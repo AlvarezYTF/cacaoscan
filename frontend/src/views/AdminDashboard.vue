@@ -19,7 +19,7 @@
         />
         <SummaryCard 
           title="Lotes analizados" 
-          :value="'$2,324'"
+          :value="'2,324'"
           icon="🌱"
           color="emerald"
         />
