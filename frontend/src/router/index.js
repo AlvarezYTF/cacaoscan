@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import NuevoAnalisis from '../views/NuevoAnalisis.vue'
 import AnalisisDetalle from '../views/AnalisisDetalle.vue'
 import LoginView from '../views/LoginView.vue'
+import RegisterView from '../views/RegisterView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,6 +20,15 @@ const router = createRouter({
       component: LoginView,
       meta: {
         title: 'Iniciar sesión | CacaoScan',
+        hideForAuth: true
+      }
+    },
+    {
+      path: '/registro',
+      name: 'register',
+      component: RegisterView,
+      meta: {
+        title: 'Registro | CacaoScan',
         hideForAuth: true
       }
     },
@@ -46,10 +56,10 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   // Update page title
   document.title = to.meta?.title || 'CacaoScan';
-  
+
   // Check if the route requires authentication
   const isAuthenticated = localStorage.getItem('auth_token'); // Update this based on your auth implementation
-  
+
   if (to.matched.some(record => record.meta.requiresAuth) && !isAuthenticated) {
     // Redirect to login if trying to access protected route
     next({ name: 'login' });
