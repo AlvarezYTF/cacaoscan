@@ -53,7 +53,7 @@ const routes = [
       path: '/agricultor',
       name: 'agricultor-dashboard',
       component: () => import('../views/AgricultorDashboard.vue'),
-      meta: { requiresAuth: true, role: 'agricultor' }
+      //meta: { requiresAuth: true, role: 'agricultor' }
     }
   ]
 
