@@ -1,16 +1,27 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '../views/HomeView.vue'
+import NuevoAnalisis from '../views/NuevoAnalisis.vue'
+import AnalisisDetalle from '../views/AnalisisDetalle.vue'
+import LoginView from '../views/LoginView.vue'
+import RegisterView from '../views/RegisterView.vue'
+import AdminDashboard from '../views/AdminDashboard.vue'
+import Agricultores from '../views/Agricultores.vue'
+import Analisis from '../views/Analisis.vue'
+import Reportes from '../views/Reportes.vue'
 
-const routes = [
-  {
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
+    {
       path: '/',
       name: 'home',
-      component: () => import('../views/HomeView.vue'),
+      component: HomeView,
       meta: { requiresAuth: true }
     },
     {
       path: '/login',
       name: 'login',
-      component: () => import('../views/LoginView.vue'),
+      component: LoginView,
       meta: {
         title: 'Iniciar sesión | CacaoScan',
         hideForAuth: true
@@ -19,7 +30,7 @@ const routes = [
     {
       path: '/registro',
       name: 'register',
-      component: () => import('../views/RegisterView.vue'),
+      component: RegisterView,
       meta: {
         title: 'Registro | CacaoScan',
         hideForAuth: true
@@ -28,7 +39,7 @@ const routes = [
     {
       path: '/nuevo-analisis',
       name: 'nuevo-analisis',
-      component: () => import('../views/NuevoAnalisis.vue'),
+      component: NuevoAnalisis,
       meta: {
         title: 'Nuevo Análisis de Lote | CacaoScan'
       }
@@ -36,7 +47,7 @@ const routes = [
     {
       path: '/analisis/:id',
       name: 'analisis-detalle',
-      component: () => import('../views/AnalisisDetalle.vue'),
+      component: AnalisisDetalle,
       meta: {
         title: 'Detalle de Análisis | CacaoScan',
         requiresAuth: true
@@ -46,20 +57,40 @@ const routes = [
     {
       path: '/admin',
       name: 'admin-dashboard',
-      component: () => import('../views/AdminDashboard.vue'),
-      meta: { requiresAuth: true, role: 'admin' }
+      component: AdminDashboard,
+      meta: {
+        title: 'Panel de Administración | CacaoScan',
+        requiresAdmin: true
+      }
     },
     {
-      path: '/agricultor',
-      name: 'agricultor-dashboard',
-      component: () => import('../views/AgricultorDashboard.vue'),
-      //meta: { requiresAuth: true, role: 'agricultor' }
+      path: '/admin/agricultores',
+      name: 'agricultores',
+      component: Agricultores,
+      meta: {
+        title: 'Gestión de Agricultores | CacaoScan',
+        requiresAdmin: true
+      }
+    },
+    {
+      path: '/admin/analisis',
+      name: 'analisis',
+      component: Analisis,
+      meta: {
+        title: 'Gestión de Análisis | CacaoScan',
+        requiresAdmin: true
+      }
+    },
+    {
+      path: '/admin/reportes',
+      name: 'reportes',
+      component: Reportes,
+      meta: {
+        title: 'Reportes | CacaoScan',
+        requiresAdmin: true
+      }
     }
-  ]
-
-const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes
+  ],
 })
 
 // // Guardián de navegación para autenticación y títulos de página
