@@ -8,6 +8,7 @@ import AdminDashboard from '../views/AdminDashboard.vue'
 import Agricultores from '../views/Agricultores.vue'
 import Analisis from '../views/Analisis.vue'
 import Reportes from '../views/Reportes.vue'
+import AgricultorDashboard from '../views/AgricultorDashboard.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -88,6 +89,15 @@ const router = createRouter({
       meta: {
         title: 'Reportes | CacaoScan',
         requiresAdmin: true
+      }
+    },
+    {
+      path: '/agricultor',
+      name: 'agricultor-dashboard',
+      component: AgricultorDashboard,
+      meta: {
+        title: 'Dashboard de Agricultor | CacaoScan',
+        requiresAuth: true
       }
     }
   ],
