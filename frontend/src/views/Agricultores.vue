@@ -119,18 +119,11 @@
               <select id="status" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
                 <option value="">Todos los estados</option>
                 <option>Activo</option>
+                <option>En Revisión</option>
                 <option>Inactivo</option>
               </select>
             </div>
-            <div class="w-full sm:w-auto">
-              <label for="certification" class="block text-sm font-medium text-gray-700 mb-1">Certificación</label>
-              <select id="certification" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
-                <option value="">Todas las certificaciones</option>
-                <option>Orgánico</option>
-                <option>Comercio Justo</option>
-                <option>Rainforest</option>
-              </select>
-            </div>
+            <!--  -->
             <div class="w-full sm:w-auto flex items-end">
               <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                 Aplicar Filtros
@@ -148,7 +141,6 @@
                   <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agricultor</th>
                   <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finca</th>
                   <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Región</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Certificaciones</th>
                   <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                   <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -171,12 +163,6 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">Santander</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex flex-wrap gap-1">
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Orgánico</span>
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Comercio Justo</span>
-                    </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
@@ -206,11 +192,6 @@
                     <div class="text-sm text-gray-900">Antioquia</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex flex-wrap gap-1">
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Orgánico</span>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -238,12 +219,6 @@
                     <div class="text-sm text-gray-900">Huila</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex flex-wrap gap-1">
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">Rainforest</span>
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Comercio Justo</span>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">En revisión</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -269,11 +244,6 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">Nariño</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex flex-wrap gap-1">
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Orgánico</span>
-                    </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>
