@@ -52,9 +52,9 @@
               </div>
             </td>
             <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-right text-xs md:text-sm font-medium">
-              <a href="#" class="text-green-600 hover:text-green-900 mr-3 transition-colors duration-200">Ver</a>
-              <a href="#" class="text-blue-600 hover:text-blue-900 mr-3 transition-colors duration-200">Editar</a>
-              <a href="#" class="text-red-600 hover:text-red-900 transition-colors duration-200">Eliminar</a>
+              <router-link :to="{ name: 'detalle-analisis', query: { id: analysis.id } }" class="text-green-600 hover:text-green-900 mr-3 transition-colors duration-200">Ver</router-link>
+              <a href="#" @click.prevent="editAnalysis(analysis.id)" class="text-blue-600 hover:text-blue-900 mr-3 transition-colors duration-200 cursor-pointer">Editar</a>
+              <a href="#" @click.prevent="deleteAnalysis(analysis.id)" class="text-red-600 hover:text-red-900 transition-colors duration-200 cursor-pointer">Eliminar</a>
             </td>
           </tr>
           
@@ -134,6 +134,7 @@ export default {
       default: 0
     }
   },
+  emits: ['edit-analysis', 'delete-analysis'],
   methods: {
     getStatusClasses(status) {
       const classes = {
@@ -147,6 +148,16 @@ export default {
       if (quality >= 80) return 'bg-green-600';
       if (quality >= 60) return 'bg-yellow-500';
       return 'bg-red-600';
+    },
+    editAnalysis(analysisId) {
+      // Emitir evento para editar el análisis
+      this.$emit('edit-analysis', analysisId);
+    },
+    deleteAnalysis(analysisId) {
+      // Confirmar eliminación y emitir evento
+      if (confirm('¿Estás seguro de que quieres eliminar este análisis?')) {
+        this.$emit('delete-analysis', analysisId);
+      }
     }
   }
 };
