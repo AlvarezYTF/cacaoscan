@@ -1,79 +1,20 @@
 <template>
-    <div class="min-h-screen bg-gray-50 flex pb-8">
-      <!-- Sidebar -->
-      <aside class="w-16 md:w-64 bg-gradient-to-b from-green-800 to-green-600 text-white fixed inset-y-0 left-0 z-10 flex flex-col shadow-lg">
-        <!-- Logo/Brand -->
-        <div class="p-4 flex items-center justify-center md:justify-start">
-          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-          </svg>
-          <h1 class="text-xl font-bold text-white tracking-tight ml-3 hidden md:block">Panel Admin</h1>
-        </div>
-        
-        <!-- Navigation -->
-        <nav class="mt-8 flex-1">
-          <div class="px-2 space-y-1">
-            <router-link :to="{name: 'admin-dashboard'}" class="group flex items-center px-2 py-3 text-sm font-medium rounded-md hover:bg-green-700 transition-colors" :class="{'bg-green-700': $route.name === 'admin-dashboard'}">
-              <svg class="w-6 h-6 mr-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-              </svg>
-              <span class="hidden md:block">Inicio</span>
-            </router-link>
-            
-            <router-link :to="{name: 'agricultores'}" class="group flex items-center px-2 py-3 text-sm font-medium rounded-md hover:bg-green-700 transition-colors" :class="{'bg-green-700': $route.name === 'agricultores'}">
-              <svg class="w-6 h-6 mr-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-              </svg>
-              <span class="hidden md:block">Agricultores</span>
-            </router-link>
-            
-            <router-link :to="{name: 'analisis'}" class="group flex items-center px-2 py-3 text-sm font-medium rounded-md hover:bg-green-700 transition-colors" :class="{'bg-green-700': $route.name === 'analisis'}">
-              <svg class="w-6 h-6 mr-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-              </svg>
-              <span class="hidden md:block">Análisis</span>
-            </router-link>
-            
-            <router-link :to="{name: 'reportes'}" class="group flex items-center px-2 py-3 text-sm font-medium rounded-md hover:bg-green-700 transition-colors" :class="{'bg-green-700': $route.name === 'reportes'}">
-              <svg class="w-6 h-6 mr-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-              </svg>
-              <span class="hidden md:block">Reportes</span>
-            </router-link>
-          </div>
-        </nav>
-        
-        <!-- User Profile -->
-        <div class="p-4 border-t border-green-700">
-          <div class="flex items-center">
-            <div class="h-8 w-8 rounded-full bg-white flex items-center justify-center text-green-800 font-bold">
-              AD
-            </div>
-            <div class="ml-3 hidden md:block">
-              <p class="text-sm font-medium text-white">Admin</p>
-              <p class="text-xs text-green-200">Ver perfil</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-  
-      <!-- Main Content -->
-      <main class="flex-1 ml-16 md:ml-64">
-        <!-- Header -->
-        <header class="bg-white shadow-sm mb-4 md:mb-6">
-          <div class="px-3 sm:px-4 lg:px-8 py-4 md:py-6">
-            <div class="flex items-center">
-              <svg class="h-6 w-6 md:h-8 md:w-8 mr-2 md:mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-              </svg>
-              <div>
-                <h1 class="text-lg md:text-2xl font-bold text-gray-800">Agricultores</h1>
-                <p class="text-xs md:text-sm text-gray-600">Gestión de agricultores y fincas</p>
-              </div>
-            </div>
-          </div>
-        </header>
-  
+  <div class="min-h-screen bg-gray-50 flex pb-8">
+    <!-- Sidebar -->
+    <AdminSidebar 
+      user-initials="AD"
+      user-name="Admin"
+      user-role="Ver perfil"
+    />
+
+    <!-- Main Content -->
+    <main class="flex-1 ml-16 md:ml-64 transition-all duration-300">
+      <!-- Header -->
+      <PageHeader 
+        title="Agricultores"
+        subtitle="Gestión de agricultores y fincas"
+      />
+
       <!-- Contenido principal -->
       <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 md:py-8">
         <!-- Barra de acciones -->
@@ -84,237 +25,321 @@
               <p class="text-xs md:text-sm text-gray-500">Gestiona los agricultores registrados en el sistema</p>
             </div>
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-              <div class="relative">
-                <input type="text" placeholder="Buscar agricultor..." class="w-full sm:w-64 pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                  </svg>
-                </div>
-              </div>
-              <button class="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center transition-colors duration-150">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                <span class="hidden sm:inline">Nuevo Agricultor</span>
-                <span class="sm:hidden">+ Nuevo</span>
-              </button>
+              <SearchBar 
+                v-model="searchQuery"
+                placeholder="Buscar agricultor..."
+              />
+              <ActionButton 
+                label="Nuevo Agricultor"
+                short-label="+ Nuevo"
+                variant="primary"
+                @click="handleNewFarmer"
+              />
             </div>
           </div>
         </div>
-  
+
         <!-- Filtros -->
         <div class="mb-4 md:mb-6 bg-white p-3 md:p-4 rounded-lg shadow-sm border border-gray-200">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            <div>
-              <label for="region" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Región</label>
-              <select id="region" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-xs md:text-sm">
-                <option value="">Todas las regiones</option>
-                <option>Antioquia</option>
-                <option>Santander</option>
-                <option>Nariño</option>
-                <option>Huila</option>
-              </select>
-            </div>
+            <FilterSelect 
+              id="region"
+              label="Región"
+              v-model="filters.region"
+              :options="regionOptions"
+            />
             
-            <div>
-              <label for="status" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Estado</label>
-              <select id="status" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-xs md:text-sm">
-                <option value="">Todos los estados</option>
-                <option>Activo</option>
-                <option>En Revisión</option>
-                <option>Inactivo</option>
-              </select>
-            </div>
+            <FilterSelect 
+              id="status"
+              label="Estado"
+              v-model="filters.status"
+              :options="statusOptions"
+            />
             
             <div class="sm:col-span-2 lg:col-span-1 flex items-end">
-              <button class="w-full bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-xs md:text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                Aplicar Filtros
-              </button>
+              <ActionButton 
+                label="Aplicar Filtros"
+                variant="secondary"
+                @click="applyFilters"
+              />
             </div>
           </div>
         </div>
-  
+
         <!-- Tabla de agricultores -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agricultor</th>
-                  <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finca</th>
-                  <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Región</th>
-                  <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th scope="col" class="px-3 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <!-- Fila 1 -->
-                <tr class="hover:bg-gray-50 transition-colors duration-150">
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <div class="h-8 w-8 md:h-10 md:w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-medium text-sm md:text-base">CH</div>
-                      <div class="ml-2 md:ml-4">
-                        <div class="text-xs md:text-sm font-medium text-gray-900">Camilo Hernandez</div>
-                        <div class="text-xs md:text-sm text-gray-500">camilo@example.com</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <div class="text-xs md:text-sm text-gray-900">Finca El Paraíso</div>
-                    <div class="text-xs md:text-sm text-gray-500">12 hectáreas</div>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <div class="text-xs md:text-sm text-gray-900">Santander</div>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-right text-xs md:text-sm font-medium">
-                    <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-1 sm:space-y-0">
-                      <a href="#" class="text-green-600 hover:text-green-900">Ver</a>
-                      <a href="#" class="text-blue-600 hover:text-blue-900">Editar</a>
-                      <a href="#" class="text-red-600 hover:text-red-900">Eliminar</a>
-                    </div>
-                  </td>
-                </tr>
-                <!-- Fila 2 -->
-                <tr class="hover:bg-gray-50 transition-colors duration-150">
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <div class="h-8 w-8 md:h-10 md:w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm md:text-base">JA</div>
-                      <div class="ml-2 md:ml-4">
-                        <div class="text-xs md:text-sm font-medium text-gray-900">Jeferson Alvarez</div>
-                        <div class="text-xs md:text-sm text-gray-500">jeferson@example.com</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <div class="text-xs md:text-sm text-gray-900">Finca Los Laureles</div>
-                    <div class="text-xs md:text-sm text-gray-500">8 hectáreas</div>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <div class="text-xs md:text-sm text-gray-900">Antioquia</div>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-right text-xs md:text-sm font-medium">
-                    <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-1 sm:space-y-0">
-                      <a href="#" class="text-green-600 hover:text-green-900">Ver</a>
-                      <a href="#" class="text-blue-600 hover:text-blue-900">Editar</a>
-                      <a href="#" class="text-red-600 hover:text-red-900">Eliminar</a>
-                    </div>
-                  </td>
-                </tr>
-                <!-- Fila 3 -->
-                <tr class="hover:bg-gray-50 transition-colors duration-150">
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <div class="h-8 w-8 md:h-10 md:w-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 font-medium text-sm md:text-base">CC</div>
-                      <div class="ml-2 md:ml-4">
-                        <div class="text-xs md:text-sm font-medium text-gray-900">Cristian Camacho</div>
-                        <div class="text-xs md:text-sm text-gray-500">cristian@example.com</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <div class="text-xs md:text-sm text-gray-900">Finca El Mirador</div>
-                    <div class="text-xs md:text-sm text-gray-500">15 hectáreas</div>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <div class="text-xs md:text-sm text-gray-900">Huila</div>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">En revisión</span>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-right text-xs md:text-sm font-medium">
-                    <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-1 sm:space-y-0">
-                      <a href="#" class="text-green-600 hover:text-green-900">Ver</a>
-                      <a href="#" class="text-blue-600 hover:text-blue-900">Editar</a>
-                      <a href="#" class="text-red-600 hover:text-red-900">Eliminar</a>
-                    </div>
-                  </td>
-                </tr>
-                <!-- Fila 4 -->
-                <tr class="hover:bg-gray-50 transition-colors duration-150">
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <div class="h-8 w-8 md:h-10 md:w-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-medium text-sm md:text-base">JP</div>
-                      <div class="ml-2 md:ml-4">
-                        <div class="text-xs md:text-sm font-medium text-gray-900">Juan Pablo Pérez</div>
-                        <div class="text-xs md:text-sm text-gray-500">juanpablo@example.com</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <div class="text-xs md:text-sm text-gray-900">Finca La Esperanza</div>
-                    <div class="text-xs md:text-sm text-gray-500">10 hectáreas</div>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <div class="text-xs md:text-sm text-gray-900">Nariño</div>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>
-                  </td>
-                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-right text-xs md:text-sm font-medium">
-                    <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-1 sm:space-y-0">
-                      <a href="#" class="text-green-600 hover:text-green-900">Ver</a>
-                      <a href="#" class="text-blue-600 hover:text-blue-900">Editar</a>
-                      <a href="#" class="text-red-600 hover:text-red-900">Eliminar</a>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <!-- Paginación -->
-          <div class="bg-gray-50 px-3 md:px-6 py-3 md:py-4 border-t border-gray-100">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-              <div class="flex justify-center sm:justify-start">
-                <p class="text-xs md:text-sm text-gray-700">
-                  Mostrando <span class="font-medium">1</span> a <span class="font-medium">4</span> de <span class="font-medium">12</span> resultados
-                </p>
+        <DataTable 
+          :columns="tableColumns"
+          :data="filteredFarmers"
+        >
+          <!-- Celda personalizada para Agricultor -->
+          <template #cell-farmer="{ row }">
+            <div class="flex items-center">
+              <div class="h-8 w-8 md:h-10 md:w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-medium text-sm md:text-base">
+                {{ row.initials }}
               </div>
-              <div class="flex justify-center sm:justify-end">
-                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-500 hover:bg-gray-50">
-                    <span class="sr-only">Anterior</span>
-                    <svg class="h-4 w-4 md:h-5 md:w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                  <button class="relative inline-flex items-center px-3 md:px-4 py-2 border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50">
-                    1
-                  </button>
-                  <button class="relative inline-flex items-center px-3 md:px-4 py-2 border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50">
-                    2
-                  </button>
-                  <button class="relative inline-flex items-center px-3 md:px-4 py-2 border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50">
-                    3
-                  </button>
-                  <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-500 hover:bg-gray-50">
-                    <span class="sr-only">Siguiente</span>
-                    <svg class="h-4 w-4 md:h-5 md:w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                </nav>
+              <div class="ml-2 md:ml-4">
+                <div class="text-xs md:text-sm font-medium text-gray-900">{{ row.name }}</div>
+                <div class="text-xs md:text-sm text-gray-500">{{ row.email }}</div>
               </div>
             </div>
-          </div>
-        </div>
+          </template>
+
+          <!-- Celda personalizada para Finca -->
+          <template #cell-farm="{ row }">
+            <div class="text-xs md:text-sm text-gray-900">{{ row.farm }}</div>
+            <div class="text-xs md:text-sm text-gray-500">{{ row.hectares }}</div>
+          </template>
+
+          <!-- Celda personalizada para Estado -->
+          <template #cell-status="{ row }">
+            <span :class="getStatusClasses(row.status)" class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full">
+              {{ row.status }}
+            </span>
+          </template>
+
+          <!-- Celda personalizada para Acciones -->
+          <template #cell-actions="{ row }">
+            <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-1 sm:space-y-0">
+              <a href="#" class="text-green-600 hover:text-green-900 transition-colors duration-200">Ver</a>
+              <a href="#" class="text-blue-600 hover:text-blue-900 transition-colors duration-200">Editar</a>
+              <a href="#" class="text-red-600 hover:text-red-900 transition-colors duration-200">Eliminar</a>
+            </div>
+          </template>
+
+          <!-- Paginación -->
+          <template #pagination>
+            <Pagination 
+              :current-page="currentPage"
+              :total-pages="totalPages"
+              :total-items="totalItems"
+              :items-per-page="itemsPerPage"
+              @page-change="handlePageChange"
+            />
+          </template>
+        </DataTable>
       </div>
-      </main>
-    </div>
-  </template>
-  
-  <script>
-  export default {
+    </main>
+  </div>
+</template>
+
+<script>
+import { ref, computed } from 'vue';
+import AdminSidebar from '@/components/agricultores/AdminSidebar.vue';
+import PageHeader from '@/components/agricultores/PageHeader.vue';
+import SearchBar from '@/components/agricultores/SearchBar.vue';
+import ActionButton from '@/components/agricultores/ActionButton.vue';
+import FilterSelect from '@/components/agricultores/FilterSelect.vue';
+import DataTable from '@/components/agricultores/DataTable.vue';
+import Pagination from '@/components/agricultores/Pagination.vue';
+
+export default {
   name: 'AgricultoresView',
+  components: {
+    AdminSidebar,
+    PageHeader,
+    SearchBar,
+    ActionButton,
+    FilterSelect,
+    DataTable,
+    Pagination
+  },
   setup() {
-    // Aquí iría la lógica del componente
-    return {};
+    // Estado reactivo
+    const searchQuery = ref('');
+    const currentPage = ref(1);
+    const filters = ref({
+      region: '',
+      status: ''
+    });
+
+    // Datos de ejemplo
+    const farmers = ref([
+      {
+        id: 1,
+        initials: 'CH',
+        name: 'Camilo Hernandez',
+        email: 'camilo@example.com',
+        farm: 'Finca El Paraíso',
+        hectares: '12 hectáreas',
+        region: 'Santander',
+        status: 'Activo'
+      },
+      {
+        id: 2,
+        initials: 'JA',
+        name: 'Jeferson Alvarez',
+        email: 'jeferson@example.com',
+        farm: 'Finca Los Laureles',
+        hectares: '8 hectáreas',
+        region: 'Antioquia',
+        status: 'Activo'
+      },
+      {
+        id: 3,
+        initials: 'CC',
+        name: 'Cristian Camacho',
+        email: 'cristian@example.com',
+        farm: 'Finca El Mirador',
+        hectares: '15 hectáreas',
+        region: 'Huila',
+        status: 'En revisión'
+      },
+      {
+        id: 4,
+        initials: 'JP',
+        name: 'Juan Pablo Pérez',
+        email: 'juanpablo@example.com',
+        farm: 'Finca La Esperanza',
+        hectares: '10 hectáreas',
+        region: 'Nariño',
+        status: 'Inactivo'
+      }
+    ]);
+
+    // Configuración de la tabla
+    const tableColumns = [
+      { key: 'farmer', label: 'Agricultor' },
+      { key: 'farm', label: 'Finca' },
+      { key: 'region', label: 'Región' },
+      { key: 'status', label: 'Estado' },
+      { key: 'actions', label: 'Acciones', align: 'right' }
+    ];
+
+    // Opciones de filtros
+    const regionOptions = [
+      { value: '', label: 'Todas las regiones' },
+      { value: 'Antioquia', label: 'Antioquia' },
+      { value: 'Santander', label: 'Santander' },
+      { value: 'Nariño', label: 'Nariño' },
+      { value: 'Huila', label: 'Huila' }
+    ];
+
+    const statusOptions = [
+      { value: '', label: 'Todos los estados' },
+      { value: 'Activo', label: 'Activo' },
+      { value: 'En Revisión', label: 'En Revisión' },
+      { value: 'Inactivo', label: 'Inactivo' }
+    ];
+
+    // Computed properties
+    const filteredFarmers = computed(() => {
+      let filtered = farmers.value;
+
+      // Filtro por búsqueda
+      if (searchQuery.value) {
+        filtered = filtered.filter(farmer => 
+          farmer.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+          farmer.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+        );
+      }
+
+      // Filtro por región
+      if (filters.value.region) {
+        filtered = filtered.filter(farmer => farmer.region === filters.value.region);
+      }
+
+      // Filtro por estado
+      if (filters.value.status) {
+        filtered = filtered.filter(farmer => farmer.status === filters.value.status);
+      }
+
+      return filtered;
+    });
+
+    const totalItems = computed(() => filteredFarmers.value.length);
+    const itemsPerPage = 4;
+    const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
+
+    // Métodos
+    const handleNewFarmer = () => {
+      console.log('Nuevo agricultor');
+      // Implementar lógica para crear nuevo agricultor
+    };
+
+    const applyFilters = () => {
+      currentPage.value = 1; // Resetear a la primera página
+      console.log('Aplicando filtros:', filters.value);
+    };
+
+    const handlePageChange = (page) => {
+      currentPage.value = page;
+    };
+
+    const getStatusClasses = (status) => {
+      switch (status) {
+        case 'Activo':
+          return 'bg-green-100 text-green-800';
+        case 'En revisión':
+          return 'bg-yellow-100 text-yellow-800';
+        case 'Inactivo':
+          return 'bg-red-100 text-red-800';
+        default:
+          return 'bg-gray-100 text-gray-800';
+      }
+    };
+
+    return {
+      searchQuery,
+      currentPage,
+      filters,
+      farmers,
+      tableColumns,
+      regionOptions,
+      statusOptions,
+      filteredFarmers,
+      totalItems,
+      itemsPerPage,
+      totalPages,
+      handleNewFarmer,
+      applyFilters,
+      handlePageChange,
+      getStatusClasses
+    };
   }
 };
-  </script>
+</script>
+
+<style scoped>
+/* Mejoras de responsividad adicionales */
+@media (max-width: 640px) {
+  .chart-container {
+    min-height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-container {
+    min-height: 300px;
+  }
+}
+
+/* Transiciones suaves para mejor UX */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Mejoras para dispositivos táctiles */
+@media (hover: none) and (pointer: coarse) {
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Optimizaciones para pantallas pequeñas */
+@media (max-width: 768px) {
+  .sidebar-collapsed {
+    width: 4rem;
+  }
+  
+  .main-content-expanded {
+    margin-left: 4rem;
+  }
+}
+</style>
