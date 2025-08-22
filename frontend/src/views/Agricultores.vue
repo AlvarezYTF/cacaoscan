@@ -60,52 +60,55 @@
       <!-- Main Content -->
       <main class="flex-1 ml-16 md:ml-64">
         <!-- Header -->
-        <header class="bg-white shadow-sm mb-6">
-          <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <header class="bg-white shadow-sm mb-4 md:mb-6">
+          <div class="px-3 sm:px-4 lg:px-8 py-4 md:py-6">
             <div class="flex items-center">
-              <svg class="h-8 w-8 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="h-6 w-6 md:h-8 md:w-8 mr-2 md:mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
               </svg>
               <div>
-                <h1 class="text-2xl font-bold text-gray-800">Agricultores</h1>
-                <p class="text-sm text-gray-600">Gestión de agricultores y fincas</p>
+                <h1 class="text-lg md:text-2xl font-bold text-gray-800">Agricultores</h1>
+                <p class="text-xs md:text-sm text-gray-600">Gestión de agricultores y fincas</p>
               </div>
             </div>
           </div>
         </header>
   
       <!-- Contenido principal -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 md:py-8">
         <!-- Barra de acciones -->
-        <div class="mb-6 flex justify-between items-center">
-          <div>
-            <h2 class="text-xl font-semibold text-gray-800">Listado de Agricultores</h2>
-            <p class="text-sm text-gray-500">Gestiona los agricultores registrados en el sistema</p>
-          </div>
-          <div class="flex items-center space-x-3">
-            <div class="relative">
-              <input type="text" placeholder="Buscar agricultor..." class="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-              </div>
+        <div class="mb-4 md:mb-6">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+            <div>
+              <h2 class="text-lg md:text-xl font-semibold text-gray-800">Listado de Agricultores</h2>
+              <p class="text-xs md:text-sm text-gray-500">Gestiona los agricultores registrados en el sistema</p>
             </div>
-            <button class="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-colors duration-150">
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-              </svg>
-              Nuevo Agricultor
-            </button>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <div class="relative">
+                <input type="text" placeholder="Buscar agricultor..." class="w-full sm:w-64 pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+              </div>
+              <button class="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center transition-colors duration-150">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                <span class="hidden sm:inline">Nuevo Agricultor</span>
+                <span class="sm:hidden">+ Nuevo</span>
+              </button>
+            </div>
           </div>
         </div>
   
         <!-- Filtros -->
-        <div class="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div class="flex flex-wrap gap-4">
-            <div class="w-full sm:w-auto">
-              <label for="region" class="block text-sm font-medium text-gray-700 mb-1">Región</label>
-              <select id="region" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
+        <div class="mb-4 md:mb-6 bg-white p-3 md:p-4 rounded-lg shadow-sm border border-gray-200">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            <div>
+              <label for="region" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Región</label>
+              <select id="region" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-xs md:text-sm">
                 <option value="">Todas las regiones</option>
                 <option>Antioquia</option>
                 <option>Santander</option>
@@ -114,25 +117,18 @@
               </select>
             </div>
             
-            <div class="w-full sm:w-auto">
-              <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-              <select id="status" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
+            <div>
+              <label for="status" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Estado</label>
+              <select id="status" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-xs md:text-sm">
                 <option value="">Todos los estados</option>
                 <option>Activo</option>
+                <option>En Revisión</option>
                 <option>Inactivo</option>
               </select>
             </div>
-            <div class="w-full sm:w-auto">
-              <label for="certification" class="block text-sm font-medium text-gray-700 mb-1">Certificación</label>
-              <select id="certification" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
-                <option value="">Todas las certificaciones</option>
-                <option>Orgánico</option>
-                <option>Comercio Justo</option>
-                <option>Rainforest</option>
-              </select>
-            </div>
-            <div class="w-full sm:w-auto flex items-end">
-              <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            
+            <div class="sm:col-span-2 lg:col-span-1 flex items-end">
+              <button class="w-full bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-xs md:text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                 Aplicar Filtros
               </button>
             </div>
@@ -145,184 +141,161 @@
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agricultor</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finca</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Región</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Certificaciones</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                  <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agricultor</th>
+                  <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finca</th>
+                  <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Región</th>
+                  <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th scope="col" class="px-3 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <!-- Fila 1 -->
                 <tr class="hover:bg-gray-50 transition-colors duration-150">
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
                     <div class="flex items-center">
-                      <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-medium">CH</div>
-                      <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">Camilo Hernandez</div>
-                        <div class="text-sm text-gray-500">camilo@example.com</div>
+                      <div class="h-8 w-8 md:h-10 md:w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-medium text-sm md:text-base">CH</div>
+                      <div class="ml-2 md:ml-4">
+                        <div class="text-xs md:text-sm font-medium text-gray-900">Camilo Hernandez</div>
+                        <div class="text-xs md:text-sm text-gray-500">camilo@example.com</div>
                       </div>
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">Finca El Paraíso</div>
-                    <div class="text-sm text-gray-500">12 hectáreas</div>
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                    <div class="text-xs md:text-sm text-gray-900">Finca El Paraíso</div>
+                    <div class="text-xs md:text-sm text-gray-500">12 hectáreas</div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">Santander</div>
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                    <div class="text-xs md:text-sm text-gray-900">Santander</div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex flex-wrap gap-1">
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Orgánico</span>
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Comercio Justo</span>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <a href="#" class="text-green-600 hover:text-green-900 mr-3">Ver</a>
-                    <a href="#" class="text-blue-600 hover:text-blue-900 mr-3">Editar</a>
-                    <a href="#" class="text-red-600 hover:text-red-900">Eliminar</a>
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-right text-xs md:text-sm font-medium">
+                    <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-1 sm:space-y-0">
+                      <a href="#" class="text-green-600 hover:text-green-900">Ver</a>
+                      <a href="#" class="text-blue-600 hover:text-blue-900">Editar</a>
+                      <a href="#" class="text-red-600 hover:text-red-900">Eliminar</a>
+                    </div>
                   </td>
                 </tr>
                 <!-- Fila 2 -->
                 <tr class="hover:bg-gray-50 transition-colors duration-150">
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
                     <div class="flex items-center">
-                      <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">JA</div>
-                      <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">Jeferson Alvarez</div>
-                        <div class="text-sm text-gray-500">jeferson@example.com</div>
+                      <div class="h-8 w-8 md:h-10 md:w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm md:text-base">JA</div>
+                      <div class="ml-2 md:ml-4">
+                        <div class="text-xs md:text-sm font-medium text-gray-900">Jeferson Alvarez</div>
+                        <div class="text-xs md:text-sm text-gray-500">jeferson@example.com</div>
                       </div>
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">Finca Los Laureles</div>
-                    <div class="text-sm text-gray-500">8 hectáreas</div>
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                    <div class="text-xs md:text-sm text-gray-900">Finca Los Laureles</div>
+                    <div class="text-xs md:text-sm text-gray-500">8 hectáreas</div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">Antioquia</div>
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                    <div class="text-xs md:text-sm text-gray-900">Antioquia</div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex flex-wrap gap-1">
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Orgánico</span>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <a href="#" class="text-green-600 hover:text-green-900 mr-3">Ver</a>
-                    <a href="#" class="text-blue-600 hover:text-blue-900 mr-3">Editar</a>
-                    <a href="#" class="text-red-600 hover:text-red-900">Eliminar</a>
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-right text-xs md:text-sm font-medium">
+                    <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-1 sm:space-y-0">
+                      <a href="#" class="text-green-600 hover:text-green-900">Ver</a>
+                      <a href="#" class="text-blue-600 hover:text-blue-900">Editar</a>
+                      <a href="#" class="text-red-600 hover:text-red-900">Eliminar</a>
+                    </div>
                   </td>
                 </tr>
                 <!-- Fila 3 -->
                 <tr class="hover:bg-gray-50 transition-colors duration-150">
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
                     <div class="flex items-center">
-                      <div class="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 font-medium">CC</div>
-                      <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">Cristian Camacho</div>
-                        <div class="text-sm text-gray-500">cristian@example.com</div>
+                      <div class="h-8 w-8 md:h-10 md:w-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 font-medium text-sm md:text-base">CC</div>
+                      <div class="ml-2 md:ml-4">
+                        <div class="text-xs md:text-sm font-medium text-gray-900">Cristian Camacho</div>
+                        <div class="text-xs md:text-sm text-gray-500">cristian@example.com</div>
                       </div>
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">Finca El Mirador</div>
-                    <div class="text-sm text-gray-500">15 hectáreas</div>
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                    <div class="text-xs md:text-sm text-gray-900">Finca El Mirador</div>
+                    <div class="text-xs md:text-sm text-gray-500">15 hectáreas</div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">Huila</div>
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                    <div class="text-xs md:text-sm text-gray-900">Huila</div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex flex-wrap gap-1">
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">Rainforest</span>
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Comercio Justo</span>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">En revisión</span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <a href="#" class="text-green-600 hover:text-green-900 mr-3">Ver</a>
-                    <a href="#" class="text-blue-600 hover:text-blue-900 mr-3">Editar</a>
-                    <a href="#" class="text-red-600 hover:text-red-900">Eliminar</a>
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-right text-xs md:text-sm font-medium">
+                    <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-1 sm:space-y-0">
+                      <a href="#" class="text-green-600 hover:text-green-900">Ver</a>
+                      <a href="#" class="text-blue-600 hover:text-blue-900">Editar</a>
+                      <a href="#" class="text-red-600 hover:text-red-900">Eliminar</a>
+                    </div>
                   </td>
                 </tr>
                 <!-- Fila 4 -->
                 <tr class="hover:bg-gray-50 transition-colors duration-150">
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
                     <div class="flex items-center">
-                      <div class="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-medium">JP</div>
-                      <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">Juan Pablo Pérez</div>
-                        <div class="text-sm text-gray-500">juanpablo@example.com</div>
+                      <div class="h-8 w-8 md:h-10 md:w-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-medium text-sm md:text-base">JP</div>
+                      <div class="ml-2 md:ml-4">
+                        <div class="text-xs md:text-sm font-medium text-gray-900">Juan Pablo Pérez</div>
+                        <div class="text-xs md:text-sm text-gray-500">juanpablo@example.com</div>
                       </div>
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">Finca La Esperanza</div>
-                    <div class="text-sm text-gray-500">10 hectáreas</div>
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                    <div class="text-xs md:text-sm text-gray-900">Finca La Esperanza</div>
+                    <div class="text-xs md:text-sm text-gray-500">10 hectáreas</div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">Nariño</div>
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                    <div class="text-xs md:text-sm text-gray-900">Nariño</div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex flex-wrap gap-1">
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Orgánico</span>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <a href="#" class="text-green-600 hover:text-green-900 mr-3">Ver</a>
-                    <a href="#" class="text-blue-600 hover:text-blue-900 mr-3">Editar</a>
-                    <a href="#" class="text-red-600 hover:text-red-900">Eliminar</a>
+                  <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-right text-xs md:text-sm font-medium">
+                    <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-1 sm:space-y-0">
+                      <a href="#" class="text-green-600 hover:text-green-900">Ver</a>
+                      <a href="#" class="text-blue-600 hover:text-blue-900">Editar</a>
+                      <a href="#" class="text-red-600 hover:text-red-900">Eliminar</a>
+                    </div>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
           <!-- Paginación -->
-          <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-            <div class="flex-1 flex justify-between sm:hidden">
-              <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                Anterior
-              </button>
-              <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                Siguiente
-              </button>
-            </div>
-            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p class="text-sm text-gray-700">
+          <div class="bg-gray-50 px-3 md:px-6 py-3 md:py-4 border-t border-gray-100">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+              <div class="flex justify-center sm:justify-start">
+                <p class="text-xs md:text-sm text-gray-700">
                   Mostrando <span class="font-medium">1</span> a <span class="font-medium">4</span> de <span class="font-medium">12</span> resultados
                 </p>
               </div>
-              <div>
+              <div class="flex justify-center sm:justify-end">
                 <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                  <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-500 hover:bg-gray-50">
                     <span class="sr-only">Anterior</span>
-                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <svg class="h-4 w-4 md:h-5 md:w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                       <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
                     </svg>
                   </button>
-                  <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  <button class="relative inline-flex items-center px-3 md:px-4 py-2 border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50">
                     1
                   </button>
-                  <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  <button class="relative inline-flex items-center px-3 md:px-4 py-2 border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50">
                     2
                   </button>
-                  <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  <button class="relative inline-flex items-center px-3 md:px-4 py-2 border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50">
                     3
                   </button>
-                  <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                  <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-500 hover:bg-gray-50">
                     <span class="sr-only">Siguiente</span>
-                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <svg class="h-4 w-4 md:h-5 md:w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                       <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                     </svg>
                   </button>

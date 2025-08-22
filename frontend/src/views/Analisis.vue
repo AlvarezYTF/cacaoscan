@@ -60,52 +60,55 @@
       <!-- Main Content -->
       <main class="flex-1 ml-16 md:ml-64">
         <!-- Header -->
-        <header class="bg-white shadow-sm mb-6">
-          <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <header class="bg-white shadow-sm mb-4 md:mb-6">
+          <div class="px-3 sm:px-4 lg:px-8 py-4 md:py-6">
             <div class="flex items-center">
-              <svg class="h-8 w-8 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="h-6 w-6 md:h-8 md:w-8 mr-2 md:mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
               </svg>
               <div>
-                <h1 class="text-2xl font-bold text-gray-800">Análisis</h1>
-                <p class="text-sm text-gray-600">Gestión de análisis de calidad de cacao</p>
+                <h1 class="text-lg md:text-2xl font-bold text-gray-800">Análisis</h1>
+                <p class="text-xs md:text-sm text-gray-600">Gestión de análisis de calidad de cacao</p>
               </div>
             </div>
           </div>
         </header>
   
       <!-- Contenido principal -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 md:py-8">
         <!-- Barra de acciones -->
-        <div class="mb-6 flex justify-between items-center">
-          <div>
-            <h2 class="text-xl font-semibold text-gray-800">Análisis de Calidad</h2>
-            <p class="text-sm text-gray-500">Gestiona los análisis de calidad de granos de cacao</p>
-          </div>
-          <div class="flex items-center space-x-3">
-            <div class="relative">
-              <input type="text" placeholder="Buscar análisis..." class="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-              </div>
+        <div class="mb-4 md:mb-6">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+            <div>
+              <h2 class="text-lg md:text-xl font-semibold text-gray-800">Análisis de Calidad</h2>
+              <p class="text-xs md:text-sm text-gray-500">Gestiona los análisis de calidad de granos de cacao</p>
             </div>
-            <button class="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-colors duration-150">
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-              </svg>
-              Nuevo Análisis
-            </button>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <div class="relative">
+                <input type="text" placeholder="Buscar análisis..." class="w-full sm:w-64 pl-9 pr-4 py-2 border border-gray-300 rounded-md text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+              </div>
+              <button class="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md text-xs md:text-sm font-medium flex items-center justify-center transition-colors duration-150">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                <span class="hidden sm:inline">Nuevo Análisis</span>
+                <span class="sm:hidden">+ Nuevo</span>
+              </button>
+            </div>
           </div>
         </div>
   
         <!-- Filtros -->
-        <div class="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div class="flex flex-wrap gap-4">
-            <div class="w-full sm:w-auto">
-              <label for="agricultor" class="block text-sm font-medium text-gray-700 mb-1">Agricultor</label>
-              <select id="agricultor" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
+        <div class="mb-4 md:mb-6 bg-white p-3 md:p-4 rounded-lg shadow-sm border border-gray-200">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            <div>
+              <label for="agricultor" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Agricultor</label>
+              <select id="agricultor" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-xs md:text-sm">
                 <option value="">Todos los agricultores</option>
                 <option>Camilo Hernandez</option>
                 <option>Jeferson Alvarez</option>
@@ -113,21 +116,21 @@
                 <option>Juan Pablo Pérez</option>
               </select>
             </div>
-            <div class="w-full sm:w-auto">
-              <label for="resultado" class="block text-sm font-medium text-gray-700 mb-1">Resultado</label>
-              <select id="resultado" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
+            <div>
+              <label for="resultado" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Resultado</label>
+              <select id="resultado" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-xs md:text-sm">
                 <option value="">Todos los resultados</option>
                 <option>Aceptado</option>
                 <option>Condicional</option>
                 <option>Rechazado</option>
               </select>
             </div>
-            <div class="w-full sm:w-auto">
-              <label for="fecha" class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-              <input type="date" id="fecha" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm" />
+            <div>
+              <label for="fecha" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Fecha</label>
+              <input type="date" id="fecha" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-xs md:text-sm" />
             </div>
-            <div class="w-full sm:w-auto flex items-end">
-              <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            <div class="sm:col-span-2 lg:col-span-1 flex items-end">
+              <button class="w-full bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-xs md:text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                 Aplicar Filtros
               </button>
             </div>
@@ -135,23 +138,23 @@
         </div>
   
         <!-- Tarjetas de resumen -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-4 md:mb-6">
           <!-- Tarjeta 1 -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-            <div class="p-5">
+            <div class="p-4 md:p-5">
               <div class="flex items-center">
-                <div class="flex-shrink-0 bg-green-50 rounded-lg p-3">
-                  <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex-shrink-0 bg-green-50 rounded-lg p-2 md:p-3">
+                  <svg class="h-5 w-5 md:h-6 md:w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                 </div>
-                <div class="ml-5">
+                <div class="ml-3 md:ml-5">
                   <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">Análisis Aceptados</dt>
+                    <dt class="text-xs md:text-sm font-medium text-gray-500 truncate">Análisis Aceptados</dt>
                     <dd class="mt-1">
-                      <div class="text-2xl font-semibold text-gray-900">124</div>
-                      <div class="text-sm text-green-600 flex items-center mt-1">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div class="text-lg md:text-2xl font-semibold text-gray-900">124</div>
+                      <div class="text-xs md:text-sm text-green-600 flex items-center mt-1">
+                        <svg class="w-3 h-3 md:w-4 md:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
                         </svg>
                         <span>8% desde el mes pasado</span>
@@ -164,20 +167,20 @@
           </div>
           <!-- Tarjeta 2 -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-            <div class="p-5">
+            <div class="p-4 md:p-5">
               <div class="flex items-center">
-                <div class="flex-shrink-0 bg-yellow-50 rounded-lg p-3">
-                  <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex-shrink-0 bg-yellow-50 rounded-lg p-2 md:p-3">
+                  <svg class="h-5 w-5 md:h-6 md:w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                   </svg>
                 </div>
-                <div class="ml-5">
+                <div class="ml-3 md:ml-5">
                   <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">Análisis Condicionales</dt>
+                    <dt class="text-xs md:text-sm font-medium text-gray-500 truncate">Análisis Condicionales</dt>
                     <dd class="mt-1">
-                      <div class="text-2xl font-semibold text-gray-900">45</div>
-                      <div class="text-sm text-yellow-600 flex items-center mt-1">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div class="text-lg md:text-2xl font-semibold text-gray-900">45</div>
+                      <div class="text-xs md:text-sm text-yellow-600 flex items-center mt-1">
+                        <svg class="w-3 h-3 md:w-4 md:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
                         </svg>
                         <span>3% desde el mes pasado</span>
@@ -190,23 +193,23 @@
           </div>
           <!-- Tarjeta 3 -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-            <div class="p-5">
+            <div class="p-4 md:p-5">
               <div class="flex items-center">
-                <div class="flex-shrink-0 bg-red-50 rounded-lg p-3">
-                  <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex-shrink-0 bg-red-50 rounded-lg p-2 md:p-3">
+                  <svg class="h-5 w-5 md:h-6 md:w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                 </div>
-                <div class="ml-5">
+                <div class="ml-3 md:ml-5">
                   <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">Análisis Rechazados</dt>
+                    <dt class="text-xs md:text-sm font-medium text-gray-500 truncate">Análisis Rechazados</dt>
                     <dd class="mt-1">
-                      <div class="text-2xl font-semibold text-gray-900">32</div>
-                      <div class="text-sm text-red-600 flex items-center mt-1">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                      <div class="text-lg md:text-2xl font-semibold text-gray-900">12</div>
+                      <div class="text-xs md:text-sm text-red-600 flex items-center mt-1">
+                        <svg class="w-3 h-3 md:w-4 md:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
                         </svg>
-                        <span>5% desde el mes pasado</span>
+                        <span>2% desde el mes pasado</span>
                       </div>
                     </dd>
                   </dl>
@@ -216,23 +219,23 @@
           </div>
           <!-- Tarjeta 4 -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-            <div class="p-5">
+            <div class="p-4 md:p-5">
               <div class="flex items-center">
-                <div class="flex-shrink-0 bg-blue-50 rounded-lg p-3">
-                  <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                <div class="flex-shrink-0 bg-blue-50 rounded-lg p-2 md:p-3">
+                  <svg class="h-5 w-5 md:h-6 md:w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                   </svg>
                 </div>
-                <div class="ml-5">
+                <div class="ml-3 md:ml-5">
                   <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">Análisis este mes</dt>
+                    <dt class="text-xs md:text-sm font-medium text-gray-500 truncate">Total Análisis</dt>
                     <dd class="mt-1">
-                      <div class="text-2xl font-semibold text-gray-900">28</div>
-                      <div class="text-sm text-blue-600 flex items-center mt-1">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div class="text-lg md:text-2xl font-semibold text-gray-900">181</div>
+                      <div class="text-xs md:text-sm text-blue-600 flex items-center mt-1">
+                        <svg class="w-3 h-3 md:w-4 md:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
                         </svg>
-                        <span>12% desde el mes pasado</span>
+                        <span>5% desde el mes pasado</span>
                       </div>
                     </dd>
                   </dl>
