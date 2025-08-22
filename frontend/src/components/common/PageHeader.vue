@@ -56,7 +56,7 @@ export default {
     },
     backText: {
       type: String,
-      default: 'Volver al inicio'
+      default: 'Volver'
     }
   }
 }

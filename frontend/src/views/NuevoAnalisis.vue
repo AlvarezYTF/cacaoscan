@@ -5,8 +5,8 @@
       <PageHeader 
         title="Nuevo Análisis de Lote"
         description="Sube imágenes de granos de cacao y completa la información del lote para iniciar un análisis de calidad detallado y preciso."
-        back-route="/admin"
-        back-text="Volver a Admin"
+        back-route="/admin/analisis"
+        back-text="Volver"
       />
 
       <!-- Main Content -->
