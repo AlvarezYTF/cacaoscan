@@ -30,7 +30,7 @@
         </div>
         <div class="card-footer">
           <span class="date">{{ analysis.date }}</span>
-          <button class="btn btn-sm btn-outline" @click="$emit('view-details', analysis)">Ver detalles</button>
+          <router-link :to="{ name: 'detalle-analisis', query: { id: analysis.id } }" class="btn btn-sm btn-outline">Ver detalles</router-link>
         </div>
       </div>
     </div>
@@ -46,8 +46,7 @@ export default {
       required: true,
       default: () => []
     }
-  },
-  emits: ['view-details']
+  }
 };
 </script>
 
@@ -182,6 +181,9 @@ export default {
   background: transparent;
   border: 1px solid #bdc3c7;
   color: #2c3e50;
+  text-decoration: none;
+  display: inline-block;
+  cursor: pointer;
 }
 
 .btn-outline:hover {
