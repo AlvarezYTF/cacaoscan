@@ -28,6 +28,12 @@
               <span v-if="!sidebarCollapsed">Análisis</span>
             </a>
           </li>
+          <li class="nav-item" :class="{ 'active': activeSection === 'fincas' }">
+            <a href="#" @click.prevent="setActiveSection('fincas')" class="nav-link" :title="sidebarCollapsed ? 'Gestión de Fincas' : ''">
+              <i class="fas fa-tree"></i>
+              <span v-if="!sidebarCollapsed">Gestión de Fincas</span>
+            </a>
+          </li>
           <li class="nav-item" :class="{ 'active': activeSection === 'reports' }">
             <a href="#" @click.prevent="setActiveSection('reports')" class="nav-link" :title="sidebarCollapsed ? 'Reportes' : ''">
               <i class="fas fa-file-alt"></i>
@@ -140,6 +146,99 @@
               <h4>Ver Detalle de Análisis</h4>
               <p>Visualiza resultados detallados con gráficos</p>
               <router-link to="/detalle-analisis" class="btn btn-primary">Ver Detalle</router-link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fincas Section -->
+      <div v-if="activeSection === 'fincas'" class="dashboard-section">
+        <div class="section-header">
+          <h1>Gestión de Fincas</h1>
+          <p>Administra y monitorea tus fincas y lotes de cacao</p>
+        </div>
+        
+        <div class="fincas-overview">
+          <div class="fincas-stats">
+            <div class="stat-card">
+              <i class="fas fa-map-marked-alt"></i>
+              <div class="stat-content">
+                <h3>{{ fincasStats.totalFincas }}</h3>
+                <p>Fincas Registradas</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <i class="fas fa-seedling"></i>
+              <div class="stat-content">
+                <h3>{{ fincasStats.totalLotes }}</h3>
+                <p>Lotes Activos</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <i class="fas fa-ruler-combined"></i>
+              <div class="stat-content">
+                <h3>{{ fincasStats.areaTotal }} ha</h3>
+                <p>Área Total</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <i class="fas fa-calendar-check"></i>
+              <div class="stat-content">
+                <h3>{{ fincasStats.ultimaActualizacion }}</h3>
+                <p>Última Actualización</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="fincas-actions">
+          <h3>Acciones de Fincas</h3>
+          <div class="actions-grid">
+            <div class="action-card">
+              <i class="fas fa-plus-circle"></i>
+              <h4>Registrar Nueva Finca</h4>
+              <p>Agrega una nueva finca a tu portafolio</p>
+              <button class="btn btn-primary" @click="registrarNuevaFinca">Registrar Finca</button>
+            </div>
+            <div class="action-card">
+              <i class="fas fa-edit"></i>
+              <h4>Gestionar Fincas</h4>
+              <p>Edita información y configuración de fincas existentes</p>
+              <button class="btn btn-secondary" @click="gestionarFincas">Gestionar</button>
+            </div>
+            <div class="action-card">
+              <i class="fas fa-chart-line"></i>
+              <h4>Monitoreo de Lotes</h4>
+              <p>Visualiza el estado y rendimiento de tus lotes</p>
+              <button class="btn btn-secondary" @click="monitorearLotes">Monitorear</button>
+            </div>
+            <div class="action-card">
+              <i class="fas fa-file-export"></i>
+              <h4>Reportes de Fincas</h4>
+              <p>Genera reportes detallados de tus fincas</p>
+              <button class="btn btn-secondary" @click="generarReportesFincas">Generar Reporte</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="fincas-list" v-if="fincas.length > 0">
+          <h3>Fincas Registradas</h3>
+          <div class="fincas-grid">
+            <div v-for="finca in fincas" :key="finca.id" class="finca-card">
+              <div class="finca-header">
+                <h4>{{ finca.nombre }}</h4>
+                <span class="finca-status" :class="finca.status">{{ finca.statusLabel }}</span>
+              </div>
+              <div class="finca-details">
+                <p><i class="fas fa-map-marker-alt"></i> {{ finca.ubicacion }}</p>
+                <p><i class="fas fa-ruler-combined"></i> {{ finca.area }} ha</p>
+                <p><i class="fas fa-seedling"></i> {{ finca.lotes }} lotes</p>
+                <p><i class="fas fa-calendar-alt"></i> Registrada: {{ finca.fechaRegistro }}</p>
+              </div>
+              <div class="finca-actions">
+                <button class="btn btn-sm btn-secondary" @click="verDetalleFinca(finca)">Ver Detalle</button>
+                <button class="btn btn-sm btn-primary" @click="editarFinca(finca)">Editar</button>
+              </div>
             </div>
           </div>
         </div>
@@ -334,7 +433,45 @@ export default {
         qualityChange: '+2%',
         defectRate: 5.2,
         defectChange: '-1.2%'
-      }
+      },
+      fincasStats: {
+        totalFincas: 3,
+        totalLotes: 12,
+        areaTotal: 8.5,
+        ultimaActualizacion: 'Hoy'
+      },
+      fincas: [
+        {
+          id: 1,
+          nombre: 'Finca El Paraíso',
+          ubicacion: 'Vereda La Esperanza, Santander',
+          area: 3.2,
+          lotes: 5,
+          fechaRegistro: '15/01/2023',
+          status: 'active',
+          statusLabel: 'Activa'
+        },
+        {
+          id: 2,
+          nombre: 'Finca Los Cacaos',
+          ubicacion: 'Vereda San José, Antioquia',
+          area: 2.8,
+          lotes: 4,
+          fechaRegistro: '20/02/2023',
+          status: 'active',
+          statusLabel: 'Activa'
+        },
+        {
+          id: 3,
+          nombre: 'Finca La Esperanza',
+          ubicacion: 'Vereda El Progreso, Caldas',
+          area: 2.5,
+          lotes: 3,
+          fechaRegistro: '10/03/2023',
+          status: 'active',
+          statusLabel: 'Activa'
+        }
+      ]
     };
   },
   computed: {
@@ -386,6 +523,38 @@ export default {
     viewAnalysisDetails(analysis) {
       console.log('Ver detalles del análisis:', analysis);
       // Navegar a la vista de detalles o mostrar un modal
+    },
+    // Métodos para gestión de fincas
+    registrarNuevaFinca() {
+      console.log('Registrar nueva finca');
+      // Aquí se implementaría la lógica para registrar una nueva finca
+      // Por ahora solo mostramos un mensaje
+      alert('Función de registro de finca en desarrollo');
+    },
+    gestionarFincas() {
+      console.log('Gestionar fincas existentes');
+      // Aquí se implementaría la lógica para gestionar fincas
+      alert('Función de gestión de fincas en desarrollo');
+    },
+    monitorearLotes() {
+      console.log('Monitorear lotes');
+      // Aquí se implementaría la lógica para monitorear lotes
+      alert('Función de monitoreo de lotes en desarrollo');
+    },
+    generarReportesFincas() {
+      console.log('Generar reportes de fincas');
+      // Aquí se implementaría la lógica para generar reportes
+      alert('Función de reportes de fincas en desarrollo');
+    },
+    verDetalleFinca(finca) {
+      console.log('Ver detalle de finca:', finca);
+      // Aquí se implementaría la lógica para ver detalles de la finca
+      alert(`Ver detalles de: ${finca.nombre}`);
+    },
+    editarFinca(finca) {
+      console.log('Editar finca:', finca);
+      // Aquí se implementaría la lógica para editar la finca
+      alert(`Editar finca: ${finca.nombre}`);
     },
     logout() {
       // Mostrar mensaje de confirmación
@@ -1114,6 +1283,221 @@ export default {
   .report-card,
   .settings-card {
     padding: 1.5rem;
+  }
+}
+
+/* Estilos para el módulo de Fincas */
+.fincas-overview {
+  margin-bottom: 2rem;
+}
+
+.fincas-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+}
+
+.stat-card i {
+  font-size: 2rem;
+  color: #27ae60;
+  width: 40px;
+  text-align: center;
+}
+
+.stat-content h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.stat-content p {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.fincas-actions {
+  margin-bottom: 2rem;
+}
+
+.fincas-actions h3 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.action-card {
+  background: white;
+  border-radius: 10px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.action-card:hover {
+  transform: translateY(-5px);
+}
+
+.action-card i {
+  font-size: 3rem;
+  color: #27ae60;
+  margin-bottom: 1rem;
+}
+
+.action-card h4 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.action-card p {
+  color: #7f8c8d;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.fincas-list {
+  margin-bottom: 2rem;
+}
+
+.fincas-list h3 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.fincas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.finca-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.finca-card:hover {
+  transform: translateY(-3px);
+}
+
+.finca-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.finca-header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.finca-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.finca-status.active {
+  background: rgba(39, 174, 96, 0.1);
+  color: #27ae60;
+}
+
+.finca-status.inactive {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+.finca-details {
+  margin-bottom: 1.5rem;
+}
+
+.finca-details p {
+  margin: 0.5rem 0;
+  color: #7f8c8d;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.finca-details i {
+  width: 16px;
+  color: #27ae60;
+}
+
+.finca-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* Responsive para fincas */
+@media (max-width: 768px) {
+  .fincas-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .fincas-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .fincas-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .action-card {
+    padding: 1.5rem;
+  }
+  
+  .finca-card {
+    padding: 1rem;
   }
 }
 </style>
