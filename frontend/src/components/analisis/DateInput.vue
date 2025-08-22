@@ -2,26 +2,26 @@
   <div class="w-full">
     <label :for="id" class="block text-xs sm:text-sm md:text-base font-medium text-gray-700 mb-1 sm:mb-2">{{ label }}</label>
     <div class="relative">
-      <select 
+      <input 
         :id="id"
+        type="date" 
         :value="modelValue"
-        @change="$emit('update:modelValue', $event.target.value)"
+        @input="$emit('update:modelValue', $event.target.value)"
         class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-xs sm:text-sm md:text-base transition-all duration-200"
         :class="{
           'py-2 px-3': size === 'small',
           'py-2.5 px-3 md:py-3 md:px-4': size === 'medium',
           'py-3 px-4 md:py-4 md:px-5': size === 'large'
         }"
-      >
-        <option v-for="option in options" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+        :min="minDate"
+        :max="maxDate"
+        :disabled="disabled"
+      />
       
-      <!-- Icono de flecha personalizado -->
-      <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+      <!-- Icono de calendario -->
+      <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
         <svg class="h-4 w-4 md:h-5 md:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
         </svg>
       </div>
     </div>
@@ -36,7 +36,7 @@
 
 <script>
 export default {
-  name: 'FilterSelect',
+  name: 'DateInput',
   props: {
     id: {
       type: String,
@@ -50,15 +50,18 @@ export default {
       type: String,
       default: ''
     },
-    options: {
-      type: Array,
-      required: true,
-      validator: (value) => value.every(option => 'value' in option && 'label' in option)
-    },
     size: {
       type: String,
       default: 'medium', // small, medium, large
       validator: (value) => ['small', 'medium', 'large'].includes(value)
+    },
+    minDate: {
+      type: String,
+      default: ''
+    },
+    maxDate: {
+      type: String,
+      default: ''
     },
     error: {
       type: String,
@@ -78,7 +81,7 @@ export default {
 </script>
 
 <style scoped>
-/* Mejoras de responsividad para selectores */
+/* Mejoras de responsividad para inputs de fecha */
 @media (max-width: 640px) {
   .text-xs {
     font-size: 0.75rem;
@@ -130,7 +133,7 @@ export default {
 
 /* Mejoras para dispositivos táctiles */
 @media (hover: none) and (pointer: coarse) {
-  select {
+  input {
     min-height: 44px;
     font-size: 16px; /* Previene zoom en iOS */
   }
@@ -141,12 +144,12 @@ export default {
 }
 
 /* Efectos de hover y focus mejorados */
-select:hover {
+input:hover:not(:disabled) {
   border-color: #9ca3af;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
-select:focus {
+input:focus:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
@@ -211,8 +214,40 @@ select:focus {
 }
 
 /* Mejoras para accesibilidad */
-select:focus-visible {
+input:focus-visible {
   outline: 2px solid #10b981;
   outline-offset: 2px;
+}
+
+/* Estilos para el input de fecha en diferentes navegadores */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  background: transparent;
+  bottom: 0;
+  color: transparent;
+  cursor: pointer;
+  height: auto;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: auto;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-text {
+  padding: 0 2px;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  padding: 0 2px;
 }
 </style>

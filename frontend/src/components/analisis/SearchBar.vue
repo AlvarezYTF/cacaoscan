@@ -36,7 +36,7 @@ export default {
     },
     placeholder: {
       type: String,
-      default: 'Buscar agricultor...'
+      default: 'Buscar análisis...'
     },
     showClearButton: {
       type: Boolean,
