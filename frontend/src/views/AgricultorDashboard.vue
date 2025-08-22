@@ -83,8 +83,8 @@
       <!-- Overview Section -->
       <div v-if="activeSection === 'overview'" class="dashboard-section">
         <div class="section-header">
-          <h1>Resumen del Dashboard</h1>
-          <p>Vista general de tu actividad y estadísticas</p>
+          <h1>¡Bienvenido a CacaoScan, Sofia!</h1>
+          <p>Esta es su herramienta para asegurar la calidad de cada grano. Con CacaoScan, podrá analizar su cosecha de forma rápida y precisa, eliminando las dudas del análisis tradicional. Obtenga los datos que necesita para mejorar sus procesos y aumentar el valor de su trabajo. Estamos aquí para ayudarle a que su cacao destaque.</p>
         </div>
         
         <StatsOverview :stats="stats" />
