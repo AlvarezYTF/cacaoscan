@@ -109,6 +109,7 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import AdminSidebar from '@/components/common/AdminSidebar.vue';
 import PageHeader from '@/components/analisis/PageHeader.vue';
 import SearchBar from '@/components/analisis/SearchBar.vue';
@@ -131,6 +132,9 @@ export default {
     AnalysisTable
   },
   setup() {
+    // Inicializar router
+    const router = useRouter();
+    
     // Estado reactivo
     const searchQuery = ref('');
     const loading = ref(false);
@@ -261,8 +265,8 @@ export default {
     };
 
     const handleNewAnalysis = () => {
-      console.log('Nuevo análisis');
-      // Aquí iría la lógica para crear un nuevo análisis
+      console.log('Navegando a nuevo análisis');
+      router.push({ name: 'nuevo-analisis' });
     };
 
     const applyFilters = () => {
@@ -292,6 +296,9 @@ export default {
       userInitials,
       userName,
       userRole,
+      
+      // Router
+      router,
       
       // Filtros
       filters,
