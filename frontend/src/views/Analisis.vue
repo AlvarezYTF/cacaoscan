@@ -21,9 +21,9 @@
         <!-- Contenido principal -->
         <main class="flex-1 p-4 md:p-6 lg:p-8 pb-0 overflow-y-auto">
           <!-- Filtros y controles -->
-          <div class="mb-4 md:mb-6">
-            <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div class="flex flex-col sm:flex-row gap-4 flex-1">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex gap-4 items-center justify-between">
+              <div class="flex gap-4">
                 <FilterSelect 
                   id="agricultor"
                   label="Agricultor"

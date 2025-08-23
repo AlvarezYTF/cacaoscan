@@ -12,7 +12,7 @@
               <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Inicio</a></li>
               <li><a href="#features" class="text-gray-400 hover:text-white transition-colors">Funcionalidades</a></li>
               <li><a href="#about" class="text-gray-400 hover:text-white transition-colors">Sobre el sistema</a></li>
-              <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Iniciar sesión</a></li>
+              <li><button @click="goToLogin" class="text-gray-400 hover:text-white transition-colors">Iniciar sesión</button></li>
             </ul>
           </div>
           <div>
@@ -29,3 +29,13 @@
       </div>
     </footer>
 </template>
+
+<script setup>
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+const goToLogin = () => {
+  router.push('/login');
+};
+</script>

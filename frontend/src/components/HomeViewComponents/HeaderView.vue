@@ -9,7 +9,6 @@
           <a href="#" class="text-gray-900 hover:text-emerald-600 px-3 py-2 text-sm font-medium">Inicio</a>
           <a href="#features" class="text-gray-500 hover:text-emerald-600 px-3 py-2 text-sm font-medium">Funcionalidades</a>
           <a href="#about" class="text-gray-500 hover:text-emerald-600 px-3 py-2 text-sm font-medium">Sobre el sistema</a>
-          <a href="#" class="text-gray-500 hover:text-emerald-600 px-3 py-2 text-sm font-medium">Iniciar sesión</a>
         </nav>
         <button class="md:hidden text-gray-500 hover:text-gray-900">
           <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -20,3 +19,7 @@
     </div>
   </header>
 </template>
+
+<script setup>
+// No se necesita funcionalidad de navegación en el header superior
+</script>

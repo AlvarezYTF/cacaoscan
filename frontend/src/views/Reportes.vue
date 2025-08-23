@@ -21,36 +21,6 @@
         
         <!-- Contenido principal -->
         <main class="flex-1 p-4 md:p-6 lg:p-8 pb-0 overflow-y-auto">
-          <!-- Filtros y controles -->
-          <div class="mb-4 md:mb-6">
-            <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div class="flex flex-col sm:flex-row gap-4 flex-1">
-                <PeriodSelector 
-                  v-model="selectedPeriod"
-                  :options="periodOptions"
-                  @update:model-value="handlePeriodChange"
-                />
-              </div>
-              
-              <div class="flex gap-2">
-                <ActionButton 
-                  label="Generar Reporte"
-                  short-label="Generar"
-                  variant="secondary"
-                  icon="ChartBarIcon"
-                  @click="handleGenerateReport"
-                />
-                <ActionButton 
-                  label="Exportar"
-                  short-label="Exportar"
-                  variant="secondary"
-                  icon="ArrowDownTrayIcon"
-                  @click="handleExport"
-                />
-              </div>
-            </div>
-          </div>
-          
           <!-- Tarjetas de estadísticas -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-4 md:mb-6">
             <StatsCard 
@@ -81,6 +51,36 @@
               icon="ExclamationTriangleIcon"
               variant="danger"
             />
+          </div>
+
+          <!-- Filtros y controles -->
+          <div class="mb-4 md:mb-6">
+            <div class="flex gap-4 items-center justify-between">
+              <div class="flex gap-4">
+                <PeriodSelector 
+                  v-model="selectedPeriod"
+                  :options="periodOptions"
+                  @update:model-value="handlePeriodChange"
+                />
+              </div>
+              
+              <div class="flex gap-2">
+                <ActionButton 
+                  label="Generar Reporte"
+                  short-label="Generar"
+                  variant="secondary"
+                  icon="ChartBarIcon"
+                  @click="handleGenerateReport"
+                />
+                <ActionButton 
+                  label="Exportar"
+                  short-label="Exportar"
+                  variant="secondary"
+                  icon="ArrowDownTrayIcon"
+                  @click="handleExport"
+                />
+              </div>
+            </div>
           </div>
           
           <!-- Tabla de reportes -->

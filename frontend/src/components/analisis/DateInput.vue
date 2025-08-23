@@ -81,6 +81,13 @@ export default {
 </script>
 
 <style scoped>
+/* Ocultar el icono nativo del input de fecha */
+input[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
 /* Mejoras de responsividad para inputs de fecha */
 @media (max-width: 640px) {
   .text-xs {
