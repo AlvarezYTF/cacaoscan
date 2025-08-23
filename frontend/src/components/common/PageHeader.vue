@@ -3,13 +3,13 @@
     <!-- Back Button -->
     <div class="mb-6">
       <router-link 
-        to="/" 
+        :to="backRoute" 
         class="inline-flex items-center group text-green-600 hover:text-green-700 transition-all duration-300 px-4 py-2 rounded-lg hover:bg-green-50"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
-        <span class="font-medium">Volver al inicio</span>
+        <span class="font-medium">{{ backText }}</span>
       </router-link>
     </div>
     
@@ -49,6 +49,14 @@ export default {
     badgeText: {
       type: String,
       default: 'Análisis de Calidad'
+    },
+    backRoute: {
+      type: String,
+      default: '/'
+    },
+    backText: {
+      type: String,
+      default: 'Volver'
     }
   }
 }

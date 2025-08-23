@@ -2,8 +2,12 @@
   <div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
     <div class="max-w-4xl mx-auto">
       <!-- Page Header -->
-      <PageHeader title="Nuevo Análisis de Lote"
-        description="Sube imágenes de granos de cacao y completa la información del lote para iniciar un análisis de calidad detallado y preciso." />
+      <PageHeader 
+        title="Nuevo Análisis de Lote"
+        description="Sube imágenes de granos de cacao y completa la información del lote para iniciar un análisis de calidad detallado y preciso."
+        back-route="/admin/analisis"
+        back-text="Volver"
+      />
 
       <!-- Main Content -->
       <div class="bg-white shadow rounded-lg overflow-hidden">
