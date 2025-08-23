@@ -113,39 +113,290 @@
 
       <!-- Analysis Section -->
       <div v-if="activeSection === 'analysis'" class="dashboard-section">
-        <div class="section-header">
-          <h1>Análisis de Lotes</h1>
-          <p>Sube y analiza nuevos lotes de cacao</p>
+        <!-- Back Button -->
+        <div class="mb-6">
+          <button 
+            @click="goBack"
+            class="inline-flex items-center group text-green-600 hover:text-green-700 transition-all duration-300 px-4 py-2 rounded-lg hover:bg-green-50"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span class="font-medium">Volver</span>
+          </button>
+        </div>
+
+        <!-- Header Banner -->
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-8 shadow-sm border border-green-100 mb-8">
+          <div class="text-center max-w-3xl mx-auto">
+            <div class="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-green-100 text-green-800 text-sm font-medium mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Análisis de Calidad
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-emerald-600">
+              Nuevo Análisis de Lote
+            </h1>
+            <div class="w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto mb-6 rounded-full"></div>
+            <p class="text-lg text-gray-600 leading-relaxed">
+              Sube imágenes de granos de cacao y completa la información del lote para iniciar un análisis de calidad detallado y preciso.
+            </p>
+          </div>
         </div>
         
-        <UploadSection @file-upload="handleFileUpload" />
-        
-        <div class="analysis-tools">
-          <h3>Herramientas de Análisis</h3>
-          <div class="tools-grid">
-            <div class="tool-card">
-              <i class="fas fa-camera"></i>
-              <h4>Captura de Imágenes</h4>
-              <p>Captura imágenes directamente desde tu dispositivo</p>
-              <button class="btn btn-primary">Iniciar Captura</button>
+        <!-- Main Content -->
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+          <div class="p-6 space-y-8">
+            <!-- Batch Info Form -->
+            <div class="space-y-6">
+              <div class="text-center">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Información del Lote</h2>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Left Column -->
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Finca *</label>
+                    <input 
+                      v-model="batchData.finca"
+                      type="text" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="Nombre de la finca"
+                    />
+                    <p v-if="formErrors.finca" class="mt-1 text-sm text-red-600">{{ formErrors.finca }}</p>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Agricultor *</label>
+                    <input 
+                      v-model="batchData.agricultor"
+                      type="text" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="Nombre del agricultor"
+                    />
+                    <p v-if="formErrors.agricultor" class="mt-1 text-sm text-red-600">{{ formErrors.agricultor }}</p>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre o código del lote *</label>
+                    <input 
+                      v-model="batchData.nombreLote"
+                      type="text" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="Código o nombre del lote"
+                    />
+                    <p v-if="formErrors.nombreLote" class="mt-1 text-sm text-red-600">{{ formErrors.nombreLote }}</p>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de recolección *</label>
+                    <div class="relative">
+                      <input 
+                        v-model="batchData.fechaRecoleccion"
+                        type="text" 
+                        class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        placeholder="dd/mm/aaaa"
+                      />
+                      <svg class="absolute right-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                    </div>
+                    <p v-if="formErrors.fechaRecoleccion" class="mt-1 text-sm text-red-600">{{ formErrors.fechaRecoleccion }}</p>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones (opcional)</label>
+                    <textarea 
+                      v-model="batchData.observaciones"
+                      rows="3"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="Notas adicionales sobre el lote..."
+                    ></textarea>
+                  </div>
+                </div>
+                
+                <!-- Right Column -->
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Lugar de origen *</label>
+                    <input 
+                      v-model="batchData.lugarOrigen"
+                      type="text" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="Lugar de origen del lote"
+                    />
+                    <p v-if="formErrors.lugarOrigen" class="mt-1 text-sm text-red-600">{{ formErrors.lugarOrigen }}</p>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Genética *</label>
+                    <select 
+                      v-model="batchData.genetica"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="">Selecciona la genética</option>
+                      <option value="criollo">Criollo</option>
+                      <option value="forastero">Forastero</option>
+                      <option value="trinitario">Trinitario</option>
+                      <option value="nacional">Nacional</option>
+                    </select>
+                    <p v-if="formErrors.genetica" class="mt-1 text-sm text-red-600">{{ formErrors.genetica }}</p>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Origen</label>
+                    <select 
+                      v-model="batchData.origen"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="">Selecciona un origen</option>
+                      <option value="nacional">Nacional</option>
+                      <option value="importado">Importado</option>
+                      <option value="local">Local</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="tool-card">
-              <i class="fas fa-upload"></i>
-              <h4>Subir Imágenes</h4>
-              <p>Sube imágenes existentes para análisis</p>
-              <button class="btn btn-secondary">Seleccionar Archivos</button>
+
+            <!-- Image Capture Section -->
+            <div class="space-y-6">
+              <div class="text-center">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Imágenes del Lote</h2>
+                <p class="text-gray-600">Captura fotos de alta calidad de los granos de cacao para un análisis preciso</p>
+              </div>
+
+              <!-- Tabs -->
+              <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8 justify-center">
+                  <button
+                    v-for="tab in tabs"
+                    :key="tab.name"
+                    @click="currentTab = tab.name"
+                    :class="[
+                      currentTab === tab.name
+                        ? 'border-green-500 text-green-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                      'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200'
+                    ]"
+                  >
+                    {{ tab.label }}
+                  </button>
+                </nav>
+              </div>
+
+              <!-- Tab Content -->
+              <div class="mt-6">
+                <!-- File Upload Tab -->
+                <div v-if="currentTab === 'upload'" class="space-y-4">
+                  <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-green-400 transition-colors duration-200 bg-gray-50">
+                    <div class="flex flex-col items-center">
+                      <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                      <p class="text-lg font-medium text-gray-900 mb-2">Arrastra tus imágenes aquí o haz clic para seleccionarlas</p>
+                      <p class="text-sm text-gray-600 mb-4">Formatos soportados: JPG, PNG (máx. 5MB por imagen)</p>
+                      <input 
+                        type="file" 
+                        multiple 
+                        accept="image/*"
+                        @change="handleFileUpload"
+                        class="hidden"
+                        ref="fileInput"
+                      />
+                      <button 
+                        @click="$refs.fileInput.click()"
+                        class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors duration-200"
+                      >
+                        Seleccionar Archivos
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Preview de imágenes subidas -->
+                  <div v-if="images.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    <div v-for="(img, index) in images" :key="index" class="relative group">
+                      <div class="aspect-square rounded-lg overflow-hidden bg-gray-200">
+                        <img :src="getImageUrl(img)" alt="Imagen del lote" class="w-full h-full object-cover" />
+                      </div>
+                      <button 
+                        @click="removeImage(index)"
+                        class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Camera Capture Tab -->
+                <div v-else-if="currentTab === 'camera'" class="space-y-6">
+                  <CameraCapture @capture="handleCapturedImage" />
+
+                  <!-- Captured Images Preview -->
+                  <div v-if="capturedImages.length > 0" class="bg-gray-50 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                      Fotos capturadas ({{ capturedImages.length }})
+                    </h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      <div v-for="(img, index) in capturedImages" :key="index" class="relative group">
+                        <div class="aspect-square rounded-lg overflow-hidden bg-gray-200">
+                          <img :src="getImageUrl(img)" alt="Imagen capturada" class="w-full h-full object-cover" />
+                        </div>
+                        <button 
+                          @click="removeCapturedImage(index)"
+                          class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="tool-card">
-              <i class="fas fa-batch-processing"></i>
-              <h4>Procesamiento por Lotes</h4>
-              <p>Procesa múltiples imágenes a la vez</p>
-              <button class="btn btn-secondary">Crear Lote</button>
-            </div>
-            <div class="tool-card">
-              <i class="fas fa-chart-pie"></i>
-              <h4>Ver Detalle de Análisis</h4>
-              <p>Visualiza resultados detallados con gráficos</p>
-              <router-link to="/detalle-analisis" class="btn btn-primary">Ver Detalle</router-link>
+
+            <!-- Ready to Analyze Section -->
+            <div class="text-center pt-6">
+              <h2 class="text-2xl font-bold text-gray-900 mb-2">¿Listo para analizar?</h2>
+              <p class="text-gray-600 mb-6">Revisa que toda la información esté completa antes de continuar</p>
+              
+              <button 
+                @click="submitAnalysis"
+                :disabled="!isFormValid || isSubmitting"
+                :class="[
+                  'px-8 py-4 rounded-lg font-medium text-white transition-all duration-200 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5',
+                  (!isFormValid || isSubmitting) && 'opacity-50 cursor-not-allowed transform-none'
+                ]"
+              >
+                <svg v-if="isSubmitting" class="w-5 h-5 inline mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                
+                <svg v-else class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                
+                {{ isSubmitting ? 'Procesando análisis...' : 'Iniciar Análisis de Calidad' }}
+              </button>
+              
+              <div v-if="!isFormValid" class="mt-4 text-center">
+                <p class="text-sm text-amber-600 flex items-center justify-center">
+                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                  </svg>
+                  Completa todos los campos requeridos para continuar
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -368,6 +619,14 @@ import QuickActions from '@/components/dashboard/QuickActions.vue';
 import UploadSection from '@/components/dashboard/UploadSection.vue';
 import RecentAnalyses from '@/components/dashboard/RecentAnalyses.vue';
 import StatsOverview from '@/components/dashboard/StatsOverview.vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useAnalysisStore } from '@/stores/analysis';
+import PageHeader from '@/components/common/PageHeader.vue';
+import ProgressIndicator from '@/components/common/ProgressIndicator.vue';
+import ErrorAlert from '@/components/common/ErrorAlert.vue';
+import BatchInfoForm from '@/components/analysis/BatchInfoForm.vue';
+import ImageUploader from '@/components/analysis/ImageUploader.vue';
+import CameraCapture from '@/components/analysis/CameraCapture.vue';
 
 export default {
   name: 'AgricultorDashboard',
@@ -376,187 +635,344 @@ export default {
     QuickActions,
     UploadSection,
     RecentAnalyses,
-    StatsOverview
+    StatsOverview,
+    PageHeader,
+    ProgressIndicator,
+    ErrorAlert,
+    BatchInfoForm,
+    ImageUploader,
+    CameraCapture
   },
-  data() {
-    return {
-      sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true',
-      activeSection: 'overview',
-      farmerName: 'Juan Pérez',
-      historyFilter: {
-        dateRange: 'all',
-        quality: 'all'
+  setup() {
+    const analysisStore = useAnalysisStore();
+    const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
+    const activeSection = ref('overview');
+    const farmerName = ref('Juan Pérez');
+    const historyFilter = ref({
+      dateRange: 'all',
+      quality: 'all'
+    });
+    const userProfile = ref({
+      fullName: 'Juan Pérez',
+      email: 'juan.perez@email.com',
+      phone: '+57 300 123 4567'
+    });
+    const userPreferences = ref({
+      notifications: true,
+      autoReports: false,
+      dataSharing: true
+    });
+    const recentAnalyses = ref([
+      {
+        id: 'CAC-2023-045',
+        status: 'completed',
+        statusLabel: 'Completado',
+        quality: 92,
+        defects: 3.2,
+        avgSize: 12.5,
+        date: '15/08/2023'
       },
-      userProfile: {
-        fullName: 'Juan Pérez',
-        email: 'juan.perez@email.com',
-        phone: '+57 300 123 4567'
+      {
+        id: 'CAC-2023-044',
+        status: 'completed',
+        statusLabel: 'Completado',
+        quality: 88,
+        defects: 5.1,
+        avgSize: 11.8,
+        date: '10/08/2023'
       },
-      userPreferences: {
-        notifications: true,
-        autoReports: false,
-        dataSharing: true
+      {
+        id: 'CAC-2023-043',
+        status: 'completed',
+        statusLabel: 'Completado',
+        quality: 85,
+        defects: 6.7,
+        avgSize: 12.1,
+        date: '05/08/2023'
+      }
+    ]);
+    const stats = ref({
+      totalBatches: 24,
+      batchesChange: '+5%',
+      avgQuality: 87,
+      qualityChange: '+2%',
+      defectRate: 5.2,
+      defectChange: '-1.2%'
+    });
+    const fincasStats = ref({
+      totalFincas: 3,
+      totalLotes: 12,
+      areaTotal: 8.5,
+      ultimaActualizacion: 'Hoy'
+    });
+    const fincas = ref([
+      {
+        id: 1,
+        nombre: 'Finca El Paraíso',
+        ubicacion: 'Vereda La Esperanza, Santander',
+        area: 3.2,
+        lotes: 5,
+        fechaRegistro: '15/01/2023',
+        status: 'active',
+        statusLabel: 'Activa'
       },
-      recentAnalyses: [
-        {
-          id: 'CAC-2023-045',
-          status: 'completed',
-          statusLabel: 'Completado',
-          quality: 92,
-          defects: 3.2,
-          avgSize: 12.5,
-          date: '15/08/2023'
-        },
-        {
-          id: 'CAC-2023-044',
-          status: 'completed',
-          statusLabel: 'Completado',
-          quality: 88,
-          defects: 5.1,
-          avgSize: 11.8,
-          date: '10/08/2023'
-        },
-        {
-          id: 'CAC-2023-043',
-          status: 'completed',
-          statusLabel: 'Completado',
-          quality: 85,
-          defects: 6.7,
-          avgSize: 12.1,
-          date: '05/08/2023'
-        }
-      ],
-      stats: {
-        totalBatches: 24,
-        batchesChange: '+5%',
-        avgQuality: 87,
-        qualityChange: '+2%',
-        defectRate: 5.2,
-        defectChange: '-1.2%'
+      {
+        id: 2,
+        nombre: 'Finca Los Cacaos',
+        ubicacion: 'Vereda San José, Antioquia',
+        area: 2.8,
+        lotes: 4,
+        fechaRegistro: '20/02/2023',
+        status: 'active',
+        statusLabel: 'Activa'
       },
-      fincasStats: {
-        totalFincas: 3,
-        totalLotes: 12,
-        areaTotal: 8.5,
-        ultimaActualizacion: 'Hoy'
-      },
-      fincas: [
-        {
-          id: 1,
-          nombre: 'Finca El Paraíso',
-          ubicacion: 'Vereda La Esperanza, Santander',
-          area: 3.2,
-          lotes: 5,
-          fechaRegistro: '15/01/2023',
-          status: 'active',
-          statusLabel: 'Activa'
-        },
-        {
-          id: 2,
-          nombre: 'Finca Los Cacaos',
-          ubicacion: 'Vereda San José, Antioquia',
-          area: 2.8,
-          lotes: 4,
-          fechaRegistro: '20/02/2023',
-          status: 'active',
-          statusLabel: 'Activa'
-        },
-        {
-          id: 3,
-          nombre: 'Finca La Esperanza',
-          ubicacion: 'Vereda El Progreso, Caldas',
-          area: 2.5,
-          lotes: 3,
-          fechaRegistro: '10/03/2023',
-          status: 'active',
-          statusLabel: 'Activa'
-        }
-      ]
-    };
-  },
-  computed: {
-    filteredAnalyses() {
-      let filtered = [...this.recentAnalyses];
+      {
+        id: 3,
+        nombre: 'Finca La Esperanza',
+        ubicacion: 'Vereda El Progreso, Caldas',
+        area: 2.5,
+        lotes: 3,
+        fechaRegistro: '10/03/2023',
+        status: 'active',
+        statusLabel: 'Activa'
+      }
+    ]);
+    const isUploading = ref(false);
+    const uploadProgress = ref(0);
+    const analysisResult = ref(null);
+    const batchData = ref({
+      finca: '',
+      agricultor: '',
+      nombreLote: '',
+      fechaRecoleccion: '',
+      observaciones: '',
+      lugarOrigen: '',
+      genetica: '',
+      origen: ''
+    });
+    const formErrors = ref({});
+    const images = ref([]);
+    const capturedImages = ref([]);
+    const currentTab = ref('upload'); // 'upload' or 'camera'
+    const isSubmitting = ref(false);
+    const tabs = ref([
+      { name: 'upload', label: 'Subir Imágenes' },
+      { name: 'camera', label: 'Capturar Imagen' }
+    ]);
+
+    const filteredAnalyses = computed(() => {
+      let filtered = [...recentAnalyses.value];
       
-      if (this.historyFilter.quality !== 'all') {
+      if (historyFilter.value.quality !== 'all') {
         const qualityRanges = {
           excellent: analysis => analysis.quality >= 90,
           good: analysis => analysis.quality >= 80 && analysis.quality < 90,
           fair: analysis => analysis.quality >= 70 && analysis.quality < 80,
           poor: analysis => analysis.quality < 70
         };
-        filtered = filtered.filter(qualityRanges[this.historyFilter.quality]);
+        filtered = filtered.filter(qualityRanges[historyFilter.value.quality]);
       }
       
       return filtered;
-    }
-  },
-  mounted() {
-    this.checkScreenSize();
-    window.addEventListener('resize', this.checkScreenSize);
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.checkScreenSize);
-  },
-  methods: {
-    toggleSidebar() {
-      this.sidebarCollapsed = !this.sidebarCollapsed;
-      localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed);
-    },
-    checkScreenSize() {
+    });
+
+    const isFormValid = computed(() => {
+      formErrors.value = {};
+      let isValid = true;
+      
+      if (!batchData.value.finca) {
+        formErrors.value.finca = 'La finca es requerida';
+        isValid = false;
+      }
+      if (!batchData.value.agricultor) {
+        formErrors.value.agricultor = 'El agricultor es requerido';
+        isValid = false;
+      }
+      if (!batchData.value.nombreLote) {
+        formErrors.value.nombreLote = 'El nombre del lote es requerido';
+        isValid = false;
+      }
+      if (!batchData.value.fechaRecoleccion) {
+        formErrors.value.fechaRecoleccion = 'La fecha de recolección es requerida';
+        isValid = false;
+      }
+      if (!batchData.value.lugarOrigen) {
+        formErrors.value.lugarOrigen = 'El lugar de origen es requerido';
+        isValid = false;
+      }
+      if (!batchData.value.genetica) {
+        formErrors.value.genetica = 'La genética es requerida';
+        isValid = false;
+      }
+      
+      if (currentTab.value === 'upload' && images.value.length === 0) {
+        formErrors.value.images = 'Debes subir al menos una imagen';
+        isValid = false;
+      }
+      if (currentTab.value === 'camera' && capturedImages.value.length === 0) {
+        formErrors.value.images = 'Debes capturar al menos una imagen';
+        isValid = false;
+      }
+      
+      return isValid;
+    });
+
+    const checkScreenSize = () => {
       if (window.innerWidth <= 768) {
-        this.sidebarCollapsed = true;
+        sidebarCollapsed.value = true;
         localStorage.setItem('sidebarCollapsed', 'true');
       }
-    },
-    setActiveSection(section) {
-      this.activeSection = section;
-    },
-    openUploadModal() {
+    };
+
+    const setActiveSection = (section) => {
+      activeSection.value = section;
+    };
+
+    const openUploadModal = () => {
       // This will be handled by the UploadSection component
-    },
-    handleFileUpload(files) {
-      console.log('Archivos seleccionados:', files);
-      // Implementar lógica para manejar la carga de archivos
-      // Por ejemplo, subir a un servidor o procesar las imágenes
-    },
-    viewAnalysisDetails(analysis) {
+    };
+
+    const getImageUrl = (img) => {
+      // If img is already a data URL, return it
+      if (typeof img === 'string' && img.startsWith('data:')) {
+        return img;
+      }
+      // If img is a File object, create a data URL
+      if (img instanceof File) {
+        return URL.createObjectURL(img);
+      }
+      // If img is an object with a url property
+      if (img && img.url) {
+        return img.url;
+      }
+      // Default fallback - return the img as is
+      return img;
+    };
+
+    const handleFileUpload = (event) => {
+      const files = event.target.files;
+      if (files && files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            images.value.push(e.target.result);
+          };
+          reader.readAsDataURL(files[i]);
+        }
+      }
+    };
+
+    const handleCapturedImage = (imageData) => {
+      capturedImages.value.push(imageData);
+    };
+
+    const removeImage = (index) => {
+      images.value.splice(index, 1);
+    };
+
+    const removeCapturedImage = (index) => {
+      capturedImages.value.splice(index, 1);
+    };
+
+    const submitAnalysis = async () => {
+      if (!isFormValid.value) {
+        alert('Por favor, completa todos los campos requeridos.');
+        return;
+      }
+
+      isSubmitting.value = true;
+      analysisResult.value = null;
+      formErrors.value = {};
+
+      try {
+        const formData = new FormData();
+        if (currentTab.value === 'upload') {
+          for (let i = 0; i < images.value.length; i++) {
+            formData.append('images', images.value[i]);
+          }
+        } else if (currentTab.value === 'camera') {
+          for (let i = 0; i < capturedImages.value.length; i++) {
+            formData.append('images', capturedImages.value[i]);
+          }
+        }
+
+        formData.append('batchName', batchData.value.nombreLote);
+        formData.append('finca', batchData.value.finca);
+        formData.append('agricultor', batchData.value.agricultor);
+        formData.append('fechaRecoleccion', batchData.value.fechaRecoleccion);
+        formData.append('observaciones', batchData.value.observaciones);
+        formData.append('lugarOrigen', batchData.value.lugarOrigen);
+        formData.append('genetica', batchData.value.genetica);
+        formData.append('origen', batchData.value.origen);
+
+        const response = await fetch('http://localhost:5000/api/analyze', { // Replace with your backend endpoint
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Error al enviar el análisis');
+        }
+
+        const result = await response.json();
+        analysisResult.value = result;
+        images.value = []; // Clear images after submission
+        capturedImages.value = []; // Clear captured images after submission
+        currentTab.value = 'upload'; // Reset to upload tab
+        alert('Análisis enviado con éxito!');
+      } catch (error) {
+        console.error('Error submitting analysis:', error);
+        alert(`Error al enviar el análisis: ${error.message}`);
+      } finally {
+        isSubmitting.value = false;
+      }
+    };
+
+    const viewAnalysisDetails = (analysis) => {
       console.log('Ver detalles del análisis:', analysis);
       // Navegar a la vista de detalles o mostrar un modal
-    },
+    };
+
     // Métodos para gestión de fincas
-    registrarNuevaFinca() {
+    const registrarNuevaFinca = () => {
       console.log('Registrar nueva finca');
       // Aquí se implementaría la lógica para registrar una nueva finca
       // Por ahora solo mostramos un mensaje
       alert('Función de registro de finca en desarrollo');
-    },
-    gestionarFincas() {
+    };
+
+    const gestionarFincas = () => {
       console.log('Gestionar fincas existentes');
       // Aquí se implementaría la lógica para gestionar fincas
       alert('Función de gestión de fincas en desarrollo');
-    },
-    monitorearLotes() {
+    };
+
+    const monitorearLotes = () => {
       console.log('Monitorear lotes');
       // Aquí se implementaría la lógica para monitorear lotes
       alert('Función de monitoreo de lotes en desarrollo');
-    },
-    generarReportesFincas() {
+    };
+
+    const generarReportesFincas = () => {
       console.log('Generar reportes de fincas');
       // Aquí se implementaría la lógica para generar reportes
       alert('Función de reportes de fincas en desarrollo');
-    },
-    verDetalleFinca(finca) {
+    };
+
+    const verDetalleFinca = (finca) => {
       console.log('Ver detalle de finca:', finca);
       // Aquí se implementaría la lógica para ver detalles de la finca
       alert(`Ver detalles de: ${finca.nombre}`);
-    },
-    editarFinca(finca) {
+    };
+
+    const editarFinca = (finca) => {
       console.log('Editar finca:', finca);
       // Aquí se implementaría la lógica para editar la finca
       alert(`Editar finca: ${finca.nombre}`);
-    },
-    logout() {
+    };
+
+    const logout = () => {
       // Mostrar mensaje de confirmación
       if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
         // Limpiar datos de sesión del localStorage
@@ -569,9 +985,63 @@ export default {
         localStorage.removeItem('authToken');
         
         // Redirigir al login
-        this.$router.push('/login');
+        router.push('/login');
       }
-    }
+    };
+
+    const goBack = () => {
+      activeSection.value = 'overview';
+    };
+
+    return {
+      sidebarCollapsed,
+      activeSection,
+      farmerName,
+      historyFilter,
+      userProfile,
+      userPreferences,
+      recentAnalyses,
+      stats,
+      fincasStats,
+      fincas,
+      isUploading,
+      uploadProgress,
+      analysisResult,
+      batchData,
+      formErrors,
+      images,
+      capturedImages,
+      currentTab,
+      isSubmitting,
+      tabs,
+      filteredAnalyses,
+      isFormValid,
+      checkScreenSize,
+      setActiveSection,
+      openUploadModal,
+      getImageUrl,
+      handleFileUpload,
+      handleCapturedImage,
+      removeImage,
+      removeCapturedImage,
+      submitAnalysis,
+      viewAnalysisDetails,
+      registrarNuevaFinca,
+      gestionarFincas,
+      monitorearLotes,
+      generarReportesFincas,
+      verDetalleFinca,
+      editarFinca,
+      logout,
+      goBack
+    };
+  },
+  mounted() {
+    this.checkScreenSize();
+    window.addEventListener('resize', this.checkScreenSize);
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.checkScreenSize);
   }
 };
 </script>
@@ -1498,6 +1968,312 @@ export default {
   
   .finca-card {
     padding: 1rem;
+  }
+}
+
+/* Estilos para la nueva vista de análisis */
+.analysis-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.analysis-form {
+  padding: 2rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.form-input {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.tabs-container {
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1.5rem;
+}
+
+.tabs-nav {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.tab-button {
+  padding: 1rem 0.25rem;
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tab-button:hover {
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.tab-button.active {
+  color: #10b981;
+  border-color: #10b981;
+}
+
+.upload-area {
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.upload-area:hover {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+.upload-icon {
+  width: 3rem;
+  height: 3rem;
+  color: #9ca3af;
+  margin-bottom: 1rem;
+}
+
+.upload-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.upload-description {
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.upload-button {
+  background-color: #10b981;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.upload-button:hover {
+  background-color: #059669;
+  transform: translateY(-1px);
+}
+
+.image-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.image-preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background-color: #f3f4f6;
+}
+
+.image-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+
+.image-preview-item:hover .remove-image-btn {
+  opacity: 1;
+}
+
+.camera-section {
+  text-align: center;
+  padding: 2rem;
+}
+
+.capture-button {
+  background-color: #10b981;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.capture-button:hover {
+  background-color: #059669;
+  transform: translateY(-1px);
+}
+
+.submit-section {
+  text-align: center;
+  padding-top: 1.5rem;
+}
+
+.submit-button {
+  padding: 1rem 2rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.submit-button:enabled {
+  background-color: #10b981;
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.submit-button:enabled:hover {
+  background-color: #059669;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.submit-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.progress-indicator {
+  background-color: #eff6ff;
+  border-left: 4px solid #3b82f6;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.progress-bar {
+  width: 100%;
+  background-color: #dbeafe;
+  border-radius: 0.5rem;
+  height: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.progress-fill {
+  background-color: #3b82f6;
+  height: 100%;
+  border-radius: 0.5rem;
+  transition: width 0.3s ease;
+}
+
+.success-alert {
+  background-color: #f0fdf4;
+  border-left: 4px solid #22c55e;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.warning-message {
+  color: #d97706;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .analysis-form {
+    padding: 1rem;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .tabs-nav {
+    gap: 1rem;
+  }
+  
+  .upload-area {
+    padding: 1.5rem;
+  }
+  
+  .image-preview-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .analysis-form {
+    padding: 0.75rem;
+  }
+  
+  .upload-area {
+    padding: 1rem;
+  }
+  
+  .upload-title {
+    font-size: 1rem;
+  }
+  
+  .submit-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
   }
 }
 </style>
