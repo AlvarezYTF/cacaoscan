@@ -34,6 +34,7 @@
               <span v-if="!sidebarCollapsed">Gestión de Fincas</span>
             </a>
           </li>
+
           <li class="nav-item" :class="{ 'active': activeSection === 'reports' }">
             <a href="#" @click.prevent="setActiveSection('reports')" class="nav-link" :title="sidebarCollapsed ? 'Reportes' : ''">
               <i class="fas fa-file-alt"></i>
@@ -470,12 +471,6 @@
               <button class="btn btn-primary" @click="registrarNuevaFinca">Registrar Finca</button>
             </div>
             <div class="action-card">
-              <i class="fas fa-edit"></i>
-              <h4>Gestionar Fincas</h4>
-              <p>Edita información y configuración de fincas existentes</p>
-              <button class="btn btn-secondary" @click="gestionarFincas">Gestionar</button>
-            </div>
-            <div class="action-card">
               <i class="fas fa-chart-line"></i>
               <h4>Monitoreo de Lotes</h4>
               <p>Visualiza el estado y rendimiento de tus lotes</p>
@@ -508,6 +503,213 @@
                 <button class="btn btn-sm btn-secondary" @click="verDetalleFinca(finca)">Ver Detalle</button>
                 <button class="btn btn-sm btn-primary" @click="editarFinca(finca)">Editar</button>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Registrar Finca Section -->
+      <div v-if="activeSection === 'registrar-finca'" class="dashboard-section">
+        <div class="section-header">
+          <h1>Registrar Nueva Finca</h1>
+          <p>Completa la información para registrar una nueva finca en tu portafolio</p>
+        </div>
+        
+        <!-- Formulario de Registro de Finca -->
+        <div class="bg-white shadow-lg rounded-xl border border-gray-100">
+          <div class="p-8">
+            <!-- Mensaje informativo -->
+            <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div class="flex items-center">
+                <svg class="w-5 h-5 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="text-sm text-blue-800">
+                  Los campos marcados con <span class="text-green-600 font-medium">*</span> son obligatorios para completar el registro.
+                </p>
+              </div>
+            </div>
+            
+            <!-- Información Básica -->
+            <div class="mb-8">
+              <h2 class="text-lg font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200">Información Básica</h2>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Nombre de la Finca 
+                    <span class="text-green-600 ml-1">*</span>
+                  </label>
+                  <input 
+                    v-model="nuevaFinca.nombre"
+                    type="text" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Ej: Finca El Paraíso"
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Código de la Finca</label>
+                  <input 
+                    v-model="nuevaFinca.codigo"
+                    type="text" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Ej: FIN-001"
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Área Total (hectáreas) 
+                    <span class="text-green-600 ml-1">*</span>
+                  </label>
+                  <input 
+                    v-model="nuevaFinca.area"
+                    type="number" 
+                    step="0.1"
+                    min="0"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder="0.0"
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Suelo</label>
+                  <select 
+                    v-model="nuevaFinca.tipoSuelo"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                  >
+                    <option value="">Selecciona el tipo de suelo</option>
+                    <option value="arcilloso">Arcilloso</option>
+                    <option value="arenoso">Arenoso</option>
+                    <option value="limoso">Limoso</option>
+                    <option value="franco">Franco</option>
+                    <option value="orgánico">Orgánico</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ubicación -->
+            <div class="mb-8">
+              <h2 class="text-lg font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200">Ubicación</h2>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Departamento 
+                    <span class="text-green-600 ml-1">*</span>
+                  </label>
+                  <input 
+                    v-model="nuevaFinca.departamento"
+                    type="text" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Ej: Santander"
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Municipio 
+                    <span class="text-green-600 ml-1">*</span>
+                  </label>
+                  <input 
+                    v-model="nuevaFinca.municipio"
+                    type="text" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Ej: Bucaramanga"
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Vereda</label>
+                  <input 
+                    v-model="nuevaFinca.vereda"
+                    type="text" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Ej: La Esperanza"
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Altitud (msnm)</label>
+                  <input 
+                    v-model="nuevaFinca.altitud"
+                    type="number" 
+                    min="0"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Información Adicional -->
+            <div class="mb-8">
+              <h2 class="text-lg font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200">Información Adicional</h2>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Año de Establecimiento</label>
+                  <input 
+                    v-model="nuevaFinca.anoEstablecimiento"
+                    type="number" 
+                    min="1900"
+                    :max="new Date().getFullYear()"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Ej: 2020"
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Estado de la Finca</label>
+                  <select 
+                    v-model="nuevaFinca.estado"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                  >
+                    <option value="activa">Activa</option>
+                    <option value="en-desarrollo">En Desarrollo</option>
+                    <option value="temporal">Temporal</option>
+                    <option value="inactiva">Inactiva</option>
+                  </select>
+                </div>
+                
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                  <textarea 
+                    v-model="nuevaFinca.descripcion"
+                    rows="3"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Describe las características especiales de tu finca..."
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+              <button 
+                @click="cancelarRegistroFinca"
+                class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+              >
+                Cancelar
+              </button>
+              
+              <button 
+                @click="guardarFinca"
+                :disabled="!isFincaFormValid || isGuardandoFinca"
+                :class="[
+                  'px-6 py-3 rounded-lg text-white font-medium transition-all duration-200',
+                  isFincaFormValid && !isGuardandoFinca
+                    ? 'bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl'
+                    : 'bg-gray-400 cursor-not-allowed'
+                ]"
+              >
+                <svg v-if="isGuardandoFinca" class="w-4 h-4 inline mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                {{ isGuardandoFinca ? 'Guardando...' : 'Guardar Finca' }}
+              </button>
             </div>
           </div>
         </div>
@@ -789,6 +991,31 @@ export default {
       { name: 'camera', label: 'Capturar Imagen' }
     ]);
 
+    // Variables para el formulario de finca
+    const nuevaFinca = ref({
+      nombre: '',
+      codigo: '',
+      area: '',
+      tipoSuelo: '',
+      departamento: '',
+      municipio: '',
+      vereda: '',
+      altitud: '',
+      anoEstablecimiento: '',
+      estado: 'activa',
+      descripcion: ''
+    });
+
+    const fincaErrors = ref({
+      nombre: '',
+      area: '',
+      departamento: '',
+      municipio: ''
+    });
+
+    const isGuardandoFinca = ref(false);
+    const hasAttemptedSubmit = ref(false);
+
     const filteredAnalyses = computed(() => {
       let filtered = [...recentAnalyses.value];
       
@@ -1000,16 +1227,8 @@ export default {
 
     // Métodos para gestión de fincas
     const registrarNuevaFinca = () => {
-      console.log('Registrar nueva finca');
-      // Aquí se implementaría la lógica para registrar una nueva finca
-      // Por ahora solo mostramos un mensaje
-      alert('Función de registro de finca en desarrollo');
-    };
-
-    const gestionarFincas = () => {
-      console.log('Gestionar fincas existentes');
-      // Aquí se implementaría la lógica para gestionar fincas
-      alert('Función de gestión de fincas en desarrollo');
+      // Cambiar a la sección de registro de finca
+      activeSection.value = 'registrar-finca';
     };
 
     const monitorearLotes = () => {
@@ -1085,6 +1304,125 @@ export default {
       currentTab.value = 'upload';
     };
 
+    // Métodos para el formulario de finca
+    const isFincaFormValid = computed(() => {
+      // Solo validar si se ha intentado enviar el formulario
+      if (!hasAttemptedSubmit.value) {
+        return true;
+      }
+      
+      fincaErrors.value = {};
+      let isValid = true;
+      
+      if (!nuevaFinca.value.nombre.trim()) {
+        fincaErrors.value.nombre = 'El nombre de la finca es requerido';
+        isValid = false;
+      }
+      
+      if (!nuevaFinca.value.area || parseFloat(nuevaFinca.value.area) <= 0) {
+        fincaErrors.value.area = 'El área debe ser mayor a 0';
+        isValid = false;
+      }
+      
+      if (!nuevaFinca.value.departamento.trim()) {
+        fincaErrors.value.departamento = 'El departamento es requerido';
+        isValid = false;
+      }
+      
+      if (!nuevaFinca.value.municipio.trim()) {
+        fincaErrors.value.municipio = 'El municipio es requerido';
+        isValid = false;
+      }
+      
+      return isValid;
+    });
+
+    const guardarFinca = async () => {
+      // Activar validación
+      hasAttemptedSubmit.value = true;
+      
+      if (!isFincaFormValid.value) {
+        return;
+      }
+      
+      try {
+        isGuardandoFinca.value = true;
+        
+        // Simular guardado en base de datos
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Crear nueva finca
+        const nuevaFincaData = {
+          id: fincas.value.length + 1,
+          nombre: nuevaFinca.value.nombre,
+          ubicacion: `${nuevaFinca.value.municipio}, ${nuevaFinca.value.departamento}`,
+          area: parseFloat(nuevaFinca.value.area),
+          lotes: 0,
+          fechaRegistro: new Date().toLocaleDateString('es-ES'),
+          status: 'active',
+          statusLabel: 'Activa',
+          codigo: nuevaFinca.value.codigo || `FIN-${String(fincas.value.length + 1).padStart(3, '0')}`,
+          tipoSuelo: nuevaFinca.value.tipoSuelo,
+          vereda: nuevaFinca.value.vereda,
+          altitud: nuevaFinca.value.altitud ? parseInt(nuevaFinca.value.altitud) : null,
+          anoEstablecimiento: nuevaFinca.value.anoEstablecimiento ? parseInt(nuevaFinca.value.anoEstablecimiento) : null,
+          estado: nuevaFinca.value.estado,
+          descripcion: nuevaFinca.value.descripcion
+        };
+        
+        // Agregar a la lista de fincas
+        fincas.value.push(nuevaFincaData);
+        
+        // Actualizar estadísticas
+        fincasStats.value.totalFincas = fincas.value.length;
+        fincasStats.value.areaTotal += nuevaFincaData.area;
+        fincasStats.value.ultimaActualizacion = 'Hoy';
+        
+        // Limpiar formulario
+        resetearFormularioFinca();
+        
+        // Mostrar mensaje de éxito
+        alert('Finca registrada exitosamente!');
+        
+        // Volver a la sección de fincas
+        activeSection.value = 'fincas';
+        
+      } catch (error) {
+        console.error('Error al guardar la finca:', error);
+        alert('Error al guardar la finca. Por favor, intenta de nuevo.');
+      } finally {
+        isGuardandoFinca.value = false;
+      }
+    };
+
+    const cancelarRegistroFinca = () => {
+      resetearFormularioFinca();
+      activeSection.value = 'fincas';
+    };
+
+    const resetearFormularioFinca = () => {
+      nuevaFinca.value = {
+        nombre: '',
+        codigo: '',
+        area: '',
+        tipoSuelo: '',
+        departamento: '',
+        municipio: '',
+        vereda: '',
+        altitud: '',
+        anoEstablecimiento: '',
+        estado: 'activa',
+        descripcion: ''
+      };
+      fincaErrors.value = {
+        nombre: '',
+        area: '',
+        departamento: '',
+        municipio: ''
+      };
+      hasAttemptedSubmit.value = false;
+    };
+
     return {
       sidebarCollapsed,
       activeSection,
@@ -1120,14 +1458,21 @@ export default {
       submitAnalysis,
       viewAnalysisDetails,
       registrarNuevaFinca,
-      gestionarFincas,
       monitorearLotes,
       generarReportesFincas,
       verDetalleFinca,
       editarFinca,
       logout,
       goBack,
-      resetForm
+      resetForm,
+      nuevaFinca,
+      fincaErrors,
+      isGuardandoFinca,
+      hasAttemptedSubmit,
+      isFincaFormValid,
+      guardarFinca,
+      cancelarRegistroFinca,
+      resetearFormularioFinca
     };
   },
   mounted() {
