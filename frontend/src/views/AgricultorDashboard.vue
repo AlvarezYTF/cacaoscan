@@ -844,7 +844,7 @@ export default {
 /* Overview Grid */
 .overview-grid {
   display: grid;
-  grid-template-columns: 0.5fr 1fr; /* Proporción 3:2 */
+  grid-template-columns: 0fr 5fr; /* Proporción 3:2 */
   gap: 1.5rem;
   margin: 1rem 0;
   width: 100%;
