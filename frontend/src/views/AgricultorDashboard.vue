@@ -585,15 +585,14 @@ export default {
 
 /* Sidebar Styles */
 .dashboard-sidebar {
-  width: 280px;
-  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  width: 280px; 
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); 
   color: white;
-  transition: all 0.3s ease;
+  transition: all 0.3s ease; 
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   display: flex;
-  flex-direction: column;
+  flex-direction: column; 
 }
-
 .sidebar-collapsed {
   width: 70px;
 }
@@ -935,42 +934,65 @@ export default {
 .dashboard-main {
   flex: 1;
   padding: 2rem;
-  transition: all 0.3s ease;
+  transition: margin-left 0.3s ease;
+  width: 100%;
+  max-width: 1400px; /* Ancho máximo para el contenido */
+  margin: 0 auto;      /* Centra el contenedor en el espacio disponible */
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
+/* Contenido principal cuando está expandido */
 .main-expanded {
-  margin-left: 0;
+  margin-left: 250px;
 }
 
-.dashboard-main {
-  flex: 1;
-  padding: 2rem;
-  transition: all 0.3s ease;
-  margin-left: 0;
-  position: relative;
+/* Contenido principal cuando está colapsado */
+.main-collapsed {
+  margin-left: 70px;
 }
 
-.mobile-sidebar-toggle {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  background: #27ae60;
-  color: white;
-  border: none;
-  padding: 0.75rem 1rem;
-  border-radius: 25px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  transition: all 0.2s ease;
+/* Ajustes responsivos */
+@media (max-width: 1024px) {
+  .dashboard-main {
+    padding: 1.5rem;
+  }
+  
+  .main-expanded {
+    margin-left: 200px;
+  }
 }
 
-.mobile-sidebar-toggle:hover {
-  background: #219653;
-  transform: translateX(5px);
+@media (max-width: 768px) {
+  .dashboard-main {
+    margin-left: 70px !important;
+    padding: 1rem;
+  }
+  
+  .main-expanded,
+  .main-collapsed {
+    margin-left: 70px !important;
+  }
+  
+  .section-header h1 {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-main {
+    margin-left: 60px !important;
+    padding: 0.75rem;
+  }
+  
+  .main-expanded,
+  .main-collapsed {
+    margin-left: 60px !important;
+  }
+  
+  .section-header h1 {
+    font-size: 1.5rem;
+  }
 }
 
 .dashboard-section {
@@ -997,22 +1019,82 @@ export default {
 /* Overview Grid */
 .overview-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2rem;
-  margin-top: 2rem;
+  grid-template-columns: 0fr 5fr; /* Proporción 3:2 */
+  gap: 1.5rem;
+  margin: 1rem 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
+/* Estilo base para ambas tarjetas */
 .overview-card {
   background: white;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.overview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .overview-card h3 {
   color: #2c3e50;
-  margin-bottom: 1rem;
-  font-size: 1.3rem;
+  margin: 0 0 1.25rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 1200px) {
+  .overview-grid {
+    gap: 1.25rem;
+  }
+  
+  .overview-card {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .overview-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .overview-card {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .overview-card {
+    padding: 1rem;
+  }
+  
+  .overview-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Ajustes específicos para la tarjeta de actividad reciente */
+.overview-card:first-child {
+  min-height: 400px; /* Altura mínima para mejor visualización */
+}
+
+/* Ajustes específicos para la tarjeta de acciones rápidas */
+.overview-card:last-child {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
 }
 
 /* Analysis Tools */
@@ -1224,48 +1306,74 @@ export default {
 }
 
 /* Responsive Design */
-@media (max-width: 1024px) {
-  .dashboard-sidebar {
-    width: 250px;
+@media (max-width: 1600px) {
+  .dashboard-main {
+    padding: 1.25rem;
+    max-width: 1200px;
   }
-  
-  .overview-grid {
-    grid-template-columns: 1fr;
+}
+
+@media (max-width: 1366px) {
+  .dashboard-main {
+    max-width: 1100px;
   }
-  
-  .tools-grid {
-    grid-template-columns: 1fr;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-main {
+    max-width: 100%;
+    padding: 1.25rem 2rem;
   }
 }
 
 @media (max-width: 768px) {
   .farmer-dashboard-container {
-    flex-direction: column;
+    flex-direction: row; /* Asegura que el menú y contenido estén en fila */
   }
-  
+
   .dashboard-sidebar {
-    width: 100%;
-    position: sticky;
+    position: fixed; /* Fija el menú en la pantalla */
+    left: 0;
     top: 0;
-    z-index: 100;
+    height: 100%;
+    width: 70px !important; /* Ancho fijo de íconos */
+    z-index: 1000;
   }
-  
-  .sidebar-collapsed {
-    width: 100%;
+
+  /* Oculta los textos para forzar el modo colapsado */
+  .sidebar-header .farmer-details,
+  .sidebar-nav .nav-link span,
+  .sidebar-footer {
+    display: none;
   }
-  
+
+  .sidebar-footer-collapsed {
+    display: flex !important; /* Muestra el botón de logout colapsado */
+  }
+
   .dashboard-main {
+    margin-left: 70px; /* Crea espacio para el menú */
     padding: 1rem;
   }
-  
+
+  .main-expanded {
+    margin-left: 70px !important; /* Mantiene el espacio sin importar el estado */
+  }
+
+  /* Oculta botones innecesarios en esta vista */
+  .desktop-collapse-button,
+  .mobile-menu-button {
+    display: none;
+  }
+
   .section-header h1 {
     font-size: 2rem;
   }
-  
+
   .history-filters {
     flex-direction: column;
   }
-  
+
   .settings-grid {
     grid-template-columns: 1fr;
   }
