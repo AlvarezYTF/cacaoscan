@@ -20,10 +20,78 @@
         
         <!-- Contenido principal -->
         <main class="flex-1 p-4 md:p-6 lg:p-8 pb-0 overflow-y-auto">
+          <!-- Estadísticas rápidas -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-500">Total Agricultores</p>
+                  <p class="text-2xl font-semibold text-gray-900">{{ totalItems }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-500">Total Fincas</p>
+                  <p class="text-2xl font-semibold text-gray-900">{{ getTotalFarms() }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-500">Activos</p>
+                  <p class="text-2xl font-semibold text-gray-900">{{ getActiveFarmers() }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-500">Área Total</p>
+                  <p class="text-2xl font-semibold text-gray-900">{{ getTotalArea() }} ha</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Filtros y controles -->
-          <div class="mb-4 md:mb-6">
-            <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div class="flex flex-col sm:flex-row gap-4 flex-1">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex gap-4 items-center justify-between">
+              <!-- Filtros -->
+              <div class="flex gap-4">
                 <FilterSelect 
                   id="region"
                   label="Región"
@@ -39,7 +107,8 @@
                 />
               </div>
               
-              <div class="flex gap-2">
+              <!-- Botones de acción -->
+              <div class="flex gap-3">
                 <ActionButton 
                   label="Aplicar Filtros"
                   short-label="Filtrar"
@@ -58,63 +127,105 @@
           </div>
 
           <!-- Barra de búsqueda -->
-          <div class="mb-4 md:mb-6">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
             <SearchBar 
               v-model="searchQuery"
-              placeholder="Buscar agricultor..."
+              placeholder="Buscar agricultor por nombre, email o finca..."
             />
           </div>
 
           <!-- Tabla de agricultores -->
-          <div class="flex-1 min-h-0">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <!-- Estado vacío -->
+            <div v-if="filteredFarmers.length === 0" class="text-center py-12 px-6">
+              <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">No se encontraron agricultores</h3>
+              <p class="text-gray-500 mb-6">
+                {{ searchQuery || filters.region !== 'all' || filters.status !== 'all' 
+                  ? 'Intenta ajustar los filtros o la búsqueda' 
+                  : 'Comienza agregando tu primer agricultor' }}
+              </p>
+              <button 
+                v-if="!searchQuery && filters.region === 'all' && filters.status === 'all'"
+                @click="handleNewFarmer"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Agregar Primer Agricultor
+              </button>
+            </div>
+
+            <!-- Tabla con datos -->
             <DataTable 
+              v-else
               :columns="tableColumns"
               :data="filteredFarmers"
             >
               <!-- Celda personalizada para Agricultor -->
               <template #cell-farmer="{ row }">
                 <div class="flex items-center">
-                  <div class="h-8 w-8 md:h-10 md:w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-medium text-sm md:text-base">
+                  <div class="h-10 w-10 rounded-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center text-green-700 font-semibold text-sm border-2 border-green-100">
                     {{ row.initials }}
                   </div>
-                  <div class="ml-2 md:ml-4">
-                    <div class="text-xs md:text-sm font-medium text-gray-900">{{ row.name }}</div>
-                    <div class="text-xs md:text-sm text-gray-500">{{ row.email }}</div>
+                  <div class="ml-3">
+                    <div class="text-sm font-medium text-gray-900">{{ row.name }}</div>
+                    <div class="text-xs text-gray-500">{{ row.email }}</div>
                   </div>
                 </div>
               </template>
 
               <!-- Celda personalizada para Finca -->
               <template #cell-farm="{ row }">
-                <div class="text-xs md:text-sm text-gray-900">{{ row.farm }}</div>
-                <div class="text-xs md:text-sm text-gray-500">{{ row.hectares }}</div>
+                <div class="text-sm text-gray-900 font-medium">{{ row.farm }}</div>
+                <div class="text-xs text-gray-500">{{ row.hectares }} hectáreas</div>
               </template>
 
               <!-- Celda personalizada para Estado -->
               <template #cell-status="{ row }">
-                <span :class="getStatusClasses(row.status)" class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full">
+                <span :class="getStatusClasses(row.status)" class="px-3 py-1.5 inline-flex text-xs leading-4 font-semibold rounded-full">
                   {{ row.status }}
                 </span>
               </template>
 
               <!-- Celda personalizada para Acciones -->
               <template #cell-actions="{ row }">
-                <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-1 sm:space-y-0">
-                  <a href="#" class="text-green-600 hover:text-green-900 transition-colors duration-200">Ver</a>
-                  <a href="#" class="text-blue-600 hover:text-blue-900 transition-colors duration-200">Editar</a>
-                  <a href="#" class="text-red-600 hover:text-red-900 transition-colors duration-200">Eliminar</a>
+                <div class="flex items-center space-x-3">
+                  <button class="text-green-600 hover:text-green-700 hover:bg-green-50 p-1.5 rounded-md transition-all duration-200" title="Ver detalles">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                  </button>
+                  <button class="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1.5 rounded-md transition-all duration-200" title="Editar">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                  </button>
+                  <button class="text-red-600 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-md transition-all duration-200" title="Eliminar">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                  </button>
                 </div>
               </template>
 
               <!-- Paginación -->
               <template #pagination>
-                <Pagination 
-                  :current-page="currentPage"
-                  :total-pages="totalPages"
-                  :total-items="totalItems"
-                  :items-per-page="itemsPerPage"
-                  @page-change="handlePageChange"
-                />
+                <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                  <Pagination 
+                    :current-page="currentPage"
+                    :total-pages="totalPages"
+                    :total-items="totalItems"
+                    :items-per-page="itemsPerPage"
+                    @page-change="handlePageChange"
+                  />
+                </div>
               </template>
             </DataTable>
           </div>
@@ -234,31 +345,49 @@ export default {
     // Computed properties
     const filteredFarmers = computed(() => {
       let filtered = farmers.value;
-
-      // Filtro por búsqueda
+      
+      // Filtrar por búsqueda
       if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
         filtered = filtered.filter(farmer => 
-          farmer.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-          farmer.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+          farmer.name.toLowerCase().includes(query) ||
+          farmer.email.toLowerCase().includes(query) ||
+          farmer.farm.toLowerCase().includes(query)
         );
       }
-
-      // Filtro por región
+      
+      // Filtrar por región
       if (filters.value.region) {
         filtered = filtered.filter(farmer => farmer.region === filters.value.region);
       }
-
-      // Filtro por estado
+      
+      // Filtrar por estado
       if (filters.value.status) {
         filtered = filtered.filter(farmer => farmer.status === filters.value.status);
       }
-
+      
       return filtered;
     });
 
     const totalItems = computed(() => filteredFarmers.value.length);
-    const itemsPerPage = 4;
-    const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
+    const itemsPerPage = ref(4);
+    const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value));
+
+    // Métodos auxiliares para estadísticas
+    const getTotalFarms = () => {
+      return farmers.value.length;
+    };
+
+    const getActiveFarmers = () => {
+      return farmers.value.filter(farmer => farmer.status === 'Activo').length;
+    };
+
+    const getTotalArea = () => {
+      return farmers.value.reduce((total, farmer) => {
+        const hectares = parseInt(farmer.hectares);
+        return total + (isNaN(hectares) ? 0 : hectares);
+      }, 0);
+    };
 
     // Métodos
     const toggleSidebar = () => {
@@ -335,7 +464,10 @@ export default {
       handleNewFarmer,
       applyFilters,
       handlePageChange,
-      getStatusClasses
+      getStatusClasses,
+      getTotalFarms,
+      getActiveFarmers,
+      getTotalArea
     };
   }
 };

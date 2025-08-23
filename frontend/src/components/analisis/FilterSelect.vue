@@ -19,7 +19,7 @@
       </select>
       
       <!-- Icono de flecha personalizado -->
-      <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+      <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
         <svg class="h-4 w-4 md:h-5 md:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
@@ -78,6 +78,13 @@ export default {
 </script>
 
 <style scoped>
+/* Ocultar el icono nativo del select */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
 /* Mejoras de responsividad para selectores */
 @media (max-width: 640px) {
   .text-xs {

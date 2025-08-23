@@ -180,7 +180,9 @@
                       @input="clearFieldError('agricultor')"
                     />
                     <p v-if="formErrors.agricultor && formErrors.agricultor !== ''" class="mt-1 text-sm text-red-600">{{ formErrors.agricultor }}</p>
+
                   </div>
+                  
                   
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Nombre o código del lote *</label>
