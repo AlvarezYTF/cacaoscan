@@ -13,12 +13,12 @@
     />
 
     <!-- Main Content -->
-    <main class="dashboard-main" :class="{ 'main-expanded': sidebarCollapsed }">
+    <main class="dashboard-main" :class="{ 'main-expanded': !sidebarCollapsed, 'main-collapsed': sidebarCollapsed }">
       <!-- Overview Section -->
       <div v-if="activeSection === 'overview'" class="dashboard-section">
         <div class="section-header">
-          <h1>Resumen del Dashboard</h1>
-          <p>Vista general de tu actividad y estadísticas</p>
+          <h1>¡Bienvenido a CacaoScan, Sofia!</h1>
+          <p>Esta es su herramienta para asegurar la calidad de cada grano. Con CacaoScan, podrá analizar su cosecha de forma rápida y precisa, eliminando las dudas del análisis tradicional. Obtenga los datos que necesita para mejorar sus procesos y aumentar el valor de su trabajo. Estamos aquí para ayudarle a que su cacao destaque.</p>
         </div>
         
         <StatsOverview :stats="stats" />
@@ -1429,90 +1429,621 @@ export default {
   background-color: #f8f9fa;
 }
 
-/* Sidebar Styles - Ahora manejados por el componente AgricultorSidebar */
+/* Sidebar Styles */
+.dashboard-sidebar {
+  width: 280px; 
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); 
+  color: white;
+  transition: all 0.3s ease; 
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column; 
+}
+.sidebar-collapsed {
+  width: 70px;
+}
+
+.sidebar-collapsed .sidebar-header {
+  padding: 1rem 0.5rem;
+  justify-content: center;
+}
+
+.sidebar-collapsed .farmer-info {
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.sidebar-collapsed .farmer-info:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.sidebar-collapsed .farmer-avatar {
+  animation: subtle-pulse 2s infinite;
+}
+
+@keyframes subtle-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.1);
+  }
+}
+
+.sidebar-collapsed .farmer-avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+}
+
+.sidebar-collapsed .nav-link {
+  padding: 1rem;
+  justify-content: center;
+  margin-right: 0;
+}
+
+.sidebar-collapsed .nav-link i {
+  margin: 0;
+}
+
+.sidebar-collapsed .nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: none;
+}
+
+.sidebar-collapsed .nav-item.active .nav-link {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  margin: 0.5rem;
+}
+
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.farmer-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.farmer-info:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
+.farmer-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.farmer-avatar::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: #27ae60;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.farmer-info:hover .farmer-avatar::after {
+  opacity: 1;
+}
+
+.farmer-info:active {
+  transform: scale(0.95);
+}
+
+/* Indicador de estado del sidebar */
+.sidebar-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px 0 0 2px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-collapsed .sidebar-header::before {
+  background: rgba(255, 255, 255, 0.6);
+  width: 6px;
+}
+
+.farmer-details h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.farmer-role {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.sidebar-toggle {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 1rem 0;
+}
+
+.nav-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-item {
+  margin: 0.5rem 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  color: white;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border-radius: 0 25px 25px 0;
+  margin-right: 1rem;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(5px);
+}
+
+.nav-item.active .nav-link {
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link i {
+  font-size: 1.2rem;
+  width: 20px;
+  text-align: center;
+}
+
+.sidebar-footer {
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quick-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.stat-value {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+/* Logout Section Styles */
+.logout-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.logout-btn {
+  width: 100%;
+  background: rgba(231, 76, 60, 0.8);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(231, 76, 60, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.logout-btn:active {
+  transform: translateY(0);
+}
+
+.logout-btn i {
+  font-size: 1rem;
+}
+
+/* Collapsed sidebar logout button */
+.sidebar-footer-collapsed {
+  padding: 1rem 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: center;
+}
+
+.logout-btn-collapsed {
+  width: 40px;
+  height: 40px;
+  background: rgba(231, 76, 60, 0.8);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.logout-btn-collapsed:hover {
+  background: rgba(231, 76, 60, 1);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.logout-btn-collapsed:active {
+  transform: scale(0.95);
+}
+
+/* Indicador de logout en sidebar colapsado */
+.sidebar-collapsed .logout-btn-collapsed {
+  position: relative;
+}
+
+.sidebar-collapsed .logout-btn-collapsed::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-collapsed .logout-btn-collapsed:hover::after {
+  opacity: 1;
+}
 
 /* Main Content Styles */
 .dashboard-main {
   flex: 1;
-  padding: 2rem;
-  transition: all 0.3s ease;
+  padding: 1rem 1.5rem;
+  transition: padding-left 0.3s ease;
+  width: 100%;
+  max-width: 1400px; /* Ancho máximo para el contenido */
+  margin: 0 auto;      /* Centra el contenedor en el espacio disponible */
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
+/* Contenido principal cuando está expandido */
 .main-expanded {
-  margin-left: 0;
-}
-
-.dashboard-main {
-  flex: 1;
-  padding: 2rem;
-  transition: all 0.3s ease;
-  margin-left: 0;
-  position: relative;
-}
-
-.mobile-sidebar-toggle {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  background: #27ae60;
-  color: white;
-  border: none;
-  padding: 0.75rem 1rem;
-  border-radius: 25px;
-  cursor: pointer;
+  padding-left: 280px;
+  /* Centra el contenido en toda la pantalla disponible */
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  transition: all 0.2s ease;
 }
 
-.mobile-sidebar-toggle:hover {
-  background: #219653;
-  transform: translateX(5px);
-}
-
-.dashboard-section {
-  max-width: 1200px;
+/* Ajusta el ancho del contenido cuando está expandido */
+.main-expanded .dashboard-section {
+  width: 100%;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
+/* Contenido principal cuando está colapsado */
+.main-collapsed {
+  padding-left: 70px;
+  /* Centra el contenido en toda la pantalla disponible */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Ajusta el ancho del contenido cuando está colapsado */
+.main-collapsed .dashboard-section {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* Centra el contenido de texto cuando el sidebar está colapsado */
+.main-collapsed .section-header {
+  max-width: 800px;
+  margin: 0 auto 1.5rem auto;
+}
+
+/* Centra el contenido de texto cuando el sidebar está expandido */
+.main-expanded .section-header {
+  max-width: 1000px;
+  margin: 0 auto 1.5rem auto;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 1024px) {
+  .dashboard-main {
+    padding: 1.5rem;
+  }
+  
+  .main-expanded {
+    padding-left: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-main {
+    padding-left: 70px !important;
+    padding: 1rem;
+  }
+  
+  .main-expanded,
+  .main-collapsed {
+    padding-left: 70px !important;
+  }
+  
+  .section-header h1 {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-main {
+    padding-left: 60px !important;
+    padding: 0.75rem;
+  }
+  
+  .main-expanded,
+  .main-collapsed {
+    padding-left: 60px !important;
+  }
+  
+  .section-header h1 {
+    font-size: 1.5rem;
+  }
+}
+
+.dashboard-section {
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Ajusta el ancho máximo según el estado del sidebar */
+.main-expanded .dashboard-section {
+  max-width: 1000px;
+}
+
+.main-collapsed .dashboard-section {
+  max-width: 800px;
+}
+
 .section-header {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   text-align: center;
 }
 
 .section-header h1 {
   color: #2c3e50;
   margin-bottom: 0.5rem;
-  font-size: 2.5rem;
+  font-size: 2.25rem;
 }
 
 .section-header p {
   color: #7f8c8d;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  margin-bottom: 0;
 }
 
 /* Overview Grid */
 .overview-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2rem;
-  margin-top: 2rem;
+  grid-template-columns: 0fr 5fr; /* Proporción 3:2 */
+  gap: 1.5rem;
+  margin: 0.5rem 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
+/* Ajusta el grid para diferentes estados del sidebar */
+.main-expanded .overview-grid {
+  grid-template-columns: 0fr 5fr; /* Mantiene la proporción original */
+  max-width: 1000px;
+}
+
+.main-collapsed .overview-grid {
+  grid-template-columns: 1fr 1fr; /* Cambia a 2 columnas iguales */
+  gap: 1rem;
+  max-width: 800px;
+}
+
+
+
+/* Centra las tarjetas de estadísticas cuando el sidebar está colapsado */
+.main-collapsed .fincas-stats {
+  max-width: 800px;
+  margin: 0 auto 1.5rem auto;
+}
+
+.main-collapsed .fincas-actions {
+  max-width: 800px;
+  margin: 0 auto 1.5rem auto;
+}
+
+.main-collapsed .fincas-grid {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Centra las tarjetas de estadísticas cuando el sidebar está expandido */
+.main-expanded .fincas-stats {
+  max-width: 1000px;
+  margin: 0 auto 1.5rem auto;
+}
+
+.main-expanded .fincas-actions {
+  max-width: 1000px;
+  margin: 0 auto 1.5rem auto;
+}
+
+.main-expanded .fincas-grid {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Estilo base para ambas tarjetas */
 .overview-card {
   background: white;
-  border-radius: 10px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Centra las tarjetas de estadísticas principales */
+.main-expanded .overview-grid:first-child {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.main-collapsed .overview-grid:first-child {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.overview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .overview-card h3 {
   color: #2c3e50;
-  margin-bottom: 1rem;
-  font-size: 1.3rem;
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 1200px) {
+  .overview-grid {
+    gap: 1rem;
+  }
+  
+  .overview-card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .overview-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .overview-card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .overview-card {
+    padding: 0.75rem;
+  }
+  
+  .overview-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* Ajustes específicos para la tarjeta de actividad reciente */
+.overview-card:first-child {
+  min-height: 400px; /* Altura mínima para mejor visualización */
+}
+
+/* Ajustes específicos para la tarjeta de acciones rápidas */
+.overview-card:last-child {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
 }
 
 /* Analysis Tools */
@@ -1724,48 +2255,75 @@ export default {
 }
 
 /* Responsive Design */
-@media (max-width: 1024px) {
-  .dashboard-sidebar {
-    width: 250px;
+@media (max-width: 1600px) {
+  .dashboard-main {
+    padding: 1rem 1.25rem;
+    max-width: 1200px;
   }
-  
-  .overview-grid {
-    grid-template-columns: 1fr;
+}
+
+@media (max-width: 1366px) {
+  .dashboard-main {
+    max-width: 1100px;
   }
-  
-  .tools-grid {
-    grid-template-columns: 1fr;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-main {
+    max-width: 100%;
+    padding: 1rem 1.5rem;
   }
 }
 
 @media (max-width: 768px) {
   .farmer-dashboard-container {
-    flex-direction: column;
+    flex-direction: row; /* Asegura que el menú y contenido estén en fila */
   }
-  
+
   .dashboard-sidebar {
-    width: 100%;
-    position: sticky;
+    position: fixed; /* Fija el menú en la pantalla */
+    left: 0;
     top: 0;
-    z-index: 100;
+    height: 100%;
+    width: 70px !important; /* Ancho fijo de íconos */
+    z-index: 1000;
   }
-  
-  .sidebar-collapsed {
-    width: 100%;
+
+  /* Oculta los textos para forzar el modo colapsado */
+  .sidebar-header .farmer-details,
+  .sidebar-nav .nav-link span,
+  .sidebar-footer {
+    display: none;
   }
-  
+
+  .sidebar-footer-collapsed {
+    display: flex !important; /* Muestra el botón de logout colapsado */
+  }
+
   .dashboard-main {
-    padding: 1rem;
+    margin-left: 70px !important; /* Fuerza el espacio mínimo para el menú colapsado */
+    padding: 0.75rem;
   }
-  
+
+  .main-expanded,
+  .main-collapsed {
+    margin-left: 70px !important; /* Mantiene el espacio mínimo en móvil */
+  }
+
+  /* Oculta botones innecesarios en esta vista */
+  .desktop-collapse-button,
+  .mobile-menu-button {
+    display: none;
+  }
+
   .section-header h1 {
     font-size: 2rem;
   }
-  
+
   .history-filters {
     flex-direction: column;
   }
-  
+
   .settings-grid {
     grid-template-columns: 1fr;
   }
@@ -1788,20 +2346,20 @@ export default {
 
 /* Estilos para el módulo de Fincas */
 .fincas-overview {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .fincas-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .stat-card {
   background: white;
   border-radius: 10px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
@@ -1834,25 +2392,25 @@ export default {
 }
 
 .fincas-actions {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .fincas-actions h3 {
   color: #2c3e50;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   font-size: 1.5rem;
 }
 
 .actions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .action-card {
   background: white;
   border-radius: 10px;
-  padding: 2rem;
+  padding: 1.5rem;
   text-align: center;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s ease;
@@ -1870,36 +2428,36 @@ export default {
 
 .action-card h4 {
   color: #2c3e50;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   font-size: 1.3rem;
 }
 
 .action-card p {
   color: #7f8c8d;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   line-height: 1.5;
 }
 
 .fincas-list {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .fincas-list h3 {
   color: #2c3e50;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   font-size: 1.5rem;
 }
 
 .fincas-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .finca-card {
   background: white;
   border-radius: 10px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s ease;
 }
@@ -1912,8 +2470,8 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid #ecf0f1;
 }
 
@@ -1942,7 +2500,7 @@ export default {
 }
 
 .finca-details {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .finca-details p {
