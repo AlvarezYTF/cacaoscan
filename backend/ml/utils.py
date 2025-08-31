@@ -366,5 +366,17 @@ def convert_to_tensor(image: np.ndarray, framework: str = 'tensorflow') -> Any:
         logger.error(f"Error al convertir a tensor: {str(e)}")
         return None
 
-# Instancia global del procesador de imágenes
+# Importar utilidades extendidas
+try:
+    from .ml_utils_extended import model_manager, dataset_validator, performance_profiler
+    from .ml_utils_extended import setup_gpu_memory_limit, cleanup_temp_files, export_model_info, validate_model_compatibility
+    logger.info("Utilidades ML extendidas cargadas")
+except ImportError as e:
+    logger.warning(f"No se pudieron cargar utilidades extendidas: {e}")
+    # Crear objetos dummy si no se pueden importar
+    model_manager = None
+    dataset_validator = None
+    performance_profiler = None
+
+# Instancias globales
 image_processor = ImageProcessor()
