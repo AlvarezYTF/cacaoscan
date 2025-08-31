@@ -19,6 +19,14 @@ from .views import (
     UserLoginView,
     UserViewSet,
 )
+from .auth_views import (
+    UserPasswordResetView,
+    UserPasswordResetConfirmView,
+    UserEmailVerificationView,
+    ResendVerificationEmailView,
+    UserStatsView,
+    UserBulkActionsView,
+)
 
 # Configurar router para ViewSet
 router = DefaultRouter()
@@ -49,6 +57,36 @@ urlpatterns = [
     
     # Logout - blacklist del refresh token
     path('logout/', TokenBlacklistView.as_view(), name='token_blacklist'),
+    
+    # ==========================================
+    # ENDPOINTS DE RESTABLECIMIENTO DE CONTRASEÑA
+    # ==========================================
+    
+    # Solicitar restablecimiento de contraseña
+    path('password-reset/', UserPasswordResetView.as_view(), name='password_reset'),
+    
+    # Confirmar restablecimiento de contraseña
+    path('password-reset-confirm/', UserPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    
+    # ==========================================
+    # ENDPOINTS DE VERIFICACIÓN DE EMAIL
+    # ==========================================
+    
+    # Verificar email con token
+    path('verify-email/', UserEmailVerificationView.as_view(), name='verify_email'),
+    
+    # Reenviar email de verificación
+    path('resend-verification/', ResendVerificationEmailView.as_view(), name='resend_verification'),
+    
+    # ==========================================
+    # ENDPOINTS ADMINISTRATIVOS
+    # ==========================================
+    
+    # Estadísticas de usuarios (solo admin)
+    path('admin/stats/', UserStatsView.as_view(), name='user_stats'),
+    
+    # Acciones masivas de usuarios (solo admin)
+    path('admin/bulk-actions/', UserBulkActionsView.as_view(), name='user_bulk_actions'),
     
     # ==========================================
     # ENDPOINTS DE GESTIÓN DE USUARIOS

@@ -88,10 +88,22 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'cacaoscan_db',
+        'USER': 'cacaoscan_user',
+        'PASSWORD': 'cacaoscan_pass',
+        'HOST': 'localhost',
+        'PORT': '5432',
+        'OPTIONS': {
+            'sslmode': 'prefer',
+        },
     }
 }
+
+# Database connection pooling
+# Para mejor rendimiento en producción
+if not DEBUG:
+    DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
 
 
 # Password validation

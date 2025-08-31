@@ -457,3 +457,103 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.set_password(self.validated_data['new_password'])
         user.save()
         return user
+
+
+class UserBulkActionSerializer(serializers.Serializer):
+    """
+    Serializer para acciones masivas de usuarios.
+    """
+    
+    user_ids = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="Lista de IDs de usuarios"
+    )
+    
+    action = serializers.ChoiceField(
+        choices=[
+            ('activate', 'Activar'),
+            ('deactivate', 'Desactivar'),
+            ('verify', 'Verificar'),
+            ('unverify', 'Desverificar'),
+        ],
+        help_text="Acción a realizar"
+    )
+    
+    def validate_user_ids(self, value):
+        """Valida que los IDs de usuario existan."""
+        if not value:
+            raise serializers.ValidationError("Debe proporcionar al menos un ID de usuario")
+        
+        # Verificar que no hay más de 100 usuarios (límite de seguridad)
+        if len(value) > 100:
+            raise serializers.ValidationError("No se pueden procesar más de 100 usuarios a la vez")
+        
+        # Verificar que los usuarios existen
+        existing_count = User.objects.filter(id__in=value).count()
+        if existing_count != len(value):
+            raise serializers.ValidationError("Algunos IDs de usuario no existen")
+        
+        return value
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    """
+    Serializer para solicitud de restablecimiento de contraseña.
+    """
+    
+    email = serializers.EmailField(
+        help_text="Email del usuario para restablecimiento"
+    )
+    
+    def validate_email(self, value):
+        """Valida que el email tenga formato correcto."""
+        return value.lower()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """
+    Serializer para confirmación de restablecimiento de contraseña.
+    """
+    
+    uid = serializers.CharField(help_text="UID del usuario")
+    token = serializers.CharField(help_text="Token de restablecimiento")
+    new_password = serializers.CharField(
+        style={'input_type': 'password'},
+        help_text="Nueva contraseña"
+    )
+    confirm_password = serializers.CharField(
+        style={'input_type': 'password'},
+        help_text="Confirmación de nueva contraseña"
+    )
+    
+    def validate_new_password(self, value):
+        """Valida la nueva contraseña."""
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError
+        
+        try:
+            validate_password(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        return value
+    
+    def validate(self, attrs):
+        """Valida que las contraseñas coincidan."""
+        new_password = attrs.get('new_password')
+        confirm_password = attrs.get('confirm_password')
+        
+        if new_password != confirm_password:
+            raise serializers.ValidationError({
+                'confirm_password': 'Las contraseñas no coinciden.'
+            })
+        
+        return attrs
+
+
+class EmailVerificationSerializer(serializers.Serializer):
+    """
+    Serializer para verificación de email.
+    """
+    
+    uid = serializers.CharField(help_text="UID del usuario")
+    token = serializers.CharField(help_text="Token de verificación")
