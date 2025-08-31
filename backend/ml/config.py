@@ -49,6 +49,16 @@ MODEL_CONFIGS = {
         'outputs': ['width', 'height', 'thickness', 'weight'],
         'output_units': ['mm', 'mm', 'mm', 'g'],
         'model_class': 'CacaoVisionModel'
+    },
+    'weight_regression': {
+        'model_path': MODELS_DIR / 'weight_regression.pkl',
+        'model_type': 'sklearn_regression',
+        'inputs': ['width', 'height', 'thickness'],
+        'input_units': ['mm', 'mm', 'mm'],
+        'outputs': ['weight'],
+        'output_units': ['g'],
+        'model_class': 'WeightRegressionModel',
+        'algorithms': ['linear', 'ridge', 'lasso', 'random_forest', 'gradient_boosting', 'svr']
     }
 }
 
