@@ -213,6 +213,28 @@ API_CONFIG = {
     'enable_training_endpoint': False  # Solo en desarrollo
 }
 
+# Configuración del servicio de predicción
+PREDICTION_SERVICE_CONFIG = {
+    'enable_caching': True,
+    'cache_timeout': 1800,  # 30 minutos
+    'default_device': 'auto',
+    'confidence_threshold': 0.7,
+    'max_cache_size': 1000,
+    'enable_performance_profiling': True,
+    'warmup_on_startup': True,
+    'critical_models': ['vision_model', 'weight_regression']
+}
+
+# Configuración del gestor de modelos
+MODEL_MANAGER_CONFIG = {
+    'max_models_in_memory': 5,
+    'model_timeout': 3600,  # 1 hora
+    'auto_reload': False,
+    'enable_health_checks': True,
+    'warmup_critical_models': True,
+    'performance_monitoring': True
+}
+
 # Rutas de modelos pre-entrenados
 PRETRAINED_MODELS = {
     'resnet50': 'resnet50_imagenet',
