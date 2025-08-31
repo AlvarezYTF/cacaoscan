@@ -132,17 +132,54 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Ensure media directories exist
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+os.makedirs(MEDIA_ROOT / 'cacao_images', exist_ok=True)
+os.makedirs(MEDIA_ROOT / 'uploads', exist_ok=True)
+os.makedirs(MEDIA_ROOT / 'temp', exist_ok=True)
+
+# File upload settings
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+FILE_UPLOAD_PERMISSIONS = 0o644
+
 # CORS configuration
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
-
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Solo en desarrollo
+
+# Headers permitidos para CORS
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-file-name',
+    'x-file-size',
+]
+
+# Métodos HTTP permitidos
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 
 # Django REST Framework configuration
 REST_FRAMEWORK = {
@@ -170,3 +207,115 @@ SWAGGER_SETTINGS = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ===========================
+# MACHINE LEARNING SETTINGS
+# ===========================
+
+# ML Models directory
+ML_MODELS_DIR = BASE_DIR / 'ml' / 'models'
+os.makedirs(ML_MODELS_DIR, exist_ok=True)
+
+# ML Data directory
+ML_DATA_DIR = BASE_DIR / 'ml' / 'data'
+os.makedirs(ML_DATA_DIR, exist_ok=True)
+os.makedirs(ML_DATA_DIR / 'images', exist_ok=True)
+os.makedirs(ML_DATA_DIR / 'processed', exist_ok=True)
+os.makedirs(ML_DATA_DIR / 'temp', exist_ok=True)
+
+# ML Logging
+ML_LOG_DIR = BASE_DIR / 'ml' / 'logs'
+os.makedirs(ML_LOG_DIR, exist_ok=True)
+
+# TensorBoard logs
+TENSORBOARD_LOG_DIR = BASE_DIR / 'ml' / 'tensorboard'
+os.makedirs(TENSORBOARD_LOG_DIR, exist_ok=True)
+
+# ML Cache directory
+ML_CACHE_DIR = BASE_DIR / 'ml' / 'cache'
+os.makedirs(ML_CACHE_DIR, exist_ok=True)
+
+# Machine Learning Configuration
+ML_CONFIG = {
+    # Supported image formats
+    'SUPPORTED_IMAGE_FORMATS': ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'],
+    
+    # Maximum file sizes
+    'MAX_IMAGE_SIZE': 10 * 1024 * 1024,  # 10MB
+    'MAX_BATCH_SIZE': 32,
+    
+    # Default image processing parameters
+    'DEFAULT_IMAGE_SIZE': (224, 224),
+    'NORMALIZE_MEANS': [0.485, 0.456, 0.406],  # ImageNet means
+    'NORMALIZE_STDS': [0.229, 0.224, 0.225],   # ImageNet stds
+    
+    # Model inference settings
+    'INFERENCE_TIMEOUT': 30,  # seconds
+    'MAX_CONCURRENT_PREDICTIONS': 5,
+    'ENABLE_GPU': True,
+    'GPU_MEMORY_LIMIT': 4096,  # MB
+    
+    # Caching settings
+    'CACHE_PREDICTIONS': True,
+    'CACHE_TIMEOUT': 3600,  # 1 hour
+    
+    # Quality thresholds
+    'QUALITY_THRESHOLDS': {
+        'excellent': 0.9,
+        'good': 0.75,
+        'fair': 0.6,
+        'poor': 0.4
+    },
+    
+    # Training settings
+    'TRAINING_ENABLED': DEBUG,  # Only allow training in development
+    'AUTO_BACKUP_MODELS': True,
+    'MAX_TRAINING_TIME': 24 * 3600,  # 24 hours
+}
+
+# Logging configuration for ML
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': ML_LOG_DIR / 'django.log',
+            'formatter': 'verbose',
+        },
+        'ml_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': ML_LOG_DIR / 'ml.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'ml': {
+            'handlers': ['ml_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

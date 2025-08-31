@@ -41,6 +41,14 @@ MODEL_CONFIGS = {
             'grano_mohoso'
         ],
         'confidence_threshold': 0.7
+    },
+    'vision_model': {
+        'model_path': MODELS_DIR / 'vision_model.pth',
+        'model_type': 'pytorch_vision',
+        'input_shape': (3, 224, 224),
+        'outputs': ['width', 'height', 'thickness', 'weight'],
+        'output_units': ['mm', 'mm', 'mm', 'g'],
+        'model_class': 'CacaoVisionModel'
     }
 }
 
@@ -98,6 +106,103 @@ QUALITY_THRESHOLDS = {
 CACHE_PREDICTIONS = True
 CACHE_TIMEOUT = 3600  # 1 hora en segundos
 
+# Configuración de entrenamiento
+TRAINING_CONFIG = {
+    'default_epochs': 100,
+    'default_batch_size': 16,
+    'default_learning_rate': 1e-3,
+    'default_optimizer': 'adam',
+    'default_scheduler': 'reduce_on_plateau',
+    'early_stopping_patience': 15,
+    'save_checkpoint_every': 10,
+    'validation_split': 0.2,
+    'augmentation_enabled': True,
+    'gradient_clipping': 1.0,
+    'weight_decay': 1e-4
+}
+
+# Configuración de hardware
+HARDWARE_CONFIG = {
+    'use_gpu': True,
+    'gpu_memory_limit': 4096,  # MB
+    'num_workers': 2,  # Para DataLoader
+    'pin_memory': True,
+    'mixed_precision': False,  # Para entrenamiento con AMP
+    'cudnn_benchmark': True
+}
+
+# Configuración de validación de datos
+DATA_VALIDATION_CONFIG = {
+    'min_dataset_size': 50,
+    'max_image_size_mb': 10,
+    'required_image_formats': SUPPORTED_IMAGE_FORMATS,
+    'check_image_corruption': True,
+    'min_image_dimensions': (32, 32),
+    'max_image_dimensions': (4096, 4096),
+    'allow_grayscale_conversion': True
+}
+
+# Configuración de métricas de evaluación
+EVALUATION_METRICS = {
+    'regression_metrics': ['mae', 'mse', 'rmse', 'mape', 'r2'],
+    'classification_metrics': ['accuracy', 'precision', 'recall', 'f1'],
+    'custom_metrics': ['aspect_ratio_error', 'volume_estimation_error'],
+    'tolerance_thresholds': {
+        'width': 0.5,  # mm
+        'height': 0.5,  # mm  
+        'thickness': 0.3,  # mm
+        'weight': 0.05  # g
+    }
+}
+
+# Configuración de modelos por defecto
+DEFAULT_MODEL_PARAMS = {
+    'vision_model': {
+        'input_channels': 3,
+        'num_outputs': 4,
+        'dropout_rate': 0.5,
+        'activation': 'relu',
+        'batch_norm': True,
+        'weight_init': 'kaiming'
+    },
+    'classifier_model': {
+        'num_classes': 4,
+        'dropout_rate': 0.3,
+        'use_pretrained': True,
+        'fine_tune_layers': 2
+    }
+}
+
+# Configuración de logging detallado
+LOGGING_CONFIG = {
+    'log_level': 'INFO',
+    'log_format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    'log_training_metrics': True,
+    'log_prediction_times': True,
+    'log_memory_usage': True,
+    'tensorboard_enabled': True,
+    'save_model_graphs': True
+}
+
+# Configuración de seguridad y límites
+SECURITY_CONFIG = {
+    'max_file_uploads_per_hour': 100,
+    'allowed_file_extensions': SUPPORTED_IMAGE_FORMATS,
+    'scan_uploaded_files': True,
+    'quarantine_suspicious_files': True,
+    'max_prediction_requests_per_minute': 30
+}
+
+# Configuración de API endpoints
+API_CONFIG = {
+    'pagination_size': 20,
+    'max_batch_prediction_size': 10,
+    'request_timeout': 30,  # segundos
+    'enable_model_info_endpoint': True,
+    'enable_metrics_endpoint': True,
+    'enable_training_endpoint': False  # Solo en desarrollo
+}
+
 # Rutas de modelos pre-entrenados
 PRETRAINED_MODELS = {
     'resnet50': 'resnet50_imagenet',
@@ -146,3 +251,242 @@ def ensure_directories():
 
 # Inicializar directorios al importar el módulo
 ensure_directories()
+
+
+def get_config_value(config_dict: dict, key: str, default=None):
+    """
+    Obtiene un valor de configuración de forma segura.
+    
+    Args:
+        config_dict (dict): Diccionario de configuración
+        key (str): Clave a buscar
+        default: Valor por defecto si no se encuentra
+        
+    Returns:
+        Valor de configuración o default
+    """
+    return config_dict.get(key, default)
+
+
+def validate_config():
+    """
+    Valida la configuración del módulo ML.
+    
+    Returns:
+        dict: Resultado de la validación
+    """
+    validation_result = {
+        'valid': True,
+        'errors': [],
+        'warnings': []
+    }
+    
+    # Validar directorios
+    required_dirs = [MODELS_DIR, DATA_DIR, IMAGES_DIR]
+    for directory in required_dirs:
+        if not directory.exists():
+            validation_result['errors'].append(f"Directorio no encontrado: {directory}")
+            validation_result['valid'] = False
+    
+    # Validar configuración de modelos
+    for model_name, config in MODEL_CONFIGS.items():
+        model_path = config.get('model_path')
+        if model_path and not model_path.exists():
+            validation_result['warnings'].append(f"Modelo no encontrado: {model_path}")
+    
+    # Validar configuración de imagen
+    image_size = IMAGE_PREPROCESSING.get('target_size')
+    if not isinstance(image_size, tuple) or len(image_size) != 2:
+        validation_result['errors'].append("target_size debe ser una tupla de 2 elementos")
+        validation_result['valid'] = False
+    
+    # Validar configuración de entrenamiento
+    batch_size = TRAINING_CONFIG.get('default_batch_size', 0)
+    if batch_size <= 0:
+        validation_result['errors'].append("batch_size debe ser mayor que 0")
+        validation_result['valid'] = False
+    
+    return validation_result
+
+
+def get_device_config():
+    """
+    Obtiene la configuración óptima del device basada en hardware disponible.
+    
+    Returns:
+        dict: Configuración del device
+    """
+    device_config = {
+        'device': 'cpu',
+        'cuda_available': False,
+        'num_gpus': 0,
+        'gpu_memory': 0,
+        'recommended_batch_size': TRAINING_CONFIG['default_batch_size']
+    }
+    
+    try:
+        import torch
+        
+        if torch.cuda.is_available():
+            device_config['device'] = 'cuda'
+            device_config['cuda_available'] = True
+            device_config['num_gpus'] = torch.cuda.device_count()
+            
+            if device_config['num_gpus'] > 0:
+                gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024**3)  # GB
+                device_config['gpu_memory'] = gpu_memory
+                
+                # Ajustar batch size basado en memoria GPU
+                if gpu_memory >= 8:
+                    device_config['recommended_batch_size'] = 32
+                elif gpu_memory >= 4:
+                    device_config['recommended_batch_size'] = 16
+                else:
+                    device_config['recommended_batch_size'] = 8
+        
+    except ImportError:
+        pass
+    
+    return device_config
+
+
+def get_training_config_for_dataset_size(dataset_size: int) -> dict:
+    """
+    Ajusta la configuración de entrenamiento basada en el tamaño del dataset.
+    
+    Args:
+        dataset_size (int): Tamaño del dataset
+        
+    Returns:
+        dict: Configuración ajustada
+    """
+    config = TRAINING_CONFIG.copy()
+    
+    # Ajustar épocas basado en tamaño del dataset
+    if dataset_size < 100:
+        config['default_epochs'] = 200
+        config['early_stopping_patience'] = 30
+    elif dataset_size < 500:
+        config['default_epochs'] = 150
+        config['early_stopping_patience'] = 20
+    elif dataset_size < 1000:
+        config['default_epochs'] = 100
+        config['early_stopping_patience'] = 15
+    else:
+        config['default_epochs'] = 80
+        config['early_stopping_patience'] = 10
+    
+    # Ajustar batch size
+    if dataset_size < 50:
+        config['default_batch_size'] = 8
+    elif dataset_size < 200:
+        config['default_batch_size'] = 16
+    else:
+        config['default_batch_size'] = 32
+    
+    return config
+
+
+def export_config_to_json(output_path: Path = None) -> dict:
+    """
+    Exporta toda la configuración a un archivo JSON.
+    
+    Args:
+        output_path (Path, optional): Ruta del archivo de salida
+        
+    Returns:
+        dict: Configuración exportada
+    """
+    import json
+    from datetime import datetime
+    
+    # Preparar configuración para exportación
+    config_export = {
+        'exported_at': datetime.now().isoformat(),
+        'version': '1.0.0',
+        'model_configs': {},
+        'image_preprocessing': IMAGE_PREPROCESSING.copy(),
+        'data_augmentation': DATA_AUGMENTATION.copy(),
+        'training_config': TRAINING_CONFIG.copy(),
+        'hardware_config': HARDWARE_CONFIG.copy(),
+        'data_validation_config': DATA_VALIDATION_CONFIG.copy(),
+        'evaluation_metrics': EVALUATION_METRICS.copy(),
+        'logging_config': LOGGING_CONFIG.copy(),
+        'security_config': SECURITY_CONFIG.copy(),
+        'api_config': API_CONFIG.copy()
+    }
+    
+    # Convertir paths a strings para JSON
+    for model_name, config in MODEL_CONFIGS.items():
+        config_export['model_configs'][model_name] = {
+            k: str(v) if isinstance(v, Path) else v 
+            for k, v in config.items()
+        }
+    
+    if output_path:
+        output_path = Path(output_path)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(config_export, f, indent=2, ensure_ascii=False)
+    
+    return config_export
+
+
+def load_config_from_json(config_path: Path):
+    """
+    Carga configuración desde un archivo JSON.
+    
+    Args:
+        config_path (Path): Ruta al archivo de configuración
+    """
+    import json
+    
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+        
+        # Actualizar configuraciones globales
+        if 'training_config' in config_data:
+            TRAINING_CONFIG.update(config_data['training_config'])
+        
+        if 'hardware_config' in config_data:
+            HARDWARE_CONFIG.update(config_data['hardware_config'])
+        
+        # Más actualizaciones según sea necesario
+        
+    except Exception as e:
+        print(f"Error cargando configuración desde {config_path}: {e}")
+
+
+def get_environment_config():
+    """
+    Obtiene configuración basada en variables de entorno.
+    
+    Returns:
+        dict: Configuración de entorno
+    """
+    import os
+    
+    env_config = {
+        'debug_mode': os.getenv('ML_DEBUG', 'False').lower() == 'true',
+        'gpu_enabled': os.getenv('ML_USE_GPU', 'True').lower() == 'true',
+        'log_level': os.getenv('ML_LOG_LEVEL', 'INFO'),
+        'batch_size': int(os.getenv('ML_BATCH_SIZE', TRAINING_CONFIG['default_batch_size'])),
+        'num_workers': int(os.getenv('ML_NUM_WORKERS', HARDWARE_CONFIG['num_workers'])),
+        'cache_enabled': os.getenv('ML_CACHE_ENABLED', 'True').lower() == 'true'
+    }
+    
+    return env_config
+
+
+# Validar configuración al importar
+validation_result = validate_config()
+if not validation_result['valid']:
+    print(f"ADVERTENCIA: Errores en configuración ML: {validation_result['errors']}")
+if validation_result['warnings']:
+    print(f"ADVERTENCIA: {validation_result['warnings']}")
+
+# Obtener información del device
+DEVICE_CONFIG = get_device_config()
+
+# Aplicar configuración de entorno
+ENV_CONFIG = get_environment_config()
