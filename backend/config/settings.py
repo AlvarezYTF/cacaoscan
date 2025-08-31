@@ -53,12 +53,27 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # Middleware de seguridad personalizado (antes que todo)
+    'apps.users.middleware.RequestSizeMiddleware',
+    'apps.users.middleware.SecurityHeadersMiddleware',
+    
+    # CORS y seguridad básica
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    
+    # Sesiones y autenticación
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    
+    # Middleware personalizado (después de autenticación)
+    'apps.users.middleware.RateLimitMiddleware',
+    'apps.users.middleware.UserActivityMiddleware',
+    'apps.users.middleware.FileUploadSecurityMiddleware',
+    'apps.users.middleware.APILoggingMiddleware',
+    
+    # Middleware estándar final
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -104,6 +119,52 @@ DATABASES = {
 # Para mejor rendimiento en producción
 if not DEBUG:
     DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
+
+
+# Cache Configuration para Rate Limiting
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 300,  # 5 minutos por defecto
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+            'CULL_FREQUENCY': 3,
+        }
+    },
+    'rate_limit': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'rate-limit-cache',
+        'TIMEOUT': 60,  # 1 minuto para rate limiting
+        'OPTIONS': {
+            'MAX_ENTRIES': 5000,
+            'CULL_FREQUENCY': 2,
+        }
+    }
+}
+
+# En producción, usar Redis para cache distribuido
+if not DEBUG:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': 'redis://127.0.0.1:6379/1',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'cacaoscan_cache',
+            'TIMEOUT': 300,
+        },
+        'rate_limit': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': 'redis://127.0.0.1:6379/2',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'cacaoscan_rate_limit',
+            'TIMEOUT': 60,
+        }
+    }
 
 
 # Password validation
@@ -208,6 +269,25 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'apps.users.throttling.SmartThrottle',
+        'apps.users.throttling.BurstThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '20/hour',
+        'user': '100/hour',
+        'farmer': '60/hour',
+        'analyst': '120/hour',
+        'admin': '300/hour',
+        'prediction': '30/hour',
+        'upload': '50/hour',
+        'login': '5/min',
+        'registration': '3/hour',
+        'password_reset': '3/hour',
+        'burst': '10/min',
+        'sustained': '1000/day',
+        'smart': '100/hour',
+    },
 }
 
 # Simple JWT configuration

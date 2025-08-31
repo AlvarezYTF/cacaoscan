@@ -1,5 +1,6 @@
 """
 Vistas para la API de predicción de imágenes de cacao.
+Incluye validaciones de permisos por rol y seguridad avanzada.
 """
 
 import logging
@@ -15,6 +16,21 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+
+# Imports para permisos personalizados
+from apps.users.permissions import (
+    CanUploadImages,
+    CanViewPredictions,
+    IsAdminOrAnalyst,
+    IsOwnerOrReadOnly,
+    IsVerifiedUser
+)
+from apps.users.decorators import (
+    farmer_upload_endpoint,
+    log_api_access,
+    validate_prediction_data,
+    require_verified_user
+)
 
 from .models import CacaoImage
 from .serializers import (
@@ -32,19 +48,24 @@ class CacaoImagePredictionView(APIView):
     """Vista para realizar predicciones de características físicas de granos de cacao."""
     
     parser_classes = [MultiPartParser, FormParser]
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated, CanUploadImages]
     
     @swagger_auto_schema(
-        operation_description="Sube una imagen de grano de cacao y obtiene predicción",
+        operation_description="Sube una imagen de grano de cacao y obtiene predicción. Requiere usuario verificado.",
         request_body=ImageUploadSerializer,
         responses={
             201: openapi.Response("Predicción realizada exitosamente", PredictionResultSerializer),
             400: openapi.Response("Error en la validación"),
+            401: openapi.Response("No autenticado"),
+            403: openapi.Response("Sin permisos o usuario no verificado"),
             500: openapi.Response("Error interno del servidor")
         },
         consumes=['multipart/form-data'],
-        tags=['Predicción']
+        tags=['Predicción'],
+        security=[{'Bearer': []}]
     )
+    @log_api_access
+    @validate_prediction_data
     def post(self, request, *args, **kwargs):
         """Realiza predicción completa de un grano de cacao desde imagen."""
         try:
@@ -63,7 +84,7 @@ class CacaoImagePredictionView(APIView):
                 batch_number=upload_serializer.validated_data.get('batch_number', ''),
                 origin=upload_serializer.validated_data.get('origin', ''),
                 notes=upload_serializer.validated_data.get('notes', ''),
-                uploaded_by=request.user if request.user.is_authenticated else None
+                uploaded_by=request.user  # Usuario siempre autenticado por permisos
             )
             cacao_image.save()
             
@@ -189,7 +210,7 @@ class CacaoImageViewSet(ModelViewSet):
     """ViewSet para gestión completa de imágenes de cacao."""
     
     queryset = CacaoImage.objects.all().order_by('-created_at')
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated, CanViewPredictions]
     
     def get_serializer_class(self):
         """Selecciona el serializer apropiado según la acción."""
@@ -197,10 +218,37 @@ class CacaoImageViewSet(ModelViewSet):
             return CacaoImageListSerializer
         return CacaoImageSerializer
     
+    def get_permissions(self):
+        """Configura permisos específicos según la acción."""
+        if self.action in ['create', 'upload']:
+            self.permission_classes = [permissions.IsAuthenticated, CanUploadImages]
+        elif self.action in ['list', 'retrieve']:
+            self.permission_classes = [permissions.IsAuthenticated, CanViewPredictions]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            self.permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
+        elif self.action == 'stats':
+            self.permission_classes = [permissions.IsAuthenticated, IsAdminOrAnalyst]
+        else:
+            self.permission_classes = [permissions.IsAuthenticated]
+        
+        return [permission() for permission in self.permission_classes]
+
     def get_queryset(self):
-        """Filtra el queryset según parámetros de consulta."""
+        """Filtra el queryset según parámetros de consulta y permisos del usuario."""
         queryset = super().get_queryset()
         
+        # Filtrar por usuario según rol
+        if self.request.user.role == 'farmer':
+            # Los agricultores solo ven sus propias imágenes
+            queryset = queryset.filter(uploaded_by=self.request.user)
+        elif self.request.user.role in ['admin', 'analyst']:
+            # Administradores y analistas ven todas las imágenes
+            pass
+        else:
+            # Por defecto, solo ver propias imágenes
+            queryset = queryset.filter(uploaded_by=self.request.user)
+        
+        # Aplicar filtros de consulta
         processed = self.request.query_params.get('processed')
         if processed is not None:
             processed_bool = processed.lower() in ['true', '1', 'yes']
@@ -213,6 +261,11 @@ class CacaoImageViewSet(ModelViewSet):
         batch = self.request.query_params.get('batch')
         if batch:
             queryset = queryset.filter(batch_number__icontains=batch)
+        
+        # Filtro por usuario específico (solo para admin/analyst)
+        user_filter = self.request.query_params.get('user')
+        if user_filter and self.request.user.role in ['admin', 'analyst']:
+            queryset = queryset.filter(uploaded_by__email__icontains=user_filter)
         
         date_from = self.request.query_params.get('date_from')
         if date_from:
@@ -233,11 +286,16 @@ class CacaoImageViewSet(ModelViewSet):
         return queryset
     
     @swagger_auto_schema(
-        operation_description="Obtiene estadísticas de las predicciones realizadas",
-        responses={200: openapi.Response("Estadísticas", PredictionStatsSerializer)},
-        tags=['Estadísticas']
+        operation_description="Obtiene estadísticas de las predicciones realizadas. Solo admin/analistas.",
+        responses={
+            200: openapi.Response("Estadísticas", PredictionStatsSerializer),
+            403: openapi.Response("Sin permisos para ver estadísticas")
+        },
+        tags=['Estadísticas'],
+        security=[{'Bearer': []}]
     )
     @action(detail=False, methods=['get'], url_path='stats')
+    @log_api_access
     def get_stats(self, request):
         """Endpoint para obtener estadísticas de predicciones."""
         try:
