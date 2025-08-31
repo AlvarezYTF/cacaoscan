@@ -3,13 +3,17 @@
  * Controla el acceso a rutas según autenticación, roles y verificación
  */
 
-import { useAuthStore } from '@/stores/auth'
+// Función helper para obtener el store dinámicamente y evitar dependencias circulares
+const getAuthStore = () => {
+  const { useAuthStore } = require('@/stores/auth')
+  return useAuthStore()
+}
 
 /**
  * Guard que requiere autenticación
  */
 export const requireAuth = (to, from, next) => {
-  const authStore = useAuthStore()
+  const authStore = getAuthStore()
 
   if (!authStore.isAuthenticated) {
     console.warn('🚫 Acceso denegado: Usuario no autenticado')
@@ -36,7 +40,7 @@ export const requireAuth = (to, from, next) => {
  * Guard que requiere que el usuario NO esté autenticado
  */
 export const requireGuest = (to, from, next) => {
-  const authStore = useAuthStore()
+  const authStore = getAuthStore()
 
   if (authStore.isAuthenticated) {
     console.log('👤 Usuario ya autenticado, redirigiendo...')
@@ -55,7 +59,7 @@ export const requireGuest = (to, from, next) => {
  */
 export const requireRole = (allowedRoles) => {
   return (to, from, next) => {
-    const authStore = useAuthStore()
+    const authStore = getAuthStore()
 
     if (!authStore.isAuthenticated) {
       console.warn('🚫 Acceso denegado: Usuario no autenticado')
@@ -95,7 +99,7 @@ export const requireRole = (allowedRoles) => {
  * Guard que requiere usuario verificado
  */
 export const requireVerified = (to, from, next) => {
-  const authStore = useAuthStore()
+  const authStore = getAuthStore()
 
   if (!authStore.isAuthenticated) {
     console.warn('🚫 Acceso denegado: Usuario no autenticado')
@@ -128,7 +132,7 @@ export const requireVerified = (to, from, next) => {
  */
 export const requirePermission = (permission) => {
   return (to, from, next) => {
-    const authStore = useAuthStore()
+    const authStore = getAuthStore()
 
     if (!authStore.isAuthenticated) {
       console.warn('🚫 Acceso denegado: Usuario no autenticado')
@@ -164,7 +168,7 @@ export const requirePermission = (permission) => {
  * Guard combinado para agricultores (autenticado + verificado + rol farmer)
  */
 export const requireFarmer = (to, from, next) => {
-  const authStore = useAuthStore()
+  const authStore = getAuthStore()
 
   // Verificar autenticación
   if (!authStore.isAuthenticated) {
@@ -207,7 +211,7 @@ export const requireFarmer = (to, from, next) => {
  * Guard para analistas
  */
 export const requireAnalyst = (to, from, next) => {
-  const authStore = useAuthStore()
+  const authStore = getAuthStore()
 
   if (!authStore.isAuthenticated) {
     next({
@@ -237,7 +241,7 @@ export const requireAnalyst = (to, from, next) => {
  * Guard para administradores
  */
 export const requireAdmin = (to, from, next) => {
-  const authStore = useAuthStore()
+  const authStore = getAuthStore()
 
   if (!authStore.isAuthenticated) {
     next({
@@ -267,7 +271,7 @@ export const requireAdmin = (to, from, next) => {
  * Guard para verificar si el usuario puede subir imágenes
  */
 export const requireCanUpload = (to, from, next) => {
-  const authStore = useAuthStore()
+  const authStore = getAuthStore()
 
   if (!authStore.isAuthenticated) {
     next({
@@ -306,10 +310,15 @@ export const requireCanUpload = (to, from, next) => {
  * Guard que actualiza actividad del usuario
  */
 export const updateActivity = (to, from, next) => {
-  const authStore = useAuthStore()
+  const authStore = getAuthStore()
 
   if (authStore.isAuthenticated) {
     authStore.updateLastActivity()
+    
+    // Log de actividad en desarrollo
+    if (import.meta.env.DEV) {
+      console.log(`👤 Activity updated for ${authStore.user?.email} on ${to.path}`)
+    }
   }
 
   next()
@@ -319,7 +328,7 @@ export const updateActivity = (to, from, next) => {
  * Guard que verifica el estado del token
  */
 export const checkTokenValidity = async (to, from, next) => {
-  const authStore = useAuthStore()
+  const authStore = getAuthStore()
 
   if (authStore.isAuthenticated && authStore.accessToken) {
     try {
@@ -329,13 +338,20 @@ export const checkTokenValidity = async (to, from, next) => {
     } catch (error) {
       console.warn('Token inválido, redirigiendo al login')
       authStore.clearAll()
-      next({
-        name: 'Login',
-        query: {
-          message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
-          expired: 'true'
-        }
-      })
+      
+      // Evitar loops de redirección
+      if (to.name !== 'Login') {
+        next({
+          name: 'Login',
+          query: {
+            message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+            expired: 'true',
+            redirect: to.fullPath
+          }
+        })
+      } else {
+        next()
+      }
     }
   } else {
     next()

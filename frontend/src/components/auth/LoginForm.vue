@@ -210,6 +210,11 @@ const handleSubmit = async () => {
     return
   }
 
+  // Emitir evento de loading
+  window.dispatchEvent(new CustomEvent('api-loading-start', {
+    detail: { type: 'login', message: 'Verificando credenciales...' }
+  }))
+
   try {
     const result = await authStore.login({
       email: form.value.email.trim(),
@@ -225,6 +230,9 @@ const handleSubmit = async () => {
   } catch (error) {
     console.error('Error en login:', error)
     setStatusMessage('Error inesperado al iniciar sesión', 'error')
+  } finally {
+    // Emitir evento de fin de loading
+    window.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 

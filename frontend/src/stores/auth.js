@@ -367,6 +367,21 @@ export const useAuthStore = defineStore('auth', () => {
   const getRedirectPath = () => {
     if (!user.value) return '/'
 
+    // Verificar si ya estamos en una ruta apropiada para evitar loops
+    const currentPath = router.currentRoute.value.path
+    const appropriatePaths = {
+      admin: ['/admin/', '/analisis', '/reportes', '/perfil'],
+      analyst: ['/analisis', '/reportes', '/perfil'],
+      farmer: ['/agricultor-dashboard', '/prediccion', '/perfil']
+    }
+    
+    const userPaths = appropriatePaths[user.value.role] || ['/']
+    const isOnAppropriatePath = userPaths.some(path => currentPath.startsWith(path))
+    
+    if (isOnAppropriatePath) {
+      return currentPath // No redirigir si ya está en una ruta apropiada
+    }
+
     switch (user.value.role) {
       case 'admin':
         return '/admin/dashboard'

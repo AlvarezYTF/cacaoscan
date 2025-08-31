@@ -214,17 +214,84 @@ const router = createRouter({
   ],
 })
 
-// Guardián global para títulos y configuraciones generales
-router.beforeEach((to, from, next) => {
-  // Actualizar el título de la página
-  document.title = to.meta?.title || 'CacaoScan'
-  
-  // Log de navegación en desarrollo
-  if (import.meta.env.DEV) {
-    console.log(`🧭 Navigating: ${from.name || from.path} → ${to.name || to.path}`)
+// Variable global para controlar estado de loading
+let isNavigating = false
+
+// Guardián global para títulos, loading y configuraciones generales  
+router.beforeEach(async (to, from, next) => {
+  // Prevenir navegación múltiple simultánea
+  if (isNavigating) {
+    return
   }
   
-  next()
+  isNavigating = true
+  
+  try {
+    // Actualizar el título de la página
+    document.title = to.meta?.title || 'CacaoScan'
+    
+    // Log de navegación en desarrollo
+    if (import.meta.env.DEV) {
+      console.log(`🧭 Navigating: ${from.name || from.path} → ${to.name || to.path}`)
+    }
+    
+    // Mostrar loading para navegación entre diferentes rutas
+    if (to.path !== from.path && from.name) {
+      // Emit loading event
+      window.dispatchEvent(new CustomEvent('route-loading-start', {
+        detail: { to, from }
+      }))
+    }
+    
+    // Verificar estado de autenticación si se requiere
+    if (to.meta.requiresAuth || to.matched.some(record => record.meta.requiresAuth)) {
+      const { useAuthStore } = await import('@/stores/auth')
+      const authStore = useAuthStore()
+      
+      // Si no hay token pero está intentando acceder a ruta protegida
+      if (!authStore.isAuthenticated) {
+        console.warn('🚫 Intento de acceso a ruta protegida sin autenticación')
+        next({
+          name: 'Login',
+          query: { 
+            redirect: to.fullPath,
+            message: 'Debes iniciar sesión para acceder a esta página'
+          }
+        })
+        return
+      }
+      
+      // Verificar que el usuario esté completamente cargado
+      if (!authStore.user) {
+        try {
+          await authStore.getCurrentUser()
+        } catch (error) {
+          console.error('Error cargando datos de usuario:', error)
+          authStore.clearAll()
+          next({
+            name: 'Login',
+            query: { 
+              redirect: to.fullPath,
+              message: 'Tu sesión ha expirado. Inicia sesión nuevamente.'
+            }
+          })
+          return
+        }
+      }
+    }
+    
+    next()
+  } catch (error) {
+    console.error('Error en navigation guard:', error)
+    next('/acceso-denegado')
+  } finally {
+    // Pequeño delay para mejor UX
+    setTimeout(() => {
+      isNavigating = false
+      // Emit loading end event
+      window.dispatchEvent(new CustomEvent('route-loading-end'))
+    }, 100)
+  }
 })
 
 // Guardián posterior para limpiar estados
