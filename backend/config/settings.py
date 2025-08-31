@@ -42,11 +42,11 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
     # Apps del proyecto
-    'apps.users',
-    'apps.images',
-    'apps.reports',
-    'apps.dashboards',
-    'analisys',
+    'apps.users.apps.UsersConfig',
+    'apps.images.apps.ImagesConfig',
+    'apps.reports.apps.ReportsConfig',
+    'apps.dashboards.apps.DashboardsConfig',
+    'analisys.apps.AnalisysConfig',
 ]
 
 MIDDLEWARE = [
