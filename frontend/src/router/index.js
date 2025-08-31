@@ -11,6 +11,8 @@ import Reportes from '../views/Reportes.vue'
 import AgricultorDashboard from '../views/AgricultorDashboard.vue'
 import PredictionView from '../views/PredictionView.vue'
 import UserPrediction from '../views/UserPrediction.vue'
+import AdminDataset from '../views/AdminDataset.vue'
+import AdminTraining from '../views/AdminTraining.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -126,6 +128,26 @@ const router = createRouter({
       meta: {
         title: 'Predicción de Usuario | CacaoScan',
         requiresAuth: false // Configurar según requerimientos de autenticación
+      }
+    },
+    {
+      path: '/admin/dataset',
+      name: 'admin-dataset',
+      component: AdminDataset,
+      meta: {
+        title: 'Gestión de Dataset | CacaoScan',
+        requiresAuth: true,
+        requiresAdmin: true
+      }
+    },
+    {
+      path: '/admin/training',
+      name: 'admin-training',
+      component: AdminTraining,
+      meta: {
+        title: 'Panel de Reentrenamiento | CacaoScan',
+        requiresAuth: true,
+        requiresAdmin: true
       }
     }
   ],
