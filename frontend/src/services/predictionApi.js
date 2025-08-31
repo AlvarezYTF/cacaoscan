@@ -5,45 +5,13 @@
  * incluyendo subida de imágenes y obtención de resultados de análisis.
  */
 
-// Configuración base de la API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const API_ENDPOINTS = {
-  predict: '/api/images/predict/',
-  images: '/api/images/',
-  stats: '/api/images/stats/'
-};
+import api from './api'
 
-/**
- * Maneja errores de red y HTTP de manera consistente
- * @param {Response} response - Respuesta de fetch
- * @returns {Promise<Object>} - Datos de respuesta o lanza error
- */
-async function handleResponse(response) {
-  const contentType = response.headers.get('content-type');
-  
-  // Verificar si la respuesta es JSON
-  if (contentType && contentType.includes('application/json')) {
-    const data = await response.json();
-    
-    if (!response.ok) {
-      // Si la respuesta tiene formato de error del backend
-      if (data.success === false || data.error) {
-        throw new Error(data.message || data.error || `Error HTTP ${response.status}`);
-      }
-      
-      // Error HTTP genérico
-      throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    return data;
-  } else {
-    // Respuesta no JSON
-    if (!response.ok) {
-      throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    return await response.text();
-  }
+// Endpoints de la API
+const API_ENDPOINTS = {
+  predict: '/images/predict/',
+  images: '/images/',
+  stats: '/images/stats/'
 }
 
 /**
@@ -55,289 +23,413 @@ export async function predictImage(formData) {
   try {
     // Validar que FormData contiene una imagen
     if (!formData.has('image')) {
-      throw new Error('No se ha proporcionado ninguna imagen para procesar');
+      throw new Error('No se ha proporcionado ninguna imagen para procesar')
     }
     
-    const imageFile = formData.get('image');
+    const imageFile = formData.get('image')
     if (!imageFile || imageFile.size === 0) {
-      throw new Error('El archivo de imagen está vacío o corrupto');
+      throw new Error('El archivo de imagen está vacío o corrupto')
     }
-    
-    // Validar tipo de archivo
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff'];
-    if (!validTypes.includes(imageFile.type)) {
-      throw new Error('Formato de imagen no soportado. Use JPG, PNG, BMP o TIFF');
+
+    // Validar formato de imagen
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(imageFile.type)) {
+      throw new Error('Formato de imagen no válido. Use JPEG, PNG o WebP')
     }
-    
-    // Validar tamaño (10MB máximo como en el backend)
-    const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+
+    // Validar tamaño máximo (5MB)
+    const maxSize = 5 * 1024 * 1024
     if (imageFile.size > maxSize) {
-      throw new Error(`El archivo es demasiado grande. Tamaño máximo permitido: ${Math.round(maxSize / (1024 * 1024))}MB`);
+      throw new Error('La imagen es demasiado grande. Máximo 5MB permitido')
     }
-    
-    console.log('Enviando imagen para predicción:', {
-      nombre: imageFile.name,
-      tamaño: `${Math.round(imageFile.size / 1024)}KB`,
-      tipo: imageFile.type
-    });
-    
-    // Realizar petición al backend
-    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.predict}`, {
-      method: 'POST',
-      body: formData
-      // No establecer Content-Type para FormData, el navegador lo hace automáticamente
-    });
-    
-    const result = await handleResponse(response);
-    
-    // Validar estructura de respuesta esperada
-    if (!result.success) {
-      throw new Error(result.message || 'Error desconocido en la predicción');
+
+    // Emitir evento de loading
+    window.dispatchEvent(new CustomEvent('api-loading-start', {
+      detail: { type: 'prediction', message: 'Analizando imagen de cacao...' }
+    }))
+
+    console.log('📤 Enviando imagen para predicción:', {
+      fileName: imageFile.name,
+      fileSize: `${(imageFile.size / 1024).toFixed(1)}KB`,
+      fileType: imageFile.type
+    })
+
+    const response = await api.post(API_ENDPOINTS.predict, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 60000 // 60 segundos para procesamiento ML
+    })
+
+    console.log('✅ Predicción completada:', response.data)
+
+    return {
+      success: true,
+      data: response.data
     }
-    
-    // Validar que contiene los campos esperados
-    const requiredFields = ['id', 'width', 'height', 'thickness', 'predicted_weight'];
-    const missingFields = requiredFields.filter(field => result[field] === undefined);
-    
-    if (missingFields.length > 0) {
-      console.warn('Campos faltantes en la respuesta:', missingFields);
-    }
-    
-    console.log('Predicción completada exitosamente:', {
-      id: result.id,
-      dimensiones: `${result.width}x${result.height}x${result.thickness}mm`,
-      peso: `${result.predicted_weight}g`,
-      confianza: result.confidence_level,
-      tiempo: `${result.processing_time}s`
-    });
-    
-    return result;
-    
+
   } catch (error) {
-    console.error('Error en predicción de imagen:', error);
+    console.error('❌ Error en predicción:', error)
     
-    // Re-lanzar errores conocidos
-    if (error.message.includes('TypeError') && error.message.includes('fetch')) {
-      throw new Error('No se pudo conectar con el servidor. Verifique su conexión a internet.');
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Error inesperado al procesar la imagen'
+
+    return {
+      success: false,
+      error: errorMessage
     }
-    
-    throw error;
+  } finally {
+    // Emitir evento de fin de loading
+    window.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 
 /**
- * Obtiene una imagen específica por ID
- * @param {number} imageId - ID de la imagen
- * @returns {Promise<Object>} - Datos completos de la imagen
+ * Obtiene lista de imágenes procesadas por el usuario
+ * @param {Object} params - Parámetros de consulta (paginación, filtros)
+ * @returns {Promise<Object>} - Lista de imágenes y metadatos
  */
-export async function getImage(imageId) {
+export async function getImages(params = {}) {
   try {
-    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.images}${imageId}/`);
-    return await handleResponse(response);
+    console.log('📋 Obteniendo lista de imágenes:', params)
+
+    const response = await api.get(API_ENDPOINTS.images, { params })
+
+    console.log('✅ Imágenes obtenidas:', {
+      count: response.data.results?.length || 0,
+      total: response.data.count || 0
+    })
+
+    return {
+      success: true,
+      data: response.data
+    }
+
   } catch (error) {
-    console.error('Error obteniendo imagen:', error);
-    throw error;
+    console.error('❌ Error obteniendo imágenes:', error)
+    
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Error al obtener el historial de imágenes'
+
+    return {
+      success: false,
+      error: errorMessage
+    }
   }
 }
 
 /**
- * Obtiene el historial de predicciones con filtros opcionales
- * @param {Object} filters - Filtros para la búsqueda
- * @param {boolean} filters.processed - Solo imágenes procesadas
- * @param {string} filters.quality - Filtro por calidad
- * @param {string} filters.batch - Filtro por lote
- * @param {string} filters.dateFrom - Fecha desde (YYYY-MM-DD)
- * @param {string} filters.dateTo - Fecha hasta (YYYY-MM-DD)
- * @param {number} filters.page - Número de página
- * @returns {Promise<Object>} - Lista paginada de predicciones
+ * Obtiene detalles de una imagen específica
+ * @param {string} imageId - ID de la imagen
+ * @returns {Promise<Object>} - Detalles de la imagen y predicción
  */
-export async function getImageHistory(filters = {}) {
+export async function getImageDetails(imageId) {
   try {
-    const params = new URLSearchParams();
+    if (!imageId) {
+      throw new Error('ID de imagen requerido')
+    }
+
+    console.log('🔍 Obteniendo detalles de imagen:', imageId)
+
+    const response = await api.get(`${API_ENDPOINTS.images}${imageId}/`)
+
+    console.log('✅ Detalles de imagen obtenidos')
+
+    return {
+      success: true,
+      data: response.data
+    }
+
+  } catch (error) {
+    console.error('❌ Error obteniendo detalles de imagen:', error)
     
-    // Agregar filtros válidos
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        params.append(key, value);
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Error al obtener los detalles de la imagen'
+
+    return {
+      success: false,
+      error: errorMessage
+    }
+  }
+}
+
+/**
+ * Elimina una imagen del sistema
+ * @param {string} imageId - ID de la imagen a eliminar
+ * @returns {Promise<Object>} - Resultado de la operación
+ */
+export async function deleteImage(imageId) {
+  try {
+    if (!imageId) {
+      throw new Error('ID de imagen requerido')
+    }
+
+    console.log('🗑️ Eliminando imagen:', imageId)
+
+    await api.delete(`${API_ENDPOINTS.images}${imageId}/`)
+
+    console.log('✅ Imagen eliminada exitosamente')
+
+    return {
+      success: true,
+      message: 'Imagen eliminada exitosamente'
+    }
+
+  } catch (error) {
+    console.error('❌ Error eliminando imagen:', error)
+    
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Error al eliminar la imagen'
+
+    return {
+      success: false,
+      error: errorMessage
+    }
+  }
+}
+
+/**
+ * Obtiene estadísticas de predicciones del usuario
+ * @param {Object} params - Parámetros de consulta (filtros de fecha, etc.)
+ * @returns {Promise<Object>} - Estadísticas agregadas
+ */
+export async function getStats(params = {}) {
+  try {
+    console.log('📊 Obteniendo estadísticas:', params)
+
+    const response = await api.get(API_ENDPOINTS.stats, { params })
+
+    console.log('✅ Estadísticas obtenidas')
+
+    return {
+      success: true,
+      data: response.data
+    }
+
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas:', error)
+    
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Error al obtener las estadísticas'
+
+    return {
+      success: false,
+      error: errorMessage
+    }
+  }
+}
+
+/**
+ * Actualiza metadatos de una imagen
+ * @param {string} imageId - ID de la imagen
+ * @param {Object} data - Nuevos metadatos
+ * @returns {Promise<Object>} - Resultado de la operación
+ */
+export async function updateImageMetadata(imageId, data) {
+  try {
+    if (!imageId) {
+      throw new Error('ID de imagen requerido')
+    }
+
+    console.log('✏️ Actualizando metadatos de imagen:', imageId, data)
+
+    const response = await api.patch(`${API_ENDPOINTS.images}${imageId}/`, data)
+
+    console.log('✅ Metadatos actualizados exitosamente')
+
+    return {
+      success: true,
+      data: response.data
+    }
+
+  } catch (error) {
+    console.error('❌ Error actualizando metadatos:', error)
+    
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Error al actualizar los metadatos'
+
+    return {
+      success: false,
+      error: errorMessage
+    }
+  }
+}
+
+/**
+ * Descarga una imagen procesada
+ * @param {string} imageId - ID de la imagen
+ * @param {string} type - Tipo de descarga ('original', 'processed', 'report')
+ * @returns {Promise<Object>} - Resultado de la operación
+ */
+export async function downloadImage(imageId, type = 'original') {
+  try {
+    if (!imageId) {
+      throw new Error('ID de imagen requerido')
+    }
+
+    console.log('⬇️ Descargando imagen:', imageId, type)
+
+    const response = await api.get(`${API_ENDPOINTS.images}${imageId}/download/`, {
+      params: { type },
+      responseType: 'blob'
+    })
+
+    // Crear URL de descarga
+    const blob = new Blob([response.data])
+    const url = window.URL.createObjectURL(blob)
+    
+    // Extraer nombre del archivo de headers o usar default
+    const contentDisposition = response.headers['content-disposition']
+    let filename = `imagen_${imageId}_${type}.jpg`
+    
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/)
+      if (filenameMatch) {
+        filename = filenameMatch[1]
       }
-    });
+    }
+
+    // Crear elemento de descarga temporal
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
     
-    const url = `${API_BASE_URL}${API_ENDPOINTS.images}${params.toString() ? `?${params.toString()}` : ''}`;
-    const response = await fetch(url);
-    
-    return await handleResponse(response);
+    // Limpiar
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    console.log('✅ Descarga completada')
+
+    return {
+      success: true,
+      message: 'Descarga completada exitosamente'
+    }
+
   } catch (error) {
-    console.error('Error obteniendo historial:', error);
-    throw error;
+    console.error('❌ Error descargando imagen:', error)
+    
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Error al descargar la imagen'
+
+    return {
+      success: false,
+      error: errorMessage
+    }
   }
 }
 
 /**
- * Obtiene estadísticas de predicciones
- * @returns {Promise<Object>} - Estadísticas de predicciones
+ * Exporta resultados de predicciones en diferentes formatos
+ * @param {Object} options - Opciones de exportación (formato, filtros, etc.)
+ * @returns {Promise<Object>} - Resultado de la operación
  */
-export async function getPredictionStats() {
+export async function exportResults(options = {}) {
   try {
-    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.stats}`);
-    return await handleResponse(response);
+    console.log('📤 Exportando resultados:', options)
+
+    const response = await api.post(`${API_ENDPOINTS.images}export/`, options, {
+      responseType: 'blob'
+    })
+
+    // Crear URL de descarga
+    const blob = new Blob([response.data])
+    const url = window.URL.createObjectURL(blob)
+    
+    // Determinar nombre del archivo
+    const format = options.format || 'csv'
+    const timestamp = new Date().toISOString().slice(0, 10)
+    const filename = `resultados_cacao_${timestamp}.${format}`
+
+    // Crear elemento de descarga temporal
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    
+    // Limpiar
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    console.log('✅ Exportación completada')
+
+    return {
+      success: true,
+      message: 'Exportación completada exitosamente'
+    }
+
   } catch (error) {
-    console.error('Error obteniendo estadísticas:', error);
-    throw error;
+    console.error('❌ Error exportando resultados:', error)
+    
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Error al exportar los resultados'
+
+    return {
+      success: false,
+      error: errorMessage
+    }
   }
 }
 
-/**
- * Crea FormData para envío de imagen con metadatos opcionales
- * @param {File} imageFile - Archivo de imagen
- * @param {Object} metadata - Metadatos opcionales
- * @param {string} metadata.batch_number - Número de lote
- * @param {string} metadata.origin - Origen del grano
- * @param {string} metadata.notes - Notas adicionales
- * @returns {FormData} - FormData listo para envío
- */
-export function createImageFormData(imageFile, metadata = {}) {
-  const formData = new FormData();
-  
-  // Agregar imagen (obligatorio)
-  formData.append('image', imageFile);
-  
-  // Agregar metadatos opcionales
-  if (metadata.batch_number) {
-    formData.append('batch_number', metadata.batch_number);
-  }
-  
-  if (metadata.origin) {
-    formData.append('origin', metadata.origin);
-  }
-  
-  if (metadata.notes) {
-    formData.append('notes', metadata.notes);
-  }
-  
-  return formData;
-}
-
-/**
- * Valida un archivo de imagen antes del envío
- * @param {File} file - Archivo a validar
- * @returns {Object} - Resultado de validación {isValid: boolean, error?: string}
- */
+// Función auxiliar para validar formatos de imagen
 export function validateImageFile(file) {
+  const errors = []
+
   if (!file) {
-    return { isValid: false, error: 'No se ha seleccionado ningún archivo' };
+    errors.push('Archivo requerido')
+    return errors
   }
-  
-  // Validar tipo de archivo
-  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff'];
-  if (!validTypes.includes(file.type)) {
-    return { 
-      isValid: false, 
-      error: 'Formato no soportado. Use archivos JPG, PNG, BMP o TIFF' 
-    };
+
+  // Validar tipo
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    errors.push('Formato no válido. Use JPEG, PNG o WebP')
   }
-  
-  // Validar tamaño (10MB máximo)
-  const maxSize = 10 * 1024 * 1024;
+
+  // Validar tamaño (5MB máximo)
+  const maxSize = 5 * 1024 * 1024
   if (file.size > maxSize) {
-    return { 
-      isValid: false, 
-      error: `Archivo demasiado grande. Tamaño máximo: ${Math.round(maxSize / (1024 * 1024))}MB` 
-    };
+    errors.push('Archivo demasiado grande. Máximo 5MB')
   }
-  
-  // Validar dimensiones mínimas (al menos 32x32 como en backend)
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      if (img.width < 32 || img.height < 32) {
-        resolve({ 
-          isValid: false, 
-          error: 'Imagen demasiado pequeña. Dimensiones mínimas: 32x32 píxeles' 
-        });
-      } else if (img.width > 4096 || img.height > 4096) {
-        resolve({ 
-          isValid: false, 
-          error: 'Imagen demasiado grande. Dimensiones máximas: 4096x4096 píxeles' 
-        });
-      } else {
-        resolve({ isValid: true });
-      }
-    };
-    img.onerror = () => {
-      resolve({ 
-        isValid: false, 
-        error: 'No se pudo cargar la imagen. Archivo posiblemente corrupto' 
-      });
-    };
-    img.src = URL.createObjectURL(file);
-  });
+
+  // Validar tamaño mínimo (1KB)
+  const minSize = 1024
+  if (file.size < minSize) {
+    errors.push('Archivo demasiado pequeño')
+  }
+
+  return errors
 }
 
-/**
- * Formatea los resultados de predicción para mostrar en UI
- * @param {Object} prediction - Resultado crudo de predicción
- * @returns {Object} - Resultado formateado para UI
- */
-export function formatPredictionResult(prediction) {
-  return {
-    id: prediction.id,
-    dimensions: {
-      width: {
-        value: parseFloat(prediction.width).toFixed(2),
-        unit: 'mm',
-        label: 'Ancho'
-      },
-      height: {
-        value: parseFloat(prediction.height).toFixed(2),
-        unit: 'mm',
-        label: 'Alto'
-      },
-      thickness: {
-        value: parseFloat(prediction.thickness).toFixed(2),
-        unit: 'mm',
-        label: 'Grosor'
-      }
-    },
-    weight: {
-      value: parseFloat(prediction.predicted_weight).toFixed(3),
-      unit: 'g',
-      label: 'Peso Predicho'
-    },
-    quality: {
-      level: prediction.confidence_level,
-      score: prediction.confidence_score ? (prediction.confidence_score * 100).toFixed(1) : null,
-      method: prediction.prediction_method
-    },
-    processing: {
-      time: prediction.processing_time ? parseFloat(prediction.processing_time).toFixed(3) : null,
-      timestamp: prediction.created_at
-    },
-    image: {
-      url: prediction.image_url,
-      id: prediction.id
-    },
-    metadata: {
-      derived_metrics: prediction.derived_metrics,
-      weight_comparison: prediction.weight_comparison
-    }
-  };
-}
-
-// Exportar constantes útiles
-export const PREDICTION_API_CONFIG = {
-  maxFileSize: 10 * 1024 * 1024, // 10MB
-  supportedFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff'],
-  minDimensions: { width: 32, height: 32 },
-  maxDimensions: { width: 4096, height: 4096 }
-};
+// Exportar API client configurado para uso directo
+export const predictionApiClient = api
 
 export default {
   predictImage,
-  getImage,
-  getImageHistory,
-  getPredictionStats,
-  createImageFormData,
-  validateImageFile,
-  formatPredictionResult,
-  PREDICTION_API_CONFIG
-};
+  getImages,
+  getImageDetails,
+  deleteImage,
+  updateImageMetadata,
+  downloadImage,
+  exportResults,
+  getStats,
+  validateImageFile
+}

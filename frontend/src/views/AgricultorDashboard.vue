@@ -770,6 +770,7 @@ import RecentAnalyses from '@/components/dashboard/RecentAnalyses.vue';
 import StatsOverview from '@/components/dashboard/StatsOverview.vue';
 import { ref, computed, onMounted, watch } from 'vue';
 import { useAnalysisStore } from '@/stores/analysis';
+import { useAuthStore } from '@/stores/auth';
 import PageHeader from '@/components/common/PageHeader.vue';
 import ProgressIndicator from '@/components/common/ProgressIndicator.vue';
 import ErrorAlert from '@/components/common/ErrorAlert.vue';
@@ -796,9 +797,12 @@ export default {
   },
   setup() {
     const analysisStore = useAnalysisStore();
+    const authStore = useAuthStore();
     const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
     const activeSection = ref('overview');
-    const farmerName = ref('Juan Pérez');
+    
+    // Usar datos reales del usuario autenticado
+    const farmerName = computed(() => authStore.userFullName || 'Usuario');
     const historyFilter = ref({
       dateRange: 'all',
       quality: 'all'
@@ -1191,20 +1195,17 @@ export default {
       alert(`Editar finca: ${finca.nombre}`);
     };
 
-    const logout = () => {
+    const logout = async () => {
       // Mostrar mensaje de confirmación
       if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-        // Limpiar datos de sesión del localStorage
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('sidebarCollapsed');
-        
-        // Limpiar cualquier otro dato de sesión que pueda existir
-        localStorage.removeItem('userData');
-        localStorage.removeItem('authToken');
-        
-        // Redirigir al login
-        router.push('/login');
+        try {
+          await authStore.logout();
+          // El authStore se encarga de la redirección automática
+        } catch (error) {
+          console.error('Error al cerrar sesión:', error);
+          // Forzar logout local en caso de error
+          authStore.clearAll();
+        }
       }
     };
 
