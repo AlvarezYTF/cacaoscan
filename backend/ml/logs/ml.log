@@ -1,0 +1,13 @@
+INFO 2025-08-31 12:22:14,430 __init__ 20908 13840 Configuración del módulo ML cargada
+WARNING 2025-08-31 12:22:14,444 __init__ 20908 13840 No se pudieron cargar las utilidades ML: No module named 'numpy'
+INFO 2025-08-31 12:22:14,445 __init__ 20908 13840 Módulo ML CacaoScan v1.0.0 inicializado
+INFO 2025-08-31 12:22:14,446 __init__ 20908 13840 Directorio raíz: C:\dev\cacaoscan\backend\ml
+WARNING 2025-08-31 12:22:14,447 __init__ 20908 13840 PyTorch no está disponible
+WARNING 2025-08-31 12:22:14,449 __init__ 20908 13840 TorchVision no está disponible
+WARNING 2025-08-31 12:22:14,450 __init__ 20908 13840 TensorFlow no está disponible
+WARNING 2025-08-31 12:22:14,452 __init__ 20908 13840 OpenCV no está disponible
+INFO 2025-08-31 12:22:14,452 __init__ 20908 13840 PIL/Pillow disponible
+WARNING 2025-08-31 12:22:14,453 __init__ 20908 13840 NumPy no está disponible
+WARNING 2025-08-31 12:22:14,454 __init__ 20908 13840 Scikit-learn no está disponible
+WARNING 2025-08-31 12:22:14,456 __init__ 20908 13840 Pandas no está disponible
+ERROR 2025-08-31 12:22:14,457 __init__ 20908 13840 Dependencias críticas faltantes: ['numpy']
