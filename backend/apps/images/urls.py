@@ -10,7 +10,7 @@ Define las rutas para:
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .views import CacaoImagePredictionView, CacaoImageViewSet
+from .views import CacaoImagePredictionView, CacaoImageViewSet, CacaoYOLOPredictionView, CacaoSmartWeightPredictionView
 from .admin_views import AdminImageViewSet, MLTrainingView, AdminDataManagementView
 
 # Configurar router para ViewSet de usuarios
@@ -31,6 +31,12 @@ urlpatterns = [
     
     # Endpoint específico para predicción
     path('predict/', CacaoImagePredictionView.as_view(), name='predict'),
+    
+    # Endpoint específico para predicción YOLOv8
+    path('predict-yolo/', CacaoYOLOPredictionView.as_view(), name='predict-yolo'),
+    
+    # Endpoint específico para predicción con recorte inteligente
+    path('predict-smart/', CacaoSmartWeightPredictionView.as_view(), name='predict-smart'),
     
     # Endpoints del ViewSet de usuario (CRUD básico)
     # GET /api/images/ - Lista imágenes (filtros básicos)

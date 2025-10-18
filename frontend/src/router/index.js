@@ -13,6 +13,7 @@ import PredictionView from '../views/PredictionView.vue'
 import UserPrediction from '../views/UserPrediction.vue'
 import AdminDataset from '../views/AdminDataset.vue'
 import AdminTraining from '../views/AdminTraining.vue'
+import SubirDatosEntrenamiento from '../views/SubirDatosEntrenamiento.vue'
 
 // Importar guards
 import { ROUTE_GUARDS } from './guards'
@@ -156,6 +157,16 @@ const router = createRouter({
       beforeEnter: ROUTE_GUARDS.admin,
       meta: {
         title: 'Panel de Reentrenamiento | CacaoScan'
+      }
+    },
+    {
+      path: '/entrenamiento-incremental',
+      name: 'SubirDatosEntrenamiento',
+      component: SubirDatosEntrenamiento,
+      beforeEnter: ROUTE_GUARDS.canUpload,
+      meta: {
+        title: 'Entrenamiento Incremental | CacaoScan',
+        requiresVerification: true
       }
     },
     // Rutas adicionales para autenticación

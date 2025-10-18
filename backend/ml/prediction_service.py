@@ -25,6 +25,8 @@ from .model_manager import get_vision_model, get_regression_model, model_manager
 from .data_preprocessing import preprocess_single_image
 from .utils import performance_profiler, validate_image_format, get_image_info
 from .config import IMAGE_PREPROCESSING, EVALUATION_METRICS
+from .yolo_model import CacaoYOLOModel, create_yolo_model
+from .prediction.predict_weight_yolo import WeightPredictorYOLO, create_weight_predictor
 
 # Configurar logging
 logger = logging.getLogger('ml')
@@ -39,14 +41,15 @@ class CacaoPredictionService:
     """
     Servicio centralizado para predicciones de granos de cacao.
     
-    Integra el modelo de visión CNN y el modelo de regresión para
+    Integra el modelo de visión CNN, modelo de regresión y YOLOv8 para
     proporcionar predicciones completas desde imágenes.
     """
     
     def __init__(self, 
                  enable_caching: bool = True,
                  device: str = 'auto',
-                 confidence_threshold: float = 0.7):
+                 confidence_threshold: float = 0.7,
+                 enable_yolo: bool = True):
         """
         Inicializa el servicio de predicción.
         
@@ -54,10 +57,12 @@ class CacaoPredictionService:
             enable_caching (bool): Si habilitar cache de resultados
             device (str): Device para modelos PyTorch
             confidence_threshold (float): Umbral de confianza mínimo
+            enable_yolo (bool): Si habilitar modelo YOLOv8
         """
         self.enable_caching = enable_caching
         self.device = device
         self.confidence_threshold = confidence_threshold
+        self.enable_yolo = enable_yolo
         
         # Cache de resultados
         self._prediction_cache = {} if enable_caching else None
@@ -68,6 +73,7 @@ class CacaoPredictionService:
             'total_predictions': 0,
             'vision_predictions': 0,
             'regression_predictions': 0,
+            'yolo_predictions': 0,
             'combined_predictions': 0,
             'avg_processing_time': 0.0,
             'errors': 0
@@ -212,12 +218,181 @@ class CacaoPredictionService:
             logger.error(f"Error en predicción de regresión: {e}")
             raise PredictionError(f"Error en predicción de regresión: {e}")
     
+    @performance_profiler.profile_function("yolo_prediction")
+    def predict_with_yolo(self, 
+                         image_input: Union[str, Path, bytes, np.ndarray, Image.Image],
+                         return_detection_image: bool = False) -> Dict[str, Any]:
+        """
+        Predice peso y dimensiones usando YOLOv8.
+        
+        Args:
+            image_input: Imagen de entrada
+            return_detection_image: Si devolver imagen con detecciones
+            
+        Returns:
+            Dict con predicciones YOLOv8: {
+                'peso_estimado': float,
+                'altura_mm': float,
+                'ancho_mm': float,
+                'grosor_mm': float,
+                'nivel_confianza': float,
+                'detection_info': {...},
+                'method': 'yolo_v8'
+            }
+        """
+        start_time = time.time()
+        
+        try:
+            if not self.enable_yolo:
+                raise PredictionError("Modelo YOLOv8 no habilitado")
+            
+            logger.info("Iniciando predicción con YOLOv8")
+            
+            # Validar entrada
+            if not validate_image_format(image_input):
+                raise PredictionError("Formato de imagen no válido")
+            
+            # Generar clave de cache
+            cache_key = None
+            if self.enable_caching:
+                cache_key = self._generate_cache_key(image_input, 'yolo')
+                if cache_key in self._prediction_cache:
+                    self._cache_stats['hits'] += 1
+                    logger.info("Predicción YOLOv8 encontrada en cache")
+                    return self._prediction_cache[cache_key]
+                else:
+                    self._cache_stats['misses'] += 1
+            
+            # Cargar modelo YOLOv8 si no está cargado
+            if self.yolo_model is None:
+                self.yolo_model = create_yolo_model(device=self.device)
+                if not self.yolo_model.load_model():
+                    raise PredictionError("No se pudo cargar el modelo YOLOv8")
+            
+            # Realizar predicción
+            result = self.yolo_model.predict_weight_from_image(
+                image_input, 
+                return_detection_image=return_detection_image
+            )
+            
+            # Agregar metadatos
+            result.update({
+                'processing_time': time.time() - start_time,
+                'timestamp': time.time(),
+                'model_version': 'yolo_v8',
+                'device': self.device
+            })
+            
+            # Guardar en cache
+            if self.enable_caching and cache_key:
+                self._prediction_cache[cache_key] = result
+            
+            # Actualizar estadísticas
+            self.prediction_stats['yolo_predictions'] += 1
+            self.prediction_stats['total_predictions'] += 1
+            self._update_avg_processing_time(time.time() - start_time)
+            
+            logger.info(f"Predicción YOLOv8 completada en {time.time() - start_time:.3f}s")
+            
+            return result
+            
+        except Exception as e:
+            self.prediction_stats['errors'] += 1
+            logger.error(f"Error en predicción YOLOv8: {e}")
+            raise PredictionError(f"Error en predicción YOLOv8: {e}")
+    
+    @performance_profiler.profile_function("smart_weight_prediction")
+    def predict_weight_with_smart_crop(self, 
+                                     image_input: Union[str, Path, bytes, np.ndarray, Image.Image],
+                                     return_cropped_image: bool = False,
+                                     return_transparent_image: bool = False) -> Dict[str, Any]:
+        """
+        Predice peso usando YOLOv8 con recorte inteligente estilo iPhone.
+        
+        Args:
+            image_input: Imagen de entrada
+            return_cropped_image: Si devolver imagen recortada
+            return_transparent_image: Si devolver imagen con fondo transparente
+            
+        Returns:
+            Dict con predicciones y imágenes procesadas
+        """
+        start_time = time.time()
+        
+        try:
+            if not self.enable_yolo:
+                raise PredictionError("Modelo YOLOv8 no habilitado")
+            
+            logger.info("Iniciando predicción con recorte inteligente YOLOv8")
+            
+            # Validar entrada
+            if not validate_image_format(image_input):
+                raise PredictionError("Formato de imagen no válido")
+            
+            # Generar clave de cache
+            cache_key = None
+            if self.enable_caching:
+                cache_key = self._generate_cache_key(image_input, 'smart_yolo')
+                if cache_key in self._prediction_cache:
+                    self._cache_stats['hits'] += 1
+                    logger.info("Predicción con recorte inteligente encontrada en cache")
+                    return self._prediction_cache[cache_key]
+                else:
+                    self._cache_stats['misses'] += 1
+            
+            # Crear predictor especializado
+            weight_predictor = create_weight_predictor(
+                device=self.device,
+                confidence_threshold=self.confidence_threshold,
+                enable_smart_crop=True
+            )
+            
+            # Cargar modelo si no está cargado
+            if not weight_predictor.is_loaded:
+                if not weight_predictor.load_model():
+                    raise PredictionError("No se pudo cargar el modelo YOLOv8")
+            
+            # Realizar predicción con recorte inteligente
+            result = weight_predictor.predict_weight(
+                image_input,
+                return_cropped_image=return_cropped_image,
+                return_transparent_image=return_transparent_image
+            )
+            
+            # Agregar metadatos
+            result.update({
+                'processing_time': time.time() - start_time,
+                'timestamp': time.time(),
+                'model_version': 'yolo_v8_smart_crop',
+                'device': self.device,
+                'smart_crop_enabled': True
+            })
+            
+            # Guardar en cache
+            if self.enable_caching and cache_key:
+                self._prediction_cache[cache_key] = result
+            
+            # Actualizar estadísticas
+            self.prediction_stats['yolo_predictions'] += 1
+            self.prediction_stats['total_predictions'] += 1
+            self._update_avg_processing_time(time.time() - start_time)
+            
+            logger.info(f"Predicción con recorte inteligente completada en {time.time() - start_time:.3f}s")
+            
+            return result
+            
+        except Exception as e:
+            self.prediction_stats['errors'] += 1
+            logger.error(f"Error en predicción con recorte inteligente: {e}")
+            raise PredictionError(f"Error en predicción con recorte inteligente: {e}")
+    
     @performance_profiler.profile_function("combined_prediction")
     def predict_complete_analysis(self, 
                                  image_input: Union[str, Path, bytes, np.ndarray, Image.Image],
                                  use_vision_for_weight: bool = True,
                                  include_confidence: bool = True,
-                                 include_comparison: bool = True) -> Dict[str, Any]:
+                                 include_comparison: bool = True,
+                                 include_yolo: bool = True) -> Dict[str, Any]:
         """
         Realiza análisis completo: imagen → dimensiones → peso predicho.
         
@@ -226,6 +401,7 @@ class CacaoPredictionService:
             use_vision_for_weight: Si usar peso del modelo de visión o calcular con regresión
             include_confidence: Si incluir métricas de confianza
             include_comparison: Si comparar ambos métodos de predicción de peso
+            include_yolo: Si incluir predicción con YOLOv8
             
         Returns:
             Dict completo: {
@@ -234,7 +410,8 @@ class CacaoPredictionService:
                 'thickness': float,
                 'predicted_weight': float,
                 'confidence': {...},
-                'comparison': {...}
+                'comparison': {...},
+                'yolo_prediction': {...}  # Si include_yolo=True
             }
         """
         start_time = time.time()
@@ -262,6 +439,16 @@ class CacaoPredictionService:
             )
             regression_weight = regression_result['predicted_weight']
             
+            # Paso 3: Predicción YOLOv8 (si está habilitado)
+            yolo_result = None
+            if include_yolo and self.enable_yolo:
+                try:
+                    yolo_result = self.predict_with_yolo(image_input)
+                    logger.info("Predicción YOLOv8 incluida en análisis completo")
+                except Exception as e:
+                    logger.warning(f"Error en predicción YOLOv8: {e}")
+                    yolo_result = None
+            
             # Determinar peso final
             if use_vision_for_weight:
                 final_weight = vision_weight
@@ -269,6 +456,14 @@ class CacaoPredictionService:
             else:
                 final_weight = regression_weight
                 weight_method = 'regression'
+            
+            # Si YOLOv8 está disponible, usar su predicción como referencia
+            if yolo_result and yolo_result.get('success', False):
+                yolo_weight = yolo_result.get('peso_estimado', 0)
+                # Opcional: usar YOLOv8 como peso principal si tiene alta confianza
+                if yolo_result.get('nivel_confianza', 0) > 0.8:
+                    final_weight = yolo_weight
+                    weight_method = 'yolo_v8'
             
             # Formatear resultado completo
             result = {
@@ -283,13 +478,21 @@ class CacaoPredictionService:
             
             # Agregar comparación si se solicita
             if include_comparison:
-                result['weight_comparison'] = {
+                comparison = {
                     'vision_weight': vision_weight,
                     'regression_weight': regression_weight,
                     'difference': abs(vision_weight - regression_weight),
                     'relative_difference_percent': abs(vision_weight - regression_weight) / max(vision_weight, regression_weight) * 100,
                     'agreement_level': self._assess_agreement(vision_weight, regression_weight)
                 }
+                
+                # Agregar YOLOv8 a la comparación si está disponible
+                if yolo_result and yolo_result.get('success', False):
+                    yolo_weight = yolo_result.get('peso_estimado', 0)
+                    comparison['yolo_weight'] = yolo_weight
+                    comparison['yolo_confidence'] = yolo_result.get('nivel_confianza', 0)
+                
+                result['weight_comparison'] = comparison
             
             # Agregar métricas de confianza
             if include_confidence:
@@ -301,6 +504,18 @@ class CacaoPredictionService:
             result['derived_metrics'] = self._calculate_derived_metrics(
                 width, height, thickness, final_weight
             )
+            
+            # Agregar predicción YOLOv8 si está disponible
+            if yolo_result and include_yolo:
+                result['yolo_prediction'] = {
+                    'peso_estimado': yolo_result.get('peso_estimado', 0),
+                    'altura_mm': yolo_result.get('altura_mm', 0),
+                    'ancho_mm': yolo_result.get('ancho_mm', 0),
+                    'grosor_mm': yolo_result.get('grosor_mm', 0),
+                    'nivel_confianza': yolo_result.get('nivel_confianza', 0),
+                    'detection_info': yolo_result.get('detection_info', {}),
+                    'success': yolo_result.get('success', False)
+                }
             
             # Actualizar estadísticas
             self.prediction_stats['combined_predictions'] += 1

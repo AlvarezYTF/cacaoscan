@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     # Apps del proyecto
     'apps.users.apps.UsersConfig',
     'apps.images.apps.ImagesConfig',
+    'apps.ml.apps.MLConfig',
     'apps.reports.apps.ReportsConfig',
     'apps.dashboards.apps.DashboardsConfig',
     'analisys.apps.AnalisysConfig',
@@ -105,8 +106,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'cacaoscan_db',
-        'USER': 'cacaoscan_user',
-        'PASSWORD': 'cacaoscan_pass',
+        'USER': 'jeferson',
+        'PASSWORD': 'J3Fers0n272003@',
         'HOST': 'localhost',
         'PORT': '5432',
         'OPTIONS': {

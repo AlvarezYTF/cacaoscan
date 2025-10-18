@@ -59,6 +59,26 @@ MODEL_CONFIGS = {
         'output_units': ['g'],
         'model_class': 'WeightRegressionModel',
         'algorithms': ['linear', 'ridge', 'lasso', 'random_forest', 'gradient_boosting', 'svr']
+    },
+    'yolo_weight_model': {
+        'model_path': MODELS_DIR / 'weight_predictor_yolo' / 'weight_yolo.pt',
+        'model_type': 'yolo_v8',
+        'input_shape': (640, 640, 3),
+        'classes': ['cacao_grain'],
+        'confidence_threshold': 0.5,
+        'iou_threshold': 0.45,
+        'outputs': ['peso_estimado', 'altura_mm', 'ancho_mm', 'grosor_mm'],
+        'output_units': ['g', 'mm', 'mm', 'mm'],
+        'model_class': 'CacaoYOLOModel',
+        'calibration_file': MODELS_DIR / 'weight_predictor_yolo' / 'calibration.json',
+        'integrated_model_file': MODELS_DIR / 'weight_predictor_yolo' / 'integrated_weight_model.json',
+        'training_config': {
+            'epochs': 100,
+            'batch_size': 16,
+            'learning_rate': 0.01,
+            'patience': 20,
+            'device': 'auto'
+        }
     }
 }
 
@@ -100,9 +120,109 @@ ML_LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 USE_GPU = True
 GPU_MEMORY_LIMIT = 4096  # MB
 
-# Configuración de batch processing
-BATCH_SIZE = 32
-MAX_CONCURRENT_PREDICTIONS = 5
+# Configuración específica para YOLOv8
+YOLO_CONFIG = {
+    'model_sizes': ['n', 's', 'm', 'l', 'x'],
+    'default_model_size': 'n',
+    'input_size': 640,
+    'confidence_threshold': 0.5,
+    'iou_threshold': 0.45,
+    'max_detections': 100,
+    'agnostic_nms': False,
+    'augment': False,
+    'visualize': False,
+    'save_txt': False,
+    'save_conf': False,
+    'save_crop': False,
+    'show_labels': True,
+    'show_conf': True,
+    'line_width': 3,
+    'box': True,
+    'labels': True,
+    'conf': True,
+    'device': 'auto',
+    'half': False,
+    'dnn': False,
+    'data': None,
+    'imgsz': 640,
+    'rect': False,
+    'resume': False,
+    'nosave': False,
+    'noval': False,
+    'noaug': False,
+    'noplots': False,
+    'evolve': None,
+    'bucket': '',
+    'cache': None,
+    'image_weights': False,
+    'multi_scale': False,
+    'single_cls': False,
+    'optimizer': 'auto',
+    'sync_bn': False,
+    'workers': 8,
+    'project': 'runs/detect',
+    'name': 'exp',
+    'exist_ok': False,
+    'quad': False,
+    'cos_lr': False,
+    'label_smoothing': 0.0,
+    'patience': 100,
+    'freeze': None,
+    'lr0': 0.01,
+    'lrf': 0.01,
+    'momentum': 0.937,
+    'weight_decay': 0.0005,
+    'warmup_epochs': 3.0,
+    'warmup_momentum': 0.8,
+    'warmup_bias_lr': 0.1,
+    'box': 7.5,
+    'cls': 0.5,
+    'dfl': 1.5,
+    'pose': 12.0,
+    'kobj': 1.0,
+    'label_smoothing': 0.0,
+    'nbs': 64,
+    'overlap_mask': True,
+    'mask_ratio': 4,
+    'dropout': 0.0,
+    'val': True,
+    'plots': True,
+    'verbose': True,
+    'seed': 42,
+    'deterministic': True,
+    'single_cls': False,
+    'rect': False,
+    'cos_lr': False,
+    'close_mosaic': 10,
+    'resume': False,
+    'amp': True,
+    'fraction': 1.0,
+    'profile': False,
+    'freeze': None,
+    'multi_scale': False
+}
+
+# Configuración de calibración para YOLOv8
+YOLO_CALIBRATION = {
+    'default_pixels_per_mm': 10.0,
+    'reference_object_size_mm': 20.0,
+    'calibration_methods': ['manual', 'automatic', 'reference_object'],
+    'min_calibration_points': 3,
+    'max_calibration_error': 0.1,  # 10% error máximo
+    'calibration_update_frequency': 'monthly'
+}
+
+# Configuración de predicción de peso para YOLOv8
+YOLO_WEIGHT_PREDICTION = {
+    'density_g_per_cm3': 1.0,  # Densidad promedio del cacao
+    'shape_factor': 0.8,  # Factor de corrección por forma irregular
+    'min_weight_g': 0.5,
+    'max_weight_g': 3.0,
+    'weight_formula': 'weight = density * volume * shape_factor',
+    'volume_formula': 'volume = (4/3) * π * (width/2) * (height/2) * (thickness/2)',
+    'confidence_weighting': True,
+    'ensemble_with_other_models': True
+}
 
 # Métricas y umbrales
 QUALITY_THRESHOLDS = {

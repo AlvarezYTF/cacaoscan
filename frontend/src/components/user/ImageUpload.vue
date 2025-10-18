@@ -209,10 +209,16 @@
 
 <script>
 import { ref, computed } from 'vue';
-import { predictImage, createImageFormData, validateImageFile } from '@/services/predictionApi.js';
+import { predictImage, predictImageYolo, predictImageSmart, createImageFormData, validateImageFile } from '@/services/predictionApi.js';
 
 export default {
   name: 'ImageUpload',
+  props: {
+    predictionMethod: {
+      type: String,
+      default: 'traditional'
+    }
+  },
   emits: ['prediction-result', 'prediction-error'],
   
   setup(props, { emit }) {
@@ -321,8 +327,23 @@ export default {
         // Crear FormData con imagen y metadatos
         const requestFormData = createImageFormData(selectedFile.value, formData.value);
         
-        // Llamar a la API
-        const result = await predictImage(requestFormData);
+        // Llamar a la API según el método seleccionado
+        let result;
+        switch (props.predictionMethod) {
+          case 'yolo':
+            result = await predictImageYolo(requestFormData);
+            break;
+          case 'smart':
+            result = await predictImageSmart(requestFormData, {
+              returnCroppedImage: true,
+              returnTransparentImage: true
+            });
+            break;
+          case 'traditional':
+          default:
+            result = await predictImage(requestFormData);
+            break;
+        }
         
         // Emitir evento con resultado exitoso
         emit('prediction-result', result);

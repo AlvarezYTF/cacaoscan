@@ -64,6 +64,7 @@ urlpatterns = [
     
     # APIs de la aplicación
     path('api/images/', include('apps.images.urls', namespace='images')),
+    path('api/ml/', include('apps.ml.urls', namespace='ml')),
     
     # Documentación de API (Swagger/OpenAPI)
     path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

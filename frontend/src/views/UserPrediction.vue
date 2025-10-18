@@ -54,7 +54,15 @@
                 </div>
               </div>
               
+              <!-- Método de Predicción -->
+              <div class="mb-6">
+                <PredictionMethodSelector 
+                  v-model="selectedMethod"
+                />
+              </div>
+              
               <ImageUpload 
+                :prediction-method="selectedMethod"
                 @prediction-result="handlePredictionResult"
                 @prediction-error="handlePredictionError"
               />
@@ -137,7 +145,17 @@
         <div class="space-y-6">
           <!-- Current Prediction Results -->
           <div v-if="hasPrediction" class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <!-- Mostrar resultados según el método usado -->
+            <YoloResultsCard 
+              v-if="isYoloMethod(currentPrediction)"
+              :result="currentPrediction"
+              :original-image="currentImageUrl"
+              @new-analysis="startNewAnalysis"
+            />
+            
+            <!-- Resultados tradicionales para métodos no-YOLO -->
             <PredictionResults 
+              v-else
               :prediction-data="currentPrediction"
               @new-analysis="handleNewAnalysis"
               @save-analysis="handleSaveAnalysis"
@@ -283,12 +301,16 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { usePredictionStore } from '@/stores/prediction.js';
 import ImageUpload from '@/components/user/ImageUpload.vue';
 import PredictionResults from '@/components/user/PredictionResults.vue';
+import PredictionMethodSelector from '@/components/analysis/PredictionMethodSelector.vue';
+import YoloResultsCard from '@/components/analysis/YoloResultsCard.vue';
 
 export default {
   name: 'UserPrediction',
   components: {
     ImageUpload,
-    PredictionResults
+    PredictionResults,
+    PredictionMethodSelector,
+    YoloResultsCard
   },
   
   setup() {
@@ -298,6 +320,8 @@ export default {
     // Local reactive state
     const showSuccessMessage = ref(false);
     const successMessage = ref('');
+    const selectedMethod = ref('traditional');
+    const currentImageUrl = ref(null);
     
     // Computed properties from store
     const currentPrediction = computed(() => predictionStore.currentPrediction);
@@ -329,6 +353,21 @@ export default {
     const handlePredictionError = (error) => {
       console.error('Error en predicción:', error);
       predictionStore.setError(error.message || 'Error desconocido en la predicción');
+    };
+    
+    // Función para determinar si es un método YOLOv8
+    const isYoloMethod = (prediction) => {
+      if (!prediction) return false;
+      return prediction.method === 'yolo_v8' || 
+             prediction.method === 'yolo_v8_smart_crop' ||
+             prediction.model_version === 'yolo_v8_smart_crop';
+    };
+    
+    // Función para iniciar nuevo análisis
+    const startNewAnalysis = () => {
+      predictionStore.clearCurrentPrediction();
+      currentImageUrl.value = null;
+      showSuccess('Listo para nuevo análisis');
     };
     
     const handleNewAnalysis = () => {
@@ -472,6 +511,8 @@ export default {
       // Local state
       showSuccessMessage,
       successMessage,
+      selectedMethod,
+      currentImageUrl,
       
       // Event handlers
       handlePredictionResult,
@@ -479,6 +520,13 @@ export default {
       handleNewAnalysis,
       handleSaveAnalysis,
       selectFromHistory,
+      loadMoreHistory,
+      clearError,
+      showSuccess,
+      
+      // YOLOv8 specific functions
+      isYoloMethod,
+      startNewAnalysis,
       loadLatestPrediction,
       loadMoreHistory,
       
