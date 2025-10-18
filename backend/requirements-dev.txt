@@ -1,0 +1,151 @@
+# =============================================================================
+# CACOASCAN - DEPENDENCIAS DE DESARROLLO
+# =============================================================================
+# Dependencias adicionales para desarrollo, testing y debugging
+# =============================================================================
+
+# Incluir dependencias base
+-r requirements.txt
+
+# =============================================================================
+# DEVELOPMENT TOOLS
+# =============================================================================
+# Jupyter Notebook - Para análisis y experimentación
+jupyter==1.0.0
+jupyterlab==4.3.1
+ipykernel==6.29.4
+
+# IPython - Shell interactivo mejorado
+ipython==8.26.0
+
+# =============================================================================
+# TESTING FRAMEWORKS
+# =============================================================================
+# Pytest - Framework de testing principal
+pytest==8.3.3
+pytest-django==4.9.0
+pytest-cov==6.0.0
+pytest-mock==3.14.0
+pytest-xdist==3.6.0
+
+# Coverage - Análisis de cobertura de código
+coverage==7.6.0
+
+# Factory Boy - Creación de datos de prueba
+factory-boy==3.3.1
+
+# =============================================================================
+# CODE QUALITY AND FORMATTING
+# =============================================================================
+# Black - Formateador de código Python
+black==24.10.0
+
+# Flake8 - Linter de código Python
+flake8==7.1.1
+flake8-docstrings==1.7.0
+flake8-import-order==0.18.2
+
+# Isort - Organizador de imports
+isort==5.13.2
+
+# Pre-commit - Hooks de pre-commit
+pre-commit==4.0.1
+
+# =============================================================================
+# DEBUGGING AND PROFILING
+# =============================================================================
+# PDB++ - Debugger mejorado
+pdbpp==0.10.3
+
+# Line-profiler - Perfilado línea por línea
+line-profiler==4.1.3
+
+# Py-spy - Profiler de Python
+py-spy==0.3.14
+
+# =============================================================================
+# DOCUMENTATION
+# =============================================================================
+# Sphinx - Generación de documentación
+sphinx==7.3.7
+sphinx-rtd-theme==3.0.2
+
+# MkDocs - Documentación con Markdown
+mkdocs==1.6.1
+mkdocs-material==9.5.30
+
+# =============================================================================
+# API TESTING
+# =============================================================================
+# HTTPie - Cliente HTTP para testing de APIs
+httpie==3.2.2
+
+# Postman - Cliente API (opcional)
+# newman==6.0.0
+
+# =============================================================================
+# DATABASE TOOLS
+# =============================================================================
+# Django Debug Toolbar - Debugging de Django
+django-debug-toolbar==4.4.6
+
+# Django Extensions - Extensiones útiles para Django
+django-extensions==3.2.3
+
+# =============================================================================
+# MACHINE LEARNING DEVELOPMENT
+# =============================================================================
+# Weights & Biases - Tracking de experimentos ML
+wandb==0.18.0
+
+# MLflow - Gestión del ciclo de vida de ML
+mlflow==2.14.2
+
+# Optuna - Optimización de hiperparámetros
+optuna==3.6.1
+
+# =============================================================================
+# VISUALIZATION AND ANALYSIS
+# =============================================================================
+# Plotly - Visualizaciones interactivas
+plotly==5.24.1
+
+# Bokeh - Visualizaciones web interactivas
+bokeh==3.4.3
+
+# =============================================================================
+# PERFORMANCE TESTING
+# =============================================================================
+# Locust - Testing de carga
+locust==2.26.0
+
+# =============================================================================
+# SECURITY TESTING
+# =============================================================================
+# Bandit - Análisis de seguridad
+bandit==1.7.10
+
+# Safety - Verificación de vulnerabilidades
+safety==3.2.0
+
+# =============================================================================
+# VERSION CONTROL
+# =============================================================================
+# GitPython - Interfaz Python para Git
+GitPython==3.1.43
+
+# =============================================================================
+# ENVIRONMENT MANAGEMENT
+# =============================================================================
+# Python-dotenv - Variables de entorno
+python-dotenv==1.0.1
+
+# =============================================================================
+# NOTES
+# =============================================================================
+# 1. Para instalar: pip install -r requirements-dev.txt
+# 2. Para desarrollo completo: pip install -r requirements-dev.txt
+# 3. Para testing: pytest
+# 4. Para formatear código: black . && isort .
+# 5. Para linting: flake8 .
+# =============================================================================

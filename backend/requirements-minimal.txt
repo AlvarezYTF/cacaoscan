@@ -1,0 +1,70 @@
+# =============================================================================
+# CACOASCAN - DEPENDENCIAS MÍNIMAS PARA PROBAR YOLOV8
+# =============================================================================
+# Solo las dependencias esenciales para probar los modelos YOLOv8
+# =============================================================================
+
+# =============================================================================
+# CORE DJANGO DEPENDENCIES
+# =============================================================================
+asgiref==3.9.1
+Django==5.2.5
+djangorestframework==3.16.1
+drf-yasg==1.21.10
+djangorestframework-simplejwt==5.3.1
+inflection==0.5.1
+packaging==25.0
+psycopg2-binary==2.9.10
+python-decouple==3.8
+pytz==2025.2
+PyYAML==6.0.2
+sqlparse==0.5.3
+tzdata==2025.2
+uritemplate==4.2.0
+django-cors-headers==4.4.0
+
+# =============================================================================
+# YOLOV8 Y COMPUTER VISION DEPENDENCIES (ESENCIALES)
+# =============================================================================
+# Ultralytics YOLOv8 - Framework principal para detección de objetos
+ultralytics==8.2.0
+
+# PyTorch ecosystem - Base para YOLOv8 (compatible con Python 3.13)
+torch==2.6.0
+torchvision==0.21.0
+torchaudio==2.6.0
+
+# OpenCV - Procesamiento de imágenes y visión por computadora
+opencv-python==4.10.0.84
+
+# Pillow - Manipulación de imágenes
+Pillow==10.4.0
+
+# =============================================================================
+# MACHINE LEARNING CORE DEPENDENCIES (MÍNIMAS)
+# =============================================================================
+# NumPy - Computación numérica
+numpy==1.26.4
+
+# Pandas - Manipulación de datos
+pandas==2.2.2
+
+# =============================================================================
+# FILE PROCESSING
+# =============================================================================
+# Python-magic - Detección de tipos de archivo
+python-magic==0.4.27
+
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+# Python-dotenv - Variables de entorno
+python-dotenv==1.0.1
+
+# =============================================================================
+# NOTES
+# =============================================================================
+# 1. Para instalar: pip install -r requirements-minimal.txt
+# 2. Esto instala solo lo esencial para probar YOLOv8
+# 3. Para funcionalidad completa, usar requirements.txt después
+# =============================================================================

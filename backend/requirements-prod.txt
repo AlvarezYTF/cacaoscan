@@ -1,8 +1,8 @@
 # =============================================================================
-# CACOASCAN - DEPENDENCIAS COMPLETAS DEL SISTEMA
+# CACOASCAN - DEPENDENCIAS DE PRODUCCIÓN
 # =============================================================================
-# Sistema de análisis de granos de cacao con YOLOv8 y Django
-# Incluye: Backend Django, Frontend Vue.js, ML con YOLOv8, y herramientas de desarrollo
+# Dependencias optimizadas para producción
+# Versiones fijas para estabilidad
 # =============================================================================
 
 # =============================================================================
@@ -14,28 +14,28 @@ djangorestframework==3.16.1
 drf-yasg==1.21.10
 djangorestframework-simplejwt==5.3.1
 inflection==0.5.1
-packaging==24.2
+packaging==25.0
 psycopg2-binary==2.9.10
 python-decouple==3.8
-pytz==2024.2
+pytz==2025.2
 PyYAML==6.0.2
 sqlparse==0.5.3
-tzdata==2024.2
+tzdata==2025.2
 uritemplate==4.2.0
 django-cors-headers==4.4.0
 
 # =============================================================================
-# YOLOV8 Y COMPUTER VISION DEPENDENCIES
+# YOLOV8 Y COMPUTER VISION (PRODUCCIÓN)
 # =============================================================================
-# Ultralytics YOLOv8 - Framework principal para detección de objetos
-ultralytics==8.2.0
+# Ultralytics YOLOv8 - Framework principal
+ultralytics==8.3.0
 
-# PyTorch ecosystem - Base para YOLOv8 (compatible con Python 3.12)
-torch==2.6.0
-torchvision==0.21.0
-torchaudio==2.6.0
+# PyTorch ecosystem - Versiones estables
+torch==2.4.0
+torchvision==0.19.0
+torchaudio==2.4.0
 
-# OpenCV - Procesamiento de imágenes y visión por computadora
+# OpenCV - Procesamiento de imágenes
 opencv-python==4.10.0.84
 opencv-contrib-python==4.10.0.84
 
@@ -43,165 +43,108 @@ opencv-contrib-python==4.10.0.84
 Pillow==10.4.0
 
 # =============================================================================
-# MACHINE LEARNING CORE DEPENDENCIES
+# MACHINE LEARNING CORE
 # =============================================================================
-# Scikit-learn - Algoritmos de ML tradicionales (compatible con Python 3.13)
-scikit-learn==1.5.2
-
-# TensorFlow - Redes neuronales (para modelos CNN adicionales)
-tensorflow==2.18.0
-
-# NumPy - Computación numérica
+scikit-learn==1.5.1
+tensorflow==2.17.0
 numpy==1.26.4
-
-# Pandas - Manipulación de datos
 pandas==2.2.2
-
-# SciPy - Computación científica
 scipy==1.13.1
 
 # =============================================================================
-# IMAGE PROCESSING AND COMPUTER VISION
+# IMAGE PROCESSING
 # =============================================================================
-# Scikit-image - Procesamiento de imágenes avanzado
 scikit-image==0.24.0
-
-# ImageIO - Lectura/escritura de imágenes
 imageio==2.34.2
-
-# Albumentations - Aumento de datos para imágenes
 albumentations==1.4.11
 
 # =============================================================================
-# DATA PROCESSING AND ANALYSIS
+# DATA PROCESSING
 # =============================================================================
-# Matplotlib - Visualización de datos
 matplotlib==3.9.2
-
-# Seaborn - Visualización estadística
 seaborn==0.13.2
-
-# Joblib - Paralelización y serialización
 joblib==1.4.2
-
-# TQDM - Barras de progreso
 tqdm==4.66.4
-
-# H5PY - Archivos HDF5 para modelos
 h5py==3.11.0
 
 # =============================================================================
-# MODEL SERIALIZATION AND DEPLOYMENT
+# MODEL DEPLOYMENT
 # =============================================================================
-# TensorBoard - Monitoreo de entrenamiento
-tensorboard==2.18.0
-
-# ONNX - Intercambio de modelos
+tensorboard==2.17.0
 onnx==1.16.1
 onnxruntime==1.19.2
 
 # =============================================================================
-# FILE PROCESSING AND VALIDATION
+# FILE PROCESSING
 # =============================================================================
-# OpenPyXL - Archivos Excel
 openpyxl==3.1.5
-
-# XlsxWriter - Escritura de Excel
 xlsxwriter==3.2.0
-
-# Python-magic - Detección de tipos de archivo
 python-magic==0.4.27
-
-# Validators - Validación de datos
 validators==0.28.3
 
 # =============================================================================
-# PERFORMANCE AND OPTIMIZATION
+# PERFORMANCE
 # =============================================================================
-# Numba - Compilación JIT para Python
 numba==0.60.0
-
-# Cython - Compilación de código Python
 cython==3.0.10
 
 # =============================================================================
-# SYSTEM MONITORING AND RESOURCE MANAGEMENT
+# SYSTEM MONITORING
 # =============================================================================
-# PSutil - Información del sistema
 psutil==6.0.0
-
-# Memory-profiler - Perfilado de memoria
 memory-profiler==0.61.0
 
 # =============================================================================
-# DEVELOPMENT AND TESTING DEPENDENCIES
+# LOGGING
 # =============================================================================
-# Pytest - Framework de testing
-pytest==8.3.3
-pytest-django==4.9.0
-pytest-cov==6.0.0
-
-# Black - Formateador de código
-black==24.10.0
-
-# Flake8 - Linter de código
-flake8==7.1.1
-
-# Isort - Organizador de imports
-isort==5.13.2
-
-# =============================================================================
-# LOGGING AND MONITORING
-# =============================================================================
-# Loguru - Logging avanzado
 loguru==0.7.2
 
 # =============================================================================
-# SECURITY AND AUTHENTICATION
+# SECURITY
 # =============================================================================
-# Cryptography - Funciones criptográficas
 cryptography==43.0.1
 
 # =============================================================================
-# API AND WEB SERVICES
+# API SERVICES
 # =============================================================================
-# Requests - Cliente HTTP
 requests==2.32.3
 
 # =============================================================================
-# DATABASE AND CACHING
+# CACHING
 # =============================================================================
-# Redis - Cache y base de datos en memoria
 redis==5.2.0
 
 # =============================================================================
-# CONFIGURATION AND ENVIRONMENT
+# CONFIGURATION
 # =============================================================================
-# Python-dotenv - Variables de entorno
 python-dotenv==1.0.1
 
 # =============================================================================
-# YOLOV8 SPECIFIC DEPENDENCIES
+# YOLOV8 SPECIFIC
 # =============================================================================
-# PyYAML - Configuración YAML para YOLOv8
-PyYAML==6.0.2
-
-# Thop - Perfilado de modelos
-thop==0.1.1.post2209072238
+thop==0.1.1
 
 # =============================================================================
-# OPTIONAL GPU SUPPORT
+# PRODUCTION SERVER
 # =============================================================================
-# CUDA support (descomentar si tienes GPU NVIDIA)
-# torch==2.6.0+cu121
-# torchvision==0.21.0+cu121
-# torchaudio==2.6.0+cu121
+# Gunicorn - Servidor WSGI para producción
+gunicorn==23.0.0
+
+# Uvicorn - Servidor ASGI para producción
+uvicorn==0.32.1
+
+# =============================================================================
+# MONITORING AND LOGGING
+# =============================================================================
+# Sentry - Monitoreo de errores
+sentry-sdk==2.18.0
 
 # =============================================================================
 # NOTES
 # =============================================================================
-# 1. Para instalar todas las dependencias: pip install -r requirements.txt
-# 2. Para GPU NVIDIA: descomentar las líneas de CUDA y usar pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-# 3. Para desarrollo: instalar también las dependencias de testing
-# 4. Para producción: considerar usar requirements-prod.txt con versiones fijas
+# 1. Para instalar: pip install -r requirements-prod.txt
+# 2. Para producción: usar gunicorn o uvicorn
+# 3. Configurar variables de entorno para producción
+# 4. Usar Redis para cache en producción
+# 5. Configurar Sentry para monitoreo de errores
 # =============================================================================
