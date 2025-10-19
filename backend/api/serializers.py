@@ -2,6 +2,8 @@
 Serializers para la API de CacaoScan.
 """
 from rest_framework import serializers
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 
 
 class ConfidenceSerializer(serializers.Serializer):
@@ -62,3 +64,55 @@ class LoadModelsResponseSerializer(serializers.Serializer):
     message = serializers.CharField(required=False)
     error = serializers.CharField(required=False)
     status = serializers.CharField()
+
+
+# Serializers de autenticación
+class LoginSerializer(serializers.Serializer):
+    """Serializer para login de usuario."""
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    
+    def validate(self, attrs):
+        username = attrs.get('username')
+        password = attrs.get('password')
+        
+        if username and password:
+            user = authenticate(username=username, password=password)
+            if user:
+                if user.is_active:
+                    attrs['user'] = user
+                    return attrs
+                else:
+                    raise serializers.ValidationError('Usuario inactivo.')
+            else:
+                raise serializers.ValidationError('Credenciales inválidas.')
+        else:
+            raise serializers.ValidationError('Debe incluir username y password.')
+
+
+class RegisterSerializer(serializers.ModelSerializer):
+    """Serializer para registro de usuario."""
+    password = serializers.CharField(write_only=True, min_length=8)
+    password_confirm = serializers.CharField(write_only=True)
+    
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name', 'password', 'password_confirm')
+    
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError("Las contraseñas no coinciden.")
+        return attrs
+    
+    def create(self, validated_data):
+        validated_data.pop('password_confirm')
+        user = User.objects.create_user(**validated_data)
+        return user
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """Serializer para información de usuario."""
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined')
+        read_only_fields = ('id', 'date_joined')

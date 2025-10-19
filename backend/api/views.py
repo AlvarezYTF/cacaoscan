@@ -23,7 +23,10 @@ from .serializers import (
     ScanMeasureResponseSerializer, 
     ErrorResponseSerializer,
     ModelsStatusSerializer,
-    LoadModelsResponseSerializer
+    LoadModelsResponseSerializer,
+    LoginSerializer,
+    RegisterSerializer,
+    UserSerializer
 )
 
 
@@ -527,3 +530,173 @@ class AutoInitializeView(APIView):
                 'status': 'error',
                 'steps_completed': steps_completed
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# Vistas de autenticación
+from django.contrib.auth import login, logout
+from django.contrib.auth.models import User
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.authtoken.models import Token
+
+
+class LoginView(APIView):
+    """
+    Endpoint para login de usuario.
+    """
+    permission_classes = [AllowAny]
+    
+    @swagger_auto_schema(
+        operation_description="Autentica un usuario y devuelve un token de acceso",
+        operation_summary="Login de usuario",
+        request_body=LoginSerializer,
+        responses={
+            200: openapi.Response(
+                description="Login exitoso",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'token': openapi.Schema(type=openapi.TYPE_STRING),
+                        'user': UserSerializer,
+                        'message': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            400: ErrorResponseSerializer,
+            401: ErrorResponseSerializer,
+        },
+        tags=['Autenticación']
+    )
+    def post(self, request):
+        """
+        Autentica un usuario.
+        """
+        serializer = LoginSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            token, created = Token.objects.get_or_create(user=user)
+            
+            # Login en la sesión
+            login(request, user)
+            
+            return Response({
+                'token': token.key,
+                'user': UserSerializer(user).data,
+                'message': 'Login exitoso'
+            })
+        
+        return Response({
+            'error': 'Credenciales inválidas',
+            'status': 'error'
+        }, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class RegisterView(APIView):
+    """
+    Endpoint para registro de usuario.
+    """
+    permission_classes = [AllowAny]
+    
+    @swagger_auto_schema(
+        operation_description="Registra un nuevo usuario en el sistema",
+        operation_summary="Registro de usuario",
+        request_body=RegisterSerializer,
+        responses={
+            201: openapi.Response(
+                description="Usuario creado exitosamente",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'user': UserSerializer,
+                        'message': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            400: ErrorResponseSerializer,
+        },
+        tags=['Autenticación']
+    )
+    def post(self, request):
+        """
+        Registra un nuevo usuario.
+        """
+        serializer = RegisterSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            return Response({
+                'user': UserSerializer(user).data,
+                'message': 'Usuario creado exitosamente'
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response({
+            'error': serializer.errors,
+            'status': 'error'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LogoutView(APIView):
+    """
+    Endpoint para logout de usuario.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Cierra la sesión del usuario y elimina el token",
+        operation_summary="Logout de usuario",
+        responses={
+            200: openapi.Response(
+                description="Logout exitoso",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            401: ErrorResponseSerializer,
+        },
+        tags=['Autenticación']
+    )
+    def post(self, request):
+        """
+        Cierra la sesión del usuario.
+        """
+        try:
+            # Eliminar token
+            request.user.auth_token.delete()
+            
+            # Logout de la sesión
+            logout(request)
+            
+            return Response({
+                'message': 'Logout exitoso'
+            })
+        except Exception as e:
+            return Response({
+                'error': f'Error en logout: {str(e)}',
+                'status': 'error'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserProfileView(APIView):
+    """
+    Endpoint para obtener perfil del usuario actual.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene la información del perfil del usuario autenticado",
+        operation_summary="Perfil de usuario",
+        responses={
+            200: UserSerializer,
+            401: ErrorResponseSerializer,
+        },
+        tags=['Autenticación']
+    )
+    def get(self, request):
+        """
+        Obtiene el perfil del usuario actual.
+        """
+        return Response(UserSerializer(request.user).data)

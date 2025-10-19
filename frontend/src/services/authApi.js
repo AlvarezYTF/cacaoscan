@@ -12,7 +12,7 @@ const authApi = {
   async login(credentials) {
     try {
       const response = await api.post('/auth/login/', {
-        email: credentials.email || credentials.username,
+        username: credentials.username || credentials.email,
         password: credentials.password
       })
       return response.data
@@ -53,11 +53,9 @@ const authApi = {
   /**
    * Cerrar sesión (blacklist refresh token)
    */
-  async logout(refreshToken) {
+  async logout() {
     try {
-      const response = await api.post('/auth/logout/', {
-        refresh: refreshToken
-      })
+      const response = await api.post('/auth/logout/')
       return response.data
     } catch (error) {
       console.error('Error en logout API:', error)
@@ -100,7 +98,7 @@ const authApi = {
    */
   async getCurrentUser() {
     try {
-      const response = await api.get('/auth/users/me/')
+      const response = await api.get('/auth/profile/')
       return response.data
     } catch (error) {
       console.error('Error obteniendo usuario actual:', error)

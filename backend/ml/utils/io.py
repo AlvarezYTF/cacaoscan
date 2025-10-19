@@ -86,3 +86,8 @@ def file_exists_and_newer(source_path: Path, target_path: Path) -> bool:
         return False
     
     return source_time > target_time
+
+
+def ensure_dir_exists(dir_path: Path) -> None:
+    """Asegura que un directorio existe, creándolo si es necesario."""
+    dir_path.mkdir(parents=True, exist_ok=True)

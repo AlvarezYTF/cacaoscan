@@ -135,11 +135,18 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.login(credentials)
       
-      if (response.access && response.refresh) {
-        setTokens(response)
+      if (response.token && response.user) {
+        // Adaptar respuesta de nuestro backend
+        const adaptedResponse = {
+          access: response.token,
+          refresh: response.token, // Usamos el mismo token como refresh
+          user: response.user
+        }
         
-        // Obtener datos del usuario
-        await getCurrentUser()
+        setTokens(adaptedResponse)
+        
+        // Establecer usuario directamente desde la respuesta
+        user.value = response.user
         
         updateLastActivity()
         

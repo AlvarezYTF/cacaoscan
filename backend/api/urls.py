@@ -13,4 +13,10 @@ urlpatterns = [
     
     # Inicialización automática
     path('auto-initialize/', views.AutoInitializeView.as_view(), name='auto-initialize'),
+    
+    # Endpoints de autenticación
+    path('auth/login/', views.LoginView.as_view(), name='auth-login'),
+    path('auth/register/', views.RegisterView.as_view(), name='auth-register'),
+    path('auth/logout/', views.LogoutView.as_view(), name='auth-logout'),
+    path('auth/profile/', views.UserProfileView.as_view(), name='auth-profile'),
 ]
