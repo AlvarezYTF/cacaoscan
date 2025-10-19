@@ -25,11 +25,13 @@ from apps.users.permissions import (
     IsOwnerOrReadOnly,
     IsVerifiedUser
 )
+from apps.users.throttling import PredictionThrottle
 from apps.users.decorators import (
     farmer_upload_endpoint,
     log_api_access,
     validate_prediction_data,
-    require_verified_user
+    require_verified_user,
+    rate_limit_by_role
 )
 
 from .models import CacaoImage
@@ -451,7 +453,7 @@ class CacaoYOLOPredictionView(APIView):
         }
     )
     @log_api_access
-    @rate_limit_prediction
+    @rate_limit_by_role(farmer_limit=30, analyst_limit=60, admin_limit=120)
     def post(self, request):
         """
         Realiza predicción usando YOLOv8.
@@ -775,7 +777,7 @@ class CacaoSmartWeightPredictionView(APIView):
         }
     )
     @log_api_access
-    @rate_limit_prediction
+    @rate_limit_by_role(farmer_limit=30, analyst_limit=60, admin_limit=120)
     def post(self, request):
         """
         Realiza predicción de peso con recorte inteligente.

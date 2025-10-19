@@ -24,8 +24,8 @@ from django.conf import settings
 
 from apps.users.permissions import CanUploadImages, IsVerifiedUser
 from apps.users.throttling import PredictionThrottle
-from apps.users.decorators import log_api_access, rate_limit_prediction
-from apps.analisys.models import CacaoImage, CacaoImageAnalysis
+from apps.users.decorators import log_api_access, rate_limit_by_role
+from apps.images.models import CacaoImage, CacaoImageAnalysis
 
 logger = logging.getLogger('ml')
 
@@ -136,7 +136,7 @@ class IncrementalTrainingView(APIView):
         }
     )
     @log_api_access
-    @rate_limit_prediction
+    @rate_limit_by_role(farmer_limit=30, analyst_limit=60, admin_limit=120)
     def post(self, request):
         """
         Realiza entrenamiento incremental con nueva imagen y datos.
