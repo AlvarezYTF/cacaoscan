@@ -95,3 +95,11 @@ pyvenv.cfg
 backend/venv/
 backend/env/
 frontend/node_modules/
+
+# Archivos de logs
+backend/ml/logs/django.log
+backend/ml/ml.log
+*.log
+*.logs
+
+
