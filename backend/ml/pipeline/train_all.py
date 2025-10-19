@@ -64,7 +64,7 @@ class CacaoDataset:
         self.transform = transform
         
         # Verificar que todas las listas tienen la misma longitud
-        lengths = [len(image_paths)] + [len(targets[target]) for target in TARGETS]
+        lengths = [len(image_paths)] + [len(targets[target]) for target in targets.keys()]
         if len(set(lengths)) > 1:
             raise ValueError(f"Longitudes inconsistentes: {lengths}")
     
@@ -90,14 +90,16 @@ class CacaoDataset:
         image = self.transform(image)
         
         # Obtener targets
-        if len(TARGETS) == 1:
+        available_targets = list(self.targets.keys())
+        if len(available_targets) == 1:
             # Modelo individual
-            target = self.targets[TARGETS[0]][idx]
+            target_name = available_targets[0]
+            target = self.targets[target_name][idx]
             return image, torch.tensor(target, dtype=torch.float32)
         else:
             # Modelo multi-head
             targets_dict = {}
-            for target_name in TARGETS:
+            for target_name in available_targets:
                 targets_dict[target_name] = torch.tensor(
                     self.targets[target_name][idx], dtype=torch.float32
                 )
@@ -143,15 +145,30 @@ class CacaoTrainingPipeline:
         
         # Filtrar registros que tienen crops
         crop_records = []
+        missing_crop_records = []
+        
         for record in valid_records:
             crop_path = record['crop_image_path']
             if crop_path and crop_path.exists():
                 crop_records.append(record)
+            else:
+                missing_crop_records.append(record)
         
         logger.info(f"Registros con crops disponibles: {len(crop_records)}")
+        logger.info(f"Registros sin crops: {len(missing_crop_records)}")
         
-        if len(crop_records) < 10:
-            raise ValueError(f"Muy pocos registros con crops: {len(crop_records)}")
+        # Solo generar crops para los que faltan si hay algunos faltantes
+        if missing_crop_records:
+            logger.info(f"Generando crops para {len(missing_crop_records)} imágenes faltantes...")
+            new_crop_records = self._generate_crops_for_missing(missing_crop_records)
+            crop_records.extend(new_crop_records)
+            
+            logger.info(f"Total de registros con crops después de generación: {len(crop_records)}")
+            
+            if len(crop_records) < 10:
+                raise ValueError(f"Muy pocos registros con crops después de generación: {len(crop_records)}")
+        else:
+            logger.info("✅ Todos los crops ya existen. No se necesita generación.")
         
         # Extraer rutas de imágenes y targets
         image_paths = [record['crop_image_path'] for record in crop_records]
@@ -196,23 +213,51 @@ class CacaoTrainingPipeline:
                 train_idx, test_size=val_size/(1-test_size), random_state=42
             )
         else:
-            # Estratificación por cuantiles de peso
-            quantile_transformer = QuantileTransformer(n_quantiles=n_quantiles, random_state=42)
-            peso_quantiles = quantile_transformer.fit_transform(peso_values.reshape(-1, 1)).flatten()
-            
-            # Convertir a bins para estratificación
-            strata = pd.cut(peso_quantiles, bins=n_quantiles, labels=False)
-            
-            # Split estratificado
-            train_idx, test_idx = train_test_split(
-                range(n_samples), test_size=test_size, random_state=42, stratify=strata
-            )
-            
-            # Crear estratos para el conjunto de entrenamiento
-            train_strata = strata[train_idx]
-            train_idx, val_idx = train_test_split(
-                train_idx, test_size=val_size/(1-test_size), random_state=42, stratify=train_strata
-            )
+            try:
+                # Estratificación por cuantiles de peso
+                quantile_transformer = QuantileTransformer(n_quantiles=n_quantiles, random_state=42)
+                peso_quantiles = quantile_transformer.fit_transform(peso_values.reshape(-1, 1)).flatten()
+                
+                # Convertir a bins para estratificación
+                strata = pd.cut(peso_quantiles, bins=n_quantiles, labels=False)
+                
+                # Verificar que todos los estratos tengan al menos 2 muestras
+                strata_counts = pd.Series(strata).value_counts()
+                min_strata_count = strata_counts.min()
+                
+                if min_strata_count < 2:
+                    logger.warning(f"Algunos estratos tienen menos de 2 muestras (mínimo: {min_strata_count}). Usando split aleatorio.")
+                    raise ValueError("Estratificación no viable")
+                
+                # Split estratificado
+                train_idx, test_idx = train_test_split(
+                    range(n_samples), test_size=test_size, random_state=42, stratify=strata
+                )
+                
+                # Crear estratos para el conjunto de entrenamiento
+                train_strata = strata[train_idx]
+                train_strata_counts = pd.Series(train_strata).value_counts()
+                
+                # Verificar que los estratos del train también tengan al menos 2 muestras
+                if train_strata_counts.min() < 2:
+                    logger.warning("Estratificación no viable para validación. Usando split aleatorio para validación.")
+                    train_idx, val_idx = train_test_split(
+                        train_idx, test_size=val_size/(1-test_size), random_state=42
+                    )
+                else:
+                    train_idx, val_idx = train_test_split(
+                        train_idx, test_size=val_size/(1-test_size), random_state=42, stratify=train_strata
+                    )
+                    
+            except (ValueError, Exception) as e:
+                logger.warning(f"Error en estratificación: {e}. Usando split aleatorio.")
+                # Fallback a split aleatorio
+                train_idx, test_idx = train_test_split(
+                    range(n_samples), test_size=test_size, random_state=42
+                )
+                train_idx, val_idx = train_test_split(
+                    train_idx, test_size=val_size/(1-test_size), random_state=42
+                )
         
         # Crear splits de imágenes
         train_images = [image_paths[i] for i in train_idx]
@@ -542,12 +587,19 @@ class CacaoTrainingPipeline:
         
         try:
             # 1. Cargar datos
+            logger.info("Paso 1: Cargando datos...")
             image_paths, targets = self.load_data()
             
+            if not image_paths or len(image_paths) < 10:
+                raise ValueError(f"Dataset insuficiente: solo {len(image_paths)} muestras. Se necesitan al menos 10.")
+            
             # 2. Crear splits
+            logger.info("Paso 2: Creando splits de datos...")
             train_images, val_images, test_images, train_targets, val_targets, test_targets = self.create_stratified_split(
                 image_paths, targets
             )
+            
+            logger.info(f"Splits creados - Train: {len(train_images)}, Val: {len(val_images)}, Test: {len(test_images)}")
             
             # 3. Crear data loaders
             self.create_data_loaders(
@@ -580,9 +632,141 @@ class CacaoTrainingPipeline:
                 'config': self.config
             }
             
-        except Exception as e:
-            logger.error(f"Error en pipeline: {e}")
+        except ValueError as e:
+            logger.error(f"Error de validación en pipeline: {e}")
             raise
+        except Exception as e:
+            logger.error(f"Error inesperado en pipeline: {e}")
+            logger.error(f"Tipo de error: {type(e).__name__}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise
+
+    def _generate_crops_for_missing(self, missing_records: List[Dict]) -> List[Dict]:
+        """
+        Genera crops solo para los registros que no tienen crops.
+        
+        Args:
+            missing_records: Lista de registros que no tienen crops
+            
+        Returns:
+            Lista de registros con crops generados exitosamente
+        """
+        logger.info(f"🚀 Generando crops para {len(missing_records)} imágenes faltantes...")
+        
+        from pathlib import Path
+        from PIL import Image
+        import os
+        
+        # Crear directorio de crops si no existe
+        crops_dir = Path("media/cacao_images/crops")
+        crops_dir.mkdir(parents=True, exist_ok=True)
+        
+        crop_records = []
+        successful = 0
+        failed = 0
+        
+        for i, record in enumerate(missing_records):
+            try:
+                image_id = record['id']
+                image_path = Path(record['image_path'])
+                crop_path = Path(record['crop_image_path'])
+                
+                # Verificar si la imagen original existe
+                if not image_path.exists():
+                    logger.warning(f"Imagen original no existe: {image_path}")
+                    failed += 1
+                    continue
+                
+                # Verificar si el crop ya existe (doble verificación)
+                if crop_path.exists():
+                    logger.debug(f"Crop ya existe (saltando): {crop_path}")
+                    crop_records.append(record)
+                    successful += 1
+                    continue
+                
+                # Generar crop simple (redimensionar imagen original)
+                img = Image.open(image_path)
+                img_resized = img.resize((512, 512), Image.Resampling.LANCZOS)
+                img_resized.save(crop_path, "PNG")
+                
+                logger.debug(f"Crop generado: {crop_path}")
+                crop_records.append(record)
+                successful += 1
+                
+                # Log de progreso cada 10 imágenes
+                if (i + 1) % 10 == 0:
+                    logger.info(f"Generados {i + 1}/{len(missing_records)} crops faltantes...")
+                    
+            except Exception as e:
+                logger.error(f"Error generando crop para ID {record['id']}: {e}")
+                failed += 1
+        
+        logger.info(f"✅ Generación de crops faltantes completada: {successful} exitosos, {failed} fallidos")
+        return crop_records
+    
+    def _generate_crops_automatically(self, valid_records: List[Dict]) -> List[Dict]:
+        """
+        Genera crops automáticamente para los registros válidos (método legacy).
+        
+        Args:
+            valid_records: Lista de registros válidos
+            
+        Returns:
+            Lista de registros con crops generados
+        """
+        logger.info("🚀 Generando crops automáticamente (método legacy)...")
+        
+        from pathlib import Path
+        from PIL import Image
+        import os
+        
+        # Crear directorio de crops si no existe
+        crops_dir = Path("media/cacao_images/crops")
+        crops_dir.mkdir(parents=True, exist_ok=True)
+        
+        crop_records = []
+        successful = 0
+        failed = 0
+        
+        for i, record in enumerate(valid_records):
+            try:
+                image_id = record['id']
+                image_path = Path(record['image_path'])
+                crop_path = Path(record['crop_image_path'])
+                
+                # Verificar si la imagen original existe
+                if not image_path.exists():
+                    logger.warning(f"Imagen original no existe: {image_path}")
+                    failed += 1
+                    continue
+                
+                # Verificar si el crop ya existe
+                if crop_path.exists() and not self.config.get('overwrite', False):
+                    logger.debug(f"Crop ya existe: {crop_path}")
+                    crop_records.append(record)
+                    successful += 1
+                    continue
+                
+                # Generar crop simple (redimensionar imagen original)
+                img = Image.open(image_path)
+                img_resized = img.resize((512, 512), Image.Resampling.LANCZOS)
+                img_resized.save(crop_path, "PNG")
+                
+                logger.debug(f"Crop generado: {crop_path}")
+                crop_records.append(record)
+                successful += 1
+                
+                # Log de progreso cada 50 imágenes
+                if (i + 1) % 50 == 0:
+                    logger.info(f"Generados {i + 1}/{len(valid_records)} crops...")
+                    
+            except Exception as e:
+                logger.error(f"Error generando crop para ID {record['id']}: {e}")
+                failed += 1
+        
+        logger.info(f"✅ Generación de crops completada: {successful} exitosos, {failed} fallidos")
+        return crop_records
 
 
 def main():
@@ -652,6 +836,66 @@ def main():
                 if target in eval_results:
                     metrics = eval_results[target]
                     print(f"{target.upper()}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, R²={metrics['r2']:.4f}")
+
+
+def run_training_pipeline(
+    epochs: int = 50,
+    batch_size: int = 32,
+    learning_rate: float = 1e-4,
+    multi_head: bool = False,
+    model_type: str = 'resnet18',
+    img_size: int = 224,
+    early_stopping_patience: int = 10,
+    save_best_only: bool = True
+) -> bool:
+    """
+    Función para ejecutar el pipeline de entrenamiento desde otros módulos.
+    
+    Args:
+        epochs: Número de épocas
+        batch_size: Tamaño de batch
+        learning_rate: Learning rate
+        multi_head: Si usar modelo multi-head
+        model_type: Tipo de modelo
+        img_size: Tamaño de imagen
+        early_stopping_patience: Paciencia para early stopping
+        save_best_only: Solo guardar el mejor modelo
+        
+    Returns:
+        bool: True si el entrenamiento fue exitoso, False en caso contrario
+    """
+    try:
+        logger.info("🚀 Iniciando pipeline de entrenamiento...")
+        
+        # Crear configuración
+        config = {
+            'multi_head': multi_head,
+            'model_type': model_type,
+            'epochs': epochs,
+            'batch_size': batch_size,
+            'img_size': img_size,
+            'learning_rate': learning_rate,
+            'num_workers': 2,
+            'early_stopping_patience': early_stopping_patience,
+            'pretrained': True,
+            'dropout_rate': 0.2,
+            'weight_decay': 1e-4,
+            'min_lr': 1e-6,
+            'save_best_only': save_best_only
+        }
+        
+        # Crear y ejecutar pipeline
+        pipeline = CacaoTrainingPipeline(config)
+        results = pipeline.run_pipeline(multi_head)
+        
+        logger.info("✅ Pipeline de entrenamiento completado exitosamente!")
+        logger.info(f"Tiempo total: {results['total_time']:.2f}s")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Error en pipeline de entrenamiento: {e}")
+        return False
 
 
 if __name__ == "__main__":

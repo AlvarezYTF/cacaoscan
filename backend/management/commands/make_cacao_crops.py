@@ -87,6 +87,10 @@ class Command(BaseCommand):
             )
         )
         
+        # Debug info
+        self.stdout.write(f"DEBUG: Parámetros - conf={confidence}, limit={limit}, overwrite={overwrite}")
+        self.stdout.write(f"DEBUG: crop_size={crop_size}, padding={padding}, validate_only={validate_only}")
+        
         try:
             # Inicializar cargador de dataset
             dataset_loader = CacaoDatasetLoader()
@@ -132,6 +136,7 @@ class Command(BaseCommand):
             # Crear procesador de crops
             self.stdout.write("Inicializando procesador de crops...")
             try:
+                self.stdout.write(f"DEBUG: Creando cropper con confidence={confidence}, crop_size={crop_size}")
                 cropper = create_cacao_cropper(
                     confidence_threshold=confidence,
                     crop_size=crop_size,
@@ -139,7 +144,9 @@ class Command(BaseCommand):
                     save_masks=save_masks,
                     overwrite=overwrite
                 )
+                self.stdout.write(f"DEBUG: Cropper creado exitosamente: {type(cropper)}")
             except Exception as e:
+                self.stdout.write(f"DEBUG: Error creando cropper: {e}")
                 raise CommandError(f"Error inicializando procesador: {e}")
             
             # Procesar imágenes

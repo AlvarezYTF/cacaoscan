@@ -80,7 +80,8 @@ class CacaoDatasetLoader:
         Returns:
             Path al archivo CSV encontrado o None si no hay ninguno
         """
-        datasets_dir = Path("backend/media/datasets")
+        from ..utils.paths import get_datasets_dir
+        datasets_dir = get_datasets_dir()
         
         if not datasets_dir.exists():
             logger.warning(f"Directorio de datasets no encontrado: {datasets_dir}")
@@ -168,7 +169,12 @@ class CacaoDatasetLoader:
         
         # Generar columna image_path automáticamente
         df['image_path'] = df['id'].apply(
-            lambda x: f"backend/media/cacao_images/raw/{x}.bmp"
+            lambda x: f"media/cacao_images/raw/{x}.bmp"
+        )
+        
+        # Generar columna crop_image_path automáticamente
+        df['crop_image_path'] = df['id'].apply(
+            lambda x: f"media/cacao_images/crops/{x}.png"
         )
         
         # Verificar duplicados
@@ -238,6 +244,9 @@ class CacaoDatasetLoader:
             image_id = row['id']
             raw_path = Path(row['image_path'])
             
+            # Generar ruta del crop
+            crop_path = Path(row['crop_image_path'])
+            
             record = {
                 'id': int(image_id),
                 'alto': float(row['alto']),
@@ -246,7 +255,7 @@ class CacaoDatasetLoader:
                 'peso': float(row['peso']),
                 'image_path': str(raw_path),
                 'raw_image_path': str(raw_path),  # Alias para compatibilidad
-                'crop_image_path': None,  # Se establecerá después del procesamiento
+                'crop_image_path': crop_path,  # Ruta del crop
                 'mask_image_path': None,  # Se establecerá después del procesamiento
                 'timestamp': get_file_timestamp(raw_path) if raw_path.exists() else None
             }

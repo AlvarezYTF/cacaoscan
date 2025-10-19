@@ -112,7 +112,23 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer para información de usuario."""
+    role = serializers.SerializerMethodField()
+    is_verified = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined', 'role', 'is_verified')
         read_only_fields = ('id', 'date_joined')
+    
+    def get_role(self, obj):
+        """Determina el rol del usuario basado en permisos."""
+        if obj.is_superuser or obj.is_staff:
+            return 'admin'
+        elif obj.groups.filter(name='analyst').exists():
+            return 'analyst'
+        else:
+            return 'farmer'
+    
+    def get_is_verified(self, obj):
+        """Determina si el usuario está verificado."""
+        return obj.is_active

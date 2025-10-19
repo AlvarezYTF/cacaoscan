@@ -73,6 +73,12 @@ export const useAuthStore = defineStore('auth', () => {
     
     localStorage.setItem('access_token', tokens.access)
     localStorage.setItem('refresh_token', tokens.refresh)
+    
+    // Guardar usuario si está disponible
+    if (tokens.user) {
+      user.value = tokens.user
+      localStorage.setItem('user', JSON.stringify(tokens.user))
+    }
   }
 
   const clearTokens = () => {
@@ -81,6 +87,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
+    localStorage.removeItem('user')
   }
 
   const setUser = (userData) => {
@@ -123,6 +130,31 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (error) {
       console.error('Error inicializando desde localStorage:', error)
+      clearAll()
+    }
+  }
+
+  // Inicializar autenticación completa
+  const initializeAuth = async () => {
+    try {
+      // Inicializar desde localStorage
+      initializeFromStorage()
+      
+      // Si hay token pero no hay usuario, intentar obtener el usuario actual
+      if (accessToken.value && !user.value) {
+        console.log('🔄 Restaurando sesión desde token...')
+        await getCurrentUser()
+      }
+      
+      console.log('✅ Autenticación inicializada:', {
+        hasToken: !!accessToken.value,
+        hasUser: !!user.value,
+        isAuthenticated: isAuthenticated.value
+      })
+      
+    } catch (error) {
+      console.error('❌ Error inicializando autenticación:', error)
+      // Si hay error, limpiar todo
       clearAll()
     }
   }
@@ -470,6 +502,7 @@ export const useAuthStore = defineStore('auth', () => {
     checkSessionTimeout,
     hasPermission,
     clearAll,
-    setError
+    setError,
+    initializeAuth
   }
 })

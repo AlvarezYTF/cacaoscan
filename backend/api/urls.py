@@ -19,4 +19,10 @@ urlpatterns = [
     path('auth/register/', views.RegisterView.as_view(), name='auth-register'),
     path('auth/logout/', views.LogoutView.as_view(), name='auth-logout'),
     path('auth/profile/', views.UserProfileView.as_view(), name='auth-profile'),
+    path('auth/refresh/', views.RefreshTokenView.as_view(), name='auth-refresh'),
+    
+    # Endpoints de imágenes
+    path('images/', views.ImagesListView.as_view(), name='images-list'),
+    path('images/<int:image_id>/', views.ImageDetailView.as_view(), name='image-detail'),
+    path('images/stats/', views.ImagesStatsView.as_view(), name='images-stats'),
 ]

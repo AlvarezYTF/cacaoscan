@@ -700,3 +700,150 @@ class UserProfileView(APIView):
         Obtiene el perfil del usuario actual.
         """
         return Response(UserSerializer(request.user).data)
+
+
+class RefreshTokenView(APIView):
+    """
+    Endpoint para refrescar token de acceso.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Refresca el token de acceso del usuario autenticado",
+        operation_summary="Refrescar token",
+        responses={
+            200: openapi.Response(
+                description="Token refrescado exitosamente",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'token': openapi.Schema(type=openapi.TYPE_STRING),
+                        'user': UserSerializer
+                    }
+                )
+            ),
+            401: ErrorResponseSerializer,
+        },
+        tags=['Autenticación']
+    )
+    def post(self, request):
+        """
+        Refresca el token del usuario actual.
+        """
+        try:
+            # Eliminar token actual
+            request.user.auth_token.delete()
+            
+            # Crear nuevo token
+            token, created = Token.objects.get_or_create(user=request.user)
+            
+            return Response({
+                'token': token.key,
+                'user': UserSerializer(request.user).data
+            })
+            
+        except Exception as e:
+            return Response({
+                'error': f'Error refrescando token: {str(e)}',
+                'status': 'error'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ImagesListView(APIView):
+    """
+    Endpoint para listar imágenes procesadas.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene la lista de imágenes procesadas por el usuario",
+        operation_summary="Lista de imágenes",
+        responses={
+            200: openapi.Response(
+                description="Lista de imágenes obtenida exitosamente",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT)),
+                        'count': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'next': openapi.Schema(type=openapi.TYPE_STRING),
+                        'previous': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            401: ErrorResponseSerializer,
+        },
+        tags=['Imágenes']
+    )
+    def get(self, request):
+        """
+        Obtiene la lista de imágenes procesadas.
+        """
+        # Por ahora, devolver una respuesta mock
+        return Response({
+            'results': [],
+            'count': 0,
+            'next': None,
+            'previous': None,
+            'message': 'Endpoint de imágenes en desarrollo'
+        })
+
+
+class ImageDetailView(APIView):
+    """
+    Endpoint para obtener detalles de una imagen específica.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene los detalles de una imagen específica",
+        operation_summary="Detalles de imagen",
+        responses={
+            200: openapi.Response(
+                description="Detalles de imagen obtenidos exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            404: ErrorResponseSerializer,
+        },
+        tags=['Imágenes']
+    )
+    def get(self, request, image_id):
+        """
+        Obtiene los detalles de una imagen específica.
+        """
+        # Por ahora, devolver una respuesta mock
+        return Response({
+            'id': image_id,
+            'message': 'Endpoint de detalles de imagen en desarrollo'
+        })
+
+
+class ImagesStatsView(APIView):
+    """
+    Endpoint para obtener estadísticas de imágenes procesadas.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene estadísticas de imágenes procesadas por el usuario",
+        operation_summary="Estadísticas de imágenes",
+        responses={
+            200: openapi.Response(
+                description="Estadísticas obtenidas exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            401: ErrorResponseSerializer,
+        },
+        tags=['Imágenes']
+    )
+    def get(self, request):
+        """
+        Obtiene estadísticas de imágenes procesadas.
+        """
+        # Por ahora, devolver una respuesta mock
+        return Response({
+            'total_images': 0,
+            'processed_today': 0,
+            'average_confidence': 0,
+            'message': 'Endpoint de estadísticas en desarrollo'
+        })

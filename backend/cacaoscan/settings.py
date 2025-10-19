@@ -3,7 +3,13 @@ Django settings for cacaoscan project.
 """
 
 import os
+import warnings
 from pathlib import Path
+
+# Suprimir warnings molestos
+warnings.filterwarnings('ignore', message='pkg_resources is deprecated')
+warnings.filterwarnings('ignore', message='The parameter.*is deprecated')
+warnings.filterwarnings('ignore', category=UserWarning, module='drf_yasg')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -201,6 +207,18 @@ LOGGING = {
         'cacaoscan.ml': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
+            'propagate': False,
+        },
+        # Suprimir warnings de pkg_resources
+        'pkg_resources': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        # Suprimir warnings de drf_yasg
+        'drf_yasg': {
+            'handlers': ['file'],
+            'level': 'ERROR',
             'propagate': False,
         },
     },

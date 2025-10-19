@@ -9,9 +9,9 @@ import api from './api'
 
 // Endpoints de la API
 const API_ENDPOINTS = {
-  predict: '/images/predict/',
-  predictYolo: '/images/predict-yolo/',
-  predictSmart: '/images/predict-smart/',
+  predict: '/scan/measure/',
+  predictYolo: '/scan/measure/',  // Usar el mismo endpoint unificado
+  predictSmart: '/scan/measure/', // Usar el mismo endpoint unificado
   images: '/images/',
   stats: '/images/stats/'
 }
