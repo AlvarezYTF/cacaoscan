@@ -207,6 +207,8 @@ export default {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .prediction-method-selector {
   @apply w-full;
 }

@@ -305,8 +305,10 @@ export default {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .yolo-results-container {
-  @apply max-w-6xl mx-auto;
+  @apply max-w-5xl mx-auto;
 }
 
 /* Animaciones suaves */
