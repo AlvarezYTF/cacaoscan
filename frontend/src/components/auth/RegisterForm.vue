@@ -1,22 +1,25 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-    <div class="sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="text-center">
-        <svg class="mx-auto h-12 w-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-        </svg>
-        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Crear Cuenta
-        </h2>
-        <p class="mt-2 text-center text-sm text-gray-600">
-          Únete a CacaoScan para comenzar a analizar tus granos de cacao
-        </p>
+  <div>
+    <!-- Mensaje de estado -->
+    <div v-if="statusMessage" class="mb-4 rounded-md p-4" :class="statusMessageClass">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg v-if="statusType === 'success'" class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <svg v-else class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium" :class="statusType === 'success' ? 'text-green-800' : 'text-red-800'">
+            {{ statusMessage }}
+          </p>
+        </div>
       </div>
     </div>
 
-    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-        <form @submit.prevent="handleSubmit" class="space-y-6">
+    <form @submit.prevent="handleSubmit" class="space-y-6">
           <!-- Nombres -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -253,40 +256,6 @@
             </button>
           </div>
         </form>
-
-        <!-- Mensaje de estado -->
-        <div v-if="statusMessage" class="mt-4 rounded-md p-4" :class="statusMessageClass">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <svg v-if="statusType === 'success'" class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              <svg v-else class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </div>
-            <div class="ml-3">
-              <p class="text-sm font-medium" :class="statusType === 'success' ? 'text-green-800' : 'text-red-800'">
-                {{ statusMessage }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Enlaces adicionales -->
-      <div class="mt-6 text-center">
-        <p class="text-sm text-gray-600">
-          ¿Ya tienes una cuenta?
-          <router-link
-            to="/login"
-            class="font-medium text-green-600 hover:text-green-500"
-          >
-            Inicia sesión aquí
-          </router-link>
-        </p>
-      </div>
-    </div>
   </div>
 </template>
 
