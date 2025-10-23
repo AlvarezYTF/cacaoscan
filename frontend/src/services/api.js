@@ -1,6 +1,6 @@
 /**
  * Configuración principal de Axios para CacaoScan
- * Incluye interceptores para JWT, manejo de errores y rate limiting
+ * Incluye interceptores para Token Authentication, manejo de errores y rate limiting
  */
 
 import axios from 'axios'
@@ -15,21 +15,6 @@ const api = axios.create({
     'Accept': 'application/json'
   }
 })
-
-// Variable para evitar múltiples intentos de refresh
-let isRefreshing = false
-let refreshSubscribers = []
-
-// Función para subscribir requests mientras se refresca el token
-const subscribeTokenRefresh = (cb) => {
-  refreshSubscribers.push(cb)
-}
-
-// Función para ejecutar todos los requests pendientes con nuevo token
-const onRefreshed = (token) => {
-  refreshSubscribers.map(cb => cb(token))
-  refreshSubscribers = []
-}
 
 // Función para obtener el store de auth dinámicamente
 const getAuthStore = () => {
@@ -105,14 +90,14 @@ api.interceptors.response.use(
       console.error(`❌ API Error: ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`, {
         status: error.response?.status,
         duration: `${duration}ms`,
-        message: error.response?.data?.detail || error.message
+        message: error.response?.data?.message || error.response?.data?.detail || error.message
       })
     }
 
-    // Manejar errores 401 (No autorizado)
+    // Manejar errores 401 (No autorizado) - Token Authentication
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Verificar si es un endpoint de auth que no requiere refresh
-      const authEndpoints = ['/auth/login/', '/auth/register/', '/auth/refresh/']
+      // Verificar si es un endpoint de auth que no requiere manejo especial
+      const authEndpoints = ['/auth/login/', '/auth/register/']
       const isAuthEndpoint = authEndpoints.some(endpoint => 
         originalRequest.url.includes(endpoint)
       )
@@ -121,85 +106,16 @@ api.interceptors.response.use(
         return Promise.reject(error)
       }
 
-      // Intentar refrescar el token
-      if (isRefreshing) {
-        // Si ya se está refrescando, esperar el resultado
-        return new Promise((resolve) => {
-          subscribeTokenRefresh((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`
-            resolve(api(originalRequest))
-          })
-        })
-      }
-
-      originalRequest._retry = true
-      isRefreshing = true
-
-      try {
-        const refreshToken = localStorage.getItem('refresh_token')
-        
-        if (!refreshToken) {
-          throw new Error('No refresh token available')
-        }
-
-        // Hacer request de refresh sin interceptor para evitar loop
-        const refreshResponse = await axios.post(
-          `${api.defaults.baseURL}/auth/refresh/`,
-          { refresh: refreshToken },
-          {
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 10000
-          }
-        )
-
-        const newAccessToken = refreshResponse.data.access
-
-        // Actualizar token en localStorage
-        localStorage.setItem('access_token', newAccessToken)
-
-        // Actualizar header del request original
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
-
-        // Ejecutar requests pendientes
-        onRefreshed(newAccessToken)
-
-        // Actualizar store si está disponible
-        try {
-          const authStore = getAuthStore()
-          authStore.accessToken = newAccessToken
-        } catch (storeError) {
-          console.warn('No se pudo actualizar el store:', storeError)
-        }
-
-        isRefreshing = false
-
-        // Reintento del request original
-        return api(originalRequest)
-
-      } catch (refreshError) {
-        console.error('Error refrescando token:', refreshError)
-        
-        isRefreshing = false
-        refreshSubscribers = []
-
-        // Limpiar tokens y redirigir al login
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('user')
-
-        // Redirigir al login solo si no estamos ya allí
-        if (router.currentRoute.value.name !== 'Login') {
-          router.push({
-            name: 'Login',
-            query: { 
-              message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
-              expired: 'true'
-            }
-          })
-        }
-
-        return Promise.reject(refreshError)
-      }
+      // Para Token Authentication, si hay 401, el token es inválido
+      // Limpiar tokens y redirigir a login
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('user')
+      
+      const authStore = getAuthStore()
+      authStore.logout(false) // No mostrar mensaje
+      router.push({ name: 'Login' })
+      
+      return Promise.reject(error)
     }
 
     // Manejar errores 403 (Prohibido)

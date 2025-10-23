@@ -17,24 +17,50 @@
       <!-- Overview Section -->
       <div v-if="activeSection === 'overview'" class="dashboard-section">
         <div class="section-header">
-          <h1>¡Bienvenido a CacaoScan, Sofia!</h1>
+          <h1>¡Bienvenido a CacaoScan, {{ farmerName }}!</h1>
           <p>Esta es su herramienta para asegurar la calidad de cada grano. Con CacaoScan, podrá analizar su cosecha de forma rápida y precisa, eliminando las dudas del análisis tradicional. Obtenga los datos que necesita para mejorar sus procesos y aumentar el valor de su trabajo. Estamos aquí para ayudarle a que su cacao destaque.</p>
         </div>
         
-        <StatsOverview :stats="stats" />
+        <!-- Estadísticas básicas -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <h3>{{ stats.totalBatches }}</h3>
+            <p>Lotes Totales</p>
+          </div>
+          <div class="stat-card">
+            <h3>{{ stats.avgQuality }}%</h3>
+            <p>Calidad Promedio</p>
+          </div>
+          <div class="stat-card">
+            <h3>{{ stats.defectRate }}%</h3>
+            <p>Tasa de Defectos</p>
+          </div>
+        </div>
         
         <div class="overview-grid">
           <div class="overview-card">
             <h3>Actividad Reciente</h3>
-            <RecentAnalyses 
-              :analyses="recentAnalyses" 
-              @view-details="viewAnalysisDetails" 
-            />
+            <div class="recent-analyses">
+              <div v-for="analysis in recentAnalyses" :key="analysis.id" class="analysis-item">
+                <span class="analysis-id">Lote #{{ analysis.id }}</span>
+                <span class="analysis-quality">{{ analysis.quality }}%</span>
+                <span class="analysis-date">{{ analysis.date }}</span>
+              </div>
+            </div>
           </div>
           
           <div class="overview-card">
             <h3>Acciones Rápidas</h3>
-            <QuickActions @upload="openUploadModal" />
+            <div class="quick-actions">
+              <button @click="setActiveSection('analysis')" class="action-btn">
+                <i class="fas fa-microscope"></i>
+                Nuevo Análisis
+              </button>
+              <button @click="setActiveSection('fincas')" class="action-btn">
+                <i class="fas fa-tree"></i>
+                Gestionar Fincas
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -45,32 +71,17 @@
         <div class="mb-6">
           <button 
             @click="goBack"
-            class="inline-flex items-center group text-green-600 hover:text-green-700 transition-all duration-300 px-4 py-2 rounded-lg hover:bg-green-50"
+            class="back-button"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span class="font-medium">Volver</span>
+            <i class="fas fa-arrow-left"></i>
+            <span>Volver</span>
           </button>
         </div>
 
         <!-- Header Banner -->
-        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-8 shadow-sm border border-green-100 mb-8">
-          <div class="text-center max-w-3xl mx-auto">
-            <div class="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-green-100 text-green-800 text-sm font-medium mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Análisis de Calidad
-            </div>
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-emerald-600">
-              Nuevo Análisis de Lote
-            </h1>
-            <div class="w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto mb-6 rounded-full"></div>
-            <p class="text-lg text-gray-600 leading-relaxed">
-              Sube imágenes de granos de cacao y completa la información del lote para iniciar un análisis de calidad detallado y preciso.
-            </p>
-          </div>
+        <div class="analysis-header">
+          <h1>Nuevo Análisis de Lote</h1>
+          <p>Sube imágenes de granos de cacao y completa la información del lote para iniciar un análisis de calidad detallado y preciso.</p>
         </div>
         
         <!-- Main Content -->
@@ -380,13 +391,6 @@
                 <p>Área Total</p>
               </div>
             </div>
-            <div class="stat-card">
-              <i class="fas fa-calendar-check"></i>
-              <div class="stat-content">
-                <h3>{{ fincasStats.ultimaActualizacion }}</h3>
-                <p>Última Actualización</p>
-              </div>
-            </div>
           </div>
         </div>
         
@@ -404,34 +408,6 @@
               <h4>Monitoreo de Lotes</h4>
               <p>Visualiza el estado y rendimiento de tus lotes</p>
               <button class="btn btn-secondary" @click="monitorearLotes">Monitorear</button>
-            </div>
-            <div class="action-card">
-              <i class="fas fa-file-export"></i>
-              <h4>Reportes de Fincas</h4>
-              <p>Genera reportes detallados de tus fincas</p>
-              <button class="btn btn-secondary" @click="generarReportesFincas">Generar Reporte</button>
-            </div>
-          </div>
-        </div>
-        
-        <div class="fincas-list" v-if="fincas.length > 0">
-          <h3>Fincas Registradas</h3>
-          <div class="fincas-grid">
-            <div v-for="finca in fincas" :key="finca.id" class="finca-card">
-              <div class="finca-header">
-                <h4>{{ finca.nombre }}</h4>
-                <span class="finca-status" :class="finca.status">{{ finca.statusLabel }}</span>
-              </div>
-              <div class="finca-details">
-                <p><i class="fas fa-map-marker-alt"></i> {{ finca.ubicacion }}</p>
-                <p><i class="fas fa-ruler-combined"></i> {{ finca.area }} ha</p>
-                <p><i class="fas fa-seedling"></i> {{ finca.lotes }} lotes</p>
-                <p><i class="fas fa-calendar-alt"></i> Registrada: {{ finca.fechaRegistro }}</p>
-              </div>
-              <div class="finca-actions">
-                <button class="btn btn-sm btn-secondary" @click="verDetalleFinca(finca)">Ver Detalle</button>
-                <button class="btn btn-sm btn-primary" @click="editarFinca(finca)">Editar</button>
-              </div>
             </div>
           </div>
         </div>
@@ -763,60 +739,23 @@
 </template>
 
 <script>
-import DashboardHeader from '@/components/dashboard/DashboardHeader.vue';
-import QuickActions from '@/components/dashboard/QuickActions.vue';
-import UploadSection from '@/components/dashboard/UploadSection.vue';
-import RecentAnalyses from '@/components/dashboard/RecentAnalyses.vue';
-import StatsOverview from '@/components/dashboard/StatsOverview.vue';
-import { ref, computed, onMounted, watch } from 'vue';
-import { useAnalysisStore } from '@/stores/analysis';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import PageHeader from '@/components/common/PageHeader.vue';
-import ProgressIndicator from '@/components/common/ProgressIndicator.vue';
-import ErrorAlert from '@/components/common/ErrorAlert.vue';
-import BatchInfoForm from '@/components/analysis/BatchInfoForm.vue';
-import ImageUploader from '@/components/analysis/ImageUploader.vue';
-import CameraCapture from '@/components/analysis/CameraCapture.vue';
 import AgricultorSidebar from '@/components/common/AgricultorSidebar.vue';
 
 export default {
   name: 'AgricultorDashboard',
   components: {
-    DashboardHeader,
-    QuickActions,
-    UploadSection,
-    RecentAnalyses,
-    StatsOverview,
-    PageHeader,
-    ProgressIndicator,
-    ErrorAlert,
-    BatchInfoForm,
-    ImageUploader,
-    CameraCapture,
     AgricultorSidebar
   },
   setup() {
-    const analysisStore = useAnalysisStore();
     const authStore = useAuthStore();
     const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
     const activeSection = ref('overview');
     
     // Usar datos reales del usuario autenticado
     const farmerName = computed(() => authStore.userFullName || 'Usuario');
-    const historyFilter = ref({
-      dateRange: 'all',
-      quality: 'all'
-    });
-    const userProfile = ref({
-      fullName: 'Juan Pérez',
-      email: 'juan.perez@email.com',
-      phone: '+57 300 123 4567'
-    });
-    const userPreferences = ref({
-      notifications: true,
-      autoReports: false,
-      dataSharing: true
-    });
+    
     const recentAnalyses = ref([
       {
         id: 'CAC-2023-045',
@@ -846,6 +785,7 @@ export default {
         date: '05/08/2023'
       }
     ]);
+    
     const stats = ref({
       totalBatches: 24,
       batchesChange: '+5%',
@@ -854,44 +794,13 @@ export default {
       defectRate: 5.2,
       defectChange: '-1.2%'
     });
+    
     const fincasStats = ref({
       totalFincas: 3,
       totalLotes: 12,
       areaTotal: 8.5,
       ultimaActualizacion: 'Hoy'
     });
-    const fincas = ref([
-      {
-        id: 1,
-        nombre: 'Finca El Paraíso',
-        ubicacion: 'Vereda La Esperanza, Santander',
-        area: 3.2,
-        lotes: 5,
-        fechaRegistro: '15/01/2023',
-        status: 'active',
-        statusLabel: 'Activa'
-      },
-      {
-        id: 2,
-        nombre: 'Finca Los Cacaos',
-        ubicacion: 'Vereda San José, Antioquia',
-        area: 2.8,
-        lotes: 4,
-        fechaRegistro: '20/02/2023',
-        status: 'active',
-        statusLabel: 'Activa'
-      },
-      {
-        id: 3,
-        nombre: 'Finca La Esperanza',
-        ubicacion: 'Vereda El Progreso, Caldas',
-        area: 2.5,
-        lotes: 3,
-        fechaRegistro: '10/03/2023',
-        status: 'active',
-        statusLabel: 'Activa'
-      }
-    ]);
     const isUploading = ref(false);
     const uploadProgress = ref(0);
     const analysisResult = ref(null);
@@ -1050,6 +959,29 @@ export default {
       localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value);
     };
 
+    const registrarNuevaFinca = () => {
+      activeSection.value = 'registrar-finca';
+    };
+
+    const monitorearLotes = () => {
+      alert('Función de monitoreo de lotes en desarrollo');
+    };
+
+    const logout = async () => {
+      if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+        try {
+          await authStore.logout();
+        } catch (error) {
+          console.error('Error al cerrar sesión:', error);
+          authStore.clearAll();
+        }
+      }
+    };
+
+    const goBack = () => {
+      activeSection.value = 'overview';
+    };
+
     const openUploadModal = () => {
       // This will be handled by the UploadSection component
     };
@@ -1160,257 +1092,21 @@ export default {
       }
     };
 
-    const viewAnalysisDetails = (analysis) => {
-      console.log('Ver detalles del análisis:', analysis);
-      // Navegar a la vista de detalles o mostrar un modal
-    };
-
-    // Métodos para gestión de fincas
-    const registrarNuevaFinca = () => {
-      // Cambiar a la sección de registro de finca
-      activeSection.value = 'registrar-finca';
-    };
-
-    const monitorearLotes = () => {
-      console.log('Monitorear lotes');
-      // Aquí se implementaría la lógica para monitorear lotes
-      alert('Función de monitoreo de lotes en desarrollo');
-    };
-
-    const generarReportesFincas = () => {
-      console.log('Generar reportes de fincas');
-      // Aquí se implementaría la lógica para generar reportes
-      alert('Función de reportes de fincas en desarrollo');
-    };
-
-    const verDetalleFinca = (finca) => {
-      console.log('Ver detalle de finca:', finca);
-      // Aquí se implementaría la lógica para ver detalles de la finca
-      alert(`Ver detalles de: ${finca.nombre}`);
-    };
-
-    const editarFinca = (finca) => {
-      console.log('Editar finca:', finca);
-      // Aquí se implementaría la lógica para editar la finca
-      alert(`Editar finca: ${finca.nombre}`);
-    };
-
-    const logout = async () => {
-      // Mostrar mensaje de confirmación
-      if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-        try {
-          await authStore.logout();
-          // El authStore se encarga de la redirección automática
-        } catch (error) {
-          console.error('Error al cerrar sesión:', error);
-          // Forzar logout local en caso de error
-          authStore.clearAll();
-        }
-      }
-    };
-
-    const goBack = () => {
-      activeSection.value = 'overview';
-    };
-
-    const resetForm = () => {
-      batchData.value = {
-        finca: '',
-        agricultor: '',
-        nombreLote: '',
-        fechaRecoleccion: '',
-        observaciones: '',
-        lugarOrigen: '',
-        genetica: '',
-        origen: ''
-      };
-      formErrors.value = {
-        hasAttemptedSubmit: false,
-        finca: '',
-        agricultor: '',
-        nombreLote: '',
-        fechaRecoleccion: '',
-        observaciones: '',
-        lugarOrigen: '',
-        genetica: '',
-        origen: '',
-        images: ''
-      };
-      images.value = [];
-      capturedImages.value = [];
-      currentTab.value = 'upload';
-    };
-
-    // Métodos para el formulario de finca
-    const isFincaFormValid = computed(() => {
-      // Solo validar si se ha intentado enviar el formulario
-      if (!hasAttemptedSubmit.value) {
-        return true;
-      }
-      
-      fincaErrors.value = {};
-      let isValid = true;
-      
-      if (!nuevaFinca.value.nombre.trim()) {
-        fincaErrors.value.nombre = 'El nombre de la finca es requerido';
-        isValid = false;
-      }
-      
-      if (!nuevaFinca.value.area || parseFloat(nuevaFinca.value.area) <= 0) {
-        fincaErrors.value.area = 'El área debe ser mayor a 0';
-        isValid = false;
-      }
-      
-      if (!nuevaFinca.value.departamento.trim()) {
-        fincaErrors.value.departamento = 'El departamento es requerido';
-        isValid = false;
-      }
-      
-      if (!nuevaFinca.value.municipio.trim()) {
-        fincaErrors.value.municipio = 'El municipio es requerido';
-        isValid = false;
-      }
-      
-      return isValid;
-    });
-
-    const guardarFinca = async () => {
-      // Activar validación
-      hasAttemptedSubmit.value = true;
-      
-      if (!isFincaFormValid.value) {
-        return;
-      }
-      
-      try {
-        isGuardandoFinca.value = true;
-        
-        // Simular guardado en base de datos
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Crear nueva finca
-        const nuevaFincaData = {
-          id: fincas.value.length + 1,
-          nombre: nuevaFinca.value.nombre,
-          ubicacion: `${nuevaFinca.value.municipio}, ${nuevaFinca.value.departamento}`,
-          area: parseFloat(nuevaFinca.value.area),
-          lotes: 0,
-          fechaRegistro: new Date().toLocaleDateString('es-ES'),
-          status: 'active',
-          statusLabel: 'Activa',
-          codigo: nuevaFinca.value.codigo || `FIN-${String(fincas.value.length + 1).padStart(3, '0')}`,
-          tipoSuelo: nuevaFinca.value.tipoSuelo,
-          vereda: nuevaFinca.value.vereda,
-          altitud: nuevaFinca.value.altitud ? parseInt(nuevaFinca.value.altitud) : null,
-          anoEstablecimiento: nuevaFinca.value.anoEstablecimiento ? parseInt(nuevaFinca.value.anoEstablecimiento) : null,
-          estado: nuevaFinca.value.estado,
-          descripcion: nuevaFinca.value.descripcion
-        };
-        
-        // Agregar a la lista de fincas
-        fincas.value.push(nuevaFincaData);
-        
-        // Actualizar estadísticas
-        fincasStats.value.totalFincas = fincas.value.length;
-        fincasStats.value.areaTotal += nuevaFincaData.area;
-        fincasStats.value.ultimaActualizacion = 'Hoy';
-        
-        // Limpiar formulario
-        resetearFormularioFinca();
-        
-        // Mostrar mensaje de éxito
-        alert('Finca registrada exitosamente!');
-        
-        // Volver a la sección de fincas
-        activeSection.value = 'fincas';
-        
-      } catch (error) {
-        console.error('Error al guardar la finca:', error);
-        alert('Error al guardar la finca. Por favor, intenta de nuevo.');
-      } finally {
-        isGuardandoFinca.value = false;
-      }
-    };
-
-    const cancelarRegistroFinca = () => {
-      resetearFormularioFinca();
-      activeSection.value = 'fincas';
-    };
-
-    const resetearFormularioFinca = () => {
-      nuevaFinca.value = {
-        nombre: '',
-        codigo: '',
-        area: '',
-        tipoSuelo: '',
-        departamento: '',
-        municipio: '',
-        vereda: '',
-        altitud: '',
-        anoEstablecimiento: '',
-        estado: 'activa',
-        descripcion: ''
-      };
-      fincaErrors.value = {
-        nombre: '',
-        area: '',
-        departamento: '',
-        municipio: ''
-      };
-      hasAttemptedSubmit.value = false;
-    };
 
     return {
       sidebarCollapsed,
       activeSection,
       farmerName,
-      historyFilter,
-      userProfile,
-      userPreferences,
       recentAnalyses,
       stats,
       fincasStats,
-      fincas,
-      isUploading,
-      uploadProgress,
-      analysisResult,
-      batchData,
-      formErrors,
-      images,
-      capturedImages,
-      currentTab,
-      isSubmitting,
-      tabs,
-      filteredAnalyses,
-      isFormValid,
       checkScreenSize,
       setActiveSection,
       toggleSidebar,
-      openUploadModal,
-      getImageUrl,
-      handleFileUpload,
-      clearFieldError,
-      handleCapturedImage,
-      removeImage,
-      removeCapturedImage,
-      submitAnalysis,
-      viewAnalysisDetails,
       registrarNuevaFinca,
       monitorearLotes,
-      generarReportesFincas,
-      verDetalleFinca,
-      editarFinca,
       logout,
-      goBack,
-      resetForm,
-      nuevaFinca,
-      fincaErrors,
-      isGuardandoFinca,
-      hasAttemptedSubmit,
-      isFincaFormValid,
-      guardarFinca,
-      cancelarRegistroFinca,
-      resetearFormularioFinca
+      goBack
     };
   },
   mounted() {
@@ -1428,6 +1124,139 @@ export default {
   display: flex;
   min-height: 100vh;
   background-color: #f8f9fa;
+}
+
+/* Estadísticas básicas */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+}
+
+.stat-card h3 {
+  font-size: 2rem;
+  color: #27ae60;
+  margin: 0 0 0.5rem 0;
+}
+
+.stat-card p {
+  color: #7f8c8d;
+  margin: 0;
+}
+
+/* Análisis recientes */
+.recent-analyses {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.analysis-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #27ae60;
+}
+
+.analysis-id {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.analysis-quality {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.analysis-date {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+/* Acciones rápidas */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border: 2px solid #27ae60;
+  border-radius: 8px;
+  color: #27ae60;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: #27ae60;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.action-btn i {
+  font-size: 1.2rem;
+}
+
+/* Botón de volver */
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  color: #6c757d;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+/* Header de análisis */
+.analysis-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.analysis-header h1 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+}
+
+.analysis-header p {
+  color: #7f8c8d;
+  font-size: 1.1rem;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 /* Sidebar Styles */

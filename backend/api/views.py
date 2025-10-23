@@ -3,6 +3,7 @@ Views para la API de CacaoScan.
 """
 import time
 import logging
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -26,8 +27,12 @@ from .serializers import (
     LoadModelsResponseSerializer,
     LoginSerializer,
     RegisterSerializer,
-    UserSerializer
+    UserSerializer,
+    EmailVerificationSerializer,
+    ResendVerificationSerializer
 )
+from .utils import create_error_response, create_success_response
+from .models import EmailVerificationToken, ExpiringToken
 
 
 logger = logging.getLogger("cacaoscan.api")
@@ -37,6 +42,7 @@ class ScanMeasureView(APIView):
     """
     Endpoint para medición de granos de cacao.
     """
+    permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
     
     @swagger_auto_schema(
@@ -201,6 +207,7 @@ class ModelsStatusView(APIView):
     """
     Endpoint para consultar el estado de los modelos.
     """
+    permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
         operation_description="Obtiene el estado de los modelos de ML cargados",
@@ -254,6 +261,7 @@ class DatasetValidationView(APIView):
     """
     Endpoint para validar el dataset.
     """
+    permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
         operation_description="Valida el dataset y devuelve estadísticas",
@@ -301,6 +309,7 @@ class LoadModelsView(APIView):
     """
     Endpoint para cargar modelos manualmente.
     """
+    permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
         operation_description="Carga los artefactos de ML (modelos y escaladores)",
@@ -341,6 +350,7 @@ class AutoInitializeView(APIView):
     """
     Endpoint para inicialización automática completa del sistema.
     """
+    permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
         operation_description="Inicializa automáticamente todo el sistema: dataset → crops → entrenamiento → modelos listos",
@@ -538,6 +548,9 @@ from django.contrib.auth.models import User
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 
+# VISTAS PÚBLICAS (AllowAny): LoginView, RegisterView
+# VISTAS PRIVADAS (IsAuthenticated): Todas las demás
+
 
 class LoginView(APIView):
     """
@@ -574,21 +587,26 @@ class LoginView(APIView):
         
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            token, created = Token.objects.get_or_create(user=user)
+            token = ExpiringToken.create_for_user(user)
             
             # Login en la sesión
             login(request, user)
             
-            return Response({
-                'token': token.key,
-                'user': UserSerializer(user).data,
-                'message': 'Login exitoso'
-            })
+            return create_success_response(
+                message='Login exitoso',
+                data={
+                    'token': token.key,
+                    'user': UserSerializer(user).data,
+                    'expires_at': token.expires_at.isoformat()
+                }
+            )
         
-        return Response({
-            'error': 'Credenciales inválidas',
-            'status': 'error'
-        }, status=status.HTTP_401_UNAUTHORIZED)
+        return create_error_response(
+            message='Credenciales inválidas',
+            error_type='invalid_credentials',
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            details=serializer.errors
+        )
 
 
 class RegisterView(APIView):
@@ -618,22 +636,54 @@ class RegisterView(APIView):
     )
     def post(self, request):
         """
-        Registra un nuevo usuario.
+        Registra un nuevo usuario y genera token automáticamente.
         """
-        serializer = RegisterSerializer(data=request.data)
+        # Log de depuración - datos recibidos
+        print(f"🔍 DEBUG RegisterView - Datos recibidos: {request.data}")
+        
+        # Crear una copia de los datos y eliminar el campo 'role' si viene del frontend
+        data = request.data.copy()
+        data.pop('role', None)  # Elimina si viene en la solicitud
+        
+        print(f"🔍 DEBUG RegisterView - Datos procesados: {data}")
+        
+        serializer = RegisterSerializer(data=data)
         
         if serializer.is_valid():
+            print("✅ DEBUG RegisterView - Serializer válido")
             user = serializer.save()
+            print(f"✅ DEBUG RegisterView - Usuario creado: {user.username} ({user.email})")
             
-            return Response({
-                'user': UserSerializer(user).data,
-                'message': 'Usuario creado exitosamente'
-            }, status=status.HTTP_201_CREATED)
+            # Crear token de verificación de email
+            verification_token = EmailVerificationToken.create_for_user(user)
+            print(f"✅ DEBUG RegisterView - Token de verificación creado: {verification_token.token}")
+            
+            # Generar token automáticamente para auto-login
+            token = ExpiringToken.create_for_user(user)
+            print(f"✅ DEBUG RegisterView - Token de acceso creado: {token.key[:10]}...")
+            
+            # Login en la sesión
+            login(request, user)
+            
+            return create_success_response(
+                message='Usuario registrado exitosamente',
+                data={
+                    'token': token.key,
+                    'user': UserSerializer(user).data,
+                    'verification_token': str(verification_token.token),  # Solo para desarrollo
+                    'verification_required': True,
+                    'expires_at': token.expires_at.isoformat()
+                },
+                status_code=status.HTTP_201_CREATED
+            )
         
-        return Response({
-            'error': serializer.errors,
-            'status': 'error'
-        }, status=status.HTTP_400_BAD_REQUEST)
+        print(f"❌ DEBUG RegisterView - Errores de validación: {serializer.errors}")
+        return create_error_response(
+            message='Error en los datos proporcionados',
+            error_type='validation_error',
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=serializer.errors
+        )
 
 
 class LogoutView(APIView):
@@ -847,3 +897,275 @@ class ImagesStatsView(APIView):
             'average_confidence': 0,
             'message': 'Endpoint de estadísticas en desarrollo'
         })
+
+
+# Vistas de verificación de email
+class EmailVerificationView(APIView):
+    """
+    Endpoint para verificar email con token.
+    """
+    permission_classes = [AllowAny]
+    
+    @swagger_auto_schema(
+        operation_description="Verifica un email usando el token enviado por correo",
+        operation_summary="Verificar email",
+        request_body=EmailVerificationSerializer,
+        responses={
+            200: openapi.Response(
+                description="Email verificado exitosamente",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'success': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING),
+                        'user': openapi.Schema(type=openapi.TYPE_OBJECT)
+                    }
+                )
+            ),
+            400: ErrorResponseSerializer,
+        },
+        tags=['Autenticación']
+    )
+    def post(self, request):
+        """
+        Verificar email con token.
+        """
+        serializer = EmailVerificationSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            token_uuid = serializer.validated_data['token']
+            token_obj = EmailVerificationToken.get_valid_token(token_uuid)
+            
+            if token_obj:
+                token_obj.verify()
+                
+                return create_success_response(
+                    message='Email verificado exitosamente',
+                    data={
+                        'user': UserSerializer(token_obj.user).data
+                    }
+                )
+            else:
+                return create_error_response(
+                    message='Token inválido o expirado',
+                    error_type='invalid_token',
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
+        
+        return create_error_response(
+            message='Datos de verificación inválidos',
+            error_type='validation_error',
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=serializer.errors
+        )
+
+
+class ResendVerificationView(APIView):
+    """
+    Endpoint para reenviar verificación de email.
+    """
+    permission_classes = [AllowAny]
+    
+    @swagger_auto_schema(
+        operation_description="Reenvía el token de verificación de email",
+        operation_summary="Reenviar verificación",
+        request_body=ResendVerificationSerializer,
+        responses={
+            200: openapi.Response(
+                description="Token de verificación reenviado",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'success': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            400: ErrorResponseSerializer,
+        },
+        tags=['Autenticación']
+    )
+    def post(self, request):
+        """
+        Reenviar token de verificación de email.
+        """
+        serializer = ResendVerificationSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            user = User.objects.get(email=email)
+            
+            # Crear nuevo token de verificación
+            token_obj = EmailVerificationToken.create_for_user(user)
+            
+            # TODO: Enviar email con token (implementar en producción)
+            # send_verification_email(user, token_obj.token)
+            
+            return create_success_response(
+                message=f'Token de verificación enviado a {email}',
+                data={
+                    'token': str(token_obj.token),  # Solo para desarrollo
+                    'expires_at': token_obj.expires_at.isoformat()
+                }
+            )
+        
+        return create_error_response(
+            message='Email inválido',
+            error_type='validation_error',
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=serializer.errors
+        )
+
+
+# Vistas de recuperación de contraseña
+class ForgotPasswordView(APIView):
+    """
+    Endpoint para solicitar recuperación de contraseña.
+    """
+    permission_classes = [AllowAny]
+    
+    @swagger_auto_schema(
+        operation_description="Envía un email con token para recuperar contraseña",
+        operation_summary="Recuperar contraseña",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'email': openapi.Schema(type=openapi.TYPE_STRING, format='email')
+            },
+            required=['email']
+        ),
+        responses={
+            200: openapi.Response(
+                description="Email de recuperación enviado",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'success': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            400: ErrorResponseSerializer,
+        },
+        tags=['Autenticación']
+    )
+    def post(self, request):
+        """
+        Solicitar recuperación de contraseña.
+        """
+        email = request.data.get('email')
+        
+        if not email:
+            return create_error_response(
+                message='Email es requerido',
+                error_type='validation_error',
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            user = User.objects.get(email=email)
+            
+            # Crear token de recuperación (usando el mismo modelo de verificación)
+            reset_token = EmailVerificationToken.create_for_user(user)
+            
+            # TODO: Enviar email con token (implementar en producción)
+            # send_password_reset_email(user, reset_token.token)
+            
+            return create_success_response(
+                message=f'Instrucciones de recuperación enviadas a {email}',
+                data={
+                    'token': str(reset_token.token),  # Solo para desarrollo
+                    'expires_at': reset_token.expires_at.isoformat()
+                }
+            )
+            
+        except User.DoesNotExist:
+            # Por seguridad, no revelar si el email existe o no
+            return create_success_response(
+                message='Si el email existe, recibirás instrucciones de recuperación'
+            )
+
+
+class ResetPasswordView(APIView):
+    """
+    Endpoint para restablecer contraseña con token.
+    """
+    permission_classes = [AllowAny]
+    
+    @swagger_auto_schema(
+        operation_description="Restablece la contraseña usando el token de recuperación",
+        operation_summary="Restablecer contraseña",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'token': openapi.Schema(type=openapi.TYPE_STRING),
+                'new_password': openapi.Schema(type=openapi.TYPE_STRING),
+                'confirm_password': openapi.Schema(type=openapi.TYPE_STRING)
+            },
+            required=['token', 'new_password', 'confirm_password']
+        ),
+        responses={
+            200: openapi.Response(
+                description="Contraseña restablecida exitosamente",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'success': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            400: ErrorResponseSerializer,
+        },
+        tags=['Autenticación']
+    )
+    def post(self, request):
+        """
+        Restablecer contraseña con token.
+        """
+        token_uuid = request.data.get('token')
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+        
+        if not all([token_uuid, new_password, confirm_password]):
+            return create_error_response(
+                message='Token, nueva contraseña y confirmación son requeridos',
+                error_type='validation_error',
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if new_password != confirm_password:
+            return create_error_response(
+                message='Las contraseñas no coinciden',
+                error_type='validation_error',
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validar fortaleza de contraseña
+        if len(new_password) < 8:
+            return create_error_response(
+                message='La contraseña debe tener al menos 8 caracteres',
+                error_type='validation_error',
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Verificar token
+        token_obj = EmailVerificationToken.get_valid_token(token_uuid)
+        if not token_obj:
+            return create_error_response(
+                message='Token inválido o expirado',
+                error_type='invalid_token',
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Restablecer contraseña
+        user = token_obj.user
+        user.set_password(new_password)
+        user.save()
+        
+        # Eliminar token usado
+        token_obj.delete()
+        
+        return create_success_response(
+            message='Contraseña restablecida exitosamente'
+        )

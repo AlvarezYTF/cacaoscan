@@ -99,15 +99,126 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'password', 'password_confirm')
     
+    def validate_username(self, value):
+        """Validar username único y formato."""
+        # Si el username es un email, usar el email como username
+        if '@' in value:
+            return value
+        
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Este nombre de usuario ya está en uso.")
+        
+        # Validar formato de username
+        if len(value) < 3:
+            raise serializers.ValidationError("El nombre de usuario debe tener al menos 3 caracteres.")
+        
+        if not value.replace('_', '').replace('-', '').isalnum():
+            raise serializers.ValidationError("El nombre de usuario solo puede contener letras, números, guiones y guiones bajos.")
+        
+        return value
+    
+    def validate_email(self, value):
+        """Validar email único y formato."""
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Este email ya está registrado.")
+        
+        # Validación básica de formato de email
+        import re
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_regex, value):
+            raise serializers.ValidationError("Ingresa un email válido.")
+        
+        return value
+    
+    def validate_password(self, value):
+        """Validar fortaleza de contraseña."""
+        if len(value) < 8:
+            raise serializers.ValidationError("La contraseña debe tener al menos 8 caracteres.")
+        
+        # Verificar que tenga al menos una letra mayúscula
+        if not any(c.isupper() for c in value):
+            raise serializers.ValidationError("La contraseña debe contener al menos una letra mayúscula.")
+        
+        # Verificar que tenga al menos una letra minúscula
+        if not any(c.islower() for c in value):
+            raise serializers.ValidationError("La contraseña debe contener al menos una letra minúscula.")
+        
+        # Verificar que tenga al menos un número
+        if not any(c.isdigit() for c in value):
+            raise serializers.ValidationError("La contraseña debe contener al menos un número.")
+        
+        return value
+    
     def validate(self, attrs):
+        """Validaciones generales."""
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("Las contraseñas no coinciden.")
+        
+        # Validar que first_name y last_name no estén vacíos
+        if not attrs.get('first_name', '').strip():
+            raise serializers.ValidationError("El nombre es requerido.")
+        
+        if not attrs.get('last_name', '').strip():
+            raise serializers.ValidationError("El apellido es requerido.")
+        
+        # Si el username es diferente al email, usar el email como username
+        if attrs.get('username') != attrs.get('email'):
+            attrs['username'] = attrs['email']
+        
         return attrs
     
     def create(self, validated_data):
+        """Crear usuario con validaciones completas."""
         validated_data.pop('password_confirm')
-        user = User.objects.create_user(**validated_data)
+        
+        # Asegurar que el username sea igual al email
+        validated_data['username'] = validated_data['email']
+        
+        # Crear usuario usando create_user para hash automático de contraseña
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+            is_active=True  # Usuarios activos por defecto
+        )
+        
         return user
+
+
+class EmailVerificationSerializer(serializers.Serializer):
+    """Serializer para verificación de email."""
+    token = serializers.UUIDField()
+    
+    def validate_token(self, value):
+        """Validar que el token existe y no ha expirado."""
+        from .models import EmailVerificationToken
+        
+        token_obj = EmailVerificationToken.get_valid_token(value)
+        if not token_obj:
+            raise serializers.ValidationError("Token inválido o expirado.")
+        
+        if token_obj.is_verified:
+            raise serializers.ValidationError("Este email ya ha sido verificado.")
+        
+        return value
+
+
+class ResendVerificationSerializer(serializers.Serializer):
+    """Serializer para reenvío de verificación de email."""
+    email = serializers.EmailField()
+    
+    def validate_email(self, value):
+        """Validar que el email existe y no está verificado."""
+        try:
+            user = User.objects.get(email=value)
+            if user.is_active and hasattr(user, 'email_verification_token'):
+                if user.email_verification_token.is_verified:
+                    raise serializers.ValidationError("Este email ya ha sido verificado.")
+            return value
+        except User.DoesNotExist:
+            raise serializers.ValidationError("No existe una cuenta con este email.")
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -130,5 +241,7 @@ class UserSerializer(serializers.ModelSerializer):
             return 'farmer'
     
     def get_is_verified(self, obj):
-        """Determina si el usuario está verificado."""
-        return obj.is_active
+        """Obtener estado de verificación del email."""
+        if hasattr(obj, 'email_verification_token'):
+            return obj.email_verification_token.is_verified
+        return obj.is_active  # Fallback para usuarios sin token de verificación

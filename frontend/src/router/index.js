@@ -31,6 +31,32 @@ const router = createRouter({
       }
     },
     {
+      path: '/dashboard',
+      name: 'Dashboard',
+      redirect: () => {
+        // Redirección dinámica según rol del usuario
+        const authStore = useAuthStore()
+        if (!authStore.isAuthenticated) {
+          return '/login'
+        }
+        
+        switch (authStore.userRole) {
+          case 'admin':
+            return '/admin/dashboard'
+          case 'analyst':
+            return '/analisis'
+          case 'farmer':
+            return '/agricultor-dashboard'
+          default:
+            return '/'
+        }
+      },
+      meta: {
+        title: 'Dashboard | CacaoScan',
+        requiresAuth: true
+      }
+    },
+    {
       path: '/login',
       name: 'Login',
       component: LoginView,
@@ -67,23 +93,56 @@ const router = createRouter({
         title: 'Detalle del Análisis de Cacao | CacaoScan'
       }
     },
+    // Rutas de administración (optimizadas con subrutas)
     {
-      path: '/admin/dashboard',
-      name: 'AdminDashboard',
-      component: AdminDashboard,
-      beforeEnter: ROUTE_GUARDS.admin,
-      meta: {
-        title: 'Panel de Administración | CacaoScan'
-      }
-    },
-    {
-      path: '/admin/agricultores',
-      name: 'Agricultores',
-      component: Agricultores,
-      beforeEnter: ROUTE_GUARDS.admin,
-      meta: {
-        title: 'Gestión de Agricultores | CacaoScan'
-      }
+      path: '/admin',
+      children: [
+        {
+          path: 'dashboard',
+          name: 'AdminDashboard',
+          component: AdminDashboard,
+          beforeEnter: ROUTE_GUARDS.admin,
+          meta: {
+            title: 'Panel de Administración | CacaoScan'
+          }
+        },
+        {
+          path: 'agricultores',
+          name: 'Agricultores',
+          component: Agricultores,
+          beforeEnter: ROUTE_GUARDS.admin,
+          meta: {
+            title: 'Gestión de Agricultores | CacaoScan'
+          }
+        },
+        {
+          path: 'configuracion',
+          name: 'Configuracion',
+          component: () => import('../views/Configuracion.vue'),
+          beforeEnter: ROUTE_GUARDS.admin,
+          meta: {
+            title: 'Configuración | CacaoScan'
+          }
+        },
+        {
+          path: 'dataset',
+          name: 'AdminDataset',
+          component: AdminDataset,
+          beforeEnter: ROUTE_GUARDS.admin,
+          meta: {
+            title: 'Gestión de Dataset | CacaoScan'
+          }
+        },
+        {
+          path: 'training',
+          name: 'AdminTraining',
+          component: AdminTraining,
+          beforeEnter: ROUTE_GUARDS.admin,
+          meta: {
+            title: 'Panel de Reentrenamiento | CacaoScan'
+          }
+        }
+      ]
     },
     {
       path: '/analisis',
@@ -101,15 +160,6 @@ const router = createRouter({
       beforeEnter: ROUTE_GUARDS.analyst,
       meta: {
         title: 'Reportes | CacaoScan'
-      }
-    },
-    {
-      path: '/admin/configuracion',
-      name: 'Configuracion',
-      component: () => import('../views/Configuracion.vue'),
-      beforeEnter: ROUTE_GUARDS.admin,
-      meta: {
-        title: 'Configuración | CacaoScan'
       }
     },
     {
@@ -139,24 +189,6 @@ const router = createRouter({
       meta: {
         title: 'Predicción de Usuario | CacaoScan',
         requiresVerification: true
-      }
-    },
-    {
-      path: '/admin/dataset',
-      name: 'AdminDataset',
-      component: AdminDataset,
-      beforeEnter: ROUTE_GUARDS.admin,
-      meta: {
-        title: 'Gestión de Dataset | CacaoScan'
-      }
-    },
-    {
-      path: '/admin/training',
-      name: 'AdminTraining',
-      component: AdminTraining,
-      beforeEnter: ROUTE_GUARDS.admin,
-      meta: {
-        title: 'Panel de Reentrenamiento | CacaoScan'
       }
     },
     {

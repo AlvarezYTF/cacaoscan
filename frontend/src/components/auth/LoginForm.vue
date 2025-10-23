@@ -223,7 +223,7 @@ const handleSubmit = async () => {
 
     if (result.success) {
       // Éxito manejado por el store (redirección automática)
-      setStatusMessage('Inicio de sesión exitoso', 'success')
+      setStatusMessage('¡Bienvenido de vuelta a CacaoScan! 🌱', 'success')
     } else {
       setStatusMessage(result.error || 'Error al iniciar sesión', 'error')
     }
