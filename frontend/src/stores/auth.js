@@ -257,8 +257,8 @@ export const useAuthStore = defineStore('auth', () => {
       // Limpiar estado local
       clearAll()
       
-      // Redirigir al login
-      await router.push({ 
+      // Redirigir al login usando replace para evitar volver atrás
+      await router.replace({ 
         name: 'Login',
         query: showMessage ? { message: 'Sesión cerrada exitosamente' } : {}
       })

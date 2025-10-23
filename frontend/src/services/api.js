@@ -107,13 +107,21 @@ api.interceptors.response.use(
       }
 
       // Para Token Authentication, si hay 401, el token es inválido
-      // Limpiar tokens y redirigir a login
+      // Limpiar tokens y redirigir a login usando replace
       localStorage.removeItem('access_token')
       localStorage.removeItem('user')
       
       const authStore = getAuthStore()
-      authStore.logout(false) // No mostrar mensaje
-      router.push({ name: 'Login' })
+      authStore.clearAll() // Limpiar estado sin logout completo
+      
+      // Redirigir usando replace para evitar volver atrás
+      router.replace({ 
+        name: 'Login',
+        query: {
+          message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
+          expired: 'true'
+        }
+      })
       
       return Promise.reject(error)
     }

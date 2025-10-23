@@ -10,13 +10,14 @@ const getAuthStore = async () => {
 }
 
 /**
- * Guard que requiere autenticación
+ * Guard principal que verifica autenticación y validez del token
  */
 export const requireAuth = async (to, from, next) => {
   const authStore = await getAuthStore()
 
-  if (!authStore.isAuthenticated) {
-    console.warn('🚫 Acceso denegado: Usuario no autenticado')
+  // Si no hay token, redirigir al login
+  if (!authStore.accessToken) {
+    console.warn('🚫 Acceso denegado: No hay token de acceso')
     next({
       name: 'Login',
       query: { 
@@ -27,11 +28,35 @@ export const requireAuth = async (to, from, next) => {
     return
   }
 
+  // Si hay token pero no hay usuario, intentar obtenerlo
+  if (!authStore.user) {
+    try {
+      console.log('🔄 Verificando token y obteniendo datos de usuario...')
+      await authStore.getCurrentUser()
+    } catch (error) {
+      console.warn('❌ Token inválido o expirado:', error)
+      // Limpiar todo y redirigir
+      authStore.clearAll()
+      next({
+        name: 'Login',
+        query: { 
+          redirect: to.fullPath,
+          message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
+          expired: 'true'
+        }
+      })
+      return
+    }
+  }
+
   // Verificar si la sesión ha expirado por inactividad
   if (authStore.checkSessionTimeout()) {
     console.warn('⏰ Sesión expirada por inactividad')
     return
   }
+
+  // Actualizar actividad del usuario
+  authStore.updateLastActivity()
 
   next()
 }
@@ -45,9 +70,9 @@ export const requireGuest = async (to, from, next) => {
   if (authStore.isAuthenticated) {
     console.log('👤 Usuario ya autenticado, redirigiendo...')
     
-    // Redirigir según rol
+    // Redirigir según rol usando router.replace para evitar historial
     const redirectPath = getRedirectPathByRole(authStore.userRole)
-    next({ path: redirectPath })
+    next({ path: redirectPath, replace: true })
     return
   }
 
@@ -83,6 +108,7 @@ export const requireRole = (allowedRoles) => {
       const errorPath = getErrorPathByRole(userRole)
       next({
         path: errorPath,
+        replace: true,
         query: {
           error: 'access_denied',
           message: 'No tienes permisos para acceder a esta página'
@@ -131,8 +157,8 @@ export const requireVerified = async (to, from, next) => {
  * Guard que requiere permiso específico
  */
 export const requirePermission = (permission) => {
-  return (to, from, next) => {
-    const authStore = getAuthStore()
+  return async (to, from, next) => {
+    const authStore = await getAuthStore()
 
     if (!authStore.isAuthenticated) {
       console.warn('🚫 Acceso denegado: Usuario no autenticado')
@@ -152,6 +178,7 @@ export const requirePermission = (permission) => {
       const errorPath = getErrorPathByRole(authStore.userRole)
       next({
         path: errorPath,
+        replace: true,
         query: {
           error: 'insufficient_permissions',
           message: 'No tienes los permisos necesarios para acceder a esta página'
@@ -186,6 +213,7 @@ export const requireFarmer = async (to, from, next) => {
   if (!authStore.isFarmer && !authStore.isAdmin) {
     next({
       path: '/acceso-denegado',
+      replace: true,
       query: {
         message: 'Esta área está destinada solo para agricultores'
       }
@@ -227,6 +255,7 @@ export const requireAnalyst = async (to, from, next) => {
   if (!authStore.isAnalyst && !authStore.isAdmin) {
     next({
       path: '/acceso-denegado',
+      replace: true,
       query: {
         message: 'Esta área está destinada solo para analistas'
       }
@@ -257,6 +286,7 @@ export const requireAdmin = async (to, from, next) => {
   if (!authStore.isAdmin) {
     next({
       path: '/acceso-denegado',
+      replace: true,
       query: {
         message: 'Esta área está destinada solo para administradores'
       }
@@ -295,6 +325,7 @@ export const requireCanUpload = async (to, from, next) => {
     } else {
       next({
         path: '/acceso-denegado',
+        replace: true,
         query: {
           message: 'No tienes permisos para subir imágenes'
         }
@@ -325,24 +356,25 @@ export const updateActivity = async (to, from, next) => {
 }
 
 /**
- * Guard que verifica el estado del token
+ * Guard que verifica el estado del token en tiempo real
  */
 export const checkTokenValidity = async (to, from, next) => {
-  const authStore = getAuthStore()
+  const authStore = await getAuthStore()
 
   if (authStore.isAuthenticated && authStore.accessToken) {
     try {
-      // Intentar obtener datos del usuario para verificar token
+      // Verificar token haciendo una petición ligera
       await authStore.getCurrentUser()
       next()
     } catch (error) {
-      console.warn('Token inválido, redirigiendo al login')
+      console.warn('Token inválido, limpiando sesión y redirigiendo al login')
       authStore.clearAll()
       
       // Evitar loops de redirección
       if (to.name !== 'Login') {
         next({
           name: 'Login',
+          replace: true,
           query: {
             message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
             expired: 'true',
