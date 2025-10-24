@@ -18,6 +18,12 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, Count, Avg, Min, Max, Sum
+
+# Importar vistas de calibración
+from .calibration_views import CalibrationStatusView, CalibrationView, CalibratedScanMeasureView
+
+# Importar vistas de emails
+from .email_views import EmailStatusView, SendTestEmailView, SendBulkNotificationView, EmailTemplatePreviewView, EmailLogsView
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.http import JsonResponse
@@ -377,6 +383,56 @@ class ScanMeasureView(APIView):
                     'prediction_id': cacao_prediction.id if cacao_prediction else None,
                     'saved_to_database': save_success and pred_success
                 }
+                
+                # 10. Enviar email de análisis completado
+                try:
+                    from .email_service import send_email_notification
+                    
+                    # Determinar nivel de confianza
+                    avg_confidence = (result['confidences']['alto'] + result['confidences']['ancho'] + 
+                                    result['confidences']['grosor'] + result['confidences']['peso']) / 4
+                    
+                    if avg_confidence >= 0.8:
+                        confidence_level = 'high'
+                    elif avg_confidence >= 0.6:
+                        confidence_level = 'medium'
+                    else:
+                        confidence_level = 'low'
+                    
+                    email_context = {
+                        'user_name': request.user.get_full_name() or request.user.username,
+                        'user_email': request.user.email,
+                        'analysis_id': cacao_prediction.id if cacao_prediction else 'N/A',
+                        'confidence': round(avg_confidence * 100, 1),
+                        'confidence_level': confidence_level,
+                        'alto_mm': result['alto_mm'],
+                        'ancho_mm': result['ancho_mm'],
+                        'grosor_mm': result['grosor_mm'],
+                        'peso_g': result['peso_g'],
+                        'confidence_alto': round(result['confidences']['alto'] * 100, 1),
+                        'confidence_ancho': round(result['confidences']['ancho'] * 100, 1),
+                        'confidence_grosor': round(result['confidences']['grosor'] * 100, 1),
+                        'confidence_peso': round(result['confidences']['peso'] * 100, 1),
+                        'processing_time_ms': prediction_time_ms,
+                        'model_version': result.get('debug', {}).get('model_version', 'v1.0'),
+                        'analysis_date': timezone.now().strftime('%d/%m/%Y %H:%M'),
+                        'crop_url': result['crop_url'],
+                        'defects_detected': []  # TODO: Implementar detección de defectos
+                    }
+                    
+                    email_result = send_email_notification(
+                        user_email=request.user.email,
+                        notification_type='analysis_complete',
+                        context=email_context
+                    )
+                    
+                    if email_result['success']:
+                        logger.info(f"Email de análisis completado enviado a {request.user.email}")
+                    else:
+                        logger.warning(f"Error enviando email de análisis: {email_result.get('error')}")
+                        
+                except Exception as e:
+                    logger.error(f"Error en envío de email de análisis: {e}")
                 
                 # Validar respuesta con serializer
                 serializer = ScanMeasureResponseSerializer(data=response_data)
@@ -872,6 +928,27 @@ class RegisterView(APIView):
             # Crear token de verificación de email
             verification_token = EmailVerificationToken.create_for_user(user)
             print(f"✅ DEBUG RegisterView - Token de verificación creado: {verification_token.token}")
+            
+            # Enviar email de bienvenida
+            try:
+                from .email_service import send_email_notification
+                email_context = {
+                    'user_name': user.get_full_name() or user.username,
+                    'user_email': user.email,
+                    'verification_token': str(verification_token.token),
+                    'verification_url': f"{request.build_absolute_uri('/')}auth/verify-email/?token={verification_token.token}"
+                }
+                email_result = send_email_notification(
+                    user_email=user.email,
+                    notification_type='welcome',
+                    context=email_context
+                )
+                if email_result['success']:
+                    print(f"✅ DEBUG RegisterView - Email de bienvenida enviado a {user.email}")
+                else:
+                    print(f"⚠️ DEBUG RegisterView - Error enviando email de bienvenida: {email_result.get('error')}")
+            except Exception as e:
+                print(f"⚠️ DEBUG RegisterView - Error en envío de email: {e}")
             
             # Generar tokens JWT automáticamente para auto-login
             refresh = RefreshToken.for_user(user)
@@ -1531,8 +1608,27 @@ class ForgotPasswordView(APIView):
             # Crear token de recuperación (usando el mismo modelo de verificación)
             reset_token = EmailVerificationToken.create_for_user(user)
             
-            # TODO: Enviar email con token (implementar en producción)
-            # send_password_reset_email(user, reset_token.token)
+            # Enviar email de restablecimiento de contraseña
+            try:
+                from .email_service import send_email_notification
+                email_context = {
+                    'user_name': user.get_full_name() or user.username,
+                    'user_email': user.email,
+                    'token': str(reset_token.token),
+                    'reset_url': f"{request.build_absolute_uri('/')}auth/reset-password/?token={reset_token.token}",
+                    'token_expiry_hours': 24  # Token válido por 24 horas
+                }
+                email_result = send_email_notification(
+                    user_email=user.email,
+                    notification_type='password_reset',
+                    context=email_context
+                )
+                if email_result['success']:
+                    logger.info(f"Email de restablecimiento enviado a {user.email}")
+                else:
+                    logger.error(f"Error enviando email de restablecimiento: {email_result.get('error')}")
+            except Exception as e:
+                logger.error(f"Error en envío de email de restablecimiento: {e}")
             
             return create_success_response(
                 message=f'Instrucciones de recuperación enviadas a {email}',

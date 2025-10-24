@@ -1,0 +1,27 @@
+¡Hola {{ user_name }}!
+
+¡Bienvenido a CacaoScan! Estamos emocionados de tenerte como parte de nuestra comunidad de agricultores y profesionales del cacao.
+
+Tu cuenta ha sido creada exitosamente y ya puedes comenzar a utilizar todas las funcionalidades de nuestra plataforma.
+
+¿Qué puedes hacer en CacaoScan?
+✓ Analizar granos de cacao con inteligencia artificial
+✓ Gestionar tus fincas y lotes
+✓ Generar reportes detallados de calidad
+✓ Recibir alertas sobre defectos detectados
+✓ Acceder a estadísticas y métricas de tus cultivos
+✓ Compartir resultados con otros profesionales
+
+Para comenzar, te recomendamos:
+1. Completar tu perfil de usuario
+2. Registrar tu primera finca
+3. Subir imágenes de granos para análisis
+4. Explorar las funcionalidades disponibles
+
+Visita nuestro sitio web: {{ site_url }}/dashboard
+
+¿Necesitas ayuda? No dudes en contactarnos si tienes alguna pregunta o necesitas asistencia.
+
+---
+Este email fue enviado a {{ user_email }} porque creaste una cuenta en CacaoScan.
+© {{ current_year }} CacaoScan. Todos los derechos reservados.

@@ -1,0 +1,51 @@
+Reporte Listo - CacaoScan
+
+Hola {{ user_name }},
+
+El reporte que solicitaste ha sido generado exitosamente y está listo para descargar.
+
+📋 INFORMACIÓN DEL REPORTE
+===========================
+- Tipo de reporte: {{ report_type }}
+- Período: {{ period_start }} - {{ period_end }}
+- Fecha de generación: {{ generation_date }}
+- Tamaño del archivo: {{ file_size }}
+- Formato: {{ file_format }}
+
+{% if summary_stats %}
+📈 RESUMEN DE ESTADÍSTICAS
+===========================
+{% for stat in summary_stats %}
+{{ stat.label }}: {{ stat.value }}
+{% endfor %}
+{% endif %}
+
+📥 DESCARGAR REPORTE
+=====================
+Enlace: {{ download_url }}
+
+📁 CONTENIDO DEL REPORTE
+========================
+{% for section in report_sections %}
+- {{ section }}
+{% endfor %}
+
+{% if recommendations %}
+💡 RECOMENDACIONES
+==================
+{% for recommendation in recommendations %}
+- {{ recommendation }}
+{% endfor %}
+{% endif %}
+
+⏰ IMPORTANTE
+==============
+Este enlace de descarga estará disponible por {{ download_expiry_days }} días. 
+Después de ese período, el archivo será eliminado automáticamente por seguridad.
+
+¿Tienes preguntas sobre este reporte? No dudes en contactarnos.
+
+---
+Este email fue enviado a {{ user_email }} porque solicitaste un reporte de análisis.
+ID del reporte: {{ report_id }}
+© {{ current_year }} CacaoScan. Todos los derechos reservados.

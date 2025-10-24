@@ -272,6 +272,49 @@ LOGGING = {
     },
 }
 
+# Configuración de Email
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() == 'true'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '30'))
+
+# Configuración de SendGrid (alternativa)
+SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
+SENDGRID_FROM_EMAIL = os.environ.get('SENDGRID_FROM_EMAIL', 'noreply@cacaoscan.com')
+
+# Configuración de emails del sistema
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'CacaoScan <noreply@cacaoscan.com>')
+SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
+ADMINS = [
+    ('Admin CacaoScan', os.environ.get('ADMIN_EMAIL', 'admin@cacaoscan.com')),
+]
+MANAGERS = ADMINS
+
+# Configuración de templates de email
+EMAIL_TEMPLATES_DIR = BASE_DIR / 'api' / 'templates' / 'emails'
+
+# Configuración de notificaciones por email
+EMAIL_NOTIFICATIONS_ENABLED = os.environ.get('EMAIL_NOTIFICATIONS_ENABLED', 'True').lower() == 'true'
+EMAIL_NOTIFICATION_TYPES = [
+    'welcome',           # Email de bienvenida
+    'password_reset',    # Restablecimiento de contraseña
+    'analysis_complete', # Análisis completado
+    'report_ready',      # Reporte listo
+    'training_complete', # Entrenamiento completado
+    'defect_alert',      # Alerta de defectos
+    'system_alert',      # Alertas del sistema
+    'weekly_summary',    # Resumen semanal
+]
+
+# Configuración de cola de emails (para producción)
+EMAIL_QUEUE_ENABLED = os.environ.get('EMAIL_QUEUE_ENABLED', 'False').lower() == 'true'
+EMAIL_BATCH_SIZE = int(os.environ.get('EMAIL_BATCH_SIZE', '50'))
+EMAIL_RETRY_ATTEMPTS = int(os.environ.get('EMAIL_RETRY_ATTEMPTS', '3'))
+
 # Configuración de JWT
 
 SIMPLE_JWT = {

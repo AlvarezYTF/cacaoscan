@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Completado - CacaoScan</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #8B4513;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #8B4513;
+            margin-bottom: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .status-high {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-medium {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status-low {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #f8f9fa;
+        }
+        .results-table th,
+        .results-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .results-table th {
+            background-color: #8B4513;
+            color: white;
+            font-weight: bold;
+        }
+        .results-table tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #8B4513;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .cta-button:hover {
+            background-color: #6d3410;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🌱 CacaoScan</div>
+            <div>Análisis de Granos Completado</div>
+        </div>
+        
+        <div class="content">
+            <h2>¡Tu análisis está listo! 🎉</h2>
+            
+            <p>Hola {{ user_name }},</p>
+            
+            <p>El análisis de tus granos de cacao ha sido completado exitosamente. Aquí tienes un resumen de los resultados:</p>
+            
+            {% if confidence_level == 'high' %}
+            <div class="status-badge status-high">✅ Alta Calidad - Confianza: {{ confidence }}%</div>
+            {% elif confidence_level == 'medium' %}
+            <div class="status-badge status-medium">⚠️ Calidad Estándar - Confianza: {{ confidence }}%</div>
+            {% else %}
+            <div class="status-badge status-low">⚠️ Calidad Baja - Confianza: {{ confidence }}%</div>
+            {% endif %}
+            
+            <h3>📊 Resultados del Análisis</h3>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Métrica</th>
+                        <th>Valor</th>
+                        <th>Confianza</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Alto</strong></td>
+                        <td>{{ alto_mm }} mm</td>
+                        <td>{{ confidence_alto }}%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ancho</strong></td>
+                        <td>{{ ancho_mm }} mm</td>
+                        <td>{{ confidence_ancho }}%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Grosor</strong></td>
+                        <td>{{ grosor_mm }} mm</td>
+                        <td>{{ confidence_grosor }}%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Peso</strong></td>
+                        <td>{{ peso_g }} g</td>
+                        <td>{{ confidence_peso }}%</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            {% if defects_detected %}
+            <div style="background-color: #f8d7da; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <h4>⚠️ Defectos Detectados</h4>
+                <ul>
+                    {% for defect in defects_detected %}
+                    <li>{{ defect }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <h3>📈 Información Adicional</h3>
+            <ul>
+                <li><strong>Tiempo de procesamiento:</strong> {{ processing_time_ms }} ms</li>
+                <li><strong>Modelo utilizado:</strong> {{ model_version }}</li>
+                <li><strong>Fecha del análisis:</strong> {{ analysis_date }}</li>
+                {% if crop_url %}
+                <li><strong>Imagen procesada:</strong> <a href="{{ site_url }}{{ crop_url }}">Ver imagen</a></li>
+                {% endif %}
+            </ul>
+            
+            <div style="text-align: center;">
+                <a href="{{ site_url }}/analysis/{{ analysis_id }}" class="cta-button">Ver Análisis Completo</a>
+            </div>
+            
+            {% if confidence_level == 'low' %}
+            <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <h4>💡 Recomendación</h4>
+                <p>La confianza del análisis es baja. Te recomendamos repetir el análisis con una imagen de mejor calidad o diferentes condiciones de iluminación.</p>
+            </div>
+            {% endif %}
+            
+            <p>¿Tienes preguntas sobre estos resultados? No dudes en contactarnos.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Este email fue enviado a {{ user_email }} porque solicitaste un análisis de granos de cacao.</p>
+            <p>&copy; {{ current_year }} CacaoScan. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>

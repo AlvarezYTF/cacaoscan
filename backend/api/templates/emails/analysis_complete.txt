@@ -1,0 +1,52 @@
+¡Tu análisis está listo! 🎉
+
+Hola {{ user_name }},
+
+El análisis de tus granos de cacao ha sido completado exitosamente. Aquí tienes un resumen de los resultados:
+
+{% if confidence_level == 'high' %}
+✅ Alta Calidad - Confianza: {{ confidence }}%
+{% elif confidence_level == 'medium' %}
+⚠️ Calidad Estándar - Confianza: {{ confidence }}%
+{% else %}
+⚠️ Calidad Baja - Confianza: {{ confidence }}%
+{% endif %}
+
+📊 RESULTADOS DEL ANÁLISIS
+===========================
+
+Alto: {{ alto_mm }} mm (Confianza: {{ confidence_alto }}%)
+Ancho: {{ ancho_mm }} mm (Confianza: {{ confidence_ancho }}%)
+Grosor: {{ grosor_mm }} mm (Confianza: {{ confidence_grosor }}%)
+Peso: {{ peso_g }} g (Confianza: {{ confidence_peso }}%)
+
+{% if defects_detected %}
+⚠️ DEFECTOS DETECTADOS
+======================
+{% for defect in defects_detected %}
+- {{ defect }}
+{% endfor %}
+{% endif %}
+
+📈 INFORMACIÓN ADICIONAL
+========================
+- Tiempo de procesamiento: {{ processing_time_ms }} ms
+- Modelo utilizado: {{ model_version }}
+- Fecha del análisis: {{ analysis_date }}
+{% if crop_url %}
+- Imagen procesada: {{ site_url }}{{ crop_url }}
+{% endif %}
+
+Ver análisis completo: {{ site_url }}/analysis/{{ analysis_id }}
+
+{% if confidence_level == 'low' %}
+💡 RECOMENDACIÓN
+================
+La confianza del análisis es baja. Te recomendamos repetir el análisis con una imagen de mejor calidad o diferentes condiciones de iluminación.
+{% endif %}
+
+¿Tienes preguntas sobre estos resultados? No dudes en contactarnos.
+
+---
+Este email fue enviado a {{ user_email }} porque solicitaste un análisis de granos de cacao.
+© {{ current_year }} CacaoScan. Todos los derechos reservados.

@@ -1,0 +1,43 @@
+Entrenamiento Completado - CacaoScan
+
+Hola {{ user_name }},
+
+El entrenamiento del modelo {{ model_name }} ha sido completado exitosamente y está listo para usar.
+
+✅ ENTRENAMIENTO EXITOSO
+
+📊 INFORMACIÓN DEL ENTRENAMIENTO
+==================================
+- Modelo: {{ model_name }}
+- ID del Trabajo: {{ job_id }}
+- Fecha de Completado: {{ completion_date }}
+- Duración: {{ duration }}
+- Estado: {{ status }}
+
+{% if metrics %}
+📈 MÉTRICAS DEL MODELO
+======================
+{% for metric_name, metric_value in metrics.items %}
+{{ metric_name }}: {{ metric_value }}
+{% endfor %}
+{% endif %}
+
+🚀 PRÓXIMOS PASOS
+=================
+1. El modelo está disponible para análisis inmediatos
+2. Puedes comenzar a procesar imágenes de granos de cacao
+3. El sistema utilizará automáticamente el nuevo modelo
+4. Monitorea el rendimiento en el dashboard
+
+Ir al Dashboard: {{ site_url }}/dashboard
+
+💡 INFORMACIÓN TÉCNICA
+=======================
+El modelo ha sido entrenado con los últimos datos disponibles y optimizado para máxima precisión en la medición de granos de cacao.
+
+¿Tienes preguntas sobre el entrenamiento? No dudes en contactarnos.
+
+---
+Este email fue enviado a {{ user_email }} porque se completó un entrenamiento de modelo.
+ID del Trabajo: {{ job_id }}
+© {{ current_year }} CacaoScan. Todos los derechos reservados.

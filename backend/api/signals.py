@@ -34,7 +34,7 @@ def notify_prediction_completed(sender, instance, created, **kwargs):
                 mensaje = f'Tu análisis de granos de cacao ha sido completado con baja confianza ({instance.average_confidence:.1%}). Considera repetir el análisis.'
             
             # Crear notificación
-            Notification.create_notification(
+            notification = Notification.create_notification(
                 user=instance.image.user,
                 tipo=tipo,
                 titulo=titulo,
@@ -52,6 +52,40 @@ def notify_prediction_completed(sender, instance, created, **kwargs):
                 }
             )
             
+            # Enviar email de notificación si está habilitado
+            try:
+                from .email_service import send_email_notification
+                
+                email_context = {
+                    'user_name': instance.image.user.get_full_name() or instance.image.user.username,
+                    'user_email': instance.image.user.email,
+                    'analysis_id': instance.id,
+                    'confidence': round(instance.average_confidence * 100, 1),
+                    'confidence_level': tipo,
+                    'alto_mm': instance.alto_mm,
+                    'ancho_mm': instance.ancho_mm,
+                    'grosor_mm': instance.grosor_mm,
+                    'peso_g': instance.peso_g,
+                    'processing_time_ms': instance.processing_time_ms,
+                    'analysis_date': instance.created_at.strftime('%d/%m/%Y %H:%M'),
+                    'crop_url': getattr(instance, 'crop_url', ''),
+                    'defects_detected': []  # TODO: Implementar detección de defectos
+                }
+                
+                email_result = send_email_notification(
+                    user_email=instance.image.user.email,
+                    notification_type='analysis_complete',
+                    context=email_context
+                )
+                
+                if email_result['success']:
+                    logger.info(f"Email de análisis completado enviado a {instance.image.user.email}")
+                else:
+                    logger.warning(f"Error enviando email de análisis: {email_result.get('error')}")
+                    
+            except Exception as e:
+                logger.error(f"Error en envío de email de análisis: {e}")
+            
             logger.info(f"Notificación de análisis completado enviada a usuario {instance.image.user.username}")
             
         except Exception as e:
@@ -66,7 +100,7 @@ def notify_training_completed(sender, instance, created, **kwargs):
     if not created and instance.status == 'completed':
         try:
             # Notificar al usuario que creó el trabajo
-            Notification.create_notification(
+            notification = Notification.create_notification(
                 user=instance.created_by,
                 tipo='training_complete',
                 titulo='Entrenamiento de Modelo Completado',
@@ -78,6 +112,35 @@ def notify_training_completed(sender, instance, created, **kwargs):
                     'duration': instance.duration_formatted if hasattr(instance, 'duration_formatted') else None
                 }
             )
+            
+            # Enviar email de notificación si está habilitado
+            try:
+                from .email_service import send_email_notification
+                
+                email_context = {
+                    'user_name': instance.created_by.get_full_name() or instance.created_by.username,
+                    'user_email': instance.created_by.email,
+                    'model_name': instance.model_name,
+                    'job_id': instance.job_id,
+                    'metrics': instance.metrics,
+                    'duration': instance.duration_formatted if hasattr(instance, 'duration_formatted') else 'N/A',
+                    'completion_date': instance.updated_at.strftime('%d/%m/%Y %H:%M'),
+                    'status': instance.status
+                }
+                
+                email_result = send_email_notification(
+                    user_email=instance.created_by.email,
+                    notification_type='training_complete',
+                    context=email_context
+                )
+                
+                if email_result['success']:
+                    logger.info(f"Email de entrenamiento completado enviado a {instance.created_by.email}")
+                else:
+                    logger.warning(f"Error enviando email de entrenamiento: {email_result.get('error')}")
+                    
+            except Exception as e:
+                logger.error(f"Error en envío de email de entrenamiento: {e}")
             
             # Si es un trabajo importante, también notificar a los administradores
             if instance.job_type in ['full_training', 'model_update']:

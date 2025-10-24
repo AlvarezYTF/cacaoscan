@@ -94,4 +94,16 @@ urlpatterns = [
     path('reportes/<int:reporte_id>/delete/', views.ReporteDeleteView.as_view(), name='reporte-delete'),
     path('reportes/stats/', views.ReporteStatsView.as_view(), name='reportes-stats'),
     path('reportes/cleanup/', views.ReporteCleanupView.as_view(), name='reportes-cleanup'),
+    
+    # Endpoints de calibración
+    path('calibration/status/', views.CalibrationStatusView.as_view(), name='calibration-status'),
+    path('calibration/', views.CalibrationView.as_view(), name='calibration'),
+    path('scan/measure/calibrated/', views.CalibratedScanMeasureView.as_view(), name='scan-measure-calibrated'),
+    
+    # Endpoints de gestión de emails
+    path('emails/status/', views.EmailStatusView.as_view(), name='email-status'),
+    path('emails/test/', views.SendTestEmailView.as_view(), name='email-test'),
+    path('emails/bulk/', views.SendBulkNotificationView.as_view(), name='email-bulk'),
+    path('emails/template-preview/', views.EmailTemplatePreviewView.as_view(), name='email-template-preview'),
+    path('emails/logs/', views.EmailLogsView.as_view(), name='email-logs'),
 ]

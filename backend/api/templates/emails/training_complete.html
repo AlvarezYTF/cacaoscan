@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrenamiento Completado - CacaoScan</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #8B4513;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #8B4513;
+            margin-bottom: 10px;
+        }
+        .success-badge {
+            display: inline-block;
+            background-color: #d4edda;
+            color: #155724;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .training-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .training-info h3 {
+            color: #8B4513;
+            margin-top: 0;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .metric-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #8B4513;
+        }
+        .metric-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #8B4513;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .cta-button:hover {
+            background-color: #6d3410;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🌱 CacaoScan</div>
+            <div>Entrenamiento de Modelo Completado</div>
+        </div>
+        
+        <div class="content">
+            <h2>🎉 ¡Entrenamiento Completado!</h2>
+            
+            <p>Hola {{ user_name }},</p>
+            
+            <p>El entrenamiento del modelo <strong>{{ model_name }}</strong> ha sido completado exitosamente y está listo para usar.</p>
+            
+            <div class="success-badge">✅ Entrenamiento Exitoso</div>
+            
+            <div class="training-info">
+                <h3>📊 Información del Entrenamiento</h3>
+                <ul>
+                    <li><strong>Modelo:</strong> {{ model_name }}</li>
+                    <li><strong>ID del Trabajo:</strong> {{ job_id }}</li>
+                    <li><strong>Fecha de Completado:</strong> {{ completion_date }}</li>
+                    <li><strong>Duración:</strong> {{ duration }}</li>
+                    <li><strong>Estado:</strong> {{ status }}</li>
+                </ul>
+            </div>
+            
+            {% if metrics %}
+            <h3>📈 Métricas del Modelo</h3>
+            <div class="metrics-grid">
+                {% for metric_name, metric_value in metrics.items %}
+                <div class="metric-card">
+                    <div class="metric-number">{{ metric_value }}</div>
+                    <div class="metric-label">{{ metric_name }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <h3>🚀 Próximos Pasos</h3>
+            <ol>
+                <li>El modelo está disponible para análisis inmediatos</li>
+                <li>Puedes comenzar a procesar imágenes de granos de cacao</li>
+                <li>El sistema utilizará automáticamente el nuevo modelo</li>
+                <li>Monitorea el rendimiento en el dashboard</li>
+            </ol>
+            
+            <div style="text-align: center;">
+                <a href="{{ site_url }}/dashboard" class="cta-button">Ir al Dashboard</a>
+            </div>
+            
+            <div style="background-color: #d1ecf1; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <h4>💡 Información Técnica</h4>
+                <p>El modelo ha sido entrenado con los últimos datos disponibles y optimizado para máxima precisión en la medición de granos de cacao.</p>
+            </div>
+            
+            <p>¿Tienes preguntas sobre el entrenamiento? No dudes en contactarnos.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Este email fue enviado a {{ user_email }} porque se completó un entrenamiento de modelo.</p>
+            <p><strong>ID del Trabajo:</strong> {{ job_id }}</p>
+            <p>&copy; {{ current_year }} CacaoScan. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>
