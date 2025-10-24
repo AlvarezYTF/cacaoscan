@@ -44,4 +44,12 @@ urlpatterns = [
     path('auth/users/<int:user_id>/update/', views.UserUpdateView.as_view(), name='user-update'),
     path('auth/users/<int:user_id>/delete/', views.UserDeleteView.as_view(), name='user-delete'),
     path('auth/admin/stats/', views.AdminStatsView.as_view(), name='admin-stats'),
+    
+    # Endpoints de panel admin de dataset global
+    path('images/admin/images/', views.AdminImagesListView.as_view(), name='admin-images-list'),
+    path('images/admin/images/<int:image_id>/', views.AdminImageDetailView.as_view(), name='admin-image-detail'),
+    path('images/admin/images/<int:image_id>/update/', views.AdminImageUpdateView.as_view(), name='admin-image-update'),
+    path('images/admin/images/<int:image_id>/delete/', views.AdminImageDeleteView.as_view(), name='admin-image-delete'),
+    path('images/admin/images/bulk-update/', views.AdminBulkUpdateView.as_view(), name='admin-bulk-update'),
+    path('images/admin/images/admin-stats/', views.AdminDatasetStatsView.as_view(), name='admin-dataset-stats'),
 ]
