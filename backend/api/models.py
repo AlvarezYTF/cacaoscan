@@ -569,6 +569,124 @@ class Finca(models.Model):
         }
 
 
+class Notification(models.Model):
+    """
+    Modelo para gestionar notificaciones del sistema.
+    """
+    TIPO_CHOICES = [
+        ('info', 'Información'),
+        ('warning', 'Advertencia'),
+        ('error', 'Error'),
+        ('success', 'Éxito'),
+        ('defect_alert', 'Alerta de Defecto'),
+        ('report_ready', 'Reporte Listo'),
+        ('training_complete', 'Entrenamiento Completo'),
+        ('welcome', 'Bienvenida'),
+    ]
+    
+    user = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='notifications',
+        help_text="Usuario destinatario de la notificación"
+    )
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPO_CHOICES,
+        help_text="Tipo de notificación"
+    )
+    titulo = models.CharField(
+        max_length=200,
+        help_text="Título de la notificación"
+    )
+    mensaje = models.TextField(
+        help_text="Mensaje detallado de la notificación"
+    )
+    leida = models.BooleanField(
+        default=False,
+        help_text="Indica si la notificación ha sido leída"
+    )
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Fecha de creación de la notificación"
+    )
+    fecha_lectura = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Fecha en que se marcó como leída"
+    )
+    datos_extra = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Datos adicionales en formato JSON"
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Notificación'
+        verbose_name_plural = 'Notificaciones'
+        ordering = ['-fecha_creacion']
+        indexes = [
+            models.Index(fields=['user', '-fecha_creacion']),
+            models.Index(fields=['leida']),
+            models.Index(fields=['tipo']),
+            models.Index(fields=['fecha_creacion']),
+        ]
+    
+    def __str__(self):
+        return f"{self.titulo} - {self.user.username} ({'Leída' if self.leida else 'No leída'})"
+    
+    def mark_as_read(self):
+        """Marcar notificación como leída."""
+        if not self.leida:
+            self.leida = True
+            self.fecha_lectura = timezone.now()
+            self.save(update_fields=['leida', 'fecha_lectura'])
+    
+    @classmethod
+    def mark_all_as_read(cls, user):
+        """Marcar todas las notificaciones de un usuario como leídas."""
+        cls.objects.filter(user=user, leida=False).update(
+            leida=True,
+            fecha_lectura=timezone.now()
+        )
+    
+    @classmethod
+    def get_unread_count(cls, user):
+        """Obtener número de notificaciones no leídas de un usuario."""
+        return cls.objects.filter(user=user, leida=False).count()
+    
+    @classmethod
+    def create_notification(cls, user, tipo, titulo, mensaje, datos_extra=None):
+        """Crear una nueva notificación."""
+        return cls.objects.create(
+            user=user,
+            tipo=tipo,
+            titulo=titulo,
+            mensaje=mensaje,
+            datos_extra=datos_extra or {}
+        )
+    
+    @property
+    def tiempo_transcurrido(self):
+        """Obtener tiempo transcurrido desde la creación."""
+        delta = timezone.now() - self.fecha_creacion
+        
+        if delta.days > 0:
+            return f"{delta.days} día{'s' if delta.days > 1 else ''}"
+        elif delta.seconds > 3600:
+            hours = delta.seconds // 3600
+            return f"{hours} hora{'s' if hours > 1 else ''}"
+        elif delta.seconds > 60:
+            minutes = delta.seconds // 60
+            return f"{minutes} minuto{'s' if minutes > 1 else ''}"
+        else:
+            return "Hace un momento"
+
+
 class Lote(models.Model):
     """
     Modelo para gestionar lotes de cacao dentro de fincas.

@@ -4,7 +4,7 @@ Serializers para la API de CacaoScan.
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
-from .models import UserProfile, CacaoImage, CacaoPrediction, TrainingJob, Finca, Lote
+from .models import UserProfile, CacaoImage, CacaoPrediction, TrainingJob, Finca, Lote, Notification
 
 
 class ConfidenceSerializer(serializers.Serializer):
@@ -746,3 +746,70 @@ class LoteStatsSerializer(serializers.Serializer):
     promedio_area_hectareas = serializers.DecimalField(max_digits=10, decimal_places=2)
     variedades_mas_comunes = serializers.ListField()
     calidad_promedio_general = serializers.FloatField()
+
+
+# Serializers para gestión de notificaciones
+class NotificationSerializer(serializers.ModelSerializer):
+    """Serializer para notificaciones con formateo de fechas."""
+    tiempo_transcurrido = serializers.ReadOnlyField()
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    
+    class Meta:
+        model = Notification
+        fields = (
+            'id', 'tipo', 'tipo_display', 'titulo', 'mensaje', 
+            'leida', 'fecha_creacion', 'fecha_lectura', 
+            'datos_extra', 'tiempo_transcurrido', 'created_at', 'updated_at'
+        )
+        read_only_fields = (
+            'id', 'fecha_creacion', 'fecha_lectura', 'created_at', 'updated_at',
+            'tiempo_transcurrido', 'tipo_display'
+        )
+    
+    def validate_titulo(self, value):
+        """Validar título de notificación."""
+        if not value or len(value.strip()) < 3:
+            raise serializers.ValidationError("El título debe tener al menos 3 caracteres.")
+        return value.strip()
+    
+    def validate_mensaje(self, value):
+        """Validar mensaje de notificación."""
+        if not value or len(value.strip()) < 10:
+            raise serializers.ValidationError("El mensaje debe tener al menos 10 caracteres.")
+        return value.strip()
+
+
+class NotificationListSerializer(serializers.ModelSerializer):
+    """Serializer optimizado para listados de notificaciones."""
+    tiempo_transcurrido = serializers.ReadOnlyField()
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    
+    class Meta:
+        model = Notification
+        fields = (
+            'id', 'tipo', 'tipo_display', 'titulo', 'leida', 
+            'fecha_creacion', 'tiempo_transcurrido'
+        )
+
+
+class NotificationCreateSerializer(serializers.ModelSerializer):
+    """Serializer para crear notificaciones."""
+    
+    class Meta:
+        model = Notification
+        fields = ('user', 'tipo', 'titulo', 'mensaje', 'datos_extra')
+    
+    def validate_tipo(self, value):
+        """Validar tipo de notificación."""
+        valid_types = [choice[0] for choice in Notification.TIPO_CHOICES]
+        if value not in valid_types:
+            raise serializers.ValidationError(f"Tipo inválido. Opciones válidas: {', '.join(valid_types)}")
+        return value
+
+
+class NotificationStatsSerializer(serializers.Serializer):
+    """Serializer para estadísticas de notificaciones."""
+    total_notifications = serializers.IntegerField()
+    unread_count = serializers.IntegerField()
+    notifications_by_type = serializers.DictField()
+    recent_notifications = serializers.ListField()
