@@ -15,6 +15,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, Count, Avg
 from django.core.paginator import Paginator
+from django.utils import timezone
 from django.http import JsonResponse
 from PIL import Image
 import io
@@ -1697,6 +1698,83 @@ class UserListView(APIView):
             
         except Exception as e:
             logger.error(f"Error obteniendo lista de usuarios: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _is_admin_user(self, user):
+        """
+        Verificar si el usuario es administrador.
+        
+        Args:
+            user: Usuario autenticado
+            
+        Returns:
+            bool: True si es admin, False en caso contrario
+        """
+        return user.is_superuser or user.is_staff
+
+
+class UserDetailView(APIView):
+    """
+    Endpoint para obtener detalles de un usuario específico (Admin only).
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene los detalles completos de un usuario específico (solo admins)",
+        operation_summary="Detalles de usuario",
+        responses={
+            200: openapi.Response(
+                description="Detalles de usuario obtenidos exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            403: ErrorResponseSerializer,
+            404: ErrorResponseSerializer,
+        },
+        tags=['Usuarios']
+    )
+    def get(self, request, user_id):
+        """
+        Obtiene los detalles completos de un usuario específico.
+        Solo accesible para administradores.
+        """
+        try:
+            # Verificar permisos de administrador
+            if not self._is_admin_user(request.user):
+                return Response({
+                    'error': 'No tienes permisos para acceder a esta funcionalidad',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Obtener usuario
+            try:
+                user = User.objects.select_related('profile').prefetch_related('groups', 'cacao_images').get(id=user_id)
+            except User.DoesNotExist:
+                return Response({
+                    'error': 'Usuario no encontrado',
+                    'status': 'error'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Serializar usuario con información extendida
+            serializer = UserSerializer(user)
+            user_data = serializer.data
+            
+            # Agregar estadísticas adicionales
+            user_data['stats'] = {
+                'total_images': user.cacao_images.count(),
+                'processed_images': user.cacao_images.filter(processed=True).count(),
+                'last_login': user.last_login.isoformat() if user.last_login else None,
+                'days_since_registration': (timezone.now().date() - user.date_joined.date()).days,
+                'has_profile': hasattr(user, 'profile'),
+                'groups': [group.name for group in user.groups.all()]
+            }
+            
+            return Response(user_data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo detalles de usuario {user_id}: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
