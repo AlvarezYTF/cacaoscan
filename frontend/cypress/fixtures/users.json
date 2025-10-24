@@ -1,0 +1,38 @@
+{
+  "admin": {
+    "email": "admin@cacaoscan.com",
+    "password": "Admin123!",
+    "firstName": "Admin",
+    "lastName": "Sistema",
+    "role": "admin",
+    "isVerified": true
+  },
+  "analyst": {
+    "email": "analista@cacaoscan.com",
+    "password": "Analyst123!",
+    "firstName": "Ana",
+    "lastName": "Lista",
+    "role": "analyst",
+    "isVerified": true
+  },
+  "farmer": {
+    "email": "agricultor@cacaoscan.com",
+    "password": "Farmer123!",
+    "firstName": "Carlos",
+    "lastName": "Campo",
+    "role": "farmer",
+    "isVerified": true
+  },
+  "farmerUnverified": {
+    "email": "agricultor.nuevo@cacaoscan.com",
+    "password": "Farmer123!",
+    "firstName": "María",
+    "lastName": "Nueva",
+    "role": "farmer",
+    "isVerified": false
+  },
+  "invalidUser": {
+    "email": "invalid@test.com",
+    "password": "WrongPassword123!"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "fincas": [
+    {
+      "id": 1,
+      "nombre": "Finca El Paraíso",
+      "ubicacion": "Provincia de Los Ríos",
+      "area_total": 15.5,
+      "propietario": "Carlos Campo",
+      "descripcion": "Finca dedicada al cultivo de cacao fino de aroma"
+    },
+    {
+      "id": 2,
+      "nombre": "Finca La Esperanza",
+      "ubicacion": "Provincia de Manabí",
+      "area_total": 8.2,
+      "propietario": "María Nueva",
+      "descripcion": "Finca familiar con tradición cacaotera"
+    }
+  ],
+  "lotes": [
+    {
+      "id": 1,
+      "finca_id": 1,
+      "nombre": "Lote A - Norte",
+      "area": 3.2,
+      "variedad": "CCN-51",
+      "edad_plantas": 5,
+      "descripcion": "Lote con plantas jóvenes de alta productividad"
+    },
+    {
+      "id": 2,
+      "finca_id": 1,
+      "nombre": "Lote B - Sur",
+      "area": 2.8,
+      "variedad": "Nacional",
+      "edad_plantas": 8,
+      "descripcion": "Lote tradicional con plantas maduras"
+    }
+  ],
+  "analisis": [
+    {
+      "id": 1,
+      "lote_id": 1,
+      "fecha_analisis": "2024-01-15",
+      "temperatura": 28.5,
+      "humedad": 75.2,
+      "ph_suelo": 6.8,
+      "resultado": "Excelente",
+      "observaciones": "Condiciones óptimas para el cultivo"
+    }
+  ]
+}
