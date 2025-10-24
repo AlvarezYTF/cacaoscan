@@ -40,7 +40,7 @@ from .serializers import (
     CacaoImageDetailSerializer
 )
 from .utils import create_error_response, create_success_response
-from .models import EmailVerificationToken, ExpiringToken, CacaoImage, CacaoPrediction
+from .models import EmailVerificationToken, ExpiringToken, CacaoImage, CacaoPrediction, TrainingJob
 
 
 logger = logging.getLogger("cacaoscan.api")
@@ -3523,6 +3523,374 @@ class AdminDatasetStatsView(APIView):
                 'error': 'Error interno del servidor',
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _is_admin_user(self, user):
+        """
+        Verificar si el usuario es administrador.
+        
+        Args:
+            user: Usuario autenticado
+            
+        Returns:
+            bool: True si es admin, False en caso contrario
+        """
+        return user.is_superuser or user.is_staff
+
+
+class TrainingJobListView(APIView):
+    """
+    Endpoint para listar trabajos de entrenamiento (Admin only).
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene la lista de trabajos de entrenamiento (solo admins)",
+        operation_summary="Lista de trabajos de entrenamiento",
+        manual_parameters=[
+            openapi.Parameter('page', openapi.IN_QUERY, description="Número de página", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page_size', openapi.IN_QUERY, description="Tamaño de página", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('status', openapi.IN_QUERY, description="Filtrar por estado", type=openapi.TYPE_STRING),
+            openapi.Parameter('job_type', openapi.IN_QUERY, description="Filtrar por tipo", type=openapi.TYPE_STRING),
+            openapi.Parameter('created_by', openapi.IN_QUERY, description="Filtrar por creador", type=openapi.TYPE_INTEGER),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Lista de trabajos obtenida exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            403: ErrorResponseSerializer,
+        },
+        tags=['Entrenamiento']
+    )
+    def get(self, request):
+        """
+        Obtiene la lista de trabajos de entrenamiento.
+        Solo accesible para administradores.
+        """
+        try:
+            # Verificar permisos de administrador
+            if not self._is_admin_user(request.user):
+                return Response({
+                    'error': 'No tienes permisos para acceder a esta funcionalidad',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Obtener parámetros de consulta
+            page = int(request.GET.get('page', 1))
+            page_size = min(int(request.GET.get('page_size', 20)), 100)
+            status_filter = request.GET.get('status')
+            job_type_filter = request.GET.get('job_type')
+            created_by_filter = request.GET.get('created_by')
+            
+            # Construir queryset base
+            queryset = TrainingJob.objects.all().select_related('created_by')
+            
+            # Aplicar filtros
+            if status_filter:
+                queryset = queryset.filter(status=status_filter)
+            
+            if job_type_filter:
+                queryset = queryset.filter(job_type=job_type_filter)
+            
+            if created_by_filter:
+                queryset = queryset.filter(created_by_id=created_by_filter)
+            
+            # Ordenar por fecha de creación (más recientes primero)
+            queryset = queryset.order_by('-created_at')
+            
+            # Paginación
+            paginator = Paginator(queryset, page_size)
+            total_pages = paginator.num_pages
+            
+            # Validar página
+            if page > total_pages and total_pages > 0:
+                return Response({
+                    'error': f'Página {page} no existe. Total de páginas: {total_pages}',
+                    'status': 'error'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            page_obj = paginator.get_page(page)
+            
+            # Serializar resultados
+            from .serializers import TrainingJobSerializer
+            serializer = TrainingJobSerializer(page_obj.object_list, many=True)
+            
+            # Preparar respuesta
+            response_data = {
+                'results': serializer.data,
+                'count': paginator.count,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': total_pages,
+                'next': None,
+                'previous': None
+            }
+            
+            # URLs de paginación
+            if page_obj.has_next():
+                response_data['next'] = f"{request.build_absolute_uri()}?page={page + 1}&page_size={page_size}"
+            
+            if page_obj.has_previous():
+                response_data['previous'] = f"{request.build_absolute_uri()}?page={page - 1}&page_size={page_size}"
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except ValueError as e:
+            return Response({
+                'error': 'Parámetros de consulta inválidos',
+                'status': 'error',
+                'details': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo lista de trabajos de entrenamiento: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _is_admin_user(self, user):
+        """
+        Verificar si el usuario es administrador.
+        
+        Args:
+            user: Usuario autenticado
+            
+        Returns:
+            bool: True si es admin, False en caso contrario
+        """
+        return user.is_superuser or user.is_staff
+
+
+class TrainingJobCreateView(APIView):
+    """
+    Endpoint para crear trabajos de entrenamiento (Admin only).
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Crea un nuevo trabajo de entrenamiento (solo admins)",
+        operation_summary="Crear trabajo de entrenamiento",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'job_type': openapi.Schema(type=openapi.TYPE_STRING, description="Tipo: regression, vision, incremental"),
+                'model_name': openapi.Schema(type=openapi.TYPE_STRING, description="Nombre del modelo"),
+                'dataset_size': openapi.Schema(type=openapi.TYPE_INTEGER, description="Tamaño del dataset"),
+                'epochs': openapi.Schema(type=openapi.TYPE_INTEGER, description="Número de epochs"),
+                'batch_size': openapi.Schema(type=openapi.TYPE_INTEGER, description="Tamaño del batch"),
+                'learning_rate': openapi.Schema(type=openapi.TYPE_NUMBER, description="Learning rate"),
+                'config_params': openapi.Schema(type=openapi.TYPE_OBJECT, description="Parámetros adicionales")
+            }
+        ),
+        responses={
+            201: openapi.Response(
+                description="Trabajo de entrenamiento creado exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            400: ErrorResponseSerializer,
+            403: ErrorResponseSerializer,
+        },
+        tags=['Entrenamiento']
+    )
+    def post(self, request):
+        """
+        Crea un nuevo trabajo de entrenamiento.
+        Solo accesible para administradores.
+        """
+        try:
+            # Verificar permisos de administrador
+            if not self._is_admin_user(request.user):
+                return Response({
+                    'error': 'No tienes permisos para acceder a esta funcionalidad',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Validar datos de entrada
+            from .serializers import TrainingJobCreateSerializer
+            serializer = TrainingJobCreateSerializer(data=request.data)
+            
+            if not serializer.is_valid():
+                return Response({
+                    'error': 'Datos de entrada inválidos',
+                    'status': 'error',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Generar ID único para el trabajo
+            import uuid
+            job_id = f"job_{uuid.uuid4().hex[:12]}"
+            
+            # Crear trabajo de entrenamiento
+            training_job = TrainingJob.objects.create(
+                job_id=job_id,
+                created_by=request.user,
+                **serializer.validated_data
+            )
+            
+            # Simular inicio del entrenamiento (en producción esto sería una tarea asíncrona)
+            self._simulate_training_start(training_job)
+            
+            # Serializar respuesta
+            from .serializers import TrainingJobSerializer
+            response_serializer = TrainingJobSerializer(training_job)
+            
+            logger.info(f"Trabajo de entrenamiento {job_id} creado por admin {request.user.username}")
+            
+            return Response({
+                'message': 'Trabajo de entrenamiento creado exitosamente',
+                'job': response_serializer.data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error creando trabajo de entrenamiento: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _simulate_training_start(self, training_job):
+        """
+        Simular inicio del entrenamiento.
+        En producción, esto sería una tarea asíncrona con Celery.
+        """
+        try:
+            # Marcar como iniciado
+            training_job.mark_started()
+            
+            # Simular progreso (en producción esto sería manejado por la tarea de entrenamiento)
+            import threading
+            import time
+            
+            def simulate_progress():
+                for i in range(1, 101):
+                    time.sleep(0.1)  # Simular tiempo de entrenamiento
+                    training_job.update_progress(i, f"Epoch {i}/{training_job.epochs}")
+                
+                # Simular finalización exitosa
+                mock_metrics = {
+                    'final_loss': 0.123,
+                    'accuracy': 0.95,
+                    'precision': 0.94,
+                    'recall': 0.96,
+                    'f1_score': 0.95
+                }
+                mock_model_path = f"/models/{training_job.job_id}_model.pth"
+                
+                training_job.mark_completed(mock_metrics, mock_model_path)
+            
+            # Ejecutar simulación en hilo separado
+            thread = threading.Thread(target=simulate_progress)
+            thread.daemon = True
+            thread.start()
+            
+        except Exception as e:
+            logger.error(f"Error iniciando simulación de entrenamiento: {e}")
+            training_job.mark_failed(f"Error iniciando entrenamiento: {str(e)}")
+    
+    def _is_admin_user(self, user):
+        """
+        Verificar si el usuario es administrador.
+        
+        Args:
+            user: Usuario autenticado
+            
+        Returns:
+            bool: True si es admin, False en caso contrario
+        """
+        return user.is_superuser or user.is_staff
+
+
+class TrainingJobStatusView(APIView):
+    """
+    Endpoint para obtener el estado de un trabajo de entrenamiento específico.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene el estado actual de un trabajo de entrenamiento",
+        operation_summary="Estado del trabajo de entrenamiento",
+        responses={
+            200: openapi.Response(
+                description="Estado del trabajo obtenido exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            403: ErrorResponseSerializer,
+            404: ErrorResponseSerializer,
+        },
+        tags=['Entrenamiento']
+    )
+    def get(self, request, job_id):
+        """
+        Obtiene el estado actual de un trabajo de entrenamiento.
+        """
+        try:
+            # Obtener trabajo de entrenamiento
+            try:
+                training_job = TrainingJob.objects.get(job_id=job_id)
+            except TrainingJob.DoesNotExist:
+                return Response({
+                    'error': 'Trabajo de entrenamiento no encontrado',
+                    'status': 'error'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Verificar permisos (solo el creador o admin puede ver)
+            if training_job.created_by != request.user and not self._is_admin_user(request.user):
+                return Response({
+                    'error': 'No tienes permisos para ver este trabajo de entrenamiento',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Serializar estado del trabajo
+            from .serializers import TrainingJobStatusSerializer
+            serializer = TrainingJobStatusSerializer(training_job)
+            
+            # Información adicional del estado
+            status_info = {
+                'job': serializer.data,
+                'status_details': {
+                    'is_active': training_job.is_active,
+                    'can_cancel': training_job.status in ['pending', 'running'],
+                    'estimated_completion': self._estimate_completion(training_job),
+                    'logs_preview': training_job.logs.split('\n')[-5:] if training_job.logs else []
+                }
+            }
+            
+            return Response(status_info, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo estado del trabajo {job_id}: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _estimate_completion(self, training_job):
+        """
+        Estimar tiempo de finalización basado en el progreso actual.
+        """
+        if training_job.status == 'completed':
+            return "Completado"
+        elif training_job.status in ['failed', 'cancelled']:
+            return "Finalizado"
+        elif training_job.progress_percentage == 0:
+            return "No iniciado"
+        elif training_job.progress_percentage > 0 and training_job.started_at:
+            # Calcular tiempo estimado basado en progreso
+            elapsed_time = (timezone.now() - training_job.started_at).total_seconds()
+            if training_job.progress_percentage > 0:
+                estimated_total = elapsed_time / (training_job.progress_percentage / 100)
+                remaining_time = estimated_total - elapsed_time
+                
+                if remaining_time > 0:
+                    hours = int(remaining_time // 3600)
+                    minutes = int((remaining_time % 3600) // 60)
+                    if hours > 0:
+                        return f"Aproximadamente {hours}h {minutes}m restantes"
+                    else:
+                        return f"Aproximadamente {minutes}m restantes"
+        
+        return "Calculando..."
     
     def _is_admin_user(self, user):
         """

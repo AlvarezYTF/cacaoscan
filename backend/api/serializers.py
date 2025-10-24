@@ -4,7 +4,7 @@ Serializers para la API de CacaoScan.
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
-from .models import UserProfile, CacaoImage, CacaoPrediction
+from .models import UserProfile, CacaoImage, CacaoPrediction, TrainingJob
 
 
 class ConfidenceSerializer(serializers.Serializer):
@@ -394,3 +394,81 @@ class ImagesStatsResponseSerializer(serializers.Serializer):
     region_stats = serializers.ListField()
     top_fincas = serializers.ListField()
     average_dimensions = serializers.DictField()
+
+
+class TrainingJobSerializer(serializers.ModelSerializer):
+    """Serializer para trabajos de entrenamiento."""
+    duration_formatted = serializers.ReadOnlyField()
+    is_active = serializers.ReadOnlyField()
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    
+    class Meta:
+        model = TrainingJob
+        fields = (
+            'id', 'job_id', 'job_type', 'status', 'created_by', 'created_by_username',
+            'model_name', 'dataset_size', 'epochs', 'batch_size', 'learning_rate',
+            'config_params', 'metrics', 'model_path', 'logs', 'created_at',
+            'started_at', 'completed_at', 'error_message', 'progress_percentage',
+            'duration_formatted', 'is_active'
+        )
+        read_only_fields = (
+            'id', 'job_id', 'created_by', 'created_at', 'started_at', 'completed_at',
+            'duration_formatted', 'is_active'
+        )
+    
+    def validate_epochs(self, value):
+        if value <= 0 or value > 1000:
+            raise serializers.ValidationError("Los epochs deben estar entre 1 y 1000.")
+        return value
+    
+    def validate_batch_size(self, value):
+        if value <= 0 or value > 128:
+            raise serializers.ValidationError("El batch size debe estar entre 1 y 128.")
+        return value
+    
+    def validate_learning_rate(self, value):
+        if value <= 0 or value > 1.0:
+            raise serializers.ValidationError("El learning rate debe estar entre 0 y 1.0.")
+        return value
+    
+    def validate_dataset_size(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("El tamaño del dataset debe ser mayor a 0.")
+        return value
+
+
+class TrainingJobCreateSerializer(serializers.ModelSerializer):
+    """Serializer para crear trabajos de entrenamiento."""
+    
+    class Meta:
+        model = TrainingJob
+        fields = (
+            'job_type', 'model_name', 'dataset_size', 'epochs', 'batch_size',
+            'learning_rate', 'config_params'
+        )
+    
+    def validate_job_type(self, value):
+        valid_types = ['regression', 'vision', 'incremental']
+        if value not in valid_types:
+            raise serializers.ValidationError(f"Tipo de trabajo inválido. Use: {', '.join(valid_types)}")
+        return value
+    
+    def validate_model_name(self, value):
+        if not value or len(value.strip()) == 0:
+            raise serializers.ValidationError("El nombre del modelo no puede estar vacío.")
+        return value.strip()
+
+
+class TrainingJobStatusSerializer(serializers.ModelSerializer):
+    """Serializer simplificado para estado de trabajos."""
+    duration_formatted = serializers.ReadOnlyField()
+    is_active = serializers.ReadOnlyField()
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    
+    class Meta:
+        model = TrainingJob
+        fields = (
+            'id', 'job_id', 'job_type', 'status', 'created_by_username',
+            'model_name', 'progress_percentage', 'created_at', 'started_at',
+            'completed_at', 'duration_formatted', 'is_active'
+        )

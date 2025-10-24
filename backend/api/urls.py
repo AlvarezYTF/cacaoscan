@@ -52,4 +52,9 @@ urlpatterns = [
     path('images/admin/images/<int:image_id>/delete/', views.AdminImageDeleteView.as_view(), name='admin-image-delete'),
     path('images/admin/images/bulk-update/', views.AdminBulkUpdateView.as_view(), name='admin-bulk-update'),
     path('images/admin/images/admin-stats/', views.AdminDatasetStatsView.as_view(), name='admin-dataset-stats'),
+    
+    # Endpoints de sistema de entrenamiento
+    path('train/jobs/', views.TrainingJobListView.as_view(), name='training-jobs-list'),
+    path('train/jobs/create/', views.TrainingJobCreateView.as_view(), name='training-job-create'),
+    path('train/jobs/<str:job_id>/status/', views.TrainingJobStatusView.as_view(), name='training-job-status'),
 ]
