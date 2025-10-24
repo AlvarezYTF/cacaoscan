@@ -16,16 +16,16 @@
             <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
             Actualizar
           </button>
-        </div>
-      </div>
-    </div>
+              </div>
+            </div>
+          </div>
 
     <!-- Estadísticas Generales -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon">
           <i class="fas fa-users"></i>
-        </div>
+            </div>
         <div class="stat-content">
           <h3>{{ stats.total_users || 0 }}</h3>
           <p>Usuarios Totales</p>
@@ -33,13 +33,13 @@
             <i class="fas fa-arrow-up"></i>
             +{{ stats.new_users_today || 0 }} hoy
           </small>
-        </div>
-      </div>
+            </div>
+          </div>
 
       <div class="stat-card">
         <div class="stat-icon">
           <i class="fas fa-seedling"></i>
-        </div>
+                  </div>
         <div class="stat-content">
           <h3>{{ stats.total_fincas || 0 }}</h3>
           <p>Fincas Registradas</p>
@@ -47,8 +47,8 @@
             <i class="fas fa-arrow-up"></i>
             +{{ stats.new_fincas_today || 0 }} hoy
           </small>
-        </div>
-      </div>
+                  </div>
+                </div>
 
       <div class="stat-card">
         <div class="stat-icon">
@@ -61,13 +61,13 @@
             <i class="fas fa-arrow-up"></i>
             +{{ stats.analyses_today || 0 }} hoy
           </small>
-        </div>
-      </div>
+              </div>
+            </div>
 
       <div class="stat-card">
         <div class="stat-icon">
           <i class="fas fa-percentage"></i>
-        </div>
+                  </div>
         <div class="stat-content">
           <h3>{{ stats.avg_quality || 0 }}%</h3>
           <p>Calidad Promedio</p>
@@ -75,9 +75,9 @@
             <i :class="getQualityChangeIcon(stats.quality_change)"></i>
             {{ stats.quality_change || 0 }}%
           </small>
-        </div>
-      </div>
-    </div>
+                </div>
+              </div>
+            </div>
 
     <!-- Gráficos y Tablas -->
     <div class="dashboard-content">
@@ -92,12 +92,12 @@
                 <option value="30">Últimos 30 días</option>
                 <option value="90">Últimos 90 días</option>
               </select>
-            </div>
-          </div>
+                  </div>
+                        </div>
           <div class="chart-body">
             <canvas ref="activityChart"></canvas>
-          </div>
-        </div>
+                  </div>
+                </div>
 
         <!-- Gráfico de Calidad -->
         <div class="chart-container">
@@ -106,9 +106,9 @@
           </div>
           <div class="chart-body">
             <canvas ref="qualityChart"></canvas>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
       <div class="content-row">
         <!-- Tabla de Usuarios Recientes -->
@@ -142,7 +142,7 @@
                         <strong>{{ user.first_name }} {{ user.last_name }}</strong>
                         <small>@{{ user.username }}</small>
                       </div>
-                    </div>
+                </div>
                   </td>
                   <td>{{ user.email }}</td>
                   <td>
@@ -163,21 +163,21 @@
                         @click="viewUser(user.id)"
                       >
                         <i class="fas fa-eye"></i>
-                      </button>
+                  </button>
                       <button 
                         class="btn btn-sm btn-outline-warning"
                         @click="editUser(user.id)"
                       >
                         <i class="fas fa-edit"></i>
-                      </button>
-                    </div>
+                  </button>
+                </div>
                   </td>
                 </tr>
               </tbody>
             </table>
-          </div>
-        </div>
-
+              </div>
+            </div>
+            
         <!-- Tabla de Actividad Reciente -->
         <div class="table-container">
           <div class="table-header">
@@ -185,7 +185,7 @@
             <router-link to="/admin/audit" class="btn btn-sm btn-outline-primary">
               Ver Auditoría
             </router-link>
-          </div>
+                </div>
           <div class="table-body">
             <table class="table">
               <thead>
@@ -211,9 +211,9 @@
                 </tr>
               </tbody>
             </table>
-          </div>
-        </div>
-      </div>
+                  </div>
+                </div>
+              </div>
 
       <!-- Alertas y Notificaciones -->
       <div class="content-row">
@@ -235,7 +235,7 @@
               >
                 <div class="alert-icon">
                   <i :class="getAlertIcon(alert.type)"></i>
-                </div>
+          </div>
                 <div class="alert-content">
                   <h4>{{ alert.title }}</h4>
                   <p>{{ alert.message }}</p>
@@ -251,8 +251,8 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+                        </div>
+                      </div>
 
         <!-- Estadísticas de Reportes -->
         <div class="reports-container">
@@ -267,15 +267,15 @@
               <div class="report-stat">
                 <h4>{{ reportStats.total_reportes || 0 }}</h4>
                 <p>Total Reportes</p>
-              </div>
+            </div>
               <div class="report-stat">
                 <h4>{{ reportStats.reportes_completados || 0 }}</h4>
                 <p>Completados</p>
-              </div>
+                </div>
               <div class="report-stat">
                 <h4>{{ reportStats.reportes_generando || 0 }}</h4>
                 <p>Generando</p>
-              </div>
+                </div>
               <div class="report-stat">
                 <h4>{{ reportStats.reportes_fallidos || 0 }}</h4>
                 <p>Fallidos</p>
@@ -431,9 +431,9 @@ export default {
           }]
         },
         options: {
-          responsive: true,
+      responsive: true,
           maintainAspectRatio: false,
-          plugins: {
+      plugins: {
             legend: {
               display: false
             }
@@ -468,9 +468,9 @@ export default {
           }]
         },
         options: {
-          responsive: true,
+      responsive: true,
           maintainAspectRatio: false,
-          plugins: {
+      plugins: {
             legend: {
               position: 'bottom'
             }

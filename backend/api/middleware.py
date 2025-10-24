@@ -293,8 +293,8 @@ def log_failed_login(username, ip_address, user_agent, failure_reason):
         ip_address: Dirección IP
         user_agent: User Agent del navegador
         failure_reason: Razón del fallo
-    """
-    try:
+        """
+        try:
         # Crear usuario temporal para el log (no se guarda en BD)
         temp_user = User(username=username)
         
@@ -307,6 +307,6 @@ def log_failed_login(username, ip_address, user_agent, failure_reason):
         )
         
         logger.warning(f"Login fallido registrado: {username} - {failure_reason}")
-        
-    except Exception as e:
+                
+        except Exception as e:
         logger.error(f"Error registrando login fallido: {e}")
