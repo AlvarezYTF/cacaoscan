@@ -4,6 +4,7 @@ Serializers para la API de CacaoScan.
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from .models import UserProfile, CacaoImage, CacaoPrediction
 
 
 class ConfidenceSerializer(serializers.Serializer):
@@ -245,3 +246,122 @@ class UserSerializer(serializers.ModelSerializer):
         if hasattr(obj, 'email_verification_token'):
             return obj.email_verification_token.is_verified
         return obj.is_active  # Fallback para usuarios sin token de verificación
+
+
+# Serializers para los nuevos modelos
+class UserProfileSerializer(serializers.ModelSerializer):
+    """Serializer para perfil extendido de usuario."""
+    full_name = serializers.ReadOnlyField()
+    role = serializers.ReadOnlyField()
+    is_verified = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = UserProfile
+        fields = (
+            'phone_number', 'region', 'municipality', 'farm_name',
+            'years_experience', 'farm_size_hectares', 'preferred_language',
+            'email_notifications', 'created_at', 'updated_at',
+            'full_name', 'role', 'is_verified'
+        )
+        read_only_fields = ('created_at', 'updated_at', 'full_name', 'role', 'is_verified')
+    
+    def validate_years_experience(self, value):
+        """Validar años de experiencia."""
+        if value is not None and (value < 0 or value > 100):
+            raise serializers.ValidationError("Los años de experiencia deben estar entre 0 y 100.")
+        return value
+    
+    def validate_farm_size_hectares(self, value):
+        """Validar tamaño de finca."""
+        if value is not None and (value < 0 or value > 10000):
+            raise serializers.ValidationError("El tamaño de la finca debe estar entre 0 y 10,000 hectáreas.")
+        return value
+
+
+class CacaoImageSerializer(serializers.ModelSerializer):
+    """Serializer para imágenes de cacao."""
+    file_size_mb = serializers.ReadOnlyField()
+    has_prediction = serializers.ReadOnlyField()
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    
+    class Meta:
+        model = CacaoImage
+        fields = (
+            'id', 'user', 'user_name', 'image', 'uploaded_at', 'processed',
+            'finca', 'region', 'lote_id', 'variedad', 'fecha_cosecha', 'notas',
+            'file_name', 'file_size', 'file_size_mb', 'file_type',
+            'created_at', 'updated_at', 'has_prediction'
+        )
+        read_only_fields = (
+            'id', 'user', 'uploaded_at', 'processed', 'file_name', 'file_size',
+            'file_type', 'created_at', 'updated_at', 'file_size_mb', 'has_prediction'
+        )
+    
+    def validate_fecha_cosecha(self, value):
+        """Validar fecha de cosecha."""
+        if value and value.year < 1900:
+            raise serializers.ValidationError("La fecha de cosecha debe ser posterior a 1900.")
+        return value
+
+
+class CacaoPredictionSerializer(serializers.ModelSerializer):
+    """Serializer para predicciones de cacao."""
+    average_confidence = serializers.ReadOnlyField()
+    volume_cm3 = serializers.ReadOnlyField()
+    density_g_cm3 = serializers.ReadOnlyField()
+    image_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CacaoPrediction
+        fields = (
+            'id', 'image', 'image_url', 'alto_mm', 'ancho_mm', 'grosor_mm', 'peso_g',
+            'confidence_alto', 'confidence_ancho', 'confidence_grosor', 'confidence_peso',
+            'average_confidence', 'processing_time_ms', 'crop_url',
+            'model_version', 'device_used', 'volume_cm3', 'density_g_cm3',
+            'created_at'
+        )
+        read_only_fields = (
+            'id', 'image', 'processing_time_ms', 'model_version', 'device_used',
+            'average_confidence', 'volume_cm3', 'density_g_cm3', 'created_at'
+        )
+    
+    def get_image_url(self, obj):
+        """Obtener URL de la imagen."""
+        if obj.image and obj.image.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.image.url)
+            return obj.image.image.url
+        return None
+    
+    def validate_alto_mm(self, value):
+        """Validar altura."""
+        if value <= 0 or value > 100:
+            raise serializers.ValidationError("La altura debe estar entre 0 y 100 mm.")
+        return value
+    
+    def validate_ancho_mm(self, value):
+        """Validar ancho."""
+        if value <= 0 or value > 100:
+            raise serializers.ValidationError("El ancho debe estar entre 0 y 100 mm.")
+        return value
+    
+    def validate_grosor_mm(self, value):
+        """Validar grosor."""
+        if value <= 0 or value > 50:
+            raise serializers.ValidationError("El grosor debe estar entre 0 y 50 mm.")
+        return value
+    
+    def validate_peso_g(self, value):
+        """Validar peso."""
+        if value <= 0 or value > 10:
+            raise serializers.ValidationError("El peso debe estar entre 0 y 10 gramos.")
+        return value
+
+
+class CacaoImageDetailSerializer(CacaoImageSerializer):
+    """Serializer detallado para imágenes con predicción."""
+    prediction = CacaoPredictionSerializer(read_only=True)
+    
+    class Meta(CacaoImageSerializer.Meta):
+        fields = CacaoImageSerializer.Meta.fields + ('prediction',)
