@@ -6,6 +6,7 @@ import os
 import warnings
 from pathlib import Path
 from dotenv import load_dotenv
+from datetime import timedelta
 
 # Cargar variables de entorno desde .env
 load_dotenv()
@@ -39,7 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework.authtoken',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'drf_yasg',
     'api',
@@ -134,7 +136,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -268,4 +270,36 @@ LOGGING = {
             'propagate': False,
         },
     },
+}
+
+# Configuración de JWT
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Token de acceso válido por 1 hora
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Token de refresh válido por 7 días
+    'ROTATE_REFRESH_TOKENS': True,                   # Rotar tokens de refresh
+    'BLACKLIST_AFTER_ROTATION': True,                # Blacklistear tokens antiguos
+    'UPDATE_LAST_LOGIN': True,                       # Actualizar último login
+    
+    'ALGORITHM': 'HS256',                            # Algoritmo de firma
+    'SIGNING_KEY': SECRET_KEY,                       # Clave de firma
+    'VERIFYING_KEY': None,                           # Clave de verificación
+    'AUDIENCE': None,                                # Audiencia
+    'ISSUER': None,                                  # Emisor
+    
+    'AUTH_HEADER_TYPES': ('Bearer',),               # Tipo de header de autorización
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',        # Nombre del header
+    'USER_ID_FIELD': 'id',                           # Campo de ID de usuario
+    'USER_ID_CLAIM': 'user_id',                     # Claim de ID de usuario
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+    
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+    
+    'JTI_CLAIM': 'jti',                              # Claim de JTI
+    
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }

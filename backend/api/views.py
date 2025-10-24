@@ -4,6 +4,10 @@ Views para la API de CacaoScan.
 import time
 import logging
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.exceptions import TokenError
+from django.contrib.auth import login, logout
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -44,7 +48,7 @@ from .serializers import (
     FincaStatsSerializer
 )
 from .utils import create_error_response, create_success_response
-from .models import EmailVerificationToken, ExpiringToken, CacaoImage, CacaoPrediction, TrainingJob, Finca, Lote, Notification, ActivityLog, LoginHistory, ReporteGenerado
+from .models import EmailVerificationToken, CacaoImage, CacaoPrediction, TrainingJob, Finca, Lote, Notification, ActivityLog, LoginHistory, ReporteGenerado
 from django.db.models import Prefetch
 from .fincas_views import (
     FincaListCreateView,
@@ -787,13 +791,16 @@ class LoginView(APIView):
     )
     def post(self, request):
         """
-        Autentica un usuario.
+        Autentica un usuario y devuelve tokens JWT.
         """
         serializer = LoginSerializer(data=request.data)
         
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            token = ExpiringToken.create_for_user(user)
+            
+            # Generar tokens JWT
+            refresh = RefreshToken.for_user(user)
+            access_token = refresh.access_token
             
             # Login en la sesión
             login(request, user)
@@ -801,9 +808,11 @@ class LoginView(APIView):
             return create_success_response(
                 message='Login exitoso',
                 data={
-                    'token': token.key,
+                    'access': str(access_token),
+                    'refresh': str(refresh),
                     'user': UserSerializer(user).data,
-                    'expires_at': token.expires_at.isoformat()
+                    'access_expires_at': access_token['exp'],
+                    'refresh_expires_at': refresh['exp']
                 }
             )
         
@@ -842,7 +851,7 @@ class RegisterView(APIView):
     )
     def post(self, request):
         """
-        Registra un nuevo usuario y genera token automáticamente.
+        Registra un nuevo usuario y genera tokens JWT automáticamente.
         """
         # Log de depuración - datos recibidos
         print(f"🔍 DEBUG RegisterView - Datos recibidos: {request.data}")
@@ -864,9 +873,10 @@ class RegisterView(APIView):
             verification_token = EmailVerificationToken.create_for_user(user)
             print(f"✅ DEBUG RegisterView - Token de verificación creado: {verification_token.token}")
             
-            # Generar token automáticamente para auto-login
-            token = ExpiringToken.create_for_user(user)
-            print(f"✅ DEBUG RegisterView - Token de acceso creado: {token.key[:10]}...")
+            # Generar tokens JWT automáticamente para auto-login
+            refresh = RefreshToken.for_user(user)
+            access_token = refresh.access_token
+            print(f"✅ DEBUG RegisterView - Tokens JWT creados")
             
             # Login en la sesión
             login(request, user)
@@ -874,11 +884,13 @@ class RegisterView(APIView):
             return create_success_response(
                 message='Usuario registrado exitosamente',
                 data={
-                    'token': token.key,
+                    'access': str(access_token),
+                    'refresh': str(refresh),
                     'user': UserSerializer(user).data,
                     'verification_token': str(verification_token.token),  # Solo para desarrollo
                     'verification_required': True,
-                    'expires_at': token.expires_at.isoformat()
+                    'access_expires_at': access_token['exp'],
+                    'refresh_expires_at': refresh['exp']
                 },
                 status_code=status.HTTP_201_CREATED
             )
@@ -917,11 +929,16 @@ class LogoutView(APIView):
     )
     def post(self, request):
         """
-        Cierra la sesión del usuario.
+        Cierra la sesión del usuario y blacklistea el token de refresh.
         """
         try:
-            # Eliminar token
-            request.user.auth_token.delete()
+            # Obtener el token de refresh del cuerpo de la petición
+            refresh_token = request.data.get('refresh')
+            
+            if refresh_token:
+                # Blacklistear el token de refresh
+                token = RefreshToken(refresh_token)
+                token.blacklist()
             
             # Logout de la sesión
             logout(request)
@@ -929,6 +946,11 @@ class LogoutView(APIView):
             return Response({
                 'message': 'Logout exitoso'
             })
+        except TokenError:
+            return Response({
+                'error': 'Token inválido',
+                'status': 'error'
+            }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({
                 'error': f'Error en logout: {str(e)}',
@@ -960,49 +982,77 @@ class UserProfileView(APIView):
 
 class RefreshTokenView(APIView):
     """
-    Endpoint para refrescar token de acceso.
+    Endpoint para refrescar token de acceso JWT.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # Cambiar a AllowAny porque necesitamos el refresh token
     
     @swagger_auto_schema(
-        operation_description="Refresca el token de acceso del usuario autenticado",
-        operation_summary="Refrescar token",
+        operation_description="Refresca el token de acceso usando el token de refresh",
+        operation_summary="Refrescar token JWT",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'refresh': openapi.Schema(type=openapi.TYPE_STRING, description='Token de refresh')
+            },
+            required=['refresh']
+        ),
         responses={
             200: openapi.Response(
                 description="Token refrescado exitosamente",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        'token': openapi.Schema(type=openapi.TYPE_STRING),
-                        'user': UserSerializer
+                        'access': openapi.Schema(type=openapi.TYPE_STRING),
+                        'refresh': openapi.Schema(type=openapi.TYPE_STRING),
+                        'access_expires_at': openapi.Schema(type=openapi.TYPE_INTEGER)
                     }
                 )
             ),
-            401: ErrorResponseSerializer,
+            400: ErrorResponseSerializer,
         },
         tags=['Autenticación']
     )
     def post(self, request):
         """
-        Refresca el token del usuario actual.
+        Refresca el token de acceso usando el token de refresh.
         """
         try:
-            # Eliminar token actual
-            request.user.auth_token.delete()
+            refresh_token = request.data.get('refresh')
             
-            # Crear nuevo token
-            token, created = Token.objects.get_or_create(user=request.user)
+            if not refresh_token:
+                return create_error_response(
+                    message='Token de refresh requerido',
+                    error_type='missing_refresh_token',
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
             
-            return Response({
-                'token': token.key,
-                'user': UserSerializer(request.user).data
-            })
+            # Crear nuevo token de acceso usando el refresh token
+            refresh = RefreshToken(refresh_token)
+            new_access_token = refresh.access_token
             
+            return create_success_response(
+                message='Token refrescado exitosamente',
+                data={
+                    'access': str(new_access_token),
+                    'refresh': str(refresh),
+                    'access_expires_at': new_access_token['exp']
+                }
+            )
+            
+        except TokenError as e:
+            return create_error_response(
+                message='Token de refresh inválido o expirado',
+                error_type='invalid_refresh_token',
+                status_code=status.HTTP_400_BAD_REQUEST,
+                details={'error': str(e)}
+            )
         except Exception as e:
-            return Response({
-                'error': f'Error refrescando token: {str(e)}',
-                'status': 'error'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return create_error_response(
+                message='Error refrescando token',
+                error_type='refresh_error',
+                status_code=status.HTTP_400_BAD_REQUEST,
+                details={'error': str(e)}
+            )
 
 
 class ImagesListView(APIView, ImagePermissionMixin):

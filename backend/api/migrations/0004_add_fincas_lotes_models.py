@@ -60,11 +60,11 @@ class Migration(migrations.Migration):
                 'ordering': ['-created_at'],
             },
         ),
-        migrations.AddField(
-            model_name='cacaoimage',
-            name='lote',
-            field=models.ForeignKey(blank=True, help_text='Lote al que pertenece esta imagen', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='cacao_images', to='api.lote'),
-        ),
+        # migrations.AddField(
+        #     model_name='cacaoimage',
+        #     name='lote',
+        #     field=models.ForeignKey(blank=True, help_text='Lote al que pertenece esta imagen', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='cacao_images', to='api.lote'),
+        # ),
         migrations.AddIndex(
             model_name='finca',
             index=models.Index(fields=['agricultor', '-created_at'], name='api_finca_agricultor_created_idx'),

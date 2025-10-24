@@ -4,7 +4,7 @@ Configuración del admin de Django para la API de CacaoScan.
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import EmailVerificationToken, ExpiringToken, UserProfile, CacaoImage, CacaoPrediction
+from .models import EmailVerificationToken, UserProfile, CacaoImage, CacaoPrediction
 
 
 # Configuración personalizada para User
@@ -48,26 +48,6 @@ class EmailVerificationTokenAdmin(admin.ModelAdmin):
         """Mostrar email del usuario."""
         return obj.user.email
     email.short_description = 'Email'
-
-
-@admin.register(ExpiringToken)
-class ExpiringTokenAdmin(admin.ModelAdmin):
-    """Admin para tokens con expiración."""
-    list_display = ('user', 'key_preview', 'created', 'expires_at', 'is_expired')
-    list_filter = ('created',)
-    search_fields = ('user__username', 'user__email', 'key')
-    readonly_fields = ('key', 'created', 'expires_at')
-    
-    def key_preview(self, obj):
-        """Mostrar preview del token."""
-        return f"{obj.key[:10]}..."
-    key_preview.short_description = 'Token Preview'
-    
-    def is_expired(self, obj):
-        """Mostrar si el token está expirado."""
-        return obj.is_expired
-    is_expired.boolean = True
-    is_expired.short_description = 'Expirado'
 
 
 @admin.register(UserProfile)

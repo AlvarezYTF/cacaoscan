@@ -80,58 +80,6 @@ class EmailVerificationToken(models.Model):
             return None
 
 
-class ExpiringToken(Token):
-    """
-    Token con expiración personalizado para CacaoScan.
-    Extiende el Token de DRF para agregar funcionalidad de expiración.
-    """
-    # Duración del token en horas (24 horas por defecto)
-    EXPIRATION_HOURS = 24
-    
-    class Meta:
-        proxy = True
-        verbose_name = 'Token con Expiración'
-        verbose_name_plural = 'Tokens con Expiración'
-    
-    @property
-    def is_expired(self):
-        """Verificar si el token ha expirado."""
-        expiration_time = self.created + timezone.timedelta(hours=self.EXPIRATION_HOURS)
-        return timezone.now() > expiration_time
-    
-    @property
-    def expires_at(self):
-        """Obtener fecha de expiración del token."""
-        return self.created + timezone.timedelta(hours=self.EXPIRATION_HOURS)
-    
-    @classmethod
-    def get_valid_token(cls, key):
-        """Obtener un token válido por clave."""
-        try:
-            token = cls.objects.get(key=key)
-            if token.is_expired:
-                token.delete()  # Eliminar token expirado
-                return None
-            return token
-        except cls.DoesNotExist:
-            return None
-    
-    @classmethod
-    def create_for_user(cls, user):
-        """Crear un nuevo token para un usuario."""
-        # Eliminar tokens existentes del usuario
-        cls.objects.filter(user=user).delete()
-        
-        # Crear nuevo token
-        return cls.objects.create(user=user)
-    
-    def save(self, *args, **kwargs):
-        """Guardar token con timestamp de creación."""
-        if not self.pk:
-            self.created = timezone.now()
-        super().save(*args, **kwargs)
-
-
 class UserProfile(models.Model):
     """
     Perfil extendido del usuario con información específica de agricultores.
@@ -210,7 +158,6 @@ class CacaoImage(models.Model):
     # Metadatos del grano/finca
     finca = models.CharField(max_length=200, blank=True, null=True)  # Mantener para compatibilidad
     region = models.CharField(max_length=100, blank=True, null=True)
-    lote_id = models.CharField(max_length=50, blank=True, null=True)  # Mantener para compatibilidad
     lote = models.ForeignKey(
         'Lote', 
         on_delete=models.SET_NULL, 

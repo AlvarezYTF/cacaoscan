@@ -19,7 +19,7 @@ urlpatterns = [
     path('auth/register/', views.RegisterView.as_view(), name='auth-register'),
     path('auth/logout/', views.LogoutView.as_view(), name='auth-logout'),
     path('auth/profile/', views.UserProfileView.as_view(), name='auth-profile'),
-    # path('auth/refresh/', views.RefreshTokenView.as_view(), name='auth-refresh'),  # No usado con Token Auth
+    path('auth/refresh/', views.RefreshTokenView.as_view(), name='auth-refresh'),
     
     # Endpoints de verificación de email
     path('auth/verify-email/', views.EmailVerificationView.as_view(), name='auth-verify-email'),
