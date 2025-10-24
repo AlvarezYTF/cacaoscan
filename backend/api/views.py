@@ -3662,6 +3662,145 @@ class TrainingJobListView(APIView):
         return user.is_superuser or user.is_staff
 
 
+class TrainingJobCreateView(APIView):
+    """
+    Endpoint para crear trabajos de entrenamiento (Admin only).
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Crea un nuevo trabajo de entrenamiento (solo admins)",
+        operation_summary="Crear trabajo de entrenamiento",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'job_type': openapi.Schema(type=openapi.TYPE_STRING, description="Tipo: regression, vision, incremental"),
+                'model_name': openapi.Schema(type=openapi.TYPE_STRING, description="Nombre del modelo"),
+                'dataset_size': openapi.Schema(type=openapi.TYPE_INTEGER, description="Tamaño del dataset"),
+                'epochs': openapi.Schema(type=openapi.TYPE_INTEGER, description="Número de epochs"),
+                'batch_size': openapi.Schema(type=openapi.TYPE_INTEGER, description="Tamaño del batch"),
+                'learning_rate': openapi.Schema(type=openapi.TYPE_NUMBER, description="Learning rate"),
+                'config_params': openapi.Schema(type=openapi.TYPE_OBJECT, description="Parámetros adicionales")
+            }
+        ),
+        responses={
+            201: openapi.Response(
+                description="Trabajo de entrenamiento creado exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            400: ErrorResponseSerializer,
+            403: ErrorResponseSerializer,
+        },
+        tags=['Entrenamiento']
+    )
+    def post(self, request):
+        """
+        Crea un nuevo trabajo de entrenamiento.
+        Solo accesible para administradores.
+        """
+        try:
+            # Verificar permisos de administrador
+            if not self._is_admin_user(request.user):
+                return Response({
+                    'error': 'No tienes permisos para acceder a esta funcionalidad',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Validar datos de entrada
+            from .serializers import TrainingJobCreateSerializer
+            serializer = TrainingJobCreateSerializer(data=request.data)
+            
+            if not serializer.is_valid():
+                return Response({
+                    'error': 'Datos de entrada inválidos',
+                    'status': 'error',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Generar ID único para el trabajo
+            import uuid
+            job_id = f"job_{uuid.uuid4().hex[:12]}"
+            
+            # Crear trabajo de entrenamiento
+            training_job = TrainingJob.objects.create(
+                job_id=job_id,
+                created_by=request.user,
+                **serializer.validated_data
+            )
+            
+            # Simular inicio del entrenamiento (en producción esto sería una tarea asíncrona)
+            self._simulate_training_start(training_job)
+            
+            # Serializar respuesta
+            from .serializers import TrainingJobSerializer
+            response_serializer = TrainingJobSerializer(training_job)
+            
+            logger.info(f"Trabajo de entrenamiento {job_id} creado por admin {request.user.username}")
+            
+            return Response({
+                'message': 'Trabajo de entrenamiento creado exitosamente',
+                'job': response_serializer.data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error creando trabajo de entrenamiento: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _simulate_training_start(self, training_job):
+        """
+        Simular inicio del entrenamiento.
+        En producción, esto sería una tarea asíncrona con Celery.
+        """
+        try:
+            # Marcar como iniciado
+            training_job.mark_started()
+            
+            # Simular progreso (en producción esto sería manejado por la tarea de entrenamiento)
+            import threading
+            import time
+            
+            def simulate_progress():
+                for i in range(1, 101):
+                    time.sleep(0.1)  # Simular tiempo de entrenamiento
+                    training_job.update_progress(i, f"Epoch {i}/{training_job.epochs}")
+                
+                # Simular finalización exitosa
+                mock_metrics = {
+                    'final_loss': 0.123,
+                    'accuracy': 0.95,
+                    'precision': 0.94,
+                    'recall': 0.96,
+                    'f1_score': 0.95
+                }
+                mock_model_path = f"/models/{training_job.job_id}_model.pth"
+                
+                training_job.mark_completed(mock_metrics, mock_model_path)
+            
+            # Ejecutar simulación en hilo separado
+            thread = threading.Thread(target=simulate_progress)
+            thread.daemon = True
+            thread.start()
+            
+        except Exception as e:
+            logger.error(f"Error iniciando simulación de entrenamiento: {e}")
+            training_job.mark_failed(f"Error iniciando entrenamiento: {str(e)}")
+    
+    def _is_admin_user(self, user):
+        """
+        Verificar si el usuario es administrador.
+        
+        Args:
+            user: Usuario autenticado
+            
+        Returns:
+            bool: True si es admin, False en caso contrario
+        """
+        return user.is_superuser or user.is_staff
+
+
 class UserDetailView(APIView):
     """
     Endpoint para obtener detalles de un usuario específico (Admin only).
