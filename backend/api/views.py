@@ -3801,6 +3801,110 @@ class TrainingJobCreateView(APIView):
         return user.is_superuser or user.is_staff
 
 
+class TrainingJobStatusView(APIView):
+    """
+    Endpoint para obtener el estado de un trabajo de entrenamiento específico.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene el estado actual de un trabajo de entrenamiento",
+        operation_summary="Estado del trabajo de entrenamiento",
+        responses={
+            200: openapi.Response(
+                description="Estado del trabajo obtenido exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            403: ErrorResponseSerializer,
+            404: ErrorResponseSerializer,
+        },
+        tags=['Entrenamiento']
+    )
+    def get(self, request, job_id):
+        """
+        Obtiene el estado actual de un trabajo de entrenamiento.
+        """
+        try:
+            # Obtener trabajo de entrenamiento
+            try:
+                training_job = TrainingJob.objects.get(job_id=job_id)
+            except TrainingJob.DoesNotExist:
+                return Response({
+                    'error': 'Trabajo de entrenamiento no encontrado',
+                    'status': 'error'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Verificar permisos (solo el creador o admin puede ver)
+            if training_job.created_by != request.user and not self._is_admin_user(request.user):
+                return Response({
+                    'error': 'No tienes permisos para ver este trabajo de entrenamiento',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Serializar estado del trabajo
+            from .serializers import TrainingJobStatusSerializer
+            serializer = TrainingJobStatusSerializer(training_job)
+            
+            # Información adicional del estado
+            status_info = {
+                'job': serializer.data,
+                'status_details': {
+                    'is_active': training_job.is_active,
+                    'can_cancel': training_job.status in ['pending', 'running'],
+                    'estimated_completion': self._estimate_completion(training_job),
+                    'logs_preview': training_job.logs.split('\n')[-5:] if training_job.logs else []
+                }
+            }
+            
+            return Response(status_info, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo estado del trabajo {job_id}: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _estimate_completion(self, training_job):
+        """
+        Estimar tiempo de finalización basado en el progreso actual.
+        """
+        if training_job.status == 'completed':
+            return "Completado"
+        elif training_job.status in ['failed', 'cancelled']:
+            return "Finalizado"
+        elif training_job.progress_percentage == 0:
+            return "No iniciado"
+        elif training_job.progress_percentage > 0 and training_job.started_at:
+            # Calcular tiempo estimado basado en progreso
+            elapsed_time = (timezone.now() - training_job.started_at).total_seconds()
+            if training_job.progress_percentage > 0:
+                estimated_total = elapsed_time / (training_job.progress_percentage / 100)
+                remaining_time = estimated_total - elapsed_time
+                
+                if remaining_time > 0:
+                    hours = int(remaining_time // 3600)
+                    minutes = int((remaining_time % 3600) // 60)
+                    if hours > 0:
+                        return f"Aproximadamente {hours}h {minutes}m restantes"
+                    else:
+                        return f"Aproximadamente {minutes}m restantes"
+        
+        return "Calculando..."
+    
+    def _is_admin_user(self, user):
+        """
+        Verificar si el usuario es administrador.
+        
+        Args:
+            user: Usuario autenticado
+            
+        Returns:
+            bool: True si es admin, False en caso contrario
+        """
+        return user.is_superuser or user.is_staff
+
+
 class UserDetailView(APIView):
     """
     Endpoint para obtener detalles de un usuario específico (Admin only).
