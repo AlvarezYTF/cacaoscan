@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.db import transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -32,7 +33,7 @@ from .serializers import (
     ResendVerificationSerializer
 )
 from .utils import create_error_response, create_success_response
-from .models import EmailVerificationToken, ExpiringToken
+from .models import EmailVerificationToken, ExpiringToken, CacaoImage, CacaoPrediction
 
 
 logger = logging.getLogger("cacaoscan.api")
@@ -44,6 +45,87 @@ class ScanMeasureView(APIView):
     """
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+    
+    def _save_uploaded_image(self, image_file, user):
+        """
+        Guarda la imagen subida en el sistema de archivos y crea registro en BD.
+        
+        Args:
+            image_file: Archivo de imagen subido
+            user: Usuario autenticado
+            
+        Returns:
+            tuple: (cacao_image_obj, success, error_message)
+        """
+        try:
+            # Crear objeto CacaoImage
+            cacao_image = CacaoImage(
+                user=user,
+                image=image_file,
+                file_name=image_file.name,
+                file_size=image_file.size,
+                file_type=image_file.content_type,
+                processed=False
+            )
+            
+            # Guardar en BD
+            cacao_image.save()
+            
+            logger.info(f"Imagen guardada con ID {cacao_image.id} para usuario {user.username}")
+            return cacao_image, True, None
+            
+        except Exception as e:
+            logger.error(f"Error guardando imagen: {e}")
+            return None, False, str(e)
+    
+    def _save_prediction(self, cacao_image, result, processing_time_ms):
+        """
+        Guarda los resultados de predicción en BD con transacción.
+        
+        Args:
+            cacao_image: Objeto CacaoImage asociado
+            result: Resultados de predicción del modelo
+            processing_time_ms: Tiempo de procesamiento en milisegundos
+            
+        Returns:
+            tuple: (cacao_prediction_obj, success, error_message)
+        """
+        try:
+            if not cacao_image:
+                return None, False, "No hay imagen asociada para guardar predicción"
+            
+            # Usar transacción para asegurar integridad
+            with transaction.atomic():
+                # Crear objeto CacaoPrediction
+                cacao_prediction = CacaoPrediction(
+                    image=cacao_image,
+                    alto_mm=result['alto_mm'],
+                    ancho_mm=result['ancho_mm'],
+                    grosor_mm=result['grosor_mm'],
+                    peso_g=result['peso_g'],
+                    confidence_alto=result['confidences']['alto'],
+                    confidence_ancho=result['confidences']['ancho'],
+                    confidence_grosor=result['confidences']['grosor'],
+                    confidence_peso=result['confidences']['peso'],
+                    processing_time_ms=processing_time_ms,
+                    crop_url=result.get('crop_url'),
+                    model_version=result['debug'].get('models_version', 'v1.0'),
+                    device_used=result['debug'].get('device', 'cpu')
+                )
+                
+                # Guardar en BD
+                cacao_prediction.save()
+                
+                # Marcar imagen como procesada
+                cacao_image.processed = True
+                cacao_image.save()
+            
+            logger.info(f"Predicción guardada con ID {cacao_prediction.id} para imagen {cacao_image.id}")
+            return cacao_prediction, True, None
+            
+        except Exception as e:
+            logger.error(f"Error guardando predicción: {e}")
+            return None, False, str(e)
     
     @swagger_auto_schema(
         operation_description="Procesa una imagen de grano de cacao y devuelve predicciones de dimensiones y peso",
@@ -135,7 +217,13 @@ class ScanMeasureView(APIView):
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # 6. Obtener predictor y hacer predicción
+            # 6. Guardar imagen en BD
+            cacao_image, save_success, save_error = self._save_uploaded_image(image_file, request.user)
+            if not save_success:
+                logger.warning(f"Error guardando imagen en BD: {save_error}")
+                # Continuar con predicción aunque falle el guardado
+            
+            # 7. Obtener predictor y hacer predicción
             try:
                 predictor = get_predictor()
                 
@@ -161,9 +249,18 @@ class ScanMeasureView(APIView):
                         }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
                 
                 # Realizar predicción
+                prediction_start = time.time()
                 result = predictor.predict(image)
+                prediction_time_ms = int((time.time() - prediction_start) * 1000)
                 
-                # 7. Preparar respuesta
+                # 8. Guardar predicción en BD
+                cacao_prediction, pred_success, pred_error = self._save_prediction(
+                    cacao_image, result, prediction_time_ms
+                )
+                if not pred_success:
+                    logger.warning(f"Error guardando predicción en BD: {pred_error}")
+                
+                # 9. Preparar respuesta
                 response_data = {
                     'alto_mm': result['alto_mm'],
                     'ancho_mm': result['ancho_mm'],
@@ -171,7 +268,10 @@ class ScanMeasureView(APIView):
                     'peso_g': result['peso_g'],
                     'confidences': result['confidences'],
                     'crop_url': result['crop_url'],
-                    'debug': result['debug']
+                    'debug': result['debug'],
+                    'image_id': cacao_image.id if cacao_image else None,
+                    'prediction_id': cacao_prediction.id if cacao_prediction else None,
+                    'saved_to_database': save_success and pred_success
                 }
                 
                 # Validar respuesta con serializer
@@ -179,6 +279,12 @@ class ScanMeasureView(APIView):
                 if serializer.is_valid():
                     total_time = time.time() - start_time
                     logger.info(f"Predicción completada en {total_time:.2f}s para imagen {filename}")
+                    
+                    # Log información sobre guardado en BD
+                    if save_success and pred_success:
+                        logger.info(f"Datos guardados correctamente en BD - Imagen ID: {cacao_image.id}, Predicción ID: {cacao_prediction.id}")
+                    else:
+                        logger.warning(f"Problemas guardando en BD - Imagen: {save_success}, Predicción: {pred_success}")
                     
                     return Response(serializer.validated_data, status=status.HTTP_200_OK)
                 else:
