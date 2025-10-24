@@ -1,7 +1,8 @@
 <template>
-  <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+  <div>
     <!-- Header -->
     <div class="text-center mb-6">
+      <img src="@/assets/sena-logo.png" alt="Logo CacaoScan" class="mx-auto h-16 w-auto mb-4">
       <h2 class="text-2xl font-bold text-gray-900">Iniciar Sesión</h2>
       <p class="text-gray-600 mt-2">Accede a tu cuenta de CacaoScan</p>
     </div>
@@ -130,7 +131,7 @@
           <div class="w-full border-t border-gray-300" />
         </div>
         <div class="relative flex justify-center text-sm">
-          <span class="px-2 bg-white text-gray-500">¿No tienes cuenta?</span>
+          <span class="px-2 bg-transparent text-gray-500">¿No tienes cuenta?</span>
         </div>
       </div>
     </div>
@@ -223,7 +224,7 @@ const handleSubmit = async () => {
 
     if (result.success) {
       // Éxito manejado por el store (redirección automática)
-      setStatusMessage('Inicio de sesión exitoso', 'success')
+      setStatusMessage('¡Bienvenido de vuelta a CacaoScan! 🌱', 'success')
     } else {
       setStatusMessage(result.error || 'Error al iniciar sesión', 'error')
     }

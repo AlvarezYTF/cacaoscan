@@ -54,10 +54,106 @@
                 </div>
               </div>
               
+              <!-- Método de Predicción -->
+              <div class="mb-6">
+                <PredictionMethodSelector 
+                  v-model="selectedMethod"
+                />
+              </div>
+              
               <ImageUpload 
+                :prediction-method="selectedMethod"
                 @prediction-result="handlePredictionResult"
                 @prediction-error="handlePredictionError"
               />
+
+              <!-- Resultados de CacaoScan Unificado -->
+              <div v-if="selectedMethod === 'cacaoscan' && cacaoScanResult" class="mt-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <h3 class="text-lg font-semibold mb-4 text-gray-900">📊 Resultados de la Predicción CacaoScan</h3>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                  <div class="bg-green-50 rounded-lg p-3">
+                    <div class="text-sm text-green-600 font-medium">Peso</div>
+                    <div class="text-xl font-bold text-green-800">{{ cacaoScanResult.peso_g }} g</div>
+                  </div>
+                  <div class="bg-blue-50 rounded-lg p-3">
+                    <div class="text-sm text-blue-600 font-medium">Altura</div>
+                    <div class="text-xl font-bold text-blue-800">{{ cacaoScanResult.alto_mm }} mm</div>
+                  </div>
+                  <div class="bg-purple-50 rounded-lg p-3">
+                    <div class="text-sm text-purple-600 font-medium">Ancho</div>
+                    <div class="text-xl font-bold text-purple-800">{{ cacaoScanResult.ancho_mm }} mm</div>
+                  </div>
+                  <div class="bg-orange-50 rounded-lg p-3">
+                    <div class="text-sm text-orange-600 font-medium">Grosor</div>
+                    <div class="text-xl font-bold text-orange-800">{{ cacaoScanResult.grosor_mm }} mm</div>
+                  </div>
+                </div>
+
+                <!-- Niveles de Confianza -->
+                <div v-if="cacaoScanResult.confidences" class="mb-4">
+                  <h4 class="text-md font-medium text-gray-800 mb-2">Niveles de Confianza</h4>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <span class="text-sm text-gray-600">Peso:</span>
+                      <span class="text-sm font-medium text-gray-800">{{ (cacaoScanResult.confidences.peso * 100).toFixed(1) }}%</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <span class="text-sm text-gray-600">Altura:</span>
+                      <span class="text-sm font-medium text-gray-800">{{ (cacaoScanResult.confidences.alto * 100).toFixed(1) }}%</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <span class="text-sm text-gray-600">Ancho:</span>
+                      <span class="text-sm font-medium text-gray-800">{{ (cacaoScanResult.confidences.ancho * 100).toFixed(1) }}%</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <span class="text-sm text-gray-600">Grosor:</span>
+                      <span class="text-sm font-medium text-gray-800">{{ (cacaoScanResult.confidences.grosor * 100).toFixed(1) }}%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Información de Debug -->
+                <div v-if="cacaoScanResult.debug" class="mb-4">
+                  <h4 class="text-md font-medium text-gray-800 mb-2">Información del Procesamiento</h4>
+                  <div class="text-sm text-gray-600 space-y-1">
+                    <div class="flex justify-between">
+                      <span>Segmentado:</span>
+                      <span class="font-medium">{{ cacaoScanResult.debug.segmented ? 'Sí' : 'No' }}</span>
+                    </div>
+                    <div v-if="cacaoScanResult.debug.yolo_conf" class="flex justify-between">
+                      <span>Confianza YOLO:</span>
+                      <span class="font-medium">{{ (cacaoScanResult.debug.yolo_conf * 100).toFixed(1) }}%</span>
+                    </div>
+                    <div v-if="cacaoScanResult.debug.latency_ms" class="flex justify-between">
+                      <span>Tiempo de procesamiento:</span>
+                      <span class="font-medium">{{ cacaoScanResult.debug.latency_ms }} ms</span>
+                    </div>
+                    <div v-if="cacaoScanResult.debug.models_version" class="flex justify-between">
+                      <span>Versión de modelos:</span>
+                      <span class="font-medium">{{ cacaoScanResult.debug.models_version }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Imagen Procesada -->
+                <div v-if="cacaoScanResult.crop_url" class="mb-4">
+                  <h4 class="text-md font-medium text-gray-800 mb-2">Imagen Procesada</h4>
+                  <div class="flex justify-center">
+                    <img :src="cacaoScanResult.crop_url" alt="Crop procesado" class="max-w-xs rounded-lg border border-gray-200" />
+                  </div>
+                </div>
+
+                <!-- Botón para nuevo análisis -->
+                <div class="flex justify-center">
+                  <button
+                    @click="clearCacaoScanResult"
+                    class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                  >
+                    Realizar Nuevo Análisis
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -92,7 +188,7 @@
                   <li>• Usa imágenes claras y bien iluminadas</li>
                   <li>• Asegúrate de que el grano esté completo en la imagen</li>
                   <li>• Evita sombras fuertes o reflejos</li>
-                  <li>• Formatos recomendados: JPG o PNG (máx. 10MB)</li>
+                  <li>• Formatos recomendados: JPG o PNG (máx. 20MB)</li>
                 </ul>
               </div>
             </div>
@@ -137,7 +233,17 @@
         <div class="space-y-6">
           <!-- Current Prediction Results -->
           <div v-if="hasPrediction" class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <!-- Mostrar resultados según el método usado -->
+            <YoloResultsCard 
+              v-if="isYoloMethod(currentPrediction)"
+              :result="currentPrediction"
+              :original-image="currentImageUrl"
+              @new-analysis="startNewAnalysis"
+            />
+            
+            <!-- Resultados tradicionales para métodos no-YOLO -->
             <PredictionResults 
+              v-else
               :prediction-data="currentPrediction"
               @new-analysis="handleNewAnalysis"
               @save-analysis="handleSaveAnalysis"
@@ -283,12 +389,16 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { usePredictionStore } from '@/stores/prediction.js';
 import ImageUpload from '@/components/user/ImageUpload.vue';
 import PredictionResults from '@/components/user/PredictionResults.vue';
+import PredictionMethodSelector from '@/components/analysis/PredictionMethodSelector.vue';
+import YoloResultsCard from '@/components/analysis/YoloResultsCard.vue';
 
 export default {
   name: 'UserPrediction',
   components: {
     ImageUpload,
-    PredictionResults
+    PredictionResults,
+    PredictionMethodSelector,
+    YoloResultsCard
   },
   
   setup() {
@@ -298,6 +408,9 @@ export default {
     // Local reactive state
     const showSuccessMessage = ref(false);
     const successMessage = ref('');
+    const selectedMethod = ref('traditional');
+    const currentImageUrl = ref(null);
+    const cacaoScanResult = ref(null);
     
     // Computed properties from store
     const currentPrediction = computed(() => predictionStore.currentPrediction);
@@ -312,6 +425,14 @@ export default {
     // Event handlers
     const handlePredictionResult = async (result) => {
       try {
+        // Si es método CacaoScan, guardar resultado específico
+        if (selectedMethod.value === 'cacaoscan') {
+          cacaoScanResult.value = result;
+          showSuccess('¡Análisis CacaoScan completado exitosamente!');
+          console.log('Resultado CacaoScan:', result);
+          return;
+        }
+        
         // Update store with result (prediction is already in store from makePrediction)
         predictionStore.updateResults(result);
         
@@ -329,6 +450,21 @@ export default {
     const handlePredictionError = (error) => {
       console.error('Error en predicción:', error);
       predictionStore.setError(error.message || 'Error desconocido en la predicción');
+    };
+    
+    // Función para determinar si es un método YOLOv8
+    const isYoloMethod = (prediction) => {
+      if (!prediction) return false;
+      return prediction.method === 'yolo_v8' || 
+             prediction.method === 'yolo_v8_smart_crop' ||
+             prediction.model_version === 'yolo_v8_smart_crop';
+    };
+    
+    // Función para iniciar nuevo análisis
+    const startNewAnalysis = () => {
+      predictionStore.clearCurrentPrediction();
+      currentImageUrl.value = null;
+      showSuccess('Listo para nuevo análisis');
     };
     
     const handleNewAnalysis = () => {
@@ -431,6 +567,12 @@ export default {
       return labels[level] || 'Desconocida';
     };
     
+    // Método para limpiar resultados de CacaoScan
+    const clearCacaoScanResult = () => {
+      cacaoScanResult.value = null;
+      showSuccess('Listo para nuevo análisis');
+    };
+
     // Auto-save scroll position
     let scrollPosition = 0;
     
@@ -472,6 +614,9 @@ export default {
       // Local state
       showSuccessMessage,
       successMessage,
+      selectedMethod,
+      currentImageUrl,
+      cacaoScanResult,
       
       // Event handlers
       handlePredictionResult,
@@ -479,6 +624,14 @@ export default {
       handleNewAnalysis,
       handleSaveAnalysis,
       selectFromHistory,
+      loadMoreHistory,
+      clearError,
+      showSuccess,
+      clearCacaoScanResult,
+      
+      // YOLOv8 specific functions
+      isYoloMethod,
+      startNewAnalysis,
       loadLatestPrediction,
       loadMoreHistory,
       

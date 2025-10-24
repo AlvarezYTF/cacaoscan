@@ -120,7 +120,7 @@
                   Arrastra y suelta o haz clic para seleccionar múltiples archivos
                 </p>
                 <p class="text-xs text-gray-400">
-                  Formatos: JPG, PNG, BMP, TIFF (máx. 10MB cada una)
+                  Formatos: JPG, PNG, BMP, TIFF (máx. 20MB cada una)
                 </p>
               </div>
             </div>

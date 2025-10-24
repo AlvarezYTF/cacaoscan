@@ -12,7 +12,6 @@ export const useAuthStore = defineStore('auth', () => {
   // Estado reactivo
   const user = ref(null)
   const accessToken = ref(localStorage.getItem('access_token'))
-  const refreshToken = ref(localStorage.getItem('refresh_token'))
   const isLoading = ref(false)
   const error = ref(null)
   const lastActivity = ref(Date.now())
@@ -67,20 +66,31 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   // Actions
-  const setTokens = (tokens) => {
-    accessToken.value = tokens.access
-    refreshToken.value = tokens.refresh
-    
-    localStorage.setItem('access_token', tokens.access)
-    localStorage.setItem('refresh_token', tokens.refresh)
+  const setTokens = (tokenData) => {
+    // Para Token Authentication, solo necesitamos el access token
+    if (typeof tokenData === 'string') {
+      // Si se pasa directamente el token como string
+      accessToken.value = tokenData
+      localStorage.setItem('access_token', tokenData)
+    } else if (tokenData.access) {
+      // Si se pasa un objeto con access token
+      accessToken.value = tokenData.access
+      localStorage.setItem('access_token', tokenData.access)
+      
+      // Guardar usuario si está disponible
+      if (tokenData.user) {
+        user.value = tokenData.user
+        localStorage.setItem('user', JSON.stringify(tokenData.user))
+      }
+    }
   }
 
   const clearTokens = () => {
     accessToken.value = null
-    refreshToken.value = null
+    user.value = null
     
     localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('user')
   }
 
   const setUser = (userData) => {
@@ -112,17 +122,38 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = JSON.parse(storedUser)
       }
       
-      const storedTokens = {
-        access: localStorage.getItem('access_token'),
-        refresh: localStorage.getItem('refresh_token')
-      }
+      const storedToken = localStorage.getItem('access_token')
       
-      if (storedTokens.access && storedTokens.refresh) {
-        accessToken.value = storedTokens.access
-        refreshToken.value = storedTokens.refresh
+      if (storedToken) {
+        accessToken.value = storedToken
       }
     } catch (error) {
       console.error('Error inicializando desde localStorage:', error)
+      clearAll()
+    }
+  }
+
+  // Inicializar autenticación completa
+  const initializeAuth = async () => {
+    try {
+      // Inicializar desde localStorage
+      initializeFromStorage()
+      
+      // Si hay token pero no hay usuario, intentar obtener el usuario actual
+      if (accessToken.value && !user.value) {
+        console.log('🔄 Restaurando sesión desde token...')
+        await getCurrentUser()
+      }
+      
+      console.log('✅ Autenticación inicializada:', {
+        hasToken: !!accessToken.value,
+        hasUser: !!user.value,
+        isAuthenticated: isAuthenticated.value
+      })
+      
+    } catch (error) {
+      console.error('❌ Error inicializando autenticación:', error)
+      // Si hay error, limpiar todo
       clearAll()
     }
   }
@@ -135,11 +166,12 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.login(credentials)
       
-      if (response.access && response.refresh) {
-        setTokens(response)
-        
-        // Obtener datos del usuario
-        await getCurrentUser()
+      if (response.token && response.user) {
+        // Para Token Authentication, solo necesitamos el token
+        setTokens({
+          access: response.token,
+          user: response.user
+        })
         
         updateLastActivity()
         
@@ -153,7 +185,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (err) {
       console.error('Error en login:', err)
-      setError(err.response?.data?.detail || err.message || 'Error al iniciar sesión')
+      setError(err.response?.data?.message || err.message || 'Error al iniciar sesión')
       return { success: false, error: error.value }
     } finally {
       isLoading.value = false
@@ -168,26 +200,41 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.register(userData)
       
-      // Si el registro incluye tokens (auto-login)
-      if (response.access && response.refresh) {
-        setTokens(response)
-        await getCurrentUser()
+      // El nuevo backend devuelve token directamente en el registro
+      if (response.success && response.token && response.user) {
+        // Para Token Authentication, solo necesitamos el token
+        setTokens({
+          access: response.token,
+          user: response.user
+        })
+        
         updateLastActivity()
         
-        const redirectPath = getRedirectPath()
-        await router.push(redirectPath)
+        // Redirigir automáticamente al dashboard de agricultor
+        await router.push({ name: 'AgricultorDashboard' })
+        
+        return { success: true }
       } else {
-        // Redirigir a login con mensaje de éxito
-        await router.push({ 
-          name: 'Login', 
-          query: { message: 'Registro exitoso. Por favor inicia sesión.' }
-        })
+        // Fallback para formato anterior
+        if (response.access && response.refresh) {
+          setTokens(response)
+          await getCurrentUser()
+          updateLastActivity()
+          
+          await router.push({ name: 'AgricultorDashboard' })
+        } else {
+          // Redirigir a login con mensaje de éxito
+          await router.push({ 
+            name: 'Login', 
+            query: { message: 'Registro exitoso. Por favor inicia sesión.' }
+          })
+        }
+        
+        return { success: true }
       }
-      
-      return { success: true }
     } catch (err) {
       console.error('Error en registro:', err)
-      setError(err.response?.data?.detail || err.message || 'Error en el registro')
+      setError(err.response?.data?.message || err.message || 'Error en el registro')
       return { success: false, error: error.value }
     } finally {
       isLoading.value = false
@@ -200,8 +247,8 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       // Intentar hacer logout en el servidor
-      if (refreshToken.value) {
-        await authApi.logout(refreshToken.value)
+      if (accessToken.value) {
+        await authApi.logout()
       }
     } catch (err) {
       console.error('Error en logout del servidor:', err)
@@ -210,8 +257,8 @@ export const useAuthStore = defineStore('auth', () => {
       // Limpiar estado local
       clearAll()
       
-      // Redirigir al login
-      await router.push({ 
+      // Redirigir al login usando replace para evitar volver atrás
+      await router.replace({ 
         name: 'Login',
         query: showMessage ? { message: 'Sesión cerrada exitosamente' } : {}
       })
@@ -241,26 +288,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Refrescar token
+  // Refrescar token (no usado con Token Authentication)
   const refreshAccessToken = async () => {
-    if (!refreshToken.value) {
-      throw new Error('No refresh token available')
-    }
-
-    try {
-      const response = await authApi.refreshToken(refreshToken.value)
-      
-      setTokens({
-        access: response.access,
-        refresh: refreshToken.value // Mantener el refresh token actual
-      })
-      
-      return response.access
-    } catch (err) {
-      console.error('Error refrescando token:', err)
-      await logout(false)
-      throw err
-    }
+    // Con Token Authentication no necesitamos refresh tokens
+    throw new Error('Token Authentication no requiere refresh tokens')
   }
 
   // Cambiar contraseña
@@ -370,7 +401,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Verificar si ya estamos en una ruta apropiada para evitar loops
     const currentPath = router.currentRoute.value.path
     const appropriatePaths = {
-      admin: ['/admin/', '/analisis', '/reportes', '/perfil'],
+      admin: ['/admin/dashboard', '/analisis', '/reportes', '/perfil'],
       analyst: ['/analisis', '/reportes', '/perfil'],
       farmer: ['/agricultor-dashboard', '/prediccion', '/perfil']
     }
@@ -430,7 +461,6 @@ export const useAuthStore = defineStore('auth', () => {
     // Estado
     user,
     accessToken,
-    refreshToken,
     isLoading,
     error,
     lastActivity,
@@ -463,6 +493,7 @@ export const useAuthStore = defineStore('auth', () => {
     checkSessionTimeout,
     hasPermission,
     clearAll,
-    setError
+    setError,
+    initializeAuth
   }
 })

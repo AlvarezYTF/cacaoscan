@@ -212,7 +212,7 @@ AdminDataset → initiateTraining() → datasetApi.trainRegressionModel()
 ### Variables de Configuración (DATASET_CONFIG)
 ```javascript
 {
-  MAX_FILE_SIZE: 10MB,
+  MAX_FILE_SIZE: 20MB,
   MAX_BULK_OPERATIONS: 100,
   SUPPORTED_FORMATS: ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff'],
   DEFAULT_PAGE_SIZE: 20,

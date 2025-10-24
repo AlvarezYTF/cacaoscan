@@ -1,6 +1,6 @@
 /**
  * Configuración principal de Axios para CacaoScan
- * Incluye interceptores para JWT, manejo de errores y rate limiting
+ * Incluye interceptores para Token Authentication, manejo de errores y rate limiting
  */
 
 import axios from 'axios'
@@ -8,28 +8,13 @@ import router from '@/router'
 
 // Configuración base de Axios
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1',
   timeout: 30000, // 30 segundos
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
 })
-
-// Variable para evitar múltiples intentos de refresh
-let isRefreshing = false
-let refreshSubscribers = []
-
-// Función para subscribir requests mientras se refresca el token
-const subscribeTokenRefresh = (cb) => {
-  refreshSubscribers.push(cb)
-}
-
-// Función para ejecutar todos los requests pendientes con nuevo token
-const onRefreshed = (token) => {
-  refreshSubscribers.map(cb => cb(token))
-  refreshSubscribers = []
-}
 
 // Función para obtener el store de auth dinámicamente
 const getAuthStore = () => {
@@ -105,14 +90,14 @@ api.interceptors.response.use(
       console.error(`❌ API Error: ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`, {
         status: error.response?.status,
         duration: `${duration}ms`,
-        message: error.response?.data?.detail || error.message
+        message: error.response?.data?.message || error.response?.data?.detail || error.message
       })
     }
 
-    // Manejar errores 401 (No autorizado)
+    // Manejar errores 401 (No autorizado) - Token Authentication
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Verificar si es un endpoint de auth que no requiere refresh
-      const authEndpoints = ['/auth/login/', '/auth/register/', '/auth/refresh/']
+      // Verificar si es un endpoint de auth que no requiere manejo especial
+      const authEndpoints = ['/auth/login/', '/auth/register/']
       const isAuthEndpoint = authEndpoints.some(endpoint => 
         originalRequest.url.includes(endpoint)
       )
@@ -121,85 +106,24 @@ api.interceptors.response.use(
         return Promise.reject(error)
       }
 
-      // Intentar refrescar el token
-      if (isRefreshing) {
-        // Si ya se está refrescando, esperar el resultado
-        return new Promise((resolve) => {
-          subscribeTokenRefresh((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`
-            resolve(api(originalRequest))
-          })
-        })
-      }
-
-      originalRequest._retry = true
-      isRefreshing = true
-
-      try {
-        const refreshToken = localStorage.getItem('refresh_token')
-        
-        if (!refreshToken) {
-          throw new Error('No refresh token available')
+      // Para Token Authentication, si hay 401, el token es inválido
+      // Limpiar tokens y redirigir a login usando replace
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('user')
+      
+      const authStore = getAuthStore()
+      authStore.clearAll() // Limpiar estado sin logout completo
+      
+      // Redirigir usando replace para evitar volver atrás
+      router.replace({ 
+        name: 'Login',
+        query: {
+          message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
+          expired: 'true'
         }
-
-        // Hacer request de refresh sin interceptor para evitar loop
-        const refreshResponse = await axios.post(
-          `${api.defaults.baseURL}/auth/refresh/`,
-          { refresh: refreshToken },
-          {
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 10000
-          }
-        )
-
-        const newAccessToken = refreshResponse.data.access
-
-        // Actualizar token en localStorage
-        localStorage.setItem('access_token', newAccessToken)
-
-        // Actualizar header del request original
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
-
-        // Ejecutar requests pendientes
-        onRefreshed(newAccessToken)
-
-        // Actualizar store si está disponible
-        try {
-          const authStore = getAuthStore()
-          authStore.accessToken = newAccessToken
-        } catch (storeError) {
-          console.warn('No se pudo actualizar el store:', storeError)
-        }
-
-        isRefreshing = false
-
-        // Reintento del request original
-        return api(originalRequest)
-
-      } catch (refreshError) {
-        console.error('Error refrescando token:', refreshError)
-        
-        isRefreshing = false
-        refreshSubscribers = []
-
-        // Limpiar tokens y redirigir al login
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('user')
-
-        // Redirigir al login solo si no estamos ya allí
-        if (router.currentRoute.value.name !== 'Login') {
-          router.push({
-            name: 'Login',
-            query: { 
-              message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
-              expired: 'true'
-            }
-          })
-        }
-
-        return Promise.reject(refreshError)
-      }
+      })
+      
+      return Promise.reject(error)
     }
 
     // Manejar errores 403 (Prohibido)
@@ -313,6 +237,171 @@ export const createBaseRequest = () => {
       'Accept': 'application/json'
     }
   })
+}
+
+/**
+ * Realiza predicción de características físicas de un grano de cacao
+ * @param {FormData} formData - Datos del formulario con la imagen y metadatos
+ * @returns {Promise<Object>} - Resultado de la predicción con peso, altura, ancho y grosor
+ */
+export async function predictImage(formData) {
+  try {
+    // Validar que FormData contiene una imagen
+    if (!formData.has('image')) {
+      throw new Error('No se ha proporcionado ninguna imagen para procesar')
+    }
+    
+    const imageFile = formData.get('image')
+    if (!imageFile || imageFile.size === 0) {
+      throw new Error('El archivo de imagen está vacío o corrupto')
+    }
+
+    // Validar formato de imagen
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
+    if (!allowedTypes.includes(imageFile.type)) {
+      throw new Error('Formato de imagen no válido. Use JPEG, PNG, WebP o BMP')
+    }
+
+    // Validar tamaño máximo (20MB)
+    const maxSize = 20 * 1024 * 1024
+    if (imageFile.size > maxSize) {
+      throw new Error('La imagen es demasiado grande. Máximo 20MB permitido')
+    }
+
+    // Emitir evento de loading
+    window.dispatchEvent(new CustomEvent('api-loading-start', {
+      detail: { type: 'prediction', message: 'Analizando imagen de cacao...' }
+    }))
+
+    console.log('📤 Enviando imagen para predicción:', {
+      fileName: imageFile.name,
+      fileSize: `${(imageFile.size / 1024).toFixed(1)}KB`,
+      fileType: imageFile.type
+    })
+
+    // Realizar la petición al endpoint de predicción
+    const response = await api.post('/api/predict/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 60000 // 60 segundos para procesamiento ML
+    })
+
+    console.log('✅ Predicción completada:', response.data)
+
+    return response.data
+
+  } catch (error) {
+    console.error('❌ Error al predecir imagen:', error)
+    
+    // Extraer mensaje de error más descriptivo
+    let errorMessage = 'Error inesperado al procesar la imagen'
+    
+    if (error.response?.data?.error) {
+      errorMessage = error.response.data.error
+    } else if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+
+    // Crear error personalizado con información útil
+    const customError = new Error(errorMessage)
+    customError.originalError = error
+    customError.status = error.response?.status
+    customError.statusText = error.response?.statusText
+
+    throw customError
+
+  } finally {
+    // Emitir evento de fin de loading
+    window.dispatchEvent(new CustomEvent('api-loading-end'))
+  }
+}
+
+/**
+ * Función auxiliar para crear FormData para predicción
+ * @param {File} file - Archivo de imagen
+ * @param {Object} metadata - Metadatos adicionales (opcional)
+ * @returns {FormData} - FormData preparado para envío
+ */
+export function createPredictionFormData(file, metadata = {}) {
+  const formData = new FormData()
+  
+  // Agregar archivo de imagen
+  formData.append('image', file)
+  
+  // Agregar metadatos si se proporcionan
+  if (metadata.lote_id) {
+    formData.append('lote_id', metadata.lote_id)
+  }
+  
+  if (metadata.finca) {
+    formData.append('finca', metadata.finca)
+  }
+  
+  if (metadata.region) {
+    formData.append('region', metadata.region)
+  }
+  
+  if (metadata.variedad) {
+    formData.append('variedad', metadata.variedad)
+  }
+  
+  if (metadata.fecha_cosecha) {
+    formData.append('fecha_cosecha', metadata.fecha_cosecha)
+  }
+  
+  if (metadata.notas) {
+    formData.append('notas', metadata.notas)
+  }
+  
+  // Agregar información técnica del archivo
+  formData.append('file_name', file.name)
+  formData.append('file_size', file.size.toString())
+  formData.append('file_type', file.type)
+  
+  // Timestamp para auditoría
+  formData.append('upload_timestamp', new Date().toISOString())
+  
+  return formData
+}
+
+/**
+ * Función auxiliar para validar archivos de imagen
+ * @param {File} file - Archivo a validar
+ * @returns {Object} - Objeto con isValid y errors
+ */
+export function validateImageFile(file) {
+  const errors = []
+
+  if (!file) {
+    errors.push('Archivo requerido')
+    return { isValid: false, errors }
+  }
+
+  // Validar tipo
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
+  if (!allowedTypes.includes(file.type)) {
+    errors.push('Formato no válido. Use JPEG, PNG, WebP o BMP')
+  }
+
+  // Validar tamaño (20MB máximo)
+  const maxSize = 20 * 1024 * 1024
+  if (file.size > maxSize) {
+    errors.push('Archivo demasiado grande. Máximo 20MB')
+  }
+
+  // Validar tamaño mínimo (1KB)
+  const minSize = 1024
+  if (file.size < minSize) {
+    errors.push('Archivo demasiado pequeño')
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  }
 }
 
 // Exportar configuraciones útiles

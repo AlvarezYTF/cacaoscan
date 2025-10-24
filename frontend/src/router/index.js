@@ -13,6 +13,7 @@ import PredictionView from '../views/PredictionView.vue'
 import UserPrediction from '../views/UserPrediction.vue'
 import AdminDataset from '../views/AdminDataset.vue'
 import AdminTraining from '../views/AdminTraining.vue'
+import SubirDatosEntrenamiento from '../views/SubirDatosEntrenamiento.vue'
 
 // Importar guards
 import { ROUTE_GUARDS } from './guards'
@@ -30,12 +31,39 @@ const router = createRouter({
       }
     },
     {
+      path: '/dashboard',
+      name: 'Dashboard',
+      redirect: () => {
+        // Redirección dinámica según rol del usuario
+        const authStore = useAuthStore()
+        if (!authStore.isAuthenticated) {
+          return '/login'
+        }
+        
+        switch (authStore.userRole) {
+          case 'admin':
+            return '/admin/dashboard'
+          case 'analyst':
+            return '/analisis'
+          case 'farmer':
+            return '/agricultor-dashboard'
+          default:
+            return '/'
+        }
+      },
+      meta: {
+        title: 'Dashboard | CacaoScan',
+        requiresAuth: true
+      }
+    },
+    {
       path: '/login',
       name: 'Login',
       component: LoginView,
       beforeEnter: ROUTE_GUARDS.guest,
       meta: {
-        title: 'Iniciar sesión | CacaoScan'
+        title: 'Iniciar sesión | CacaoScan',
+        requiresGuest: true
       }
     },
     {
@@ -44,7 +72,8 @@ const router = createRouter({
       component: RegisterView,
       beforeEnter: ROUTE_GUARDS.guest,
       meta: {
-        title: 'Registro | CacaoScan'
+        title: 'Registro | CacaoScan',
+        requiresGuest: true
       }
     },
     {
@@ -66,23 +95,56 @@ const router = createRouter({
         title: 'Detalle del Análisis de Cacao | CacaoScan'
       }
     },
+    // Rutas de administración (optimizadas con subrutas)
     {
-      path: '/admin/dashboard',
-      name: 'AdminDashboard',
-      component: AdminDashboard,
-      beforeEnter: ROUTE_GUARDS.admin,
-      meta: {
-        title: 'Panel de Administración | CacaoScan'
-      }
-    },
-    {
-      path: '/admin/agricultores',
-      name: 'Agricultores',
-      component: Agricultores,
-      beforeEnter: ROUTE_GUARDS.admin,
-      meta: {
-        title: 'Gestión de Agricultores | CacaoScan'
-      }
+      path: '/admin',
+      children: [
+        {
+          path: 'dashboard',
+          name: 'AdminDashboard',
+          component: AdminDashboard,
+          beforeEnter: ROUTE_GUARDS.admin,
+          meta: {
+            title: 'Panel de Administración | CacaoScan'
+          }
+        },
+        {
+          path: 'agricultores',
+          name: 'Agricultores',
+          component: Agricultores,
+          beforeEnter: ROUTE_GUARDS.admin,
+          meta: {
+            title: 'Gestión de Agricultores | CacaoScan'
+          }
+        },
+        {
+          path: 'configuracion',
+          name: 'Configuracion',
+          component: () => import('../views/Configuracion.vue'),
+          beforeEnter: ROUTE_GUARDS.admin,
+          meta: {
+            title: 'Configuración | CacaoScan'
+          }
+        },
+        {
+          path: 'dataset',
+          name: 'AdminDataset',
+          component: AdminDataset,
+          beforeEnter: ROUTE_GUARDS.admin,
+          meta: {
+            title: 'Gestión de Dataset | CacaoScan'
+          }
+        },
+        {
+          path: 'training',
+          name: 'AdminTraining',
+          component: AdminTraining,
+          beforeEnter: ROUTE_GUARDS.admin,
+          meta: {
+            title: 'Panel de Reentrenamiento | CacaoScan'
+          }
+        }
+      ]
     },
     {
       path: '/analisis',
@@ -103,15 +165,6 @@ const router = createRouter({
       }
     },
     {
-      path: '/admin/configuracion',
-      name: 'Configuracion',
-      component: () => import('../views/Configuracion.vue'),
-      beforeEnter: ROUTE_GUARDS.admin,
-      meta: {
-        title: 'Configuración | CacaoScan'
-      }
-    },
-    {
       path: '/agricultor-dashboard',
       name: 'AgricultorDashboard',
       component: AgricultorDashboard,
@@ -124,10 +177,10 @@ const router = createRouter({
       path: '/prediccion',
       name: 'Prediction',
       component: PredictionView,
-      beforeEnter: ROUTE_GUARDS.canUpload,
+      beforeEnter: ROUTE_GUARDS.auth,
       meta: {
         title: 'Análisis de Granos de Cacao | CacaoScan',
-        requiresVerification: true
+        requiresVerification: false
       }
     },
     {
@@ -141,21 +194,13 @@ const router = createRouter({
       }
     },
     {
-      path: '/admin/dataset',
-      name: 'AdminDataset',
-      component: AdminDataset,
-      beforeEnter: ROUTE_GUARDS.admin,
+      path: '/entrenamiento-incremental',
+      name: 'SubirDatosEntrenamiento',
+      component: SubirDatosEntrenamiento,
+      beforeEnter: ROUTE_GUARDS.canUpload,
       meta: {
-        title: 'Gestión de Dataset | CacaoScan'
-      }
-    },
-    {
-      path: '/admin/training',
-      name: 'AdminTraining',
-      component: AdminTraining,
-      beforeEnter: ROUTE_GUARDS.admin,
-      meta: {
-        title: 'Panel de Reentrenamiento | CacaoScan'
+        title: 'Entrenamiento Incremental | CacaoScan',
+        requiresVerification: true
       }
     },
     // Rutas adicionales para autenticación
@@ -243,16 +288,19 @@ router.beforeEach(async (to, from, next) => {
       }))
     }
     
+    // Importar store de autenticación dinámicamente
+    const { useAuthStore } = await import('@/stores/auth')
+    const authStore = useAuthStore()
+    
     // Verificar estado de autenticación si se requiere
     if (to.meta.requiresAuth || to.matched.some(record => record.meta.requiresAuth)) {
-      const { useAuthStore } = await import('@/stores/auth')
-      const authStore = useAuthStore()
       
-      // Si no hay token pero está intentando acceder a ruta protegida
-      if (!authStore.isAuthenticated) {
-        console.warn('🚫 Intento de acceso a ruta protegida sin autenticación')
+      // Si no hay token, redirigir al login
+      if (!authStore.accessToken) {
+        console.warn('🚫 Intento de acceso a ruta protegida sin token')
         next({
           name: 'Login',
+          replace: true,
           query: { 
             redirect: to.fullPath,
             message: 'Debes iniciar sesión para acceder a esta página'
@@ -261,29 +309,54 @@ router.beforeEach(async (to, from, next) => {
         return
       }
       
-      // Verificar que el usuario esté completamente cargado
+      // Si hay token pero no hay usuario, intentar obtenerlo
       if (!authStore.user) {
         try {
+          console.log('🔄 Verificando token y obteniendo datos de usuario...')
           await authStore.getCurrentUser()
         } catch (error) {
-          console.error('Error cargando datos de usuario:', error)
+          console.error('❌ Token inválido o expirado:', error)
+          // Limpiar todo y redirigir
           authStore.clearAll()
           next({
             name: 'Login',
+            replace: true,
             query: { 
               redirect: to.fullPath,
-              message: 'Tu sesión ha expirado. Inicia sesión nuevamente.'
+              message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
+              expired: 'true'
             }
           })
           return
         }
+      }
+      
+      // Verificar si la sesión ha expirado por inactividad
+      if (authStore.checkSessionTimeout()) {
+        console.warn('⏰ Sesión expirada por inactividad')
+        return
+      }
+      
+      // Actualizar actividad del usuario
+      authStore.updateLastActivity()
+    }
+    
+    // Verificar rutas públicas que requieren que el usuario NO esté autenticado
+    if (to.meta.requiresGuest || to.matched.some(record => record.meta.requiresGuest)) {
+      if (authStore.isAuthenticated) {
+        console.log('👤 Usuario ya autenticado, redirigiendo desde ruta pública...')
+        
+        // Redirigir según rol usando router.replace para evitar historial
+        const redirectPath = getRedirectPathByRole(authStore.userRole)
+        next({ path: redirectPath, replace: true })
+        return
       }
     }
     
     next()
   } catch (error) {
     console.error('Error en navigation guard:', error)
-    next('/acceso-denegado')
+    next({ path: '/acceso-denegado', replace: true })
   } finally {
     // Pequeño delay para mejor UX
     setTimeout(() => {
@@ -293,6 +366,20 @@ router.beforeEach(async (to, from, next) => {
     }, 100)
   }
 })
+
+// Función auxiliar para obtener ruta de redirección por rol
+const getRedirectPathByRole = (role) => {
+  switch (role) {
+    case 'admin':
+      return '/admin/dashboard'
+    case 'analyst':
+      return '/analisis'
+    case 'farmer':
+      return '/agricultor-dashboard'
+    default:
+      return '/'
+  }
+}
 
 // Guardián posterior para limpiar estados
 router.afterEach((to, from) => {

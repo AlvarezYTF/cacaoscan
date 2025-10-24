@@ -344,6 +344,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 /* Estilos adicionales si son necesarios */
 .router-link-active {
   @apply border-green-500 text-gray-900;

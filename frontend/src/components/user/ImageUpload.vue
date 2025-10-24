@@ -63,7 +63,7 @@
                 Arrastra y suelta o haz clic para seleccionar
               </p>
               <p class="text-xs text-gray-400">
-                Formatos: JPG, PNG, BMP, TIFF (máx. 10MB)
+                Formatos: JPG, PNG, BMP, TIFF (máx. 20MB)
               </p>
             </div>
           </div>
@@ -208,11 +208,18 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
-import { predictImage, createImageFormData, validateImageFile } from '@/services/predictionApi.js';
+import { ref, computed, onMounted } from 'vue';
+import { predictImage, predictImageYolo, predictImageSmart, createImageFormData, validateImageFile } from '@/services/predictionApi.js';
+import { predictImage as predictImageNew, createPredictionFormData, validateImageFile as validateImageFileNew } from '@/services/api.js';
 
 export default {
   name: 'ImageUpload',
+  props: {
+    predictionMethod: {
+      type: String,
+      default: 'traditional'
+    }
+  },
   emits: ['prediction-result', 'prediction-error'],
   
   setup(props, { emit }) {
@@ -280,9 +287,9 @@ export default {
       
       try {
         // Validar archivo
-        const validation = await validateImageFile(file);
-        if (!validation.isValid) {
-          error.value = validation.error;
+        const validation = validateImageFile(file);
+        if (validation.length > 0) {
+          error.value = validation[0]; // Mostrar el primer error
           return;
         }
 
@@ -321,11 +328,37 @@ export default {
         // Crear FormData con imagen y metadatos
         const requestFormData = createImageFormData(selectedFile.value, formData.value);
         
-        // Llamar a la API
-        const result = await predictImage(requestFormData);
+        // Llamar a la API según el método seleccionado
+        let result;
+        switch (props.predictionMethod) {
+          case 'yolo':
+            result = await predictImageYolo(requestFormData);
+            break;
+          case 'smart':
+            result = await predictImageSmart(requestFormData, {
+              returnCroppedImage: true,
+              returnTransparentImage: true
+            });
+            break;
+          case 'cacaoscan':
+            // Usar la nueva función predictImage del servicio api.js
+            const newFormData = createPredictionFormData(selectedFile.value, formData.value);
+            result = { success: true, data: await predictImageNew(newFormData) };
+            break;
+          case 'traditional':
+          default:
+            result = await predictImage(requestFormData);
+            break;
+        }
         
         // Emitir evento con resultado exitoso
-        emit('prediction-result', result);
+        if (result.success) {
+          // Mapear datos de la API al formato esperado por PredictionResults
+          const mappedData = mapApiResponseToPredictionData(result.data);
+          emit('prediction-result', mappedData);
+        } else {
+          throw new Error(result.error || 'Error en la predicción');
+        }
         
         // Limpiar formulario después del éxito
         resetForm();
@@ -359,6 +392,36 @@ export default {
       
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
+
+    // Función para mapear respuesta de API al formato esperado por PredictionResults
+    const mapApiResponseToPredictionData = (apiData) => {
+      return {
+        id: apiData.id || Date.now(),
+        width: apiData.ancho_mm || apiData.width,
+        height: apiData.alto_mm || apiData.altura_mm || apiData.height,
+        thickness: apiData.grosor_mm || apiData.thickness,
+        predicted_weight: apiData.peso_g || apiData.peso_estimado || apiData.predicted_weight,
+        prediction_method: apiData.method || apiData.prediction_method || props.predictionMethod || 'unknown',
+        confidence_level: apiData.nivel_confianza ? 
+          (apiData.nivel_confianza > 0.8 ? 'high' : 
+           apiData.nivel_confianza > 0.6 ? 'medium' : 'low') : 
+          apiData.confidence_level || 'unknown',
+        confidence_score: apiData.nivel_confianza || apiData.confidence_score || 0,
+        processing_time: apiData.processing_time || 0,
+        image_url: apiData.image_url,
+        created_at: apiData.created_at,
+        // Campos adicionales específicos de cada método
+        detection_info: apiData.detection_info,
+        smart_crop: apiData.smart_crop,
+        derived_metrics: apiData.derived_metrics,
+        weight_comparison: apiData.weight_comparison
+      };
+    };
+
+    // Lifecycle
+    onMounted(() => {
+      // Componente montado correctamente
+    });
 
     return {
       // Estado

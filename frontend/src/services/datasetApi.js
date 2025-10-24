@@ -270,8 +270,8 @@ export const validateImageFile = (file) => {
     };
   }
   
-  // Validar tamaño (máximo 10MB)
-  const maxSize = 10 * 1024 * 1024;
+  // Validar tamaño (máximo 20MB)
+  const maxSize = 20 * 1024 * 1024;
   if (file.size > maxSize) {
     return {
       isValid: false,
@@ -508,7 +508,7 @@ export const getCommonFilters = () => ({
  */
 export const DATASET_CONFIG = {
   // Límites
-  MAX_FILE_SIZE: 10 * 1024 * 1024,  // 10MB
+  MAX_FILE_SIZE: 20 * 1024 * 1024,  // 20MB
   MAX_BULK_OPERATIONS: 100,         // Máximo imágenes por operación masiva
   
   // Formatos soportados

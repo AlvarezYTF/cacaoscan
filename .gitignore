@@ -1,0 +1,105 @@
+# Archivos de imágenes - NO subir al repositorio
+backend/ml/media/imgs/
+backend/ml/media/cacao_images/
+backend/ml/media/dataset/
+backend/media/cacao_images/
+backend/media/imgs/
+backend/media/dataset/
+
+# Archivos de modelos entrenados
+backend/ml/models/
+*.pt
+*.pth
+*.pkl
+*.h5
+*.onnx
+
+# Archivos de entrenamiento
+backend/ml/runs/
+backend/ml/logs/
+backend/ml/outputs/
+
+# Archivos temporales
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Archivos de configuración local
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Archivos de base de datos local
+*.db
+*.sqlite3
+
+# Archivos de cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Archivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos de sistema
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Archivos de Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de Vue.js
+frontend/dist/
+frontend/build/
+
+# Archivos de Django
+backend/staticfiles/
+backend/media/
+backend/static/
+
+# Archivos de Python
+*.pyc
+__pycache__/
+*.egg-info/
+dist/
+build/
+
+# Entornos virtuales de Python
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+.env/
+pyvenv.cfg
+
+# Entornos virtuales específicos
+backend/venv/
+backend/env/
+frontend/node_modules/
+
+# Archivos de logs
+backend/ml/logs/django.log
+backend/ml/ml.log
+*.log
+*.logs
+
+

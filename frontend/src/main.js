@@ -24,19 +24,11 @@ const initApp = async () => {
   try {
     const authStore = useAuthStore()
     
-    // Inicializar desde localStorage si hay tokens
-    if (authStore.accessToken && authStore.user) {
-      try {
-        // Verificar que el token siga siendo válido
-        await authStore.getCurrentUser()
-        console.log('✅ Usuario autenticado restaurado desde localStorage')
-      } catch (error) {
-        console.warn('⚠️ Token inválido, limpiando localStorage')
-        authStore.clearAll()
-      }
-    }
+    // Inicializar autenticación completa
+    await authStore.initializeAuth()
+    
   } catch (error) {
-    console.error('❌ Error inicializando autenticación:', error)
+    console.error('❌ Error inicializando aplicación:', error)
   }
 
   // Montar la aplicación

@@ -52,8 +52,8 @@
                   @click="applyFilters"
                 />
                 <ActionButton 
-                  label="Nuevo Análisis"
-                  short-label="+ Nuevo"
+                  label="Analizar Imagen"
+                  short-label="+ Imagen"
                   variant="primary"
                   icon="PlusIcon"
                   @click="handleNewAnalysis"
@@ -265,8 +265,8 @@ export default {
     };
 
     const handleNewAnalysis = () => {
-      console.log('Navegando a nuevo análisis');
-      router.push({ name: 'nuevo-analisis' });
+      console.log('Navegando a predicción de imagen');
+      router.push({ name: 'Prediction' });
     };
 
     const applyFilters = () => {

@@ -1,22 +1,25 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-    <div class="sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="text-center">
-        <svg class="mx-auto h-12 w-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-        </svg>
-        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Crear Cuenta
-        </h2>
-        <p class="mt-2 text-center text-sm text-gray-600">
-          Únete a CacaoScan para comenzar a analizar tus granos de cacao
-        </p>
+  <div>
+    <!-- Mensaje de estado -->
+    <div v-if="statusMessage" class="mb-4 rounded-md p-4" :class="statusMessageClass">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg v-if="statusType === 'success'" class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <svg v-else class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium" :class="statusType === 'success' ? 'text-green-800' : 'text-red-800'">
+            {{ statusMessage }}
+          </p>
+        </div>
       </div>
     </div>
 
-    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-        <form @submit.prevent="handleSubmit" class="space-y-6">
+    <form @submit.prevent="handleSubmit" class="space-y-6">
           <!-- Nombres -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -101,30 +104,7 @@
             <p v-if="errors.phoneNumber" class="mt-2 text-sm text-red-600">{{ errors.phoneNumber }}</p>
           </div>
 
-          <!-- Rol -->
-          <div>
-            <label for="role" class="block text-sm font-medium text-gray-700">
-              Tipo de Usuario *
-            </label>
-            <div class="mt-1">
-              <select
-                id="role"
-                v-model="form.role"
-                required
-                :disabled="isLoading"
-                class="block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm disabled:bg-gray-100"
-                :class="{ 'border-red-500': errors.role }"
-              >
-                <option value="">Selecciona tu tipo de usuario</option>
-                <option value="farmer">Agricultor - Productor de cacao</option>
-                <option value="analyst">Analista - Investigador o técnico</option>
-              </select>
-            </div>
-            <p v-if="errors.role" class="mt-2 text-sm text-red-600">{{ errors.role }}</p>
-            <p class="mt-1 text-xs text-gray-500">
-              Los usuarios administradores son creados por el sistema
-            </p>
-          </div>
+          <!-- Rol eliminado - todos los usuarios registrados son agricultores automáticamente -->
 
           <!-- Contraseñas -->
           <div>
@@ -276,40 +256,6 @@
             </button>
           </div>
         </form>
-
-        <!-- Mensaje de estado -->
-        <div v-if="statusMessage" class="mt-4 rounded-md p-4" :class="statusMessageClass">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <svg v-if="statusType === 'success'" class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              <svg v-else class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </div>
-            <div class="ml-3">
-              <p class="text-sm font-medium" :class="statusType === 'success' ? 'text-green-800' : 'text-red-800'">
-                {{ statusMessage }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Enlaces adicionales -->
-      <div class="mt-6 text-center">
-        <p class="text-sm text-gray-600">
-          ¿Ya tienes una cuenta?
-          <router-link
-            to="/login"
-            class="font-medium text-green-600 hover:text-green-500"
-          >
-            Inicia sesión aquí
-          </router-link>
-        </p>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -328,7 +274,6 @@ const form = ref({
   lastName: '',
   email: '',
   phoneNumber: '',
-  role: '',
   password: '',
   confirmPassword: '',
   acceptTerms: false,
@@ -361,8 +306,7 @@ const isFormValid = computed(() => {
     form.value.firstName.trim() &&
     form.value.lastName.trim() &&
     form.value.email.trim() &&
-    form.value.role &&
-    isPasswordValid.value &&
+    form.value.password.length >= 6 && // Validación básica de UX
     form.value.password === form.value.confirmPassword &&
     form.value.acceptTerms
   )
@@ -374,10 +318,11 @@ const statusMessageClass = computed(() => {
     : 'bg-red-50 border border-red-200'
 })
 
-// Validación
+// Validación simplificada para UX (validaciones críticas en backend)
 const validateForm = () => {
   errors.value = {}
   
+  // Validaciones básicas de UX
   if (!form.value.firstName.trim()) {
     errors.value.firstName = 'El nombre es requerido'
   }
@@ -396,14 +341,11 @@ const validateForm = () => {
     errors.value.phoneNumber = 'Ingresa un número de teléfono válido'
   }
   
-  if (!form.value.role) {
-    errors.value.role = 'Selecciona tu tipo de usuario'
-  }
-  
+  // Validación básica de contraseña (detalles en backend)
   if (!form.value.password) {
     errors.value.password = 'La contraseña es requerida'
-  } else if (!isPasswordValid.value) {
-    errors.value.password = 'La contraseña no cumple con los requisitos de seguridad'
+  } else if (form.value.password.length < 6) {
+    errors.value.password = 'La contraseña debe tener al menos 6 caracteres'
   }
   
   if (!form.value.confirmPassword) {
@@ -456,26 +398,19 @@ const handleSubmit = async () => {
       first_name: form.value.firstName.trim(),
       last_name: form.value.lastName.trim(),
       email: form.value.email.trim(),
-      phone_number: form.value.phoneNumber.trim() || null,
-      role: form.value.role,
       password: form.value.password,
-      confirm_password: form.value.confirmPassword,
+      confirm_password: form.value.confirmPassword, // Este campo se mapea a password_confirm en authApi
+      phone_number: form.value.phoneNumber.trim() || null,
       email_notifications: form.value.emailNotifications
     })
 
     if (result.success) {
-      setStatusMessage('¡Cuenta creada exitosamente! Revisa tu email para verificar tu cuenta.', 'success')
+      setStatusMessage('¡Registro exitoso! Bienvenido a CacaoScan 🌱', 'success')
       
-      // Redirigir después de 3 segundos
+      // Redirigir después de 2 segundos al dashboard de agricultor
       setTimeout(() => {
-        router.push({
-          name: 'Login',
-          query: { 
-            message: 'Cuenta creada exitosamente. Revisa tu email para verificarla.',
-            email: form.value.email
-          }
-        })
-      }, 3000)
+        router.push({ name: 'AgricultorDashboard' })
+      }, 2000)
     } else {
       setStatusMessage(result.error || 'Error al crear la cuenta', 'error')
     }

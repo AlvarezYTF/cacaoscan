@@ -9,7 +9,9 @@ import api from './api'
 
 // Endpoints de la API
 const API_ENDPOINTS = {
-  predict: '/images/predict/',
+  predict: '/scan/measure/',
+  predictYolo: '/scan/measure/',  // Usar el mismo endpoint unificado
+  predictSmart: '/scan/measure/', // Usar el mismo endpoint unificado
   images: '/images/',
   stats: '/images/stats/'
 }
@@ -37,10 +39,10 @@ export async function predictImage(formData) {
       throw new Error('Formato de imagen no válido. Use JPEG, PNG o WebP')
     }
 
-    // Validar tamaño máximo (5MB)
-    const maxSize = 5 * 1024 * 1024
+    // Validar tamaño máximo (20MB)
+    const maxSize = 20 * 1024 * 1024
     if (imageFile.size > maxSize) {
-      throw new Error('La imagen es demasiado grande. Máximo 5MB permitido')
+      throw new Error('La imagen es demasiado grande. Máximo 20MB permitido')
     }
 
     // Emitir evento de loading
@@ -75,6 +77,160 @@ export async function predictImage(formData) {
                         error.response?.data?.error || 
                         error.message || 
                         'Error inesperado al procesar la imagen'
+
+    return {
+      success: false,
+      error: errorMessage
+    }
+  } finally {
+    // Emitir evento de fin de loading
+    window.dispatchEvent(new CustomEvent('api-loading-end'))
+  }
+}
+
+/**
+ * Realiza predicción usando YOLOv8 con detección de objetos
+ * @param {FormData} formData - Datos del formulario con la imagen y metadatos
+ * @returns {Promise<Object>} - Resultado de la predicción YOLOv8
+ */
+export async function predictImageYolo(formData) {
+  try {
+    // Validar que FormData contiene una imagen
+    if (!formData.has('image')) {
+      throw new Error('No se ha proporcionado ninguna imagen para procesar')
+    }
+    
+    const imageFile = formData.get('image')
+    if (!imageFile || imageFile.size === 0) {
+      throw new Error('El archivo de imagen está vacío o corrupto')
+    }
+
+    // Validar formato de imagen
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
+    if (!allowedTypes.includes(imageFile.type)) {
+      throw new Error('Formato de imagen no válido. Use JPEG, PNG, WebP o BMP')
+    }
+
+    // Validar tamaño máximo (20MB para YOLOv8)
+    const maxSize = 20 * 1024 * 1024
+    if (imageFile.size > maxSize) {
+      throw new Error('La imagen es demasiado grande. Máximo 20MB permitido')
+    }
+
+    // Emitir evento de loading
+    window.dispatchEvent(new CustomEvent('api-loading-start', {
+      detail: { type: 'yolo-prediction', message: 'Analizando imagen con YOLOv8...' }
+    }))
+
+    console.log('📤 Enviando imagen para predicción YOLOv8:', {
+      fileName: imageFile.name,
+      fileSize: `${(imageFile.size / 1024).toFixed(1)}KB`,
+      fileType: imageFile.type
+    })
+
+    const response = await api.post(API_ENDPOINTS.predictYolo, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 120000 // 120 segundos para YOLOv8
+    })
+
+    console.log('✅ Predicción YOLOv8 completada:', response.data)
+
+    return {
+      success: true,
+      data: response.data
+    }
+
+  } catch (error) {
+    console.error('❌ Error en predicción YOLOv8:', error)
+    
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Error inesperado al procesar la imagen con YOLOv8'
+
+    return {
+      success: false,
+      error: errorMessage
+    }
+  } finally {
+    // Emitir evento de fin de loading
+    window.dispatchEvent(new CustomEvent('api-loading-end'))
+  }
+}
+
+/**
+ * Realiza predicción usando YOLOv8 con recorte inteligente estilo iPhone
+ * @param {FormData} formData - Datos del formulario con la imagen y metadatos
+ * @param {Object} options - Opciones adicionales
+ * @returns {Promise<Object>} - Resultado de la predicción con recorte inteligente
+ */
+export async function predictImageSmart(formData, options = {}) {
+  try {
+    // Validar que FormData contiene una imagen
+    if (!formData.has('image')) {
+      throw new Error('No se ha proporcionado ninguna imagen para procesar')
+    }
+    
+    const imageFile = formData.get('image')
+    if (!imageFile || imageFile.size === 0) {
+      throw new Error('El archivo de imagen está vacío o corrupto')
+    }
+
+    // Validar formato de imagen
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
+    if (!allowedTypes.includes(imageFile.type)) {
+      throw new Error('Formato de imagen no válido. Use JPEG, PNG, WebP o BMP')
+    }
+
+    // Validar tamaño máximo (20MB para YOLOv8)
+    const maxSize = 20 * 1024 * 1024
+    if (imageFile.size > maxSize) {
+      throw new Error('La imagen es demasiado grande. Máximo 20MB permitido')
+    }
+
+    // Agregar opciones al FormData
+    if (options.returnCroppedImage) {
+      formData.append('return_cropped_image', 'true')
+    }
+    if (options.returnTransparentImage) {
+      formData.append('return_transparent_image', 'true')
+    }
+
+    // Emitir evento de loading
+    window.dispatchEvent(new CustomEvent('api-loading-start', {
+      detail: { type: 'smart-prediction', message: 'Analizando imagen con recorte inteligente...' }
+    }))
+
+    console.log('📤 Enviando imagen para predicción con recorte inteligente:', {
+      fileName: imageFile.name,
+      fileSize: `${(imageFile.size / 1024).toFixed(1)}KB`,
+      fileType: imageFile.type,
+      options
+    })
+
+    const response = await api.post(API_ENDPOINTS.predictSmart, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 150000 // 150 segundos para recorte inteligente
+    })
+
+    console.log('✅ Predicción con recorte inteligente completada:', response.data)
+
+    return {
+      success: true,
+      data: response.data
+    }
+
+  } catch (error) {
+    console.error('❌ Error en predicción con recorte inteligente:', error)
+    
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Error inesperado al procesar la imagen con recorte inteligente'
 
     return {
       success: false,
@@ -418,10 +574,10 @@ export function validateImageFile(file) {
     errors.push('Formato no válido. Use JPEG, PNG o WebP')
   }
 
-  // Validar tamaño (5MB máximo)
-  const maxSize = 5 * 1024 * 1024
+  // Validar tamaño (20MB máximo)
+  const maxSize = 20 * 1024 * 1024
   if (file.size > maxSize) {
-    errors.push('Archivo demasiado grande. Máximo 5MB')
+    errors.push('Archivo demasiado grande. Máximo 20MB')
   }
 
   // Validar tamaño mínimo (1KB)
@@ -486,6 +642,8 @@ export const predictionApiClient = api
 
 export default {
   predictImage,
+  predictImageYolo,
+  predictImageSmart,
   getImages,
   getImageHistory,
   getPredictionStats,

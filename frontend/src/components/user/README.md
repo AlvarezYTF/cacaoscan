@@ -170,7 +170,7 @@ const API_ENDPOINTS = {
 #### Validaciones
 
 - **Formatos soportados**: JPG, PNG, BMP, TIFF
-- **Tamaño máximo**: 10MB
+- **Tamaño máximo**: 20MB
 - **Dimensiones mínimas**: 32x32 píxeles  
 - **Dimensiones máximas**: 4096x4096 píxeles
 

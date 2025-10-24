@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { predictImage, getImageHistory, getPredictionStats } from '@/services/predictionApi.js';
+import { predictImage, predictImageYolo, predictImageSmart, getImageHistory, getPredictionStats } from '@/services/predictionApi.js';
 
 export const usePredictionStore = defineStore('prediction', {
   state: () => ({
@@ -185,6 +185,108 @@ export const usePredictionStore = defineStore('prediction', {
         
       } catch (error) {
         this.error = error.message || 'Error al realizar la predicción';
+        this.uploadError = error.message;
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    
+    // Realizar predicción con YOLOv8
+    async makePredictionYolo(formData) {
+      this.isLoading = true;
+      this.error = null;
+      this.uploadError = null;
+      
+      try {
+        // Obtener información de la imagen del FormData
+        const imageFile = formData.get('image');
+        if (imageFile) {
+          this.lastUpload = {
+            fileName: imageFile.name,
+            fileSize: imageFile.size,
+            uploadTime: new Date().toISOString()
+          };
+          this.currentImage = imageFile;
+        }
+        
+        // Realizar la predicción YOLOv8
+        const result = await predictImageYolo(formData);
+        
+        if (result.success) {
+          // Actualizar el estado con el resultado
+          this.currentPrediction = result.data;
+          
+          // Agregar al historial (al principio)
+          this.predictions.unshift(result.data);
+          
+          // Mantener solo los últimos 50 en memoria
+          if (this.predictions.length > 50) {
+            this.predictions = this.predictions.slice(0, 50);
+          }
+          
+          // Actualizar estadísticas
+          this.stats.totalPredictions = this.predictions.length;
+          this.updateTodayStats();
+          
+          return result.data;
+        } else {
+          throw new Error(result.error);
+        }
+        
+      } catch (error) {
+        this.error = error.message || 'Error al realizar la predicción YOLOv8';
+        this.uploadError = error.message;
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    
+    // Realizar predicción con recorte inteligente
+    async makePredictionSmart(formData, options = {}) {
+      this.isLoading = true;
+      this.error = null;
+      this.uploadError = null;
+      
+      try {
+        // Obtener información de la imagen del FormData
+        const imageFile = formData.get('image');
+        if (imageFile) {
+          this.lastUpload = {
+            fileName: imageFile.name,
+            fileSize: imageFile.size,
+            uploadTime: new Date().toISOString()
+          };
+          this.currentImage = imageFile;
+        }
+        
+        // Realizar la predicción con recorte inteligente
+        const result = await predictImageSmart(formData, options);
+        
+        if (result.success) {
+          // Actualizar el estado con el resultado
+          this.currentPrediction = result.data;
+          
+          // Agregar al historial (al principio)
+          this.predictions.unshift(result.data);
+          
+          // Mantener solo los últimos 50 en memoria
+          if (this.predictions.length > 50) {
+            this.predictions = this.predictions.slice(0, 50);
+          }
+          
+          // Actualizar estadísticas
+          this.stats.totalPredictions = this.predictions.length;
+          this.updateTodayStats();
+          
+          return result.data;
+        } else {
+          throw new Error(result.error);
+        }
+        
+      } catch (error) {
+        this.error = error.message || 'Error al realizar la predicción con recorte inteligente';
         this.uploadError = error.message;
         throw error;
       } finally {

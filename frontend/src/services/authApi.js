@@ -12,7 +12,7 @@ const authApi = {
   async login(credentials) {
     try {
       const response = await api.post('/auth/login/', {
-        username: credentials.email || credentials.username,
+        username: credentials.username || credentials.email,
         password: credentials.password
       })
       return response.data
@@ -28,20 +28,13 @@ const authApi = {
   async register(userData) {
     try {
       const response = await api.post('/auth/register/', {
-        username: userData.username,
+        username: userData.email, // Usar email como username
         email: userData.email,
         password: userData.password,
-        password_confirm: userData.passwordConfirm,
-        first_name: userData.firstName,
-        last_name: userData.lastName,
-        phone_number: userData.phoneNumber || '',
-        role: userData.role || 'farmer',
-        // Datos del perfil
-        region: userData.region || '',
-        municipality: userData.municipality || '',
-        farm_name: userData.farmName || '',
-        years_experience: userData.yearsExperience || null,
-        farm_size_hectares: userData.farmSizeHectares || null
+        password_confirm: userData.confirm_password, // Corregido: password_confirm
+        first_name: userData.first_name,
+        last_name: userData.last_name
+        // El rol 'farmer' se asigna automáticamente en el backend
       })
       return response.data
     } catch (error) {
@@ -53,11 +46,9 @@ const authApi = {
   /**
    * Cerrar sesión (blacklist refresh token)
    */
-  async logout(refreshToken) {
+  async logout() {
     try {
-      const response = await api.post('/auth/logout/', {
-        refresh: refreshToken
-      })
+      const response = await api.post('/auth/logout/')
       return response.data
     } catch (error) {
       console.error('Error en logout API:', error)
@@ -100,7 +91,7 @@ const authApi = {
    */
   async getCurrentUser() {
     try {
-      const response = await api.get('/auth/users/me/')
+      const response = await api.get('/auth/profile/')
       return response.data
     } catch (error) {
       console.error('Error obteniendo usuario actual:', error)
@@ -289,6 +280,38 @@ const authApi = {
       return response.data
     } catch (error) {
       console.error('Error eliminando usuario:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Solicitar recuperación de contraseña
+   */
+  async forgotPassword(email) {
+    try {
+      const response = await api.post('/auth/forgot-password/', {
+        email: email
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error en forgot password API:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Restablecer contraseña con token
+   */
+  async resetPassword(token, newPassword, confirmPassword) {
+    try {
+      const response = await api.post('/auth/reset-password/', {
+        token: token,
+        new_password: newPassword,
+        confirm_password: confirmPassword
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error en reset password API:', error)
       throw error
     }
   }
