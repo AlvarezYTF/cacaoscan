@@ -19,6 +19,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from PIL import Image
 import io
+import os
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -2789,6 +2790,115 @@ class AdminImagesListView(APIView):
             
         except Exception as e:
             logger.error(f"Error obteniendo lista global de imágenes: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _is_admin_user(self, user):
+        """
+        Verificar si el usuario es administrador.
+        
+        Args:
+            user: Usuario autenticado
+            
+        Returns:
+            bool: True si es admin, False en caso contrario
+        """
+        return user.is_superuser or user.is_staff
+
+
+class AdminImageDetailView(APIView):
+    """
+    Endpoint para obtener detalles completos de cualquier imagen del sistema (Admin only).
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene los detalles completos de cualquier imagen del sistema (solo admins)",
+        operation_summary="Detalles globales de imagen",
+        responses={
+            200: openapi.Response(
+                description="Detalles de imagen obtenidos exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            403: ErrorResponseSerializer,
+            404: ErrorResponseSerializer,
+        },
+        tags=['Admin Dataset']
+    )
+    def get(self, request, image_id):
+        """
+        Obtiene los detalles completos de cualquier imagen del sistema.
+        Solo accesible para administradores.
+        """
+        try:
+            # Verificar permisos de administrador
+            if not self._is_admin_user(request.user):
+                return Response({
+                    'error': 'No tienes permisos para acceder a esta funcionalidad',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Obtener imagen con información completa
+            try:
+                image = CacaoImage.objects.select_related(
+                    'user', 'prediction'
+                ).prefetch_related(
+                    'user__groups'
+                ).get(id=image_id)
+            except CacaoImage.DoesNotExist:
+                return Response({
+                    'error': 'Imagen no encontrada',
+                    'status': 'error'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Serializar imagen con predicción
+            serializer = CacaoImageDetailSerializer(image, context={'request': request})
+            image_data = serializer.data
+            
+            # Agregar información administrativa adicional
+            image_data['admin_info'] = {
+                'owner_info': {
+                    'id': image.user.id,
+                    'username': image.user.username,
+                    'email': image.user.email,
+                    'first_name': image.user.first_name,
+                    'last_name': image.user.last_name,
+                    'is_active': image.user.is_active,
+                    'is_staff': image.user.is_staff,
+                    'is_superuser': image.user.is_superuser,
+                    'date_joined': image.user.date_joined.isoformat(),
+                    'last_login': image.user.last_login.isoformat() if image.user.last_login else None,
+                    'groups': [group.name for group in image.user.groups.all()]
+                },
+                'file_info': {
+                    'file_path': image.image.path if image.image else None,
+                    'file_exists': image.image and os.path.exists(image.image.path) if image.image else False,
+                    'storage_backend': str(type(image.image.storage).__name__) if image.image else None
+                },
+                'processing_info': {
+                    'processing_time_ms': image.prediction.processing_time_ms if hasattr(image, 'prediction') and image.prediction else None,
+                    'model_version': image.prediction.model_version if hasattr(image, 'prediction') and image.prediction else None,
+                    'device_used': image.prediction.device_used if hasattr(image, 'prediction') and image.prediction else None,
+                    'crop_url': image.prediction.crop_url if hasattr(image, 'prediction') and image.prediction else None
+                },
+                'access_info': {
+                    'accessed_by_admin': request.user.username,
+                    'access_timestamp': timezone.now().isoformat(),
+                    'admin_permissions': {
+                        'can_edit': True,
+                        'can_delete': True,
+                        'can_download': True,
+                        'can_view_owner_data': True
+                    }
+                }
+            }
+            
+            return Response(image_data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo detalles administrativos de imagen {image_id}: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
