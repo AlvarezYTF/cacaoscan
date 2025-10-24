@@ -1,395 +1,345 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
 import api from '@/services/api'
 
-export const useNotificationStore = defineStore('notifications', () => {
-  // State
-  const notifications = ref([])
-  const loading = ref(false)
-  const websocket = ref(null)
-  const settings = ref({
-    email_notifications: true,
-    push_notifications: true,
-    report_notifications: true,
-    analysis_notifications: true,
-    show_toasts: true,
-    sound_enabled: true
-  })
+export const useNotificationsStore = defineStore('notifications', {
+  state: () => ({
+    notifications: [],
+    unreadCount: 0,
+    stats: {
+      total_notifications: 0,
+      unread_count: 0,
+      notifications_by_type: {},
+      recent_notifications: []
+    },
+    pagination: {
+      currentPage: 1,
+      totalPages: 1,
+      totalItems: 0,
+      itemsPerPage: 20
+    },
+    loading: false,
+    error: null,
+    realtimeEnabled: true
+  }),
 
-  // Computed
-  const unreadCount = computed(() => 
-    notifications.value.filter(n => !n.leida).length
-  )
+  getters: {
+    getNotificationById: (state) => (id) => {
+      return state.notifications.find(notification => notification.id === id)
+    },
 
-  const recentNotifications = computed(() => 
-    notifications.value.slice(0, 5)
-  )
+    getUnreadNotifications: (state) => {
+      return state.notifications.filter(notification => !notification.leida)
+    },
 
-  // Actions
-  const getNotifications = async (params = {}) => {
-    loading.value = true
-    try {
-      const response = await api.get('/notifications/', { params })
-      notifications.value = response.data.results || []
-      return response.data
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
-      throw error
-    } finally {
-      loading.value = false
+    getNotificationsByType: (state) => (tipo) => {
+      return state.notifications.filter(notification => notification.tipo === tipo)
+    },
+
+    getRecentNotifications: (state) => (limit = 5) => {
+      return state.notifications
+        .sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion))
+        .slice(0, limit)
+    },
+
+    getNotificationsByDate: (state) => (date) => {
+      const targetDate = new Date(date).toDateString()
+      return state.notifications.filter(notification => 
+        new Date(notification.fecha_creacion).toDateString() === targetDate
+      )
     }
-  }
+  },
 
-  const getNotification = async (id) => {
-    try {
-      const response = await api.get(`/notifications/${id}/`)
-      return response.data
-    } catch (error) {
-      console.error('Error fetching notification:', error)
-      throw error
-    }
-  }
+  actions: {
+    async fetchNotifications(params = {}) {
+      try {
+        this.loading = true
+        this.error = null
 
-  const markAsRead = async (id) => {
-    try {
-      const response = await api.patch(`/notifications/${id}/mark-read/`)
-      
-      // Update local state
-      const index = notifications.value.findIndex(n => n.id === id)
-      if (index !== -1) {
-        notifications.value[index].leida = true
-        notifications.value[index].fecha_lectura = response.data.fecha_lectura
+        const response = await api.get('/notifications/', { params })
+        
+        this.notifications = response.data.results || response.data
+        this.pagination = {
+          currentPage: response.data.page || 1,
+          totalPages: response.data.total_pages || 1,
+          totalItems: response.data.count || 0,
+          itemsPerPage: response.data.page_size || 20
+        }
+
+        // Calcular notificaciones no leídas
+        this.unreadCount = this.notifications.filter(n => !n.leida).length
+
+        return response
+      } catch (error) {
+        this.error = error.response?.data?.detail || 'Error al cargar notificaciones'
+        console.error('Error fetching notifications:', error)
+        throw error
+      } finally {
+        this.loading = false
       }
-      
-      return response.data
-    } catch (error) {
-      console.error('Error marking notification as read:', error)
-      throw error
-    }
-  }
+    },
 
-  const markAllAsRead = async () => {
-    try {
-      const response = await api.post('/notifications/mark-all-read/')
-      
-      // Update local state
-      notifications.value.forEach(notification => {
-        if (!notification.leida) {
+    async fetchNotificationDetails(id) {
+      try {
+        const response = await api.get(`/notifications/${id}/`)
+        return response
+      } catch (error) {
+        console.error('Error fetching notification details:', error)
+        throw error
+      }
+    },
+
+    async markAsRead(id) {
+      try {
+        await api.post(`/notifications/${id}/mark-read/`)
+        
+        // Actualizar estado local
+        const notification = this.getNotificationById(id)
+        if (notification && !notification.leida) {
           notification.leida = true
           notification.fecha_lectura = new Date().toISOString()
+          this.unreadCount = Math.max(0, this.unreadCount - 1)
         }
-      })
-      
-      return response.data
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error)
-      throw error
-    }
-  }
-
-  const deleteNotification = async (id) => {
-    try {
-      await api.delete(`/notifications/${id}/`)
-      
-      // Remove from local state
-      notifications.value = notifications.value.filter(n => n.id !== id)
-      
-    } catch (error) {
-      console.error('Error deleting notification:', error)
-      throw error
-    }
-  }
-
-  const createNotification = async (notificationData) => {
-    try {
-      const response = await api.post('/notifications/', notificationData)
-      
-      // Add to local state
-      notifications.value.unshift(response.data)
-      
-      return response.data
-    } catch (error) {
-      console.error('Error creating notification:', error)
-      throw error
-    }
-  }
-
-  const updateSettings = async (newSettings) => {
-    try {
-      const response = await api.patch('/notifications/settings/', newSettings)
-      settings.value = { ...settings.value, ...response.data }
-      return response.data
-    } catch (error) {
-      console.error('Error updating notification settings:', error)
-      throw error
-    }
-  }
-
-  const getSettings = async () => {
-    try {
-      const response = await api.get('/notifications/settings/')
-      settings.value = { ...settings.value, ...response.data }
-      return response.data
-    } catch (error) {
-      console.error('Error fetching notification settings:', error)
-      throw error
-    }
-  }
-
-  // WebSocket connection
-  const connectWebSocket = () => {
-    if (websocket.value) {
-      websocket.value.close()
-    }
-
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `${protocol}//${window.location.host}/ws/notifications/`
-    
-    websocket.value = new WebSocket(wsUrl)
-
-    websocket.value.onopen = () => {
-      console.log('WebSocket connected for notifications')
-    }
-
-    websocket.value.onclose = () => {
-      console.log('WebSocket disconnected for notifications')
-      // Attempt to reconnect after 5 seconds
-      setTimeout(() => {
-        if (!websocket.value || websocket.value.readyState === WebSocket.CLOSED) {
-          connectWebSocket()
-        }
-      }, 5000)
-    }
-
-    websocket.value.onerror = (error) => {
-      console.error('WebSocket error:', error)
-    }
-
-    websocket.value.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        handleWebSocketMessage(data)
+        
+        return true
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error)
+        console.error('Error marking notification as read:', error)
+        throw error
       }
-    }
-  }
+    },
 
-  const handleWebSocketMessage = (data) => {
-    switch (data.type) {
-      case 'notification':
-        // Add new notification to the list
-        notifications.value.unshift(data.notification)
+    async markAllAsRead() {
+      try {
+        await api.post('/notifications/mark-all-read/')
         
-        // Show toast if enabled
-        if (settings.value.show_toasts) {
-          showToast(data.notification)
+        // Actualizar estado local
+        this.notifications.forEach(notification => {
+          notification.leida = true
+          notification.fecha_lectura = new Date().toISOString()
+        })
+        this.unreadCount = 0
+        
+        return true
+      } catch (error) {
+        console.error('Error marking all notifications as read:', error)
+        throw error
+      }
+    },
+
+    async getUnreadCount() {
+      try {
+        const response = await api.get('/notifications/unread-count/')
+        this.unreadCount = response.data.unread_count
+        return response.data.unread_count
+      } catch (error) {
+        console.error('Error getting unread count:', error)
+        throw error
+      }
+    },
+
+    async getNotificationStats() {
+      try {
+        const response = await api.get('/notifications/stats/')
+        this.stats = response.data
+        return response.data
+      } catch (error) {
+        console.error('Error getting notification stats:', error)
+        throw error
+      }
+    },
+
+    async createNotification(notificationData) {
+      try {
+        const response = await api.post('/notifications/create/', notificationData)
+        
+        // Agregar a la lista local
+        this.notifications.unshift(response.data)
+        this.unreadCount++
+        
+        return response.data
+      } catch (error) {
+        console.error('Error creating notification:', error)
+        throw error
+      }
+    },
+
+    // Métodos para integración con WebSockets
+    addRealtimeNotification(notification) {
+      // Verificar si la notificación ya existe
+      const existingIndex = this.notifications.findIndex(n => n.id === notification.id)
+      
+      if (existingIndex !== -1) {
+        // Actualizar notificación existente
+        this.notifications[existingIndex] = notification
+      } else {
+        // Agregar nueva notificación al inicio
+        this.notifications.unshift(notification)
+        
+        // Limitar a 100 notificaciones
+        if (this.notifications.length > 100) {
+          this.notifications = this.notifications.slice(0, 100)
+        }
+      }
+      
+      // Actualizar contador de no leídas
+      if (!notification.leida) {
+        this.unreadCount++
+      }
+    },
+
+    updateRealtimeNotification(notification) {
+      const index = this.notifications.findIndex(n => n.id === notification.id)
+      if (index !== -1) {
+        const wasUnread = !this.notifications[index].leida
+        const isNowRead = notification.leida
+        
+        this.notifications[index] = notification
+        
+        // Actualizar contador
+        if (wasUnread && isNowRead) {
+          this.unreadCount = Math.max(0, this.unreadCount - 1)
+        } else if (!wasUnread && !isNowRead) {
+          this.unreadCount++
+        }
+      }
+    },
+
+    updateRealtimeStats(stats) {
+      this.stats = stats
+      this.unreadCount = stats.unread_count
+    },
+
+    // Métodos de utilidad
+    clearError() {
+      this.error = null
+    },
+
+    reset() {
+      this.notifications = []
+      this.unreadCount = 0
+      this.stats = {
+        total_notifications: 0,
+        unread_count: 0,
+        notifications_by_type: {},
+        recent_notifications: []
+      }
+      this.pagination = {
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+        itemsPerPage: 20
+      }
+      this.loading = false
+      this.error = null
+    },
+
+    // Métodos para filtros y búsqueda
+    async searchNotifications(query) {
+      try {
+        const response = await api.get('/notifications/', {
+          params: { search: query }
+        })
+        
+        this.notifications = response.data.results || response.data
+        return response
+      } catch (error) {
+        console.error('Error searching notifications:', error)
+        throw error
+      }
+    },
+
+    async filterByType(tipo) {
+      try {
+        const response = await api.get('/notifications/', {
+          params: { tipo }
+        })
+        
+        this.notifications = response.data.results || response.data
+        return response
+      } catch (error) {
+        console.error('Error filtering notifications by type:', error)
+        throw error
+      }
+    },
+
+    async filterByReadStatus(leida) {
+      try {
+        const response = await api.get('/notifications/', {
+          params: { leida }
+        })
+        
+        this.notifications = response.data.results || response.data
+        return response
+      } catch (error) {
+        console.error('Error filtering notifications by read status:', error)
+        throw error
+      }
+    },
+
+    // Métodos para paginación
+    async goToPage(page) {
+      try {
+        const response = await this.fetchNotifications({ page })
+        return response
+      } catch (error) {
+        console.error('Error going to page:', error)
+        throw error
+      }
+    },
+
+    async changePageSize(pageSize) {
+      try {
+        this.pagination.itemsPerPage = pageSize
+        const response = await this.fetchNotifications({ 
+          page: 1, 
+          page_size: pageSize 
+        })
+        return response
+      } catch (error) {
+        console.error('Error changing page size:', error)
+        throw error
+      }
+    },
+
+    // Métodos para exportación
+    async exportNotifications(format = 'json') {
+      try {
+        const response = await api.get('/notifications/export/', {
+          params: { format },
+          responseType: 'blob'
+        })
+
+        // Crear URL para descarga
+        const blob = new Blob([response.data])
+        const url = window.URL.createObjectURL(blob)
+        
+        // Crear enlace temporal para descarga
+        const link = document.createElement('a')
+        link.href = url
+        
+        // Obtener nombre del archivo del header
+        const contentDisposition = response.headers['content-disposition']
+        let filename = 'notificaciones_exportadas.json'
+        
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/)
+          if (filenameMatch) {
+            filename = filenameMatch[1]
+          }
         }
         
-        // Play sound if enabled
-        if (settings.value.sound_enabled) {
-          playNotificationSound(data.notification.tipo)
-        }
-        break
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
         
-      case 'notification_read':
-        // Update notification read status
-        const index = notifications.value.findIndex(n => n.id === data.notification_id)
-        if (index !== -1) {
-          notifications.value[index].leida = true
-          notifications.value[index].fecha_lectura = data.fecha_lectura
-        }
-        break
-        
-      case 'notification_deleted':
-        // Remove notification from list
-        notifications.value = notifications.value.filter(n => n.id !== data.notification_id)
-        break
-        
-      default:
-        console.log('Unknown WebSocket message type:', data.type)
-    }
-  }
+        // Limpiar
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
 
-  const disconnectWebSocket = () => {
-    if (websocket.value) {
-      websocket.value.close()
-      websocket.value = null
-    }
-  }
-
-  // Toast notifications
-  const showToast = (notification) => {
-    // This will be handled by the NotificationBell component
-    // We emit a custom event that the component can listen to
-    window.dispatchEvent(new CustomEvent('notification-toast', {
-      detail: notification
-    }))
-  }
-
-  // Sound notifications
-  const playNotificationSound = (type) => {
-    try {
-      const audio = new Audio()
-      
-      // Different sounds for different notification types
-      const soundMap = {
-        'error': '/sounds/error.mp3',
-        'warning': '/sounds/warning.mp3',
-        'success': '/sounds/success.mp3',
-        'info': '/sounds/info.mp3',
-        'defect_alert': '/sounds/alert.mp3',
-        'report_ready': '/sounds/success.mp3',
-        'training_complete': '/sounds/success.mp3',
-        'welcome': '/sounds/info.mp3'
-      }
-      
-      audio.src = soundMap[type] || '/sounds/notification.mp3'
-      audio.volume = 0.3
-      audio.play().catch(error => {
-        console.log('Could not play notification sound:', error)
-      })
-    } catch (error) {
-      console.log('Error playing notification sound:', error)
-    }
-  }
-
-  // Browser notification permission
-  const requestNotificationPermission = async () => {
-    if ('Notification' in window) {
-      const permission = await Notification.requestPermission()
-      return permission === 'granted'
-    }
-    return false
-  }
-
-  const showBrowserNotification = (notification) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      const browserNotification = new Notification(notification.titulo, {
-        body: notification.mensaje,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
-        tag: `notification-${notification.id}`,
-        requireInteraction: notification.tipo === 'error' || notification.tipo === 'defect_alert'
-      })
-
-      browserNotification.onclick = () => {
-        window.focus()
-        browserNotification.close()
-        // Navigate to relevant page based on notification type
-        handleNotificationClick(notification)
-      }
-
-      // Auto-close after 5 seconds (except for important notifications)
-      if (notification.tipo !== 'error' && notification.tipo !== 'defect_alert') {
-        setTimeout(() => {
-          browserNotification.close()
-        }, 5000)
+        return true
+      } catch (error) {
+        console.error('Error exporting notifications:', error)
+        throw error
       }
     }
-  }
-
-  const handleNotificationClick = (notification) => {
-    // This will be handled by the component that shows the notification
-    window.dispatchEvent(new CustomEvent('notification-click', {
-      detail: notification
-    }))
-  }
-
-  // Utility functions
-  const getNotificationStats = async () => {
-    try {
-      const response = await api.get('/notifications/stats/')
-      return response.data
-    } catch (error) {
-      console.error('Error fetching notification stats:', error)
-      throw error
-    }
-  }
-
-  const clearOldNotifications = async (daysOld = 30) => {
-    try {
-      const response = await api.post('/notifications/clear-old/', {
-        days_old: daysOld
-      })
-      
-      // Refresh notifications list
-      await getNotifications()
-      
-      return response.data
-    } catch (error) {
-      console.error('Error clearing old notifications:', error)
-      throw error
-    }
-  }
-
-  const exportNotifications = async (format = 'json') => {
-    try {
-      const response = await api.get('/notifications/export/', {
-        params: { format },
-        responseType: 'blob'
-      })
-      
-      // Create download link
-      const blob = new Blob([response.data], { 
-        type: format === 'json' ? 'application/json' : 'text/csv'
-      })
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `notifications_${new Date().toISOString().split('T')[0]}.${format}`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-      
-    } catch (error) {
-      console.error('Error exporting notifications:', error)
-      throw error
-    }
-  }
-
-  // Initialize store
-  const initialize = async () => {
-    try {
-      await getSettings()
-      await requestNotificationPermission()
-      connectWebSocket()
-    } catch (error) {
-      console.error('Error initializing notification store:', error)
-    }
-  }
-
-  return {
-    // State
-    notifications,
-    loading,
-    websocket,
-    settings,
-    
-    // Computed
-    unreadCount,
-    recentNotifications,
-    
-    // Actions
-    getNotifications,
-    getNotification,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-    createNotification,
-    updateSettings,
-    getSettings,
-    connectWebSocket,
-    disconnectWebSocket,
-    showToast,
-    playNotificationSound,
-    requestNotificationPermission,
-    showBrowserNotification,
-    handleNotificationClick,
-    getNotificationStats,
-    clearOldNotifications,
-    exportNotifications,
-    initialize
   }
 })

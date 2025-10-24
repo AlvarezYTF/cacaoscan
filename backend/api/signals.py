@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 from .models import Notification, CacaoPrediction, TrainingJob, Finca, Lote
+from .realtime_service import realtime_service
 
 logger = logging.getLogger("cacaoscan.api")
 
@@ -33,23 +34,25 @@ def notify_prediction_completed(sender, instance, created, **kwargs):
                 titulo = 'Análisis Completado - Calidad Baja'
                 mensaje = f'Tu análisis de granos de cacao ha sido completado con baja confianza ({instance.average_confidence:.1%}). Considera repetir el análisis.'
             
-            # Crear notificación
-            notification = Notification.create_notification(
-                user=instance.image.user,
+            # Crear notificación y enviar en tiempo real
+            datos_extra = {
+                'prediction_id': instance.id,
+                'image_id': instance.image.id,
+                'confidence': float(instance.average_confidence),
+                'quality_metrics': {
+                    'alto_mm': float(instance.alto_mm),
+                    'ancho_mm': float(instance.ancho_mm),
+                    'grosor_mm': float(instance.grosor_mm),
+                    'peso_g': float(instance.peso_g),
+                }
+            }
+            
+            notification = realtime_service.create_and_send_notification(
+                user_id=instance.image.user.id,
                 tipo=tipo,
                 titulo=titulo,
                 mensaje=mensaje,
-                datos_extra={
-                    'prediction_id': instance.id,
-                    'image_id': instance.image.id,
-                    'confidence': float(instance.average_confidence),
-                    'quality_metrics': {
-                        'alto_mm': float(instance.alto_mm),
-                        'ancho_mm': float(instance.ancho_mm),
-                        'grosor_mm': float(instance.grosor_mm),
-                        'peso_g': float(instance.peso_g),
-                    }
-                }
+                datos_extra=datos_extra
             )
             
             # Enviar email de notificación si está habilitado
@@ -100,17 +103,19 @@ def notify_training_completed(sender, instance, created, **kwargs):
     if not created and instance.status == 'completed':
         try:
             # Notificar al usuario que creó el trabajo
-            notification = Notification.create_notification(
-                user=instance.created_by,
+            datos_extra = {
+                'job_id': instance.job_id,
+                'model_name': instance.model_name,
+                'metrics': instance.metrics,
+                'duration': instance.duration_formatted if hasattr(instance, 'duration_formatted') else None
+            }
+            
+            notification = realtime_service.create_and_send_notification(
+                user_id=instance.created_by.id,
                 tipo='training_complete',
                 titulo='Entrenamiento de Modelo Completado',
                 mensaje=f'El entrenamiento del modelo "{instance.model_name}" ha sido completado exitosamente. El modelo está listo para usar.',
-                datos_extra={
-                    'job_id': instance.job_id,
-                    'model_name': instance.model_name,
-                    'metrics': instance.metrics,
-                    'duration': instance.duration_formatted if hasattr(instance, 'duration_formatted') else None
-                }
+                datos_extra=datos_extra
             )
             
             # Enviar email de notificación si está habilitado
@@ -172,16 +177,18 @@ def notify_training_failed(sender, instance, created, **kwargs):
     """
     if not created and instance.status == 'failed':
         try:
-            Notification.create_notification(
-                user=instance.created_by,
+            datos_extra = {
+                'job_id': instance.job_id,
+                'model_name': instance.model_name,
+                'error_message': instance.error_message
+            }
+            
+            realtime_service.create_and_send_notification(
+                user_id=instance.created_by.id,
                 tipo='error',
                 titulo='Error en Entrenamiento de Modelo',
                 mensaje=f'El entrenamiento del modelo "{instance.model_name}" ha fallado. Error: {instance.error_message or "Error desconocido"}.',
-                datos_extra={
-                    'job_id': instance.job_id,
-                    'model_name': instance.model_name,
-                    'error_message': instance.error_message
-                }
+                datos_extra=datos_extra
             )
             
             logger.info(f"Notificación de error de entrenamiento enviada a usuario {instance.created_by.username}")
@@ -198,20 +205,22 @@ def notify_user_registered(sender, instance, created, **kwargs):
     if created:
         try:
             # Notificación de bienvenida
-            Notification.create_notification(
-                user=instance,
+            datos_extra = {
+                'user_id': instance.id,
+                'registration_date': timezone.now().isoformat(),
+                'next_steps': [
+                    'Completa tu perfil',
+                    'Registra tu primera finca',
+                    'Sube tu primera imagen para análisis'
+                ]
+            }
+            
+            realtime_service.create_and_send_notification(
+                user_id=instance.id,
                 tipo='welcome',
                 titulo='¡Bienvenido a CacaoScan!',
                 mensaje='Gracias por registrarte en CacaoScan. Tu cuenta ha sido creada exitosamente. Puedes comenzar a analizar granos de cacao subiendo imágenes.',
-                datos_extra={
-                    'user_id': instance.id,
-                    'registration_date': timezone.now().isoformat(),
-                    'next_steps': [
-                        'Completa tu perfil',
-                        'Registra tu primera finca',
-                        'Sube tu primera imagen para análisis'
-                    ]
-                }
+                datos_extra=datos_extra
             )
             
             logger.info(f"Notificación de bienvenida enviada a nuevo usuario {instance.username}")
