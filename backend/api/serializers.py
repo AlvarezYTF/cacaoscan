@@ -34,6 +34,9 @@ class ScanMeasureResponseSerializer(serializers.Serializer):
     confidences = ConfidenceSerializer(help_text="Niveles de confianza por target")
     crop_url = serializers.URLField(help_text="URL del recorte procesado")
     debug = DebugInfoSerializer(help_text="Información de debug del procesamiento")
+    image_id = serializers.IntegerField(help_text="ID de la imagen guardada en BD", required=False, allow_null=True)
+    prediction_id = serializers.IntegerField(help_text="ID de la predicción guardada en BD", required=False, allow_null=True)
+    saved_to_database = serializers.BooleanField(help_text="Indica si los datos se guardaron correctamente en BD")
 
 
 class ErrorResponseSerializer(serializers.Serializer):
