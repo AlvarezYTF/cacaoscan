@@ -40,7 +40,7 @@ from .serializers import (
     CacaoImageDetailSerializer
 )
 from .utils import create_error_response, create_success_response
-from .models import EmailVerificationToken, ExpiringToken, CacaoImage, CacaoPrediction
+from .models import EmailVerificationToken, ExpiringToken, CacaoImage, CacaoPrediction, TrainingJob
 
 
 logger = logging.getLogger("cacaoscan.api")
@@ -3519,6 +3519,131 @@ class AdminDatasetStatsView(APIView):
             
         except Exception as e:
             logger.error(f"Error obteniendo estadísticas globales del dataset: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _is_admin_user(self, user):
+        """
+        Verificar si el usuario es administrador.
+        
+        Args:
+            user: Usuario autenticado
+            
+        Returns:
+            bool: True si es admin, False en caso contrario
+        """
+        return user.is_superuser or user.is_staff
+
+
+class TrainingJobListView(APIView):
+    """
+    Endpoint para listar trabajos de entrenamiento (Admin only).
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene la lista de trabajos de entrenamiento (solo admins)",
+        operation_summary="Lista de trabajos de entrenamiento",
+        manual_parameters=[
+            openapi.Parameter('page', openapi.IN_QUERY, description="Número de página", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page_size', openapi.IN_QUERY, description="Tamaño de página", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('status', openapi.IN_QUERY, description="Filtrar por estado", type=openapi.TYPE_STRING),
+            openapi.Parameter('job_type', openapi.IN_QUERY, description="Filtrar por tipo", type=openapi.TYPE_STRING),
+            openapi.Parameter('created_by', openapi.IN_QUERY, description="Filtrar por creador", type=openapi.TYPE_INTEGER),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Lista de trabajos obtenida exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            403: ErrorResponseSerializer,
+        },
+        tags=['Entrenamiento']
+    )
+    def get(self, request):
+        """
+        Obtiene la lista de trabajos de entrenamiento.
+        Solo accesible para administradores.
+        """
+        try:
+            # Verificar permisos de administrador
+            if not self._is_admin_user(request.user):
+                return Response({
+                    'error': 'No tienes permisos para acceder a esta funcionalidad',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Obtener parámetros de consulta
+            page = int(request.GET.get('page', 1))
+            page_size = min(int(request.GET.get('page_size', 20)), 100)
+            status_filter = request.GET.get('status')
+            job_type_filter = request.GET.get('job_type')
+            created_by_filter = request.GET.get('created_by')
+            
+            # Construir queryset base
+            queryset = TrainingJob.objects.all().select_related('created_by')
+            
+            # Aplicar filtros
+            if status_filter:
+                queryset = queryset.filter(status=status_filter)
+            
+            if job_type_filter:
+                queryset = queryset.filter(job_type=job_type_filter)
+            
+            if created_by_filter:
+                queryset = queryset.filter(created_by_id=created_by_filter)
+            
+            # Ordenar por fecha de creación (más recientes primero)
+            queryset = queryset.order_by('-created_at')
+            
+            # Paginación
+            paginator = Paginator(queryset, page_size)
+            total_pages = paginator.num_pages
+            
+            # Validar página
+            if page > total_pages and total_pages > 0:
+                return Response({
+                    'error': f'Página {page} no existe. Total de páginas: {total_pages}',
+                    'status': 'error'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            page_obj = paginator.get_page(page)
+            
+            # Serializar resultados
+            from .serializers import TrainingJobSerializer
+            serializer = TrainingJobSerializer(page_obj.object_list, many=True)
+            
+            # Preparar respuesta
+            response_data = {
+                'results': serializer.data,
+                'count': paginator.count,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': total_pages,
+                'next': None,
+                'previous': None
+            }
+            
+            # URLs de paginación
+            if page_obj.has_next():
+                response_data['next'] = f"{request.build_absolute_uri()}?page={page + 1}&page_size={page_size}"
+            
+            if page_obj.has_previous():
+                response_data['previous'] = f"{request.build_absolute_uri()}?page={page - 1}&page_size={page_size}"
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except ValueError as e:
+            return Response({
+                'error': 'Parámetros de consulta inválidos',
+                'status': 'error',
+                'details': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo lista de trabajos de entrenamiento: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
