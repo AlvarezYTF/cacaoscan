@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.db import transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -79,7 +80,7 @@ class ScanMeasureView(APIView):
     
     def _save_prediction(self, cacao_image, result, processing_time_ms):
         """
-        Guarda los resultados de predicción en BD.
+        Guarda los resultados de predicción en BD con transacción.
         
         Args:
             cacao_image: Objeto CacaoImage asociado
@@ -93,29 +94,31 @@ class ScanMeasureView(APIView):
             if not cacao_image:
                 return None, False, "No hay imagen asociada para guardar predicción"
             
-            # Crear objeto CacaoPrediction
-            cacao_prediction = CacaoPrediction(
-                image=cacao_image,
-                alto_mm=result['alto_mm'],
-                ancho_mm=result['ancho_mm'],
-                grosor_mm=result['grosor_mm'],
-                peso_g=result['peso_g'],
-                confidence_alto=result['confidences']['alto'],
-                confidence_ancho=result['confidences']['ancho'],
-                confidence_grosor=result['confidences']['grosor'],
-                confidence_peso=result['confidences']['peso'],
-                processing_time_ms=processing_time_ms,
-                crop_url=result.get('crop_url'),
-                model_version=result['debug'].get('models_version', 'v1.0'),
-                device_used=result['debug'].get('device', 'cpu')
-            )
-            
-            # Guardar en BD
-            cacao_prediction.save()
-            
-            # Marcar imagen como procesada
-            cacao_image.processed = True
-            cacao_image.save()
+            # Usar transacción para asegurar integridad
+            with transaction.atomic():
+                # Crear objeto CacaoPrediction
+                cacao_prediction = CacaoPrediction(
+                    image=cacao_image,
+                    alto_mm=result['alto_mm'],
+                    ancho_mm=result['ancho_mm'],
+                    grosor_mm=result['grosor_mm'],
+                    peso_g=result['peso_g'],
+                    confidence_alto=result['confidences']['alto'],
+                    confidence_ancho=result['confidences']['ancho'],
+                    confidence_grosor=result['confidences']['grosor'],
+                    confidence_peso=result['confidences']['peso'],
+                    processing_time_ms=processing_time_ms,
+                    crop_url=result.get('crop_url'),
+                    model_version=result['debug'].get('models_version', 'v1.0'),
+                    device_used=result['debug'].get('device', 'cpu')
+                )
+                
+                # Guardar en BD
+                cacao_prediction.save()
+                
+                # Marcar imagen como procesada
+                cacao_image.processed = True
+                cacao_image.save()
             
             logger.info(f"Predicción guardada con ID {cacao_prediction.id} para imagen {cacao_image.id}")
             return cacao_prediction, True, None
@@ -276,6 +279,12 @@ class ScanMeasureView(APIView):
                 if serializer.is_valid():
                     total_time = time.time() - start_time
                     logger.info(f"Predicción completada en {total_time:.2f}s para imagen {filename}")
+                    
+                    # Log información sobre guardado en BD
+                    if save_success and pred_success:
+                        logger.info(f"Datos guardados correctamente en BD - Imagen ID: {cacao_image.id}, Predicción ID: {cacao_prediction.id}")
+                    else:
+                        logger.warning(f"Problemas guardando en BD - Imagen: {save_success}, Predicción: {pred_success}")
                     
                     return Response(serializer.validated_data, status=status.HTTP_200_OK)
                 else:
