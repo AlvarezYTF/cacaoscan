@@ -126,3 +126,65 @@ class ExpiringToken(Token):
         if not self.pk:
             self.created = timezone.now()
         super().save(*args, **kwargs)
+
+
+class UserProfile(models.Model):
+    """
+    Perfil extendido del usuario con información específica de agricultores.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    
+    # Información de contacto
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    
+    # Información geográfica
+    region = models.CharField(max_length=100, blank=True, null=True)
+    municipality = models.CharField(max_length=100, blank=True, null=True)
+    
+    # Información de la finca
+    farm_name = models.CharField(max_length=200, blank=True, null=True)
+    years_experience = models.PositiveIntegerField(blank=True, null=True)
+    farm_size_hectares = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    
+    # Preferencias del usuario
+    preferred_language = models.CharField(max_length=10, default='es', choices=[
+        ('es', 'Español'),
+        ('en', 'English'),
+    ])
+    email_notifications = models.BooleanField(default=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Perfil de Usuario'
+        verbose_name_plural = 'Perfiles de Usuario'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Perfil de {self.user.get_full_name() or self.user.username}"
+    
+    @property
+    def full_name(self):
+        """Obtener nombre completo del usuario."""
+        return self.user.get_full_name() or self.user.username
+    
+    @property
+    def role(self):
+        """Obtener rol del usuario desde el username o grupos."""
+        # Por ahora, determinar rol basado en grupos o username
+        if self.user.is_superuser:
+            return 'admin'
+        elif self.user.groups.filter(name='analyst').exists():
+            return 'analyst'
+        else:
+            return 'farmer'
+    
+    @property
+    def is_verified(self):
+        """Verificar si el usuario está verificado."""
+        try:
+            return self.user.email_verification_token.is_verified
+        except:
+            return False
