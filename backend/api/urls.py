@@ -86,4 +86,12 @@ urlpatterns = [
     path('audit/activity-logs/', views.ActivityLogListView.as_view(), name='activity-logs-list'),
     path('audit/login-history/', views.LoginHistoryListView.as_view(), name='login-history-list'),
     path('audit/stats/', views.AuditStatsView.as_view(), name='audit-stats'),
+    
+    # Endpoints de gestión de reportes
+    path('reportes/', views.ReporteListCreateView.as_view(), name='reportes-list-create'),
+    path('reportes/<int:reporte_id>/', views.ReporteDetailView.as_view(), name='reporte-detail'),
+    path('reportes/<int:reporte_id>/download/', views.ReporteDownloadView.as_view(), name='reporte-download'),
+    path('reportes/<int:reporte_id>/delete/', views.ReporteDeleteView.as_view(), name='reporte-delete'),
+    path('reportes/stats/', views.ReporteStatsView.as_view(), name='reportes-stats'),
+    path('reportes/cleanup/', views.ReporteCleanupView.as_view(), name='reportes-cleanup'),
 ]

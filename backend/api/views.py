@@ -44,7 +44,7 @@ from .serializers import (
     FincaStatsSerializer
 )
 from .utils import create_error_response, create_success_response
-from .models import EmailVerificationToken, ExpiringToken, CacaoImage, CacaoPrediction, TrainingJob, Finca, Lote, Notification, ActivityLog, LoginHistory
+from .models import EmailVerificationToken, ExpiringToken, CacaoImage, CacaoPrediction, TrainingJob, Finca, Lote, Notification, ActivityLog, LoginHistory, ReporteGenerado
 from .fincas_views import (
     FincaListCreateView,
     FincaDetailView,
@@ -73,6 +73,14 @@ from .audit_views import (
     ActivityLogListView,
     LoginHistoryListView,
     AuditStatsView
+)
+from .report_views import (
+    ReporteListCreateView,
+    ReporteDetailView,
+    ReporteDownloadView,
+    ReporteDeleteView,
+    ReporteStatsView,
+    ReporteCleanupView
 )
 
 
