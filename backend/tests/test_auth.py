@@ -10,7 +10,7 @@ from rest_framework.authtoken.models import Token
 from django.utils import timezone
 from datetime import timedelta
 
-from api.models import EmailVerificationToken, ExpiringToken
+from api.models import EmailVerificationToken, UserProfile
 
 
 class AuthenticationTestCase(APITestCase):
