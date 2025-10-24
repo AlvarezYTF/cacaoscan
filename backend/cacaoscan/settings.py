@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'api',
     'users.apps.UsersConfig',
+    'reports',
 ]
 
 MIDDLEWARE = [

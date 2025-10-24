@@ -1,3 +1,4 @@
+reportlab==4.0.4
 albumentations==1.4.0
 amqp==5.3.1
 asgiref==3.10.0
