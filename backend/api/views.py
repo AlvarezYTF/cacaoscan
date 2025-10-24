@@ -2197,6 +2197,101 @@ class ImageUpdateView(APIView, ImagePermissionMixin):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class ImageDeleteView(APIView, ImagePermissionMixin):
+    """
+    Endpoint para eliminar una imagen y su predicción asociada.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Elimina una imagen y su predicción asociada del sistema",
+        operation_summary="Eliminar imagen",
+        responses={
+            200: openapi.Response(
+                description="Imagen eliminada exitosamente",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING),
+                        'deleted_image': openapi.Schema(type=openapi.TYPE_OBJECT)
+                    }
+                )
+            ),
+            403: ErrorResponseSerializer,
+            404: ErrorResponseSerializer,
+        },
+        tags=['Imágenes']
+    )
+    def delete(self, request, image_id):
+        """
+        Elimina una imagen y su predicción asociada.
+        Solo el propietario o un admin pueden eliminar.
+        """
+        try:
+            # Obtener imagen con predicción
+            try:
+                image = CacaoImage.objects.select_related('prediction').get(id=image_id)
+            except CacaoImage.DoesNotExist:
+                return Response({
+                    'error': 'Imagen no encontrada',
+                    'status': 'error'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Verificar permisos de acceso
+            if not self.can_access_image(request.user, image):
+                return Response({
+                    'error': 'No tienes permisos para eliminar esta imagen',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Guardar información de la imagen antes de eliminarla
+            image_data = {
+                'id': image.id,
+                'file_name': image.file_name,
+                'file_size_mb': image.file_size_mb,
+                'finca': image.finca,
+                'region': image.region,
+                'lote_id': image.lote_id,
+                'variedad': image.variedad,
+                'fecha_cosecha': image.fecha_cosecha.isoformat() if image.fecha_cosecha else None,
+                'processed': image.processed,
+                'created_at': image.created_at.isoformat(),
+                'user': image.user.username
+            }
+            
+            # Información de la predicción si existe
+            prediction_data = None
+            if hasattr(image, 'prediction') and image.prediction:
+                prediction_data = {
+                    'id': image.prediction.id,
+                    'alto_mm': float(image.prediction.alto_mm),
+                    'ancho_mm': float(image.prediction.ancho_mm),
+                    'grosor_mm': float(image.prediction.grosor_mm),
+                    'peso_g': float(image.prediction.peso_g),
+                    'average_confidence': float(image.prediction.average_confidence),
+                    'model_version': image.prediction.model_version,
+                    'created_at': image.prediction.created_at.isoformat()
+                }
+            
+            # Eliminar imagen (esto también eliminará la predicción por CASCADE)
+            image.delete()
+            
+            logger.info(f"Imagen {image_id} eliminada por usuario {request.user.username}")
+            
+            return Response({
+                'message': 'Imagen eliminada exitosamente',
+                'deleted_image': image_data,
+                'deleted_prediction': prediction_data
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error eliminando imagen {image_id}: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class UserDetailView(APIView):
     """
     Endpoint para obtener detalles de un usuario específico (Admin only).
