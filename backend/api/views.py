@@ -167,7 +167,13 @@ class ScanMeasureView(APIView):
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # 6. Obtener predictor y hacer predicción
+            # 6. Guardar imagen en BD
+            cacao_image, save_success, save_error = self._save_uploaded_image(image_file, request.user)
+            if not save_success:
+                logger.warning(f"Error guardando imagen en BD: {save_error}")
+                # Continuar con predicción aunque falle el guardado
+            
+            # 7. Obtener predictor y hacer predicción
             try:
                 predictor = get_predictor()
                 
@@ -195,7 +201,7 @@ class ScanMeasureView(APIView):
                 # Realizar predicción
                 result = predictor.predict(image)
                 
-                # 7. Preparar respuesta
+                # 8. Preparar respuesta
                 response_data = {
                     'alto_mm': result['alto_mm'],
                     'ancho_mm': result['ancho_mm'],
@@ -203,7 +209,9 @@ class ScanMeasureView(APIView):
                     'peso_g': result['peso_g'],
                     'confidences': result['confidences'],
                     'crop_url': result['crop_url'],
-                    'debug': result['debug']
+                    'debug': result['debug'],
+                    'image_id': cacao_image.id if cacao_image else None,
+                    'saved_to_database': save_success
                 }
                 
                 # Validar respuesta con serializer
