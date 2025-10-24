@@ -12,6 +12,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q, Count, Avg
+from django.core.paginator import Paginator
 from django.http import JsonResponse
 from PIL import Image
 import io
@@ -907,13 +910,23 @@ class RefreshTokenView(APIView):
 
 class ImagesListView(APIView):
     """
-    Endpoint para listar imágenes procesadas.
+    Endpoint para listar imágenes procesadas con paginación y filtros.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene la lista de imágenes procesadas por el usuario",
+        operation_description="Obtiene la lista de imágenes procesadas por el usuario con paginación y filtros",
         operation_summary="Lista de imágenes",
+        manual_parameters=[
+            openapi.Parameter('page', openapi.IN_QUERY, description="Número de página", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page_size', openapi.IN_QUERY, description="Tamaño de página (máximo 100)", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('region', openapi.IN_QUERY, description="Filtrar por región", type=openapi.TYPE_STRING),
+            openapi.Parameter('finca', openapi.IN_QUERY, description="Filtrar por finca", type=openapi.TYPE_STRING),
+            openapi.Parameter('processed', openapi.IN_QUERY, description="Filtrar por estado de procesamiento", type=openapi.TYPE_BOOLEAN),
+            openapi.Parameter('search', openapi.IN_QUERY, description="Buscar en notas y metadatos", type=openapi.TYPE_STRING),
+            openapi.Parameter('date_from', openapi.IN_QUERY, description="Fecha desde (YYYY-MM-DD)", type=openapi.TYPE_STRING),
+            openapi.Parameter('date_to', openapi.IN_QUERY, description="Fecha hasta (YYYY-MM-DD)", type=openapi.TYPE_STRING),
+        ],
         responses={
             200: openapi.Response(
                 description="Lista de imágenes obtenida exitosamente",
@@ -923,55 +936,193 @@ class ImagesListView(APIView):
                         'results': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT)),
                         'count': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'next': openapi.Schema(type=openapi.TYPE_STRING),
-                        'previous': openapi.Schema(type=openapi.TYPE_STRING)
+                        'previous': openapi.Schema(type=openapi.TYPE_STRING),
+                        'page': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'page_size': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'total_pages': openapi.Schema(type=openapi.TYPE_INTEGER)
                     }
                 )
             ),
+            400: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
         },
         tags=['Imágenes']
     )
     def get(self, request):
         """
-        Obtiene la lista de imágenes procesadas.
+        Obtiene la lista de imágenes procesadas con paginación y filtros.
         """
-        # Por ahora, devolver una respuesta mock
-        return Response({
-            'results': [],
-            'count': 0,
-            'next': None,
-            'previous': None,
-            'message': 'Endpoint de imágenes en desarrollo'
-        })
+        try:
+            # Obtener parámetros de consulta
+            page = int(request.GET.get('page', 1))
+            page_size = min(int(request.GET.get('page_size', 20)), 100)  # Máximo 100 por página
+            region = request.GET.get('region')
+            finca = request.GET.get('finca')
+            processed = request.GET.get('processed')
+            search = request.GET.get('search')
+            date_from = request.GET.get('date_from')
+            date_to = request.GET.get('date_to')
+            
+            # Construir queryset base
+            queryset = CacaoImage.objects.filter(user=request.user).select_related('user')
+            
+            # Aplicar filtros
+            if region:
+                queryset = queryset.filter(region__icontains=region)
+            
+            if finca:
+                queryset = queryset.filter(finca__icontains=finca)
+            
+            if processed is not None:
+                processed_bool = processed.lower() in ['true', '1', 'yes']
+                queryset = queryset.filter(processed=processed_bool)
+            
+            if search:
+                queryset = queryset.filter(
+                    Q(notas__icontains=search) |
+                    Q(finca__icontains=search) |
+                    Q(region__icontains=search) |
+                    Q(lote_id__icontains=search) |
+                    Q(variedad__icontains=search)
+                )
+            
+            if date_from:
+                queryset = queryset.filter(created_at__date__gte=date_from)
+            
+            if date_to:
+                queryset = queryset.filter(created_at__date__lte=date_to)
+            
+            # Ordenar por fecha de creación (más recientes primero)
+            queryset = queryset.order_by('-created_at')
+            
+            # Paginación
+            paginator = Paginator(queryset, page_size)
+            total_pages = paginator.num_pages
+            
+            # Validar página
+            if page > total_pages and total_pages > 0:
+                return Response({
+                    'error': f'Página {page} no existe. Total de páginas: {total_pages}',
+                    'status': 'error'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            page_obj = paginator.get_page(page)
+            
+            # Serializar resultados
+            serializer = CacaoImageSerializer(page_obj.object_list, many=True, context={'request': request})
+            
+            # Preparar respuesta
+            response_data = {
+                'results': serializer.data,
+                'count': paginator.count,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': total_pages,
+                'next': None,
+                'previous': None
+            }
+            
+            # URLs de paginación
+            if page_obj.has_next():
+                response_data['next'] = f"{request.build_absolute_uri()}?page={page + 1}&page_size={page_size}"
+            
+            if page_obj.has_previous():
+                response_data['previous'] = f"{request.build_absolute_uri()}?page={page - 1}&page_size={page_size}"
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except ValueError as e:
+            return Response({
+                'error': 'Parámetros de consulta inválidos',
+                'status': 'error',
+                'details': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo lista de imágenes: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ImageDetailView(APIView):
     """
-    Endpoint para obtener detalles de una imagen específica.
+    Endpoint para obtener detalles de una imagen específica con acceso por owner/admin.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene los detalles de una imagen específica",
+        operation_description="Obtiene los detalles completos de una imagen específica incluyendo predicción",
         operation_summary="Detalles de imagen",
         responses={
             200: openapi.Response(
                 description="Detalles de imagen obtenidos exitosamente",
                 schema=openapi.Schema(type=openapi.TYPE_OBJECT)
             ),
+            403: ErrorResponseSerializer,
             404: ErrorResponseSerializer,
         },
         tags=['Imágenes']
     )
     def get(self, request, image_id):
         """
-        Obtiene los detalles de una imagen específica.
+        Obtiene los detalles completos de una imagen específica.
+        Solo el propietario o un admin pueden acceder.
         """
-        # Por ahora, devolver una respuesta mock
-        return Response({
-            'id': image_id,
-            'message': 'Endpoint de detalles de imagen en desarrollo'
-        })
+        try:
+            # Obtener imagen
+            try:
+                image = CacaoImage.objects.select_related('user', 'prediction').get(id=image_id)
+            except CacaoImage.DoesNotExist:
+                return Response({
+                    'error': 'Imagen no encontrada',
+                    'status': 'error'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Verificar permisos de acceso
+            if not self._can_access_image(request.user, image):
+                return Response({
+                    'error': 'No tienes permisos para acceder a esta imagen',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Serializar imagen con predicción
+            serializer = CacaoImageDetailSerializer(image, context={'request': request})
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo detalles de imagen {image_id}: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _can_access_image(self, user, image):
+        """
+        Verificar si el usuario puede acceder a la imagen.
+        
+        Args:
+            user: Usuario autenticado
+            image: Objeto CacaoImage
+            
+        Returns:
+            bool: True si puede acceder, False en caso contrario
+        """
+        # El propietario siempre puede acceder
+        if image.user == user:
+            return True
+        
+        # Los admins pueden acceder a cualquier imagen
+        if user.is_superuser or user.is_staff:
+            return True
+        
+        # Los analistas pueden acceder a imágenes de todos los usuarios
+        if user.groups.filter(name='analyst').exists():
+            return True
+        
+        return False
 
 
 class ImagesStatsView(APIView):
