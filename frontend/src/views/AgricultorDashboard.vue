@@ -24,15 +24,15 @@
         <!-- Estadísticas básicas -->
         <div class="stats-grid">
           <div class="stat-card">
-            <h3>{{ stats.totalBatches }}</h3>
+            <h3>{{ formattedStats.totalBatches }}</h3>
             <p>Lotes Totales</p>
           </div>
           <div class="stat-card">
-            <h3>{{ stats.avgQuality }}%</h3>
+            <h3>{{ formattedStats.avgQuality }}%</h3>
             <p>Calidad Promedio</p>
           </div>
           <div class="stat-card">
-            <h3>{{ stats.defectRate }}%</h3>
+            <h3>{{ formattedStats.defectRate }}%</h3>
             <p>Tasa de Defectos</p>
           </div>
         </div>
@@ -631,17 +631,35 @@
           <div class="report-card">
             <h3>Reporte de Calidad</h3>
             <p>Análisis detallado de la calidad de tus lotes</p>
-            <button class="btn btn-primary">Generar Reporte</button>
+            <button 
+              class="btn btn-primary" 
+              @click="handleGenerateReport('quality')"
+              :disabled="loading"
+            >
+              {{ loading ? 'Generando...' : 'Generar Reporte' }}
+            </button>
           </div>
           <div class="report-card">
             <h3>Reporte de Defectos</h3>
             <p>Identificación y clasificación de defectos</p>
-            <button class="btn btn-primary">Generar Reporte</button>
+            <button 
+              class="btn btn-primary" 
+              @click="handleGenerateReport('defects')"
+              :disabled="loading"
+            >
+              {{ loading ? 'Generando...' : 'Generar Reporte' }}
+            </button>
           </div>
           <div class="report-card">
             <h3>Reporte de Rendimiento</h3>
             <p>Métricas de rendimiento por período</p>
-            <button class="btn btn-primary">Generar Reporte</button>
+            <button 
+              class="btn btn-primary" 
+              @click="handleGenerateReport('performance')"
+              :disabled="loading"
+            >
+              {{ loading ? 'Generando...' : 'Generar Reporte' }}
+            </button>
           </div>
         </div>
       </div>
@@ -741,7 +759,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import AgricultorSidebar from '@/components/common/AgricultorSidebar.vue';
+import { useImageStats } from '@/composables/useImageStats'
 
 export default {
   name: 'AgricultorDashboard',
@@ -753,54 +771,106 @@ export default {
     const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
     const activeSection = ref('overview');
     
+    // Usar composable para estadísticas reales
+    const { 
+      stats, 
+      loading, 
+      error, 
+      fetchStats, 
+      fetchImages, 
+      generateReport,
+      totalImages,
+      processedImages,
+      processingRate,
+      averageConfidence,
+      averageDimensions,
+      regionStats,
+      topFincas
+    } = useImageStats();
+    
     // Usar datos reales del usuario autenticado
     const farmerName = computed(() => authStore.userFullName || 'Usuario');
     
-    const recentAnalyses = ref([
-      {
-        id: 'CAC-2023-045',
-        status: 'completed',
-        statusLabel: 'Completado',
-        quality: 92,
-        defects: 3.2,
-        avgSize: 12.5,
-        date: '15/08/2023'
-      },
-      {
-        id: 'CAC-2023-044',
-        status: 'completed',
-        statusLabel: 'Completado',
-        quality: 88,
-        defects: 5.1,
-        avgSize: 11.8,
-        date: '10/08/2023'
-      },
-      {
-        id: 'CAC-2023-043',
-        status: 'completed',
-        statusLabel: 'Completado',
-        quality: 85,
-        defects: 6.7,
-        avgSize: 12.1,
-        date: '05/08/2023'
+    // Datos de análisis recientes (ahora desde API)
+    const recentAnalyses = ref([]);
+    const imagesLoading = ref(false);
+    
+    // Cargar datos reales al montar el componente
+    onMounted(async () => {
+      await Promise.all([
+        fetchStats(),
+        loadRecentAnalyses()
+      ]);
+    });
+    
+    // Función para cargar análisis recientes
+    async function loadRecentAnalyses() {
+      imagesLoading.value = true;
+      try {
+        const data = await fetchImages(1, { page_size: '5' });
+        recentAnalyses.value = data.results.map(image => ({
+          id: `CAC-${image.id}`,
+          status: image.processed ? 'completed' : 'pending',
+          statusLabel: image.processed ? 'Completado' : 'Pendiente',
+          quality: image.prediction ? Math.round(image.prediction.average_confidence * 100) : 0,
+          defects: image.prediction ? Math.round((1 - image.prediction.average_confidence) * 100 * 10) / 10 : 0,
+          avgSize: image.prediction ? Math.round((image.prediction.alto_mm + image.prediction.ancho_mm + image.prediction.grosor_mm) / 3 * 10) / 10 : 0,
+          date: new Date(image.created_at).toLocaleDateString('es-ES')
+        }));
+      } catch (err) {
+        console.error('Error loading recent analyses:', err);
+      } finally {
+        imagesLoading.value = false;
       }
-    ]);
+    }
     
-    const stats = ref({
-      totalBatches: 24,
-      batchesChange: '+5%',
-      avgQuality: 87,
-      qualityChange: '+2%',
-      defectRate: 5.2,
-      defectChange: '-1.2%'
-    });
+    // Función para generar reportes
+    async function handleGenerateReport(reportType) {
+      const filters = {
+        date_from: filterDateFrom.value,
+        date_to: filterDateTo.value,
+        region: filterRegion.value,
+        finca: filterFinca.value
+      };
+      
+      const success = await generateReport(reportType, filters);
+      if (success) {
+        // Mostrar mensaje de éxito
+        console.log(`Reporte ${reportType} generado exitosamente`);
+      }
+    }
     
-    const fincasStats = ref({
-      totalFincas: 3,
-      totalLotes: 12,
-      areaTotal: 8.5,
+    // Función para refrescar datos
+    async function refreshData() {
+      await Promise.all([
+        fetchStats(),
+        loadRecentAnalyses()
+      ]);
+    }
+    
+    // Computed para estadísticas formateadas
+    const formattedStats = computed(() => ({
+      totalBatches: totalImages.value,
+      batchesChange: '+0%', // TODO: Calcular cambio porcentual
+      avgQuality: Math.round(averageConfidence.value * 100),
+      qualityChange: '+0%', // TODO: Calcular cambio porcentual
+      defectRate: Math.round((1 - averageConfidence.value) * 100 * 10) / 10,
+      defectChange: '+0%' // TODO: Calcular cambio porcentual
+    }));
+    
+    const formattedFincasStats = computed(() => ({
+      totalFincas: topFincas.value.length,
+      totalLotes: processedImages.value,
+      areaTotal: 0, // TODO: Calcular área total
       ultimaActualizacion: 'Hoy'
-    });
+    }));
+    
+    // Variables de filtros para reportes
+    const filterDateFrom = ref('');
+    const filterDateTo = ref('');
+    const filterRegion = ref('');
+    const filterFinca = ref('');
+    
     const isUploading = ref(false);
     const uploadProgress = ref(0);
     const analysisResult = ref(null);
@@ -1098,15 +1168,21 @@ export default {
       activeSection,
       farmerName,
       recentAnalyses,
-      stats,
-      fincasStats,
+      formattedStats,
+      formattedFincasStats,
+      loading,
+      error,
+      imagesLoading,
       checkScreenSize,
       setActiveSection,
       toggleSidebar,
       registrarNuevaFinca,
       monitorearLotes,
       logout,
-      goBack
+      goBack,
+      handleGenerateReport,
+      refreshData,
+      loadRecentAnalyses
     };
   },
   mounted() {
