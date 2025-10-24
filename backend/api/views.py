@@ -2101,6 +2101,102 @@ class AdminStatsView(APIView):
         return user.is_superuser or user.is_staff
 
 
+class ImageUpdateView(APIView, ImagePermissionMixin):
+    """
+    Endpoint para actualizar metadatos de una imagen específica.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Actualiza los metadatos de una imagen específica",
+        operation_summary="Actualizar imagen",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'finca': openapi.Schema(type=openapi.TYPE_STRING),
+                'region': openapi.Schema(type=openapi.TYPE_STRING),
+                'lote_id': openapi.Schema(type=openapi.TYPE_STRING),
+                'variedad': openapi.Schema(type=openapi.TYPE_STRING),
+                'fecha_cosecha': openapi.Schema(type=openapi.TYPE_STRING, format='date'),
+                'notas': openapi.Schema(type=openapi.TYPE_STRING)
+            }
+        ),
+        responses={
+            200: openapi.Response(
+                description="Imagen actualizada exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            400: ErrorResponseSerializer,
+            403: ErrorResponseSerializer,
+            404: ErrorResponseSerializer,
+        },
+        tags=['Imágenes']
+    )
+    def patch(self, request, image_id):
+        """
+        Actualiza los metadatos de una imagen específica.
+        Solo el propietario o un admin pueden actualizar.
+        """
+        try:
+            # Obtener imagen
+            try:
+                image = CacaoImage.objects.get(id=image_id)
+            except CacaoImage.DoesNotExist:
+                return Response({
+                    'error': 'Imagen no encontrada',
+                    'status': 'error'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Verificar permisos de acceso
+            if not self.can_access_image(request.user, image):
+                return Response({
+                    'error': 'No tienes permisos para actualizar esta imagen',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Actualizar campos permitidos
+            allowed_fields = ['finca', 'region', 'lote_id', 'variedad', 'fecha_cosecha', 'notas']
+            updated_fields = []
+            
+            for field in allowed_fields:
+                if field in request.data:
+                    setattr(image, field, request.data[field])
+                    updated_fields.append(field)
+            
+            # Validar fecha_cosecha si se proporciona
+            if 'fecha_cosecha' in request.data and request.data['fecha_cosecha']:
+                try:
+                    from datetime import datetime
+                    fecha_cosecha = datetime.strptime(request.data['fecha_cosecha'], '%Y-%m-%d').date()
+                    image.fecha_cosecha = fecha_cosecha
+                except ValueError:
+                    return Response({
+                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
+                        'status': 'error'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Guardar cambios
+            image.save()
+            
+            # Serializar imagen actualizada
+            serializer = CacaoImageSerializer(image, context={'request': request})
+            
+            logger.info(f"Imagen {image_id} actualizada por usuario {request.user.username}. Campos: {updated_fields}")
+            
+            return Response({
+                'message': 'Imagen actualizada exitosamente',
+                'updated_fields': updated_fields,
+                'image': serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error actualizando imagen {image_id}: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class UserDetailView(APIView):
     """
     Endpoint para obtener detalles de un usuario específico (Admin only).
