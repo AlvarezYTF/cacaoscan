@@ -7,6 +7,9 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 from rest_framework.authtoken.models import Token
 import uuid
+import logging
+
+logger = logging.getLogger("cacaoscan.api")
 
 
 class EmailVerificationToken(models.Model):
@@ -685,6 +688,229 @@ class Notification(models.Model):
             return f"{minutes} minuto{'s' if minutes > 1 else ''}"
         else:
             return "Hace un momento"
+
+
+class ActivityLog(models.Model):
+    """
+    Modelo para registrar logs de actividad del sistema.
+    """
+    ACCION_CHOICES = [
+        ('login', 'Inicio de Sesión'),
+        ('logout', 'Cierre de Sesión'),
+        ('create', 'Creación'),
+        ('update', 'Actualización'),
+        ('delete', 'Eliminación'),
+        ('view', 'Visualización'),
+        ('download', 'Descarga'),
+        ('upload', 'Subida'),
+        ('analysis', 'Análisis'),
+        ('training', 'Entrenamiento'),
+        ('report', 'Reporte'),
+        ('error', 'Error'),
+    ]
+    
+    usuario = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='activity_logs',
+        help_text="Usuario que realizó la acción"
+    )
+    accion = models.CharField(
+        max_length=20,
+        choices=ACCION_CHOICES,
+        help_text="Tipo de acción realizada"
+    )
+    modelo = models.CharField(
+        max_length=50,
+        help_text="Modelo afectado (ej: CacaoImage, Finca)"
+    )
+    objeto_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="ID del objeto afectado"
+    )
+    descripcion = models.TextField(
+        help_text="Descripción detallada de la acción"
+    )
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        help_text="Dirección IP del usuario"
+    )
+    user_agent = models.TextField(
+        null=True,
+        blank=True,
+        help_text="User Agent del navegador"
+    )
+    datos_antes = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Estado del objeto antes de la acción"
+    )
+    datos_despues = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Estado del objeto después de la acción"
+    )
+    timestamp = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Fecha y hora de la acción"
+    )
+    
+    class Meta:
+        verbose_name = 'Log de Actividad'
+        verbose_name_plural = 'Logs de Actividad'
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['usuario', '-timestamp']),
+            models.Index(fields=['accion', '-timestamp']),
+            models.Index(fields=['modelo', '-timestamp']),
+            models.Index(fields=['timestamp']),
+        ]
+    
+    def __str__(self):
+        usuario_name = self.usuario.username if self.usuario else 'Usuario Anónimo'
+        return f"{usuario_name} - {self.get_accion_display()} - {self.modelo} ({self.timestamp.strftime('%Y-%m-%d %H:%M')})"
+    
+    @classmethod
+    def log_activity(cls, usuario, accion, modelo, descripcion, objeto_id=None, 
+                     ip_address=None, user_agent=None, datos_antes=None, datos_despues=None):
+        """
+        Crear un log de actividad.
+        
+        Args:
+            usuario: Usuario que realizó la acción
+            accion: Tipo de acción
+            modelo: Modelo afectado
+            descripcion: Descripción de la acción
+            objeto_id: ID del objeto afectado
+            ip_address: Dirección IP
+            user_agent: User Agent del navegador
+            datos_antes: Estado antes de la acción
+            datos_despues: Estado después de la acción
+        """
+        return cls.objects.create(
+            usuario=usuario,
+            accion=accion,
+            modelo=modelo,
+            objeto_id=objeto_id,
+            descripcion=descripcion,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            datos_antes=datos_antes or {},
+            datos_despues=datos_despues or {}
+        )
+
+
+class LoginHistory(models.Model):
+    """
+    Modelo para registrar el historial de inicios de sesión.
+    """
+    usuario = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='login_history',
+        help_text="Usuario que inició sesión"
+    )
+    ip_address = models.GenericIPAddressField(
+        help_text="Dirección IP del usuario"
+    )
+    user_agent = models.TextField(
+        help_text="User Agent del navegador"
+    )
+    login_time = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Fecha y hora del inicio de sesión"
+    )
+    logout_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Fecha y hora del cierre de sesión"
+    )
+    session_duration = models.DurationField(
+        null=True,
+        blank=True,
+        help_text="Duración de la sesión"
+    )
+    success = models.BooleanField(
+        default=True,
+        help_text="Indica si el inicio de sesión fue exitoso"
+    )
+    failure_reason = models.CharField(
+        max_length=200,
+        null=True,
+        blank=True,
+        help_text="Razón del fallo si no fue exitoso"
+    )
+    
+    class Meta:
+        verbose_name = 'Historial de Login'
+        verbose_name_plural = 'Historial de Logins'
+        ordering = ['-login_time']
+        indexes = [
+            models.Index(fields=['usuario', '-login_time']),
+            models.Index(fields=['ip_address']),
+            models.Index(fields=['login_time']),
+            models.Index(fields=['success']),
+        ]
+    
+    def __str__(self):
+        status = "Exitoso" if self.success else "Fallido"
+        return f"{self.usuario.username} - {status} - {self.login_time.strftime('%Y-%m-%d %H:%M')}"
+    
+    def calculate_session_duration(self):
+        """Calcular duración de la sesión."""
+        if self.logout_time:
+            self.session_duration = self.logout_time - self.login_time
+            self.save(update_fields=['session_duration'])
+    
+    @classmethod
+    def log_login(cls, usuario, ip_address, user_agent, success=True, failure_reason=None):
+        """
+        Registrar un inicio de sesión.
+        
+        Args:
+            usuario: Usuario que inició sesión
+            ip_address: Dirección IP
+            user_agent: User Agent del navegador
+            success: Si el login fue exitoso
+            failure_reason: Razón del fallo si no fue exitoso
+        """
+        return cls.objects.create(
+            usuario=usuario,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            success=success,
+            failure_reason=failure_reason
+        )
+    
+    @classmethod
+    def log_logout(cls, usuario, ip_address):
+        """
+        Registrar un cierre de sesión.
+        
+        Args:
+            usuario: Usuario que cerró sesión
+            ip_address: Dirección IP
+        """
+        try:
+            # Buscar la sesión activa más reciente
+            login_record = cls.objects.filter(
+                usuario=usuario,
+                ip_address=ip_address,
+                logout_time__isnull=True,
+                success=True
+            ).order_by('-login_time').first()
+            
+            if login_record:
+                login_record.logout_time = timezone.now()
+                login_record.calculate_session_duration()
+                
+        except Exception as e:
+            logger.error(f"Error registrando logout: {e}")
 
 
 class Lote(models.Model):
