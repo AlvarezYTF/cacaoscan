@@ -1950,6 +1950,157 @@ class UserDeleteView(APIView):
         return user.is_superuser or user.is_staff
 
 
+class AdminStatsView(APIView):
+    """
+    Endpoint para obtener estadísticas globales del sistema (Admin only).
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene estadísticas globales del sistema (solo admins)",
+        operation_summary="Estadísticas del sistema",
+        responses={
+            200: openapi.Response(
+                description="Estadísticas obtenidas exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            403: ErrorResponseSerializer,
+        },
+        tags=['Usuarios']
+    )
+    def get(self, request):
+        """
+        Obtiene estadísticas globales del sistema.
+        Solo accesible para administradores.
+        """
+        try:
+            # Verificar permisos de administrador
+            if not self._is_admin_user(request.user):
+                return Response({
+                    'error': 'No tienes permisos para acceder a esta funcionalidad',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Estadísticas de usuarios
+            total_users = User.objects.count()
+            active_users = User.objects.filter(is_active=True).count()
+            staff_users = User.objects.filter(is_staff=True).count()
+            superusers = User.objects.filter(is_superuser=True).count()
+            
+            # Usuarios por rol
+            analyst_users = User.objects.filter(groups__name='analyst').distinct().count()
+            farmer_users = User.objects.filter(
+                ~Q(is_superuser=True),
+                ~Q(is_staff=True),
+                ~Q(groups__name='analyst')
+            ).count()
+            
+            # Usuarios verificados
+            verified_users = User.objects.filter(
+                email_verification_token__is_verified=True
+            ).count()
+            
+            # Estadísticas de imágenes
+            total_images = CacaoImage.objects.count()
+            processed_images = CacaoImage.objects.filter(processed=True).count()
+            unprocessed_images = total_images - processed_images
+            
+            # Estadísticas de predicciones
+            total_predictions = CacaoPrediction.objects.count()
+            
+            # Estadísticas por fecha
+            from datetime import timedelta
+            today = timezone.now().date()
+            this_week = today - timedelta(days=7)
+            this_month = today - timedelta(days=30)
+            
+            users_this_week = User.objects.filter(date_joined__date__gte=this_week).count()
+            users_this_month = User.objects.filter(date_joined__date__gte=this_month).count()
+            
+            images_this_week = CacaoImage.objects.filter(created_at__date__gte=this_week).count()
+            images_this_month = CacaoImage.objects.filter(created_at__date__gte=this_month).count()
+            
+            # Estadísticas por región
+            region_stats = CacaoImage.objects.values('region').annotate(
+                count=Count('id'),
+                processed_count=Count('id', filter=Q(processed=True))
+            ).order_by('-count')[:10]
+            
+            # Estadísticas por finca
+            finca_stats = CacaoImage.objects.values('finca').annotate(
+                count=Count('id'),
+                processed_count=Count('id', filter=Q(processed=True))
+            ).order_by('-count')[:10]
+            
+            # Estadísticas de dimensiones promedio
+            avg_dimensions = CacaoPrediction.objects.aggregate(
+                avg_alto=Avg('alto_mm'),
+                avg_ancho=Avg('ancho_mm'),
+                avg_grosor=Avg('grosor_mm'),
+                avg_peso=Avg('peso_g'),
+                avg_confidence=Avg('average_confidence'),
+                avg_processing_time=Avg('processing_time_ms')
+            )
+            
+            # Preparar respuesta
+            stats = {
+                'users': {
+                    'total': total_users,
+                    'active': active_users,
+                    'staff': staff_users,
+                    'superusers': superusers,
+                    'analysts': analyst_users,
+                    'farmers': farmer_users,
+                    'verified': verified_users,
+                    'this_week': users_this_week,
+                    'this_month': users_this_month
+                },
+                'images': {
+                    'total': total_images,
+                    'processed': processed_images,
+                    'unprocessed': unprocessed_images,
+                    'this_week': images_this_week,
+                    'this_month': images_this_month,
+                    'processing_rate': round((processed_images / total_images * 100), 2) if total_images > 0 else 0
+                },
+                'predictions': {
+                    'total': total_predictions,
+                    'average_dimensions': {
+                        'alto_mm': round(float(avg_dimensions['avg_alto'] or 0), 2),
+                        'ancho_mm': round(float(avg_dimensions['avg_ancho'] or 0), 2),
+                        'grosor_mm': round(float(avg_dimensions['avg_grosor'] or 0), 2),
+                        'peso_g': round(float(avg_dimensions['avg_peso'] or 0), 2)
+                    },
+                    'average_confidence': round(float(avg_dimensions['avg_confidence'] or 0), 3),
+                    'average_processing_time_ms': round(float(avg_dimensions['avg_processing_time'] or 0), 0)
+                },
+                'top_regions': list(region_stats),
+                'top_fincas': list(finca_stats),
+                'generated_at': timezone.now().isoformat()
+            }
+            
+            return Response(stats, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo estadísticas del sistema: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _is_admin_user(self, user):
+        """
+        Verificar si el usuario es administrador.
+        
+        Args:
+            user: Usuario autenticado
+            
+        Returns:
+            bool: True si es admin, False en caso contrario
+        """
+        return user.is_superuser or user.is_staff
+
+
 class UserDetailView(APIView):
     """
     Endpoint para obtener detalles de un usuario específico (Admin only).
