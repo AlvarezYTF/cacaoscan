@@ -3040,6 +3040,126 @@ class AdminImageUpdateView(APIView):
         return user.is_superuser or user.is_staff
 
 
+class AdminImageDeleteView(APIView):
+    """
+    Endpoint para eliminar cualquier imagen del sistema (Admin only).
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Elimina cualquier imagen del sistema (solo admins)",
+        operation_summary="Eliminar imagen global",
+        responses={
+            200: openapi.Response(
+                description="Imagen eliminada exitosamente",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING),
+                        'deleted_image': openapi.Schema(type=openapi.TYPE_OBJECT),
+                        'deleted_by': openapi.Schema(type=openapi.TYPE_STRING),
+                        'deletion_timestamp': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            403: ErrorResponseSerializer,
+            404: ErrorResponseSerializer,
+        },
+        tags=['Admin Dataset']
+    )
+    def delete(self, request, image_id):
+        """
+        Elimina cualquier imagen del sistema.
+        Solo accesible para administradores.
+        """
+        try:
+            # Verificar permisos de administrador
+            if not self._is_admin_user(request.user):
+                return Response({
+                    'error': 'No tienes permisos para acceder a esta funcionalidad',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Obtener imagen con predicción
+            try:
+                image = CacaoImage.objects.select_related('user', 'prediction').get(id=image_id)
+            except CacaoImage.DoesNotExist:
+                return Response({
+                    'error': 'Imagen no encontrada',
+                    'status': 'error'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Guardar información completa antes de eliminar
+            image_data = {
+                'id': image.id,
+                'file_name': image.file_name,
+                'file_size_mb': image.file_size_mb,
+                'finca': image.finca,
+                'region': image.region,
+                'lote_id': image.lote_id,
+                'variedad': image.variedad,
+                'fecha_cosecha': image.fecha_cosecha.isoformat() if image.fecha_cosecha else None,
+                'notas': image.notas,
+                'processed': image.processed,
+                'created_at': image.created_at.isoformat(),
+                'owner': {
+                    'id': image.user.id,
+                    'username': image.user.username,
+                    'email': image.user.email,
+                    'first_name': image.user.first_name,
+                    'last_name': image.user.last_name
+                }
+            }
+            
+            # Información de la predicción si existe
+            prediction_data = None
+            if hasattr(image, 'prediction') and image.prediction:
+                prediction_data = {
+                    'id': image.prediction.id,
+                    'alto_mm': float(image.prediction.alto_mm),
+                    'ancho_mm': float(image.prediction.ancho_mm),
+                    'grosor_mm': float(image.prediction.grosor_mm),
+                    'peso_g': float(image.prediction.peso_g),
+                    'average_confidence': float(image.prediction.average_confidence),
+                    'model_version': image.prediction.model_version,
+                    'device_used': image.prediction.device_used,
+                    'processing_time_ms': image.prediction.processing_time_ms,
+                    'created_at': image.prediction.created_at.isoformat()
+                }
+            
+            # Eliminar imagen (esto también eliminará la predicción por CASCADE)
+            image.delete()
+            
+            logger.info(f"Imagen {image_id} eliminada por admin {request.user.username}. Propietario: {image_data['owner']['username']}")
+            
+            return Response({
+                'message': 'Imagen eliminada exitosamente por administrador',
+                'deleted_image': image_data,
+                'deleted_prediction': prediction_data,
+                'deleted_by': request.user.username,
+                'deletion_timestamp': timezone.now().isoformat()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error eliminando imagen {image_id} por admin: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _is_admin_user(self, user):
+        """
+        Verificar si el usuario es administrador.
+        
+        Args:
+            user: Usuario autenticado
+            
+        Returns:
+            bool: True si es admin, False en caso contrario
+        """
+        return user.is_superuser or user.is_staff
+
+
 class UserDetailView(APIView):
     """
     Endpoint para obtener detalles de un usuario específico (Admin only).
