@@ -368,3 +368,29 @@ class CacaoImageDetailSerializer(CacaoImageSerializer):
     
     class Meta(CacaoImageSerializer.Meta):
         fields = CacaoImageSerializer.Meta.fields + ('prediction',)
+
+
+class ImagesListResponseSerializer(serializers.Serializer):
+    """Serializer para respuesta de lista de imágenes."""
+    results = CacaoImageSerializer(many=True)
+    count = serializers.IntegerField()
+    page = serializers.IntegerField()
+    page_size = serializers.IntegerField()
+    total_pages = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True)
+    previous = serializers.URLField(allow_null=True)
+
+
+class ImagesStatsResponseSerializer(serializers.Serializer):
+    """Serializer para respuesta de estadísticas de imágenes."""
+    total_images = serializers.IntegerField()
+    processed_images = serializers.IntegerField()
+    unprocessed_images = serializers.IntegerField()
+    processed_today = serializers.IntegerField()
+    processed_this_week = serializers.IntegerField()
+    processed_this_month = serializers.IntegerField()
+    average_confidence = serializers.FloatField()
+    average_processing_time_ms = serializers.FloatField()
+    region_stats = serializers.ListField()
+    top_fincas = serializers.ListField()
+    average_dimensions = serializers.DictField()
