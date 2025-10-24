@@ -1,530 +1,1000 @@
 <template>
-  <div class="bg-gray-50 min-h-screen">
-    <div class="dashboard-layout">
-      <!-- Sidebar -->
-      <AdminSidebar 
-        :user-initials="userInitials"
-        :user-name="userName"
-        :user-role="userRole"
-        :sidebar-collapsed="sidebarCollapsed"
-        @toggle-sidebar="toggleSidebar"
-      />
-      
-      <!-- Contenido principal -->
-      <div class="dashboard-content">
-        <!-- Header de la página -->
-        <header class="bg-white shadow-sm mb-4 md:mb-6">
-          <div class="px-3 sm:px-4 lg:px-8 py-4 md:py-6">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
-              <div>
-                <h1 class="text-lg md:text-2xl font-bold text-gray-800">Panel de Administración</h1>
-                <p class="text-xs md:text-sm text-gray-600">Vista general del sistema</p>
-              </div>
+  <div class="admin-dashboard">
+    <!-- Header del Dashboard -->
+    <div class="dashboard-header">
+      <div class="header-content">
+        <h1 class="dashboard-title">
+          <i class="fas fa-tachometer-alt"></i>
+          Dashboard de Administración
+        </h1>
+        <div class="header-actions">
+          <button 
+            class="btn btn-primary"
+            @click="refreshData"
+            :disabled="loading"
+          >
+            <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
+            Actualizar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estadísticas Generales -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ stats.total_users || 0 }}</h3>
+          <p>Usuarios Totales</p>
+          <small class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>
+            +{{ stats.new_users_today || 0 }} hoy
+          </small>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-seedling"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ stats.total_fincas || 0 }}</h3>
+          <p>Fincas Registradas</p>
+          <small class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>
+            +{{ stats.new_fincas_today || 0 }} hoy
+          </small>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ stats.total_analyses || 0 }}</h3>
+          <p>Análisis Realizados</p>
+          <small class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>
+            +{{ stats.analyses_today || 0 }} hoy
+          </small>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-percentage"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ stats.avg_quality || 0 }}%</h3>
+          <p>Calidad Promedio</p>
+          <small class="stat-change" :class="getQualityChangeClass(stats.quality_change)">
+            <i :class="getQualityChangeIcon(stats.quality_change)"></i>
+            {{ stats.quality_change || 0 }}%
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficos y Tablas -->
+    <div class="dashboard-content">
+      <div class="content-row">
+        <!-- Gráfico de Actividad -->
+        <div class="chart-container">
+          <div class="chart-header">
+            <h3>Actividad de Usuarios</h3>
+            <div class="chart-controls">
+              <select v-model="activityPeriod" @change="updateActivityChart">
+                <option value="7">Últimos 7 días</option>
+                <option value="30">Últimos 30 días</option>
+                <option value="90">Últimos 90 días</option>
+              </select>
             </div>
           </div>
-        </header>
-        
-        <!-- Contenido principal -->
-        <main class="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
-          <!-- Dashboard Title & Controls -->
-          <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6">
-            <div>
-              <h2 class="text-lg md:text-2xl font-bold text-gray-800">Vista General</h2>
-              <p class="text-xs md:text-sm text-gray-600 mt-1">Resumen de actividad y métricas clave</p>
-            </div>
-            <div class="mt-3 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-              <div class="relative">
-                <select class="w-full sm:w-auto bg-white border border-gray-300 rounded-md py-2 pl-3 pr-10 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                  <option>Último mes</option>
-                  <option>Últimos 3 meses</option>
-                  <option>Último año</option>
-                  <option>Todo el tiempo</option>
-                </select>
-              </div>
-              <button class="w-full sm:w-auto bg-green-100 text-green-800 hover:bg-green-200 px-4 py-2 rounded-md text-xs md:text-sm font-medium flex items-center justify-center">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                </svg>
-                <span class="hidden sm:inline">Exportar</span>
-                <span class="sm:hidden">Exportar</span>
-              </button>
-            </div>
+          <div class="chart-body">
+            <canvas ref="activityChart"></canvas>
           </div>
+        </div>
 
-          <!-- Summary Cards -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-              <div class="p-4 md:p-5">
-                <div class="flex items-center">
-                  <div class="flex-shrink-0 bg-green-50 rounded-lg p-2 md:p-3">
-                    <svg class="w-6 h-6 md:w-8 md:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                    </svg>
-                  </div>
-                  <div class="ml-3 md:ml-5 w-0 flex-1">
-                    <dl>
-                      <dt class="text-xs md:text-sm font-medium text-gray-500 truncate">Agricultores registrados</dt>
-                      <dd>
-                        <div class="text-lg md:text-2xl font-semibold text-gray-900">221,324</div>
-                        <div class="text-xs md:text-sm text-green-600 flex items-center mt-1">
-                          <svg class="w-3 h-3 md:w-4 md:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-                          </svg>
-                          <span>12% desde el mes pasado</span>
-                        </div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-              <div class="p-4 md:p-5">
-                <div class="flex items-center">
-                  <div class="flex-shrink-0 bg-emerald-50 rounded-lg p-2 md:p-3">
-                    <svg class="w-6 h-6 md:w-8 md:h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                    </svg>
-                  </div>
-                  <div class="ml-3 md:ml-5 w-0 flex-1">
-                    <dl>
-                      <dt class="text-xs md:text-sm font-medium text-gray-500 truncate">Lotes analizados</dt>
-                      <dd>
-                        <div class="text-lg md:text-2xl font-semibold text-gray-900">2,324</div>
-                        <div class="text-xs md:text-sm text-emerald-600 flex items-center mt-1">
-                          <svg class="w-3 h-3 md:w-4 md:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-                          </svg>
-                          <span>8% desde el mes pasado</span>
-                        </div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-              <div class="p-4 md:p-5">
-                <div class="flex items-center">
-                  <div class="flex-shrink-0 bg-blue-50 rounded-lg p-2 md:p-3">
-                    <svg class="w-6 h-6 md:w-8 md:h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2zm0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                  </div>
-                  <div class="ml-3 md:ml-5 w-0 flex-1">
-                    <dl>
-                      <dt class="text-xs md:text-sm font-medium text-gray-500 truncate">Total de análisis</dt>
-                      <dd>
-                        <div class="text-lg md:text-2xl font-semibold text-gray-900">16,703</div>
-                        <div class="text-xs md:text-sm text-blue-600 flex items-center mt-1">
-                          <svg class="w-3 h-3 md:w-4 md:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-                          </svg>
-                          <span>15% desde el mes pasado</span>
-                        </div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <!-- Gráfico de Calidad -->
+        <div class="chart-container">
+          <div class="chart-header">
+            <h3>Distribución de Calidad</h3>
           </div>
-
-          <!-- Charts and Table -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-            <!-- Gráfico de líneas -->
-            <div class="col-span-1 lg:col-span-2 bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 md:mb-6 space-y-3 sm:space-y-0">
-                <div>
-                  <h2 class="text-base md:text-lg font-semibold text-gray-800">
-                    Evolución de análisis por tipo de defecto
-                  </h2>
-                  <p class="text-xs md:text-sm text-gray-500 mt-1">Tendencias de los últimos 5 meses</p>
-                </div>
-                <div class="flex space-x-2">
-                  <button class="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100">
-                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path>
-                    </svg>
-                  </button>
-                  <button class="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <div class="relative">
-                <BarChart 
-                  :chart-data="lineChartData"
-                  :chart-options="lineChartOptions"
-                  type="line"
-                  class="h-72"
-                />
-              </div>
-            </div>
-            
-            <!-- Gráfico de dona -->
-            <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 md:mb-6 space-y-3 sm:space-y-0">
-                <div>
-                  <h2 class="text-base md:text-lg font-semibold text-gray-800">
-                    Distribución por tipo de cacao
-                  </h2>
-                  <p class="text-xs md:text-sm text-gray-500 mt-1">Porcentaje del total analizado</p>
-                </div>
-                <div class="flex space-x-2">
-                  <button class="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100">
-                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <div class="flex flex-col items-center justify-center">
-                <PieChart 
-                  :chart-data="doughnutChartData"
-                  :chart-options="doughnutChartOptions"
-                  class="h-48 md:h-64 w-full"
-                />
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full mt-4">
-                  <div v-for="(label, index) in doughnutChartData.labels" :key="index" 
-                    class="flex items-center text-xs md:text-sm">
-                    <div class="w-3 h-3 rounded-full mr-2" 
-                      :style="{ backgroundColor: doughnutChartData.datasets[0].backgroundColor[index] }"></div>
-                    <span class="text-gray-700">{{ label }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div class="chart-body">
+            <canvas ref="qualityChart"></canvas>
           </div>
+        </div>
+      </div>
 
-          <!-- Últimos análisis realizados -->
-          <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 md:mb-8 overflow-hidden hover:shadow-md transition-shadow duration-300">
-            <div class="p-4 md:p-6 border-b border-gray-100">
-              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
-                <div>
-                  <h2 class="text-base md:text-lg font-semibold text-gray-800">Últimos análisis realizados</h2>
-                  <p class="text-xs md:text-sm text-gray-500 mt-1">Análisis más recientes en el sistema</p>
-                </div>
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                  <div class="relative">
-                    <input type="text" placeholder="Buscar análisis..." class="w-full sm:w-64 pl-9 pr-4 py-2 border border-gray-300 rounded-md text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                      </svg>
-                    </div>
-                  </div>
-                  <button class="w-full sm:w-auto bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md text-xs md:text-sm font-medium flex items-center justify-center transition-colors duration-150">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    <span class="hidden sm:inline">Nuevo análisis</span>
-                    <span class="sm:hidden">+ Nuevo</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agricultor</th>
-                    <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lote</th>
-                    <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                    <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resultado</th>
-                    <th scope="col" class="px-3 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-for="(item, idx) in paginatedAnalyses" :key="idx" class="hover:bg-gray-50 transition-colors duration-150">
-                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                      <div class="flex items-center">
-                        <div class="h-6 w-6 md:h-8 md:w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium text-xs md:text-sm">{{ item.agricultor.charAt(0) }}</div>
-                        <div class="ml-2 md:ml-3">
-                          <div class="text-xs md:text-sm font-medium text-gray-900">{{ item.agricultor }}</div>
-                        </div>
+      <div class="content-row">
+        <!-- Tabla de Usuarios Recientes -->
+        <div class="table-container">
+          <div class="table-header">
+            <h3>Usuarios Recientes</h3>
+            <router-link to="/admin/users" class="btn btn-sm btn-outline-primary">
+              Ver Todos
+            </router-link>
+          </div>
+          <div class="table-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Email</th>
+                  <th>Rol</th>
+                  <th>Registro</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="user in recentUsers" :key="user.id">
+                  <td>
+                    <div class="user-info">
+                      <div class="user-avatar">
+                        <i class="fas fa-user"></i>
                       </div>
-                    </td>
-                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                      <div class="text-xs md:text-sm text-gray-900">Lote #{{ item.lote }}</div>
-                    </td>
-                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                      <div class="text-xs md:text-sm text-gray-900">{{ new Date().toLocaleDateString('es-ES') }}</div>
-                    </td>
-                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
-                      <span :class="{
-                        'px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full': true,
-                        'bg-green-100 text-green-800': item.resultado === 'Aceptado',
-                        'bg-yellow-100 text-yellow-800': item.resultado === 'Condicional',
-                        'bg-red-100 text-red-800': item.resultado === 'Rechazado'
-                      }">
-                        {{ item.resultado }}
-                      </span>
-                    </td>
-                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <a href="#" class="text-green-600 hover:text-green-900 mr-3">Ver</a>
-                      <a href="#" class="text-blue-600 hover:text-blue-900">Editar</a>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                      <div class="user-details">
+                        <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                        <small>@{{ user.username }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{{ user.email }}</td>
+                  <td>
+                    <span class="badge" :class="getRoleBadgeClass(user.role)">
+                      {{ user.role }}
+                    </span>
+                  </td>
+                  <td>{{ formatDate(user.date_joined) }}</td>
+                  <td>
+                    <span class="badge" :class="user.is_active ? 'badge-success' : 'badge-danger'">
+                      {{ user.is_active ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button 
+                        class="btn btn-sm btn-outline-primary"
+                        @click="viewUser(user.id)"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button 
+                        class="btn btn-sm btn-outline-warning"
+                        @click="editUser(user.id)"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tabla de Actividad Reciente -->
+        <div class="table-container">
+          <div class="table-header">
+            <h3>Actividad Reciente</h3>
+            <router-link to="/admin/audit" class="btn btn-sm btn-outline-primary">
+              Ver Auditoría
+            </router-link>
+          </div>
+          <div class="table-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Acción</th>
+                  <th>Modelo</th>
+                  <th>Fecha</th>
+                  <th>IP</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="activity in recentActivities" :key="activity.id">
+                  <td>{{ activity.usuario || 'Anónimo' }}</td>
+                  <td>
+                    <span class="badge" :class="getActionBadgeClass(activity.accion)">
+                      {{ activity.accion_display }}
+                    </span>
+                  </td>
+                  <td>{{ activity.modelo }}</td>
+                  <td>{{ formatDateTime(activity.timestamp) }}</td>
+                  <td>{{ activity.ip_address || 'N/A' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alertas y Notificaciones -->
+      <div class="content-row">
+        <div class="alerts-container">
+          <div class="alert-header">
+            <h3>Alertas del Sistema</h3>
+          </div>
+          <div class="alert-body">
+            <div v-if="alerts.length === 0" class="no-alerts">
+              <i class="fas fa-check-circle"></i>
+              <p>No hay alertas activas</p>
             </div>
-            <!-- Paginación mejorada -->
-            <div class="bg-gray-50 px-3 md:px-6 py-3 md:py-4 border-t border-gray-100">
-              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                <div class="flex justify-center sm:justify-start">
-                  <p class="text-xs md:text-sm text-gray-700">
-                    Mostrando <span class="font-medium">{{ (currentPage - 1) * pageSize + 1 }}</span> a <span class="font-medium">{{ Math.min(currentPage * pageSize, analyses.length) }}</span> de <span class="font-medium">{{ analyses.length }}</span> resultados
-                  </p>
+            <div v-else>
+              <div 
+                v-for="alert in alerts" 
+                :key="alert.id"
+                class="alert"
+                :class="`alert-${alert.type}`"
+              >
+                <div class="alert-icon">
+                  <i :class="getAlertIcon(alert.type)"></i>
                 </div>
-                <div class="flex justify-center sm:justify-end">
-                  <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                    <button @click="currentPage = Math.max(1, currentPage - 1)" :disabled="currentPage === 1" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                      <span class="sr-only">Anterior</span>
-                      <svg class="h-4 w-4 md:h-5 md:w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                      </svg>
-                    </button>
-                    <button v-for="page in totalPages" :key="page" @click="currentPage = page" :class="[
-                      'relative inline-flex items-center px-3 md:px-4 py-2 border text-xs md:text-sm font-medium',
-                      currentPage === page ? 'z-10 bg-green-50 border-green-500 text-green-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                    ]">
-                      {{ page }}
-                    </button>
-                    <button @click="currentPage = Math.min(totalPages, currentPage + 1)" :disabled="currentPage === totalPages" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                      <span class="sr-only">Siguiente</span>
-                      <svg class="h-4 w-4 md:h-5 md:w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                      </svg>
-                    </button>
-                  </nav>
+                <div class="alert-content">
+                  <h4>{{ alert.title }}</h4>
+                  <p>{{ alert.message }}</p>
+                  <small>{{ formatDateTime(alert.created_at) }}</small>
+                </div>
+                <div class="alert-actions">
+                  <button 
+                    class="btn btn-sm btn-outline-secondary"
+                    @click="dismissAlert(alert.id)"
+                  >
+                    <i class="fas fa-times"></i>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-        </main>
+        </div>
+
+        <!-- Estadísticas de Reportes -->
+        <div class="reports-container">
+          <div class="reports-header">
+            <h3>Reportes Generados</h3>
+            <router-link to="/admin/reports" class="btn btn-sm btn-outline-primary">
+              Gestionar Reportes
+            </router-link>
+          </div>
+          <div class="reports-body">
+            <div class="reports-stats">
+              <div class="report-stat">
+                <h4>{{ reportStats.total_reportes || 0 }}</h4>
+                <p>Total Reportes</p>
+              </div>
+              <div class="report-stat">
+                <h4>{{ reportStats.reportes_completados || 0 }}</h4>
+                <p>Completados</p>
+              </div>
+              <div class="report-stat">
+                <h4>{{ reportStats.reportes_generando || 0 }}</h4>
+                <p>Generando</p>
+              </div>
+              <div class="report-stat">
+                <h4>{{ reportStats.reportes_fallidos || 0 }}</h4>
+                <p>Fallidos</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Cargando datos...</p>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
-import AdminSidebar from '@/components/common/AdminSidebar.vue';
-import BarChart from '@/components/charts/BarChart.vue';
-import PieChart from '@/components/charts/PieChart.vue';
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import Chart from 'chart.js/auto'
+import Swal from 'sweetalert2'
+import { useAuthStore } from '@/stores/auth'
+import { useAdminStore } from '@/stores/admin'
 
 export default {
   name: 'AdminDashboard',
-  components: { 
-    AdminSidebar,
-    BarChart, 
-    PieChart 
-  },
   setup() {
-    // Estado del sidebar
-    const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
-    
-    // Datos de usuario
-    const userInitials = ref('AD');
-    const userName = ref('Admin');
-    const userRole = ref('Administrador');
-    
-    // Datos para el gráfico de líneas (evolución por tipo de defecto)
-    const lineChartData = ref({
-      labels: ['Abr', 'May', 'Jun', 'Jul', 'Ago'],
-      datasets: [
-        {
-          label: 'Hongos',
-          data: [24, 28, 42, 35, 31],
-          borderColor: '#10B981',
-          backgroundColor: 'rgba(16,185,129,0.2)',
-          tension: 0.4,
-          borderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-        {
-          label: 'Pizarrozo',
-          data: [15, 12, 18, 22, 19],
-          borderColor: '#8B5CF6',
-          backgroundColor: 'rgba(139, 92, 246, 0.2)',
-          tension: 0.4,
-          borderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-        {
-          label: 'Insectos',
-          data: [8, 10, 15, 12, 9],
-          borderColor: '#F59E0B',
-          backgroundColor: 'rgba(245,158,11,0.2)',
-          tension: 0.4,
-          borderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-        {
-          label: 'Planos',
-          data: [5, 8, 6, 9, 7],
-          borderColor: '#3B82F6',
-          backgroundColor: 'rgba(59,130,246,0.2)',
-          tension: 0.4,
-          borderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-        {
-          label: 'Mohoso',
-          data: [3, 5, 8, 6, 10],
-          borderColor: '#EC4899',
-          backgroundColor: 'rgba(236, 72, 153, 0.2)',
-          tension: 0.4,
-          borderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-        {
-          label: 'Violeta',
-          data: [10, 7, 5, 8, 6],
-          borderColor: '#EF4444',
-          backgroundColor: 'rgba(239,68,68,0.2)',
-          tension: 0.4,
-          borderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-      ],
-    });
-    const lineChartOptions = ref({
-      responsive: true,
-      plugins: {
-        legend: { position: 'top' },
-      },
-    });
+    const router = useRouter()
+    const authStore = useAuthStore()
+    const adminStore = useAdminStore()
 
-    // Datos de prueba para el gráfico de dona (tipo de cacao)
-    const doughnutChartData = ref({
-      labels: ['Fino aroma', 'Común', 'Híbrido'],
-      datasets: [
-        {
-          data: [40, 30, 30],
-          backgroundColor: ['#F59E0B', '#2563EB', '#10B981'],
-          borderWidth: 2,
-        },
-      ],
-    });
-    const doughnutChartOptions = ref({
-      responsive: true,
-      cutout: '70%',
-      plugins: {
-        legend: { position: 'bottom' },
-      },
-    });
+    // Reactive data
+    const loading = ref(false)
+    const stats = ref({})
+    const recentUsers = ref([])
+    const recentActivities = ref([])
+    const alerts = ref([])
+    const reportStats = ref({})
+    const activityPeriod = ref('7')
 
-    // Datos de prueba para la tabla de últimos análisis
-    const analyses = ref([
-      { agricultor: 'Camilo Hernandez', lote: 101, resultado: 'Aceptado' },
-      { agricultor: 'Jeferson Alvarez', lote: 102, resultado: 'Condicional' },
-      { agricultor: 'Cristian Camacho', lote: 103, resultado: 'Rechazado' },
-      { agricultor: 'Juan Pablo Pérez', lote: 104, resultado: 'Aceptado' },
-      { agricultor: 'Carlos Pérez', lote: 105, resultado: 'Aceptado' },
-      { agricultor: 'María Gómez', lote: 106, resultado: 'Condicional' },
-      { agricultor: 'Juan Torres', lote: 107, resultado: 'Rechazado' },
-      { agricultor: 'Ana Ruiz', lote: 108, resultado: 'Aceptado' },
-    ]);
-    const currentPage = ref(1);
-    const pageSize = 4;
-    const totalPages = computed(() => Math.ceil(analyses.value.length / pageSize));
-    const paginatedAnalyses = computed(() => {
-      const start = (currentPage.value - 1) * pageSize;
-      return analyses.value.slice(start, start + pageSize);
-    });
+    // Chart references
+    const activityChart = ref(null)
+    const qualityChart = ref(null)
+    let activityChartInstance = null
+    let qualityChartInstance = null
 
-    // Métodos
-    const toggleSidebar = () => {
-      sidebarCollapsed.value = !sidebarCollapsed.value;
-      localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value);
-    };
-
-    const checkScreenSize = () => {
-      if (window.innerWidth <= 768) {
-        sidebarCollapsed.value = true;
-        localStorage.setItem('sidebarCollapsed', 'true');
+    // Methods
+    const loadDashboardData = async () => {
+      loading.value = true
+      try {
+        await Promise.all([
+          loadStats(),
+          loadRecentUsers(),
+          loadRecentActivities(),
+          loadAlerts(),
+          loadReportStats()
+        ])
+      } catch (error) {
+        console.error('Error loading dashboard data:', error)
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudieron cargar los datos del dashboard'
+        })
+      } finally {
+        loading.value = false
       }
-    };
+    }
+
+    const loadStats = async () => {
+      try {
+        const response = await adminStore.getGeneralStats()
+        stats.value = response.data
+      } catch (error) {
+        console.error('Error loading stats:', error)
+      }
+    }
+
+    const loadRecentUsers = async () => {
+      try {
+        const response = await adminStore.getRecentUsers()
+        recentUsers.value = response.data
+      } catch (error) {
+        console.error('Error loading recent users:', error)
+      }
+    }
+
+    const loadRecentActivities = async () => {
+      try {
+        const response = await adminStore.getRecentActivities()
+        recentActivities.value = response.data
+      } catch (error) {
+        console.error('Error loading recent activities:', error)
+      }
+    }
+
+    const loadAlerts = async () => {
+      try {
+        const response = await adminStore.getSystemAlerts()
+        alerts.value = response.data
+      } catch (error) {
+        console.error('Error loading alerts:', error)
+      }
+    }
+
+    const loadReportStats = async () => {
+      try {
+        const response = await adminStore.getReportStats()
+        reportStats.value = response.data
+      } catch (error) {
+        console.error('Error loading report stats:', error)
+      }
+    }
+
+    const refreshData = () => {
+      loadDashboardData()
+    }
+
+    const updateActivityChart = async () => {
+      try {
+        const response = await adminStore.getActivityData(activityPeriod.value)
+        updateActivityChartData(response.data)
+      } catch (error) {
+        console.error('Error updating activity chart:', error)
+      }
+    }
+
+    const createCharts = () => {
+      createActivityChart()
+      createQualityChart()
+    }
+
+    const createActivityChart = () => {
+      if (activityChartInstance) {
+        activityChartInstance.destroy()
+      }
+
+      const ctx = activityChart.value.getContext('2d')
+      activityChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Actividad',
+            data: [],
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      })
+    }
+
+    const createQualityChart = () => {
+      if (qualityChartInstance) {
+        qualityChartInstance.destroy()
+      }
+
+      const ctx = qualityChart.value.getContext('2d')
+      qualityChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Excelente', 'Buena', 'Regular', 'Baja'],
+          datasets: [{
+            data: [0, 0, 0, 0],
+            backgroundColor: [
+              '#28a745',
+              '#17a2b8',
+              '#ffc107',
+              '#dc3545'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      })
+    }
+
+    const updateActivityChartData = (data) => {
+      if (activityChartInstance) {
+        activityChartInstance.data.labels = data.labels
+        activityChartInstance.data.datasets[0].data = data.values
+        activityChartInstance.update()
+      }
+    }
+
+    const updateQualityChartData = (data) => {
+      if (qualityChartInstance) {
+        qualityChartInstance.data.datasets[0].data = [
+          data.excelente || 0,
+          data.buena || 0,
+          data.regular || 0,
+          data.baja || 0
+        ]
+        qualityChartInstance.update()
+      }
+    }
+
+    // Utility methods
+    const formatDate = (date) => {
+      return new Date(date).toLocaleDateString('es-ES')
+    }
+
+    const formatDateTime = (date) => {
+      return new Date(date).toLocaleString('es-ES')
+    }
+
+    const getRoleBadgeClass = (role) => {
+      const classes = {
+        'Administrador': 'badge-danger',
+        'Agricultor': 'badge-success',
+        'Técnico': 'badge-info'
+      }
+      return classes[role] || 'badge-secondary'
+    }
+
+    const getActionBadgeClass = (action) => {
+      const classes = {
+        'create': 'badge-success',
+        'update': 'badge-warning',
+        'delete': 'badge-danger',
+        'view': 'badge-info',
+        'login': 'badge-primary',
+        'logout': 'badge-secondary'
+      }
+      return classes[action] || 'badge-secondary'
+    }
+
+    const getQualityChangeClass = (change) => {
+      if (change > 0) return 'positive'
+      if (change < 0) return 'negative'
+      return 'neutral'
+    }
+
+    const getQualityChangeIcon = (change) => {
+      if (change > 0) return 'fas fa-arrow-up'
+      if (change < 0) return 'fas fa-arrow-down'
+      return 'fas fa-minus'
+    }
+
+    const getAlertIcon = (type) => {
+      const icons = {
+        'success': 'fas fa-check-circle',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times-circle',
+        'info': 'fas fa-info-circle'
+      }
+      return icons[type] || 'fas fa-info-circle'
+    }
+
+    const viewUser = (userId) => {
+      router.push(`/admin/users/${userId}`)
+    }
+
+    const editUser = (userId) => {
+      router.push(`/admin/users/${userId}/edit`)
+    }
+
+    const dismissAlert = async (alertId) => {
+      try {
+        await adminStore.dismissAlert(alertId)
+        alerts.value = alerts.value.filter(alert => alert.id !== alertId)
+        Swal.fire({
+          icon: 'success',
+          title: 'Alerta Descartada',
+          text: 'La alerta ha sido descartada exitosamente'
+        })
+      } catch (error) {
+        console.error('Error dismissing alert:', error)
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo descartar la alerta'
+        })
+      }
+    }
 
     // Lifecycle
-    onMounted(() => {
-      checkScreenSize();
-      window.addEventListener('resize', checkScreenSize);
-    });
+    onMounted(async () => {
+      // Verificar permisos de administrador
+      if (!authStore.user?.is_superuser && !authStore.user?.is_staff) {
+        router.push('/unauthorized')
+        return
+      }
+
+      await loadDashboardData()
+      
+      // Crear gráficos después de cargar los datos
+      setTimeout(() => {
+        createCharts()
+        updateActivityChart()
+      }, 100)
+    })
+
+    onUnmounted(() => {
+      if (activityChartInstance) {
+        activityChartInstance.destroy()
+      }
+      if (qualityChartInstance) {
+        qualityChartInstance.destroy()
+      }
+    })
 
     return {
-      // Estado del sidebar
-      sidebarCollapsed,
-      userInitials,
-      userName,
-      userRole,
-      
-      // Datos de gráficos
-      lineChartData,
-      lineChartOptions,
-      doughnutChartData,
-      doughnutChartOptions,
-      
-      // Datos de tabla
-      analyses,
-      currentPage,
-      totalPages,
-      paginatedAnalyses,
-      
-      // Métodos
-      toggleSidebar
-    };
-  },
-};
+      loading,
+      stats,
+      recentUsers,
+      recentActivities,
+      alerts,
+      reportStats,
+      activityPeriod,
+      activityChart,
+      qualityChart,
+      refreshData,
+      updateActivityChart,
+      formatDate,
+      formatDateTime,
+      getRoleBadgeClass,
+      getActionBadgeClass,
+      getQualityChangeClass,
+      getQualityChangeIcon,
+      getAlertIcon,
+      viewUser,
+      editUser,
+      dismissAlert
+    }
+  }
+}
 </script>
 
 <style scoped>
-/* Layout principal del dashboard */
-.dashboard-layout {
-  display: flex;
-  height: 100vh;
-  width: 100%;
+.admin-dashboard {
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
 }
 
-/* Contenido principal del dashboard */
+.dashboard-header {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashboard-title {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
+
+.dashboard-title i {
+  margin-right: 10px;
+  color: #3498db;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  margin-right: 20px;
+  color: #3498db;
+}
+
+.stat-content h3 {
+  margin: 0;
+  font-size: 2rem;
+  color: #2c3e50;
+}
+
+.stat-content p {
+  margin: 5px 0;
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+.stat-change {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.stat-change.positive {
+  color: #27ae60;
+}
+
+.stat-change.negative {
+  color: #e74c3c;
+}
+
+.stat-change.neutral {
+  color: #95a5a6;
+}
+
 .dashboard-content {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  gap: 20px;
+}
+
+.content-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.chart-container,
+.table-container,
+.alerts-container,
+.reports-container {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   overflow: hidden;
-  transition: all 0.3s ease;
 }
 
-/* Asegurar que el contenido se ajuste correctamente */
-.dashboard-content > * {
+.chart-header,
+.table-header,
+.alert-header,
+.reports-header {
+  padding: 20px;
+  border-bottom: 1px solid #ecf0f1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chart-header h3,
+.table-header h3,
+.alert-header h3,
+.reports-header h3 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.chart-body {
+  padding: 20px;
+  height: 300px;
+}
+
+.table-body {
+  padding: 0;
+}
+
+.table {
+  margin: 0;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #3498db;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+
+.user-details strong {
+  display: block;
+  color: #2c3e50;
+}
+
+.user-details small {
+  color: #7f8c8d;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.badge-success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.badge-warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.badge-info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.badge-primary {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.badge-secondary {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+.alert-body {
+  padding: 20px;
+}
+
+.no-alerts {
+  text-align: center;
+  color: #7f8c8d;
+  padding: 40px;
+}
+
+.no-alerts i {
+  font-size: 3rem;
+  margin-bottom: 10px;
+  color: #27ae60;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border-left-color: #28a745;
+  color: #155724;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  border-left-color: #ffc107;
+  color: #856404;
+}
+
+.alert-error {
+  background-color: #f8d7da;
+  border-left-color: #dc3545;
+  color: #721c24;
+}
+
+.alert-info {
+  background-color: #d1ecf1;
+  border-left-color: #17a2b8;
+  color: #0c5460;
+}
+
+.alert-icon {
+  font-size: 1.5rem;
+  margin-right: 15px;
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-content h4 {
+  margin: 0 0 5px 0;
+  font-size: 1rem;
+}
+
+.alert-content p {
+  margin: 0 0 5px 0;
+  font-size: 0.9rem;
+}
+
+.alert-content small {
+  color: #6c757d;
+}
+
+.alert-actions {
+  margin-left: 15px;
+}
+
+.reports-body {
+  padding: 20px;
+}
+
+.reports-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.report-stat {
+  text-align: center;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.report-stat h4 {
+  margin: 0 0 5px 0;
+  font-size: 1.5rem;
+  color: #2c3e50;
+}
+
+.report-stat p {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
 }
 
-/* Responsive */
+.loading-spinner {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.loading-spinner i {
+  font-size: 2rem;
+  color: #3498db;
+  margin-bottom: 10px;
+}
+
+.loading-spinner p {
+  margin: 0;
+  color: #2c3e50;
+}
+
 @media (max-width: 768px) {
-  .dashboard-content {
-    min-width: 0;
-    flex: 1;
+  .content-row {
+    grid-template-columns: 1fr;
   }
-}
-
-@media (max-width: 640px) {
-  .dashboard-content {
-    min-width: 0;
-    flex: 1;
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .reports-stats {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>
