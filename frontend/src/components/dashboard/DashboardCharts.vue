@@ -73,7 +73,7 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Chart from 'chart.js/auto'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
@@ -129,37 +129,63 @@ export default {
 
     // Methods
     const createActivityChart = () => {
-      if (activityChartInstance) {
-        activityChartInstance.destroy()
+      // ✅ CORRECCIÓN: Verificar que el elemento canvas existe antes de crear el gráfico
+      if (!activityChart.value) {
+        console.warn('⚠️ Canvas de actividad no está disponible aún')
+        return
       }
 
-      const ctx = activityChart.value.getContext('2d')
-      activityChartInstance = new Chart(ctx, {
-        type: activityChartType.value,
-        data: props.activityChartData,
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          ...props.activityChartOptions
-        }
-      })
+      // Destruir instancia anterior si existe
+      if (activityChartInstance) {
+        activityChartInstance.destroy()
+        activityChartInstance = null
+      }
+
+      try {
+        const ctx = activityChart.value.getContext('2d')
+        activityChartInstance = new Chart(ctx, {
+          type: activityChartType.value,
+          data: props.activityChartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            ...props.activityChartOptions
+          }
+        })
+        console.log('✅ Gráfico de actividad creado correctamente')
+      } catch (error) {
+        console.error('❌ Error al crear gráfico de actividad:', error)
+      }
     }
 
     const createQualityChart = () => {
-      if (qualityChartInstance) {
-        qualityChartInstance.destroy()
+      // ✅ CORRECCIÓN: Verificar que el elemento canvas existe antes de crear el gráfico
+      if (!qualityChart.value) {
+        console.warn('⚠️ Canvas de calidad no está disponible aún')
+        return
       }
 
-      const ctx = qualityChart.value.getContext('2d')
-      qualityChartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: props.qualityChartData,
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          ...props.qualityChartOptions
-        }
-      })
+      // Destruir instancia anterior si existe
+      if (qualityChartInstance) {
+        qualityChartInstance.destroy()
+        qualityChartInstance = null
+      }
+
+      try {
+        const ctx = qualityChart.value.getContext('2d')
+        qualityChartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: props.qualityChartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            ...props.qualityChartOptions
+          }
+        })
+        console.log('✅ Gráfico de calidad creado correctamente')
+      } catch (error) {
+        console.error('❌ Error al crear gráfico de calidad:', error)
+      }
     }
 
     const updateActivityChart = () => {
@@ -211,12 +237,28 @@ export default {
     })
 
     // Lifecycle
-    onMounted(() => {
-      // Create charts after component is mounted
-      setTimeout(() => {
+    onMounted(async () => {
+      // ✅ CORRECCIÓN: Usar nextTick para asegurar que el DOM está completamente renderizado
+      // nextTick espera a que Vue termine de actualizar el DOM después del montaje
+      await nextTick()
+      
+      console.log('📊 Iniciando creación de gráficos...')
+      console.log('Canvas actividad:', activityChart.value)
+      console.log('Canvas calidad:', qualityChart.value)
+      
+      // Crear gráficos solo si los elementos canvas están disponibles
+      if (activityChart.value && qualityChart.value) {
         createActivityChart()
         createQualityChart()
-      }, 100)
+      } else {
+        console.error('❌ Elementos canvas no disponibles en onMounted')
+        // Intentar de nuevo después de un pequeño delay como fallback
+        setTimeout(() => {
+          console.log('🔄 Reintentando creación de gráficos...')
+          createActivityChart()
+          createQualityChart()
+        }, 200)
+      }
     })
 
     onUnmounted(() => {

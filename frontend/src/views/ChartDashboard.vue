@@ -592,9 +592,14 @@ export default {
 
     // Lifecycle
     onMounted(async () => {
-      // Verificar permisos
-      if (!authStore.user?.is_superuser && !authStore.user?.is_staff) {
-        router.push('/unauthorized')
+      // Verificar permisos de administrador usando el sistema de roles
+      if (!authStore.isAdmin) {
+        console.warn('🚫 Usuario sin permisos de admin:', {
+          userRole: authStore.userRole,
+          isAdmin: authStore.isAdmin,
+          user: authStore.user
+        })
+        router.push('/acceso-denegado')
         return
       }
 

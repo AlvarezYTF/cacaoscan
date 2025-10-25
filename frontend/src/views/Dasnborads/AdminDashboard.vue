@@ -313,27 +313,36 @@ export default {
     const loadRecentUsers = async () => {
       try {
         const response = await adminStore.getRecentUsers()
-        recentUsers.value = response.data
+        // Asegurar que sea un array
+        recentUsers.value = Array.isArray(response.data) ? response.data : []
+        console.log('👥 Recent users loaded:', recentUsers.value.length, 'items')
       } catch (error) {
         console.error('Error loading recent users:', error)
+        recentUsers.value = []
       }
     }
 
     const loadRecentActivities = async () => {
       try {
         const response = await adminStore.getRecentActivities()
-        recentActivities.value = response.data
+        // Asegurar que sea un array
+        recentActivities.value = Array.isArray(response.data) ? response.data : []
+        console.log('📊 Recent activities loaded:', recentActivities.value.length, 'items')
       } catch (error) {
         console.error('Error loading recent activities:', error)
+        recentActivities.value = []
       }
     }
 
     const loadAlerts = async () => {
       try {
         const response = await adminStore.getSystemAlerts()
-        alerts.value = response.data
+        // Asegurar que sea un array
+        alerts.value = Array.isArray(response.data) ? response.data : []
+        console.log('🚨 Alerts loaded:', alerts.value.length, 'items')
       } catch (error) {
         console.error('Error loading alerts:', error)
+        alerts.value = []
       }
     }
 
@@ -754,9 +763,14 @@ export default {
 
     // Lifecycle
     onMounted(async () => {
-      // Verificar permisos de administrador
-      if (!authStore.user?.is_superuser && !authStore.user?.is_staff) {
-        router.push('/unauthorized')
+      // Verificar permisos de administrador usando el sistema de roles
+      if (!authStore.isAdmin) {
+        console.warn('🚫 Usuario sin permisos de admin:', {
+          userRole: authStore.userRole,
+          isAdmin: authStore.isAdmin,
+          user: authStore.user
+        })
+        router.push('/acceso-denegado')
         return
       }
 
