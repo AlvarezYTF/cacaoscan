@@ -1,25 +1,33 @@
 <template>
   <div class="bg-gray-50 min-h-screen">
-    <div class="dashboard-layout">
-      <!-- Sidebar -->
-      <AdminSidebar 
-        :user-initials="userInitials"
-        :user-name="userName"
-        :user-role="userRole"
-        :sidebar-collapsed="sidebarCollapsed"
-        @toggle-sidebar="toggleSidebar"
-      />
-      
-      <!-- Contenido principal -->
-      <div class="dashboard-content">
-        <!-- Header de la página -->
-        <PageHeader 
-          title="Agricultores"
-          subtitle="Gestión de agricultores y fincas"
-        />
-        
+    <!-- Sidebar -->
+    <AdminSidebar 
+      :brand-name="brandName"
+      :user-name="userName"
+      :user-role="userRole"
+      :current-route="$route.path"
+      @menu-click="handleMenuClick"
+      @logout="handleLogout"
+    />
+    
+    <!-- Navbar -->
+    <AdminNavbar
+      :title="navbarTitle"
+      :subtitle="navbarSubtitle"
+      :user-name="userName"
+      :user-role="userRole"
+      :search-placeholder="searchPlaceholder"
+      :refresh-button-text="refreshButtonText"
+      :loading="loading"
+      @search="handleSearch"
+      @refresh="handleRefresh"
+    />
+    
+    <!-- Contenido principal -->
+    <div class="p-4 sm:ml-64">
+      <div class="p-4 mt-14">
         <!-- Contenido principal -->
-        <main class="flex-1 p-4 md:p-6 lg:p-8 pb-0 overflow-y-auto">
+        <main class="space-y-6">
           <!-- Estadísticas rápidas -->
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
@@ -198,19 +206,22 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue';
-import AdminSidebar from '@/components/common/AdminSidebar.vue';
-import PageHeader from '@/components/agricultores/PageHeader.vue';
+import { useRouter } from 'vue-router';
+import AdminSidebar from '@/components/layout/AdminSidebar.vue';
+import AdminNavbar from '@/components/layout/AdminNavbar.vue';
 import SearchBar from '@/components/agricultores/SearchBar.vue';
 import ActionButton from '@/components/agricultores/ActionButton.vue';
 import FilterSelect from '@/components/agricultores/FilterSelect.vue';
 import DataTable from '@/components/agricultores/DataTable.vue';
 import Pagination from '@/components/agricultores/Pagination.vue';
+import { useAuthStore } from '@/stores/auth';
+import Swal from 'sweetalert2';
 
 export default {
   name: 'AgricultoresView',
   components: {
     AdminSidebar,
-    PageHeader,
+    AdminNavbar,
     SearchBar,
     ActionButton,
     FilterSelect,
@@ -218,16 +229,33 @@ export default {
     Pagination
   },
   setup() {
+    const router = useRouter();
+    const authStore = useAuthStore();
+
     // Estado reactivo
     const searchQuery = ref('');
     const currentPage = ref(1);
     const loading = ref(false);
-    const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
     
-    // Datos de usuario
-    const userInitials = ref('AD');
-    const userName = ref('Admin');
-    const userRole = ref('Administrador');
+    // Props para AdminSidebar y AdminNavbar
+    const brandName = computed(() => 'CacaoScan');
+    
+    const userName = computed(() => {
+      const user = authStore.user;
+      if (user?.first_name && user?.last_name) {
+        return `${user.first_name} ${user.last_name}`;
+      }
+      return user?.username || 'Administrador';
+    });
+
+    const userRole = computed(() => {
+      return authStore.user?.is_superuser ? 'Administrador' : 'Usuario';
+    });
+
+    const navbarTitle = ref('Agricultores');
+    const navbarSubtitle = ref('Gestión de agricultores y fincas');
+    const searchPlaceholder = ref('Buscar agricultor por nombre, email o finca...');
+    const refreshButtonText = ref('Actualizar');
     
     const filters = ref({
       region: '',
@@ -350,10 +378,35 @@ export default {
       }, 0);
     };
 
-    // Métodos
-    const toggleSidebar = () => {
-      sidebarCollapsed.value = !sidebarCollapsed.value;
-      localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value);
+    // Métodos para AdminSidebar y AdminNavbar
+    const handleMenuClick = (menuItem) => {
+      if (menuItem.route) {
+        router.push(menuItem.route);
+      }
+    };
+
+    const handleLogout = async () => {
+      try {
+        await authStore.logout();
+        router.push('/login');
+      } catch (error) {
+        console.error('Error al cerrar sesión:', error);
+      }
+    };
+
+    const handleSearch = (query) => {
+      searchQuery.value = query;
+    };
+
+    const handleRefresh = () => {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Datos actualizados',
+        showConfirmButton: false,
+        timer: 2000
+      });
     };
 
     const handleNewFarmer = () => {
@@ -402,10 +455,15 @@ export default {
       searchQuery,
       currentPage,
       loading,
-      sidebarCollapsed,
-      userInitials,
+      
+      // Props para componentes
+      brandName,
       userName,
       userRole,
+      navbarTitle,
+      navbarSubtitle,
+      searchPlaceholder,
+      refreshButtonText,
       
       // Filtros
       filters,
@@ -421,7 +479,10 @@ export default {
       totalPages,
       
       // Métodos
-      toggleSidebar,
+      handleMenuClick,
+      handleLogout,
+      handleSearch,
+      handleRefresh,
       handleNewFarmer,
       applyFilters,
       handlePageChange,

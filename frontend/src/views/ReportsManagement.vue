@@ -393,8 +393,8 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
-import ReportGenerator from './ReportGenerator.vue'
-import ReportDownloadButton from './ReportDownloadButton.vue'
+import ReportGenerator from '@/components/reportes/ReportGenerator.vue'
+import ReportDownloadButton from '@/components/reportes/ReportDownloadButton.vue'
 
 export default {
   name: 'ReportsManagement',

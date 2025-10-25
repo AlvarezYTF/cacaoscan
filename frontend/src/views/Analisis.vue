@@ -1,23 +1,32 @@
 <template>
-  <div class="bg-gray-50 min-h-screen">
-    <div class="dashboard-layout">
-      <!-- Sidebar -->
-      <AdminSidebar 
-        :user-initials="userInitials"
-        :user-name="userName"
-        :user-role="userRole"
-        :sidebar-collapsed="sidebarCollapsed"
-        @toggle-sidebar="toggleSidebar"
-      />
-      
-      <!-- Contenido principal -->
-      <div class="dashboard-content">
-        <!-- Header de la página -->
-        <PageHeader 
-          title="Análisis"
-          subtitle="Gestión de análisis de calidad de cacao"
-        />
-        
+  <div class="min-h-screen bg-gray-50">
+    <!-- Sidebar Component -->
+    <AdminSidebar 
+      :brand-name="brandName"
+      :user-name="userName"
+      :user-role="userRole"
+      :current-route="$route.path"
+      @menu-click="handleMenuClick"
+      @logout="handleLogout"
+    />
+
+    <!-- Navbar Component -->
+    <AdminNavbar 
+      :title="navbarTitle"
+      :subtitle="navbarSubtitle"
+      :user-name="userName"
+      :user-role="userRole"
+      :search-placeholder="searchPlaceholder"
+      :refresh-button-text="refreshButtonText"
+      :loading="loading"
+      :initial-search-query="searchQuery"
+      @search="handleSearch"
+      @refresh="handleRefresh"
+    />
+
+    <!-- Main Content -->
+    <div class="p-4 sm:ml-64">
+      <div class="analysis-view">
         <!-- Contenido principal -->
         <main class="flex-1 p-4 md:p-6 lg:p-8 pb-0 overflow-y-auto">
           <!-- Filtros y controles -->
@@ -110,7 +119,10 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import AdminSidebar from '@/components/common/AdminSidebar.vue';
+import Swal from 'sweetalert2';
+import { useAuthStore } from '@/stores/auth';
+import AdminSidebar from '@/components/layout/AdminSidebar.vue';
+import AdminNavbar from '@/components/layout/AdminNavbar.vue';
 import PageHeader from '@/components/analisis/PageHeader.vue';
 import SearchBar from '@/components/analisis/SearchBar.vue';
 import ActionButton from '@/components/analisis/ActionButton.vue';
@@ -123,6 +135,7 @@ export default {
   name: 'AnalisisView',
   components: {
     AdminSidebar,
+    AdminNavbar,
     PageHeader,
     SearchBar,
     ActionButton,
@@ -132,18 +145,32 @@ export default {
     AnalysisTable
   },
   setup() {
-    // Inicializar router
+    // Inicializar router y stores
     const router = useRouter();
+    const authStore = useAuthStore();
+    
+    // Sidebar properties
+    const brandName = computed(() => 'CacaoScan');
+    const userName = computed(() => {
+      const user = authStore.user;
+      return user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username : 'Usuario';
+    });
+    const userRole = computed(() => {
+      const user = authStore.user;
+      if (user?.is_superuser) return 'Superadministrador';
+      if (user?.is_staff) return 'Administrador';
+      return 'Usuario';
+    });
+
+    // Navbar properties
+    const navbarTitle = ref('Análisis de Calidad');
+    const navbarSubtitle = ref('Gestión de análisis de calidad de cacao');
+    const searchPlaceholder = ref('Buscar análisis...');
+    const refreshButtonText = ref('Actualizar');
     
     // Estado reactivo
     const searchQuery = ref('');
     const loading = ref(false);
-    const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
-    
-    // Datos de usuario
-    const userInitials = ref('AD');
-    const userName = ref('Admin');
-    const userRole = ref('Administrador');
     
     const filters = ref({
       agricultor: '',
@@ -259,11 +286,6 @@ export default {
     const totalItems = computed(() => filteredAnalyses.value.length);
 
     // Métodos
-    const toggleSidebar = () => {
-      sidebarCollapsed.value = !sidebarCollapsed.value;
-      localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value);
-    };
-
     const handleNewAnalysis = () => {
       console.log('Navegando a predicción de imagen');
       router.push({ name: 'Prediction' });
@@ -271,31 +293,76 @@ export default {
 
     const applyFilters = () => {
       console.log('Aplicando filtros:', filters.value);
-      // Aquí iría la lógica para aplicar filtros
+      loading.value = true;
+      // Simular carga de datos
+      setTimeout(() => {
+        loading.value = false;
+      }, 1000);
+    };
+
+    // Sidebar event handlers
+    const handleMenuClick = (menuItem) => {
+      console.log('Menu clicked:', menuItem);
+      router.push(menuItem.route);
+    };
+
+    const handleLogout = async () => {
+      const result = await Swal.fire({
+        title: '¿Cerrar sesión?',
+        text: '¿Estás seguro de que quieres cerrar sesión?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, cerrar sesión',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (result.isConfirmed) {
+        await authStore.logout();
+        router.push('/login');
+      }
+    };
+
+    // Navbar event handlers
+    const handleSearch = (query) => {
+      searchQuery.value = query;
+    };
+
+    const handleRefresh = () => {
+      loading.value = true;
+      // Simular recarga de datos
+      setTimeout(() => {
+        loading.value = false;
+        Swal.fire({
+          icon: 'success',
+          title: 'Datos actualizados',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000
+        });
+      }, 1000);
     };
 
     // Lifecycle
     onMounted(() => {
       console.log('Vista de análisis montada');
-      checkScreenSize();
-      window.addEventListener('resize', checkScreenSize);
     });
 
-    const checkScreenSize = () => {
-      if (window.innerWidth <= 768) {
-        sidebarCollapsed.value = true;
-        localStorage.setItem('sidebarCollapsed', 'true');
-      }
-    };
-
     return {
+      // Sidebar & Navbar
+      brandName,
+      userName,
+      userRole,
+      navbarTitle,
+      navbarSubtitle,
+      searchPlaceholder,
+      refreshButtonText,
+      
       // Estado
       searchQuery,
       loading,
-      sidebarCollapsed,
-      userInitials,
-      userName,
-      userRole,
       
       // Router
       router,
@@ -312,9 +379,12 @@ export default {
       totalItems,
       
       // Métodos
-      toggleSidebar,
       handleNewAnalysis,
-      applyFilters
+      applyFilters,
+      handleMenuClick,
+      handleLogout,
+      handleSearch,
+      handleRefresh
     };
   }
 };
@@ -322,12 +392,14 @@ export default {
 
 <style scoped>
 /* Estilos específicos para la vista de análisis */
-.min-h-screen {
-  min-height: 100vh;
+.analysis-view {
+  padding: 0;
+  background-color: transparent;
+  min-height: auto;
 }
 
-.h-screen {
-  height: 100vh;
+.min-h-screen {
+  min-height: 100vh;
 }
 
 /* Asegurar que el contenido principal no se desborde */
@@ -372,34 +444,6 @@ main {
 /* Layout específico para la vista de análisis */
 .bg-gray-50 {
   background-color: #f9fafb;
-}
-
-/* Asegurar que el sidebar y contenido principal se alineen correctamente */
-.flex.h-screen {
-  height: 100vh;
-  max-height: 100vh;
-}
-
-/* Layout principal del dashboard */
-.dashboard-layout {
-  display: flex;
-  height: 100vh;
-  width: 100%;
-}
-
-/* Contenido principal del dashboard */
-.dashboard-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-/* Asegurar que el contenido se ajuste correctamente */
-.dashboard-content > * {
-  width: 100%;
 }
 
 /* Mejoras de responsividad */

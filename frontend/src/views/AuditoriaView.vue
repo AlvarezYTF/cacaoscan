@@ -1,54 +1,57 @@
 <template>
   <div class="bg-gray-50 min-h-screen">
-    <div class="dashboard-layout">
-      <!-- Sidebar -->
-      <AdminSidebar 
-        :user-initials="userInitials"
-        :user-name="userName"
-        :user-role="userRole"
-        :sidebar-collapsed="sidebarCollapsed"
-        @toggle-sidebar="toggleSidebar"
-      />
-      
-      <!-- Contenido principal -->
-      <div class="dashboard-content">
-        <!-- Header de la página -->
-        <PageHeader 
-          title="Auditoría del Sistema"
-          subtitle="Monitorea la actividad y seguridad del sistema"
-        >
-          <template #actions>
-            <div class="flex gap-2">
-              <button
-                @click="showFilters = !showFilters"
-                class="btn btn-outline"
-                :class="{ 'btn-primary': showFilters }"
-              >
-                <i class="fas fa-filter"></i>
-                {{ showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros' }}
-              </button>
-              <button
-                @click="refreshData"
-                class="btn btn-outline"
-                :disabled="loading"
-              >
-                <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
-                Actualizar
-              </button>
-              <button
-                @click="exportAuditData"
-                class="btn btn-primary"
-                :disabled="loading"
-              >
-                <i class="fas fa-download"></i>
-                Exportar
-              </button>
-            </div>
-          </template>
-        </PageHeader>
+    <!-- Sidebar -->
+    <AdminSidebar 
+      :brand-name="brandName"
+      :user-name="userName"
+      :user-role="userRole"
+      :current-route="$route.path"
+      @menu-click="handleMenuClick"
+      @logout="handleLogout"
+    />
+    
+    <!-- Navbar -->
+    <AdminNavbar
+      :title="navbarTitle"
+      :subtitle="navbarSubtitle"
+      :user-name="userName"
+      :user-role="userRole"
+      :search-placeholder="searchPlaceholder"
+      :refresh-button-text="refreshButtonText"
+      :loading="loading"
+      :initial-period="selectedPeriod"
+      @search="handleSearch"
+      @period-change="handlePeriodChange"
+      @refresh="handleRefresh"
+    />
+    
+    <!-- Contenido principal -->
+    <div class="p-4 sm:ml-64">
+      <div class="p-4 mt-14">
+        <!-- Botones de acción superiores -->
+        <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+          <div class="flex gap-2">
+            <button
+              @click="showFilters = !showFilters"
+              class="px-4 py-2 text-sm font-medium rounded-lg border transition-colors"
+              :class="showFilters ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+            >
+              <i class="fas fa-filter mr-2"></i>
+              {{ showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros' }}
+            </button>
+            <button
+              @click="exportAuditData"
+              class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              :disabled="loading"
+            >
+              <i class="fas fa-download mr-2"></i>
+              Exportar
+            </button>
+          </div>
+        </div>
         
         <!-- Contenido principal -->
-        <main class="flex-1 p-4 md:p-6 lg:p-8 pb-0 overflow-y-auto">
+        <main class="space-y-6">
           <!-- Tarjetas de estadísticas -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-4 md:mb-6">
             <StatsCard 
@@ -341,8 +344,8 @@
 <script>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import AdminSidebar from '@/components/common/AdminSidebar.vue';
-import PageHeader from '@/components/common/PageHeader.vue';
+import AdminSidebar from '@/components/layout/AdminSidebar.vue';
+import AdminNavbar from '@/components/layout/AdminNavbar.vue';
 import StatsCard from '@/components/reportes/StatsCard.vue';
 import AuditTable from '@/components/audit/AuditTable.vue';
 import AuditTimeline from '@/components/audit/AuditTimeline.vue';
@@ -359,7 +362,7 @@ export default {
   name: 'AuditoriaView',
   components: {
     AdminSidebar,
-    PageHeader,
+    AdminNavbar,
     StatsCard,
     AuditTable,
     AuditTimeline,
@@ -376,7 +379,6 @@ export default {
 
     // Estado reactivo
     const loading = ref(false);
-    const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
     const showFilters = ref(false);
     const showDetailsModal = ref(false);
     const showStatsModal = ref(false);
@@ -389,15 +391,9 @@ export default {
     const exportConfirmMessage = ref('');
     const realTimeInterval = ref(null);
 
-    // Datos de usuario
-    const userInitials = computed(() => {
-      const user = authStore.user;
-      if (user?.first_name && user?.last_name) {
-        return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
-      }
-      return user?.username?.[0]?.toUpperCase() || 'U';
-    });
-
+    // Props para AdminSidebar y AdminNavbar
+    const brandName = computed(() => 'CacaoScan');
+    
     const userName = computed(() => {
       const user = authStore.user;
       if (user?.first_name && user?.last_name) {
@@ -407,8 +403,13 @@ export default {
     });
 
     const userRole = computed(() => {
-      return authStore.user?.is_superuser ? 'Administrador' : 'Usuario';
+      return authStore.user?.is_superuser ? 'Administrador' : 'Analista';
     });
+
+    const navbarTitle = ref('Auditoría del Sistema');
+    const navbarSubtitle = ref('Monitorea la actividad y seguridad del sistema');
+    const searchPlaceholder = ref('Buscar en auditoría...');
+    const refreshButtonText = ref('Actualizar');
 
     // Filtros
     const filters = ref({
@@ -441,10 +442,42 @@ export default {
     // Paginación
     const pagination = computed(() => auditStore.pagination);
 
-    // Métodos
-    const toggleSidebar = () => {
-      sidebarCollapsed.value = !sidebarCollapsed.value;
-      localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value);
+    // Métodos para AdminSidebar y AdminNavbar
+    const handleMenuClick = (menuItem) => {
+      if (menuItem.route) {
+        router.push(menuItem.route);
+      }
+    };
+
+    const handleLogout = async () => {
+      try {
+        await authStore.logout();
+        router.push('/login');
+      } catch (error) {
+        console.error('Error al cerrar sesión:', error);
+      }
+    };
+
+    const handleSearch = (query) => {
+      filters.value.search = query;
+      loadAuditData();
+    };
+
+    const handleRefresh = async () => {
+      await loadInitialData();
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Datos actualizados',
+        showConfirmButton: false,
+        timer: 2000
+      });
+    };
+
+    const handlePeriodChange = (period) => {
+      selectedPeriod.value = period;
+      loadAuditData();
     };
 
     const loadInitialData = async () => {
@@ -676,7 +709,6 @@ export default {
     return {
       // Estado
       loading,
-      sidebarCollapsed,
       showFilters,
       showDetailsModal,
       showStatsModal,
@@ -688,10 +720,14 @@ export default {
       selectedAuditType,
       exportConfirmMessage,
 
-      // Datos de usuario
-      userInitials,
+      // Props para componentes
+      brandName,
       userName,
       userRole,
+      navbarTitle,
+      navbarSubtitle,
+      searchPlaceholder,
+      refreshButtonText,
 
       // Datos
       filters,
@@ -700,7 +736,10 @@ export default {
       pagination,
 
       // Métodos
-      toggleSidebar,
+      handleMenuClick,
+      handleLogout,
+      handleSearch,
+      handleRefresh,
       handleAuditTypeChange,
       handlePeriodChange,
       applyFilters,
@@ -722,27 +761,6 @@ export default {
 /* Estilos específicos para la vista de auditoría */
 .min-h-screen {
   min-height: 100vh;
-}
-
-.h-screen {
-  height: 100vh;
-}
-
-/* Layout principal del dashboard */
-.dashboard-layout {
-  display: flex;
-  height: 100vh;
-  width: 100%;
-}
-
-/* Contenido principal del dashboard */
-.dashboard-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-  transition: all 0.3s ease;
 }
 
 /* Formularios */

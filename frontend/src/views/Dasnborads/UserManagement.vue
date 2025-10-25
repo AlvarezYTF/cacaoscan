@@ -1,7 +1,34 @@
 <template>
-  <div class="user-management">
-    <!-- Header -->
-    <div class="page-header">
+  <div class="min-h-screen bg-gray-50">
+    <!-- Sidebar Component -->
+    <AdminSidebar 
+      :brand-name="brandName"
+      :user-name="userName"
+      :user-role="userRole"
+      :current-route="$route.path"
+      @menu-click="handleMenuClick"
+      @logout="handleLogout"
+    />
+
+    <!-- Navbar Component -->
+    <AdminNavbar 
+      :title="navbarTitle"
+      :subtitle="navbarSubtitle"
+      :user-name="userName"
+      :user-role="userRole"
+      :search-placeholder="searchPlaceholder"
+      :refresh-button-text="refreshButtonText"
+      :loading="loading"
+      :initial-search-query="searchQuery"
+      @search="handleSearch"
+      @refresh="handleRefresh"
+    />
+
+    <!-- Main Content -->
+    <div class="p-4 sm:ml-64">
+      <div class="user-management">
+        <!-- Header -->
+        <div class="page-header">
       <div class="header-content">
         <h1 class="page-title">
           <i class="fas fa-users-cog"></i>
@@ -309,6 +336,8 @@
       :user="activityUser"
       @close="closeActivityModal"
     />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -318,15 +347,18 @@ import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
 import { useAdminStore } from '@/stores/admin'
 import { useAuthStore } from '@/stores/auth'
+import AdminSidebar from '@/components/layout/AdminSidebar.vue'
+import AdminNavbar from '@/components/layout/AdminNavbar.vue'
 import UserFormModal from '@/components/admin/UserFormModal.vue'
 import UserDetailsModal from '@/components/admin/UserDetailsModal.vue'
 import UserActivityModal from '@/components/admin/UserActivityModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import { debounce } from 'lodash-es'
 
 export default {
   name: 'UserManagement',
   components: {
+    AdminSidebar,
+    AdminNavbar,
     UserFormModal,
     UserDetailsModal,
     UserActivityModal,
@@ -336,6 +368,25 @@ export default {
     const router = useRouter()
     const adminStore = useAdminStore()
     const authStore = useAuthStore()
+
+    // Sidebar properties
+    const brandName = computed(() => 'CacaoScan')
+    const userName = computed(() => {
+      const user = authStore.user
+      return user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username : 'Usuario'
+    })
+    const userRole = computed(() => {
+      const user = authStore.user
+      if (user?.is_superuser) return 'Superadministrador'
+      if (user?.is_staff) return 'Administrador'
+      return 'Usuario'
+    })
+
+    // Navbar properties
+    const navbarTitle = ref('Gestión de Usuarios')
+    const navbarSubtitle = ref('Administra todos los usuarios del sistema')
+    const searchPlaceholder = ref('Buscar usuarios...')
+    const refreshButtonText = ref('Actualizar')
 
     // Reactive data
     const loading = ref(false)
@@ -395,6 +446,18 @@ export default {
     })
 
     // Methods
+    const debounce = (func, wait) => {
+      let timeout
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout)
+          func(...args)
+        }
+        clearTimeout(timeout)
+        timeout = setTimeout(later, wait)
+      }
+    }
+
     const loadUsers = async () => {
       loading.value = true
       try {
@@ -736,6 +799,40 @@ export default {
       return 'active'
     }
 
+    // Sidebar event handlers
+    const handleMenuClick = (menuItem) => {
+      console.log('Menu clicked:', menuItem)
+      router.push(menuItem.route)
+    }
+
+    const handleLogout = async () => {
+      const result = await Swal.fire({
+        title: '¿Cerrar sesión?',
+        text: '¿Estás seguro de que quieres cerrar sesión?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, cerrar sesión',
+        cancelButtonText: 'Cancelar'
+      })
+
+      if (result.isConfirmed) {
+        await authStore.logout()
+        router.push('/login')
+      }
+    }
+
+    // Navbar event handlers
+    const handleSearch = (query) => {
+      searchQuery.value = query
+      debouncedSearch()
+    }
+
+    const handleRefresh = () => {
+      loadUsers()
+    }
+
     // Watchers
     watch(selectedUsers, (newValue) => {
       selectAll.value = newValue.length === users.value.length && users.value.length > 0
@@ -753,6 +850,15 @@ export default {
     })
 
     return {
+      // Sidebar & Navbar
+      brandName,
+      userName,
+      userRole,
+      navbarTitle,
+      navbarSubtitle,
+      searchPlaceholder,
+      refreshButtonText,
+      
       // Data
       loading,
       users,
@@ -803,7 +909,11 @@ export default {
       formatDate,
       formatDateTime,
       getRoleBadgeClass,
-      getUserStatusClass
+      getUserStatusClass,
+      handleMenuClick,
+      handleLogout,
+      handleSearch,
+      handleRefresh
     }
   }
 }
@@ -811,9 +921,9 @@ export default {
 
 <style scoped>
 .user-management {
-  padding: 20px;
-  background-color: #f8f9fa;
-  min-height: 100vh;
+  padding: 0;
+  background-color: transparent;
+  min-height: auto;
 }
 
 .page-header {

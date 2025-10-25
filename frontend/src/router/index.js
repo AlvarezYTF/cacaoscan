@@ -18,7 +18,7 @@ import AdminTraining from '../views/AdminTraining.vue'
 import SubirDatosEntrenamiento from '../views/SubirDatosEntrenamiento.vue'
 import FincasView from '../views/FincasView.vue'
 import LotesView from '../views/LotesView.vue'
-import UserManagement from '../views/UserManagement.vue'
+import UserManagement from '../views/Dasnborads/UserManagement.vue'
 
 // Importar guards y auth store
 import { ROUTE_GUARDS } from './guards'
@@ -356,8 +356,9 @@ const router = createRouter({
 // Variable global para controlar estado de loading
 let isNavigating = false
 
-// Guardián global para títulos, loading y configuraciones generales  
-router.beforeEach(async (to, from, next) => {
+// Guardián global para títulos, loading y configuraciones generales
+// Usando formato moderno "return-based" de Vue Router 4
+router.beforeEach(async (to, from) => {
   // Prevenir navegación múltiple simultánea
   if (isNavigating) {
     // Abortar navegación si ya hay una en curso para evitar errores
@@ -392,15 +393,14 @@ router.beforeEach(async (to, from, next) => {
       // Si no hay token, redirigir al login
       if (!authStore.accessToken) {
         console.warn('🚫 Intento de acceso a ruta protegida sin token')
-        next({
+        return {
           name: 'Login',
           replace: true,
           query: { 
             redirect: to.fullPath,
             message: 'Debes iniciar sesión para acceder a esta página'
           }
-        })
-        return
+        }
       }
       
       // Si hay token pero no hay usuario, intentar obtenerlo
@@ -412,7 +412,7 @@ router.beforeEach(async (to, from, next) => {
           console.error('❌ Token inválido o expirado:', error)
           // Limpiar todo y redirigir
           authStore.clearAll()
-          next({
+          return {
             name: 'Login',
             replace: true,
             query: { 
@@ -420,16 +420,14 @@ router.beforeEach(async (to, from, next) => {
               message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
               expired: 'true'
             }
-          })
-          return
+          }
         }
       }
       
       // Verificar si la sesión ha expirado por inactividad
       if (authStore.checkSessionTimeout()) {
         console.warn('⏰ Sesión expirada por inactividad')
-        // La sesión ha expirado, el store se encargará de redirigir.
-        // Abortamos la navegación actual para evitar conflictos.
+        // La sesión ha expirado, abortar navegación
         return false
       }
       
@@ -442,21 +440,17 @@ router.beforeEach(async (to, from, next) => {
       if (authStore.isAuthenticated) {
         console.log('👤 Usuario ya autenticado, redirigiendo desde ruta pública...')
         
-        // Redirigir según rol usando router.replace para evitar historial
+        // Redirigir según rol
         const redirectPath = getRedirectPathByRole(authStore.userRole)
-        
-        // IMPORTANTE: Llamar next() con el destino y salir inmediatamente
-        next({ path: redirectPath, replace: true })
-        return
+        return { path: redirectPath, replace: true }
       }
     }
     
-    // Solo llamar next() una vez, al final
-    next()
+    // Permitir navegación (return undefined o true)
+    return true
   } catch (error) {
     console.error('Error en navigation guard:', error)
-    next({ path: '/acceso-denegado', replace: true })
-    return
+    return { path: '/acceso-denegado', replace: true }
   } finally {
     // Pequeño delay para mejor UX
     setTimeout(() => {

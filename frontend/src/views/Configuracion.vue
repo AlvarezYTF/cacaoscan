@@ -1,27 +1,33 @@
 <template>
   <div class="bg-gray-50 min-h-screen">
-    <div class="dashboard-layout">
-      <!-- Sidebar -->
-      <AdminSidebar 
-        :user-initials="userInitials"
-        :user-name="userName"
-        :user-role="userRole"
-        :sidebar-collapsed="sidebarCollapsed"
-        @toggle-sidebar="toggleSidebar"
-      />
-      
-      <!-- Contenido principal -->
-      <div class="dashboard-content">
-        <!-- Header de la página -->
-        <div class="bg-white border-b border-gray-200 px-4 py-6 sm:px-6 lg:px-8">
-          <div class="max-w-7xl mx-auto">
-            <h1 class="text-2xl font-bold text-gray-900">Configuración del Sistema</h1>
-            <p class="mt-2 text-sm text-gray-600">Gestiona la configuración general de la aplicación</p>
-          </div>
-        </div>
-        
+    <!-- Sidebar -->
+    <AdminSidebar 
+      :brand-name="brandName"
+      :user-name="userName"
+      :user-role="userRole"
+      :current-route="$route.path"
+      @menu-click="handleMenuClick"
+      @logout="handleLogout"
+    />
+    
+    <!-- Navbar -->
+    <AdminNavbar
+      :title="navbarTitle"
+      :subtitle="navbarSubtitle"
+      :user-name="userName"
+      :user-role="userRole"
+      :search-placeholder="searchPlaceholder"
+      :refresh-button-text="refreshButtonText"
+      :loading="loading"
+      @search="handleSearch"
+      @refresh="handleRefresh"
+    />
+    
+    <!-- Contenido principal -->
+    <div class="p-4 sm:ml-64">
+      <div class="p-4 mt-14">
         <!-- Contenido principal -->
-        <main class="flex-1 p-4 md:p-6 lg:p-8 pb-0 overflow-y-auto">
+        <main class="space-y-6">
           <div class="max-w-7xl mx-auto">
             <!-- Pestañas de configuración -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
@@ -642,23 +648,45 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
-import AdminSidebar from '@/components/common/AdminSidebar.vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import AdminSidebar from '@/components/layout/AdminSidebar.vue';
+import AdminNavbar from '@/components/layout/AdminNavbar.vue';
+import { useAuthStore } from '@/stores/auth';
+import Swal from 'sweetalert2';
 
 export default {
   name: 'Configuracion',
   components: {
-    AdminSidebar
+    AdminSidebar,
+    AdminNavbar
   },
   setup() {
+    const router = useRouter();
+    const authStore = useAuthStore();
+
     // Estado reactivo
     const loading = ref(false);
-    const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
     
-    // Datos de usuario
-    const userInitials = ref('AD');
-    const userName = ref('Admin');
-    const userRole = ref('Administrador');
+    // Props para AdminSidebar y AdminNavbar
+    const brandName = computed(() => 'CacaoScan');
+    
+    const userName = computed(() => {
+      const user = authStore.user;
+      if (user?.first_name && user?.last_name) {
+        return `${user.first_name} ${user.last_name}`;
+      }
+      return user?.username || 'Administrador';
+    });
+
+    const userRole = computed(() => {
+      return authStore.user?.is_superuser ? 'Administrador' : 'Usuario';
+    });
+
+    const navbarTitle = ref('Configuración del Sistema');
+    const navbarSubtitle = ref('Gestiona la configuración general de la aplicación');
+    const searchPlaceholder = ref('Buscar configuración...');
+    const refreshButtonText = ref('Actualizar');
     
     // Pestañas activas
     const tabs = [
@@ -820,10 +848,36 @@ export default {
       additionalDocs: ''
     });
     
-    // Métodos
-    const toggleSidebar = () => {
-      sidebarCollapsed.value = !sidebarCollapsed.value;
-      localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value);
+    // Métodos para AdminSidebar y AdminNavbar
+    const handleMenuClick = (menuItem) => {
+      if (menuItem.route) {
+        router.push(menuItem.route);
+      }
+    };
+
+    const handleLogout = async () => {
+      try {
+        await authStore.logout();
+        router.push('/login');
+      } catch (error) {
+        console.error('Error al cerrar sesión:', error);
+      }
+    };
+
+    const handleSearch = (query) => {
+      console.log('Buscar:', query);
+      // Implementar búsqueda en configuración si es necesario
+    };
+
+    const handleRefresh = () => {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Configuración actualizada',
+        showConfirmButton: false,
+        timer: 2000
+      });
     };
     
     // Métodos de usuarios
@@ -1031,10 +1085,15 @@ export default {
     return {
       // Estado
       loading,
-      sidebarCollapsed,
-      userInitials,
+      
+      // Props para componentes
+      brandName,
       userName,
       userRole,
+      navbarTitle,
+      navbarSubtitle,
+      searchPlaceholder,
+      refreshButtonText,
       
       // Pestañas
       tabs,
@@ -1065,7 +1124,10 @@ export default {
       exportParams,
       
       // Métodos
-      toggleSidebar,
+      handleMenuClick,
+      handleLogout,
+      handleSearch,
+      handleRefresh,
       editUser,
       saveUser,
       deleteUser,
