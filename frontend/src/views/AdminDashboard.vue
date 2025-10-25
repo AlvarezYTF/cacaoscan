@@ -3,11 +3,22 @@
     <!-- Header del Dashboard -->
     <div class="dashboard-header">
       <div class="header-content">
-        <h1 class="dashboard-title">
-          <i class="fas fa-tachometer-alt"></i>
-          Dashboard de Administración
-        </h1>
+        <div class="header-title">
+          <h1 class="dashboard-title">
+            <i class="fas fa-tachometer-alt"></i>
+            Dashboard de Administración
+          </h1>
+          <p>Panel de control completo del sistema CacaoScan</p>
+        </div>
         <div class="header-actions">
+          <div class="period-selector">
+            <label>Período:</label>
+            <select v-model="selectedPeriod" @change="updatePeriod">
+              <option value="7">Últimos 7 días</option>
+              <option value="30">Últimos 30 días</option>
+              <option value="90">Últimos 90 días</option>
+            </select>
+          </div>
           <button 
             class="btn btn-primary"
             @click="refreshData"
@@ -16,99 +27,61 @@
             <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
             Actualizar
           </button>
-              </div>
-            </div>
-          </div>
-
-    <!-- Estadísticas Generales -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-users"></i>
-            </div>
-        <div class="stat-content">
-          <h3>{{ stats.total_users || 0 }}</h3>
-          <p>Usuarios Totales</p>
-          <small class="stat-change positive">
-            <i class="fas fa-arrow-up"></i>
-            +{{ stats.new_users_today || 0 }} hoy
-          </small>
-            </div>
-          </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-seedling"></i>
-                  </div>
-        <div class="stat-content">
-          <h3>{{ stats.total_fincas || 0 }}</h3>
-          <p>Fincas Registradas</p>
-          <small class="stat-change positive">
-            <i class="fas fa-arrow-up"></i>
-            +{{ stats.new_fincas_today || 0 }} hoy
-          </small>
-                  </div>
-                </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-chart-line"></i>
         </div>
-        <div class="stat-content">
-          <h3>{{ stats.total_analyses || 0 }}</h3>
-          <p>Análisis Realizados</p>
-          <small class="stat-change positive">
-            <i class="fas fa-arrow-up"></i>
-            +{{ stats.analyses_today || 0 }} hoy
-          </small>
-              </div>
-            </div>
+      </div>
+    </div>
 
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-percentage"></i>
-                  </div>
-        <div class="stat-content">
-          <h3>{{ stats.avg_quality || 0 }}%</h3>
-          <p>Calidad Promedio</p>
-          <small class="stat-change" :class="getQualityChangeClass(stats.quality_change)">
-            <i :class="getQualityChangeIcon(stats.quality_change)"></i>
-            {{ stats.quality_change || 0 }}%
-          </small>
-                </div>
-              </div>
-            </div>
+    <!-- Estadísticas Generales con nuevos componentes -->
+    <StatsGrid 
+      :stats="mainStats"
+      :columns="4"
+      @stat-click="handleStatClick"
+    />
 
-    <!-- Gráficos y Tablas -->
-    <div class="dashboard-content">
-      <div class="content-row">
-        <!-- Gráfico de Actividad -->
-        <div class="chart-container">
-          <div class="chart-header">
-            <h3>Actividad de Usuarios</h3>
-            <div class="chart-controls">
-              <select v-model="activityPeriod" @change="updateActivityChart">
-                <option value="7">Últimos 7 días</option>
-                <option value="30">Últimos 30 días</option>
-                <option value="90">Últimos 90 días</option>
-              </select>
-                  </div>
-                        </div>
-          <div class="chart-body">
-            <canvas ref="activityChart"></canvas>
-                  </div>
-                </div>
+    <!-- Gráficos Principales con nuevos componentes -->
+    <div class="charts-grid">
+      <!-- Gráfico de Actividad -->
+      <DashboardWidget
+        title="Actividad de Usuarios"
+        icon="fas fa-users"
+        variant="primary"
+        size="large"
+        :loading="loading"
+        :refreshable="true"
+        @refresh="refreshActivityData"
+      >
+        <template #actions>
+          <select v-model="activityChartType" @change="updateActivityChart">
+            <option value="line">Línea</option>
+            <option value="bar">Barras</option>
+          </select>
+        </template>
+        
+        <AdvancedChart
+          :chart-data="activityChartData"
+          :type="activityChartType"
+          :options="activityChartOptions"
+          @chart-click="handleActivityClick"
+        />
+      </DashboardWidget>
 
-        <!-- Gráfico de Calidad -->
-        <div class="chart-container">
-          <div class="chart-header">
-            <h3>Distribución de Calidad</h3>
-          </div>
-          <div class="chart-body">
-            <canvas ref="qualityChart"></canvas>
-              </div>
-            </div>
-          </div>
+      <!-- Gráfico de Calidad -->
+      <DashboardWidget
+        title="Distribución de Calidad"
+        icon="fas fa-star"
+        variant="success"
+        size="medium"
+        :loading="loading"
+        @refresh="refreshQualityData"
+      >
+        <AdvancedChart
+          :chart-data="qualityChartData"
+          type="doughnut"
+          :options="qualityChartOptions"
+          @chart-click="handleQualityClick"
+        />
+      </DashboardWidget>
+    </div>
 
       <div class="content-row">
         <!-- Tabla de Usuarios Recientes -->
@@ -297,15 +270,23 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Chart from 'chart.js/auto'
 import Swal from 'sweetalert2'
 import { useAuthStore } from '@/stores/auth'
 import { useAdminStore } from '@/stores/admin'
+import AdvancedChart from '@/components/charts/AdvancedChart.vue'
+import StatsGrid from '@/components/charts/StatsGrid.vue'
+import DashboardWidget from '@/components/charts/DashboardWidget.vue'
 
 export default {
   name: 'AdminDashboard',
+  components: {
+    AdvancedChart,
+    StatsGrid,
+    DashboardWidget
+  },
   setup() {
     const router = useRouter()
     const authStore = useAuthStore()
@@ -318,13 +299,93 @@ export default {
     const recentActivities = ref([])
     const alerts = ref([])
     const reportStats = ref({})
-    const activityPeriod = ref('7')
+    const selectedPeriod = ref('30')
+    const activityChartType = ref('line')
 
-    // Chart references
-    const activityChart = ref(null)
-    const qualityChart = ref(null)
-    let activityChartInstance = null
-    let qualityChartInstance = null
+    // Datos de gráficos
+    const activityData = ref({ labels: [], datasets: [] })
+    const qualityData = ref({ labels: [], datasets: [] })
+
+    // Estadísticas principales computadas
+    const mainStats = computed(() => [
+      {
+        value: stats.value.total_users || 0,
+        label: 'Usuarios Totales',
+        icon: 'fas fa-users',
+        change: stats.value.new_users_today || 0,
+        changePeriod: 'hoy',
+        variant: 'primary',
+        trend: {
+          data: stats.value.users_trend || [],
+          color: '#3498db'
+        }
+      },
+      {
+        value: stats.value.total_fincas || 0,
+        label: 'Fincas Registradas',
+        icon: 'fas fa-seedling',
+        change: stats.value.new_fincas_today || 0,
+        changePeriod: 'hoy',
+        variant: 'success',
+        trend: {
+          data: stats.value.fincas_trend || [],
+          color: '#2ecc71'
+        }
+      },
+      {
+        value: stats.value.total_analyses || 0,
+        label: 'Análisis Realizados',
+        icon: 'fas fa-chart-line',
+        change: stats.value.analyses_today || 0,
+        changePeriod: 'hoy',
+        variant: 'info',
+        trend: {
+          data: stats.value.analyses_trend || [],
+          color: '#17a2b8'
+        }
+      },
+      {
+        value: stats.value.avg_quality || 0,
+        label: 'Calidad Promedio',
+        icon: 'fas fa-star',
+        suffix: '%',
+        change: stats.value.quality_change || 0,
+        changePeriod: 'vs mes anterior',
+        variant: 'warning',
+        trend: {
+          data: stats.value.quality_trend || [],
+          color: '#f39c12'
+        }
+      }
+    ])
+
+    // Configuración de gráficos
+    const activityChartData = computed(() => activityData.value)
+    const qualityChartData = computed(() => qualityData.value)
+
+    const activityChartOptions = computed(() => ({
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (value) => value.toLocaleString()
+          }
+        }
+      }
+    }))
+
+    const qualityChartOptions = computed(() => ({
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }))
 
     // Methods
     const loadDashboardData = async () => {
@@ -335,7 +396,9 @@ export default {
           loadRecentUsers(),
           loadRecentActivities(),
           loadAlerts(),
-          loadReportStats()
+          loadReportStats(),
+          loadQualityData(),
+          updateActivityChart()
         ])
       } catch (error) {
         console.error('Error loading dashboard data:', error)
@@ -394,17 +457,63 @@ export default {
       }
     }
 
+    const loadQualityData = async () => {
+      try {
+        const response = await adminStore.getQualityDistribution()
+        qualityData.value = {
+          labels: ['Excelente', 'Buena', 'Regular', 'Baja'],
+          datasets: [{
+            data: [
+              response.data.excelente || 0,
+              response.data.buena || 0,
+              response.data.regular || 0,
+              response.data.baja || 0
+            ],
+            backgroundColor: [
+              '#28a745',
+              '#17a2b8',
+              '#ffc107',
+              '#dc3545'
+            ]
+          }]
+        }
+      } catch (error) {
+        console.error('Error loading quality data:', error)
+      }
+    }
+
     const refreshData = () => {
       loadDashboardData()
     }
 
     const updateActivityChart = async () => {
       try {
-        const response = await adminStore.getActivityData(activityPeriod.value)
-        updateActivityChartData(response.data)
+        const response = await adminStore.getActivityData(selectedPeriod.value)
+        activityData.value = {
+          labels: response.data.labels,
+          datasets: [{
+            label: 'Actividad',
+            data: response.data.values,
+            borderColor: '#3498db',
+            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+            fill: true
+          }]
+        }
       } catch (error) {
         console.error('Error updating activity chart:', error)
       }
+    }
+
+    const refreshActivityData = () => {
+      updateActivityChart()
+    }
+
+    const refreshQualityData = () => {
+      loadQualityData()
+    }
+
+    const updatePeriod = () => {
+      loadDashboardData()
     }
 
     const createCharts = () => {
@@ -578,6 +687,20 @@ export default {
       }
     }
 
+    // Event handlers para gráficos
+    const handleStatClick = (stat) => {
+      console.log('Stat clicked:', stat)
+      // Implementar navegación según la estadística
+    }
+
+    const handleActivityClick = (data) => {
+      console.log('Activity chart clicked:', data)
+    }
+
+    const handleQualityClick = (data) => {
+      console.log('Quality chart clicked:', data)
+    }
+
     // Lifecycle
     onMounted(async () => {
       // Verificar permisos de administrador
@@ -611,11 +734,21 @@ export default {
       recentActivities,
       alerts,
       reportStats,
-      activityPeriod,
-      activityChart,
-      qualityChart,
+      selectedPeriod,
+      activityChartType,
+      mainStats,
+      activityChartData,
+      qualityChartData,
+      activityChartOptions,
+      qualityChartOptions,
       refreshData,
       updateActivityChart,
+      refreshActivityData,
+      refreshQualityData,
+      updatePeriod,
+      handleStatClick,
+      handleActivityClick,
+      handleQualityClick,
       formatDate,
       formatDateTime,
       getRoleBadgeClass,
@@ -640,10 +773,10 @@ export default {
 
 .dashboard-header {
   background: white;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
@@ -652,15 +785,53 @@ export default {
   align-items: center;
 }
 
+.header-title {
+  flex: 1;
+}
+
 .dashboard-title {
-  margin: 0;
+  margin: 0 0 8px 0;
   color: #2c3e50;
-  font-size: 1.8rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .dashboard-title i {
-  margin-right: 10px;
   color: #3498db;
+}
+
+.header-title p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.period-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.period-selector label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.period-selector select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  color: #374151;
 }
 
 .stats-grid {
@@ -717,6 +888,13 @@ export default {
 
 .stat-change.neutral {
   color: #95a5a6;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
 .dashboard-content {
@@ -984,7 +1162,29 @@ export default {
   color: #2c3e50;
 }
 
+@media (max-width: 1024px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .period-selector {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
   .content-row {
     grid-template-columns: 1fr;
   }

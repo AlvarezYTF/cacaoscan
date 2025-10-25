@@ -5,6 +5,7 @@ import DetalleAnalisisView from '../views/DetalleAnalisisView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
+import ChartDashboard from '../views/ChartDashboard.vue'
 import Agricultores from '../views/Agricultores.vue'
 import Analisis from '../views/Analisis.vue'
 import Reportes from '../views/Reportes.vue'
@@ -109,6 +110,15 @@ const router = createRouter({
           beforeEnter: ROUTE_GUARDS.admin,
           meta: {
             title: 'Panel de Administración | CacaoScan'
+          }
+        },
+        {
+          path: 'charts',
+          name: 'ChartDashboard',
+          component: ChartDashboard,
+          beforeEnter: ROUTE_GUARDS.admin,
+          meta: {
+            title: 'Dashboard de Gráficas | CacaoScan'
           }
         },
         {
