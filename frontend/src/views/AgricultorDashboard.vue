@@ -741,6 +741,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useImageStats } from '@/composables/useImageStats'
 import ImageHistoryCard from '@/components/dashboard/ImageHistoryCard.vue'
+import AgricultorSidebar from '@/components/common/AgricultorSidebar.vue'
 
 export default {
   name: 'AgricultorDashboard',
