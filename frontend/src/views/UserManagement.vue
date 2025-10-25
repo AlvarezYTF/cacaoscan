@@ -107,7 +107,7 @@
 
       <div class="table-body">
         <div v-if="loading" class="loading-state">
-          <i class="fas fa-spinner fa-spin"></i>
+          <LoadingSpinner size="lg" color="blue" />
           <p>Cargando usuarios...</p>
         </div>
 
@@ -321,6 +321,7 @@ import { useAuthStore } from '@/stores/auth'
 import UserFormModal from '@/components/admin/UserFormModal.vue'
 import UserDetailsModal from '@/components/admin/UserDetailsModal.vue'
 import UserActivityModal from '@/components/admin/UserActivityModal.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { debounce } from 'lodash-es'
 
 export default {
@@ -328,7 +329,8 @@ export default {
   components: {
     UserFormModal,
     UserDetailsModal,
-    UserActivityModal
+    UserActivityModal,
+    LoadingSpinner
   },
   setup() {
     const router = useRouter()

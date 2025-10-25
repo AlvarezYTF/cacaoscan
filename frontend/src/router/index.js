@@ -18,6 +18,7 @@ import AdminTraining from '../views/AdminTraining.vue'
 import SubirDatosEntrenamiento from '../views/SubirDatosEntrenamiento.vue'
 import FincasView from '../views/FincasView.vue'
 import LotesView from '../views/LotesView.vue'
+import UserManagement from '../views/UserManagement.vue'
 
 // Importar guards y auth store
 import { ROUTE_GUARDS } from './guards'
@@ -156,6 +157,15 @@ const router = createRouter({
           beforeEnter: ROUTE_GUARDS.admin,
           meta: {
             title: 'Panel de Reentrenamiento | CacaoScan'
+          }
+        },
+        {
+          path: 'users',
+          name: 'AdminUsers',
+          component: UserManagement,
+          beforeEnter: ROUTE_GUARDS.admin,
+          meta: {
+            title: 'Gestión de Usuarios | CacaoScan'
           }
         }
       ]
