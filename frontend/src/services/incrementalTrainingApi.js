@@ -9,9 +9,11 @@ import api from './api'
 
 // Endpoints de la API
 const API_ENDPOINTS = {
-  incrementalTraining: '/ml/train/incremental-weight/',
-  trainingStats: '/ml/training/stats/',
-  trainingHistory: '/ml/training/history/'
+  status: '/incremental/status/',
+  train: '/incremental/train/',
+  upload: '/incremental/upload/',
+  models: '/incremental/models/',
+  data: '/incremental/data/'
 }
 
 /**
@@ -74,7 +76,7 @@ export async function submitIncrementalTraining(formData) {
       grainData
     })
 
-    const response = await api.post(API_ENDPOINTS.incrementalTraining, formData, {
+    const response = await api.post(API_ENDPOINTS.train, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
@@ -107,17 +109,17 @@ export async function submitIncrementalTraining(formData) {
 }
 
 /**
- * Obtiene estadísticas del entrenamiento del modelo
+ * Obtiene estado del entrenamiento incremental
  * @param {Object} params - Parámetros de consulta
- * @returns {Promise<Object>} - Estadísticas del modelo
+ * @returns {Promise<Object>} - Estado del sistema de entrenamiento
  */
-export async function getTrainingStats(params = {}) {
+export async function getIncrementalTrainingStatus(params = {}) {
   try {
-    console.log('📊 Obteniendo estadísticas de entrenamiento:', params)
+    console.log('📊 Obteniendo estado de entrenamiento incremental:', params)
 
-    const response = await api.get(API_ENDPOINTS.trainingStats, { params })
+    const response = await api.get(API_ENDPOINTS.status, { params })
 
-    console.log('✅ Estadísticas obtenidas')
+    console.log('✅ Estado obtenido')
 
     return {
       success: true,
@@ -125,12 +127,12 @@ export async function getTrainingStats(params = {}) {
     }
 
   } catch (error) {
-    console.error('❌ Error obteniendo estadísticas:', error)
+    console.error('❌ Error obteniendo estado:', error)
     
     const errorMessage = error.response?.data?.detail || 
                         error.response?.data?.error || 
                         error.message || 
-                        'Error al obtener las estadísticas de entrenamiento'
+                        'Error al obtener el estado del entrenamiento incremental'
 
     return {
       success: false,
@@ -140,17 +142,17 @@ export async function getTrainingStats(params = {}) {
 }
 
 /**
- * Obtiene historial de entrenamientos incrementales
+ * Obtiene versiones de modelos incrementales
  * @param {Object} params - Parámetros de consulta (paginación, filtros)
- * @returns {Promise<Object>} - Historial de entrenamientos
+ * @returns {Promise<Object>} - Versiones de modelos
  */
-export async function getTrainingHistory(params = {}) {
+export async function getIncrementalModels(params = {}) {
   try {
-    console.log('📋 Obteniendo historial de entrenamientos:', params)
+    console.log('📋 Obteniendo versiones de modelos:', params)
 
-    const response = await api.get(API_ENDPOINTS.trainingHistory, { params })
+    const response = await api.get(API_ENDPOINTS.models, { params })
 
-    console.log('✅ Historial obtenido')
+    console.log('✅ Versiones de modelos obtenidas')
 
     return {
       success: true,
@@ -158,12 +160,84 @@ export async function getTrainingHistory(params = {}) {
     }
 
   } catch (error) {
-    console.error('❌ Error obteniendo historial:', error)
+    console.error('❌ Error obteniendo versiones de modelos:', error)
     
     const errorMessage = error.response?.data?.detail || 
                         error.response?.data?.error || 
                         error.message || 
-                        'Error al obtener el historial de entrenamientos'
+                        'Error al obtener las versiones de modelos'
+
+    return {
+      success: false,
+      error: errorMessage
+    }
+  }
+}
+
+/**
+ * Obtiene versiones de datos de entrenamiento incremental
+ * @param {Object} params - Parámetros de consulta
+ * @returns {Promise<Object>} - Versiones de datos
+ */
+export async function getIncrementalDataVersions(params = {}) {
+  try {
+    console.log('📋 Obteniendo versiones de datos:', params)
+
+    const response = await api.get(API_ENDPOINTS.data, { params })
+
+    console.log('✅ Versiones de datos obtenidas')
+
+    return {
+      success: true,
+      data: response.data
+    }
+
+  } catch (error) {
+    console.error('❌ Error obteniendo versiones de datos:', error)
+    
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Error al obtener las versiones de datos'
+
+    return {
+      success: false,
+      error: errorMessage
+    }
+  }
+}
+
+/**
+ * Sube datos para entrenamiento incremental
+ * @param {FormData} formData - Datos a subir
+ * @returns {Promise<Object>} - Resultado de la subida
+ */
+export async function uploadIncrementalData(formData) {
+  try {
+    console.log('📤 Subiendo datos para entrenamiento incremental')
+
+    const response = await api.post(API_ENDPOINTS.upload, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 120000 // 2 minutos
+    })
+
+    console.log('✅ Datos subidos exitosamente')
+
+    return {
+      success: true,
+      data: response.data,
+      message: 'Datos subidos exitosamente'
+    }
+
+  } catch (error) {
+    console.error('❌ Error subiendo datos:', error)
+    
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Error al subir los datos'
 
     return {
       success: false,
@@ -283,8 +357,10 @@ export function validateImageFile(file) {
 
 export default {
   submitIncrementalTraining,
-  getTrainingStats,
-  getTrainingHistory,
+  getIncrementalTrainingStatus,
+  getIncrementalModels,
+  getIncrementalDataVersions,
+  uploadIncrementalData,
   validateGrainData,
   createTrainingFormData,
   validateImageFile
