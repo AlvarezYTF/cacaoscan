@@ -1,23 +1,23 @@
 <template>
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300">
+  <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
     <!-- Controles de tabla (opcional) -->
-    <div v-if="$slots.controls" class="p-3 md:p-4 border-b border-gray-100 bg-gray-50">
+    <div v-if="$slots.controls" class="p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-green-50">
       <slot name="controls"></slot>
     </div>
     
     <!-- Tabla responsiva -->
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
+        <thead class="bg-gradient-to-r from-gray-50 to-gray-50">
           <tr>
             <th 
               v-for="column in columns" 
               :key="column.key"
               scope="col" 
-              class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
               :class="[
                 column.align === 'right' ? 'text-right' : 'text-left',
-                column.sortable ? 'cursor-pointer hover:bg-gray-100' : '',
+                column.sortable ? 'cursor-pointer hover:bg-green-50 transition-all duration-200' : '',
                 column.width ? column.width : ''
               ]"
               @click="column.sortable ? handleSort(column.key) : null"
@@ -35,13 +35,13 @@
           <tr 
             v-for="(row, index) in paginatedData" 
             :key="row.id || index"
-            class="hover:bg-gray-50 transition-all duration-200"
-            :class="{ 'bg-blue-50': selectedRows.includes(row.id || index) }"
+            class="hover:bg-green-50 transition-all duration-200 cursor-pointer"
+            :class="{ 'bg-green-100 border-l-4 border-green-500': selectedRows.includes(row.id || index) }"
           >
             <td 
               v-for="column in columns" 
               :key="column.key"
-              class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap"
+              class="px-6 py-4 whitespace-nowrap"
               :class="[
                 column.align === 'right' ? 'text-right' : 'text-left',
                 column.className || ''
@@ -55,13 +55,17 @@
           
           <!-- Fila vacía cuando no hay datos -->
           <tr v-if="paginatedData.length === 0">
-            <td :colspan="columns.length" class="px-3 md:px-6 py-8 text-center text-gray-500">
-              <div class="flex flex-col items-center space-y-2">
-                <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 002 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-                </svg>
-                <p class="text-sm font-medium">No hay datos disponibles</p>
-                <p class="text-xs text-gray-400">Intenta ajustar los filtros o agregar nuevos registros</p>
+            <td :colspan="columns.length" class="px-6 py-16 text-center">
+              <div class="flex flex-col items-center space-y-4">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                  <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 002 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-base font-bold text-gray-900 mb-1">No hay datos disponibles</p>
+                  <p class="text-sm text-gray-600">Intenta ajustar los filtros o agregar nuevos registros</p>
+                </div>
               </div>
             </td>
           </tr>
@@ -73,7 +77,7 @@
     <slot name="pagination"></slot>
     
     <!-- Información de la tabla -->
-    <div v-if="showTableInfo" class="px-3 md:px-6 py-2 md:py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-500">
+    <div v-if="showTableInfo" class="px-6 py-4 bg-gradient-to-r from-green-50 to-green-50 border-t border-gray-200 text-sm text-gray-600">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0">
         <span>Mostrando {{ startItem }} a {{ endItem }} de {{ totalItems }} resultados</span>
         <span v-if="loading" class="flex items-center space-x-1">
@@ -228,9 +232,9 @@ export default {
 
 /* Efectos de hover mejorados */
 tbody tr:hover {
-  background-color: #f9fafb;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  background-color: #f0fdf4;
+  transform: translateX(2px);
+  box-shadow: -2px 0 4px -1px rgba(16, 185, 129, 0.1);
 }
 
 /* Animación de entrada para filas */

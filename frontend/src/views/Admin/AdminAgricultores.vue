@@ -16,11 +16,30 @@
     <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'">
       <!-- Page Header -->
       <div class="mb-8">
-        <div class="bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-green-200 transition-all duration-200">
-        <div class="px-6 py-4">
-            <div class="flex-1">
-              <h1 class="text-3xl font-bold text-gray-900 mb-2">Gestión de Agricultores</h1>
-              <p class="text-gray-600 text-lg">Administra todos los agricultores y fincas del sistema</p>
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+          <div class="flex items-center justify-between flex-wrap gap-4">
+            <div class="flex items-center">
+              <div class="bg-green-100 p-3 rounded-lg mr-4">
+                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+              </div>
+              <div>
+                <h1 class="text-3xl font-bold text-gray-900">Gestión de Agricultores</h1>
+                <p class="text-gray-600 mt-1">Administra todos los agricultores y fincas del sistema</p>
+              </div>
+            </div>
+            <!-- Acciones principales -->
+            <div class="flex items-center space-x-3">
+              <button 
+                @click="handleNewFarmer"
+                class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg flex items-center gap-2"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Nuevo Agricultor
+              </button>
             </div>
           </div>
         </div>
@@ -29,177 +48,39 @@
       <!-- Contenido principal -->
       <main class="space-y-6">
         <!-- Estadísticas rápidas -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                    </svg>
-                  </div>
-                </div>
-                <div class="ml-4">
-                  <p class="text-sm font-medium text-gray-600">Total Agricultores</p>
-                  <p class="text-2xl font-bold text-gray-900">{{ totalItems }}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                    </svg>
-                  </div>
-                </div>
-                <div class="ml-4">
-                  <p class="text-sm font-medium text-gray-600">Total Fincas</p>
-                  <p class="text-2xl font-bold text-gray-900">{{ getTotalFarms() }}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                  </div>
-                </div>
-                <div class="ml-4">
-                  <p class="text-sm font-medium text-gray-600">Activos</p>
-                  <p class="text-2xl font-bold text-gray-900">{{ getActiveFarmers() }}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path>
-                    </svg>
-                  </div>
-                </div>
-                <div class="ml-4">
-                  <p class="text-sm font-medium text-gray-600">Área Total</p>
-                  <p class="text-2xl font-bold text-gray-900">{{ getTotalArea() }} ha</p>
-                </div>
-              </div>
-            </div>
-          </div>
+        <FarmersStatsCards 
+          :total-items="totalItems"
+          :farmers="farmers"
+          :all-fincas="allFincas"
+        />
 
-          <!-- Barra de búsqueda -->
-          <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-            <SearchBar 
-              v-model="searchQuery"
-              placeholder="Buscar agricultor por nombre, email o finca..."
-            />
-          </div>
+        <!-- Barra de búsqueda -->
+        <FarmersSearchBar 
+          v-model:search-query="searchQuery"
+          :placeholder="searchPlaceholder"
+        />
 
-          <!-- Tabla de agricultores -->
-          <div class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md hover:border-green-200 transition-all duration-200">
-            <!-- Estado vacío -->
-            <div v-if="filteredFarmers.length === 0" class="text-center py-12 px-6">
-              <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
-              </div>
-              <h3 class="text-lg font-medium text-gray-900 mb-2">No se encontraron agricultores</h3>
-              <p class="text-gray-500 mb-6">
-                {{ searchQuery || filters.region !== 'all' || filters.status !== 'all' 
-                  ? 'Intenta ajustar los filtros o la búsqueda' 
-                  : 'Comienza agregando tu primer agricultor' }}
-              </p>
-              <button 
-                v-if="!searchQuery && filters.region === 'all' && filters.status === 'all'"
-                @click="handleNewFarmer"
-                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
-              >
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                Agregar Primer Agricultor
-              </button>
-            </div>
-
-            <!-- Tabla con datos -->
-            <DataTable 
-              v-else
-              :columns="tableColumns"
-              :data="filteredFarmers"
-            >
-              <!-- Celda personalizada para Agricultor -->
-              <template #cell-farmer="{ row }">
-                <div class="flex items-center">
-                  <div class="h-10 w-10 rounded-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center text-green-700 font-semibold text-sm border-2 border-green-100">
-                    {{ row.initials }}
-                  </div>
-                  <div class="ml-3">
-                    <div class="text-sm font-medium text-gray-900">{{ row.name }}</div>
-                    <div class="text-xs text-gray-500">{{ row.email }}</div>
-                  </div>
-                </div>
-              </template>
-
-              <!-- Celda personalizada para Finca -->
-              <template #cell-farm="{ row }">
-                <div class="text-sm text-gray-900 font-medium">{{ row.farm }}</div>
-                <div class="text-xs text-gray-500">{{ row.hectares }} hectáreas</div>
-              </template>
-
-              <!-- Celda personalizada para Estado -->
-              <template #cell-status="{ row }">
-                <span :class="getStatusClasses(row.status)" class="px-3 py-1.5 inline-flex text-xs leading-4 font-semibold rounded-full">
-                  {{ row.status }}
-                </span>
-              </template>
-
-              <!-- Celda personalizada para Acciones -->
-              <template #cell-actions="{ row }">
-                <div class="flex items-center space-x-3">
-                  <button class="text-green-600 hover:text-green-700 hover:bg-green-50 p-1.5 rounded-md transition-all duration-200" title="Ver detalles">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                    </svg>
-                  </button>
-                  <button class="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1.5 rounded-md transition-all duration-200" title="Editar">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                    </svg>
-                  </button>
-                  <button class="text-red-600 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-md transition-all duration-200" title="Eliminar">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                  </button>
-                </div>
-              </template>
-
-              <!-- Paginación -->
-              <template #pagination>
-                <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                  <Pagination 
-                    :current-page="currentPage"
-                    :total-pages="totalPages"
-                    :total-items="totalItems"
-                    :items-per-page="itemsPerPage"
-                    @page-change="handlePageChange"
-                  />
-                </div>
-              </template>
-            </DataTable>
-          </div>
+        <!-- Tabla de agricultores -->
+        <FarmersTable 
+          :filtered-farmers="filteredFarmers"
+          :search-query="searchQuery"
+          :filters="filters"
+          :table-columns="tableColumns"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :total-items="totalItems"
+          :items-per-page="itemsPerPage"
+          @new-farmer="handleNewFarmer"
+          @page-change="handlePageChange"
+        />
         </main>
     </div>
+
+    <!-- Modal para crear agricultor -->
+    <CreateFarmerModal 
+      ref="createFarmerModalRef"
+      @farmer-created="handleFarmerCreated"
+    />
   </div>
 </template>
 
@@ -207,14 +88,17 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter }                from 'vue-router';
 import AdminSidebar                 from '@/components/layout/Common/Sidebar.vue';
-import DataTable                    from '@/components/admin/AdminAgricultorComponents/DataTable.vue';
-import Pagination                   from '@/components/admin/AdminAgricultorComponents/Pagination.vue';
+import FarmersStatsCards            from '@/components/admin/AdminAgricultorComponents/FarmersStatsCards.vue';
+import FarmersSearchBar             from '@/components/admin/AdminAgricultorComponents/FarmersSearchBar.vue';
+import FarmersTable                 from '@/components/admin/AdminAgricultorComponents/FarmersTable.vue';
+import CreateFarmerModal            from '@/components/admin/AdminAgricultorComponents/CreateFarmerModal.vue';
 import { useAuthStore }             from '@/stores/auth';
+import { getFincas, getFincaStats } from '@/services/fincasApi';
 import Swal                         from 'sweetalert2';
 
 export default {
   name: 'AdminAgricultores',
-  components: { AdminSidebar, DataTable, Pagination },
+  components: { AdminSidebar, FarmersStatsCards, FarmersSearchBar, FarmersTable, CreateFarmerModal },
   setup() {
     const router = useRouter();
     const authStore = useAuthStore();
@@ -223,6 +107,7 @@ export default {
     const searchQuery = ref('');
     const currentPage = ref(1);
     const loading = ref(false);
+    const allFincas = ref([]);
     
     // Props para AdminSidebar y AdminNavbar
     const brandName = computed(() => 'CacaoScan');
@@ -261,49 +146,8 @@ export default {
       status: ''
     });
 
-    // Datos de ejemplo
-    const farmers = ref([
-      {
-        id: 1,
-        initials: 'CH',
-        name: 'Camilo Hernandez',
-        email: 'camilo@example.com',
-        farm: 'Finca El Paraíso',
-        hectares: '12 hectáreas',
-        region: 'Santander',
-        status: 'Activo'
-      },
-      {
-        id: 2,
-        initials: 'JA',
-        name: 'Jeferson Alvarez',
-        email: 'jeferson@example.com',
-        farm: 'Finca Los Laureles',
-        hectares: '8 hectáreas',
-        region: 'Antioquia',
-        status: 'Activo'
-      },
-      {
-        id: 3,
-        initials: 'CC',
-        name: 'Cristian Camacho',
-        email: 'cristian@example.com',
-        farm: 'Finca El Mirador',
-        hectares: '15 hectáreas',
-        region: 'Huila',
-        status: 'En revisión'
-      },
-      {
-        id: 4,
-        initials: 'JP',
-        name: 'Juan Pablo Pérez',
-        email: 'juanpablo@example.com',
-        farm: 'Finca La Esperanza',
-        hectares: '10 hectáreas',
-        region: 'Nariño',
-        status: 'Inactivo'
-      }
-    ]);
+    // Datos reales cargados desde backend
+    const farmers = ref([]);
 
     // Configuración de la tabla
     const tableColumns = [
@@ -329,6 +173,67 @@ export default {
       { value: 'En Revisión', label: 'En Revisión' },
       { value: 'Inactivo', label: 'Inactivo' }
     ];
+
+    // Función para cargar agricultores desde el backend
+    const loadFarmers = async () => {
+      loading.value = true;
+      try {
+        // Obtener todas las fincas del backend
+        const response = await getFincas({});
+        
+        // Extraer información única de agricultores
+        const agricultoresMap = new Map();
+        
+        for (const finca of response.results || []) {
+          const agricultor = finca.agricultor;
+          
+          // Validar que el agricultor existe y tiene id
+          if (!agricultor || !agricultor.id) {
+            console.warn('Finca sin agricultor válido:', finca);
+            continue;
+          }
+          
+          if (!agricultoresMap.has(agricultor.id)) {
+            // Obtener iniciales
+            const names = agricultor.first_name?.split(' ') || agricultor.username?.split(' ') || [];
+            const initials = names.length >= 2 
+              ? `${names[0].charAt(0)}${names[1].charAt(0)}`.toUpperCase()
+              : agricultor.username?.substring(0, 2).toUpperCase() || 'AA';
+            
+            agricultoresMap.set(agricultor.id, {
+              id: agricultor.id,
+              initials,
+              name: `${agricultor.first_name || ''} ${agricultor.last_name || ''}`.trim() || agricultor.username,
+              email: agricultor.email,
+              farm: finca.nombre,
+              hectares: `${finca.hectareas} hectáreas`,
+              region: finca.departamento,
+              status: finca.activa ? 'Activo' : 'Inactivo',
+              fincas: [finca]
+            });
+          } else {
+            // Si el agricultor ya existe, agregar finca a su lista
+            const existingFarmer = agricultoresMap.get(agricultor.id);
+            if (existingFarmer && existingFarmer.fincas) {
+              existingFarmer.fincas.push(finca);
+            }
+          }
+        }
+        
+        farmers.value = Array.from(agricultoresMap.values());
+        allFincas.value = response.results || [];
+      } catch (error) {
+        console.error('Error cargando agricultores:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudieron cargar los agricultores',
+          confirmButtonColor: '#10b981'
+        });
+      } finally {
+        loading.value = false;
+      }
+    };
 
     // Computed properties
     const filteredFarmers = computed(() => {
@@ -363,7 +268,7 @@ export default {
 
     // Métodos auxiliares para estadísticas
     const getTotalFarms = () => {
-      return farmers.value.length;
+      return allFincas.value.length;
     };
 
     const getActiveFarmers = () => {
@@ -371,10 +276,9 @@ export default {
     };
 
     const getTotalArea = () => {
-      return farmers.value.reduce((total, farmer) => {
-        const hectares = parseInt(farmer.hectares);
-        return total + (isNaN(hectares) ? 0 : hectares);
-      }, 0);
+      return allFincas.value.reduce((total, finca) => {
+        return total + parseFloat(finca.hectareas || 0);
+      }, 0).toFixed(1);
     };
 
     // Métodos para AdminSidebar y AdminNavbar
@@ -397,7 +301,8 @@ export default {
       searchQuery.value = query;
     };
 
-    const handleRefresh = () => {
+    const handleRefresh = async () => {
+      await loadFarmers();
       Swal.fire({
         toast: true,
         position: 'top-end',
@@ -408,9 +313,27 @@ export default {
       });
     };
 
+    // Referencia al modal
+    const createFarmerModalRef = ref(null);
+
     const handleNewFarmer = () => {
-      console.log('Nuevo agricultor');
-      // Implementar lógica para crear nuevo agricultor
+      if (createFarmerModalRef.value) {
+        createFarmerModalRef.value.openModal();
+      }
+    };
+
+    const handleFarmerCreated = async (farmerData) => {
+      // Recargar la lista de agricultores
+      await loadFarmers();
+      
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Agricultor creado exitosamente',
+        showConfirmButton: false,
+        timer: 2000
+      });
     };
 
     const applyFilters = () => {
@@ -436,10 +359,11 @@ export default {
     };
 
     // Lifecycle
-    onMounted(() => {
+    onMounted(async () => {
       console.log('Vista Agricultores montada');
       checkScreenSize();
       window.addEventListener('resize', checkScreenSize);
+      await loadFarmers();
     });
 
     const checkScreenSize = () => {
@@ -456,6 +380,8 @@ export default {
       loading,
       isSidebarCollapsed,
       toggleSidebarCollapse,
+      allFincas,
+      createFarmerModalRef,
       
       // Props para componentes
       brandName,
@@ -490,7 +416,8 @@ export default {
       getStatusClasses,
       getTotalFarms,
       getActiveFarmers,
-      getTotalArea
+      getTotalArea,
+      loadFarmers
     };
   }
 };

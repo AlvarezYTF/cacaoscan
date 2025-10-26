@@ -1,10 +1,10 @@
 <template>
-  <div class="bg-gray-50 px-3 md:px-6 py-3 md:py-4 border-t border-gray-100">
+  <div class="bg-gradient-to-r from-green-50 to-green-50 px-6 py-4 border-t border-gray-200">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
       <!-- Información de resultados -->
       <div class="flex justify-center sm:justify-start">
-        <p class="text-xs sm:text-sm text-gray-700">
-          Mostrando <span class="font-medium">{{ startItem }}</span> a <span class="font-medium">{{ endItem }}</span> de <span class="font-medium">{{ totalItems }}</span> resultados
+        <p class="text-sm font-medium text-gray-600">
+          Mostrando <span class="font-bold text-gray-900">{{ startItem }}</span> a <span class="font-bold text-gray-900">{{ endItem }}</span> de <span class="font-bold text-gray-900">{{ totalItems }}</span> resultados
         </p>
       </div>
       
@@ -15,8 +15,8 @@
           <button 
             @click="$emit('page-change', currentPage - 1)"
             :disabled="currentPage === 1"
-            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-xs sm:text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            :class="{ 'hover:bg-gray-100': currentPage !== 1 }"
+            class="relative inline-flex items-center px-4 py-2 rounded-l-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            :class="{ 'hover:bg-green-100': currentPage !== 1 }"
           >
             <span class="sr-only">Anterior</span>
             <svg class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -29,7 +29,7 @@
             <!-- Página actual -->
             <button 
               v-if="page === currentPage"
-              class="relative inline-flex items-center px-3 sm:px-4 py-2 border border-green-500 bg-green-50 text-xs sm:text-sm font-medium text-green-600 hover:bg-green-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              class="relative inline-flex items-center px-4 py-2 border-2 border-green-500 bg-green-100 text-sm font-bold text-green-700 shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               {{ page }}
             </button>
@@ -38,14 +38,14 @@
             <button 
               v-else
               @click="$emit('page-change', page)"
-              class="relative inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 bg-white text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               {{ page }}
             </button>
           </template>
           
           <!-- Separador de páginas -->
-          <span v-if="showPageSeparator" class="relative inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 bg-white text-xs sm:text-sm font-medium text-gray-700">
+          <span v-if="showPageSeparator" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-400">
             ...
           </span>
           
@@ -53,8 +53,8 @@
           <button 
             @click="$emit('page-change', currentPage + 1)"
             :disabled="currentPage === totalPages"
-            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-xs sm:text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            :class="{ 'hover:bg-gray-100': currentPage !== totalPages }"
+            class="relative inline-flex items-center px-4 py-2 rounded-r-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            :class="{ 'hover:bg-green-100': currentPage !== totalPages }"
           >
             <span class="sr-only">Siguiente</span>
             <svg class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -240,13 +240,13 @@ export default {
 
 /* Efectos de hover mejorados */
 button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1);
 }
 
 button:focus:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 /* Animación de entrada */
