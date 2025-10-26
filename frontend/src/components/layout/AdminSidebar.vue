@@ -106,15 +106,15 @@ export default {
       {
         id: 'analisis',
         label: 'Análisis',
-        route: '/nuevo-analisis',
-        iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+        route: '/admin/analisis',
+        iconPath: 'M9 2v2h2v10H9v2h6v-2h-2V4h2V2H9z M7 5H2v2h5V5zm0 4H2v2h5V9zm0 4H2v2h5v-2zm13-8h-5v2h5V5zm0 4h-5v2h5V9zm0 4h-5v2h5v-2z',
         fillRule: 'evenodd',
         clipRule: 'evenodd'
       },
       {
         id: 'users',
         label: 'Usuarios',
-        route: '/admin/users',
+        route: '/admin/usuarios',
         iconPath: 'M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z',
         badge: null
       },
@@ -129,7 +129,7 @@ export default {
       {
         id: 'training',
         label: 'Entrenamiento',
-        route: '/admin/training',
+        route: '/admin/entrenamiento',
         iconPath: 'M9 2a1 1 0 000 2h2a1 1 0 100-2H9z M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z',
         fillRule: 'evenodd',
         clipRule: 'evenodd'

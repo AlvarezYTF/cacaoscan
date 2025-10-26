@@ -10,19 +10,6 @@
       @logout="handleLogout"
     />
     
-    <!-- Navbar -->
-    <AdminNavbar
-      :title="navbarTitle"
-      :subtitle="navbarSubtitle"
-      :user-name="userName"
-      :user-role="userRole"
-      :search-placeholder="searchPlaceholder"
-      :refresh-button-text="refreshButtonText"
-      :loading="loading"
-      @search="handleSearch"
-      @refresh="handleRefresh"
-    />
-    
     <!-- Contenido principal -->
     <div class="p-6 sm:ml-64">
       <!-- Page Header -->

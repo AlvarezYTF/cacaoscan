@@ -8,12 +8,6 @@
       @menu-click="handleMenuClick"
       @logout="handleLogout"
     />
-    <AdminNavbar 
-      :user-name="userName"
-      :user-role="userRole"
-      :user-email="userEmail"
-      @logout="handleLogout"
-    />
 
     <!-- Main Content with Navbar -->
     <div class="lg:pl-64">

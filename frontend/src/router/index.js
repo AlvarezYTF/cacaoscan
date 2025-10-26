@@ -1,24 +1,28 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import NuevoAnalisis from '../views/NuevoAnalisis.vue'
+
+//Vistas Admin
+import AdminAnalisis from '../views/Admin/AdminAnalisis.vue'
+import AdminConfiguracion from '../views/Admin/AdminConfiguracion.vue'
+import AdminDashboard from '../views/Admin/AdminDashboard.vue'
+import AdminAgricultores from '../views/Admin/AdminAgricultores.vue'
+import AdminTraining from '../views/Admin/AdminTraining.vue'
+import AdminUsuarios from '../views/Admin/AdminUsuarios.vue'
+
+import AdminDataset from '../views/AdminDataset.vue'
 import DetalleAnalisisView from '../views/DetalleAnalisisView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
-import AdminDashboard from '../views/Dasnborads/AdminDashboard.vue'
 import ChartDashboard from '../views/ChartDashboard.vue'
-import Agricultores from '../views/Agricultores.vue'
 import Analisis from '../views/Analisis.vue'
 import Reportes from '../views/Reportes.vue'
 import ReportsManagement from '../views/ReportsManagement.vue'
 import AgricultorDashboard from '../views/AgricultorDashboard.vue'
 import PredictionView from '../views/PredictionView.vue'
 import UserPrediction from '../views/UserPrediction.vue'
-import AdminDataset from '../views/AdminDataset.vue'
-import AdminTraining from '../views/AdminTraining.vue'
 import SubirDatosEntrenamiento from '../views/SubirDatosEntrenamiento.vue'
 import FincasView from '../views/FincasView.vue'
 import LotesView from '../views/LotesView.vue'
-import UserManagement from '../views/Dasnborads/UserManagement.vue'
 
 // Importar auth store
 import { useAuthStore } from '@/stores/auth'
@@ -26,6 +30,8 @@ import { useAuthStore } from '@/stores/auth'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+
+    //RUTA DEL HOME
     {
       path: '/',
       name: 'Home',
@@ -33,9 +39,10 @@ const router = createRouter({
       meta: {
         title: 'CacaoScan - Sistema de Análisis de Cacao',
         requiresAuth: false
-        // requiresGuest removido - Home es accesible para todos
-      }
+      },
     },
+
+    //RUTA DEL REDIRECCIONAMIENTO DE LA DASHBOARD
     {
       path: '/dashboard',
       name: 'Dashboard',
@@ -45,7 +52,7 @@ const router = createRouter({
         if (!authStore.isAuthenticated) {
           return '/login'
         }
-        
+
         switch (authStore.userRole) {
           case 'admin':
             return '/admin/dashboard'
@@ -59,9 +66,11 @@ const router = createRouter({
       },
       meta: {
         title: 'Dashboard | CacaoScan',
-        requiresAuth: true
-      }
+        requiresAuth: true,
+      },
     },
+
+    //LOGIN Y REGISTRO
     {
       path: '/login',
       name: 'Login',
@@ -69,8 +78,8 @@ const router = createRouter({
       // beforeEnter removido - el guard global maneja requiresGuest
       meta: {
         title: 'Iniciar sesión | CacaoScan',
-        requiresGuest: true
-      }
+        requiresGuest: true,
+      },
     },
     {
       path: '/registro',
@@ -79,97 +88,80 @@ const router = createRouter({
       // beforeEnter removido - el guard global maneja requiresGuest
       meta: {
         title: 'Registro | CacaoScan',
-        requiresGuest: true
-      }
+        requiresGuest: true,
+      },
     },
-    {
-      path: '/nuevo-analisis',
-      name: 'NuevoAnalisis',
-      component: NuevoAnalisis,
-      meta: {
-        title: 'Nuevo Análisis de Lote | CacaoScan',
-        requiresAuth: true,
-        requiresRole: 'admin',
-        requiresVerification: true
-      }
-    },
-    {
-      path: '/detalle-analisis/:id?',
-      name: 'DetalleAnalisis',
-      component: DetalleAnalisisView,
-      meta: {
-        title: 'Detalle del Análisis de Cacao | CacaoScan',
-        requiresAuth: true
-      }
-    },
-    // Rutas de administración (optimizadas con subrutas)
+
+    // RUTAS DEL ADMINISTRADOR
     {
       path: '/admin',
       meta: {
         requiresAuth: true,
-        requiresRole: 'admin'
+        requiresRole: 'admin',
       },
       children: [
         {
           path: 'dashboard',
           name: 'AdminDashboard',
           component: AdminDashboard,
-          // beforeEnter removido - el guard global maneja la autenticación y rol
           meta: {
             title: 'Panel de Administración | CacaoScan',
             requiresAuth: true,
-            requiresRole: 'admin'
-          }
-        },
-        {
-          path: 'charts',
-          name: 'ChartDashboard',
-          component: ChartDashboard,
-          meta: {
-            title: 'Dashboard de Gráficas | CacaoScan'
-          }
+            requiresRole: 'admin',
+          },
         },
         {
           path: 'agricultores',
-          name: 'Agricultores',
-          component: Agricultores,
+          name: 'AdminAgricultores',
+          component: AdminAgricultores,
           meta: {
-            title: 'Gestión de Agricultores | CacaoScan'
-          }
+            title: 'Gestión de Agricultores | CacaoScan',
+          },
         },
         {
           path: 'configuracion',
-          name: 'Configuracion',
-          component: () => import('../views/Configuracion.vue'),
+          name: 'AdminConfiguracion',
+          component: AdminConfiguracion,
           meta: {
-            title: 'Configuración | CacaoScan'
-          }
+            title: 'Configuración | CacaoScan',
+          },
         },
         {
-          path: 'dataset',
-          name: 'AdminDataset',
-          component: AdminDataset,
-          meta: {
-            title: 'Gestión de Dataset | CacaoScan'
-          }
-        },
-        {
-          path: 'training',
+          path: 'entrenamiento',
           name: 'AdminTraining',
           component: AdminTraining,
           meta: {
-            title: 'Panel de Reentrenamiento | CacaoScan'
-          }
+            title: 'Panel de Reentrenamiento | CacaoScan',
+          },
         },
         {
-          path: 'users',
-          name: 'AdminUsers',
-          component: UserManagement,
+          path: 'usuarios',
+          name: 'AdminUsuarios',
+          component: AdminUsuarios,
           meta: {
-            title: 'Gestión de Usuarios | CacaoScan'
-          }
-        }
-      ]
+            title: 'Gestión de Usuarios | CacaoScan',
+          },
+        },
+        {
+          path: 'analisis',
+          name: 'AdminAnalisis',
+          component: AdminAnalisis,
+          meta: {
+            title: 'Análisis de Lote | CacaoScan',
+          },
+        },
+      ],
+    },
+
+
+    {
+      path: '/detalle-analisis/:id?',
+      name: 'DetalleAnalisis',
+      component: DetalleAnalisisView,
+      meta: {
+        title: 'Detalle del Análisis de Cacao | CacaoScan',
+        requiresAuth: true,
+      },
     },
     {
       path: '/analisis',
@@ -178,8 +170,8 @@ const router = createRouter({
       meta: {
         title: 'Análisis de Datos | CacaoScan',
         requiresAuth: true,
-        requiresRole: 'analyst'
-      }
+        requiresRole: 'analyst',
+      },
     },
     {
       path: '/reportes',
@@ -188,8 +180,8 @@ const router = createRouter({
       meta: {
         title: 'Reportes | CacaoScan',
         requiresAuth: true,
-        requiresRole: 'analyst'
-      }
+        requiresRole: 'analyst',
+      },
     },
     {
       path: '/reportes/management',
@@ -198,8 +190,8 @@ const router = createRouter({
       meta: {
         title: 'Gestión de Reportes | CacaoScan',
         requiresAuth: true,
-        requiresRole: 'analyst'
-      }
+        requiresRole: 'analyst',
+      },
     },
     {
       path: '/agricultor-dashboard',
@@ -208,8 +200,8 @@ const router = createRouter({
       meta: {
         title: 'Dashboard de Agricultor | CacaoScan',
         requiresAuth: true,
-        requiresRole: 'farmer'
-      }
+        requiresRole: 'farmer',
+      },
     },
     {
       path: '/prediccion',
@@ -218,8 +210,8 @@ const router = createRouter({
       meta: {
         title: 'Análisis de Granos de Cacao | CacaoScan',
         requiresAuth: true,
-        requiresVerification: false
-      }
+        requiresVerification: false,
+      },
     },
     {
       path: '/user/prediction',
@@ -228,8 +220,8 @@ const router = createRouter({
       meta: {
         title: 'Predicción de Usuario | CacaoScan',
         requiresAuth: true,
-        requiresVerification: true
-      }
+        requiresVerification: true,
+      },
     },
     {
       path: '/entrenamiento-incremental',
@@ -238,8 +230,8 @@ const router = createRouter({
       meta: {
         title: 'Entrenamiento Incremental | CacaoScan',
         requiresAuth: true,
-        requiresVerification: true
-      }
+        requiresVerification: true,
+      },
     },
     // Rutas de gestión de fincas y lotes
     {
@@ -250,8 +242,8 @@ const router = createRouter({
         title: 'Gestión de Fincas | CacaoScan',
         requiresAuth: true,
         requiresRole: 'farmer',
-        requiresVerification: true
-      }
+        requiresVerification: true,
+      },
     },
     {
       path: '/fincas/:id',
@@ -261,8 +253,8 @@ const router = createRouter({
         title: 'Detalle de Finca | CacaoScan',
         requiresAuth: true,
         requiresRole: 'farmer',
-        requiresVerification: true
-      }
+        requiresVerification: true,
+      },
     },
     {
       path: '/fincas/:id/lotes',
@@ -272,8 +264,8 @@ const router = createRouter({
         title: 'Lotes de Finca | CacaoScan',
         requiresAuth: true,
         requiresRole: 'farmer',
-        requiresVerification: true
-      }
+        requiresVerification: true,
+      },
     },
     {
       path: '/lotes',
@@ -283,8 +275,8 @@ const router = createRouter({
         title: 'Gestión de Lotes | CacaoScan',
         requiresAuth: true,
         requiresRole: 'farmer',
-        requiresVerification: true
-      }
+        requiresVerification: true,
+      },
     },
     {
       path: '/lotes/:id',
@@ -294,8 +286,8 @@ const router = createRouter({
         title: 'Detalle de Lote | CacaoScan',
         requiresAuth: true,
         requiresRole: 'farmer',
-        requiresVerification: true
-      }
+        requiresVerification: true,
+      },
     },
     {
       path: '/lotes/:id/analisis',
@@ -305,8 +297,8 @@ const router = createRouter({
         title: 'Análisis de Lote | CacaoScan',
         requiresAuth: true,
         requiresRole: 'farmer',
-        requiresVerification: true
-      }
+        requiresVerification: true,
+      },
     },
     // Rutas adicionales para autenticación
     {
@@ -315,8 +307,8 @@ const router = createRouter({
       component: () => import('../views/EmailVerification.vue'),
       meta: {
         title: 'Verificar Email | CacaoScan',
-        requiresAuth: true
-      }
+        requiresAuth: true,
+      },
     },
     {
       path: '/reset-password',
@@ -324,8 +316,8 @@ const router = createRouter({
       component: () => import('../views/PasswordReset.vue'),
       meta: {
         title: 'Restablecer Contraseña | CacaoScan',
-        requiresGuest: true
-      }
+        requiresGuest: true,
+      },
     },
     {
       path: '/reset-password/confirm',
@@ -333,25 +325,25 @@ const router = createRouter({
       component: () => import('../views/PasswordResetConfirm.vue'),
       meta: {
         title: 'Confirmar Nueva Contraseña | CacaoScan',
-        requiresGuest: true
-      }
+        requiresGuest: true,
+      },
     },
     {
       path: '/acceso-denegado',
       name: 'AccessDenied',
       component: () => import('../views/AccessDenied.vue'),
       meta: {
-        title: 'Acceso Denegado | CacaoScan'
-      }
+        title: 'Acceso Denegado | CacaoScan',
+      },
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'NotFound',
       component: () => import('../views/NotFound.vue'),
       meta: {
-        title: 'Página no encontrada | CacaoScan'
-      }
-    }
+        title: 'Página no encontrada | CacaoScan',
+      },
+    },
   ],
 })
 
@@ -367,59 +359,61 @@ router.beforeEach(async (to, from) => {
     clearTimeout(navigationTimeout)
     navigationTimeout = null
   }
-  
+
   // Prevenir navegación múltiple simultánea (solo si es la misma ruta)
   if (isNavigating && to.path === from.path) {
     return false
   }
-  
+
   isNavigating = true
-  
+
   try {
     // Actualizar el título de la página
     document.title = to.meta?.title || 'CacaoScan'
-    
+
     // Log de navegación en desarrollo
     if (import.meta.env.DEV) {
       console.log(`🧭 Navigating: ${from.name || from.path} → ${to.name || to.path}`)
     }
-    
+
     // Mostrar loading para navegación entre diferentes rutas
     if (to.path !== from.path && from.name) {
       // Emit loading event
-      window.dispatchEvent(new CustomEvent('route-loading-start', {
-        detail: { to, from }
-      }))
+      window.dispatchEvent(
+        new CustomEvent('route-loading-start', {
+          detail: { to, from },
+        }),
+      )
     }
-    
+
     // Usar store de autenticación (ya importado estáticamente)
     const authStore = useAuthStore()
-    
+
     // PRIMERO: Verificar rutas públicas que requieren que el usuario NO esté autenticado
     // Esto debe ir ANTES de verificar requiresAuth para evitar conflictos
-    if (to.meta.requiresGuest || to.matched.some(record => record.meta.requiresGuest)) {
+    if (to.meta.requiresGuest || to.matched.some((record) => record.meta.requiresGuest)) {
       console.log('🔍 Verificando ruta requiresGuest:', to.path)
       console.log('🔍 Estado de autenticación:', {
         isAuthenticated: authStore.isAuthenticated,
         hasToken: !!authStore.accessToken,
         hasUser: !!authStore.user,
-        userRole: authStore.userRole
+        userRole: authStore.userRole,
       })
-      
+
       if (authStore.isAuthenticated) {
         console.log('👤 Usuario ya autenticado, redirigiendo desde ruta pública...')
         console.log('📊 Rol del usuario:', authStore.userRole)
-        
+
         // Redirigir según rol
         const redirectPath = getRedirectPathByRole(authStore.userRole)
         console.log('🎯 Redirigiendo a:', redirectPath)
-        
+
         // Evitar bucle infinito: si la ruta de redirección es la misma que la actual
         if (redirectPath === to.path) {
           console.warn('⚠️ Bucle de redirección detectado, permitiendo navegación')
           return true
         }
-        
+
         // Verificar que la ruta de redirección existe
         const routeExists = router.resolve(redirectPath)
         if (!routeExists.matched.length) {
@@ -427,27 +421,26 @@ router.beforeEach(async (to, from) => {
           console.log('🔄 Redirigiendo a Home como fallback')
           return { path: '/', replace: true }
         }
-        
+
         return { path: redirectPath, replace: true }
       }
     }
-    
+
     // SEGUNDO: Verificar estado de autenticación si se requiere
-    if (to.meta.requiresAuth || to.matched.some(record => record.meta.requiresAuth)) {
-      
+    if (to.meta.requiresAuth || to.matched.some((record) => record.meta.requiresAuth)) {
       // Si no hay token, redirigir al login
       if (!authStore.accessToken) {
         console.warn('🚫 Intento de acceso a ruta protegida sin token')
         return {
           name: 'Login',
           replace: true,
-          query: { 
+          query: {
             redirect: to.fullPath,
-            message: 'Debes iniciar sesión para acceder a esta página'
-          }
+            message: 'Debes iniciar sesión para acceder a esta página',
+          },
         }
       }
-      
+
       // Si hay token pero no hay usuario, intentar obtenerlo
       if (!authStore.user) {
         try {
@@ -460,35 +453,42 @@ router.beforeEach(async (to, from) => {
           return {
             name: 'Login',
             replace: true,
-            query: { 
+            query: {
               redirect: to.fullPath,
               message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
-              expired: 'true'
-            }
+              expired: 'true',
+            },
           }
         }
       }
-      
+
       // Verificar si la sesión ha expirado por inactividad
       if (authStore.checkSessionTimeout()) {
         console.warn('⏰ Sesión expirada por inactividad')
         // La sesión ha expirado, abortar navegación
         return false
       }
-      
+
       // NUEVO: Verificar rol requerido si la ruta lo especifica
-      const requiredRole = to.meta.requiresRole || to.matched.find(record => record.meta.requiresRole)?.meta.requiresRole
+      const requiredRole =
+        to.meta.requiresRole ||
+        to.matched.find((record) => record.meta.requiresRole)?.meta.requiresRole
       if (requiredRole) {
         const userRole = authStore.userRole?.toLowerCase().trim()
         const normalizedRequiredRole = String(requiredRole).toLowerCase().trim()
-        
-        console.log('🔐 Verificando rol requerido:', normalizedRequiredRole, '- Rol del usuario:', userRole)
-        
+
+        console.log(
+          '🔐 Verificando rol requerido:',
+          normalizedRequiredRole,
+          '- Rol del usuario:',
+          userRole,
+        )
+
         // Función para normalizar roles del usuario
         const normalizeUserRole = (role) => {
           if (!role) return null
           const normalized = String(role).toLowerCase().trim()
-          
+
           // Mapear variantes comunes de roles
           switch (normalized) {
             case 'administrador':
@@ -505,15 +505,15 @@ router.beforeEach(async (to, from) => {
               return normalized
           }
         }
-        
+
         const normalizedUserRole = normalizeUserRole(userRole)
-        
+
         // Verificar si el usuario tiene el rol requerido
         if (normalizedUserRole !== normalizedRequiredRole) {
           console.warn('⛔ Acceso denegado: Rol insuficiente', {
             userRole: userRole,
             normalizedUserRole: normalizedUserRole,
-            requiredRole: normalizedRequiredRole
+            requiredRole: normalizedRequiredRole,
           })
           return {
             path: '/acceso-denegado',
@@ -521,16 +521,16 @@ router.beforeEach(async (to, from) => {
             query: {
               reason: 'insufficient_role',
               required: normalizedRequiredRole,
-              current: normalizedUserRole
-            }
+              current: normalizedUserRole,
+            },
           }
         }
       }
-      
+
       // Actualizar actividad del usuario
       authStore.updateLastActivity()
     }
-    
+
     // Permitir navegación (return undefined o true)
     console.log('✅ Guard completado exitosamente, permitiendo navegación a:', to.path)
     return true
@@ -551,12 +551,12 @@ router.beforeEach(async (to, from) => {
 // Función auxiliar para obtener ruta de redirección por rol
 const getRedirectPathByRole = (role) => {
   console.log('🔍 getRedirectPathByRole llamado con rol:', role, 'tipo:', typeof role)
-  
+
   // Función para normalizar roles (misma lógica que en el guard)
   const normalizeRole = (role) => {
     if (!role) return null
     const normalized = String(role).toLowerCase().trim()
-    
+
     // Mapear variantes comunes de roles
     switch (normalized) {
       case 'administrador':
@@ -573,9 +573,9 @@ const getRedirectPathByRole = (role) => {
         return normalized
     }
   }
-  
+
   const normalizedRole = normalizeRole(role)
-  
+
   switch (normalizedRole) {
     case 'admin':
       return '/admin/dashboard'
@@ -596,7 +596,7 @@ router.afterEach((to, from) => {
   if (to.path !== from.path) {
     window.scrollTo(0, 0)
   }
-  
+
   // Log de navegación completada en desarrollo
   if (import.meta.env.DEV) {
     console.log(`✅ Navigation completed: ${to.name || to.path}`)
