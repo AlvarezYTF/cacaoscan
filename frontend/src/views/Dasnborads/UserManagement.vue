@@ -25,21 +25,22 @@
     />
 
     <!-- Main Content -->
-    <div class="p-4 sm:ml-64">
-      <div class="user-management">
-        <!-- Header -->
-        <div class="page-header">
-      <div class="header-content">
-        <h1 class="page-title">
-          <i class="fas fa-users-cog"></i>
-          Gestión de Usuarios
-        </h1>
-        <div class="header-actions">
+    <div class="p-6 sm:ml-64">
+      <!-- Page Header -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Gestión de Usuarios</h1>
+            <p class="text-gray-600 text-lg">Administra todos los usuarios del sistema CacaoScan</p>
+          </div>
+          <div class="flex items-center space-x-3">
           <button 
-            class="btn btn-primary"
             @click="openCreateModal"
+              class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
           >
-            <i class="fas fa-plus"></i>
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
             Nuevo Usuario
           </button>
         </div>
@@ -47,266 +48,368 @@
     </div>
 
     <!-- Filtros y Búsqueda -->
-    <div class="filters-section">
-      <div class="filters-row">
-        <div class="search-box">
-          <i class="fas fa-search"></i>
+      <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+        <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          <div class="flex-1 min-w-0">
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
           <input 
             type="text" 
             v-model="searchQuery"
             placeholder="Buscar usuarios..."
             @input="debouncedSearch"
+                class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-green-500 focus:border-green-500 text-sm"
           >
+            </div>
         </div>
         
-        <div class="filter-group">
-          <select v-model="roleFilter" @change="applyFilters">
+          <div class="flex flex-wrap gap-3">
+            <select 
+              v-model="roleFilter" 
+              @change="applyFilters"
+              class="block w-full lg:w-auto px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+            >
             <option value="">Todos los roles</option>
             <option value="Administrador">Administrador</option>
             <option value="Agricultor">Agricultor</option>
             <option value="Técnico">Técnico</option>
           </select>
-        </div>
 
-        <div class="filter-group">
-          <select v-model="statusFilter" @change="applyFilters">
+            <select 
+              v-model="statusFilter" 
+              @change="applyFilters"
+              class="block w-full lg:w-auto px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+            >
             <option value="">Todos los estados</option>
             <option value="active">Activos</option>
             <option value="inactive">Inactivos</option>
           </select>
-        </div>
 
-        <div class="filter-group">
-          <select v-model="sortBy" @change="applyFilters">
+            <select 
+              v-model="sortBy" 
+              @change="applyFilters"
+              class="block w-full lg:w-auto px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+            >
             <option value="-date_joined">Más recientes</option>
             <option value="date_joined">Más antiguos</option>
             <option value="username">Nombre de usuario</option>
             <option value="email">Email</option>
             <option value="last_login">Último login</option>
           </select>
-        </div>
 
         <button 
-          class="btn btn-outline-secondary"
           @click="clearFilters"
+              class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
         >
-          <i class="fas fa-times"></i>
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
           Limpiar
         </button>
+          </div>
       </div>
     </div>
 
     <!-- Estadísticas Rápidas -->
-    <div class="stats-row">
-      <div class="stat-item">
-        <div class="stat-number">{{ totalUsers }}</div>
-        <div class="stat-label">Total Usuarios</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
+          <div class="flex items-center">
+            <div class="p-3 rounded-lg bg-gray-50">
+              <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+              </svg>
       </div>
-      <div class="stat-item">
-        <div class="stat-number">{{ activeUsers }}</div>
-        <div class="stat-label">Activos</div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Total Usuarios</p>
+              <p class="text-2xl font-bold text-gray-900">{{ totalUsers }}</p>
       </div>
-      <div class="stat-item">
-        <div class="stat-number">{{ newUsersToday }}</div>
-        <div class="stat-label">Nuevos Hoy</div>
       </div>
-      <div class="stat-item">
-        <div class="stat-number">{{ onlineUsers }}</div>
-        <div class="stat-label">En Línea</div>
+        </div>
+        
+        <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
+          <div class="flex items-center">
+            <div class="p-3 rounded-lg bg-green-50">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Activos</p>
+              <p class="text-2xl font-bold text-gray-900">{{ activeUsers }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
+          <div class="flex items-center">
+            <div class="p-3 rounded-lg bg-blue-50">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Nuevos Hoy</p>
+              <p class="text-2xl font-bold text-gray-900">{{ newUsersToday }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
+          <div class="flex items-center">
+            <div class="p-3 rounded-lg bg-green-50">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">En Línea</p>
+              <p class="text-2xl font-bold text-gray-900">{{ onlineUsers }}</p>
+            </div>
+          </div>
       </div>
     </div>
 
     <!-- Tabla de Usuarios -->
-    <div class="table-container">
-      <div class="table-header">
-        <h3>Lista de Usuarios</h3>
-        <div class="table-actions">
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-xl font-bold text-gray-900">Lista de Usuarios</h3>
+          <div class="flex items-center space-x-3">
           <button 
-            class="btn btn-sm btn-outline-primary"
             @click="exportUsers"
             :disabled="loading"
+              class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
           >
-            <i class="fas fa-download"></i>
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
             Exportar
           </button>
         </div>
       </div>
 
       <div class="table-body">
-        <div v-if="loading" class="loading-state">
-          <LoadingSpinner size="lg" color="blue" />
-          <p>Cargando usuarios...</p>
+        <div v-if="loading" class="flex flex-col items-center justify-center py-12">
+          <LoadingSpinner size="lg" color="green" />
+          <p class="mt-4 text-gray-600">Cargando usuarios...</p>
         </div>
 
-        <div v-else-if="users.length === 0" class="empty-state">
-          <i class="fas fa-users"></i>
-          <h3>No se encontraron usuarios</h3>
-          <p>No hay usuarios que coincidan con los filtros aplicados.</p>
+        <div v-else-if="users.length === 0" class="flex flex-col items-center justify-center py-12">
+          <svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+          </svg>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No se encontraron usuarios</h3>
+          <p class="text-gray-600 text-center">No hay usuarios que coincidan con los filtros aplicados.</p>
         </div>
 
-        <table v-else class="table">
-          <thead>
+        <div v-else class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
             <tr>
-              <th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <input 
                   type="checkbox" 
                   v-model="selectAll"
                   @change="toggleSelectAll"
+                    class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                 >
               </th>
-              <th>Usuario</th>
-              <th>Email</th>
-              <th>Rol</th>
-              <th>Estado</th>
-              <th>Último Login</th>
-              <th>Registro</th>
-              <th>Acciones</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Login</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registro</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="user in users" :key="user.id" :class="{ selected: selectedUsers.includes(user.id) }">
-              <td>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="user in users" :key="user.id" :class="{ 'bg-green-50': selectedUsers.includes(user.id) }" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap">
                 <input 
                   type="checkbox" 
                   :value="user.id"
                   v-model="selectedUsers"
+                    class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                 >
               </td>
-              <td>
-                <div class="user-info">
-                  <div class="user-avatar" :class="getUserStatusClass(user)">
-                    <i class="fas fa-user"></i>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10">
+                      <div class="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                        <svg class="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                        </svg>
                   </div>
-                  <div class="user-details">
-                    <strong>{{ user.first_name }} {{ user.last_name }}</strong>
-                    <small>@{{ user.username }}</small>
+                    </div>
+                    <div class="ml-4">
+                      <div class="text-sm font-medium text-gray-900">
+                        {{ user.first_name }} {{ user.last_name }}
+                      </div>
+                      <div class="text-sm text-gray-500">@{{ user.username }}</div>
                   </div>
                 </div>
               </td>
-              <td>{{ user.email }}</td>
-              <td>
-                <span class="badge" :class="getRoleBadgeClass(user.role)">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ user.email }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" :class="getRoleBadgeClass(user.role)">
                   {{ user.role || 'Sin rol' }}
                 </span>
               </td>
-              <td>
-                <span class="badge" :class="user.is_active ? 'badge-success' : 'badge-danger'">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" :class="user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
                   {{ user.is_active ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
-              <td>
-                <span v-if="user.last_login" class="last-login">
-                  {{ formatDateTime(user.last_login) }}
-                </span>
-                <span v-else class="text-muted">Nunca</span>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <span v-if="user.last_login">{{ formatDateTime(user.last_login) }}</span>
+                  <span v-else class="text-gray-400">Nunca</span>
               </td>
-              <td>{{ formatDate(user.date_joined) }}</td>
-              <td>
-                <div class="action-buttons">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(user.date_joined) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <div class="flex items-center space-x-2">
                   <button 
-                    class="btn btn-sm btn-outline-primary"
                     @click="viewUser(user)"
+                      class="text-green-600 hover:text-green-700 p-2 rounded-lg hover:bg-green-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
                     title="Ver detalles"
                   >
-                    <i class="fas fa-eye"></i>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                      </svg>
                   </button>
                   <button 
-                    class="btn btn-sm btn-outline-warning"
                     @click="editUser(user)"
+                      class="text-amber-600 hover:text-amber-700 p-2 rounded-lg hover:bg-amber-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
                     title="Editar"
                   >
-                    <i class="fas fa-edit"></i>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                      </svg>
                   </button>
                   <button 
-                    class="btn btn-sm btn-outline-info"
                     @click="viewUserActivity(user)"
+                      class="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     title="Ver actividad"
                   >
-                    <i class="fas fa-history"></i>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
                   </button>
                   <button 
-                    class="btn btn-sm btn-outline-danger"
                     @click="confirmDeleteUser(user)"
+                      class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Eliminar"
                     :disabled="user.is_superuser"
                   >
-                    <i class="fas fa-trash"></i>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
                   </button>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
 
       <!-- Paginación -->
-      <div v-if="totalPages > 1" class="pagination-container">
-        <nav aria-label="Paginación de usuarios">
-          <ul class="pagination">
-            <li class="page-item" :class="{ disabled: currentPage === 1 }">
+        <div v-if="totalPages > 1" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div class="flex-1 flex justify-between sm:hidden">
               <button 
-                class="page-link"
                 @click="changePage(currentPage - 1)"
                 :disabled="currentPage === 1"
+              class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <i class="fas fa-chevron-left"></i>
+              Anterior
               </button>
-            </li>
-            
-            <li 
+            <button 
+              @click="changePage(currentPage + 1)"
+              :disabled="currentPage === totalPages"
+              class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente
+            </button>
+          </div>
+          <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p class="text-sm text-gray-700">
+                Mostrando página <span class="font-medium">{{ currentPage }}</span> de <span class="font-medium">{{ totalPages }}</span>
+              </p>
+            </div>
+            <div>
+              <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button 
+                  @click="changePage(currentPage - 1)"
+                  :disabled="currentPage === 1"
+                  class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                  </svg>
+                </button>
+                
+                <button 
               v-for="page in visiblePages" 
               :key="page"
-              class="page-item"
-              :class="{ active: page === currentPage }"
-            >
-              <button 
-                class="page-link"
                 @click="changePage(page)"
+                  :class="page === currentPage ? 'z-10 bg-green-50 border-green-500 text-green-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'"
+                  class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
               >
                 {{ page }}
               </button>
-            </li>
             
-            <li class="page-item" :class="{ disabled: currentPage === totalPages }">
               <button 
-                class="page-link"
                 @click="changePage(currentPage + 1)"
                 :disabled="currentPage === totalPages"
+                  class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <i class="fas fa-chevron-right"></i>
+                  <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                  </svg>
               </button>
-            </li>
-          </ul>
         </nav>
+            </div>
+          </div>
       </div>
     </div>
 
     <!-- Acciones Masivas -->
-    <div v-if="selectedUsers.length > 0" class="bulk-actions">
-      <div class="bulk-actions-content">
-        <span class="selected-count">
+      <div v-if="selectedUsers.length > 0" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white rounded-lg border border-gray-200 shadow-lg p-4 z-50">
+        <div class="flex items-center space-x-4">
+          <span class="text-sm font-medium text-gray-900">
           {{ selectedUsers.length }} usuario(s) seleccionado(s)
         </span>
-        <div class="bulk-buttons">
+          <div class="flex items-center space-x-2">
           <button 
-            class="btn btn-sm btn-success"
             @click="bulkActivate"
+              class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
           >
-            <i class="fas fa-check"></i>
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
             Activar
           </button>
           <button 
-            class="btn btn-sm btn-warning"
             @click="bulkDeactivate"
+              class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-lg hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors duration-200"
           >
-            <i class="fas fa-ban"></i>
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
+              </svg>
             Desactivar
           </button>
           <button 
-            class="btn btn-sm btn-danger"
             @click="bulkDelete"
+              class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
           >
-            <i class="fas fa-trash"></i>
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
             Eliminar
           </button>
         </div>
@@ -336,7 +439,6 @@
       :user="activityUser"
       @close="closeActivityModal"
     />
-      </div>
     </div>
   </div>
 </template>
@@ -781,11 +883,11 @@ export default {
 
     const getRoleBadgeClass = (role) => {
       const classes = {
-        'Administrador': 'badge-danger',
-        'Agricultor': 'badge-success',
-        'Técnico': 'badge-info'
+        'Administrador': 'bg-green-100 text-green-800',
+        'Agricultor': 'bg-green-100 text-green-800',
+        'Técnico': 'bg-green-100 text-green-800'
       }
-      return classes[role] || 'badge-secondary'
+      return classes[role] || 'bg-gray-100 text-gray-800'
     }
 
     const getUserStatusClass = (user) => {
@@ -925,344 +1027,105 @@ export default {
 </script>
 
 <style scoped>
+/* Estilos específicos para UserManagement */
 .user-management {
   padding: 0;
   background-color: transparent;
   min-height: auto;
 }
 
-.page-header {
-  background: white;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+/* Transiciones suaves */
+.transition-colors {
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
 }
 
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
 }
 
-.page-title {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 1.8rem;
+/* Mejoras de accesibilidad */
+button:focus-visible {
+  outline: 2px solid rgb(34 197 94);
+  outline-offset: 2px;
 }
 
-.page-title i {
-  margin-right: 10px;
-  color: #3498db;
+input:focus-visible {
+  outline: 2px solid rgb(34 197 94);
+  outline-offset: 2px;
 }
 
-.filters-section {
-  background: white;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+select:focus-visible {
+  outline: 2px solid rgb(34 197 94);
+  outline-offset: 2px;
 }
 
-.filters-row {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-  flex-wrap: wrap;
+/* Estilos para elementos de estado */
+.text-green-600 {
+  color: rgb(34 197 94);
 }
 
-.search-box {
-  position: relative;
-  flex: 1;
-  min-width: 250px;
+.text-green-700 {
+  color: rgb(21 128 61);
 }
 
-.search-box i {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #7f8c8d;
+.text-green-800 {
+  color: rgb(22 101 52);
 }
 
-.search-box input {
-  width: 100%;
-  padding: 10px 10px 10px 35px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  font-size: 14px;
+.bg-green-50 {
+  background-color: rgb(240 253 244);
 }
 
-.filter-group select {
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  font-size: 14px;
-  min-width: 150px;
+.bg-green-100 {
+  background-color: rgb(220 252 231);
 }
 
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
+.border-green-200 {
+  border-color: rgb(187 247 208);
 }
 
-.stat-item {
-  background: white;
-  border-radius: 10px;
-  padding: 20px;
-  text-align: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.border-green-500 {
+  border-color: rgb(34 197 94);
 }
 
-.stat-number {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #2c3e50;
-  margin-bottom: 5px;
+.hover\:border-green-200:hover {
+  border-color: rgb(187 247 208);
 }
 
-.stat-label {
-  color: #7f8c8d;
-  font-size: 0.9rem;
+.hover\:text-green-700:hover {
+  color: rgb(21 128 61);
 }
 
-.table-container {
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  overflow: hidden;
+.hover\:bg-green-50:hover {
+  background-color: rgb(240 253 244);
 }
 
-.table-header {
-  padding: 20px;
-  border-bottom: 1px solid #ecf0f1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.focus\:ring-green-500:focus {
+  --tw-ring-color: rgb(34 197 94);
 }
 
-.table-header h3 {
-  margin: 0;
-  color: #2c3e50;
-}
-
-.table-body {
-  padding: 0;
-}
-
-.loading-state,
-.empty-state {
-  padding: 40px;
-  text-align: center;
-  color: #7f8c8d;
-}
-
-.loading-state i {
-  font-size: 2rem;
-  margin-bottom: 10px;
-  color: #3498db;
-}
-
-.empty-state i {
-  font-size: 3rem;
-  margin-bottom: 15px;
-  color: #bdc3c7;
-}
-
-.table {
-  margin: 0;
-  width: 100%;
-}
-
-.table th {
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #dee2e6;
-  font-weight: 600;
-  color: #495057;
-  padding: 15px;
-}
-
-.table td {
-  padding: 15px;
-  border-bottom: 1px solid #dee2e6;
-}
-
-.table tbody tr:hover {
-  background-color: #f8f9fa;
-}
-
-.table tbody tr.selected {
-  background-color: #e3f2fd;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-}
-
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #3498db;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 12px;
-  position: relative;
-}
-
-.user-avatar.online::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 12px;
-  height: 12px;
-  background-color: #27ae60;
-  border-radius: 50%;
-  border: 2px solid white;
-}
-
-.user-avatar.inactive {
-  background-color: #95a5a6;
-}
-
-.user-details strong {
-  display: block;
-  color: #2c3e50;
-  font-size: 0.9rem;
-}
-
-.user-details small {
-  color: #7f8c8d;
-  font-size: 0.8rem;
-}
-
-.badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.badge-success {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.badge-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.badge-warning {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.badge-info {
-  background-color: #d1ecf1;
-  color: #0c5460;
-}
-
-.badge-secondary {
-  background-color: #e2e3e5;
-  color: #383d41;
-}
-
-.last-login {
-  font-size: 0.8rem;
-  color: #495057;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 5px;
-}
-
-.action-buttons .btn {
-  padding: 5px 8px;
-  font-size: 0.8rem;
-}
-
-.pagination-container {
-  padding: 20px;
-  display: flex;
-  justify-content: center;
-}
-
-.pagination {
-  margin: 0;
-}
-
-.page-item.active .page-link {
-  background-color: #3498db;
-  border-color: #3498db;
-}
-
-.page-link {
-  color: #3498db;
-  border-color: #dee2e6;
-}
-
-.page-link:hover {
-  color: #2980b9;
-  background-color: #e9ecef;
-  border-color: #dee2e6;
-}
-
-.bulk-actions {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: white;
-  border-radius: 10px;
-  padding: 15px 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 1000;
-}
-
-.bulk-actions-content {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.selected-count {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.bulk-buttons {
-  display: flex;
-  gap: 10px;
-}
-
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .filters-row {
-    flex-direction: column;
-    align-items: stretch;
+  .grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
   
-  .search-box {
-    min-width: auto;
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
   
-  .stats-row {
-    grid-template-columns: repeat(2, 1fr);
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   }
   
-  .table-container {
-    overflow-x: auto;
-  }
-  
-  .action-buttons {
-    flex-direction: column;
+@media (max-width: 640px) {
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 }
 </style>

@@ -1,10 +1,10 @@
 <template>
   <div class="p-4 sm:ml-64">
-    <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg bg-white mb-6">
+    <div class="p-6 border border-gray-200 rounded-lg bg-white shadow-sm mb-6">
       <div class="flex items-center justify-between">
         <!-- Header Info -->
         <div>
-          <h1 class="text-2xl font-semibold text-gray-800">{{ title }}</h1>
+          <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
           <p class="text-gray-600 mt-1">{{ subtitle }}</p>
         </div>
         
@@ -21,7 +21,7 @@
               type="text" 
               v-model="searchQuery"
               @input="handleSearch"
-              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-80 pl-10 p-2.5" 
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-80 pl-10 p-2.5 transition-colors duration-200" 
               :placeholder="searchPlaceholder"
             >
           </div>
@@ -30,7 +30,7 @@
           <select 
             v-model="selectedPeriod" 
             @change="handlePeriodChange" 
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block p-2.5 transition-colors duration-200"
           >
             <option value="7">Últimos 7 días</option>
             <option value="30">Últimos 30 días</option>
@@ -41,7 +41,7 @@
           <button 
             @click="handleRefresh"
             :disabled="loading"
-            class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
           >
             <svg class="w-4 h-4 mr-2" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -52,12 +52,12 @@
           <!-- User Avatar -->
           <div class="flex items-center ml-3">
             <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span class="text-sm font-medium text-white">{{ userInitials }}</span>
+              <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                <span class="text-sm font-semibold text-white">{{ userInitials }}</span>
               </div>
               <div class="hidden md:block">
-                <p class="text-sm font-medium text-gray-700">{{ userName }}</p>
-                <p class="text-xs text-gray-500">{{ userRole }}</p>
+                <p class="text-sm font-semibold text-gray-900">{{ userName }}</p>
+                <p class="text-xs text-gray-600">{{ userRole }}</p>
               </div>
             </div>
           </div>
@@ -159,7 +159,7 @@ export default {
 <style scoped>
 /* Estilos específicos para el navbar */
 .search-input:focus {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
 }
 
 /* Responsive adjustments */
@@ -193,5 +193,18 @@ export default {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Mejoras de accesibilidad */
+button:focus-visible {
+  outline: 2px solid rgb(34 197 94);
+  outline-offset: 2px;
+}
+
+/* Transiciones suaves */
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
 }
 </style>

@@ -1,12 +1,12 @@
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Recent Users Table -->
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md hover:border-green-200 transition-all duration-200">
       <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900">{{ usersTableTitle }}</h3>
+        <h3 class="text-xl font-bold text-gray-900">{{ usersTableTitle }}</h3>
         <router-link 
           :to="usersTableLink" 
-          class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+          class="text-sm text-green-600 hover:text-green-700 font-medium transition-colors duration-200"
         >
           {{ usersTableLinkText }}
         </router-link>
@@ -30,8 +30,8 @@
             >
               <td class="px-6 py-4">
                 <div class="flex items-center">
-                  <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                    <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                    <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
                     </svg>
                   </div>
@@ -64,7 +64,7 @@
                 <div class="flex items-center space-x-2">
                   <button 
                     @click="handleViewUser(user.id)" 
-                    class="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
+                    class="text-green-600 hover:text-green-700 p-2 rounded-lg hover:bg-green-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
                     :title="`Ver usuario ${user.username}`"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,7 +74,7 @@
                   </button>
                   <button 
                     @click="handleEditUser(user.id)" 
-                    class="text-amber-600 hover:text-amber-800 p-1 rounded hover:bg-amber-50"
+                    class="text-amber-600 hover:text-amber-700 p-2 rounded-lg hover:bg-amber-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
                     :title="`Editar usuario ${user.username}`"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,12 +90,12 @@
     </div>
     
     <!-- Recent Activity Table -->
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md hover:border-green-200 transition-all duration-200">
       <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900">{{ activityTableTitle }}</h3>
+        <h3 class="text-xl font-bold text-gray-900">{{ activityTableTitle }}</h3>
         <router-link 
           :to="activityTableLink" 
-          class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+          class="text-sm text-green-600 hover:text-green-700 font-medium transition-colors duration-200"
         >
           {{ activityTableLinkText }}
         </router-link>
@@ -188,10 +188,10 @@ export default {
     
     getRoleBadgeClass(role) {
       const roleClasses = {
-        'admin': 'bg-purple-100 text-purple-800',
-        'staff': 'bg-blue-100 text-blue-800',
+        'admin': 'bg-green-100 text-green-800',
+        'staff': 'bg-green-100 text-green-800',
         'user': 'bg-gray-100 text-gray-800',
-        'superuser': 'bg-red-100 text-red-800'
+        'superuser': 'bg-green-100 text-green-800'
       }
       return roleClasses[role?.toLowerCase()] || 'bg-gray-100 text-gray-800'
     },
@@ -230,8 +230,8 @@ export default {
 }
 
 /* Hover effects for action buttons */
-.hover\:bg-blue-50:hover {
-  background-color: #eff6ff;
+.hover\:bg-green-50:hover {
+  background-color: #f0fdf4;
 }
 
 .hover\:bg-amber-50:hover {
@@ -251,8 +251,58 @@ button {
 }
 
 /* Focus states for accessibility */
-button:focus {
-  outline: 2px solid #3b82f6;
+button:focus-visible {
+  outline: 2px solid rgb(34 197 94);
   outline-offset: 2px;
+}
+
+/* Transiciones suaves */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+.transition-colors {
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Estilos para elementos de estado */
+.text-green-600 {
+  color: rgb(34 197 94);
+}
+
+.text-green-700 {
+  color: rgb(21 128 61);
+}
+
+.bg-green-50 {
+  background-color: rgb(240 253 244);
+}
+
+.bg-green-100 {
+  background-color: rgb(220 252 231);
+}
+
+.text-green-800 {
+  color: rgb(22 101 52);
+}
+
+.border-green-200 {
+  border-color: rgb(187 247 208);
+}
+
+.hover\:border-green-200:hover {
+  border-color: rgb(187 247 208);
+}
+
+.hover\:text-green-700:hover {
+  color: rgb(21 128 61);
+}
+
+.focus\:ring-green-500:focus {
+  --tw-ring-color: rgb(34 197 94);
 }
 </style>

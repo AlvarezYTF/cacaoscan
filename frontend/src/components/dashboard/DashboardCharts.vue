@@ -1,21 +1,21 @@
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Activity Chart -->
-    <div class="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-gray-900">{{ activityChartTitle }}</h3>
-        <div class="flex items-center space-x-2">
+    <div class="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-gray-900">{{ activityChartTitle }}</h3>
+        <div class="flex items-center space-x-3">
           <select 
             v-model="activityChartType" 
             @change="handleActivityChartTypeChange" 
-            class="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-blue-500 focus:border-blue-500"
+            class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-green-500 focus:border-green-500 bg-white hover:border-green-300 transition-colors duration-200"
           >
             <option value="line">Línea</option>
             <option value="bar">Barras</option>
           </select>
           <button 
             @click="handleActivityRefresh" 
-            class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+            class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
             :disabled="loading"
           >
             <LoadingSpinner 
@@ -41,12 +41,12 @@
     </div>
 
     <!-- Quality Distribution Chart -->
-    <div class="bg-white rounded-lg border border-gray-200 p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-gray-900">{{ qualityChartTitle }}</h3>
+    <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-gray-900">{{ qualityChartTitle }}</h3>
         <button 
           @click="handleQualityRefresh" 
-          class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+          class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
           :disabled="loading"
         >
           <LoadingSpinner 
@@ -288,6 +288,7 @@ export default {
 /* Estilos específicos para los gráficos */
 canvas {
   max-height: 320px;
+  border-radius: 0.5rem;
 }
 
 /* Responsive adjustments */
@@ -315,5 +316,52 @@ canvas {
 .bg-white:hover {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   transition: box-shadow 0.2s ease-in-out;
+}
+
+/* Transiciones suaves */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Mejoras de accesibilidad */
+button:focus-visible {
+  outline: 2px solid rgb(34 197 94);
+  outline-offset: 2px;
+}
+
+select:focus-visible {
+  outline: 2px solid rgb(34 197 94);
+  outline-offset: 2px;
+}
+
+/* Estilos para elementos de estado */
+.text-green-600 {
+  color: rgb(34 197 94);
+}
+
+.bg-green-50 {
+  background-color: rgb(240 253 244);
+}
+
+.border-green-200 {
+  border-color: rgb(187 247 208);
+}
+
+.hover\:border-green-200:hover {
+  border-color: rgb(187 247 208);
+}
+
+.hover\:text-green-600:hover {
+  color: rgb(34 197 94);
+}
+
+.hover\:bg-green-50:hover {
+  background-color: rgb(240 253 244);
+}
+
+.focus\:ring-green-500:focus {
+  --tw-ring-color: rgb(34 197 94);
 }
 </style>

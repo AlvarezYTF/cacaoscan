@@ -4,53 +4,55 @@
     class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0" 
     aria-label="Sidebar"
   >
-    <div class="h-full px-3 py-4 overflow-y-auto bg-white border-r border-gray-200">
+    <div class="h-full px-4 py-6 overflow-y-auto bg-white border-r border-gray-200 shadow-sm">
       <!-- Logo y Branding -->
-      <div class="flex items-center pl-2.5 mb-5">
-        <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
-        </svg>
-        <span class="ml-2 text-xl font-semibold text-gray-800">{{ brandName }}</span>
+      <div class="flex items-center mb-8">
+        <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+          </svg>
+        </div>
+        <span class="ml-3 text-xl font-bold text-gray-900">{{ brandName }}</span>
       </div>
 
       <!-- Navigation Menu -->
-      <ul class="space-y-2 font-medium">
-        <li v-for="item in menuItems" :key="item.id">
+      <nav class="space-y-1">
+        <div v-for="item in menuItems" :key="item.id">
           <router-link 
             :to="item.route" 
-            class="flex items-center p-2 rounded-lg group transition-colors duration-200"
+            class="flex items-center px-3 py-3 text-sm font-medium rounded-lg group transition-all duration-200"
             :class="getMenuItemClass(item)"
             @click="handleMenuClick(item)"
           >
             <svg 
-              class="w-5 h-5 transition duration-75" 
+              class="w-5 h-5 transition-colors duration-200" 
               :class="getIconClass(item)"
               fill="currentColor" 
               viewBox="0 0 20 20"
             >
               <path :d="item.iconPath" :fill-rule="item.fillRule" :clip-rule="item.clipRule"></path>
             </svg>
-            <span class="ml-3">{{ item.label }}</span>
-            <span v-if="item.badge" class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <span class="ml-3 flex-1">{{ item.label }}</span>
+            <span v-if="item.badge" class="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
               {{ item.badge }}
             </span>
           </router-link>
-        </li>
-      </ul>
+        </div>
+      </nav>
 
       <!-- User Section -->
-      <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+      <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200 bg-gray-50">
         <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-            <span class="text-sm font-medium text-white">{{ userInitials }}</span>
+          <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+            <span class="text-sm font-semibold text-white">{{ userInitials }}</span>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-900 truncate">{{ userName }}</p>
-            <p class="text-xs text-gray-500 truncate">{{ userRole }}</p>
+            <p class="text-sm font-semibold text-gray-900 truncate">{{ userName }}</p>
+            <p class="text-xs text-gray-600 truncate">{{ userRole }}</p>
           </div>
           <button 
             @click="handleLogout"
-            class="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+            class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
             title="Cerrar Sesión"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,14 +127,6 @@ export default {
         clipRule: 'evenodd'
       },
       {
-        id: 'dataset',
-        label: 'Dataset',
-        route: '/admin/dataset',
-        iconPath: 'M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z',
-        fillRule: 'evenodd',
-        clipRule: 'evenodd'
-      },
-      {
         id: 'training',
         label: 'Entrenamiento',
         route: '/admin/training',
@@ -162,9 +156,9 @@ export default {
                       (item.route !== '/admin/dashboard' && props.currentRoute.startsWith(item.route))
       
       if (isActive) {
-        return 'text-gray-900 bg-blue-50'
+        return 'text-gray-900 bg-green-50 border-r-2 border-green-600'
       }
-      return 'text-gray-600 hover:bg-gray-100'
+      return 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
     }
 
     const getIconClass = (item) => {
@@ -172,9 +166,9 @@ export default {
                       (item.route !== '/admin/dashboard' && props.currentRoute.startsWith(item.route))
       
       if (isActive) {
-        return 'text-blue-600'
+        return 'text-green-600'
       }
-      return 'text-gray-500 group-hover:text-gray-900'
+      return 'text-gray-500 group-hover:text-gray-700'
     }
 
     const handleMenuClick = (item) => {
@@ -204,8 +198,15 @@ export default {
 }
 
 /* Animación suave para los elementos del menú */
-.group:hover .group-hover\:text-gray-900 {
+.group:hover .group-hover\:text-gray-700 {
   transition: color 0.2s ease-in-out;
+}
+
+/* Estilo para elementos activos */
+.router-link-active {
+  background-color: rgb(240 253 244);
+  border-right: 2px solid rgb(34 197 94);
+  color: rgb(17 24 39);
 }
 
 /* Responsive behavior */
@@ -217,5 +218,18 @@ export default {
   #sidebar.show {
     transform: translateX(0);
   }
+}
+
+/* Mejoras de accesibilidad */
+button:focus-visible {
+  outline: 2px solid rgb(34 197 94);
+  outline-offset: 2px;
+}
+
+/* Transiciones suaves */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
 }
 </style>

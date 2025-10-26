@@ -174,31 +174,25 @@ const startAdvancedTraining = async (modelType, config, dataFilters = {}, experi
  */
 const getTrainingHistory = async (filters = {}) => {
   try {
-    const jobs = await baseGetJobs();
+    // Construir parámetros de consulta
+    const queryParams = new URLSearchParams();
+    if (filters.model_type) queryParams.append('job_type', filters.model_type);
+    if (filters.status) queryParams.append('status', filters.status);
     
-    // Aplicar filtros locales si es necesario (KISS)
-    let filteredJobs = jobs;
+    const url = `${API_BASE_URL}/api/train/jobs/?${queryParams}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
     
-    if (filters.model_type) {
-      filteredJobs = filteredJobs.filter(job => job.model_type === filters.model_type);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     
-    if (filters.status) {
-      filteredJobs = filteredJobs.filter(job => job.status === filters.status);
-    }
+    const data = await response.json();
     
-    if (filters.date_from) {
-      const fromDate = new Date(filters.date_from);
-      filteredJobs = filteredJobs.filter(job => new Date(job.created_at) >= fromDate);
-    }
-    
-    if (filters.date_to) {
-      const toDate = new Date(filters.date_to);
-      filteredJobs = filteredJobs.filter(job => new Date(job.created_at) <= toDate);
-    }
-    
-    // Ordenar por fecha de creación (más reciente primero)
-    return filteredJobs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    // Retornar los resultados (el backend ya aplica filtros)
+    return data.results || [];
     
   } catch (error) {
     console.error('Error obteniendo historial de entrenamiento:', error);
@@ -217,7 +211,7 @@ const getMultipleJobStatus = async (jobIds) => {
     const results = await Promise.allSettled(statusPromises);
     
     return results.map((result, index) => ({
-      jobId: jobIds[index],
+      job_id: jobIds[index],
       success: result.status === 'fulfilled',
       data: result.status === 'fulfilled' ? result.value : null,
       error: result.status === 'rejected' ? result.reason.message : null
@@ -236,7 +230,7 @@ const getMultipleJobStatus = async (jobIds) => {
  */
 const cancelTrainingJob = async (jobId) => {
   try {
-    return await makeRequest(`${API_BASE_URL}/api/images/admin/train/cancel/${jobId}/`, {
+    return await makeRequest(`${API_BASE_URL}/api/train/jobs/${jobId}/cancel/`, {
       method: 'POST'
     });
   } catch (error) {
@@ -252,7 +246,7 @@ const cancelTrainingJob = async (jobId) => {
  */
 const getModelMetrics = async (jobId) => {
   try {
-    return await makeRequest(`${API_BASE_URL}/api/images/admin/train/metrics/${jobId}/`);
+    return await makeRequest(`${API_BASE_URL}/api/train/jobs/${jobId}/metrics/`);
   } catch (error) {
     console.error('Error obteniendo métricas:', error);
     throw error;
@@ -266,7 +260,7 @@ const getModelMetrics = async (jobId) => {
  */
 const compareModels = async (jobIds) => {
   try {
-    return await makeRequest(`${API_BASE_URL}/api/images/admin/train/compare/`, {
+    return await makeRequest(`${API_BASE_URL}/api/train/jobs/compare/`, {
       method: 'POST',
       body: JSON.stringify({ job_ids: jobIds })
     });

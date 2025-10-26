@@ -24,79 +24,88 @@
     />
     
     <!-- Contenido principal -->
-    <div class="p-4 sm:ml-64">
-      <div class="p-4 mt-14">
-        <!-- Contenido principal -->
-        <main class="space-y-6">
-          <!-- Estadísticas rápidas -->
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+    <div class="p-6 sm:ml-64">
+      <!-- Page Header -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Gestión de Agricultores</h1>
+            <p class="text-gray-600 text-lg">Administra todos los agricultores y fincas del sistema</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenido principal -->
+      <main class="space-y-6">
+        <!-- Estadísticas rápidas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
-                  <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
                   </div>
                 </div>
                 <div class="ml-4">
-                  <p class="text-sm font-medium text-gray-500">Total Agricultores</p>
-                  <p class="text-2xl font-semibold text-gray-900">{{ totalItems }}</p>
+                  <p class="text-sm font-medium text-gray-600">Total Agricultores</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ totalItems }}</p>
                 </div>
               </div>
             </div>
             
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
-                  <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                     </svg>
                   </div>
                 </div>
                 <div class="ml-4">
-                  <p class="text-sm font-medium text-gray-500">Total Fincas</p>
-                  <p class="text-2xl font-semibold text-gray-900">{{ getTotalFarms() }}</p>
+                  <p class="text-sm font-medium text-gray-600">Total Fincas</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ getTotalFarms() }}</p>
                 </div>
               </div>
             </div>
             
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
-                  <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                   </div>
                 </div>
                 <div class="ml-4">
-                  <p class="text-sm font-medium text-gray-500">Activos</p>
-                  <p class="text-2xl font-semibold text-gray-900">{{ getActiveFarmers() }}</p>
+                  <p class="text-sm font-medium text-gray-600">Activos</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ getActiveFarmers() }}</p>
                 </div>
               </div>
             </div>
             
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
-                  <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                  <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path>
                     </svg>
                   </div>
                 </div>
                 <div class="ml-4">
-                  <p class="text-sm font-medium text-gray-500">Área Total</p>
-                  <p class="text-2xl font-semibold text-gray-900">{{ getTotalArea() }} ha</p>
+                  <p class="text-sm font-medium text-gray-600">Área Total</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ getTotalArea() }} ha</p>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Barra de búsqueda -->
-          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+          <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
             <SearchBar 
               v-model="searchQuery"
               placeholder="Buscar agricultor por nombre, email o finca..."
@@ -104,7 +113,7 @@
           </div>
 
           <!-- Tabla de agricultores -->
-          <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md hover:border-green-200 transition-all duration-200">
             <!-- Estado vacío -->
             <div v-if="filteredFarmers.length === 0" class="text-center py-12 px-6">
               <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -121,7 +130,7 @@
               <button 
                 v-if="!searchQuery && filters.region === 'all' && filters.status === 'all'"
                 @click="handleNewFarmer"
-                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
               >
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -199,7 +208,6 @@
             </DataTable>
           </div>
         </main>
-      </div>
     </div>
   </div>
 </template>
@@ -428,7 +436,7 @@ export default {
         case 'Activo':
           return 'bg-green-100 text-green-800';
         case 'En revisión':
-          return 'bg-yellow-100 text-yellow-800';
+          return 'bg-amber-100 text-amber-800';
         case 'Inactivo':
           return 'bg-red-100 text-red-800';
         default:

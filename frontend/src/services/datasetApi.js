@@ -344,10 +344,13 @@ export const exportDatasetCSV = async (filters = {}) => {
  */
 export const trainRegressionModel = async (trainingParams) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/images/admin/train/regression/`, {
+    const response = await fetch(`${API_BASE_URL}/api/train/jobs/create/`, {
       method: 'POST',
       headers: getCommonHeaders(),
-      body: JSON.stringify(trainingParams)
+      body: JSON.stringify({
+        job_type: 'regression',
+        ...trainingParams
+      })
     });
     
     return await handleResponse(response);
@@ -364,10 +367,13 @@ export const trainRegressionModel = async (trainingParams) => {
  */
 export const trainVisionModel = async (trainingParams) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/images/admin/train/vision/`, {
+    const response = await fetch(`${API_BASE_URL}/api/train/jobs/create/`, {
       method: 'POST',
       headers: getCommonHeaders(),
-      body: JSON.stringify(trainingParams)
+      body: JSON.stringify({
+        job_type: 'vision',
+        ...trainingParams
+      })
     });
     
     return await handleResponse(response);
@@ -384,7 +390,7 @@ export const trainVisionModel = async (trainingParams) => {
  */
 export const getTrainingJobStatus = async (jobId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/images/admin/train/status/${jobId}/`, {
+    const response = await fetch(`${API_BASE_URL}/api/train/jobs/${jobId}/status/`, {
       method: 'GET',
       headers: getCommonHeaders()
     });
@@ -402,12 +408,13 @@ export const getTrainingJobStatus = async (jobId) => {
  */
 export const getTrainingJobs = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/images/admin/train/jobs/`, {
+    const response = await fetch(`${API_BASE_URL}/api/train/jobs/`, {
       method: 'GET',
       headers: getCommonHeaders()
     });
     
-    return await handleResponse(response);
+    const data = await handleResponse(response);
+    return data.results || [];
   } catch (error) {
     console.error('Error obteniendo lista de jobs:', error);
     throw error;

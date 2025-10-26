@@ -18,7 +18,7 @@
       :user-role="userRole"
       :search-placeholder="searchPlaceholder"
       :refresh-button-text="refreshButtonText"
-      :loading="loading"
+        :loading="loading"
       :initial-period="selectedPeriod"
       :initial-search-query="searchQuery"
       @search="handleSearch"
@@ -27,59 +27,88 @@
     />
 
     <!-- Main Content -->
-    <div class="p-4 sm:ml-64">
+    <div class="p-6 sm:ml-64">
+      <!-- Dashboard Header -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Dashboard de Administración</h1>
+            <p class="text-gray-600 text-lg">Panel de control completo del sistema CacaoScan</p>
+    </div>
+          <div class="flex items-center space-x-3">
+                      <button 
+              @click="handleRefresh"
+              :disabled="loading"
+              class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+            >
+              <svg class="w-4 h-4 mr-2" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              {{ loading ? 'Actualizando...' : 'Actualizar' }}
+                      </button>
+                    </div>
+          </div>
+        </div>
       <!-- KPI Cards Component -->
-      <KPICards 
-        :cards="kpiCards"
-        @card-click="handleKPICardClick"
-      />
+      <div class="mb-8">
+        <KPICards 
+          :cards="kpiCards"
+          @card-click="handleKPICardClick"
+        />
+      </div>
 
       <!-- Charts Component -->
-      <DashboardCharts 
-        :activity-chart-title="activityChartTitle"
-        :quality-chart-title="qualityChartTitle"
-        :activity-chart-data="activityChartData"
-        :quality-chart-data="qualityChartData"
-        :activity-chart-options="activityChartOptions"
-        :quality-chart-options="qualityChartOptions"
-        :loading="loading"
-        :initial-activity-chart-type="activityChartType"
-        @activity-chart-type-change="handleActivityChartTypeChange"
-        @activity-refresh="handleActivityRefresh"
-        @quality-refresh="handleQualityRefresh"
-        @activity-click="handleActivityClick"
-        @quality-click="handleQualityClick"
-      />
+      <div class="mb-8">
+        <DashboardCharts 
+          :activity-chart-title="activityChartTitle"
+          :quality-chart-title="qualityChartTitle"
+          :activity-chart-data="activityChartData"
+          :quality-chart-data="qualityChartData"
+          :activity-chart-options="activityChartOptions"
+          :quality-chart-options="qualityChartOptions"
+          :loading="loading"
+          :initial-activity-chart-type="activityChartType"
+          @activity-chart-type-change="handleActivityChartTypeChange"
+          @activity-refresh="handleActivityRefresh"
+          @quality-refresh="handleQualityRefresh"
+          @activity-click="handleActivityClick"
+          @quality-click="handleQualityClick"
+        />
+      </div>
 
       <!-- Tables Component -->
-      <DashboardTables 
-        :users-table-title="usersTableTitle"
-        :users-table-link="usersTableLink"
-        :users-table-link-text="usersTableLinkText"
-        :activity-table-title="activityTableTitle"
-        :activity-table-link="activityTableLink"
-        :activity-table-link-text="activityTableLinkText"
-        :recent-users="recentUsers"
-        :recent-activities="recentActivities"
-        @view-user="handleViewUser"
-        @edit-user="handleEditUser"
-      />
+      <div class="mb-8">
+        <DashboardTables 
+          :users-table-title="usersTableTitle"
+          :users-table-link="usersTableLink"
+          :users-table-link-text="usersTableLinkText"
+          :activity-table-title="activityTableTitle"
+          :activity-table-link="activityTableLink"
+          :activity-table-link-text="activityTableLinkText"
+          :recent-users="recentUsers"
+          :recent-activities="recentActivities"
+          @view-user="handleViewUser"
+          @edit-user="handleEditUser"
+        />
+        </div>
 
       <!-- Alerts and Reports Component -->
-      <DashboardAlerts 
-        :alerts-title="alertsTitle"
-        :no-alerts-message="noAlertsMessage"
-        :reports-title="reportsTitle"
-        :reports-link="reportsLink"
-        :reports-link-text="reportsLinkText"
-        :total-reports-label="totalReportsLabel"
-        :completed-reports-label="completedReportsLabel"
-        :generating-reports-label="generatingReportsLabel"
-        :failed-reports-label="failedReportsLabel"
-        :alerts="alerts"
-        :report-stats="reportStats"
-        @dismiss-alert="handleDismissAlert"
-      />
+      <div class="mb-8">
+        <DashboardAlerts 
+          :alerts-title="alertsTitle"
+          :no-alerts-message="noAlertsMessage"
+          :reports-title="reportsTitle"
+          :reports-link="reportsLink"
+          :reports-link-text="reportsLinkText"
+          :total-reports-label="totalReportsLabel"
+          :completed-reports-label="completedReportsLabel"
+          :generating-reports-label="generatingReportsLabel"
+          :failed-reports-label="failedReportsLabel"
+          :alerts="alerts"
+          :report-stats="reportStats"
+          @dismiss-alert="handleDismissAlert"
+        />
+      </div>
 
     </div>
   </div>
@@ -846,9 +875,15 @@ export default {
 </script>
 
 <style scoped>
-/* Estilos mínimos para componentes específicos que necesitan ajustes */
+/* Estilos específicos para el dashboard */
+.dashboard-container {
+  background-color: #f9fafb;
+}
+
+/* Mejoras para gráficos */
 canvas {
   max-height: 320px;
+  border-radius: 0.5rem;
 }
 
 /* Asegurar que los gráficos sean responsivos */
@@ -857,4 +892,64 @@ canvas {
     max-height: 250px;
   }
 }
-</style>  
+
+/* Animaciones suaves para elementos interactivos */
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Mejoras de accesibilidad */
+button:focus-visible {
+  outline: 2px solid rgb(34 197 94);
+  outline-offset: 2px;
+}
+
+/* Estilos para elementos de carga */
+.loading-overlay {
+  background-color: rgba(249, 250, 251, 0.8);
+  backdrop-filter: blur(2px);
+}
+
+/* Espaciado consistente */
+.section-spacing {
+  margin-bottom: 2rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .dashboard-header {
+  flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-header h1 {
+    font-size: 1.875rem;
+  }
+  
+  .dashboard-header p {
+  font-size: 1rem;
+}
+}
+
+/* Estilos para elementos de estado */
+.status-success {
+  color: rgb(34 197 94);
+}
+
+.status-warning {
+  color: rgb(245 158 11);
+}
+
+.status-error {
+  color: rgb(239 68 68);
+}
+
+.status-info {
+  color: rgb(59 130 246);
+}
+</style>

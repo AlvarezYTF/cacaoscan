@@ -1,9 +1,9 @@
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- System Alerts -->
-    <div class="bg-white rounded-lg border border-gray-200">
+    <div class="bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-green-200 transition-all duration-200">
       <div class="px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900">{{ alertsTitle }}</h3>
+        <h3 class="text-xl font-bold text-gray-900">{{ alertsTitle }}</h3>
       </div>
       <div class="p-6">
         <div v-if="alerts.length === 0" class="text-center py-8">
@@ -32,7 +32,7 @@
             <div class="ml-3 flex-shrink-0">
               <button 
                 @click="handleDismissAlert(alert.id)"
-                class="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"
+                class="text-gray-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                 :title="`Descartar alerta: ${alert.title}`"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,31 +46,31 @@
     </div>
 
     <!-- Reports Statistics -->
-    <div class="bg-white rounded-lg border border-gray-200">
+    <div class="bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-green-200 transition-all duration-200">
       <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900">{{ reportsTitle }}</h3>
+        <h3 class="text-xl font-bold text-gray-900">{{ reportsTitle }}</h3>
         <router-link 
           :to="reportsLink" 
-          class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+          class="text-sm text-green-600 hover:text-green-700 font-medium transition-colors duration-200"
         >
           {{ reportsLinkText }}
         </router-link>
       </div>
       <div class="p-6">
         <div class="grid grid-cols-2 gap-4">
-          <div class="text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+          <div class="text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
             <div class="text-2xl font-bold text-gray-900">{{ reportStats.total_reportes || 0 }}</div>
             <div class="text-sm text-gray-600">{{ totalReportsLabel }}</div>
           </div>
-          <div class="text-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+          <div class="text-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors duration-200">
             <div class="text-2xl font-bold text-green-600">{{ reportStats.reportes_completados || 0 }}</div>
             <div class="text-sm text-gray-600">{{ completedReportsLabel }}</div>
           </div>
-          <div class="text-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+          <div class="text-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors duration-200">
             <div class="text-2xl font-bold text-blue-600">{{ reportStats.reportes_generando || 0 }}</div>
             <div class="text-sm text-gray-600">{{ generatingReportsLabel }}</div>
           </div>
-          <div class="text-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+          <div class="text-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors duration-200">
             <div class="text-2xl font-bold text-red-600">{{ reportStats.reportes_fallidos || 0 }}</div>
             <div class="text-sm text-gray-600">{{ failedReportsLabel }}</div>
           </div>
@@ -194,14 +194,32 @@ export default {
   transition: background-color 0.2s ease-in-out;
 }
 
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
 /* Hover effects for buttons */
 .hover\:bg-gray-100:hover {
   background-color: #f3f4f6;
 }
 
+.hover\:bg-red-50:hover {
+  background-color: #fef2f2;
+}
+
+.hover\:bg-green-100:hover {
+  background-color: #dcfce7;
+}
+
+.hover\:bg-blue-100:hover {
+  background-color: #dbeafe;
+}
+
 /* Focus states for accessibility */
-button:focus {
-  outline: 2px solid #3b82f6;
+button:focus-visible {
+  outline: 2px solid rgb(34 197 94);
   outline-offset: 2px;
 }
 
@@ -230,5 +248,62 @@ button:focus {
   .space-y-3 > div {
     padding: 0.75rem;
   }
+}
+
+/* Estilos para elementos de estado */
+.text-green-600 {
+  color: rgb(34 197 94);
+}
+
+.text-green-700 {
+  color: rgb(21 128 61);
+}
+
+.text-red-600 {
+  color: rgb(220 38 38);
+}
+
+.bg-green-50 {
+  background-color: rgb(240 253 244);
+}
+
+.bg-green-100 {
+  background-color: rgb(220 252 231);
+}
+
+.bg-red-50 {
+  background-color: rgb(254 242 242);
+}
+
+.bg-blue-50 {
+  background-color: rgb(239 246 255);
+}
+
+.bg-blue-100 {
+  background-color: rgb(219 234 254);
+}
+
+.border-green-200 {
+  border-color: rgb(187 247 208);
+}
+
+.hover\:border-green-200:hover {
+  border-color: rgb(187 247 208);
+}
+
+.hover\:text-green-700:hover {
+  color: rgb(21 128 61);
+}
+
+.hover\:text-red-600:hover {
+  color: rgb(220 38 38);
+}
+
+.focus\:ring-green-500:focus {
+  --tw-ring-color: rgb(34 197 94);
+}
+
+.focus\:ring-red-500:focus {
+  --tw-ring-color: rgb(239 68 68);
 }
 </style>
