@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 
 //Vistas Admin
-import AdminAnalisis from '../views/common/AdminAnalisis.vue'
+import AdminAnalisis from '../views/common/Analisis.vue'
 import AdminConfiguracion from '../views/Admin/AdminConfiguracion.vue'
 import AdminDashboard from '../views/Admin/AdminDashboard.vue'
 import AdminAgricultores from '../views/Admin/AdminAgricultores.vue'
@@ -14,10 +14,11 @@ import DetalleAnalisisView from '../views/DetalleAnalisisView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import ChartDashboard from '../views/ChartDashboard.vue'
-import Analisis from '../views/Analisis.vue'
 import Reportes from '../views/Reportes.vue'
 import ReportsManagement from '../views/ReportsManagement.vue'
 import AgricultorDashboard from '../views/Agricultor/AgricultorDashboard.vue'
+import Historial from '../views/Agricultor/AgricultorHistorial.vue'
+import AgricultorReportes from '../views/Agricultor/AgricultorReportes.vue'
 import PredictionView from '../views/PredictionView.vue'
 import UserPrediction from '../views/UserPrediction.vue'
 import SubirDatosEntrenamiento from '../views/SubirDatosEntrenamiento.vue'
@@ -166,11 +167,10 @@ const router = createRouter({
     {
       path: '/analisis',
       name: 'Analisis',
-      component: Analisis,
+      component: AdminAnalisis,
       meta: {
         title: 'Análisis de Datos | CacaoScan',
         requiresAuth: true,
-        requiresRole: 'analyst',
       },
     },
     {
@@ -199,6 +199,26 @@ const router = createRouter({
       component: AgricultorDashboard,
       meta: {
         title: 'Dashboard de Agricultor | CacaoScan',
+        requiresAuth: true,
+        requiresRole: 'farmer',
+      },
+    },
+    {
+      path: '/agricultor/historial',
+      name: 'Historial',
+      component: Historial,
+      meta: {
+        title: 'Historial de Análisis | CacaoScan',
+        requiresAuth: true,
+        requiresRole: 'farmer',
+      },
+    },
+    {
+      path: '/agricultor/reportes',
+      name: 'AgricultorReportes',
+      component: AgricultorReportes,
+      meta: {
+        title: 'Reportes de Análisis | CacaoScan',
         requiresAuth: true,
         requiresRole: 'farmer',
       },
@@ -380,15 +400,16 @@ router.beforeEach(async (to, from) => {
       console.log(`🧭 Navigating: ${from.name || from.path} → ${to.name || to.path}`)
     }
 
-    // Mostrar loading para navegación entre diferentes rutas
-    if (to.path !== from.path && from.name) {
-      // Emit loading event
-      window.dispatchEvent(
-        new CustomEvent('route-loading-start', {
-          detail: { to, from },
-        }),
-      )
-    }
+    // Mostrar loading SOLO para carga de datos, NO para cambios de vista
+    // COMENTADO: loading durante navegación entre vistas
+    // if (to.path !== from.path && from.name) {
+    //   // Emit loading event
+    //   window.dispatchEvent(
+    //     new CustomEvent('route-loading-start', {
+    //       detail: { to, from },
+    //     }),
+    //   )
+    // }
 
     // Usar store de autenticación (ya importado estáticamente)
     const authStore = useAuthStore()

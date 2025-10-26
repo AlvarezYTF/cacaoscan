@@ -439,10 +439,11 @@ export default {
       localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
     }
     const userRole = computed(() => {
-      const user = authStore.user
-      if (user?.is_superuser) return 'Superadministrador'
-      if (user?.is_staff) return 'Administrador'
-      return 'Usuario'
+      const role = authStore.userRole || 'Usuario'
+      // Normalize role for sidebar - Backend returns: 'admin', 'analyst', or 'farmer'
+      if (role === 'admin') return 'admin'
+      if (role === 'farmer') return 'agricultor'
+      return 'admin' // Default to admin
     })
 
     // Navbar properties

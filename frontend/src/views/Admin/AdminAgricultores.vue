@@ -236,8 +236,12 @@ export default {
     });
 
     const userRole = computed(() => {
-      return authStore.user?.is_superuser ? 'Administrador' : 'Usuario';
-    });
+      const role = authStore.userRole || 'Usuario'
+      // Normalize role for sidebar - Backend returns: 'admin', 'analyst', or 'farmer'
+      if (role === 'admin') return 'admin'
+      if (role === 'farmer') return 'agricultor'
+      return 'admin' // Default to admin
+    })
 
     // Sidebar collapse state
     const isSidebarCollapsed = ref(false);

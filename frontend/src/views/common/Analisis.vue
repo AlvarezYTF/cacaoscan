@@ -7,13 +7,14 @@
       :user-role="userRole"
       :current-route="$route.path"
       :active-section="activeSection"
-      :collapsed="false"
+      :collapsed="isSidebarCollapsed"
       @menu-click="handleMenuClick"
       @logout="handleLogout"
+      @toggle-collapse="toggleSidebarCollapse"
     />
 
     <!-- Main Content with Navbar -->
-    <div class="lg:pl-64">
+    <div :class="isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'">
       <!-- Navbar -->
 
       <!-- Page Content -->
@@ -242,6 +243,9 @@ export default {
     const authStore = useAuthStore();
     const analysisStore = useAnalysisStore();
 
+    // Sidebar collapse state
+    const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
+
     // Local state
     const batchData = ref({
       name: '',
@@ -422,6 +426,11 @@ export default {
       }
     };
 
+    const toggleSidebarCollapse = () => {
+      isSidebarCollapsed.value = !isSidebarCollapsed.value;
+      localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value);
+    };
+
     const handleLogout = async () => {
       try {
         await authStore.logout();
@@ -437,6 +446,8 @@ export default {
     });
 
     return {
+      // Stores
+      authStore,
       // State
       batchData,
       images,
@@ -446,6 +457,7 @@ export default {
       isSubmitting,
       formErrors,
       analysisResult,
+      isSidebarCollapsed,
 
       // Computed
       isFormValid,
@@ -465,7 +477,8 @@ export default {
       submitAnalysis,
       resetForm,
       handleMenuClick,
-      handleLogout
+      handleLogout,
+      toggleSidebarCollapse
     };
   }
 };

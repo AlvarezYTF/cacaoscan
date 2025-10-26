@@ -35,159 +35,6 @@
         </div>
       </div>
 
-      <!-- Analysis Section -->
-      <div v-if="activeSection === 'analysis'" class="dashboard-section">
-        <div class="mb-8">
-          <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">Nuevo Análisis de Lote</h1>
-            <p class="text-gray-600">Sube imágenes de granos de cacao y completa la información del lote</p>
-        </div>
-        </div>
-        
-        <div class="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
-          <div class="p-8 space-y-8">
-            <!-- Progress Indicator -->
-            <ProgressIndicator v-if="isUploading" :progress="uploadProgress" label="Procesando imágenes..." />
-
-            <!-- Batch Info Form -->
-            <div class="bg-gray-50 rounded-lg p-6">
-              <BatchInfoForm 
-                v-model="batchData" 
-                :errors="formErrors" 
-                :user-role="'agricultor'"
-                :user-name="farmerName"
-                :user-id="authStore.user?.id"
-                @update:modelValue="updateBatchData" 
-              />
-                  </div>
-                  
-            <!-- Image Upload Section -->
-            <div class="space-y-6">
-              <div class="text-center">
-                <h2 class="text-2xl font-semibold text-gray-900 mb-3">Imágenes del Lote</h2>
-                <p class="text-gray-600">Captura fotos de alta calidad de los granos de cacao</p>
-              </div>
-
-              <!-- Tabs -->
-              <div class="bg-white border border-gray-200 rounded-lg p-1">
-                <nav class="flex space-x-1">
-                  <button
-                    v-for="tab in tabs"
-                    :key="tab.name"
-                    @click="currentTab = tab.name"
-                    :class="[
-                      currentTab === tab.name
-                        ? 'bg-green-600 text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
-                      'flex-1 py-3 px-4 text-sm font-medium rounded-md transition-colors duration-200'
-                    ]"
-                  >
-                    {{ tab.label }}
-                  </button>
-                </nav>
-              </div>
-
-              <!-- Tab Content -->
-              <div class="mt-6">
-                <!-- File Upload Tab -->
-                <div v-if="currentTab === 'upload'" class="bg-gray-50 rounded-lg p-6">
-                  <ImageUploader
-                    v-model="images"
-                    @update:modelValue="updateImages"
-                  />
-                </div>
-
-                <!-- Camera Capture Tab -->
-                <div v-else-if="currentTab === 'camera'" class="space-y-6">
-                  <div class="bg-gray-50 rounded-lg p-6">
-                  <CameraCapture @capture="handleCapturedImage" />
-                  </div>
-
-                  <!-- Captured Images Preview -->
-                  <div v-if="capturedImages.length > 0" class="bg-white border border-gray-200 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                      </svg>
-                      Fotos capturadas ({{ capturedImages.length }})
-                    </h3>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                      <div v-for="(img, index) in capturedImages" :key="index" class="relative group">
-                        <div class="aspect-square rounded-lg overflow-hidden bg-gray-200">
-                          <img :src="getImageUrl(img)" alt="Imagen capturada" class="w-full h-full object-cover" />
-                        </div>
-                        <button 
-                          @click="removeCapturedImage(index)"
-                          class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                        >
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Submit Section -->
-            <div class="pt-6 border-t border-gray-200">
-              <div class="flex justify-between">
-                <button 
-                  @click="resetForm"
-                  class="px-6 py-3 rounded-lg font-semibold text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
-                >
-                  Limpiar
-                </button>
-                
-                <button 
-                  @click="submitAnalysis"
-                  :disabled="!isFormValid || isSubmitting"
-                  :class="[
-                    'px-8 py-3 rounded-lg font-semibold text-white transition-all duration-200 shadow-md hover:shadow-lg',
-                    (!isFormValid || isSubmitting) ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
-                  ]"
-                >
-                  {{ isSubmitting ? 'Procesando...' : 'Iniciar Análisis' }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- History Section -->
-      <div v-if="activeSection === 'history'" class="dashboard-section">
-            <div class="mb-8">
-          <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-            <h1 class="text-3xl font-bold text-gray-900">Historial de Análisis</h1>
-            <p class="text-gray-600 mt-1">Revisa todos tus análisis de granos de cacao</p>
-          </div>
-        </div>
-        
-        <ImageHistoryCard 
-          :initial-images="recentAnalyses"
-          :auto-load="true"
-          @image-selected="handleImageSelected"
-          @refresh-requested="refreshData"
-        />
-      </div>
-
-      <!-- Reports Section -->
-      <div v-if="activeSection === 'reports'" class="dashboard-section">
-            <div class="mb-8">
-          <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-            <h1 class="text-3xl font-bold text-gray-900">Reportes</h1>
-            <p class="text-gray-600 mt-1">Genera y visualiza reportes detallados de tus análisis</p>
-                </div>
-                </div>
-                
-        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <p class="text-gray-600">Funcionalidad de reportes próximamente disponible</p>
-              </div>
-            </div>
-
       <!-- Settings Section -->
       <div v-if="activeSection === 'settings'" class="dashboard-section">
             <div class="mb-8">
@@ -252,10 +99,9 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { useAnalysisStore } from '@/stores/analysis';
 import { useImageStats } from '@/composables/useImageStats'
 import ImageHistoryCard from '@/components/dashboard/ImageHistoryCard.vue'
 import Sidebar from '@/components/layout/Common/Sidebar.vue'
@@ -263,10 +109,6 @@ import WelcomeHeader from '@/components/agricultor/WelcomeHeader.vue'
 import StatsCards from '@/components/agricultor/StatsCards.vue'
 import RecentActivity from '@/components/agricultor/RecentActivity.vue'
 import QuickActions from '@/components/agricultor/QuickActions.vue'
-import ProgressIndicator from '@/components/admin/AdminAnalisisComponents/ProgressIndicator.vue'
-import BatchInfoForm from '@/components/admin/AdminAnalisisComponents/BatchInfoForm.vue'
-import ImageUploader from '@/components/admin/AdminAnalisisComponents/ImageUploader.vue'
-import CameraCapture from '@/components/admin/AdminAnalisisComponents/CameraCapture.vue'
 
 export default {
   name: 'AgricultorDashboard',
@@ -276,11 +118,7 @@ export default {
     WelcomeHeader,
     StatsCards,
     RecentActivity,
-    QuickActions,
-    ProgressIndicator,
-    BatchInfoForm,
-    ImageUploader,
-    CameraCapture
+    QuickActions
   },
   setup() {
     const router = useRouter();
@@ -441,139 +279,6 @@ export default {
       dataSharing: false
     });
 
-    // Analysis state
-    const analysisStore = useAnalysisStore();
-    const batchData = ref({
-      name: '',
-      collectionDate: '',
-      origin: '',
-      notes: ''
-    });
-    
-    const images = ref([]);
-    const capturedImages = ref([]);
-    const currentTab = ref('upload');
-    const isSubmitting = ref(false);
-    const formErrors = ref({});
-    const analysisResult = ref(null);
-    const isUploading = ref(false);
-    const uploadProgress = ref(0);
-
-    const tabs = [
-      { name: 'upload', label: 'Subir imágenes' },
-      { name: 'camera', label: 'Tomar foto' }
-    ];
-
-    // Watch for captured images changes
-    watch(capturedImages, (newVal) => {
-      const uploadedImages = images.value.filter(img => !capturedImages.value.includes(img));
-      images.value = [...uploadedImages, ...newVal];
-    }, { deep: true });
-
-    const isFormValid = computed(() => {
-      return (
-        batchData.value.name.trim() !== '' &&
-        batchData.value.collectionDate &&
-        images.value.length > 0
-      );
-    });
-
-    const updateBatchData = (data) => {
-      batchData.value = { ...data };
-    };
-
-    const updateImages = (newImages) => {
-      images.value = newImages;
-    };
-
-    const getImageUrl = (img) => {
-      if (img && img.preview) return img.preview;
-      if (typeof img === 'string' && img.startsWith('data:')) return img;
-      if (img && img.url) return img.url;
-      return '';
-    };
-
-    const handleFileUpload = (event) => {
-      const files = event.target.files;
-      if (files && files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            images.value.push({
-              file: files[i],
-              preview: e.target.result
-            });
-          };
-          reader.readAsDataURL(files[i]);
-        }
-      }
-    };
-
-    const removeImage = (index) => {
-      images.value.splice(index, 1);
-    };
-
-    const handleCapturedImage = (imageFile) => {
-      if (!capturedImages.value.some(img => img.name === imageFile.name)) {
-        capturedImages.value = [...capturedImages.value, imageFile];
-      }
-    };
-
-    const removeCapturedImage = (index) => {
-      capturedImages.value.splice(index, 1);
-    };
-
-    const resetForm = () => {
-      batchData.value = {
-        name: '',
-        collectionDate: '',
-        origin: '',
-        notes: ''
-      };
-      images.value = [];
-      capturedImages.value = [];
-      currentTab.value = 'upload';
-      analysisResult.value = null;
-      formErrors.value = {};
-    };
-
-    const submitAnalysis = async () => {
-      if (!isFormValid.value) return;
-
-      try {
-      isSubmitting.value = true;
-        isUploading.value = true;
-        uploadProgress.value = 0;
-      analysisResult.value = null;
-
-        analysisStore.setBatchData(batchData.value);
-        analysisStore.images = [...images.value];
-
-        // Simulate progress
-        const progressInterval = setInterval(() => {
-          if (uploadProgress.value < 90) {
-            uploadProgress.value += 10;
-          }
-        }, 200);
-
-        const result = await analysisStore.submitBatch();
-        
-        clearInterval(progressInterval);
-        uploadProgress.value = 100;
-        analysisResult.value = result;
-        
-        setTimeout(() => {
-          resetForm();
-        }, 3000);
-      } catch (err) {
-        console.error('Error submitting analysis:', err);
-        formErrors.value = { general: err.message || 'Error al procesar el análisis' };
-      } finally {
-        isSubmitting.value = false;
-        isUploading.value = false;
-      }
-    };
-
     return {
       // Stores
       authStore,
@@ -599,27 +304,7 @@ export default {
       loadRecentAnalyses,
       handleImageSelected,
       handleNuevoAnalisis,
-      handleGestionarFincas,
-      // Analysis
-      batchData,
-      images,
-      capturedImages,
-      currentTab,
-      isSubmitting,
-      formErrors,
-      analysisResult,
-      isUploading,
-      uploadProgress,
-      tabs,
-      isFormValid,
-      updateBatchData,
-      updateImages,
-      getImageUrl,
-      removeImage,
-      handleCapturedImage,
-      removeCapturedImage,
-      resetForm,
-      submitAnalysis
+      handleGestionarFincas
     };
   },
   mounted() {
@@ -639,8 +324,15 @@ export default {
   background-color: #F9FAFB;
 }
 
-.dashboard-section {
+.dashboard-main {
+  min-height: 100vh;
+  width: 100%;
   padding: 2rem;
+  overflow-y: auto;
+}
+
+.dashboard-section {
+  max-width: 100%;
 }
 
 .settings-grid {

@@ -112,10 +112,11 @@ export default {
       return user ? `${user.first_name} ${user.last_name}`.trim() || user.username : 'Admin User'
     })
     const userRole = computed(() => {
-      const user = authStore.user
-      if (user?.is_superuser) return 'Administrador'
-      if (user?.is_staff) return 'Staff'
-      return 'Usuario'
+      const role = authStore.userRole || 'Usuario'
+      // Normalize role for sidebar - Backend returns: 'admin', 'analyst', or 'farmer'
+      if (role === 'admin') return 'admin'
+      if (role === 'farmer') return 'agricultor'
+      return 'admin' // Default to admin for AdminDashboard
     })
 
     // Navbar properties
@@ -587,7 +588,11 @@ export default {
     // Sidebar event handlers
     const handleMenuClick = (menuItem) => {
       console.log('Menu clicked:', menuItem)
-      // La navegación se maneja automáticamente por router-link
+      
+      if (menuItem.route) {
+        // Navigate to the route
+        router.push(menuItem.route)
+      }
     }
 
     const handleLogout = async () => {

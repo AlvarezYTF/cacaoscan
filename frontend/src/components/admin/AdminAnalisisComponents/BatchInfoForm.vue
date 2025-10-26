@@ -3,6 +3,48 @@
     <h2 class="text-lg font-medium text-gray-900">Información del Lote</h2>
     
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <!-- Agricultor (First) -->
+      <div>
+        <label for="farmer" class="block text-sm font-medium text-gray-700">
+          Agricultor <span class="text-red-500">*</span>
+        </label>
+        
+        <!-- Select for admin -->
+        <select
+          v-if="userRole === 'admin'"
+          id="farmer"
+          v-model="formData.farmer"
+          :disabled="loadingAgricultores"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+          :class="{ 'border-red-500': errors.farmer, 'bg-gray-100 cursor-wait': loadingAgricultores }"
+        >
+          <option value="">{{ loadingAgricultores ? 'Cargando agricultores...' : 'Selecciona un agricultor' }}</option>
+          <option v-for="agricultor in agricultores" :key="agricultor.id" :value="agricultor.username">
+            {{ agricultor.first_name }} {{ agricultor.last_name }} ({{ agricultor.email }})
+          </option>
+        </select>
+        
+        <!-- Input readonly for agricultor -->
+        <input
+          v-else
+          type="text"
+          id="farmer"
+          v-model="formData.farmer"
+          @input="updateForm"
+          readonly
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 bg-gray-100 cursor-not-allowed"
+          :class="{ 'border-red-500': errors.farmer }"
+        />
+        
+        <p v-if="errors.farmer" class="mt-1 text-sm text-red-600">{{ errors.farmer }}</p>
+        <p v-if="userRole === 'agricultor'" class="mt-1 text-xs text-gray-500">
+          Este campo se completa automáticamente con tu nombre
+        </p>
+        <p v-if="agricultores.length === 0 && !loadingAgricultores && userRole === 'admin'" class="mt-1 text-xs text-amber-600">
+          No hay agricultores registrados
+        </p>
+      </div>
+
       <!-- Finca -->
       <div>
         <label for="farm" class="block text-sm font-medium text-gray-700">
@@ -11,7 +53,6 @@
         <select
           id="farm"
           v-model="formData.farm"
-          @change="updateForm"
           :disabled="loadingFincas"
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
           :class="{ 'border-red-500': errors.farm, 'bg-gray-100 cursor-wait': loadingFincas }"
@@ -41,29 +82,6 @@
           :class="{ 'border-red-500': errors.originPlace }"
         />
         <p v-if="errors.originPlace" class="mt-1 text-sm text-red-600">{{ errors.originPlace }}</p>
-      </div>
-
-      <!-- Agricultor -->
-      <div>
-        <label for="farmer" class="block text-sm font-medium text-gray-700">
-          Agricultor <span class="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="farmer"
-          v-model="formData.farmer"
-          @input="updateForm"
-          :readonly="userRole === 'agricultor'"
-          :class="[
-            'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500',
-            { 'border-red-500': errors.farmer },
-            { 'bg-gray-100 cursor-not-allowed': userRole === 'agricultor' }
-          ]"
-        />
-        <p v-if="errors.farmer" class="mt-1 text-sm text-red-600">{{ errors.farmer }}</p>
-        <p v-if="userRole === 'agricultor'" class="mt-1 text-xs text-gray-500">
-          Este campo se completa automáticamente con tu nombre
-        </p>
       </div>
 
       <!-- Genética -->
@@ -166,6 +184,8 @@
 <script>
 import { ref, watch, onMounted } from 'vue';
 import { getFincas } from '@/services/fincasApi';
+import { useAuthStore } from '@/stores/auth';
+import authApi from '@/services/authApi';
 
 export default {
   name: 'BatchInfoForm',
@@ -193,6 +213,7 @@ export default {
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
+    const authStore = useAuthStore();
     const formData = ref({
       farm: '',
       originPlace: '',
@@ -203,25 +224,30 @@ export default {
 
     const fincas = ref([]);
     const loadingFincas = ref(false);
+    
+    const agricultores = ref([]);
+    const loadingAgricultores = ref(false);
+    
+    // All fincas (keep track of all loaded fincas to filter them)
+    const allFincas = ref([]);
 
-    // Load fincas from backend
-    const loadFincas = async () => {
-      loadingFincas.value = true;
+    
+    // Load agricultores from backend (only for admin)
+    const loadAgricultores = async () => {
+      if (props.userRole !== 'admin') return;
+      
+      loadingAgricultores.value = true;
       try {
-        const response = await getFincas();
-        
-        if (props.userRole === 'agricultor' && props.userId) {
-          // Filter only fincas owned by the current user
-          fincas.value = response.results?.filter(finca => finca.propietario === props.userId) || [];
-        } else {
-          // Admin sees all fincas
-          fincas.value = response.results || [];
-        }
+        const response = await authApi.getUsers();
+        // Filter to get only farmers (non-admin, non-staff users)
+        agricultores.value = response.results?.filter(user => 
+          !user.is_superuser && !user.is_staff && user.role === 'farmer'
+        ) || [];
       } catch (error) {
-        console.error('Error loading fincas:', error);
-        fincas.value = [];
+        console.error('Error loading agricultores:', error);
+        agricultores.value = [];
       } finally {
-        loadingFincas.value = false;
+        loadingAgricultores.value = false;
       }
     };
 
@@ -230,8 +256,20 @@ export default {
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('collectionDate')?.setAttribute('max', today);
       
-      // Load fincas
-      await loadFincas();
+      // Load all fincas
+      await loadAllFincas();
+      
+      // Load agricultores (only for admin)
+      await loadAgricultores();
+      
+      // Set initial fincas based on role
+      if (props.userRole === 'agricultor' && props.userId) {
+        // Filter only fincas owned by the current user
+        fincas.value = allFincas.value.filter(finca => finca.agricultor === props.userId) || [];
+      } else {
+        // Admin sees all fincas initially
+        fincas.value = allFincas.value;
+      }
       
       // Auto-fill farmer name if user is agricultor
       if (props.userRole === 'agricultor' && props.userName && !formData.value.farmer) {
@@ -240,21 +278,83 @@ export default {
       }
     });
 
+    // Load all fincas from backend
+    const loadAllFincas = async () => {
+      try {
+        const response = await getFincas();
+        allFincas.value = response.results || [];
+      } catch (error) {
+        console.error('Error loading all fincas:', error);
+        allFincas.value = [];
+      }
+    };
+
     const updateForm = () => {
       emit('update:modelValue', { ...formData.value });
+    };
+
+    // When farmer changes, filter fincas by that farmer
+    const handleFarmerChange = () => {
+      if (props.userRole === 'agricultor') return;
+      
+      if (formData.value.farmer) {
+        const selectedAgricultor = agricultores.value.find(a => a.username === formData.value.farmer);
+        console.log('🔍 Selected agricultor:', selectedAgricultor);
+        if (selectedAgricultor) {
+          fincas.value = allFincas.value.filter(finca => finca.agricultor === selectedAgricultor.id);
+          console.log('🔍 Filtered fincas for agricultor:', fincas.value);
+        } else {
+          fincas.value = allFincas.value;
+        }
+      } else {
+        fincas.value = allFincas.value;
+      }
+      
+      updateForm();
+    };
+
+    // When finca changes, auto-select the associated farmer
+    const handleFincaChange = () => {
+      if (props.userRole === 'agricultor') return;
+      
+      if (formData.value.farm) {
+        const selectedFinca = allFincas.value.find(f => f.nombre === formData.value.farm);
+        console.log('🔍 Selected finca:', selectedFinca);
+        if (selectedFinca && selectedFinca.agricultor) {
+          const associatedAgricultor = agricultores.value.find(a => a.id === selectedFinca.agricultor);
+          console.log('🔍 Associated agricultor:', associatedAgricultor);
+          if (associatedAgricultor) {
+            formData.value.farmer = associatedAgricultor.username;
+          }
+        }
+      }
+      
+      updateForm();
     };
 
     // Watch for changes in modelValue from parent
     watch(() => props.modelValue, (newValue) => {
       formData.value = { ...newValue };
     }, { deep: true });
+    
+    // Watch for farmer changes
+    watch(() => formData.value.farmer, () => {
+      handleFarmerChange();
+    });
+    
+    // Watch for finca changes
+    watch(() => formData.value.farm, () => {
+      handleFincaChange();
+    });
 
     return {
       formData,
       updateForm,
       userRole: props.userRole,
       fincas,
-      loadingFincas
+      loadingFincas,
+      agricultores,
+      loadingAgricultores
     };
   }
 };

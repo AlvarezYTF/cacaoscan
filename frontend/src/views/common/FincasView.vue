@@ -7,13 +7,14 @@
       :user-role="userRole"
       :current-route="$route.path"
       :active-section="activeSection"
-      :collapsed="false"
+      :collapsed="isSidebarCollapsed"
       @menu-click="handleMenuClick"
       @logout="handleLogout"
+      @toggle-collapse="toggleSidebarCollapse"
     />
 
     <!-- Main Content -->
-    <div class="lg:pl-64">
+    <div :class="isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'">
       <!-- Page Content -->
       <main class="py-6 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto">
@@ -213,6 +214,9 @@ import fincasApi from '@/services/fincasApi'
 const router = useRouter()
 const authStore = useAuthStore()
 
+// Sidebar collapse state
+const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
+
 // Estado reactivo
 const fincas = ref([])
 const loading = ref(false)
@@ -236,10 +240,10 @@ const userName = computed(() => {
 
 const userRole = computed(() => {
   const role = authStore.userRole || 'Usuario'
-  // Normalize role for sidebar
-  if (role === 'farmer' || role === 'Agricultor') return 'agricultor'
-  if (role === 'admin' || role === 'Administrador') return 'admin'
-  return role
+  // Normalize role for sidebar - Backend returns: 'admin', 'analyst', or 'farmer'
+  if (role === 'admin') return 'admin'
+  if (role === 'farmer') return 'agricultor'
+  return 'agricultor' // Default to agricultor
 })
 
 // Debounced search
@@ -340,6 +344,11 @@ const handleMenuClick = (item) => {
       })
     }
   }
+}
+
+const toggleSidebarCollapse = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
 }
 
 const handleLogout = async () => {
