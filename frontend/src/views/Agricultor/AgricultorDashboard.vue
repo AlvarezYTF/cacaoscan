@@ -35,65 +35,6 @@
         </div>
       </div>
 
-      <!-- Settings Section -->
-      <div v-if="activeSection === 'settings'" class="dashboard-section">
-            <div class="mb-8">
-          <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-            <h1 class="text-3xl font-bold text-gray-900">Configuración</h1>
-            <p class="text-gray-600 mt-1">Gestiona tu perfil y preferencias</p>
-                </div>
-                </div>
-                
-        <div class="settings-grid">
-          <div class="settings-card">
-            <h3 class="text-lg font-bold text-gray-900 mb-4">Perfil de Usuario</h3>
-            <div class="space-y-4">
-                <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Nombre completo</label>
-                <input type="text" v-model="userProfile.fullName" placeholder="Tu nombre completo" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200">
-                </div>
-                <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                <input type="email" v-model="userProfile.email" placeholder="tu@email.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200">
-                </div>
-                <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
-                <input type="tel" v-model="userProfile.phone" placeholder="+57 300 123 4567" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200">
-                </div>
-              <button type="button" class="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg">
-                Guardar Cambios
-              </button>
-        </div>
-      </div>
-
-          <div class="settings-card">
-            <h3 class="text-lg font-bold text-gray-900 mb-4">Preferencias</h3>
-            <div class="space-y-4 mb-6">
-              <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <label class="flex items-center cursor-pointer">
-                  <input type="checkbox" v-model="userPreferences.notifications" class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
-                  <span class="ml-3 text-sm font-medium text-gray-700">Recibir notificaciones por email</span>
-                </label>
-              </div>
-              <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <label class="flex items-center cursor-pointer">
-                  <input type="checkbox" v-model="userPreferences.autoReports" class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
-                  <span class="ml-3 text-sm font-medium text-gray-700">Generar reportes automáticamente</span>
-                </label>
-              </div>
-              <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <label class="flex items-center cursor-pointer">
-                  <input type="checkbox" v-model="userPreferences.dataSharing" class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
-                  <span class="ml-3 text-sm font-medium text-gray-700">Compartir datos anónimos para investigación</span>
-                </label>
-              </div>
-            </div>
-            <button type="button" class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg">
-              Guardar Preferencias
-            </button>
-          </div>
-        </div>
-      </div>
     </main>
   </div>
 </template>
@@ -266,19 +207,6 @@ export default {
       }
     };
 
-    // Variables para configuración
-    const userProfile = ref({
-      fullName: authStore.user?.full_name || '',
-      email: authStore.user?.email || '',
-      phone: ''
-    });
-
-    const userPreferences = ref({
-      notifications: true,
-      autoReports: false,
-      dataSharing: false
-    });
-
     return {
       // Stores
       authStore,
@@ -292,8 +220,6 @@ export default {
       loading,
       error,
       imagesLoading,
-      userProfile,
-      userPreferences,
       checkScreenSize,
       setActiveSection,
       handleMenuClick,
@@ -333,18 +259,5 @@ export default {
 
 .dashboard-section {
   max-width: 100%;
-}
-
-.settings-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-}
-
-.settings-card {
-  background: white;
-  border-radius: 1rem;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 </style>

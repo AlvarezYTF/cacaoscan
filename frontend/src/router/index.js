@@ -19,6 +19,7 @@ import ReportsManagement from '../views/ReportsManagement.vue'
 import AgricultorDashboard from '../views/Agricultor/AgricultorDashboard.vue'
 import Historial from '../views/Agricultor/AgricultorHistorial.vue'
 import AgricultorReportes from '../views/Agricultor/AgricultorReportes.vue'
+import AgricultorConfiguracion from '../views/Agricultor/AgricultorConfiguracion.vue'
 import PredictionView from '../views/PredictionView.vue'
 import UserPrediction from '../views/UserPrediction.vue'
 import SubirDatosEntrenamiento from '../views/SubirDatosEntrenamiento.vue'
@@ -219,6 +220,16 @@ const router = createRouter({
       component: AgricultorReportes,
       meta: {
         title: 'Reportes de Análisis | CacaoScan',
+        requiresAuth: true,
+        requiresRole: 'farmer',
+      },
+    },
+    {
+      path: '/agricultor/configuracion',
+      name: 'AgricultorConfiguracion',
+      component: AgricultorConfiguracion,
+      meta: {
+        title: 'Configuración | CacaoScan',
         requiresAuth: true,
         requiresRole: 'farmer',
       },
