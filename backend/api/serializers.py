@@ -98,9 +98,13 @@ class LoginSerializer(serializers.Serializer):
             # Si no funciona, intentar con email
             if not user and email:
                 try:
-                    user_obj = User.objects.get(email=email)
-                    user = authenticate(username=user_obj.username, password=password)
-                except User.DoesNotExist:
+                    # Usar .first() en lugar de .get() para evitar error si hay múltiples usuarios
+                    user_obj = User.objects.filter(email=email).first()
+                    if user_obj:
+                        user = authenticate(username=user_obj.username, password=password)
+                    else:
+                        user = None
+                except Exception:
                     user = None
             
             if user:

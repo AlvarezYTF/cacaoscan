@@ -40,6 +40,7 @@ urlpatterns = [
     
     # Endpoints de gestión de usuarios (Admin)
     path('auth/users/', views.UserListView.as_view(), name='user-list'),
+    path('auth/users/stats/', views.UserStatsView.as_view(), name='users-stats'),
     path('auth/users/<int:user_id>/', views.UserDetailView.as_view(), name='user-detail'),
     path('auth/users/<int:user_id>/update/', views.UserUpdateView.as_view(), name='user-update'),
     path('auth/users/<int:user_id>/delete/', views.UserDeleteView.as_view(), name='user-delete'),

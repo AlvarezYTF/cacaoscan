@@ -78,7 +78,7 @@ const authApi = {
         username: userData.email, // Usar email como username
         email: userData.email,
         password: userData.password,
-        password_confirm: userData.password_confirm, // Usar password_confirm correctamente
+        password_confirm: userData.confirm_password || userData.password_confirm, // Aceptar ambos campos
         first_name: userData.first_name,
         last_name: userData.last_name
       };
@@ -384,6 +384,19 @@ const authApi = {
       return response.data
     } catch (error) {
       console.error('Error cambiando estado de usuario:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Obtener estadísticas de usuarios
+   */
+  async getUserStats() {
+    try {
+      const response = await api.get('/auth/users/stats/')
+      return response.data
+    } catch (error) {
+      console.error('Error obteniendo estadísticas de usuarios:', error)
       throw error
     }
   },

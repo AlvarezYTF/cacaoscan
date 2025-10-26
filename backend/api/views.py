@@ -872,21 +872,14 @@ class LoginView(APIView):
         """
         Autentica un usuario y devuelve tokens JWT.
         """
-        print(f"🔍 DEBUG LoginView - Datos recibidos: {request.data}")
-        
         serializer = LoginSerializer(data=request.data)
-        
-        print(f"🔍 DEBUG LoginView - Serializer válido: {serializer.is_valid()}")
         
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            print(f"✅ DEBUG LoginView - Usuario autenticado: {user.username} ({user.email})")
             
             # Generar tokens JWT
             refresh = RefreshToken.for_user(user)
             access_token = refresh.access_token
-            
-            print(f"✅ DEBUG LoginView - Tokens generados para {user.username}")
             
             # Login en la sesión
             login(request, user)
@@ -902,7 +895,6 @@ class LoginView(APIView):
                 }
             )
         
-        print(f"❌ DEBUG LoginView - Errores de validación: {serializer.errors}")
         return create_error_response(
             message='Credenciales inválidas',
             error_type='invalid_credentials',
@@ -940,25 +932,17 @@ class RegisterView(APIView):
         """
         Registra un nuevo usuario y genera tokens JWT automáticamente.
         """
-        # Log de depuración - datos recibidos
-        print(f"🔍 DEBUG RegisterView - Datos recibidos: {request.data}")
-        
         # Crear una copia de los datos y eliminar el campo 'role' si viene del frontend
         data = request.data.copy()
         data.pop('role', None)  # Elimina si viene en la solicitud
         
-        print(f"🔍 DEBUG RegisterView - Datos procesados: {data}")
-        
         serializer = RegisterSerializer(data=data)
         
         if serializer.is_valid():
-            print("✅ DEBUG RegisterView - Serializer válido")
             user = serializer.save()
-            print(f"✅ DEBUG RegisterView - Usuario creado: {user.username} ({user.email})")
             
             # Crear token de verificación de email
             verification_token = EmailVerificationToken.create_for_user(user)
-            print(f"✅ DEBUG RegisterView - Token de verificación creado: {verification_token.token}")
             
             # Enviar email de bienvenida
             try:
@@ -969,22 +953,17 @@ class RegisterView(APIView):
                     'verification_token': str(verification_token.token),
                     'verification_url': f"{request.build_absolute_uri('/')}auth/verify-email/?token={verification_token.token}"
                 }
-                email_result = send_email_notification(
+                send_email_notification(
                     user_email=user.email,
                     notification_type='welcome',
                     context=email_context
                 )
-                if email_result['success']:
-                    print(f"✅ DEBUG RegisterView - Email de bienvenida enviado a {user.email}")
-                else:
-                    print(f"⚠️ DEBUG RegisterView - Error enviando email de bienvenida: {email_result.get('error')}")
-            except Exception as e:
-                print(f"⚠️ DEBUG RegisterView - Error en envío de email: {e}")
+            except Exception:
+                pass  # No fallar el registro si falla el envío de email
             
             # Generar tokens JWT automáticamente para auto-login
             refresh = RefreshToken.for_user(user)
             access_token = refresh.access_token
-            print(f"✅ DEBUG RegisterView - Tokens JWT creados")
             
             # Login en la sesión
             login(request, user)
@@ -1003,7 +982,6 @@ class RegisterView(APIView):
                 status_code=status.HTTP_201_CREATED
             )
         
-        print(f"❌ DEBUG RegisterView - Errores de validación: {serializer.errors}")
         return create_error_response(
             message='Error en los datos proporcionados',
             error_type='validation_error',
@@ -2152,6 +2130,116 @@ class UserDeleteView(APIView):
             
         except Exception as e:
             logger.error(f"Error eliminando usuario {user_id}: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _is_admin_user(self, user):
+        """
+        Verificar si el usuario es administrador.
+        
+        Args:
+            user: Usuario autenticado
+            
+        Returns:
+            bool: True si es admin, False en caso contrario
+        """
+        return user.is_superuser or user.is_staff
+
+
+class UserStatsView(APIView):
+    """
+    Endpoint para obtener estadísticas de usuarios (Admin only).
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene estadísticas de usuarios del sistema (solo admins)",
+        operation_summary="Estadísticas de usuarios",
+        responses={
+            200: openapi.Response(
+                description="Estadísticas obtenidas exitosamente",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            403: ErrorResponseSerializer,
+        },
+        tags=['Usuarios']
+    )
+    def get(self, request):
+        """
+        Obtiene estadísticas de usuarios.
+        Solo accesible para administradores.
+        """
+        try:
+            # Verificar permisos de administrador
+            if not self._is_admin_user(request.user):
+                return Response({
+                    'error': 'No tienes permisos para acceder a esta funcionalidad',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            from datetime import timedelta, datetime
+            from django.utils import timezone
+            from django.db.models import Count, Q
+            
+            # Estadísticas generales
+            total_users = User.objects.count()
+            active_users = User.objects.filter(is_active=True).count()
+            inactive_users = total_users - active_users
+            
+            # Usuarios registrados hoy
+            today = timezone.now().date()
+            users_today = User.objects.filter(date_joined__date=today).count()
+            
+            # Usuarios en línea (últimos 5 minutos)
+            five_minutes_ago = timezone.now() - timedelta(minutes=5)
+            online_users = User.objects.filter(last_login__gte=five_minutes_ago).count()
+            
+            # Usuarios por rol
+            admin_users = User.objects.filter(Q(is_superuser=True) | Q(is_staff=True)).count()
+            analyst_users = User.objects.filter(groups__name='analyst').distinct().count()
+            farmer_users = User.objects.filter(
+                ~Q(is_superuser=True),
+                ~Q(is_staff=True),
+                ~Q(groups__name='analyst')
+            ).count()
+            
+            # Usuarios por estado de verificación
+            verified_users = User.objects.filter(
+                email_verification_token__is_verified=True
+            ).count()
+            
+            # Usuarios nuevos esta semana
+            this_week_start = today - timedelta(days=today.weekday())
+            users_this_week = User.objects.filter(date_joined__date__gte=this_week_start).count()
+            
+            # Usuarios nuevos este mes
+            this_month_start = today.replace(day=1)
+            users_this_month = User.objects.filter(date_joined__date__gte=this_month_start).count()
+            
+            # Preparar respuesta
+            stats = {
+                'total': total_users,
+                'active': active_users,
+                'inactive': inactive_users,
+                'online': online_users,
+                'new_today': users_today,
+                'new_this_week': users_this_week,
+                'new_this_month': users_this_month,
+                'by_role': {
+                    'admin': admin_users,
+                    'analyst': analyst_users,
+                    'farmer': farmer_users
+                },
+                'verified': verified_users,
+                'generated_at': timezone.now().isoformat()
+            }
+            
+            return Response(stats, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo estadísticas de usuarios: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'

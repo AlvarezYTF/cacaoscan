@@ -24,7 +24,7 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.get('/admin/stats/')
+      const response = await api.get('/auth/admin/stats/')
       stats.value = response.data
       
       return response
@@ -41,8 +41,14 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.get(`/admin/users/recent/?limit=${limit}`)
-      users.value = response.data
+      // Usar el endpoint de usuarios con limit
+      const response = await api.get('/auth/users/', { 
+        params: { 
+          page_size: limit, 
+          ordering: '-date_joined' 
+        } 
+      })
+      users.value = response.data.results || response.data
       
       return response
     } catch (err) {
@@ -75,8 +81,9 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.get('/admin/alerts/')
-      alerts.value = response.data
+      // Las alertas se manejan a través de notificaciones
+      const response = await api.get('/notifications/')
+      alerts.value = response.data.results || response.data
       
       return response
     } catch (err) {
@@ -109,7 +116,7 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.get(`/admin/activity-data/?period=${period}`)
+      const response = await api.get('/audit/activity-logs/')
       
       return response
     } catch (err) {
@@ -125,7 +132,8 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.get('/admin/quality-distribution/')
+      // Usar endpoint de imágenes stats
+      const response = await api.get('/images/stats/')
       
       return response
     } catch (err) {
@@ -141,7 +149,7 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.post(`/admin/alerts/${alertId}/dismiss/`)
+      const response = await api.patch(`/notifications/${alertId}/read/`)
       
       // Remove alert from local state
       alerts.value = alerts.value.filter(alert => alert.id !== alertId)
@@ -160,8 +168,8 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.get('/admin/users/', { params })
-      users.value = response.data.results
+      const response = await api.get('/auth/users/', { params })
+      users.value = response.data.results || response.data
       
       return response
     } catch (err) {
@@ -177,7 +185,7 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.get(`/admin/users/${userId}/`)
+      const response = await api.get(`/auth/users/${userId}/`)
       
       return response
     } catch (err) {
@@ -193,7 +201,7 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.put(`/admin/users/${userId}/`, userData)
+      const response = await api.patch(`/auth/users/${userId}/update/`, userData)
       
       // Update user in local state
       const index = users.value.findIndex(user => user.id === userId)
@@ -215,7 +223,7 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.delete(`/admin/users/${userId}/`)
+      const response = await api.delete(`/auth/users/${userId}/delete/`)
       
       // Remove user from local state
       users.value = users.value.filter(user => user.id !== userId)
@@ -354,14 +362,21 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.get(`/admin/export/${type}/`, {
+      // Usar endpoint de export de imágenes si existe, sino devolver error
+      const endpoint = type === 'images' ? '/images/export/' : null
+      
+      if (!endpoint) {
+        throw new Error(`Exportación de tipo ${type} no disponible`)
+      }
+      
+      const response = await api.get(endpoint, {
         params: { ...params, format },
         responseType: 'blob'
       })
       
       return response
     } catch (err) {
-      error.value = err.response?.data?.detail || 'Error al exportar datos'
+      error.value = err.response?.data?.detail || err.message || 'Error al exportar datos'
       throw err
     } finally {
       loading.value = false
@@ -389,7 +404,8 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.get('/admin/system-health/')
+      // Usar endpoint de stats generales como health check
+      const response = await api.get('/auth/admin/stats/')
       
       return response
     } catch (err) {
