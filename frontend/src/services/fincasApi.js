@@ -42,10 +42,13 @@ export async function getFincaById(fincaId) {
  */
 export async function createFinca(fincaData) {
   try {
+    console.log('📤 [fincasApi] Enviando datos al backend:', fincaData)
     const response = await api.post('/fincas/', fincaData)
+    console.log('✅ [fincasApi] Respuesta del backend:', response.data)
     return response.data
   } catch (error) {
-    console.error('Error creando finca:', error)
+    console.error('❌ [fincasApi] Error creando finca:', error)
+    console.error('❌ [fincasApi] Error response:', error.response?.data)
     throw error
   }
 }

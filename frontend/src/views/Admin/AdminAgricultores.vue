@@ -72,6 +72,10 @@
           :items-per-page="itemsPerPage"
           @new-farmer="handleNewFarmer"
           @page-change="handlePageChange"
+          @view-farmer="handleViewFarmer"
+          @edit-farmer="handleEditFarmer"
+          @delete-farmer="handleDeleteFarmer"
+          @toggle-status="handleToggleStatus"
         />
         </main>
     </div>
@@ -80,6 +84,21 @@
     <CreateFarmerModal 
       ref="createFarmerModalRef"
       @farmer-created="handleFarmerCreated"
+    />
+
+    <!-- Modal para ver detalles del agricultor -->
+    <FarmerDetailModal 
+      ref="farmerDetailModalRef"
+      :farmer="selectedFarmer"
+      @close="selectedFarmer = null"
+    />
+
+    <!-- Modal para editar agricultor -->
+    <EditFarmerModal 
+      ref="editFarmerModalRef"
+      :farmer="selectedFarmerForEdit"
+      @farmer-updated="handleFarmerUpdated"
+      @close="selectedFarmerForEdit = null"
     />
   </div>
 </template>
@@ -92,13 +111,16 @@ import FarmersStatsCards            from '@/components/admin/AdminAgricultorComp
 import FarmersSearchBar             from '@/components/admin/AdminAgricultorComponents/FarmersSearchBar.vue';
 import FarmersTable                 from '@/components/admin/AdminAgricultorComponents/FarmersTable.vue';
 import CreateFarmerModal            from '@/components/admin/AdminAgricultorComponents/CreateFarmerModal.vue';
+import FarmerDetailModal            from '@/components/admin/AdminAgricultorComponents/FarmerDetailModal.vue';
+import EditFarmerModal              from '@/components/admin/AdminAgricultorComponents/EditFarmerModal.vue';
 import { useAuthStore }             from '@/stores/auth';
+import authApi                       from '@/services/authApi';
 import { getFincas, getFincaStats } from '@/services/fincasApi';
 import Swal                         from 'sweetalert2';
 
 export default {
   name: 'AdminAgricultores',
-  components: { AdminSidebar, FarmersStatsCards, FarmersSearchBar, FarmersTable, CreateFarmerModal },
+  components: { AdminSidebar, FarmersStatsCards, FarmersSearchBar, FarmersTable, CreateFarmerModal, FarmerDetailModal, EditFarmerModal },
   setup() {
     const router = useRouter();
     const authStore = useAuthStore();
@@ -178,50 +200,96 @@ export default {
     const loadFarmers = async () => {
       loading.value = true;
       try {
-        // Obtener todas las fincas del backend
-        const response = await getFincas({});
+        // Obtener usuarios y fincas simultáneamente (optimizado para no traer todas las fincas si no es necesario)
+        const [usersResponse, fincasResponse] = await Promise.all([
+          authApi.getUsers({ role: 'farmer' }),
+          getFincas({ page_size: 100 }) // Limitar a 100 fincas para no sobrecargar
+        ]);
         
-        // Extraer información única de agricultores
+        console.log('👥 Usuarios obtenidos:', usersResponse);
+        console.log('🏞️ Fincas obtenidas:', fincasResponse);
+        
+        // Crear un mapa de agricultores
         const agricultoresMap = new Map();
         
-        for (const finca of response.results || []) {
-          const agricultor = finca.agricultor;
-          
-          // Validar que el agricultor existe y tiene id
-          if (!agricultor || !agricultor.id) {
-            console.warn('Finca sin agricultor válido:', finca);
-            continue;
+        // Primero, agregar todos los agricultores (con o sin fincas)
+        if (usersResponse.results) {
+          for (const user of usersResponse.results) {
+            // Filtrar solo agricultores (no admin, no staff)
+            if (user.role === 'farmer' || (!user.is_superuser && !user.is_staff && !user.is_admin)) {
+              // Obtener iniciales
+              const names = user.first_name?.split(' ') || user.username?.split(' ') || [];
+              const initials = names.length >= 2 
+                ? `${names[0].charAt(0)}${names[1].charAt(0)}`.toUpperCase()
+                : user.username?.substring(0, 2).toUpperCase() || 'AA';
+              
+              agricultoresMap.set(user.id, {
+                id: user.id,
+                initials,
+                name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+                email: user.email,
+                farm: 'Sin finca',
+                hectares: '0 hectáreas',
+                region: user.region || 'No especificada',
+                status: user.is_active ? 'Activo' : 'Inactivo',
+                is_active: user.is_active || false,
+                isUpdating: false,
+                fincas: []
+              });
+            }
           }
+        }
+        
+        // Luego, actualizar con información de fincas
+        if (fincasResponse.results) {
+          console.log('🔍 Procesando fincas desde respuesta:', fincasResponse.results);
           
-          if (!agricultoresMap.has(agricultor.id)) {
-            // Obtener iniciales
-            const names = agricultor.first_name?.split(' ') || agricultor.username?.split(' ') || [];
-            const initials = names.length >= 2 
-              ? `${names[0].charAt(0)}${names[1].charAt(0)}`.toUpperCase()
-              : agricultor.username?.substring(0, 2).toUpperCase() || 'AA';
+          for (const finca of fincasResponse.results) {
+            // Intentar obtener el ID del agricultor de diferentes maneras
+            let agricultorId = null;
             
-            agricultoresMap.set(agricultor.id, {
-              id: agricultor.id,
-              initials,
-              name: `${agricultor.first_name || ''} ${agricultor.last_name || ''}`.trim() || agricultor.username,
-              email: agricultor.email,
-              farm: finca.nombre,
-              hectares: `${finca.hectareas} hectáreas`,
-              region: finca.departamento,
-              status: finca.activa ? 'Activo' : 'Inactivo',
-              fincas: [finca]
-            });
-          } else {
-            // Si el agricultor ya existe, agregar finca a su lista
-            const existingFarmer = agricultoresMap.get(agricultor.id);
-            if (existingFarmer && existingFarmer.fincas) {
+            console.log('🔍 Finca actual:', finca);
+            
+            if (finca.agricultor_id) {
+              agricultorId = finca.agricultor_id;
+              console.log('✅ Usando agricultor_id:', agricultorId);
+            } else if (finca.agricultor && finca.agricultor.id) {
+              agricultorId = finca.agricultor.id;
+              console.log('✅ Usando agricultor.id:', agricultorId);
+            } else if (typeof finca.agricultor === 'number') {
+              agricultorId = finca.agricultor;
+              console.log('✅ Usando agricultor (number):', agricultorId);
+            }
+            
+            if (!agricultorId) {
+              console.warn('⚠️ Finca sin agricultor válido:', finca);
+              continue;
+            }
+            
+            const existingFarmer = agricultoresMap.get(agricultorId);
+            if (existingFarmer) {
+              console.log('✅ Agregando finca a agricultor:', agricultorId, existingFarmer.name);
+              
+              // Actualizar información con la primera finca
+              if (existingFarmer.fincas.length === 0) {
+                existingFarmer.farm = finca.nombre;
+                existingFarmer.hectares = `${finca.hectareas} hectáreas`;
+                existingFarmer.region = finca.departamento || existingFarmer.region;
+                existingFarmer.status = finca.activa ? 'Activo' : 'Inactivo';
+              }
+              
               existingFarmer.fincas.push(finca);
+              console.log('✅ Total de fincas para agricultor:', existingFarmer.fincas.length);
+            } else {
+              console.warn('⚠️ Agricultor no encontrado para finca:', agricultorId, finca);
             }
           }
         }
         
         farmers.value = Array.from(agricultoresMap.values());
-        allFincas.value = response.results || [];
+        allFincas.value = fincasResponse.results || [];
+        
+        console.log('✅ Agricultores procesados:', farmers.value);
       } catch (error) {
         console.error('Error cargando agricultores:', error);
         Swal.fire({
@@ -313,8 +381,12 @@ export default {
       });
     };
 
-    // Referencia al modal
+    // Referencias a los modales
     const createFarmerModalRef = ref(null);
+    const farmerDetailModalRef = ref(null);
+    const editFarmerModalRef = ref(null);
+    const selectedFarmer = ref(null);
+    const selectedFarmerForEdit = ref(null);
 
     const handleNewFarmer = () => {
       if (createFarmerModalRef.value) {
@@ -334,6 +406,153 @@ export default {
         showConfirmButton: false,
         timer: 2000
       });
+    };
+
+    const handleViewFarmer = (farmer) => {
+      selectedFarmer.value = farmer;
+      if (farmerDetailModalRef.value) {
+        farmerDetailModalRef.value.openModal();
+      }
+    };
+
+    const handleEditFarmer = (farmer) => {
+      selectedFarmerForEdit.value = farmer;
+      if (editFarmerModalRef.value) {
+        editFarmerModalRef.value.openModal();
+      }
+    };
+
+    const handleFarmerUpdated = (event) => {
+      console.log('Farmer updated event:', event);
+      if (event.type === 'finca-created' || event.type === 'user-updated') {
+        // Recargar agricultores para mostrar los cambios
+        loadFarmers();
+      }
+    };
+
+    const handleDeleteFarmer = async (farmer) => {
+      console.log('Delete farmer:', farmer);
+      
+      try {
+        // Confirmar eliminación con SweetAlert2
+        const result = await Swal.fire({
+          title: '¿Estás seguro?',
+          html: `
+            <div class="text-center">
+              <svg class="mx-auto text-red-600 w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <p class="text-gray-700 mb-2">Se eliminará el agricultor:</p>
+              <p class="text-lg font-bold text-gray-900 mb-4">${farmer.name}</p>
+              <p class="text-sm text-red-600">Esta acción no se puede deshacer</p>
+            </div>
+          `,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#6b7280',
+          confirmButtonText: 'Sí, eliminar',
+          cancelButtonText: 'Cancelar',
+          focusCancel: true,
+          customClass: {
+            popup: 'rounded-xl',
+            confirmButton: 'px-6 py-2.5 rounded-lg font-semibold hover:bg-red-700 transition-all duration-200',
+            cancelButton: 'px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-200 transition-all duration-200'
+          }
+        });
+
+        if (result.isConfirmed) {
+          console.log('Confirmado eliminar agricultor:', farmer.id);
+          
+          // Mostrar indicador de carga
+          Swal.fire({
+            title: 'Eliminando...',
+            text: 'Por favor espera',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+              Swal.showLoading();
+            }
+          });
+
+          // Llamar al backend para eliminar
+          await authApi.deleteUser(farmer.id);
+          
+          console.log('Agricultor eliminado exitosamente');
+
+          // Mostrar éxito
+          Swal.fire({
+            icon: 'success',
+            title: '¡Eliminado!',
+            text: 'El agricultor ha sido eliminado exitosamente',
+            confirmButtonColor: '#10b981',
+            timer: 2000
+          });
+
+          // Recargar la lista de agricultores
+          await loadFarmers();
+        }
+      } catch (error) {
+        console.error('Error eliminando agricultor:', error);
+        
+        // Mostrar error específico
+        const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error al eliminar el agricultor';
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMessage,
+          confirmButtonColor: '#ef4444'
+        });
+      }
+    };
+
+    const handleToggleStatus = async (farmer) => {
+      console.log('Toggle status for farmer:', farmer);
+      
+      try {
+        // Marcar el farmer como actualizándose
+        farmer.isUpdating = true;
+        
+        // Cambiar el estado
+        const newStatus = !farmer.is_active;
+        
+        // Actualizar en el backend
+        await authApi.toggleUserStatus(farmer.id, newStatus);
+        
+        // Actualizar estado local sin recargar
+        farmer.is_active = newStatus;
+        farmer.status = newStatus ? 'Activo' : 'Inactivo';
+        
+        console.log(`✅ Estado actualizado para agricultor ${farmer.name}: ${newStatus ? 'Activo' : 'Inactivo'}`);
+        
+        // Mostrar notificación de éxito
+        Swal.fire({
+          icon: 'success',
+          title: 'Estado actualizado',
+          text: `El agricultor ahora está ${newStatus ? 'activo' : 'inactivo'}`,
+          confirmButtonColor: '#10b981',
+          timer: 2000,
+          showConfirmButton: false
+        });
+        
+      } catch (error) {
+        console.error('Error cambiando estado:', error);
+        
+        // Mostrar error
+        const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error al cambiar el estado del agricultor';
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMessage,
+          confirmButtonColor: '#ef4444'
+        });
+      } finally {
+        // Remover el estado de actualización
+        farmer.isUpdating = false;
+      }
     };
 
     const applyFilters = () => {
@@ -382,6 +601,10 @@ export default {
       toggleSidebarCollapse,
       allFincas,
       createFarmerModalRef,
+      farmerDetailModalRef,
+      editFarmerModalRef,
+      selectedFarmer,
+      selectedFarmerForEdit,
       
       // Props para componentes
       brandName,
@@ -411,6 +634,12 @@ export default {
       handleSearch,
       handleRefresh,
       handleNewFarmer,
+      handleFarmerCreated,
+      handleViewFarmer,
+      handleEditFarmer,
+      handleFarmerUpdated,
+      handleDeleteFarmer,
+      handleToggleStatus,
       applyFilters,
       handlePageChange,
       getStatusClasses,

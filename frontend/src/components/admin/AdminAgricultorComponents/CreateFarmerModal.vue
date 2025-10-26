@@ -309,7 +309,11 @@ export default {
           password_confirm: formData.password_confirm
         };
 
+        console.log('📤 [CreateFarmerModal] Enviando datos:', farmerData);
+
         const response = await authApi.register(farmerData);
+        
+        console.log('✅ [CreateFarmerModal] Respuesta recibida:', response);
 
         Swal.fire({
           icon: 'success',
@@ -324,14 +328,31 @@ export default {
       } catch (error) {
         console.error('Error creando agricultor:', error);
         
-        const errorMessage = error.response?.data?.message || 
-                           error.response?.data?.error || 
-                           'Error al crear el agricultor';
+        // Extraer mensaje de error del backend
+        let errorMessage = 'Error al crear el agricultor';
+        
+        if (error.response?.data) {
+          const data = error.response.data;
+          
+          // Mensaje principal
+          errorMessage = data.message || data.error || errorMessage;
+          
+          // Agregar detalles de validación si existen
+          if (data.details) {
+            const details = Object.entries(data.details)
+              .map(([key, value]) => `${key}: ${Array.isArray(value) ? value[0] : value}`)
+              .join(', ');
+            
+            if (details) {
+              errorMessage += `\n\nDetalles: ${details}`;
+            }
+          }
+        }
         
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: errorMessage,
+          html: errorMessage.replace(/\n/g, '<br>'),
           confirmButtonColor: '#ef4444'
         });
       } finally {

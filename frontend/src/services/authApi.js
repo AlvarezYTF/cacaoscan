@@ -62,15 +62,20 @@ const authApi = {
    */
   async register(userData) {
     try {
-      const response = await api.post('/auth/register/', {
+      console.log('🔍 [authApi] Datos recibidos para registro:', userData);
+      
+      const payload = {
         username: userData.email, // Usar email como username
         email: userData.email,
         password: userData.password,
-        password_confirm: userData.confirm_password, // Corregido: password_confirm
+        password_confirm: userData.password_confirm, // Usar password_confirm correctamente
         first_name: userData.first_name,
         last_name: userData.last_name
-        // El rol 'farmer' se asigna automáticamente en el backend
-      })
+      };
+      
+      console.log('📤 [authApi] Payload enviado al backend:', payload);
+      
+      const response = await api.post('/auth/register/', payload)
       
       console.log('🔍 [authApi] Respuesta cruda del backend (registro):', response.data)
       
@@ -337,7 +342,7 @@ const authApi = {
    */
   async updateUser(userId, userData) {
     try {
-      const response = await api.patch(`/auth/users/${userId}/`, userData)
+      const response = await api.patch(`/auth/users/${userId}/update/`, userData)
       return response.data
     } catch (error) {
       console.error('Error actualizando usuario:', error)
@@ -350,10 +355,25 @@ const authApi = {
    */
   async deleteUser(userId) {
     try {
-      const response = await api.delete(`/auth/users/${userId}/`)
+      const response = await api.delete(`/auth/users/${userId}/delete/`)
       return response.data
     } catch (error) {
       console.error('Error eliminando usuario:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Cambiar estado de usuario (activo/inactivo)
+   */
+  async toggleUserStatus(userId, isActive) {
+    try {
+      const response = await api.patch(`/auth/users/${userId}/update/`, {
+        is_active: isActive
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error cambiando estado de usuario:', error)
       throw error
     }
   },

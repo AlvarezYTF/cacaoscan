@@ -498,7 +498,19 @@ class FincaSerializer(serializers.ModelSerializer):
     
     def get_estadisticas(self, obj):
         """Obtener estadísticas de la finca."""
-        return obj.get_estadisticas()
+        try:
+            return obj.get_estadisticas()
+        except Exception:
+            # Retornar estadísticas vacías si hay error
+            return {
+                'total_lotes': 0,
+                'lotes_activos': 0,
+                'total_analisis': 0,
+                'calidad_promedio': 0.0,
+                'hectareas': float(obj.hectareas) if obj.hectareas else 0.0,
+                'fecha_registro': obj.fecha_registro.strftime('%d/%m/%Y') if obj.fecha_registro else '',
+                'activa': obj.activa if hasattr(obj, 'activa') else True
+            }
     
     def validate_nombre(self, value):
         """Validar nombre de finca."""
@@ -566,19 +578,20 @@ class FincaSerializer(serializers.ModelSerializer):
 
 
 class FincaListSerializer(serializers.ModelSerializer):
-    """Serializer optimizado para listados de fincas."""
-    agricultor_name = serializers.CharField(source='agricultor.get_full_name', read_only=True)
-    ubicacion_completa = serializers.ReadOnlyField()
-    total_lotes = serializers.ReadOnlyField()
-    lotes_activos = serializers.ReadOnlyField()
+    """Serializer optimizado para listados de fincas (sin estadísticas pesadas)."""
+    ubicacion_completa = serializers.SerializerMethodField()
     
     class Meta:
         model = Finca
         fields = (
-            'id', 'nombre', 'ubicacion_completa', 'hectareas', 
-            'agricultor_name', 'total_lotes', 'lotes_activos', 
-            'activa', 'fecha_registro'
+            'id', 'nombre', 'municipio', 'departamento', 'ubicacion', 
+            'ubicacion_completa', 'hectareas', 'activa', 'fecha_registro', 'agricultor_id',
+            'coordenadas_lat', 'coordenadas_lng'
         )
+    
+    def get_ubicacion_completa(self, obj):
+        """Obtener ubicación completa."""
+        return f"{obj.municipio}, {obj.departamento}"
 
 
 class FincaDetailSerializer(FincaSerializer):

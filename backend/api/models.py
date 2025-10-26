@@ -462,6 +462,7 @@ class Finca(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['agricultor', '-created_at']),
+            models.Index(fields=['agricultor_id']),  # Índice específico para búsquedas por agricultor
             models.Index(fields=['municipio', 'departamento']),
             models.Index(fields=['activa']),
         ]
@@ -497,10 +498,14 @@ class Finca(models.Model):
     def calidad_promedio(self):
         """Calcular calidad promedio de la finca basada en análisis."""
         from django.db.models import Avg
-        avg_confidence = self.lotes.aggregate(
-            avg_quality=Avg('cacao_images__prediction__average_confidence')
-        )['avg_quality']
-        return round(float(avg_confidence or 0) * 100, 2)
+        try:
+            avg_confidence = self.lotes.aggregate(
+                avg_quality=Avg('cacao_images__prediction__average_confidence')
+            )['avg_quality']
+            return round(float(avg_confidence or 0) * 100, 2)
+        except Exception:
+            # Si hay error calculando el promedio (relación no existe, etc.)
+            return 0.0
     
     @property
     def ubicacion_completa(self):
