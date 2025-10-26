@@ -73,15 +73,36 @@ class LoadModelsResponseSerializer(serializers.Serializer):
 # Serializers de autenticación
 class LoginSerializer(serializers.Serializer):
     """Serializer para login de usuario."""
-    username = serializers.CharField()
+    username = serializers.CharField(required=False)
+    email = serializers.EmailField(required=False)
     password = serializers.CharField(write_only=True)
     
     def validate(self, attrs):
         username = attrs.get('username')
+        email = attrs.get('email')
         password = attrs.get('password')
         
+        # Si viene email, usarlo como username
+        if email and not username:
+            username = email
+            attrs['username'] = email
+        
+        # Validar que al menos uno esté presente
+        if not username and not email:
+            raise serializers.ValidationError('Debe incluir username o email.')
+        
         if username and password:
+            # Intentar autenticar con username
             user = authenticate(username=username, password=password)
+            
+            # Si no funciona, intentar con email
+            if not user and email:
+                try:
+                    user_obj = User.objects.get(email=email)
+                    user = authenticate(username=user_obj.username, password=password)
+                except User.DoesNotExist:
+                    user = None
+            
             if user:
                 if user.is_active:
                     attrs['user'] = user
@@ -91,7 +112,7 @@ class LoginSerializer(serializers.Serializer):
             else:
                 raise serializers.ValidationError('Credenciales inválidas.')
         else:
-            raise serializers.ValidationError('Debe incluir username y password.')
+            raise serializers.ValidationError('Debe incluir username/email y password.')
 
 
 class RegisterSerializer(serializers.ModelSerializer):

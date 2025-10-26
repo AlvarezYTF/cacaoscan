@@ -872,14 +872,21 @@ class LoginView(APIView):
         """
         Autentica un usuario y devuelve tokens JWT.
         """
+        print(f"🔍 DEBUG LoginView - Datos recibidos: {request.data}")
+        
         serializer = LoginSerializer(data=request.data)
+        
+        print(f"🔍 DEBUG LoginView - Serializer válido: {serializer.is_valid()}")
         
         if serializer.is_valid():
             user = serializer.validated_data['user']
+            print(f"✅ DEBUG LoginView - Usuario autenticado: {user.username} ({user.email})")
             
             # Generar tokens JWT
             refresh = RefreshToken.for_user(user)
             access_token = refresh.access_token
+            
+            print(f"✅ DEBUG LoginView - Tokens generados para {user.username}")
             
             # Login en la sesión
             login(request, user)
@@ -895,6 +902,7 @@ class LoginView(APIView):
                 }
             )
         
+        print(f"❌ DEBUG LoginView - Errores de validación: {serializer.errors}")
         return create_error_response(
             message='Credenciales inválidas',
             error_type='invalid_credentials',

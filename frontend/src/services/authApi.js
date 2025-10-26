@@ -11,10 +11,20 @@ const authApi = {
    */
   async login(credentials) {
     try {
-      const response = await api.post('/auth/login/', {
-        username: credentials.username || credentials.email,
+      // Enviar email si está disponible, de lo contrario username
+      const loginData = {
         password: credentials.password
-      })
+      }
+      
+      // Priorizar email sobre username
+      if (credentials.email) {
+        loginData.email = credentials.email
+        loginData.username = credentials.email
+      } else if (credentials.username) {
+        loginData.username = credentials.username
+      }
+      
+      const response = await api.post('/auth/login/', loginData)
       
       console.log('🔍 [authApi] Respuesta cruda del backend:', response.data)
       
