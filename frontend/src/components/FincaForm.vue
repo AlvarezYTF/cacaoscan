@@ -205,6 +205,8 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import fincasApi from '@/services/fincasApi'
+import { useFincasStore } from '@/stores/fincas'
+import Swal from 'sweetalert2'
 
 const props = defineProps({
   finca: {
@@ -218,6 +220,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'saved'])
+
+const fincasStore = useFincasStore()
 
 // Estado reactivo
 const loading = ref(false)
@@ -315,9 +319,25 @@ const handleSubmit = async () => {
     const formattedData = fincasApi.formatFincaData(formData)
     
     if (props.isEditing) {
-      await fincasApi.updateFinca(props.finca.id, formattedData)
+      await fincasStore.update(props.finca.id, formattedData)
+      // Notificación de éxito
+      Swal.fire({
+        icon: 'success',
+        title: 'Finca actualizada',
+        text: 'La finca se actualizó correctamente.',
+        timer: 3000,
+        showConfirmButton: false
+      })
     } else {
-      await fincasApi.createFinca(formattedData)
+      await fincasStore.create(formattedData)
+      // Notificación de éxito
+      Swal.fire({
+        icon: 'success',
+        title: 'Finca creada',
+        text: 'La finca se creó correctamente.',
+        timer: 3000,
+        showConfirmButton: false
+      })
     }
     
     emit('saved')
@@ -335,6 +355,22 @@ const handleSubmit = async () => {
         } else {
           errors.value[field] = serverErrors[field]
         }
+      })
+      
+      // Notificación de error
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Por favor corrige los errores en el formulario.',
+        timer: 4000
+      })
+    } else {
+      // Error general
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo guardar la finca. Intenta nuevamente.',
+        timer: 4000
       })
     }
   } finally {

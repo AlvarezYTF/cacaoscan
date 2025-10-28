@@ -1,0 +1,1243 @@
+================================================================================
+                    EXPLICACIÓN COMPLETA DEL SISTEMA CACAOSCAN
+================================================================================
+
+1. INTRODUCCIÓN GENERAL DEL SISTEMA
+================================================================================
+
+¿Qué es CacaoScan?
+------------------
+CacaoScan es un sistema web inteligente para agricultores que permite medir 
+las dimensiones (alto, ancho, grosor) y el peso de granos de cacao usando 
+únicamente una fotografía. El sistema utiliza inteligencia artificial (IA) 
+para analizar imágenes de granos de cacao y entregar resultados en segundos.
+
+¿Qué problema resuelve?
+------------------------
+Tradicionalmente, medir granos de cacao requiere herramientas especializadas 
+y tiempo. Los agricultores necesitan datos precisos para:
+- Determinar la calidad de sus cosechas
+- Establecer precios justos
+- Mejorar sus procesos de cultivo
+- Cumplir con estándares de calidad
+
+CacaoScan elimina la necesidad de equipos costosos y permite realizar 
+análisis rápidos desde cualquier smartphone o cámara.
+
+Ejemplo de uso simple:
+----------------------
+1. Un agricultor toma una foto de granos de cacao en su finca
+2. Sube la foto a través de la aplicación web
+3. El sistema analiza la imagen automáticamente
+4. En segundos, recibe:
+   - Mediciones de cada grano (alto, ancho, grosor en milímetros)
+   - Peso estimado (en gramos)
+   - Nivel de confianza de las predicciones
+   - Imagen del grano aislado y procesado
+5. Puede guardar los resultados, generar reportes y ver estadísticas
+
+
+2. TECNOLOGÍAS PRINCIPALES
+================================================================================
+
+Lenguajes de Programación:
+---------------------------
+- Python 3.x (Backend): Gestión de lógica, bases de datos y Machine Learning
+- JavaScript/TypeScript (Frontend): Interfaz interactiva del usuario
+- HTML/CSS: Estructura y diseño visual
+
+Frameworks y Librerías:
+------------------------
+Backend:
+- Django 4.2.7: Framework web principal para Python
+- Django REST Framework: API REST para comunicación frontend-backend
+- Django Channels: WebSockets para actualizaciones en tiempo real
+- PyTorch 2.3.1: Framework de Deep Learning para los modelos de IA
+- Ultralytics YOLOv8: Modelo de segmentación de imágenes
+- Scikit-learn: Modelos de regresión para predicción de dimensiones
+
+Frontend:
+- Vue.js 3: Framework JavaScript para la interfaz de usuario
+- Vite: Herramienta de construcción y desarrollo rápida
+- Vue Router: Navegación entre páginas
+- Pinia: Gestión de estado global
+- Axios: Comunicación con la API del backend
+- Tailwind CSS: Estilos y diseño responsive
+- Chart.js: Gráficos y visualizaciones
+
+Base de Datos:
+--------------
+- PostgreSQL: Base de datos relacional principal
+  - Almacena: usuarios, imágenes, predicciones, fincas, lotes, reportes
+  - Modelo: Diseño relacional con múltiples tablas interconectadas
+  - Características: Soporte para JSON, índices optimizados, transacciones ACID
+
+Otras Herramientas:
+-------------------
+- Redis (opcional): Sistema de caché y WebSockets en tiempo real
+- Celery: Procesamiento asíncrono de tareas pesadas
+- Swagger/ReDoc: Documentación interactiva de la API
+- JWT (JSON Web Tokens): Autenticación segura sin sesiones del servidor
+- reCAPTCHA: Protección contra bots y spam
+- Django Signals: Eventos automáticos del sistema
+
+
+3. ESTRUCTURA DEL PROYECTO
+================================================================================
+
+La estructura del proyecto está organizada en dos grandes partes:
+
+CACAOSCAN/
+│
+├── backend/                    # Servidor y lógica del sistema
+│   ├── api/                    # Módulo principal de la API
+│   │   ├── models.py           # Modelos de datos (tablas de BD)
+│   │   ├── views.py            # Controladores (puntos de entrada de la API)
+│   │   ├── serializers.py      # Convertidores entre datos Python y JSON
+│   │   ├── urls.py             # Rutas de la API (endpoints)
+│   │   ├── security/           # Seguridad y validaciones
+│   │   │   └── recaptcha.py    # Integración con reCAPTCHA
+│   │   ├── services/           # Lógica de negocio separada
+│   │   │   ├── image_service.py
+│   │   │   ├── prediction_service.py
+│   │   │   └── training_service.py
+│   │   └── signals.py          # Eventos automáticos
+│   │
+│   ├── ml/                     # Módulo de Machine Learning
+│   │   ├── segmentation/       # Segmentación de imágenes
+│   │   │   ├── cropper.py      # Recorte de granos de imagen
+│   │   │   └── infer_yolo_seg.py  # Modelo YOLOv8 de segmentación
+│   │   ├── regression/         # Predicción de dimensiones
+│   │   │   ├── models.py       # Arquitectura de redes neuronales
+│   │   │   ├── train.py        # Entrenamiento de modelos
+│   │   │   └── scalers.py      # Normalización de datos
+│   │   ├── prediction/         # Predicción unificada
+│   │   │   ├── predict.py      # Predicciones sin calibración
+│   │   │   └── calibrated_predict.py  # Predicciones calibradas
+│   │   ├── data/               # Preparación de datos
+│   │   │   └── dataset_loader.py
+│   │   └── utils/              # Utilidades de ML
+│   │
+│   ├── users/                  # Gestión de usuarios
+│   │   └── signals.py          # Eventos al crear/actualizar usuarios
+│   │
+│   ├── reports/                # Sistema de reportes
+│   │   ├── models.py           # Modelo de reportes
+│   │   ├── views.py            # Generación de reportes
+│   │   └── pdf_generator.py    # Generación de PDFs
+│   │
+│   ├── cacaoscan/              # Configuración principal
+│   │   ├── settings.py         # Configuración de Django
+│   │   ├── urls.py             # URLs principales
+│   │   ├── wsgi.py             # Servidor WSGI
+│   │   └── asgi.py             # Servidor ASGI (para WebSockets)
+│   │
+│   ├── requirements.txt        # Dependencias de Python
+│   └── manage.py               # Script de administración
+│
+└── frontend/                   # Cliente web
+    ├── src/
+    │   ├── components/         # Componentes Vue reutilizables
+    │   │   ├── auth/           # Login, registro
+    │   │   ├── admin/          # Paneles de administración
+    │   │   ├── agricultor/     # Vistas para agricultores
+    │   │   ├── analysis/       # Análisis de imágenes
+    │   │   ├── charts/         # Gráficos
+    │   │   └── common/         # Componentes compartidos
+    │   │
+    │   ├── views/              # Páginas completas
+    │   │   ├── LoginView.vue
+    │   │   ├── RegisterView.vue
+    │   │   ├── AdminDashboard.vue
+    │   │   ├── AgricultorDashboard.vue
+    │   │   └── ...
+    │   │
+    │   ├── stores/             # Estado global con Pinia
+    │   │   ├── auth.js         # Autenticación y usuario
+    │   │   ├── analysis.js     # Análisis de imágenes
+    │   │   ├── admin.js        # Gestión administrativa
+    │   │   ├── notifications.js # Notificaciones
+    │   │   └── audit.js        # Auditoría
+    │   │
+    │   ├── services/           # Comunicación con API
+    │   │   ├── authApi.js      # Endpoints de autenticación
+    │   │   ├── predictionApi.js # Predicciones
+    │   │   ├── adminApi.js     # Funciones de admin
+    │   │   └── ...
+    │   │
+    │   ├── router/             # Enrutamiento
+    │   │   ├── index.js        # Configuración de rutas
+    │   │   └── guards.js       # Protección de rutas
+    │   │
+    │   └── composables/        # Funciones compartidas
+    │       ├── useWebSocket.js # Conexiones WebSocket
+    │       └── useDashboardStats.js # Estadísticas
+    │
+    ├── package.json            # Dependencias de Node.js
+    └── vite.config.js          # Configuración de Vite
+
+
+4. FLUJO GENERAL DE FUNCIONAMIENTO
+================================================================================
+
+Ejemplo completo: Un agricultor analiza granos de cacao
+-------------------------------------------------------
+
+Paso 1: Autenticación
+---------------------
+1. El usuario ingresa a la URL del sistema (ej: localhost:5173)
+2. Vue Router detecta que debe estar autenticado
+3. Redirige a /login
+4. El usuario ingresa email y contraseña
+5. El frontend envía una petición POST a: /api/v1/auth/login/
+   - Con datos: { email: "...", password: "...", recaptcha_token: "..." }
+
+6. El backend (views.LoginView) recibe la petición:
+   - Valida el reCAPTCHA
+   - Autentica al usuario con Django
+   - Genera tokens JWT (access_token y refresh_token)
+   - Registra el login en LoginHistory
+   - Retorna: { access_token: "...", refresh_token: "..." }
+
+7. El frontend guarda los tokens en localStorage
+8. Guarda la info del usuario en Pinia (authStore)
+9. Redirige al dashboard según el rol del usuario
+
+Paso 2: Subir imagen para análisis
+-----------------------------------
+1. El usuario va a "Analizar Granos" en su dashboard
+2. Selecciona una imagen de granos de cacao desde su dispositivo
+3. El frontend muestra un preview de la imagen
+4. El usuario hace clic en "Analizar"
+
+5. El frontend prepara la petición:
+   - Crea un FormData con el archivo de imagen
+   - Incluye el access_token en el header Authorization
+   - Envía POST a: /api/v1/scan/measure/
+
+6. El backend recibe la petición (views.ScanMeasureView):
+   - Valida el token JWT
+   - Valida que la imagen no exceda 8MB
+   - Guarda la imagen en CacaoImage en la base de datos
+   - Llama al predictor de ML
+
+7. El predictor de ML (ml.prediction.predict):
+   a) Carga el modelo YOLOv8 para segmentación
+   b) Detecta y recorta el grano de cacao de la imagen
+   c) Carga 4 modelos de regresión (uno por cada dimensión)
+   d) Analiza la imagen recortada
+   e) Retorna predicciones: alto, ancho, grosor, peso
+   f) Guarda las predicciones en CacaoPrediction
+
+8. El backend retorna una respuesta JSON:
+   {
+     "alto_mm": 12.5,
+     "ancho_mm": 9.8,
+     "grosor_mm": 7.2,
+     "peso_g": 3.1,
+     "confidences": { "alto": 0.85, "ancho": 0.80, ... },
+     "crop_url": "/media/...",
+     "debug": { "latency_ms": 150 }
+   }
+
+9. El frontend muestra los resultados al usuario
+10. Guarda los datos en el store de análisis
+11. Actualiza estadísticas en el dashboard
+
+Paso 3: Ver historial de análisis
+----------------------------------
+1. El usuario va a "Mi Historial"
+2. El frontend hace GET a: /api/v1/images/
+3. El backend consulta la BD y devuelve lista de análisis
+4. El frontend renderiza una tabla con todos los análisis
+5. El usuario puede filtrar, ordenar y exportar
+
+
+5. COMUNICACIÓN ENTRE FRONTEND Y BACKEND
+================================================================================
+
+Protocolo de comunicación: API REST
+------------------------------------
+El sistema usa una arquitectura REST donde:
+- Frontend y backend son aplicaciones separadas
+- Comunican vía HTTP/HTTPS
+- Intercambian datos en formato JSON
+- Backend expone endpoints (URLs) con diferentes métodos HTTP
+
+Endpoints principales:
+----------------------
+
+1. Autenticación (sin token requerido):
+   POST /api/v1/auth/login/
+   Body: { "email": "...", "password": "...", "recaptcha_token": "..." }
+   Response: { "access_token": "...", "refresh_token": "..." }
+
+2. Predicción (requiere autenticación):
+   POST /api/v1/scan/measure/
+   Headers: { "Authorization": "Bearer <access_token>" }
+   Body: FormData con imagen
+   Response: { "alto_mm": 12.5, "ancho_mm": 9.8, ... }
+
+3. Lista de análisis (requiere autenticación):
+   GET /api/v1/images/
+   Headers: { "Authorization": "Bearer <access_token>" }
+   Response: [ { "id": 1, "image": "...", "prediction": {...} }, ... ]
+
+4. Gestión de fincas (requiere autenticación):
+   GET /api/v1/fincas/          # Listar fincas
+   POST /api/v1/fincas/         # Crear finca
+   GET /api/v1/fincas/<id>/     # Detalle de finca
+   PUT /api/v1/fincas/<id>/     # Actualizar finca
+   DELETE /api/v1/fincas/<id>/  # Eliminar finca
+
+Ejemplo de código frontend (Axios):
+-----------------------------------
+// En authApi.js
+import axios from 'axios'
+
+const API_BASE_URL = 'http://localhost:8000/api/v1'
+
+export const login = async (email, password, recaptchaToken) => {
+  const response = await axios.post(`${API_BASE_URL}/auth/login/`, {
+    email,
+    password,
+    recaptcha_token: recaptchaToken
+  })
+  return response.data
+}
+
+// En predictionApi.js
+export const scanImage = async (imageFile) => {
+  const token = localStorage.getItem('access_token')
+  const formData = new FormData()
+  formData.append('image', imageFile)
+  
+  const response = await axios.post(
+    `${API_BASE_URL}/scan/measure/`,
+    formData,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    }
+  )
+  return response.data
+}
+
+Ejemplo de código backend (Django REST Framework):
+--------------------------------------------------
+# En api/views.py
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+class ScanMeasureView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        # Validar imagen
+        image_file = request.FILES.get('image')
+        if not image_file:
+            return Response({'error': 'Imagen requerida'}, status=400)
+        
+        # Guardar imagen
+        image_obj = CacaoImage.objects.create(
+            user=request.user,
+            image=image_file
+        )
+        
+        # Realizar predicción
+        prediction = predict_image(image_obj.image.path)
+        
+        # Guardar resultado
+        CacaoPrediction.objects.create(
+            image=image_obj,
+            **prediction
+        )
+        
+        return Response(prediction, status=200)
+
+
+6. BASE DE DATOS Y MODELOS
+================================================================================
+
+Estructura principal de las tablas:
+------------------------------------
+
+User (base de Django)
+---------------------
+- id: Identificador único
+- username: Nombre de usuario
+- email: Correo electrónico
+- password: Contraseña (encriptada)
+- first_name, last_name: Nombres del usuario
+- is_active: Usuario activo o no
+- date_joined: Fecha de registro
+
+UserProfile (extension del usuario)
+-----------------------------------
+- user: Relación 1:1 con User
+- phone_number: Teléfono de contacto
+- region, municipality: Ubicación
+- farm_name: Nombre de la finca
+- years_experience: Años de experiencia
+- preferred_language: Idioma preferido ('es' o 'en')
+
+Finca (fincas de cacao)
+-----------------------
+- id: Identificador único
+- nombre: Nombre de la finca
+- ubicacion: Dirección
+- municipio, departamento: Ubicación geográfica
+- hectareas: Tamaño de la finca
+- agricultor: Relación con User (un agricultor puede tener varias fincas)
+- coordenadas_lat, coordenadas_lng: GPS
+- activa: Finca activa o inactiva
+- fecha_registro: Fecha de creación
+
+Lote (lotes dentro de fincas)
+------------------------------
+- id: Identificador único
+- finca: Relación con Finca (una finca tiene varios lotes)
+- identificador: Código del lote dentro de la finca
+- variedad: Tipo de cacao
+- fecha_plantacion, fecha_cosecha: Fechas importantes
+- area_hectareas: Tamaño del lote
+- estado: 'activo', 'inactivo', 'cosechado', 'renovado'
+- coordenadas_lat, coordenadas_lng: GPS del lote
+
+CacaoImage (imágenes subidas)
+------------------------------
+- id: Identificador único
+- user: Relación con User
+- image: Archivo de imagen (upload_to='cacao_images/...')
+- lote: Relación opcional con Lote
+- variedad: Variedad de cacao
+- fecha_cosecha: Fecha de la cosecha
+- processed: Si ya fue procesada
+- uploaded_at: Fecha de subida
+
+CacaoPrediction (resultados de ML)
+-----------------------------------
+- id: Identificador único
+- image: Relación 1:1 con CacaoImage
+- alto_mm, ancho_mm, grosor_mm, peso_g: Predicciones
+- confidence_alto, confidence_ancho, ...: Niveles de confianza
+- processing_time_ms: Tiempo de procesamiento
+- crop_url: URL del grano recortado
+- model_version: Versión del modelo usado
+- device_used: 'cpu', 'cuda' (GPU) o 'mps' (Apple Silicon)
+
+TrainingJob (trabajos de entrenamiento)
+----------------------------------------
+- id, job_id: Identificadores
+- job_type: 'regression', 'vision', 'incremental'
+- status: 'pending', 'running', 'completed', 'failed'
+- created_by: Usuario que inició el entrenamiento
+- model_name: Nombre del modelo
+- dataset_size: Tamaño del dataset
+- epochs, batch_size, learning_rate: Parámetros
+- metrics: Resultados del entrenamiento (JSON)
+- model_path: Ruta del modelo entrenado
+- logs: Logs del entrenamiento
+
+Notification (notificaciones del sistema)
+------------------------------------------
+- id: Identificador único
+- user: Usuario destinatario
+- tipo: 'info', 'warning', 'error', 'success', ...
+- titulo, mensaje: Contenido de la notificación
+- leida: Si ya fue leída
+- fecha_creacion: Fecha de creación
+- datos_extra: Datos adicionales (JSON)
+
+ActivityLog (logs de auditoría)
+--------------------------------
+- id: Identificador único
+- usuario: Usuario que realizó la acción
+- accion: 'login', 'logout', 'create', 'update', 'delete', ...
+- modelo: Nombre del modelo afectado (ej: "CacaoImage")
+- objeto_id: ID del objeto
+- descripcion: Descripción de la acción
+- ip_address, user_agent: Información del cliente
+- datos_antes, datos_despues: Estado antes y después (JSON)
+- timestamp: Fecha y hora
+
+Relaciones entre tablas:
+------------------------
+User (1) ───┬── (M) UserProfile
+            ├── (M) Finca
+            ├── (M) CacaoImage
+            ├── (M) Notification
+            └── (M) ActivityLog
+
+Finca (1) ── (M) Lote
+
+CacaoImage (1) ── (1) CacaoPrediction
+         (M) ── (1) User
+         (M) ── (1) Lote
+
+Ejemplo de datos en la base de datos:
+--------------------------------------
+User (ejemplo):
+  id: 5
+  username: "juan_garcia"
+  email: "juan@example.com"
+  first_name: "Juan"
+  last_name: "García"
+  is_active: true
+
+Finca (ejemplo):
+  id: 12
+  nombre: "Finca El Paraíso"
+  ubicacion: "Vereda La Libertad Km 5"
+  municipio: "Rionegro"
+  departamento: "Antioquia"
+  hectareas: 15.50
+  agricultor_id: 5
+  activa: true
+
+CacaoImage (ejemplo):
+  id: 342
+  user_id: 5
+  lote_id: 45
+  image: "cacao_images/processed/2024/01/15/img_342.jpg"
+  processed: true
+  variedad: "Criollo"
+  uploaded_at: "2024-01-15 14:30:00"
+
+CacaoPrediction (ejemplo):
+  id: 342
+  image_id: 342
+  alto_mm: 12.50
+  ancho_mm: 9.80
+  grosor_mm: 7.20
+  peso_g: 3.10
+  confidence_alto: 0.85
+  confidence_ancho: 0.80
+  confidence_grosor: 0.75
+  confidence_peso: 0.70
+  processing_time_ms: 150
+  model_version: "v1.0"
+
+
+7. LÓGICA INTERNA O CAPAS DEL BACKEND
+================================================================================
+
+El backend sigue una arquitectura en capas para mantener el código organizado:
+
+Capa 1: URLs y Routing (urls.py)
+---------------------------------
+Define qué URLs del sistema existen y a qué vistas se conectan.
+
+Ejemplo:
+  path('scan/measure/', views.ScanMeasureView.as_view(), name='scan-measure')
+  
+Significa: Cuando alguien hace POST a /api/v1/scan/measure/, 
+se ejecuta el método POST de ScanMeasureView.
+
+Capa 2: Views (Controladores) - views.py
+-----------------------------------------
+Reciben peticiones HTTP, validan datos y coordinan la lógica.
+
+Estructura típica:
+  class ScanMeasureView(APIView):
+      permission_classes = [IsAuthenticated]  # Requiere autenticación
+      
+      def post(self, request):
+          # 1. Validar datos
+          serializer = ImageSerializer(data=request.data)
+          serializer.is_valid(raise_exception=True)
+          
+          # 2. Llamar al servicio
+          result = PredictionService.predict_image(
+              request.user, 
+              serializer.validated_data['image']
+          )
+          
+          # 3. Retornar respuesta
+          return Response(result, status=200)
+
+Capa 3: Services (Lógica de Negocio) - services/
+-----------------------------------------------
+Contienen la lógica de negocio reutilizable y separada de los controladores.
+
+Ejemplo en services/prediction_service.py:
+  class PredictionService:
+      @staticmethod
+      def predict_image(user, image_file):
+          # Guardar imagen en BD
+          image_obj = CacaoImage.objects.create(
+              user=user,
+              image=image_file
+          )
+          
+          # Realizar predicción ML
+          ml_result = ml.prediction.predict_image_bytes(image_file.read())
+          
+          # Guardar predicción
+          prediction = CacaoPrediction.objects.create(
+              image=image_obj,
+              **ml_result
+          )
+          
+          # Crear notificación
+          NotificationService.create_notification(
+              user=user,
+              tipo='success',
+              titulo='Análisis completado',
+              mensaje=f'Se analizaron {ml_result["peso_g"]}g de cacao'
+          )
+          
+          return ml_result
+
+Capa 4: Models (Capas de Datos) - models.py
+--------------------------------------------
+Definen la estructura de la base de datos y operaciones con datos.
+
+Ejemplo:
+  class CacaoImage(models.Model):
+      user = models.ForeignKey(User, on_delete=models.CASCADE)
+      image = models.ImageField(upload_to='cacao_images/...')
+      uploaded_at = models.DateTimeField(auto_now_add=True)
+      
+      def __str__(self):
+          return f"Imagen {self.id} - {self.user.username}"
+      
+      @property
+      def has_prediction(self):
+          return hasattr(self, 'prediction')
+
+Capa 5: Serializers - serializers.py
+-------------------------------------
+Convierten objetos Python a JSON y viceversa, validan datos.
+
+Ejemplo:
+  class CacaoImageSerializer(serializers.ModelSerializer):
+      prediction = CacaoPredictionSerializer(read_only=True)
+      
+      class Meta:
+          model = CacaoImage
+          fields = ['id', 'image', 'uploaded_at', 'prediction']
+          read_only_fields = ['id', 'uploaded_at']
+
+Capa 6: ML - ml/
+----------------
+Módulo de Machine Learning con subcapas:
+
+a) Segmentación (ml/segmentation/cropper.py):
+   - Carga modelo YOLOv8
+   - Detecta granos de cacao en la imagen
+   - Recorta cada grano individualmente
+
+b) Regresión (ml/regression/models.py):
+   - Define arquitectura de redes neuronales (ResNet18)
+   - 4 modelos separados: uno para alto, ancho, grosor y peso
+
+c) Predicción (ml/prediction/predict.py):
+   - Orquesta todo el proceso
+   - Llama a segmentación
+   - Llama a cada modelo de regresión
+   - Retorna resultados unificados
+
+Flujo interno de predicción:
+----------------------------
+1. ImageUpload (multipart/form-data)
+   ↓
+2. ScanMeasureView.post() (views.py)
+   ↓
+3. PredictionService.predict_image() (services/)
+   ↓
+4. CacaoImage.save() (models.py → BD)
+   ↓
+5. ML.predict_image_bytes() (ml/prediction/predict.py)
+   ↓
+6a. YOLOCropper.segment() (ml/segmentation/)
+    └─> Detecta y recorta grano
+   ↓
+6b. RegressionModel.predict() (ml/regression/)
+    └─> Predice cada dimensión
+   ↓
+7. CacaoPrediction.save() (models.py → BD)
+   ↓
+8. Response JSON (serializers.py)
+
+
+8. AUTENTICACIÓN Y SEGURIDAD
+================================================================================
+
+Sistema de autenticación: JWT (JSON Web Tokens)
+------------------------------------------------
+En lugar de usar sesiones del servidor, el sistema usa tokens JWT que se 
+almacenan en el frontend y se envían con cada petición.
+
+Ventajas:
+- Escalable: No requiere almacenamiento de sesiones en el servidor
+- Stateless: El servidor no guarda estado de autenticación
+- Seguro: Tokens firmados criptográficamente
+
+Flujo de autenticación:
+-----------------------
+1. Usuario hace login con email/password
+2. Backend verifica credenciales
+3. Backend genera dos tokens:
+   - access_token: Válido por 1 hora (usado en todas las peticiones)
+   - refresh_token: Válido por 7 días (usado para renovar el access_token)
+4. Frontend guarda ambos tokens en localStorage
+5. En cada petición, el frontend envía: Authorization: Bearer <access_token>
+6. Si el access_token expira, el frontend usa el refresh_token para obtener uno nuevo
+
+Configuración en settings.py:
+------------------------------
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # 1 hora
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # 7 días
+    'ROTATE_REFRESH_TOKENS': True,                   # Rotar tokens
+    'BLACKLIST_AFTER_ROTATION': True,                # Invalidar tokens antiguos
+    'ALGORITHM': 'HS256',                            # Algoritmo de firma
+    'SIGNING_KEY': SECRET_KEY,                       # Clave secreta
+}
+
+Roles y Permisos:
+-----------------
+El sistema tiene 3 roles principales:
+1. Admin: Acceso completo al sistema
+   - Ver todos los usuarios y sus datos
+   - Gestionar fincas, lotes y análisis
+   - Entrenar modelos de ML
+   - Ver auditoría completa
+
+2. Analyst (Analista): Acceso a análisis y reportes
+   - Ver y analizar todas las imágenes subidas
+   - Generar reportes de calidad
+   - Ver estadísticas globales
+
+3. Farmer (Agricultor): Usuario final
+   - Ver solo sus propias fincas y lotes
+   - Subir y analizar sus propias imágenes
+   - Ver reportes de sus cultivos
+
+Implementación en código:
+--------------------------
+# En views.py
+class AdminStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        # Solo admins pueden acceder
+        if not request.user.is_superuser:
+            return Response({'error': 'No autorizado'}, status=403)
+        
+        stats = calculate_admin_stats()
+        return Response(stats)
+
+Protección contra bots: reCAPTCHA
+----------------------------------
+Todas las acciones críticas (login, registro, recuperación de contraseña) 
+están protegidas con Google reCAPTCHA v3.
+
+Flujo:
+1. Usuario interactúa con el formulario
+2. Frontend obtiene un token de reCAPTCHA
+3. Frontend envía el token junto con los datos al backend
+4. Backend valida el token con Google
+5. Si es válido, procesa la acción
+6. Si es inválido (bot), rechaza la petición
+
+Implementación:
+--------------
+# Frontend (LoginForm.vue)
+import { useRecaptcha } from '@/composables/useRecaptcha'
+
+const { executeRecaptcha } = useRecaptcha()
+const recaptchaToken = await executeRecaptcha('login')
+
+# Backend (security/recaptcha.py)
+def verify_recaptcha(token):
+    response = requests.post('https://www.google.com/recaptcha/api/siteverify', {
+        'secret': RECAPTCHA_SECRET_KEY,
+        'response': token
+    })
+    return response.json()['success']
+
+Recuperación de contraseña:
+---------------------------
+1. Usuario solicita recuperación (olvidé mi contraseña)
+2. Sistema genera un token único y temporal
+3. Sistema envía email con link de recuperación
+4. Usuario hace clic en el link (expira en 24 horas)
+5. Usuario ingresa nueva contraseña
+6. Sistema valida el token y actualiza la contraseña
+
+Registro de actividad (Auditoría):
+-----------------------------------
+Todas las acciones importantes se registran en ActivityLog:
+- Login/Logout: Quién, cuándo, desde qué IP
+- Creación/Eliminación: Qué se creó/eliminó, quién
+- Actualizaciones: Estado antes y después
+- Análisis: Qué usuario analizó qué imágenes
+
+
+9. INTERFAZ DE USUARIO (FRONTEND)
+================================================================================
+
+Arquitectura de Vue.js:
+-----------------------
+El frontend usa Vue.js 3 con Composition API, que organiza el código por 
+funcionalidad en lugar de por tipo.
+
+Estructura de un componente típico:
+------------------------------------
+<template>
+  <!-- HTML con sintaxis de Vue -->
+  <div class="dashboard">
+    <h1>Bienvenido, {{ userFullName }}</h1>
+    <button @click="handleClick">Analizar Imagen</button>
+    <div v-if="loading">Cargando...</div>
+  </template>
+
+<script>
+  // Lógica del componente (JavaScript)
+  import { ref, computed } from 'vue'
+  import { useAuthStore } from '@/stores/auth'
+  import predictionApi from '@/services/predictionApi'
+  
+  export default {
+    setup() {
+      const authStore = useAuthStore()
+      const loading = ref(false)
+      
+      const userFullName = computed(() => authStore.userFullName)
+      
+      const handleClick = async () => {
+        loading.value = true
+        try {
+          const result = await predictionApi.scanImage(imageFile)
+          console.log(result)
+        } finally {
+          loading.value = false
+        }
+      }
+      
+      return { userFullName, loading, handleClick }
+    }
+  }
+</script>
+
+<style scoped>
+  /* Estilos CSS solo para este componente */
+  .dashboard { padding: 20px; }
+</style>
+
+Gestión de Estado: Pinia
+-------------------------
+Pinia es el sistema de gestión de estado global (como Redux en React).
+
+Ejemplo del store de autenticación (stores/auth.js):
+----------------------------------------------------
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+
+export const useAuthStore = defineStore('auth', () => {
+  // Estado reactivo
+  const user = ref(null)
+  const accessToken = ref(localStorage.getItem('access_token'))
+  
+  // Getters computados
+  const isAuthenticated = computed(() => {
+    return !!(accessToken.value && user.value)
+  })
+  
+  const userRole = computed(() => {
+    return user.value?.role || null
+  })
+  
+  // Acciones
+  async function login(email, password, recaptchaToken) {
+    const response = await authApi.login(email, password, recaptchaToken)
+    accessToken.value = response.access_token
+    localStorage.setItem('access_token', response.access_token)
+    await fetchUser()
+  }
+  
+  async function fetchUser() {
+    const response = await authApi.getProfile()
+    user.value = response
+  }
+  
+  return { user, isAuthenticated, userRole, login, fetchUser }
+})
+
+Uso en componentes:
+-------------------
+<script setup>
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+
+// Acceder al estado
+console.log(authStore.user)  // Usuario actual
+console.log(authStore.isAuthenticated)  // true/false
+
+// Llamar acciones
+await authStore.login('email@example.com', 'password', 'token')
+</script>
+
+Navegación: Vue Router
+----------------------
+El sistema de rutas define qué componente se muestra en cada URL.
+
+Ejemplo de configuración (router/index.js):
+--------------------------------------------
+import { createRouter, createWebHistory } from 'vue-router'
+import AdminDashboard from '../views/AdminDashboard.vue'
+import AgricultorDashboard from '../views/AgricultorDashboard.vue'
+
+const routes = [
+  {
+    path: '/',
+    name: 'Home',
+    component: HomeView
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    redirect: () => {
+      const authStore = useAuthStore()
+      switch(authStore.userRole) {
+        case 'admin': return '/admin/dashboard'
+        case 'farmer': return '/agricultor-dashboard'
+        default: return '/'
+      }
+    }
+  },
+  {
+    path: '/admin/dashboard',
+    name: 'AdminDashboard',
+    component: AdminDashboard,
+    meta: { requiresAuth: true, requiresRole: 'admin' }
+  }
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+})
+
+// Guard global (protección de rutas)
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore()
+  
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    next('/login')  // Redirigir a login
+  } else if (to.meta.requiresRole && authStore.userRole !== to.meta.requiresRole) {
+    next('/access-denied')  // No tiene permisos
+  } else {
+    next()  // Permitir acceso
+  }
+})
+
+Componentes reutilizables:
+--------------------------
+Los componentes comunes están en components/common/:
+
+- LoadingSpinner.vue: Círculo de carga animado
+- ErrorAlert.vue: Mensajes de error
+- ConfirmModal.vue: Confirmación antes de eliminar
+- Pagination.vue: Navegación de páginas
+- StatsCard.vue: Tarjetas de estadísticas
+
+Ejemplo de uso:
+---------------
+<template>
+  <div>
+    <LoadingSpinner v-if="loading" />
+    <ErrorAlert v-if="error" :message="error" />
+    <StatsCard :title="'Total Análisis'" :value="stats.total" />
+    <ConfirmModal 
+      v-if="showDeleteModal"
+      @confirm="deleteItem"
+      @cancel="showDeleteModal = false"
+    />
+  </div>
+</template>
+
+Comunicación con API:
+---------------------
+Los servicios en services/ encapsulan toda la comunicación con el backend:
+
+// services/predictionApi.js
+import axios from 'axios'
+
+const API_BASE_URL = import.meta.env.VITE_API_URL
+
+export const scanImage = async (imageFile) => {
+  const token = localStorage.getItem('access_token')
+  const formData = new FormData()
+  formData.append('image', imageFile)
+  
+  const response = await axios.post(
+    `${API_BASE_URL}/scan/measure/`,
+    formData,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  )
+  return response.data
+}
+
+Uso en componentes:
+-------------------
+<script setup>
+import { scanImage } from '@/services/predictionApi'
+
+const handleUpload = async () => {
+  try {
+    const result = await scanImage(selectedFile)
+    console.log('Predicción:', result)
+  } catch (error) {
+    console.error('Error:', error)
+  }
+}
+</script>
+
+
+10. EJEMPLO DE FLUJO COMPLETO DE USO
+================================================================================
+
+Escenario: Juan, un agricultor nuevo, usa CacaoScan por primera vez
+--------------------------------------------------------------------
+
+Paso 1: Registro (5 minutos)
+----------------------------
+1. Juan accede a cacaoscan.com
+2. Ve la página de inicio con información del sistema
+3. Hace clic en "Registrarse"
+4. Completa el formulario:
+   - Email: juan@example.com
+   - Contraseña: ********
+   - Nombre: Juan
+   - Apellido: García
+   - Teléfono: +57 300 123 4567
+5. Resuelve el captcha (para verificar que no es bot)
+6. Hace clic en "Crear cuenta"
+
+Backend:
+- Se crea registro en User
+- Se genera token de verificación de email
+- Se envía email a juan@example.com con link de verificación
+- Se crea UserProfile con los datos adicionales
+
+Frontend:
+- Muestra mensaje: "Por favor verifica tu email"
+- Redirige a página de verificación
+
+7. Juan abre su email y hace clic en el link
+8. Su email queda verificado y su cuenta activada
+
+Paso 2: Login (2 minutos)
+--------------------------
+1. Juan regresa a cacaoscan.com
+2. Hace clic en "Iniciar Sesión"
+3. Ingresa email y contraseña
+4. Hace clic en "Entrar"
+
+Backend:
+- Valida credenciales
+- Genera tokens JWT
+- Registra login en LoginHistory
+- Retorna tokens y datos del usuario
+
+Frontend:
+- Guarda tokens en localStorage
+- Guarda info del usuario en Pinia
+- Redirige a dashboard de agricultor
+
+Paso 3: Configurar finca (10 minutos)
+--------------------------------------
+1. Juan ve su dashboard con estadísticas vacías
+2. Hace clic en "Registrar mi Finca"
+3. Completa el formulario:
+   - Nombre: "Finca El Paraíso"
+   - Ubicación: "Vereda La Libertad Km 5"
+   - Municipio: "Rionegro"
+   - Departamento: "Antioquia"
+   - Hectáreas: 15.5
+4. Guarda
+
+Backend:
+- Se crea registro en Finca
+- Se asocia la finca a Juan
+- Se registra la acción en ActivityLog
+
+Frontend:
+- Muestra mensaje de éxito
+- Redirige a detalles de la finca
+
+5. Juan crea un lote dentro de su finca:
+   - Identificador: "Lote A"
+   - Variedad: "Criollo"
+   - Fecha de plantación: 2020-03-15
+   - Área: 5 hectáreas
+
+Paso 4: Primer análisis (15 minutos)
+-------------------------------------
+1. Juan tiene una cosecha de granos de cacao
+2. Toma una foto de 10 granos en su celular
+3. Abre CacaoScan en su navegador móvil
+4. Va a "Analizar Granos"
+5. Selecciona la foto desde su dispositivo
+6. Selecciona el lote "Lote A"
+7. Hace clic en "Analizar"
+
+Frontend:
+- Muestra "Analizando imagen..." con spinner
+- Envía imagen a backend vía FormData
+
+Backend:
+- Guarda imagen en CacaoImage
+- Llama al predictor de ML:
+  a) YOLO segmenta los 10 granos
+  b) Recorta cada grano individualmente
+  c) Para cada grano, ejecuta los 4 modelos de regresión
+  d) Obtiene predicciones de alto, ancho, grosor, peso
+- Guarda predicciones en CacaoPrediction
+- Crea notificación de éxito
+
+Frontend:
+- Recibe resultado:
+  {
+    predictions: [
+      { alto_mm: 12.5, ancho_mm: 9.8, grosor_mm: 7.2, peso_g: 3.1 },
+      { alto_mm: 13.2, ancho_mm: 10.1, grosor_mm: 7.5, peso_g: 3.4 },
+      ...
+    ],
+    crop_urls: [...],
+    processing_time: 2.3
+  }
+- Muestra resultados en pantalla
+- Juan puede ver cada grano recortado
+- Juan ve las mediciones de cada grano
+- Juan puede descargar los resultados
+
+Paso 5: Ver estadísticas (5 minutos)
+-------------------------------------
+1. Juan va a su dashboard
+2. Ve nuevas estadísticas:
+   - Total de análisis: 1
+   - Total de granos analizados: 10
+   - Peso promedio: 3.2 g
+   - Tamaño promedio: 12.8 x 9.9 x 7.3 mm
+3. Ve un gráfico de distribución de tamaños
+4. Hace clic en "Ver detalles" de su último análisis
+
+Paso 6: Generar reporte (10 minutos)
+-------------------------------------
+1. Juan va a "Mis Reportes"
+2. Hace clic en "Generar Reporte de Lote"
+3. Selecciona el "Lote A" y rango de fechas
+4. Selecciona formato: PDF
+5. Hace clic en "Generar"
+
+Backend:
+- Crea registro en ReporteGenerado
+- Agrega trabajo a cola de procesamiento (Celery)
+- Genera PDF con:
+  - Información del lote
+  - Análisis estadísticos
+  - Gráficos de calidad
+  - Recomendaciones
+- Guarda PDF en sistema de archivos
+- Actualiza estado del reporte a "completado"
+- Crea notificación
+
+Frontend:
+- Muestra "Generando reporte..."
+- Cuando se completa, muestra "Descargar reporte"
+- Juan descarga el PDF
+
+Paso 7: Usar reporte (en cualquier momento)
+--------------------------------------------
+1. Juan muestra el reporte a un comprador
+2. El comprador ve datos objetivos de calidad
+3. Juan puede establecer un precio justo basado en mediciones
+4. El comprador confía en los datos científicos
+
+Tiempo total aproximado: 50 minutos para configuración inicial
+---------------------------------------------------------------
+
+
+11. CONCLUSIÓN Y MANTENIMIENTO
+================================================================================
+
+¿Cómo se mantiene el sistema?
+------------------------------
+
+1. Actualización de modelos de ML:
+   - Los modelos se pueden reentrenar con nuevos datos
+   - Administrador sube nuevo dataset en el panel de admin
+   - Inicia trabajo de entrenamiento
+   - Sistema entrena nuevos modelos y valida su rendimiento
+   - Si los nuevos modelos son mejores, se despliegan automáticamente
+
+2. Actualización de código:
+   - El sistema está en Git, permite versionado
+   - Cambios se prueban en desarrollo local
+   - Se despliegan a producción con migrations de Django
+   - La base de datos se actualiza automáticamente con `migrate`
+
+3. Monitoreo:
+   - Logs en: backend/logs/django.log
+   - Métricas de modelos en tabla ModelMetrics
+   - Auditoría de actividades en ActivityLog
+   - Historial de logins en LoginHistory
+
+4. Respaldo de datos:
+   - Postgres permite backups con pg_dump
+   - Imágenes se pueden respaldar del directorio media/
+   - Modelos de ML en directorio artifacts/
+
+Posibles mejoras futuras:
+-------------------------
+
+1. Corto plazo:
+   - App móvil nativa (React Native o Flutter)
+   - Más tipos de reportes personalizados
+   - Integración con WhatsApp para notificaciones
+   - Dashboard de administración más robusto
+
+2. Mediano plazo:
+   - Detección de defectos en granos (podredumbres, fermentación)
+   - Predicción de calidad de fermentación
+   - Recomendaciones de proceso basadas en IA
+   - API pública para integraciones de terceros
+
+3. Largo plazo:
+   - Análisis de lotes completos con drones
+   - Predicción de rendimiento de cosecha
+   - Integración con bolsas de comercio de cacao
+   - Sistema de certificación de calidad digital
+
+Tecnologías que podrían agregarse:
+----------------------------------
+- Docker: Para facilitar despliegue
+- Kubernetes: Para escalamiento automático
+- Redis Cluster: Para mejor rendimiento de caché
+- Elasticsearch: Para búsquedas avanzadas en datos
+- Apache Kafka: Para procesamiento de eventos en tiempo real
+- Grafana: Para monitoreo visual de métricas
+
+Documentación adicional:
+------------------------
+- API completa: http://localhost:8000/swagger/
+- Documentación de modelos ML: backend/README_ML.md
+- Guía de API: backend/README_API.md
+- Setup de base de datos: backend/DATABASE_SETUP.md
+
+
+================================================================================
+                           FIN DE LA EXPLICACIÓN
+================================================================================

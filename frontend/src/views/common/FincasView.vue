@@ -207,20 +207,19 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useFincasStore } from '@/stores/fincas'
 import Sidebar from '@/components/layout/Common/Sidebar.vue'
 import FincaForm from '@/components/FincaForm.vue'
 import fincasApi from '@/services/fincasApi'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const fincasStore = useFincasStore()
 
 // Sidebar collapse state
 const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
 
 // Estado reactivo
-const fincas = ref([])
-const loading = ref(false)
-const error = ref(null)
 const searchQuery = ref('')
 const filters = ref({
   departamento: '',
@@ -232,6 +231,10 @@ const isEditing = ref(false)
 const activeSection = ref('fincas')
 
 // Computed
+const fincas = computed(() => fincasStore.fincas)
+const loading = computed(() => fincasStore.loading)
+const error = computed(() => fincasStore.error)
+
 const departamentos = computed(() => fincasApi.getDepartamentosColombia())
 
 const userName = computed(() => {
@@ -257,24 +260,13 @@ const debouncedSearch = () => {
 
 // Métodos
 const loadFincas = async () => {
-  loading.value = true
-  error.value = null
-  
-  try {
-    const params = {
-      search: searchQuery.value,
-      departamento: filters.value.departamento,
-      activa: filters.value.activa
-    }
-    
-    const response = await fincasApi.getFincas(params)
-    fincas.value = response.results || response
-  } catch (err) {
-    error.value = 'Error al cargar las fincas. Intenta nuevamente.'
-    console.error('Error loading fincas:', err)
-  } finally {
-    loading.value = false
+  const params = {
+    search: searchQuery.value,
+    departamento: filters.value.departamento,
+    activa: filters.value.activa
   }
+  
+  await fincasStore.fetchFincas(params)
 }
 
 const applyFilters = () => {
@@ -318,7 +310,7 @@ const closeModal = () => {
 
 const handleFincaSaved = () => {
   closeModal()
-  loadFincas()
+  // No es necesario llamar loadFincas() ya que el store lo hace automáticamente
 }
 
 // Sidebar and navbar methods
