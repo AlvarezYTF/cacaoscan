@@ -70,7 +70,7 @@ export async function updateFinca(fincaId, fincaData) {
 }
 
 /**
- * Eliminar una finca
+ * Eliminar (desactivar) una finca (soft delete)
  * @param {number} fincaId - ID de la finca
  * @returns {Promise<void>}
  */
@@ -79,6 +79,21 @@ export async function deleteFinca(fincaId) {
     await api.delete(`/fincas/${fincaId}/delete/`)
   } catch (error) {
     console.error(`Error eliminando finca ${fincaId}:`, error)
+    throw error
+  }
+}
+
+/**
+ * Reactivar una finca desactivada (solo admins)
+ * @param {number} fincaId - ID de la finca
+ * @returns {Promise<Object>} - Finca reactivada
+ */
+export async function activateFinca(fincaId) {
+  try {
+    const response = await api.post(`/fincas/${fincaId}/activate/`)
+    return response.data
+  } catch (error) {
+    console.error(`Error reactivando finca ${fincaId}:`, error)
     throw error
   }
 }
@@ -406,6 +421,7 @@ export default {
   createFinca,
   updateFinca,
   deleteFinca,
+  activateFinca,
   getFincaStats,
   getLotesByFinca,
   validateFincaData,

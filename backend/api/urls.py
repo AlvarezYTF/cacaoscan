@@ -64,6 +64,7 @@ urlpatterns = [
     path('fincas/<int:finca_id>/', views.FincaDetailView.as_view(), name='finca-detail'),
     path('fincas/<int:finca_id>/update/', views.FincaUpdateView.as_view(), name='finca-update'),
     path('fincas/<int:finca_id>/delete/', views.FincaDeleteView.as_view(), name='finca-delete'),
+    path('fincas/<int:finca_id>/activate/', views.FincaActivateView.as_view(), name='finca-activate'),
     path('fincas/<int:finca_id>/stats/', views.FincaStatsView.as_view(), name='finca-stats'),
     
     # Endpoints de gestión de lotes

@@ -162,10 +162,10 @@
               Editar
             </button>
             <button
-              @click.stop="viewLotes(finca)"
-              class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm transition-colors"
+              @click.stop="confirmDelete(finca)"
+              class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm transition-colors"
             >
-              Ver Lotes
+              Eliminar
             </button>
           </div>
         </div>
@@ -211,6 +211,7 @@ import { useFincasStore } from '@/stores/fincas'
 import Sidebar from '@/components/layout/Common/Sidebar.vue'
 import FincaForm from '@/components/FincaForm.vue'
 import fincasApi from '@/services/fincasApi'
+import Swal from 'sweetalert2'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -320,6 +321,41 @@ const closeModal = () => {
 const handleFincaSaved = () => {
   closeModal()
   // No es necesario llamar loadFincas() ya que el store lo hace automáticamente
+}
+
+const confirmDelete = async (finca) => {
+  const result = await Swal.fire({
+    icon: 'warning',
+    title: '¿Desactivar finca?',
+    html: `<p>¿Estás seguro de que deseas desactivar la finca <strong>"${finca.nombre}"</strong>?</p><p class="text-sm text-gray-600 mt-2">La finca ya no aparecerá en tu lista, pero los datos se conservarán. Puedes contactar a un administrador si necesitas reactivarla.</p>`,
+    showCancelButton: true,
+    confirmButtonText: 'Sí, desactivar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    reverseButtons: true
+  })
+  
+  if (result.isConfirmed) {
+    try {
+      await fincasStore.remove(finca.id)
+      Swal.fire({
+        icon: 'success',
+        title: 'Finca desactivada',
+        text: 'La finca se desactivó correctamente. Ya no aparecerá en tu lista.',
+        timer: 3000,
+        showConfirmButton: false
+      })
+    } catch (error) {
+      console.error('Error desactivando finca:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo desactivar la finca. Intenta nuevamente.',
+        timer: 4000
+      })
+    }
+  }
 }
 
 // Sidebar and navbar methods

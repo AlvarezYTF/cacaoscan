@@ -84,6 +84,7 @@ from .fincas_views import (
     FincaDetailView,
     FincaUpdateView,
     FincaDeleteView,
+    FincaActivateView,
     FincaStatsView
 )
 from .lotes_views import (
