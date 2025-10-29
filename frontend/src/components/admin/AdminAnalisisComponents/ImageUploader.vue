@@ -1,24 +1,25 @@
 <template>
   <div class="space-y-4">
-    <!-- Drop Zone -->
+    <!-- Drop Zone mejorado -->
     <div 
       @dragover.prevent="isDragging = true"
       @dragleave="isDragging = false"
       @drop.prevent="handleDrop"
       @click="$refs.fileInput.click()"
-      class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors"
+      class="border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 group"
       :class="{
-        'border-green-500 bg-green-50': isDragging,
-        'border-gray-300 hover:border-green-400': !isDragging,
+        'border-green-500 bg-green-50 shadow-lg scale-[1.02]': isDragging,
+        'border-gray-300 hover:border-green-400 hover:bg-green-50': !isDragging,
       }"
     >
-      <div class="flex flex-col items-center justify-center space-y-2">
-        <svg 
-          class="w-12 h-12 text-gray-400" 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
+      <div class="flex flex-col items-center justify-center space-y-3">
+        <div class="p-4 bg-green-100 rounded-2xl group-hover:bg-green-200 transition-colors duration-300">
+          <svg 
+            class="w-12 h-12 text-green-600 group-hover:text-green-700 transition-colors" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
           <path 
             stroke-linecap="round" 
             stroke-linejoin="round" 
@@ -26,10 +27,11 @@
             d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
           />
         </svg>
-        <p class="text-lg font-medium text-gray-700">
+        </div>
+        <p class="text-xl font-bold text-gray-800 group-hover:text-green-700 transition-colors">
           Arrastra tus imágenes aquí o haz clic para seleccionarlas
         </p>
-        <p class="text-sm text-gray-500">
+        <p class="text-sm text-gray-500 font-medium">
           Formatos soportados: JPG, PNG (máx. 5MB por imagen)
         </p>
       </div>
@@ -43,12 +45,12 @@
       />
     </div>
 
-    <!-- Image Previews -->
+    <!-- Image Previews mejorados -->
     <div v-if="images.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
       <div 
         v-for="(image, index) in images" 
         :key="index"
-        class="relative group rounded-lg overflow-hidden border border-gray-200"
+        class="relative group overflow-hidden border-2 border-gray-200 hover:border-green-300 rounded-2xl transition-all duration-300 hover:shadow-lg"
       >
         <img 
           :src="getImageUrl(image)" 

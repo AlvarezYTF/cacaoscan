@@ -1,22 +1,31 @@
 <template>
+  <!-- Charts con diseño profesional mejorado -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Activity Chart -->
-    <div class="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
+    <!-- Activity Chart mejorado -->
+    <div class="lg:col-span-2 bg-white rounded-2xl border-2 border-gray-200 p-8 hover:shadow-xl hover:border-green-300 transition-all duration-300">
       <div class="flex items-center justify-between mb-6">
-        <h3 class="text-xl font-bold text-gray-900">{{ activityChartTitle }}</h3>
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-green-100 rounded-xl">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900">{{ activityChartTitle }}</h3>
+        </div>
+        <div class="flex items-center gap-2">
           <select 
             v-model="activityChartType" 
             @change="handleActivityChartTypeChange" 
-            class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-green-500 focus:border-green-500 bg-white hover:border-green-300 transition-colors duration-200"
+            class="text-sm border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white hover:border-green-300 transition-all duration-200 font-medium"
           >
             <option value="line">Línea</option>
             <option value="bar">Barras</option>
           </select>
           <button 
             @click="handleActivityRefresh" 
-            class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+            class="group p-2.5 text-gray-500 hover:text-white hover:bg-green-600 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             :disabled="loading"
+            title="Actualizar datos"
           >
             <LoadingSpinner 
               v-if="loading" 
@@ -25,7 +34,7 @@
             />
             <svg 
               v-else
-              class="w-4 h-4" 
+              class="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" 
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -36,18 +45,26 @@
         </div>
       </div>
       <div class="h-80">
-        <canvas ref="activityChart" @click="handleActivityClick"></canvas>
+        <canvas ref="activityChart" @click="handleActivityClick" class="rounded-xl"></canvas>
       </div>
     </div>
 
-    <!-- Quality Distribution Chart -->
-    <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200">
+    <!-- Quality Distribution Chart mejorado -->
+    <div class="bg-white rounded-2xl border-2 border-gray-200 p-8 hover:shadow-xl hover:border-green-300 transition-all duration-300">
       <div class="flex items-center justify-between mb-6">
-        <h3 class="text-xl font-bold text-gray-900">{{ qualityChartTitle }}</h3>
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-green-100 rounded-xl">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900">{{ qualityChartTitle }}</h3>
+        </div>
         <button 
           @click="handleQualityRefresh" 
-          class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+          class="group p-2.5 text-gray-500 hover:text-white hover:bg-green-600 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           :disabled="loading"
+          title="Actualizar datos"
         >
           <LoadingSpinner 
             v-if="loading" 
@@ -56,7 +73,7 @@
           />
           <svg 
             v-else
-            class="w-4 h-4" 
+            class="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" 
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24"
@@ -66,7 +83,7 @@
         </button>
       </div>
       <div class="h-80">
-        <canvas ref="qualityChart" @click="handleQualityClick"></canvas>
+        <canvas ref="qualityChart" @click="handleQualityClick" class="rounded-xl"></canvas>
       </div>
     </div>
   </div>
@@ -285,10 +302,16 @@ export default {
 </script>
 
 <style scoped>
-/* Estilos específicos para los gráficos */
+/* Estilos específicos para los gráficos mejorados */
 canvas {
   max-height: 320px;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+
+canvas:hover {
+  filter: brightness(1.05);
+  transition: filter 0.2s ease-in-out;
 }
 
 /* Responsive adjustments */
@@ -312,27 +335,29 @@ canvas {
   animation: spin 1s linear infinite;
 }
 
-/* Chart container hover effects */
+/* Chart container hover effects mejorados */
 .bg-white:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.2s ease-in-out;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.3s ease-in-out;
+  transform: translateY(-2px);
 }
 
-/* Transiciones suaves */
+/* Transiciones suaves mejoradas */
 .transition-all {
   transition-property: all;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
+  transition-duration: 300ms;
 }
 
 /* Mejoras de accesibilidad */
 button:focus-visible {
-  outline: 2px solid rgb(34 197 94);
+  outline: 3px solid rgb(34 197 94);
   outline-offset: 2px;
+  border-radius: 0.75rem;
 }
 
 select:focus-visible {
-  outline: 2px solid rgb(34 197 94);
+  outline: 3px solid rgb(34 197 94);
   outline-offset: 2px;
 }
 
@@ -345,8 +370,20 @@ select:focus-visible {
   background-color: rgb(240 253 244);
 }
 
+.bg-green-100 {
+  background-color: rgb(220 252 231);
+}
+
 .border-green-200 {
   border-color: rgb(187 247 208);
+}
+
+.border-green-300 {
+  border-color: rgb(134 239 172);
+}
+
+.hover\:border-green-300:hover {
+  border-color: rgb(134 239 172);
 }
 
 .hover\:border-green-200:hover {
@@ -359,6 +396,10 @@ select:focus-visible {
 
 .hover\:bg-green-50:hover {
   background-color: rgb(240 253 244);
+}
+
+.hover\:bg-green-600:hover {
+  background-color: rgb(34 197 94);
 }
 
 .focus\:ring-green-500:focus {

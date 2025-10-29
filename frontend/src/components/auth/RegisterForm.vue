@@ -411,6 +411,27 @@
               </svg>
               <span>{{ isLoading ? 'Creando cuenta...' : 'Crear Cuenta' }}</span>
             </button>
+            
+            <!-- Mensaje de ayuda cuando el formulario no es válido -->
+            <Transition
+              enter-active-class="transform ease-out duration-200"
+              enter-from-class="opacity-0 -translate-y-2"
+              enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition ease-in duration-150"
+              leave-from-class="opacity-100"
+              leave-to-class="opacity-0"
+            >
+              <div v-if="!isFormValid && !isLoading" class="mt-4 text-center">
+                <div class="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-50 border-2 border-amber-300 rounded-xl">
+                  <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                  </svg>
+                  <p class="text-sm font-bold text-amber-800">
+                    {{ getValidationMessage() }}
+                  </p>
+                </div>
+              </div>
+            </Transition>
           </div>
         </form>
   </div>
@@ -463,7 +484,7 @@ const isFormValid = computed(() => {
     form.value.firstName.trim() &&
     form.value.lastName.trim() &&
     form.value.email.trim() &&
-    form.value.password.length >= 6 && // Validación básica de UX
+    isPasswordValid.value && // Usar validación completa de contraseña
     form.value.password === form.value.confirmPassword &&
     form.value.acceptTerms
   )
@@ -528,6 +549,16 @@ const isValidPhone = (phone) => {
   return phoneRegex.test(phone.replace(/\s/g, ''))
 }
 
+const getValidationMessage = () => {
+  if (!form.value.firstName.trim()) return 'Completa tu nombre'
+  if (!form.value.lastName.trim()) return 'Completa tu apellido'
+  if (!form.value.email.trim()) return 'Ingresa tu email'
+  if (!isPasswordValid.value) return 'La contraseña no cumple con los requisitos'
+  if (form.value.password !== form.value.confirmPassword) return 'Las contraseñas no coinciden'
+  if (!form.value.acceptTerms) return 'Debes aceptar los términos y condiciones'
+  return 'Completa todos los campos obligatorios'
+}
+
 const setStatusMessage = (message, type = 'info') => {
   statusMessage.value = message
   statusType.value = type
@@ -573,7 +604,37 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     console.error('Error en registro:', error)
-    setStatusMessage('Error inesperado. Intenta nuevamente.', 'error')
+    
+    // Extraer mensaje de error más específico
+    let errorMessage = 'Error inesperado. Intenta nuevamente.'
+    if (error.response?.data) {
+      // Intentar extraer mensaje del backend
+      if (error.response.data.detail) {
+        errorMessage = error.response.data.detail
+      } else if (error.response.data.error) {
+        errorMessage = error.response.data.error
+      } else if (typeof error.response.data === 'string') {
+        errorMessage = error.response.data
+      } else if (error.response.data.non_field_errors) {
+        errorMessage = error.response.data.non_field_errors[0]
+      } else {
+        // Mostrar los primeros errores de validación
+        const errorKeys = Object.keys(error.response.data)
+        if (errorKeys.length > 0) {
+          const firstKey = errorKeys[0]
+          const firstError = error.response.data[firstKey]
+          if (Array.isArray(firstError)) {
+            errorMessage = firstError[0]
+          } else if (typeof firstError === 'string') {
+            errorMessage = firstError
+          }
+        }
+      }
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
+    setStatusMessage(errorMessage, 'error')
   } finally {
     isLoading.value = false
     // Emitir evento de fin de loading

@@ -46,8 +46,22 @@ INSTALLED_APPS = [
     'corsheaders',
     'drf_yasg',
     'channels',
-    'api',
+    # Core apps (orden importante)
+    'core',
+    
+    # Auth apps
+    'auth_app',
     'users.apps.UsersConfig',
+    
+    # Feature apps
+    'fincas_app',
+    'images_app',
+    'notifications',
+    'audit',
+    'training',
+    
+    # Existing apps
+    'api',  # Mantener temporalmente hasta completar migración
     'reports',
 ]
 
@@ -60,6 +74,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.error_handler.StandardErrorMiddleware',  # Middleware de errores
     'api.middleware.TokenCleanupMiddleware',  # Limpieza automática de tokens
     'api.realtime_middleware.RealtimeAuditMiddleware',
     'api.realtime_middleware.RealtimeLoginMiddleware',

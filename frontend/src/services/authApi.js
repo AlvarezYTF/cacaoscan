@@ -80,7 +80,9 @@ const authApi = {
         password: userData.password,
         password_confirm: userData.confirm_password || userData.password_confirm, // Aceptar ambos campos
         first_name: userData.first_name,
-        last_name: userData.last_name
+        last_name: userData.last_name,
+        ...(userData.phone_number && { phone_number: userData.phone_number }), // Solo incluir si existe
+        ...(userData.email_notifications !== undefined && { email_notifications: userData.email_notifications })
       };
       
       console.log('📤 [authApi] Payload enviado al backend:', payload);
@@ -125,9 +127,44 @@ const authApi = {
       }
       
       console.log('✅ [authApi] Datos normalizados para el store (registro):', normalizedData)
-      return normalizedData
+      
+      // Agregar campo success para compatibilidad con el store
+      return {
+        success: true,
+        ...normalizedData
+      }
     } catch (error) {
       console.error('Error en registro API:', error)
+      console.error('📋 [authApi] Respuesta completa del error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers
+      })
+      
+      // Extraer mensaje de error más detallado
+      if (error.response?.data) {
+        // Si hay errores de validación específicos
+        if (error.response.data.detail) {
+          error.message = error.response.data.detail
+        } else if (error.response.data.error) {
+          error.message = error.response.data.error
+        } else if (typeof error.response.data === 'string') {
+          error.message = error.response.data
+        } else if (error.response.data.non_field_errors) {
+          error.message = error.response.data.non_field_errors[0]
+        } else {
+          // Intentar extraer el primer error de campo
+          const firstError = Object.values(error.response.data)[0]
+          if (Array.isArray(firstError)) {
+            error.message = firstError[0]
+          } else if (typeof firstError === 'string') {
+            error.message = firstError
+          } else {
+            error.message = 'Error en los datos proporcionados'
+          }
+        }
+      }
+      
       throw error
     }
   },
@@ -200,22 +237,33 @@ const authApi = {
    */
   async updateProfile(profileData) {
     try {
-      const response = await api.patch('/auth/users/me/update/', {
-        first_name: profileData.firstName,
-        last_name: profileData.lastName,
-        phone_number: profileData.phoneNumber,
-        // Datos del perfil
-        region: profileData.region,
-        municipality: profileData.municipality,
-        farm_name: profileData.farmName,
-        years_experience: profileData.yearsExperience,
-        farm_size_hectares: profileData.farmSizeHectares,
-        preferred_language: profileData.preferredLanguage,
-        email_notifications: profileData.emailNotifications
-      })
+      const payload = {
+        first_name: profileData.firstName || profileData.fullName?.split(' ')[0] || '',
+        last_name: profileData.lastName || profileData.fullName?.split(' ').slice(1).join(' ') || ''
+      }
+      
+      // Incluir phone_number si está disponible
+      if (profileData.phoneNumber || profileData.phone) {
+        payload.phone_number = profileData.phoneNumber || profileData.phone
+      }
+      
+      const response = await api.put('/auth/profile/', payload)
       return response.data
     } catch (error) {
       console.error('Error actualizando perfil:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Obtener perfil del usuario actual
+   */
+  async getProfile() {
+    try {
+      const response = await api.get('/auth/profile/')
+      return response.data
+    } catch (error) {
+      console.error('Error obteniendo perfil:', error)
       throw error
     }
   },

@@ -283,7 +283,14 @@ export const useAuthStore = defineStore('auth', () => {
     if (!accessToken.value) return null
 
     try {
-      const userData = await authApi.getCurrentUser()
+      const response = await authApi.getCurrentUser()
+      
+      // El endpoint /auth/profile/ puede devolver dos formatos:
+      // 1. { success, data: {...}, message }
+      // 2. {...userData} (directo)
+      
+      const userData = response.data || response
+      
       setUser(userData)
       updateLastActivity()
       return userData
@@ -413,12 +420,28 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const updatedUser = await authApi.updateProfile(profileData)
-      setUser(updatedUser)
+      const response = await authApi.updateProfile(profileData)
+      
+      // Actualizar datos del usuario si la respuesta incluye data
+      if (response.data && response.data.user) {
+        setUser(response.data.user)
+        setSuccess('Perfil actualizado exitosamente')
+        return { success: true, data: response.data.user }
+      } else if (response.user) {
+        setUser(response.user)
+        setSuccess('Perfil actualizado exitosamente')
+        return { success: true, data: response.user }
+      }
+      
+      // Si no hay datos de usuario, actualizar usuario actual
+      if (isAuthenticated.value) {
+        await getCurrentUser()
+      }
+      
       return { success: true }
     } catch (err) {
       console.error('Error actualizando perfil:', err)
-      setError(err.response?.data?.detail || 'Error al actualizar perfil')
+      setError(err.response?.data?.message || err.message || 'Error al actualizar perfil')
       return { success: false, error: error.value }
     } finally {
       isLoading.value = false

@@ -1,7 +1,7 @@
 <template>
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- System Alerts -->
-    <div class="bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-green-200 transition-all duration-200">
+    <!-- System Alerts mejorado -->
+    <div class="bg-white rounded-2xl border-2 border-gray-200 hover:shadow-xl hover:border-green-300 transition-all duration-300">
       <div class="px-6 py-4 border-b border-gray-200">
         <h3 class="text-xl font-bold text-gray-900">{{ alertsTitle }}</h3>
       </div>
@@ -45,8 +45,8 @@
       </div>
     </div>
 
-    <!-- Reports Statistics -->
-    <div class="bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-green-200 transition-all duration-200">
+    <!-- Reports Statistics mejorado -->
+    <div class="bg-white rounded-2xl border-2 border-gray-200 hover:shadow-xl hover:border-green-300 transition-all duration-300">
       <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
         <h3 class="text-xl font-bold text-gray-900">{{ reportsTitle }}</h3>
         <router-link 

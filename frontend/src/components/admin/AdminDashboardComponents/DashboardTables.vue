@@ -1,19 +1,29 @@
 <template>
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Recent Users Table -->
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md hover:border-green-200 transition-all duration-200">
-      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 class="text-xl font-bold text-gray-900">{{ usersTableTitle }}</h3>
+    <!-- Recent Users Table mejorado -->
+    <div class="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-green-300 transition-all duration-300">
+      <div class="px-6 py-4 border-b-2 border-gray-200 bg-gray-50 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 bg-green-100 rounded-lg">
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900">{{ usersTableTitle }}</h3>
+        </div>
         <router-link 
           :to="usersTableLink" 
-          class="text-sm text-green-600 hover:text-green-700 font-medium transition-colors duration-200"
+          class="text-sm text-green-600 hover:text-green-700 font-semibold transition-colors duration-200 flex items-center gap-1 hover:gap-2"
         >
           {{ usersTableLinkText }}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
         </router-link>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-500">
-          <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+          <thead class="text-xs text-gray-700 uppercase bg-gray-100 font-bold">
             <tr>
               <th scope="col" class="px-6 py-3">Usuario</th>
               <th scope="col" class="px-6 py-3">Email</th>
@@ -89,20 +99,30 @@
       </div>
     </div>
     
-    <!-- Recent Activity Table -->
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md hover:border-green-200 transition-all duration-200">
-      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 class="text-xl font-bold text-gray-900">{{ activityTableTitle }}</h3>
+    <!-- Recent Activity Table mejorado -->
+    <div class="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-green-300 transition-all duration-300">
+      <div class="px-6 py-4 border-b-2 border-gray-200 bg-gray-50 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 bg-green-100 rounded-lg">
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900">{{ activityTableTitle }}</h3>
+        </div>
         <router-link 
           :to="activityTableLink" 
-          class="text-sm text-green-600 hover:text-green-700 font-medium transition-colors duration-200"
+          class="text-sm text-green-600 hover:text-green-700 font-semibold transition-colors duration-200 flex items-center gap-1 hover:gap-2"
         >
           {{ activityTableLinkText }}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
         </router-link>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm text-left text-gray-500">
-          <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+          <thead class="text-xs text-gray-700 uppercase bg-gray-100 font-bold">
             <tr>
               <th scope="col" class="px-6 py-3">Usuario</th>
               <th scope="col" class="px-6 py-3">Acción</th>

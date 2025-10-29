@@ -10,7 +10,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError
-from ..models import EmailVerificationToken, LoginHistory, ActivityLog
+from ..models import EmailVerificationToken, LoginHistory, ActivityLog, UserProfile
 
 logger = logging.getLogger("cacaoscan.services.auth")
 
@@ -540,18 +540,37 @@ class AuthenticationService(BaseService):
             ServiceResult con datos del perfil
         """
         try:
+            # Obtener perfil extendido si existe
+            user_profile = None
+            try:
+                user_profile = user.profile
+            except UserProfile.DoesNotExist:
+                # Si no existe perfil, crear uno vacío
+                user_profile = UserProfile.objects.create(user=user)
+            
             profile_data = {
                 'id': user.id,
                 'username': user.username,
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
+                'full_name': user.get_full_name() or user.username,
                 'is_staff': user.is_staff,
                 'is_superuser': user.is_superuser,
                 'is_active': user.is_active,
                 'date_joined': user.date_joined.isoformat(),
                 'last_login': user.last_login.isoformat() if user.last_login else None,
-                'email_verified': hasattr(user, 'email_verified') and user.email_verified
+                'is_verified': self._check_email_verified(user),
+                # Datos del perfil extendido
+                'phone_number': user_profile.phone_number or '',
+                'region': user_profile.region or '',
+                'municipality': user_profile.municipality or '',
+                'farm_name': user_profile.farm_name or '',
+                'years_experience': user_profile.years_experience,
+                'farm_size_hectares': float(user_profile.farm_size_hectares) if user_profile.farm_size_hectares else None,
+                'preferred_language': user_profile.preferred_language,
+                'email_notifications': user_profile.email_notifications,
+                'role': user_profile.role
             }
             
             return ServiceResult.success(
@@ -565,6 +584,15 @@ class AuthenticationService(BaseService):
                 ValidationServiceError("Error interno obteniendo perfil", details={"original_error": str(e)})
             )
     
+    def _check_email_verified(self, user: User) -> bool:
+        """Verifica si el email del usuario está verificado."""
+        try:
+            if hasattr(user, 'email_verification_token'):
+                return user.email_verification_token.is_verified
+        except:
+            pass
+        return user.is_active
+    
     def update_user_profile(self, user: User, profile_data: Dict[str, Any]) -> ServiceResult:
         """
         Actualiza el perfil de un usuario.
@@ -577,30 +605,53 @@ class AuthenticationService(BaseService):
             ServiceResult con datos actualizados
         """
         try:
-            # Campos permitidos para actualización
-            allowed_fields = ['first_name', 'last_name', 'email']
+            # Campos permitidos para actualización del modelo User
+            user_allowed_fields = ['first_name', 'last_name', 'email']
             
-            # Validar campos
-            for field in profile_data:
-                if field not in allowed_fields:
+            # Campos del perfil extendido (UserProfile)
+            profile_allowed_fields = ['phone_number']
+            
+            # Separar datos de User y UserProfile
+            user_data = {}
+            profile_data_dict = {}
+            
+            for field, value in profile_data.items():
+                if field in user_allowed_fields:
+                    user_data[field] = value
+                elif field in profile_allowed_fields:
+                    profile_data_dict[field] = value
+                else:
                     return ServiceResult.validation_error(
                         f"Campo '{field}' no permitido para actualización",
-                        details={"field": field, "allowed_fields": allowed_fields}
+                        details={
+                            "field": field, 
+                            "allowed_fields": user_allowed_fields + profile_allowed_fields
+                        }
                     )
             
             # Validar email único si se está cambiando
-            if 'email' in profile_data and profile_data['email'] != user.email:
-                if User.objects.filter(email=profile_data['email']).exclude(id=user.id).exists():
+            if 'email' in user_data and user_data['email'] != user.email:
+                if User.objects.filter(email=user_data['email']).exclude(id=user.id).exists():
                     return ServiceResult.validation_error(
                         "Este email ya está registrado",
                         details={"field": "email"}
                     )
             
-            # Actualizar campos
-            for field, value in profile_data.items():
+            # Actualizar campos del modelo User
+            for field, value in user_data.items():
                 setattr(user, field, value)
             
             user.save()
+            
+            # Actualizar perfil extendido si existe
+            if profile_data_dict:
+                profile, created = UserProfile.objects.get_or_create(user=user)
+                for field, value in profile_data_dict.items():
+                    setattr(profile, field, value)
+                profile.save()
+            
+            # Obtener datos actualizados del usuario
+            updated_data = self.get_user_profile(user).data
             
             # Crear log de auditoría
             self.create_audit_log(
@@ -614,18 +665,7 @@ class AuthenticationService(BaseService):
             self.log_info(f"Perfil actualizado para usuario {user.username}")
             
             return ServiceResult.success(
-                data={
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'first_name': user.first_name,
-                    'last_name': user.last_name,
-                    'is_staff': user.is_staff,
-                    'is_superuser': user.is_superuser,
-                    'is_active': user.is_active,
-                    'date_joined': user.date_joined.isoformat(),
-                    'last_login': user.last_login.isoformat() if user.last_login else None
-                },
+                data=updated_data,
                 message="Perfil actualizado exitosamente"
             )
             

@@ -1,46 +1,70 @@
 <template>
+  <!-- KPI Cards con diseño profesional mejorado -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     <div 
-      v-for="card in cards" 
+      v-for="(card, index) in cards" 
       :key="card.id"
-      class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-green-200 transition-all duration-200 cursor-pointer group"
+      class="relative bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-xl hover:border-green-300 transition-all duration-300 cursor-pointer group animate-slide-up"
+      :style="{ animationDelay: `${index * 50}ms` }"
       @click="handleCardClick(card)"
     >
+      <!-- Indicador decorativo superior -->
+      <div class="absolute top-0 right-0 w-20 h-1 bg-gradient-to-l from-green-500 to-transparent rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      
       <div class="flex items-center justify-between">
         <div class="flex-1">
-          <p class="text-sm font-medium text-gray-600 mb-1">{{ card.label }}</p>
-          <p class="text-3xl font-bold text-gray-900 mb-2">
-            {{ card.value }}{{ card.suffix || '' }}
+          <!-- Label con badge -->
+          <div class="flex items-center gap-2 mb-2">
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">{{ card.label }}</p>
+          </div>
+          
+          <!-- Valor principal destacado -->
+          <p class="text-4xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors duration-300">
+            {{ formatValue(card.value) }}{{ card.suffix || '' }}
           </p>
-          <div class="flex items-center" :class="getChangeColorClass(card.change)">
-            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          
+          <!-- Indicador de cambio con mejor diseño -->
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full" :class="getChangeBgClass(card.change)">
+            <svg class="w-4 h-4" :class="getChangeColorClass(card.change)" fill="currentColor" viewBox="0 0 20 20">
               <path :d="getChangeIconPath(card.change)" :fill-rule="card.fillRule" :clip-rule="card.clipRule"></path>
             </svg>
-            <span class="text-sm font-medium">
+            <span class="text-sm font-semibold" :class="getChangeColorClass(card.change)">
               {{ formatChangeText(card.change, card.changePeriod) }}
             </span>
           </div>
         </div>
-        <div class="p-3 rounded-lg bg-green-50 group-hover:bg-green-100 transition-colors duration-200">
-          <svg class="w-7 h-7 text-green-600 group-hover:text-green-700 transition-colors duration-200" fill="currentColor" viewBox="0 0 20 20">
-            <path :d="card.iconPath" :fill-rule="card.fillRule" :clip-rule="card.clipRule"></path>
-          </svg>
+        
+        <!-- Ícono con efecto 3D mejorado -->
+        <div class="relative ml-4">
+          <div class="absolute inset-0 bg-green-400 rounded-2xl transform rotate-3 opacity-20 group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300"></div>
+          <div class="relative p-4 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 transition-all duration-300 shadow-md group-hover:shadow-lg">
+            <svg class="w-8 h-8 text-green-600 group-hover:text-green-700 group-hover:scale-110 transition-all duration-300" fill="currentColor" viewBox="0 0 20 20">
+              <path :d="card.iconPath" :fill-rule="card.fillRule" :clip-rule="card.clipRule"></path>
+            </svg>
+          </div>
         </div>
       </div>
       
-      <!-- Trend indicator (optional) -->
-      <div v-if="card.trend && card.trend.data" class="mt-4 pt-3 border-t border-gray-100">
+      <!-- Indicador de tendencia mejorado -->
+      <div v-if="card.trend && card.trend.data" class="mt-5 pt-4 border-t-2 border-gray-100">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-gray-500">Tendencia</span>
-          <div class="flex items-center" :class="getTrendColorClass(card.trend.direction)">
-            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Tendencia</span>
+          <div class="flex items-center gap-2 px-2.5 py-1 rounded-full" :class="getTrendBgClass(card.trend.direction)">
+            <svg class="w-3 h-3" :class="getTrendColorClass(card.trend.direction)" fill="currentColor" viewBox="0 0 20 20">
               <path :d="getTrendIconPath(card.trend.direction)" fill-rule="evenodd" clip-rule="evenodd"></path>
             </svg>
-            <span class="text-xs font-medium">
+            <span class="text-xs font-bold" :class="getTrendColorClass(card.trend.direction)">
               {{ card.trend.direction === 'up' ? 'Subiendo' : card.trend.direction === 'down' ? 'Bajando' : 'Estable' }}
             </span>
           </div>
         </div>
+      </div>
+      
+      <!-- Flecha de navegación en hover -->
+      <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
       </div>
     </div>
   </div>
@@ -131,6 +155,28 @@ export default {
       return paths[direction] || paths.stable
     }
 
+    const formatValue = (value) => {
+      if (typeof value === 'number') {
+        return value.toLocaleString('es-ES')
+      }
+      return value
+    }
+
+    const getChangeBgClass = (change) => {
+      if (change > 0) return 'bg-green-50'
+      if (change < 0) return 'bg-red-50'
+      return 'bg-gray-50'
+    }
+
+    const getTrendBgClass = (direction) => {
+      const classes = {
+        'up': 'bg-green-50',
+        'down': 'bg-red-50',
+        'stable': 'bg-gray-50'
+      }
+      return classes[direction] || classes.stable
+    }
+
     return {
       handleCardClick,
       getChangeColorClass,
@@ -139,23 +185,42 @@ export default {
       getIconBgClass,
       getIconColorClass,
       getTrendColorClass,
-      getTrendIconPath
+      getTrendIconPath,
+      formatValue,
+      getChangeBgClass,
+      getTrendBgClass
     }
   }
 }
 </script>
 
 <style scoped>
+/* Animación de entrada para las cards */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out both;
+}
+
 /* Hover effects mejorados */
 .group:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
 }
 
 /* Transiciones suaves */
 .transition-all {
   transition-property: all;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
+  transition-duration: 300ms;
 }
 
 /* Animaciones de iconos */
@@ -164,19 +229,20 @@ export default {
 }
 
 svg {
-  transition: transform 0.2s ease-in-out;
+  transition: transform 0.3s ease-in-out;
 }
 
 /* Mejoras de accesibilidad */
 .group:focus-visible {
-  outline: 2px solid rgb(34 197 94);
+  outline: 3px solid rgb(34 197 94);
   outline-offset: 2px;
+  border-radius: 1rem;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .group:hover {
-    transform: none;
+    transform: translateY(-2px);
   }
 }
 
@@ -191,5 +257,25 @@ svg {
 
 .text-gray-600 {
   color: rgb(75 85 99);
+}
+
+.bg-green-50 {
+  background-color: rgb(240 253 244);
+}
+
+.bg-red-50 {
+  background-color: rgb(254 242 242);
+}
+
+.bg-gray-50 {
+  background-color: rgb(249 250 251);
+}
+
+/* Gradient text effect */
+.group:hover .text-gray-900 {
+  background: linear-gradient(135deg, rgb(55 65 81), rgb(34 197 94));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 </style>
