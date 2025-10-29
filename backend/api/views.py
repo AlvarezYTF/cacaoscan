@@ -1199,6 +1199,81 @@ class RefreshTokenView(APIView):
             )
 
 
+class ChangePasswordView(APIView):
+    """
+    Endpoint para cambiar la contraseña del usuario autenticado.
+    Requiere autenticación y validación de la contraseña actual.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Cambiar la contraseña del usuario autenticado.
+        
+        Requiere:
+        - old_password: Contraseña actual
+        - new_password: Nueva contraseña (mínimo 8 caracteres, mayúscula, minúscula, número)
+        - confirm_password: Confirmación de la nueva contraseña
+        """
+        from .serializers import ChangePasswordSerializer
+        
+        serializer = ChangePasswordSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            user = request.user
+            old_password = serializer.validated_data['old_password']
+            new_password = serializer.validated_data['new_password']
+            
+            # Verificar que la contraseña actual sea correcta
+            if not user.check_password(old_password):
+                return create_error_response(
+                    message='La contraseña actual es incorrecta',
+                    error_type='invalid_old_password',
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    details={'old_password': ['La contraseña actual no es correcta.']}
+                )
+            
+            # Cambiar la contraseña
+            try:
+                user.set_password(new_password)
+                user.save()
+                
+                # Log de auditoría si está disponible
+                try:
+                    from audit.models import ActivityLog
+                    ActivityLog.objects.create(
+                        user=user,
+                        action='change_password',
+                        resource_type='user',
+                        resource_id=str(user.id),
+                        details={'timestamp': timezone.now().isoformat()},
+                        timestamp=timezone.now()
+                    )
+                except Exception:
+                    pass  # Si no hay módulo de auditoría, continuar
+                
+                return create_success_response(
+                    message='Contraseña cambiada exitosamente',
+                    data={'user_id': user.id}
+                )
+                
+            except Exception as e:
+                logger.error(f"Error cambiando contraseña para usuario {user.id}: {str(e)}")
+                return create_error_response(
+                    message='Error al cambiar la contraseña',
+                    error_type='password_change_error',
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        # Si hay errores de validación, devolverlos
+        return create_error_response(
+            message='Errores de validación',
+            error_type='validation_error',
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=serializer.errors
+        )
+
+
 class ImagesListView(APIView, ImagePermissionMixin):
     """
     Endpoint para listar imágenes procesadas con paginación y filtros.

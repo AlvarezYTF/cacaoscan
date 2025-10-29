@@ -277,7 +277,7 @@ const authApi = {
    */
   async changePassword(passwordData) {
     try {
-      const response = await api.post('/api/v1/auth/users/change-password/', {
+      const response = await api.post('/api/v1/auth/change-password/', {
         old_password: passwordData.oldPassword,
         new_password: passwordData.newPassword,
         confirm_password: passwordData.confirmPassword

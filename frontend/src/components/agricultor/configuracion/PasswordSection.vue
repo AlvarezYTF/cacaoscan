@@ -9,22 +9,26 @@
       <h3 class="text-2xl font-bold text-gray-900">Cambiar Contraseña</h3>
     </div>
 
-    <div class="space-y-5">
+    <form @submit.prevent="handleSave" class="space-y-5">
+      <!-- Contraseña actual -->
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
           <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
-          Contraseña actual
+          Contraseña actual *
         </label>
         <div class="relative">
           <input 
             :type="showCurrentPassword ? 'text' : 'password'" 
             v-model="localPasswordForm.currentPassword" 
+            @blur="validateField('currentPassword')"
             placeholder="••••••••" 
-            class="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all duration-200"
+            class="w-full px-4 py-3 pr-12 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 transition-all duration-200"
+            :class="errors.currentPassword ? 'border-red-500' : 'border-gray-200 focus:border-green-500'"
           >
           <button 
+            type="button"
             @click="showCurrentPassword = !showCurrentPassword"
             class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600 transition-colors"
           >
@@ -35,24 +39,30 @@
             </svg>
           </button>
         </div>
+        <p v-if="errors.currentPassword" class="text-red-600 text-xs mt-1">{{ errors.currentPassword }}</p>
       </div>
 
+      <!-- Nueva contraseña -->
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
           <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
-          Nueva contraseña
+          Nueva contraseña *
         </label>
         <div class="relative">
           <input 
             :type="showNewPassword ? 'text' : 'password'" 
             v-model="localPasswordForm.newPassword" 
+            @blur="validateField('newPassword')"
+            @input="validateField('newPassword')"
             placeholder="••••••••" 
-            class="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all duration-200"
+            class="w-full px-4 py-3 pr-12 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 transition-all duration-200"
+            :class="errors.newPassword ? 'border-red-500' : (isPasswordValid ? 'border-green-300' : 'border-gray-200 focus:border-green-500')"
           >
           <button 
+            type="button"
             @click="showNewPassword = !showNewPassword"
             class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600 transition-colors"
           >
@@ -63,38 +73,110 @@
             </svg>
           </button>
         </div>
+        <!-- Mensajes de validación de nueva contraseña -->
+        <div v-if="localPasswordForm.newPassword" class="mt-2 space-y-1">
+          <div class="flex items-center gap-2 text-xs" :class="passwordChecks.length >= 8 ? 'text-green-600' : 'text-gray-500'">
+            <svg class="w-4 h-4" :class="passwordChecks.length >= 8 ? 'text-green-500' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path v-if="passwordChecks.length >= 8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span>Mínimo 8 caracteres</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs" :class="passwordChecks.hasUpperCase ? 'text-green-600' : 'text-gray-500'">
+            <svg class="w-4 h-4" :class="passwordChecks.hasUpperCase ? 'text-green-500' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path v-if="passwordChecks.hasUpperCase" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span>Al menos una mayúscula</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs" :class="passwordChecks.hasLowerCase ? 'text-green-600' : 'text-gray-500'">
+            <svg class="w-4 h-4" :class="passwordChecks.hasLowerCase ? 'text-green-500' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path v-if="passwordChecks.hasLowerCase" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span>Al menos una minúscula</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs" :class="passwordChecks.hasNumber ? 'text-green-600' : 'text-gray-500'">
+            <svg class="w-4 h-4" :class="passwordChecks.hasNumber ? 'text-green-500' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path v-if="passwordChecks.hasNumber" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span>Al menos un número</span>
+          </div>
+        </div>
+        <p v-if="errors.newPassword" class="text-red-600 text-xs mt-1">{{ errors.newPassword }}</p>
       </div>
 
+      <!-- Confirmar nueva contraseña -->
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
           <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Confirmar nueva contraseña
+          Confirmar nueva contraseña *
         </label>
         <input 
           :type="showNewPassword ? 'text' : 'password'" 
           v-model="localPasswordForm.confirmPassword" 
+          @blur="validateField('confirmPassword')"
+          @input="validateField('confirmPassword')"
           placeholder="••••••••" 
-          class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all duration-200"
+          class="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 transition-all duration-200"
+          :class="errors.confirmPassword ? 'border-red-500' : (passwordsMatch ? 'border-green-300' : 'border-gray-200 focus:border-green-500')"
         >
+        <p v-if="errors.confirmPassword" class="text-red-600 text-xs mt-1">{{ errors.confirmPassword }}</p>
       </div>
-    </div>
 
-    <button 
-      @click="handleSave"
-      :disabled="isLoading || !isFormValid"
-      class="w-full mt-6 flex justify-center items-center gap-2 py-3.5 px-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-    >
-      <svg v-if="isLoading" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-      </svg>
-      {{ isLoading ? 'Cambiando...' : 'Cambiar Contraseña' }}
-    </button>
+      <!-- Mensaje de error general (del backend) -->
+      <Transition
+        enter-active-class="transform ease-out duration-300 transition"
+        enter-from-class="opacity-0 translate-y-2"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition ease-in duration-200"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div v-if="errorMessage" class="p-4 rounded-xl bg-red-50 text-red-800 border-2 border-red-200 flex items-start gap-3 shadow-md">
+          <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-sm font-medium">{{ errorMessage }}</p>
+        </div>
+      </Transition>
+
+      <!-- Mensaje de éxito -->
+      <Transition
+        enter-active-class="transform ease-out duration-300 transition"
+        enter-from-class="opacity-0 translate-y-2"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition ease-in duration-200"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div v-if="successMessage" class="p-4 rounded-xl bg-green-50 text-green-800 border-2 border-green-200 flex items-start gap-3 shadow-md">
+          <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-sm font-medium">{{ successMessage }}</p>
+        </div>
+      </Transition>
+
+      <!-- Botón de guardar -->
+      <button 
+        type="submit"
+        :disabled="isLoading || !isFormValid"
+        class="w-full mt-6 flex justify-center items-center gap-2 py-3.5 px-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+      >
+        <svg v-if="isLoading" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        {{ isLoading ? 'Cambiando...' : 'Cambiar Contraseña' }}
+      </button>
+    </form>
   </div>
 </template>
 
@@ -119,23 +201,162 @@ const localPasswordForm = ref({
   confirmPassword: ''
 })
 
-const isFormValid = computed(() => {
-  return localPasswordForm.value.currentPassword && 
-         localPasswordForm.value.newPassword && 
-         localPasswordForm.value.confirmPassword &&
+const errors = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const errorMessage = ref('')
+const successMessage = ref('')
+
+// Validaciones de contraseña en tiempo real
+const passwordChecks = computed(() => {
+  const pwd = localPasswordForm.value.newPassword
+  return {
+    length: pwd.length,
+    hasUpperCase: /[A-Z]/.test(pwd),
+    hasLowerCase: /[a-z]/.test(pwd),
+    hasNumber: /[0-9]/.test(pwd)
+  }
+})
+
+// Validar si la contraseña cumple todos los requisitos
+const isPasswordValid = computed(() => {
+  const checks = passwordChecks.value
+  return checks.length >= 8 && checks.hasUpperCase && checks.hasLowerCase && checks.hasNumber
+})
+
+// Validar si las contraseñas coinciden
+const passwordsMatch = computed(() => {
+  return localPasswordForm.value.newPassword && 
+         localPasswordForm.value.confirmPassword && 
          localPasswordForm.value.newPassword === localPasswordForm.value.confirmPassword
 })
 
-const handleSave = () => {
-  if (!isFormValid.value) return
-  emit('save', { ...localPasswordForm.value })
+// Validación del formulario completo
+const isFormValid = computed(() => {
+  return localPasswordForm.value.currentPassword && 
+         isPasswordValid.value &&
+         passwordsMatch.value
+})
+
+// Validar un campo específico
+const validateField = (fieldName) => {
+  errors.value[fieldName] = ''
   
-  // Limpiar formulario
+  switch (fieldName) {
+    case 'currentPassword':
+      if (!localPasswordForm.value.currentPassword) {
+        errors.value.currentPassword = 'La contraseña actual es requerida'
+      }
+      break
+      
+    case 'newPassword':
+      const pwd = localPasswordForm.value.newPassword
+      if (!pwd) {
+        errors.value.newPassword = 'La nueva contraseña es requerida'
+      } else if (pwd.length < 8) {
+        errors.value.newPassword = 'La contraseña debe tener al menos 8 caracteres'
+      } else if (!/[A-Z]/.test(pwd)) {
+        errors.value.newPassword = 'La contraseña debe contener al menos una letra mayúscula'
+      } else if (!/[a-z]/.test(pwd)) {
+        errors.value.newPassword = 'La contraseña debe contener al menos una letra minúscula'
+      } else if (!/[0-9]/.test(pwd)) {
+        errors.value.newPassword = 'La contraseña debe contener al menos un número'
+      }
+      break
+      
+    case 'confirmPassword':
+      if (!localPasswordForm.value.confirmPassword) {
+        errors.value.confirmPassword = 'La confirmación de contraseña es requerida'
+      } else if (!passwordsMatch.value) {
+        errors.value.confirmPassword = 'Las contraseñas no coinciden'
+      }
+      break
+  }
+}
+
+// Validar todo el formulario antes de enviar
+const validateForm = () => {
+  errors.value = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  }
+  
+  validateField('currentPassword')
+  validateField('newPassword')
+  validateField('confirmPassword')
+  
+  return Object.values(errors.value).every(error => !error)
+}
+
+const handleSave = () => {
+  // Limpiar mensajes previos
+  errorMessage.value = ''
+  successMessage.value = ''
+  
+  // Validar formulario
+  if (!validateForm()) {
+    return
+  }
+  
+  // Emitir evento para que el componente padre maneje el guardado
+  emit('save', { ...localPasswordForm.value })
+}
+
+// Exponer método para mostrar errores del backend
+const setError = (message) => {
+  errorMessage.value = message
+  successMessage.value = ''
+  // Ocultar después de 5 segundos
+  setTimeout(() => {
+    errorMessage.value = ''
+  }, 5000)
+}
+
+// Exponer método para mostrar éxito
+const setSuccess = (message) => {
+  successMessage.value = message
+  errorMessage.value = ''
+  // Limpiar formulario después de éxito
   localPasswordForm.value = {
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   }
+  errors.value = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  }
+  // Ocultar después de 5 segundos
+  setTimeout(() => {
+    successMessage.value = ''
+  }, 5000)
 }
+
+// Observar cambios en isLoading para limpiar errores cuando se completa
+watch(() => props.isLoading, (newValue) => {
+  if (!newValue) {
+    // El componente padre manejará el éxito/error
+  }
+})
+
+// Exponer métodos para el componente padre
+defineExpose({
+  setError,
+  setSuccess
+})
 </script>
 
+<style scoped>
+/* Transiciones suaves para mensajes */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>

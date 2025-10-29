@@ -20,6 +20,7 @@ urlpatterns = [
     path('auth/logout/', views.LogoutView.as_view(), name='auth-logout'),
     path('auth/profile/', views.UserProfileView.as_view(), name='auth-profile'),
     path('auth/refresh/', views.RefreshTokenView.as_view(), name='auth-refresh'),
+    path('auth/change-password/', views.ChangePasswordView.as_view(), name='auth-change-password'),
     
     # Endpoints de verificación de email
     path('auth/verify-email/', views.EmailVerificationView.as_view(), name='auth-verify-email'),

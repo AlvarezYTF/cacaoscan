@@ -245,6 +245,78 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
+class ChangePasswordSerializer(serializers.Serializer):
+    """
+    Serializer para cambio de contraseña de usuario autenticado.
+    """
+    old_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        label="Contraseña actual"
+    )
+    new_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        min_length=8,
+        label="Nueva contraseña"
+    )
+    confirm_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        label="Confirmar nueva contraseña"
+    )
+    
+    def validate_old_password(self, value):
+        """Validar que se proporcione la contraseña actual."""
+        if not value:
+            raise serializers.ValidationError("La contraseña actual es requerida.")
+        return value
+    
+    def validate_new_password(self, value):
+        """
+        Validar que la nueva contraseña cumpla con los requisitos de seguridad:
+        - Mínimo 8 caracteres
+        - Al menos una letra mayúscula
+        - Al menos una letra minúscula
+        - Al menos un número
+        """
+        import re
+        
+        if len(value) < 8:
+            raise serializers.ValidationError("La contraseña debe tener al menos 8 caracteres.")
+        
+        if not re.search(r"[A-Z]", value):
+            raise serializers.ValidationError("La contraseña debe contener al menos una letra mayúscula.")
+        
+        if not re.search(r"[a-z]", value):
+            raise serializers.ValidationError("La contraseña debe contener al menos una letra minúscula.")
+        
+        if not re.search(r"[0-9]", value):
+            raise serializers.ValidationError("La contraseña debe contener al menos un número.")
+        
+        return value
+    
+    def validate(self, attrs):
+        """Validaciones generales."""
+        old_password = attrs.get('old_password')
+        new_password = attrs.get('new_password')
+        confirm_password = attrs.get('confirm_password')
+        
+        # Validar que las contraseñas nuevas coincidan
+        if new_password != confirm_password:
+            raise serializers.ValidationError({
+                'confirm_password': 'Las contraseñas nuevas no coinciden.'
+            })
+        
+        # Validar que la nueva contraseña sea diferente a la actual
+        if old_password == new_password:
+            raise serializers.ValidationError({
+                'new_password': 'La nueva contraseña debe ser diferente a la contraseña actual.'
+            })
+        
+        return attrs
+
+
 class EmailVerificationSerializer(serializers.Serializer):
     """Serializer para verificación de email."""
     token = serializers.UUIDField()
