@@ -124,11 +124,23 @@ export default {
   max-width: 500px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   overflow: hidden;
+  animation: modalAppear 0.2s ease-out;
+}
+
+@keyframes modalAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .confirm-modal-header {
   padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: #dc2626;
   color: white;
   display: flex;
   align-items: center;
@@ -190,16 +202,17 @@ export default {
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
   border-radius: 0.5rem;
-  color: #92400e;
+  color: #991b1b;
   font-size: 0.875rem;
+  transition: all 0.2s;
 }
 
 .confirm-warning i {
   font-size: 1.125rem;
-  color: #f59e0b;
+  color: #ef4444;
 }
 
 .confirm-modal-footer {
@@ -219,10 +232,14 @@ export default {
   font-size: 0.875rem;
   font-weight: 500;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all 0.2s ease-in-out;
   cursor: pointer;
   border: 1px solid transparent;
   gap: 0.5rem;
+}
+
+.btn:active {
+  transform: scale(0.98);
 }
 
 .btn:disabled {

@@ -1,8 +1,8 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="text-center mb-6">
-      <img src="@/assets/sena-logo.png" alt="Logo CacaoScan" class="mx-auto h-16 w-auto mb-4">
+    <div class="text-center mb-8">
+      <img src="@/assets/sena-logo.png" alt="Logo CacaoScan" class="mx-auto h-16 w-auto mb-4 animate-fade-in">
       <h2 class="text-2xl font-bold text-gray-900">Iniciar Sesión</h2>
       <p class="text-gray-600 mt-2">Accede a tu cuenta de CacaoScan</p>
     </div>
@@ -26,7 +26,7 @@
           autocomplete="email"
           required
           :disabled="isLoading"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
           :class="{ 'border-red-500': errors.email }"
           placeholder="usuario@ejemplo.com"
         />
@@ -46,14 +46,14 @@
             autocomplete="current-password"
             required
             :disabled="isLoading"
-            class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
+            class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
             :class="{ 'border-red-500': errors.password }"
             placeholder="Ingresa tu contraseña"
           />
           <button
             type="button"
             @click="showPassword = !showPassword"
-            class="absolute inset-y-0 right-0 pr-3 flex items-center"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors"
             :disabled="isLoading"
           >
             <svg
@@ -108,7 +108,7 @@
       <button
         type="submit"
         :disabled="isLoading"
-        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-md active:scale-[0.98]"
       >
         <LoadingSpinner 
           v-if="isLoading"
@@ -136,7 +136,7 @@
     <div class="mt-6">
       <router-link
         to="/registro"
-        class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+        class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 hover:shadow-md active:scale-[0.98]"
       >
         Crear nueva cuenta
       </router-link>
@@ -275,5 +275,20 @@ onMounted(() => {
   to {
     transform: rotate(360deg);
   }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out;
 }
 </style>

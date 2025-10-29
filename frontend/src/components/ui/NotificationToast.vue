@@ -48,7 +48,7 @@
             <!-- Icono de información -->
             <svg
               v-else
-              class="h-6 w-6 text-blue-400"
+              class="h-6 w-6 text-green-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke-width="1.5"
@@ -69,7 +69,7 @@
           <div class="ml-4 flex flex-shrink-0">
             <button
               @click="close"
-              class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
             >
               <span class="sr-only">Cerrar</span>
               <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

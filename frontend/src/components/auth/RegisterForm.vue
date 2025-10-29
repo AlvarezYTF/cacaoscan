@@ -34,7 +34,7 @@
                   autocomplete="given-name"
                   required
                   :disabled="isLoading"
-                  class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm disabled:bg-gray-100"
+                  class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm disabled:bg-gray-100 transition-colors"
                   :class="{ 'border-red-500': errors.firstName }"
                   placeholder="Juan"
                 />
@@ -54,7 +54,7 @@
                   autocomplete="family-name"
                   required
                   :disabled="isLoading"
-                  class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm disabled:bg-gray-100"
+                  class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm disabled:bg-gray-100 transition-colors"
                   :class="{ 'border-red-500': errors.lastName }"
                   placeholder="Pérez"
                 />
@@ -119,14 +119,14 @@
                 autocomplete="new-password"
                 required
                 :disabled="isLoading"
-                class="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm disabled:bg-gray-100"
+                class="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm disabled:bg-gray-100 transition-colors"
                 :class="{ 'border-red-500': errors.password }"
                 placeholder="••••••••"
               />
               <button
                 type="button"
                 @click="showPassword = !showPassword"
-                class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors"
                 :disabled="isLoading"
               >
                 <svg
@@ -174,7 +174,7 @@
           </div>
 
           <!-- Validador de contraseña -->
-          <div v-if="form.password" class="bg-gray-50 rounded-md p-4">
+          <div v-if="form.password" class="bg-gray-50 border border-gray-200 rounded-md p-4 transition-all duration-200">
             <h4 class="text-sm font-medium text-gray-900 mb-2">Requisitos de la contraseña:</h4>
             <ul class="space-y-1">
               <li class="flex items-center text-sm" :class="passwordChecks.length ? 'text-green-600' : 'text-gray-500'">
@@ -240,7 +240,7 @@
             <button
               type="submit"
               :disabled="isLoading || !isFormValid"
-              class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-md active:scale-[0.98]"
             >
               <svg
                 v-if="isLoading"
