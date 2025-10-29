@@ -62,6 +62,7 @@ import { useRouter } from 'vue-router'
 import Chart from 'chart.js/auto'
 import Swal from 'sweetalert2'
 import { useAuthStore } from '@/stores/auth'
+import { useConfigStore } from '@/stores/config'
 import { useAdminStore } from '@/stores/admin'
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue'
 import KPICards from '@/components/admin/AdminDashboardComponents/KPICards.vue'
@@ -84,6 +85,7 @@ export default {
     const router = useRouter()
     const authStore = useAuthStore()
     const adminStore = useAdminStore()
+    const configStore = useConfigStore()
 
     // Reactive data
     const loading = ref(false)
@@ -106,7 +108,7 @@ export default {
     const qualityData = ref({ labels: [], datasets: [] })
 
     // Sidebar properties
-    const brandName = ref('CacaoScan')
+    const brandName = computed(() => configStore.brandName)
     const userName = computed(() => {
       const user = authStore.user
       return user ? `${user.first_name} ${user.last_name}`.trim() || user.username : 'Admin User'

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import api from '@/services/api';
 
 export const useAnalysisStore = defineStore('analysis', {
   state: () => ({
@@ -7,6 +8,10 @@ export const useAnalysisStore = defineStore('analysis', {
       collectionDate: '',
       origin: '',
       notes: '',
+      farm: '',
+      originPlace: '',
+      genetics: '',
+      farmer: '',
     },
     images: [],
     uploadProgress: 0,
@@ -20,6 +25,8 @@ export const useAnalysisStore = defineStore('analysis', {
       return (
         state.batch.name.trim() !== '' &&
         state.batch.collectionDate &&
+        state.batch.farm &&
+        state.batch.genetics &&
         state.images.length > 0
       );
     },
@@ -49,6 +56,10 @@ export const useAnalysisStore = defineStore('analysis', {
         collectionDate: '',
         origin: '',
         notes: '',
+        farm: '',
+        originPlace: '',
+        genetics: '',
+        farmer: '',
       };
       this.images = [];
       this.uploadProgress = 0;
@@ -60,13 +71,16 @@ export const useAnalysisStore = defineStore('analysis', {
 
       this.isUploading = true;
       this.uploadError = null;
+      this.uploadProgress = 0;
 
       try {
         const formData = new FormData();
 
         // Add batch data
         Object.entries(this.batch).forEach(([key, value]) => {
-          if (value) formData.append(key, value);
+          if (value) {
+            formData.append(key, value);
+          }
         });
 
         // Add images
@@ -74,27 +88,28 @@ export const useAnalysisStore = defineStore('analysis', {
           formData.append('images', file);
         });
 
-        // TODO: Replace with actual API endpoint
-        const response = await fetch('/api/analysis', {
-          method: 'POST',
-          body: formData,
+        // Upload with progress tracking
+        const response = await api.post('/analysis/batch/', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
           onUploadProgress: (progressEvent) => {
-            this.uploadProgress = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
+            if (progressEvent.total) {
+              this.uploadProgress = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+            }
           },
         });
 
-        if (!response.ok) {
-          throw new Error('Error al enviar el análisis');
-        }
-
-        const result = await response.json();
-        return result;
+        return response.data;
 
       } catch (error) {
-        this.uploadError = error.message || 'Error desconocido al procesar la solicitud';
-        throw error;
+        const errorMessage = error.response?.data?.error || 
+                            error.message || 
+                            'Error desconocido al procesar la solicitud';
+        this.uploadError = errorMessage;
+        throw new Error(errorMessage);
       } finally {
         this.isUploading = false;
       }

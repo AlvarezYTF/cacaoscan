@@ -17,6 +17,13 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  vue: {
+    template: {
+      compilerOptions: {
+        isCustomElement: (tag) => tag.startsWith('ion-')
+      }
+    }
+  },
   build: {
     // Aumentar el límite de advertencia a 1500 kB
     chunkSizeWarningLimit: 1500,

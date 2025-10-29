@@ -174,6 +174,7 @@ import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
 import { useAdminStore } from '@/stores/admin'
 import { useAuthStore } from '@/stores/auth'
+import { useConfigStore } from '@/stores/config'
 import authApi from '@/services/authApi'
 import { useWebSocket } from '@/composables/useWebSocket'
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue'
@@ -201,10 +202,11 @@ export default {
     const router = useRouter()
     const adminStore = useAdminStore()
     const authStore = useAuthStore()
+    const configStore = useConfigStore()
     const websocket = useWebSocket()
 
     // Sidebar properties
-    const brandName = computed(() => 'CacaoScan')
+    const brandName = computed(() => configStore.brandName)
     const userName = computed(() => {
       const user = authStore.user
       return user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username : 'Usuario'

@@ -132,12 +132,14 @@ class CacaoDatasetLoader:
         except Exception as e:
             raise ValueError(f"Error leyendo CSV: {e}")
         
-        # Validar columnas requeridas (en mayúscula)
-        required_columns = ['ID', 'ALTO', 'ANCHO', 'GROSOR', 'PESO']
-        missing_columns = [col for col in required_columns if col not in df.columns]
+        # Validar que existen todas las columnas requeridas (sin importar el orden)
+        required_columns = {'ID': 'id', 'ALTO': 'alto', 'ANCHO': 'ancho', 'GROSOR': 'grosor', 'PESO': 'peso'}
+        missing_columns = [col for col in required_columns.keys() if col not in df.columns]
         
         if missing_columns:
             raise ValueError(f"Columnas faltantes en el dataset: {missing_columns}")
+        
+        logger.info(f"✅ Columnas validadas: {list(df.columns)}")
         
         # Convertir tipos de datos y manejar valores nulos
         initial_count = len(df)
@@ -145,7 +147,7 @@ class CacaoDatasetLoader:
         # ID como entero
         df['ID'] = pd.to_numeric(df['ID'], errors='coerce').astype('Int64')
         
-        # Dimensiones y peso como float32
+        # Dimensiones y peso como float32 (leer de cualquier orden de columna)
         df['ALTO'] = pd.to_numeric(df['ALTO'], errors='coerce').astype(np.float32)
         df['ANCHO'] = pd.to_numeric(df['ANCHO'], errors='coerce').astype(np.float32)
         df['GROSOR'] = pd.to_numeric(df['GROSOR'], errors='coerce').astype(np.float32)

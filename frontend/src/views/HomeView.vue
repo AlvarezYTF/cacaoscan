@@ -23,11 +23,11 @@
 // Pinia store can be imported here when needed
 // import { useMainStore } from '@/stores/main'
 // const store = useMainStore()
-import HeaderView from '@/components/HomeViewComponents/HeaderView.vue';
-import HeroView from '@/components/HomeViewComponents/HeroView.vue';
-import FooterView from '@/components/HomeViewComponents/FooterView.vue';
-import FeaturesView from '@/components/HomeViewComponents/FeaturesView.vue';
-import AboutView from '@/components/HomeViewComponents/AboutView.vue';
+import HeaderView     from '@/components/HomeViewComponents/HeaderView.vue';
+import HeroView       from '@/components/HomeViewComponents/HeroView.vue';
+import FooterView     from '@/components/HomeViewComponents/FooterView.vue';
+import FeaturesView   from '@/components/HomeViewComponents/FeaturesView.vue';
+import AboutView      from '@/components/HomeViewComponents/AboutView.vue';
 </script>
 
 <style scoped>

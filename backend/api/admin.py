@@ -4,7 +4,7 @@ Configuración del admin de Django para la API de CacaoScan.
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import EmailVerificationToken, UserProfile, CacaoImage, CacaoPrediction
+from .models import EmailVerificationToken, UserProfile, CacaoImage, CacaoPrediction, SystemSettings
 
 
 # Configuración personalizada para User
@@ -145,6 +145,22 @@ class CacaoPredictionAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """Optimizar queryset con select_related."""
         return super().get_queryset(request).select_related('image__user')
+
+
+@admin.register(SystemSettings)
+class SystemSettingsAdmin(admin.ModelAdmin):
+    """Admin para configuración del sistema."""
+    list_display = ('nombre_sistema', 'email_contacto', 'updated_at')
+    
+    def has_add_permission(self, request):
+        """No permitir agregar más de una instancia."""
+        if self.model.objects.count() >= 1:
+            return False
+        return super().has_add_permission(request)
+    
+    def has_delete_permission(self, request, obj=None):
+        """No permitir eliminar la configuración."""
+        return False
 
 
 # Configuración del sitio admin

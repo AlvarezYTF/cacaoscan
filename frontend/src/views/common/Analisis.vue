@@ -39,39 +39,103 @@
               <ProgressIndicator v-if="isUploading" :progress="uploadProgress" label="Procesando imágenes..." />
 
               <!-- Success Alert -->
-              <div v-if="analysisResult" class="bg-green-50 border border-green-200 rounded-lg p-6">
+              <div v-if="analysisResult" class="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-8 shadow-lg">
                 <div class="flex items-start">
                   <div class="flex-shrink-0">
-                    <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
+                    <div class="flex items-center justify-center w-16 h-16 bg-green-500 rounded-full">
+                      <svg class="h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
                   </div>
-                  <div class="ml-4 flex-1">
-                    <h3 class="text-lg font-semibold text-green-900 mb-2">
+                  <div class="ml-6 flex-1">
+                    <h3 class="text-2xl font-bold text-green-900 mb-4">
                       Análisis completado exitosamente
                     </h3>
-                    <div class="space-y-2">
-                      <p class="text-sm text-green-700">
-                        <span class="font-medium">ID de análisis:</span> {{ analysisResult.analysisId }}
-                      </p>
-                      <div class="pt-2">
-                        <router-link 
-                          :to="{ name: 'analisis-detalle', params: { id: analysisResult.analysisId } }"
-                          class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
-                        >
-                          Ver resultados detallados
-                          <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                          </svg>
-                        </router-link>
+                    
+                    <!-- Estadísticas principales -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                      <div class="bg-white rounded-lg p-4 border border-green-200">
+                        <p class="text-sm text-gray-600 mb-1">Lote Analizado</p>
+                        <p class="text-lg font-semibold text-green-900">{{ analysisResult.lote_name }}</p>
                       </div>
+                      
+                      <div class="bg-white rounded-lg p-4 border border-green-200">
+                        <p class="text-sm text-gray-600 mb-1">Imágenes Procesadas</p>
+                        <p class="text-lg font-semibold text-green-900">
+                          {{ analysisResult.processed_images }}/{{ analysisResult.total_images }}
+                        </p>
+                      </div>
+                      
+                      <div class="bg-white rounded-lg p-4 border border-green-200">
+                        <p class="text-sm text-gray-600 mb-1">Confianza Promedio</p>
+                        <p class="text-lg font-semibold text-green-900">
+                          {{ (analysisResult.average_confidence * 100).toFixed(1) }}%
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Estadísticas adicionales -->
+                    <div v-if="analysisResult.average_dimensions || analysisResult.total_weight" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                      <div v-if="analysisResult.average_dimensions" class="bg-white rounded-lg p-3 border border-green-200">
+                        <p class="text-xs text-gray-600 mb-1">Alto Promedio</p>
+                        <p class="text-base font-semibold text-green-900">{{ analysisResult.average_dimensions.alto.toFixed(2) }} mm</p>
+                      </div>
+                      
+                      <div v-if="analysisResult.average_dimensions" class="bg-white rounded-lg p-3 border border-green-200">
+                        <p class="text-xs text-gray-600 mb-1">Ancho Promedio</p>
+                        <p class="text-base font-semibold text-green-900">{{ analysisResult.average_dimensions.ancho.toFixed(2) }} mm</p>
+                      </div>
+                      
+                      <div v-if="analysisResult.average_dimensions" class="bg-white rounded-lg p-3 border border-green-200">
+                        <p class="text-xs text-gray-600 mb-1">Grosor Promedio</p>
+                        <p class="text-base font-semibold text-green-900">{{ analysisResult.average_dimensions.grosor.toFixed(2) }} mm</p>
+                      </div>
+                      
+                      <div v-if="analysisResult.total_weight" class="bg-white rounded-lg p-3 border border-green-200">
+                        <p class="text-xs text-gray-600 mb-1">Peso Total</p>
+                        <p class="text-base font-semibold text-green-900">{{ analysisResult.total_weight }} g</p>
+                      </div>
+                    </div>
+
+                    <!-- Tiempo de procesamiento -->
+                    <div v-if="analysisResult.processing_time_seconds" class="mb-4">
+                      <p class="text-sm text-green-700">
+                        <svg class="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Tiempo de procesamiento: {{ analysisResult.processing_time_seconds }} segundos
+                      </p>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="flex flex-col sm:flex-row gap-3">
+                      <router-link 
+                        :to="{ name: 'LoteDetail', params: { id: analysisResult.lote_id } }"
+                        class="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white text-base font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 shadow-md"
+                      >
+                        Ver resultados detallados
+                        <svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </router-link>
+                      
+                      <button
+                        @click="resetAndCreateNew"
+                        class="inline-flex items-center justify-center px-6 py-3 bg-white text-green-700 text-base font-semibold rounded-lg hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 border-2 border-green-300 shadow-md"
+                      >
+                        Crear nuevo análisis
+                        <svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
 
               <!-- Batch Info Form -->
-              <div class="bg-gray-50 rounded-lg p-6">
+              <div v-if="!analysisResult" class="bg-gray-50 rounded-lg p-6">
                 <h2 class="text-xl font-semibold text-gray-900 mb-4">Información del Lote</h2>
                 <BatchInfoForm 
                   v-model="batchData" 
@@ -84,7 +148,7 @@
               </div>
 
               <!-- Image Capture Section -->
-              <div class="space-y-6">
+              <div v-if="!analysisResult" class="space-y-6">
                 <div class="text-center">
                   <h2 class="text-2xl font-semibold text-gray-900 mb-3">Imágenes del Lote</h2>
                   <p class="text-gray-600 text-lg">Captura fotos de alta calidad de los granos de cacao para un análisis preciso</p>
@@ -156,7 +220,7 @@
           </div>
 
               <!-- Submit Button -->
-              <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+              <div v-if="!analysisResult" class="bg-green-50 border border-green-200 rounded-lg p-6">
                 <div class="text-center mb-6">
                   <h3 class="text-xl font-semibold text-green-900 mb-2">¿Listo para analizar?</h3>
                   <p class="text-green-700">Revisa que toda la información esté completa antes de continuar</p>
@@ -186,7 +250,13 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                     </svg>
                     <p class="text-sm text-amber-700 font-medium">
-                      Completa todos los campos requeridos para continuar
+                      Falta: {{ 
+                        !batchData.name ? 'Nombre del lote' :
+                        !batchData.collectionDate ? 'Fecha de recolección' :
+                        !batchData.farm ? 'Finca' :
+                        !batchData.genetics ? 'Genética' :
+                        !images.length ? 'Al menos una imagen' : ''
+                      }}
                     </p>
                   </div>
                 </div>
@@ -251,7 +321,11 @@ export default {
       name: '',
       collectionDate: '',
       origin: '',
-      notes: ''
+      notes: '',
+      farm: '',
+      originPlace: '',
+      genetics: '',
+      farmer: ''
     });
 
     const images = ref([]);
@@ -279,6 +353,8 @@ export default {
       return (
         batchData.value.name.trim() !== '' &&
         batchData.value.collectionDate &&
+        batchData.value.farm &&
+        batchData.value.genetics &&
         images.value.length > 0
       );
     });
@@ -393,7 +469,11 @@ export default {
         name: '',
         collectionDate: '',
         origin: '',
-        notes: ''
+        notes: '',
+        farm: '',
+        originPlace: '',
+        genetics: '',
+        farmer: ''
       };
       images.value = [];
       capturedImages.value = [];
@@ -439,6 +519,11 @@ export default {
       }
     };
 
+    const resetAndCreateNew = () => {
+      analysisResult.value = null;
+      resetForm();
+    };
+
     // Lifecycle hooks
     onMounted(() => {
       // Reset store when component is mounted
@@ -478,7 +563,8 @@ export default {
       resetForm,
       handleMenuClick,
       handleLogout,
-      toggleSidebarCollapse
+      toggleSidebarCollapse,
+      resetAndCreateNew
     };
   }
 };

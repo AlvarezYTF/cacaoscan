@@ -4,7 +4,7 @@ Serializers para la API de CacaoScan.
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
-from .models import UserProfile, CacaoImage, CacaoPrediction, TrainingJob, Finca, Lote, Notification, ModelMetrics
+from .models import UserProfile, CacaoImage, CacaoPrediction, TrainingJob, Finca, Lote, Notification, ModelMetrics, SystemSettings
 
 
 class ConfidenceSerializer(serializers.Serializer):
@@ -1001,3 +1001,36 @@ class ModelComparisonSerializer(serializers.Serializer):
     comparison_metrics = serializers.DictField()
     winner = serializers.CharField()
     improvement_percentage = serializers.FloatField()
+
+
+class SystemSettingsSerializer(serializers.ModelSerializer):
+    """Serializer para configuración del sistema."""
+    logo_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = SystemSettings
+        fields = [
+            'nombre_sistema',
+            'email_contacto',
+            'lema',
+            'logo',
+            'logo_url',
+            'recaptcha_enabled',
+            'session_timeout',
+            'login_attempts',
+            'two_factor_auth',
+            'active_model',
+            'last_training',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+    
+    def get_logo_url(self, obj):
+        """Obtener URL del logo si existe."""
+        if obj.logo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.logo.url)
+            return obj.logo.url
+        return None

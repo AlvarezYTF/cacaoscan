@@ -265,7 +265,10 @@ export default {
       // Set initial fincas based on role
       if (props.userRole === 'agricultor' && props.userId) {
         // Filter only fincas owned by the current user
-        fincas.value = allFincas.value.filter(finca => finca.agricultor === props.userId) || [];
+        console.log('🔍 Filtering fincas for agricultor ID:', props.userId);
+        console.log('🔍 All fincas:', allFincas.value);
+        fincas.value = allFincas.value.filter(finca => finca.agricultor_id === props.userId) || [];
+        console.log('🔍 Filtered fincas:', fincas.value);
       } else {
         // Admin sees all fincas initially
         fincas.value = allFincas.value;
@@ -290,7 +293,18 @@ export default {
     };
 
     const updateForm = () => {
-      emit('update:modelValue', { ...formData.value });
+      // Mapear los campos al formato que espera el store
+      const mappedData = {
+        name: formData.value.name || '',
+        farm: formData.value.farm || '',
+        originPlace: formData.value.originPlace || '',
+        genetics: formData.value.genetics || '',
+        collectionDate: formData.value.collectionDate || '',
+        origin: '',  // Este campo no se usa por ahora
+        notes: formData.value.notes || '',
+        farmer: formData.value.farmer || '',
+      };
+      emit('update:modelValue', mappedData);
     };
 
     // When farmer changes, filter fincas by that farmer
@@ -301,7 +315,7 @@ export default {
         const selectedAgricultor = agricultores.value.find(a => a.username === formData.value.farmer);
         console.log('🔍 Selected agricultor:', selectedAgricultor);
         if (selectedAgricultor) {
-          fincas.value = allFincas.value.filter(finca => finca.agricultor === selectedAgricultor.id);
+          fincas.value = allFincas.value.filter(finca => finca.agricultor_id === selectedAgricultor.id);
           console.log('🔍 Filtered fincas for agricultor:', fincas.value);
         } else {
           fincas.value = allFincas.value;
@@ -320,8 +334,8 @@ export default {
       if (formData.value.farm) {
         const selectedFinca = allFincas.value.find(f => f.nombre === formData.value.farm);
         console.log('🔍 Selected finca:', selectedFinca);
-        if (selectedFinca && selectedFinca.agricultor) {
-          const associatedAgricultor = agricultores.value.find(a => a.id === selectedFinca.agricultor);
+        if (selectedFinca && selectedFinca.agricultor_id) {
+          const associatedAgricultor = agricultores.value.find(a => a.id === selectedFinca.agricultor_id);
           console.log('🔍 Associated agricultor:', associatedAgricultor);
           if (associatedAgricultor) {
             formData.value.farmer = associatedAgricultor.username;
