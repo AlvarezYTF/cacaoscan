@@ -35,11 +35,11 @@ class FincaPermissionMixin:
         user = self.request.user
         
         if user.is_superuser or user.is_staff:
-            # Admin puede ver todas las fincas (sin select_related para optimizar)
+            # Admin puede ver todas las fincas (activas e inactivas)
             return Finca.objects.all()
         else:
-            # Agricultor solo ve sus fincas
-            return Finca.objects.filter(agricultor=user)
+            # Agricultor solo ve sus fincas ACTIVAS (soft delete)
+            return Finca.objects.filter(agricultor=user, activa=True)
     
     def perform_create(self, serializer):
         """Asignar automáticamente el agricultor al crear finca."""
@@ -97,8 +97,9 @@ class FincaListCreateView(FincaPermissionMixin, APIView):
             if departamento:
                 queryset = queryset.filter(departamento__icontains=departamento)
             
+            # Filtro por estado activo (solo admins pueden ver inactivas)
             activa = request.GET.get('activa')
-            if activa is not None:
+            if activa is not None and (request.user.is_superuser or request.user.is_staff):
                 activa_bool = activa.lower() in ['true', '1', 'yes']
                 queryset = queryset.filter(activa=activa_bool)
             
@@ -383,31 +384,33 @@ class FincaDeleteView(FincaPermissionMixin, APIView):
         tags=['Fincas']
     )
     def delete(self, request, finca_id):
-        """Eliminar finca."""
+        """Desactivar finca (soft delete)."""
         try:
-            queryset = self.get_queryset()
+            # Usar queryset sin filtro de activa para poder desactivar fincas inactivas
+            if request.user.is_superuser or request.user.is_staff:
+                queryset = Finca.objects.all()
+            else:
+                queryset = Finca.objects.filter(agricultor=request.user)
+            
             finca = queryset.get(id=finca_id)
             
-            # Verificar si tiene lotes asociados
-            if hasattr(finca, 'lotes') and finca.lotes.exists():
+            if not finca.activa:
                 return Response({
-                    'error': 'No se puede eliminar la finca porque tiene lotes asociados',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Verificar si tiene análisis asociados
-            if hasattr(finca, 'cacao_images') and finca.cacao_images.exists():
-                return Response({
-                    'error': 'No se puede eliminar la finca porque tiene análisis asociados',
+                    'error': 'La finca ya está desactivada',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             finca_nombre = finca.nombre
-            finca.delete()
+            # Soft delete: marcar como inactiva en lugar de eliminar
+            finca.activa = False
+            finca.save(update_fields=['activa'])
             
-            logger.info(f"Finca '{finca_nombre}' eliminada por usuario {request.user.username}")
+            logger.info(f"Finca '{finca_nombre}' desactivada (soft delete) por usuario {request.user.username}")
             
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({
+                'message': 'Finca desactivada correctamente',
+                'status': 'success'
+            }, status=status.HTTP_200_OK)
             
         except Finca.DoesNotExist:
             return Response({
@@ -415,7 +418,70 @@ class FincaDeleteView(FincaPermissionMixin, APIView):
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error eliminando finca {finca_id}: {e}")
+            logger.error(f"Error desactivando finca {finca_id}: {e}")
+            return Response({
+                'error': 'Error interno del servidor',
+                'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FincaActivateView(FincaPermissionMixin, APIView):
+    """
+    Vista para reactivar una finca desactivada (soft delete).
+    Solo accesible para administradores.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Reactivar una finca desactivada (solo admins)",
+        operation_summary="Reactivar finca",
+        responses={
+            200: openapi.Response(description="Finca reactivada exitosamente"),
+            400: openapi.Response(description="La finca ya está activa"),
+            403: openapi.Response(description="Permiso denegado"),
+            404: ErrorResponseSerializer,
+            401: ErrorResponseSerializer,
+        },
+        tags=['Fincas']
+    )
+    def post(self, request, finca_id):
+        """Reactivar finca (solo admins)."""
+        try:
+            # Solo admins pueden reactivar fincas
+            if not (request.user.is_superuser or request.user.is_staff):
+                return Response({
+                    'error': 'No tienes permisos para reactivar fincas',
+                    'status': 'error'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Obtener la finca sin filtro de activa
+            try:
+                finca = Finca.objects.get(id=finca_id)
+            except Finca.DoesNotExist:
+                return Response({
+                    'error': 'Finca no encontrada',
+                    'status': 'error'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            if finca.activa:
+                return Response({
+                    'error': 'La finca ya está activa',
+                    'status': 'error'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            finca_nombre = finca.nombre
+            finca.activa = True
+            finca.save(update_fields=['activa'])
+            
+            logger.info(f"Finca '{finca_nombre}' reactivada por admin {request.user.username}")
+            
+            return Response({
+                'message': 'Finca reactivada correctamente',
+                'status': 'success'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error reactivando finca {finca_id}: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'

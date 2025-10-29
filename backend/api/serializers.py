@@ -518,7 +518,7 @@ class FincaSerializer(serializers.ModelSerializer):
         )
         read_only_fields = (
             'id', 'fecha_registro', 'created_at', 'updated_at', 
-            'ubicacion_completa', 'estadisticas'
+            'ubicacion_completa', 'estadisticas', 'agricultor'
         )
     
     def get_estadisticas(self, obj):

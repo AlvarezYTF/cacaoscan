@@ -16,6 +16,22 @@ const api = axios.create({
   }
 })
 
+// Variables para manejar el refresh token concurrente
+let isRefreshing = false
+let failedRequestsQueue = []
+
+// Función para procesar la cola de peticiones fallidas
+const processQueue = (error, token = null) => {
+  failedRequestsQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token)
+    }
+  })
+  failedRequestsQueue = []
+}
+
 // Función para obtener el store de auth dinámicamente
 const getAuthStore = () => {
   // Importación dinámica para evitar dependencias circulares
@@ -87,51 +103,150 @@ api.interceptors.response.use(
     if (originalRequest.metadata) {
       const endTime = new Date()
       const duration = endTime - originalRequest.metadata.startTime
-      console.error(`❌ API Error: ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`, {
-        status: error.response?.status,
-        duration: `${duration}ms`,
-        message: error.response?.data?.message || error.response?.data?.detail || error.message
-      })
+      
+      // Endpoints que pueden fallar normalmente (configuración, stats)
+      const isConfigEndpoint = originalRequest.url?.includes('/config/')
+      const isStatsEndpoint = originalRequest.url?.includes('/stats/')
+      
+      // Determinar si es un error esperado (500 o 403 en endpoints no críticos)
+      const isExpectedFailure = (isConfigEndpoint || isStatsEndpoint) && 
+                                 (error.response?.status === 403 || error.response?.status === 500)
+      
+      // Solo loggear errores críticos o no esperados
+      if (!isExpectedFailure) {
+        console.error(`❌ API Error: ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`, {
+          status: error.response?.status,
+          duration: `${duration}ms`,
+          message: error.response?.data?.message || error.response?.data?.detail || error.message
+        })
+      }
     }
 
-    // Manejar errores 401 (No autorizado) - Token Authentication
+    // Manejar errores 401 (No autorizado) - JWT Refresh Token Flow
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Verificar si es un endpoint de auth que no requiere manejo especial
-      const authEndpoints = ['/auth/login/', '/auth/register/']
+      const authEndpoints = ['/auth/login/', '/auth/register/', '/auth/refresh/']
       const isAuthEndpoint = authEndpoints.some(endpoint => 
         originalRequest.url.includes(endpoint)
       )
 
       if (isAuthEndpoint) {
+        // Si falla en el refresh token, limpiar todo y redirigir
+        if (originalRequest.url.includes('/auth/refresh/')) {
+          console.error('🚫 Refresh token inválido o expirado, cerrando sesión.')
+          localStorage.clear()
+          router.replace({ 
+            name: 'Login',
+            query: {
+              message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+              expired: 'true'
+            }
+          })
+        }
         return Promise.reject(error)
       }
 
-      // Para Token Authentication, si hay 401, el token es inválido
-      // Limpiar tokens y redirigir a login usando replace
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('user')
-      
-      const authStore = getAuthStore()
-      authStore.clearAll() // Limpiar estado sin logout completo
-      
-      // Redirigir usando replace para evitar volver atrás
-      router.replace({ 
-        name: 'Login',
-        query: {
-          message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
-          expired: 'true'
+      const refreshToken = localStorage.getItem('refresh_token')
+
+      // Si no hay refresh token → cerrar sesión
+      if (!refreshToken) {
+        console.warn('⚠️ No hay refresh token disponible, redirigiendo a login...')
+        localStorage.clear()
+        router.replace({ 
+          name: 'Login',
+          query: {
+            message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
+            expired: 'true'
+          }
+        })
+        return Promise.reject(error)
+      }
+
+      // Si ya se está refrescando, agregar a la cola
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedRequestsQueue.push({ resolve, reject })
+        }).then(token => {
+          originalRequest.headers.Authorization = 'Bearer ' + token
+          return api(originalRequest)
+        }).catch(err => {
+          return Promise.reject(err)
+        })
+      }
+
+      // Marcar que estamos refrescando
+      originalRequest._retry = true
+      isRefreshing = true
+
+      // Crear instancia base de axios sin interceptores para evitar loops
+      const baseAxios = axios.create({
+        baseURL: api.defaults.baseURL,
+        headers: {
+          'Content-Type': 'application/json'
         }
       })
-      
-      return Promise.reject(error)
+
+      try {
+        // Intentar refrescar el token
+        const response = await baseAxios.post('/auth/refresh/', {
+          refresh: refreshToken,
+        })
+
+        const newAccessToken = response.data.access
+        const newRefreshToken = response.data.refresh
+
+        // Guardar los nuevos tokens
+        localStorage.setItem('access_token', newAccessToken)
+        if (newRefreshToken) {
+          localStorage.setItem('refresh_token', newRefreshToken)
+        }
+
+        // Actualizar header por defecto
+        api.defaults.headers.Authorization = 'Bearer ' + newAccessToken
+
+        // Actualizar el token en el store
+        const authStore = getAuthStore()
+        authStore.setTokens({ access: newAccessToken, refresh: newRefreshToken })
+
+        console.log('🔄 Token JWT refrescado automáticamente')
+
+        // Procesar la cola de peticiones fallidas
+        processQueue(null, newAccessToken)
+
+        // Reintentar la petición original con el nuevo token
+        originalRequest.headers.Authorization = 'Bearer ' + newAccessToken
+        return api(originalRequest)
+      } catch (refreshError) {
+        console.error('❌ Error refrescando token:', refreshError)
+        
+        // Procesar la cola con error
+        processQueue(refreshError, null)
+
+        // Si el refresh falla, limpiar todo y redirigir
+        localStorage.clear()
+        router.replace({ 
+          name: 'Login',
+          query: {
+            message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+            expired: 'true'
+          }
+        })
+        
+        return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
+      }
     }
 
     // Manejar errores 403 (Prohibido)
     if (error.response?.status === 403) {
       const errorMessage = error.response.data?.detail || 'No tienes permisos para realizar esta acción'
+      const isConfigEndpoint = originalRequest?.url?.includes('/config/')
       
-      // Mostrar notificación de error si hay sistema de notificaciones
-      console.warn('🚫 Acceso denegado:', errorMessage)
+      // Solo mostrar notificación para endpoints críticos
+      if (!isConfigEndpoint) {
+        console.warn('🚫 Acceso denegado:', errorMessage)
+      }
       
       // Si es falta de verificación, redirigir a página de verificación
       if (errorMessage.includes('verificada')) {
@@ -162,15 +277,21 @@ api.interceptors.response.use(
 
     // Manejar errores 500 (Error del servidor)
     if (error.response?.status >= 500) {
-      console.error('🔥 Server Error:', error.response?.data)
+      const isConfigEndpoint = originalRequest?.url?.includes('/config/')
+      const isStatsEndpoint = originalRequest?.url?.includes('/stats/')
       
-      if (typeof window !== 'undefined' && window.showNotification) {
-        window.showNotification({
-          type: 'error',
-          title: 'Error del servidor',
-          message: 'Ocurrió un error interno. Por favor intenta más tarde.',
-          duration: 8000
-        })
+      // No mostrar notificación para endpoints de configuración o estadísticas
+      if (!isConfigEndpoint && !isStatsEndpoint) {
+        console.error('🔥 Server Error:', error.response?.data)
+        
+        if (typeof window !== 'undefined' && window.showNotification) {
+          window.showNotification({
+            type: 'error',
+            title: 'Error del servidor',
+            message: 'Ocurrió un error interno. Por favor intenta más tarde.',
+            duration: 8000
+          })
+        }
       }
     }
 

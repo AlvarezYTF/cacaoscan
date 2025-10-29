@@ -43,8 +43,11 @@
         v-for="finca in fincas"
         :key="finca.id"
         :finca="finca"
+        :user-role="userRole"
         @edit="$emit('edit', $event)"
         @view-lotes="$emit('view-lotes', $event)"
+        @confirm-delete="$emit('confirm-delete', $event)"
+        @confirm-activate="$emit('confirm-activate', $event)"
         @click="$emit('view-finca', $event)"
       />
     </div>
@@ -88,10 +91,14 @@ defineProps({
   error: {
     type: String,
     default: null
+  },
+  userRole: {
+    type: String,
+    default: 'agricultor'
   }
 })
 
-defineEmits(['edit', 'view-lotes', 'view-finca', 'create', 'retry'])
+defineEmits(['edit', 'view-lotes', 'view-finca', 'create', 'retry', 'confirm-delete', 'confirm-activate'])
 </script>
 
 <style scoped>

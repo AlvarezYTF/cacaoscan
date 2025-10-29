@@ -260,6 +260,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
+import api from '@/services/api'
 import Swal from 'sweetalert2'
 
 const route = useRoute()
@@ -291,18 +292,10 @@ const loadLote = async () => {
     loading.value = true
     error.value = null
     
-    const response = await fetch(`/api/lotes/${route.params.id}/`, {
-      headers: {
-        'Authorization': `Bearer ${authStore.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    // Usar axios con interceptor JWT
+    const response = await api.get(`/lotes/${route.params.id}/`)
     
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`)
-    }
-    
-    lote.value = await response.json()
+    lote.value = response.data
     
     // Cargar información de la finca
     if (lote.value.finca) {
@@ -313,8 +306,29 @@ const loadLote = async () => {
     await loadAnalisisRecientes()
     
   } catch (err) {
-    error.value = err.message
     console.error('Error cargando lote:', err)
+    
+    // Manejar diferentes tipos de errores
+    if (err.response) {
+      if (err.response.status === 404) {
+        error.value = 'El lote no existe o fue desactivado.'
+        router.push({ name: 'Fincas' })
+      } else if (err.response.status === 403) {
+        error.value = 'No tienes permiso para ver este lote.'
+        router.push({ name: 'Fincas' })
+      } else if (err.response.status === 401) {
+        error.value = 'Tu sesión ha expirado. Redirigiendo al login...'
+        setTimeout(() => {
+          authStore.logout(false)
+        }, 2000)
+      } else {
+        error.value = err.response.data?.detail || `Error ${err.response.status}`
+      }
+    } else if (err.request) {
+      error.value = 'No se pudo conectar al servidor. Verifica tu conexión.'
+    } else {
+      error.value = err.message || 'Error desconocido'
+    }
   } finally {
     loading.value = false
   }
@@ -322,36 +336,21 @@ const loadLote = async () => {
 
 const loadFinca = async (fincaId) => {
   try {
-    const response = await fetch(`/api/fincas/${fincaId}/`, {
-      headers: {
-        'Authorization': `Bearer ${authStore.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    
-    if (response.ok) {
-      finca.value = await response.json()
-    }
+    const response = await api.get(`/fincas/${fincaId}/`)
+    finca.value = response.data
   } catch (err) {
     console.error('Error cargando finca:', err)
+    // Ignorar - no es crítico
   }
 }
 
 const loadAnalisisRecientes = async () => {
   try {
-    const response = await fetch(`/api/lotes/${route.params.id}/analisis/`, {
-      headers: {
-        'Authorization': `Bearer ${authStore.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    
-    if (response.ok) {
-      const data = await response.json()
-      analisisRecientes.value = data.results?.slice(0, 5) || []
-    }
+    const response = await api.get(`/lotes/${route.params.id}/analisis/`)
+    analisisRecientes.value = response.data.results?.slice(0, 5) || []
   } catch (err) {
     console.error('Error cargando análisis:', err)
+    // Ignorar - no es crítico
   }
 }
 
@@ -378,33 +377,22 @@ const generateReport = async () => {
       }
     })
     
-    const response = await fetch('/api/reportes/', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authStore.accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        tipo_reporte: 'lote',
-        formato: 'pdf',
-        titulo: `Reporte de Lote: ${lote.value.identificador}`,
-        parametros: {
-          lote_id: lote.value.id
-        }
-      })
+    const response = await api.post('/reportes/', {
+      tipo_reporte: 'lote',
+      formato: 'pdf',
+      titulo: `Reporte de Lote: ${lote.value.identificador}`,
+      parametros: {
+        lote_id: lote.value.id
+      }
     })
     
-    if (response.ok) {
-      await Swal.fire({
-        title: 'Reporte Generado',
-        text: 'El reporte se ha generado exitosamente',
-        icon: 'success'
-      })
-      
-      router.push('/reportes')
-    } else {
-      throw new Error('Error generando reporte')
-    }
+    await Swal.fire({
+      title: 'Reporte Generado',
+      text: 'El reporte se ha generado exitosamente',
+      icon: 'success'
+    })
+    
+    router.push('/reportes')
   } catch (err) {
     await Swal.fire({
       title: 'Error',
@@ -428,25 +416,15 @@ const deleteLote = async () => {
   
   if (result.isConfirmed) {
     try {
-      const response = await fetch(`/api/lotes/${lote.value.id}/`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${authStore.accessToken}`,
-          'Content-Type': 'application/json'
-        }
+      await api.delete(`/lotes/${lote.value.id}/`)
+      
+      await Swal.fire({
+        title: 'Eliminado',
+        text: 'El lote ha sido eliminado exitosamente',
+        icon: 'success'
       })
       
-      if (response.ok) {
-        await Swal.fire({
-          title: 'Eliminado',
-          text: 'El lote ha sido eliminado exitosamente',
-          icon: 'success'
-        })
-        
-        router.push(`/fincas/${lote.value.finca}/lotes`)
-      } else {
-        throw new Error('Error eliminando lote')
-      }
+      router.push(`/fincas/${lote.value.finca}/lotes`)
     } catch (err) {
       await Swal.fire({
         title: 'Error',

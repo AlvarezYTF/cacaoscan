@@ -51,6 +51,7 @@
                 </label>
                 <input
                   v-model="formData.nombre"
+                  name="nombre"
                   type="text"
                   required
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
@@ -58,7 +59,9 @@
                   placeholder="Ingresa el nombre de la finca"
                 />
                 <p v-if="errors.nombre" class="text-red-500 text-xs mt-2 flex items-center gap-1">
-                  <ion-icon name="alert-circle" class="w-3 h-3"></ion-icon>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
                   {{ errors.nombre }}
                 </p>
               </div>
@@ -69,6 +72,7 @@
                 </label>
                 <input
                   v-model="formData.hectareas"
+                  name="hectareas"
                   type="number"
                   step="0.01"
                   min="0.01"
@@ -78,7 +82,9 @@
                   placeholder="0.00"
                 />
                 <p v-if="errors.hectareas" class="text-red-500 text-xs mt-2 flex items-center gap-1">
-                  <ion-icon name="alert-circle" class="w-3 h-3"></ion-icon>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
                   {{ errors.hectareas }}
                 </p>
               </div>
@@ -103,6 +109,7 @@
                 </label>
                 <input
                   v-model="formData.ubicacion"
+                  name="ubicacion"
                   type="text"
                   required
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
@@ -110,7 +117,9 @@
                   placeholder="Ingresa la dirección completa de la finca"
                 />
                 <p v-if="errors.ubicacion" class="text-red-500 text-xs mt-2 flex items-center gap-1">
-                  <ion-icon name="alert-circle" class="w-3 h-3"></ion-icon>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
                   {{ errors.ubicacion }}
                 </p>
               </div>
@@ -122,6 +131,7 @@
                   </label>
                   <select
                     v-model="formData.departamento"
+                    name="departamento"
                     required
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white"
                     :class="{ 'border-red-500 focus:ring-red-500': errors.departamento }"
@@ -133,7 +143,9 @@
                     </option>
                   </select>
                   <p v-if="errors.departamento" class="text-red-500 text-xs mt-2 flex items-center gap-1">
-                    <ion-icon name="alert-circle" class="w-3 h-3"></ion-icon>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
                     {{ errors.departamento }}
                   </p>
                 </div>
@@ -144,6 +156,7 @@
                   </label>
                   <select
                     v-model="formData.municipio"
+                    name="municipio"
                     required
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white"
                     :class="{ 'border-red-500 focus:ring-red-500': errors.municipio }"
@@ -154,7 +167,9 @@
                     </option>
                   </select>
                   <p v-if="errors.municipio" class="text-red-500 text-xs mt-2 flex items-center gap-1">
-                    <ion-icon name="alert-circle" class="w-3 h-3"></ion-icon>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
                     {{ errors.municipio }}
                   </p>
                 </div>
@@ -179,6 +194,7 @@
                 </label>
                 <input
                   v-model="formData.coordenadas_lat"
+                  name="coordenadas_lat"
                   type="number"
                   step="any"
                   min="-90"
@@ -188,7 +204,9 @@
                   placeholder="-90.000000 a 90.000000"
                 />
                 <p v-if="errors.coordenadas_lat" class="text-red-500 text-xs mt-2 flex items-center gap-1">
-                  <ion-icon name="alert-circle" class="w-3 h-3"></ion-icon>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
                   {{ errors.coordenadas_lat }}
                 </p>
               </div>
@@ -199,6 +217,7 @@
                 </label>
                 <input
                   v-model="formData.coordenadas_lng"
+                  name="coordenadas_lng"
                   type="number"
                   step="any"
                   min="-180"
@@ -235,13 +254,16 @@
               </label>
               <textarea
                 v-model="formData.descripcion"
+              name="descripcion"
                 rows="3"
                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors resize-none"
                 :class="{ 'border-red-500 focus:ring-red-500': errors.descripcion }"
                 placeholder="Agrega una descripción detallada de la finca..."
               ></textarea>
               <p v-if="errors.descripcion" class="text-red-500 text-xs mt-2 flex items-center gap-1">
-                <ion-icon name="alert-circle" class="w-3 h-3"></ion-icon>
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
                 {{ errors.descripcion }}
               </p>
             </div>
@@ -291,6 +313,8 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import fincasApi from '@/services/fincasApi'
+import { useFincasStore } from '@/stores/fincas'
+import Swal from 'sweetalert2'
 
 const props = defineProps({
   finca: {
@@ -304,6 +328,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'saved'])
+
+const fincasStore = useFincasStore()
 
 // Estado reactivo
 const loading = ref(false)
@@ -400,27 +426,127 @@ const handleSubmit = async () => {
   try {
     const formattedData = fincasApi.formatFincaData(formData)
     
+    console.log('📤 [FincaForm] Datos a enviar:', formattedData)
+    console.log('📤 [FincaForm] Datos originales del formulario:', JSON.stringify(formData, null, 2))
+    
     if (props.isEditing) {
-      await fincasApi.updateFinca(props.finca.id, formattedData)
+      await fincasStore.update(props.finca.id, formattedData)
+      // Notificación de éxito
+      Swal.fire({
+        icon: 'success',
+        title: 'Finca actualizada',
+        text: 'La finca se actualizó correctamente.',
+        timer: 3000,
+        showConfirmButton: false
+      })
     } else {
-      await fincasApi.createFinca(formattedData)
+      await fincasStore.create(formattedData)
+      // Notificación de éxito
+      Swal.fire({
+        icon: 'success',
+        title: 'Finca creada',
+        text: 'La finca se creó correctamente.',
+        timer: 3000,
+        showConfirmButton: false
+      })
     }
     
     emit('saved')
   } catch (error) {
-    console.error('Error saving finca:', error)
+    console.error('❌ [FincaForm] Error saving finca:', error)
+    console.error('❌ [FincaForm] Error completo:', JSON.stringify(error.response?.data, null, 2))
+    console.error('❌ [FincaForm] Error response status:', error.response?.status)
     
     // Manejar errores de validación del servidor
     if (error.response?.data) {
-      const serverErrors = error.response.data
+      // El backend devuelve errores en error.response.data.details o error.response.data directamente
+      const serverErrors = error.response.data.details || error.response.data
+      
+      console.log('Server errors:', serverErrors)
+      
       errors.value = {}
       
+      // Mapear nombres de campos del backend al frontend
+      const fieldMapping = {
+        'nombre': 'nombre',
+        'ubicacion': 'ubicacion',
+        'municipio': 'municipio',
+        'departamento': 'departamento',
+        'hectareas': 'hectareas',
+        'coordenadas_lat': 'coordenadas_lat',
+        'coordenadas_lng': 'coordenadas_lng',
+        'descripcion': 'descripcion'
+      }
+      
+      let errorMessage = ''
+      let firstErrorField = null
+      
       Object.keys(serverErrors).forEach(field => {
-        if (Array.isArray(serverErrors[field])) {
-          errors.value[field] = serverErrors[field][0]
-        } else {
-          errors.value[field] = serverErrors[field]
+        // Evitar campos no relacionados como 'error', 'status', etc.
+        if (field === 'error' || field === 'status' || field === 'error_detail') {
+          if (!errorMessage && typeof serverErrors[field] === 'string') {
+            errorMessage = serverErrors[field]
+          }
+          return
         }
+        
+        const frontendField = fieldMapping[field] || field
+        const errorValue = serverErrors[field]
+        
+        // Manejar diferentes formatos de error
+        if (Array.isArray(errorValue) && errorValue.length > 0) {
+          errors.value[frontendField] = errorValue[0]
+          if (!errorMessage) errorMessage = errorValue[0]
+        } else if (typeof errorValue === 'string') {
+          errors.value[frontendField] = errorValue
+          if (!errorMessage) errorMessage = errorValue
+        } else if (errorValue && typeof errorValue === 'object') {
+          // Si es un objeto, extraer el primer mensaje
+          const firstKey = Object.keys(errorValue)[0]
+          if (firstKey && errorValue[firstKey]) {
+            const msg = Array.isArray(errorValue[firstKey]) ? errorValue[firstKey][0] : errorValue[firstKey]
+            errors.value[frontendField] = msg
+            if (!errorMessage) errorMessage = msg
+          }
+        }
+        
+        // Guardar el primer campo con error para hacer scroll
+        if (!firstErrorField && errors.value[frontendField]) {
+          firstErrorField = frontendField
+        }
+      })
+      
+      // Scroll al primer campo con error
+      if (firstErrorField) {
+        setTimeout(() => {
+          const errorElement = document.querySelector(`[name="${firstErrorField}"]`)
+          if (errorElement) {
+            errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            errorElement.focus()
+          }
+        }, 300)
+      }
+      
+      // Notificación de error con mensaje específico
+      Swal.fire({
+        icon: 'error',
+        title: 'Error de validación',
+        html: errorMessage 
+          ? `<p style="margin: 0; padding: 10px;">${errorMessage}</p>`
+          : '<p style="margin: 0; padding: 10px;">Por favor revisa los campos marcados en rojo.</p>',
+        timer: errorMessage ? 6000 : 4000,
+        showConfirmButton: true
+      })
+    } else {
+      // Error general
+      const errorMsg = error.message || 'No se pudo guardar la finca. Intenta nuevamente.'
+      console.error('General error:', errorMsg)
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: errorMsg,
+        timer: 4000
       })
     }
   } finally {

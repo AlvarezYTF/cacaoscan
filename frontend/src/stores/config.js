@@ -57,40 +57,54 @@ export const useConfigStore = defineStore('config', {
   },
 
   actions: {
-    // Cargar todas las configuraciones
-    async loadAll(onlyPublic = false) {
+    // Cargar todas las configuraciones (respetando permisos por rol)
+    async loadAll() {
       this.loading = true
       try {
-        // Cargar configuraciones públicas (accesibles para todos)
-        const publicConfigs = await Promise.all([
-          configApi.getGeneralConfig().catch(() => ({})),
-          configApi.getSystemConfig().catch(() => ({}))
-        ])
+        // Importar dinámicamente el authStore para evitar dependencias circulares
+        let authStore = null
+        try {
+          const { useAuthStore } = await import('@/stores/auth')
+          authStore = useAuthStore()
+        } catch (err) {
+          // Si no se puede cargar el store, asumir rol mínimo
+          console.warn('No se pudo cargar authStore, usando permisos mínimos')
+        }
+
+        // Determinar qué permisos tiene el usuario
+        const isAdmin = authStore?.isAdmin || false
+        const isAnalyst = authStore?.isAnalyst || false
+        const canAccessConfig = isAdmin || isAnalyst
+
+        console.log('🔐 Cargando configuración con permisos:', { isAdmin, isAnalyst, canAccessConfig })
+
+        // Cargar configuraciones según permisos
+        const promises = [configApi.getSystemConfig()] // Siempre cargar sistema
+
+        // Solo admin/analyst pueden acceder a configuraciones avanzadas
+        if (canAccessConfig) {
+          promises.push(
+            configApi.getGeneralConfig(),
+            configApi.getSecurityConfig(),
+            configApi.getMLConfig()
+          )
+        }
+
+        const results = await Promise.all(promises)
         
-        // Solo cargar configuraciones administrativas si el usuario tiene permisos
-        let security = {}
-        let ml = {}
-        
-        if (!onlyPublic) {
-          try {
-            security = await configApi.getSecurityConfig()
-          } catch (error) {
-            // Si el usuario no tiene permisos, se mantiene la configuración por defecto
-            console.log('ℹ️ Configuración de seguridad no disponible para este usuario')
-          }
-          
-          try {
-            ml = await configApi.getMLConfig()
-          } catch (error) {
-            // Si el usuario no tiene permisos, se mantiene la configuración por defecto
-            console.log('ℹ️ Configuración ML no disponible para este usuario')
-          }
+        // Procesar resultados según cantidad
+        let general, security, ml, system
+        if (canAccessConfig && results.length === 4) {
+          [general, security, ml, system] = results
+        } else {
+          system = results[0]
+          general = null
+          security = null
+          ml = null
         }
         
-        const [general, system] = publicConfigs
-        
-        // Actualizar estado si hay datos
-        if (general && Object.keys(general).length > 0) {
+        // Actualizar estado si hay datos (ignorar si es null)
+        if (general && typeof general === 'object' && Object.keys(general).length > 0) {
           this.general = {
             nombre_sistema: general.nombre_sistema || 'CacaoScan',
             email_contacto: general.email_contacto || 'contacto@cacaoscan.com',
@@ -99,7 +113,23 @@ export const useConfigStore = defineStore('config', {
           }
         }
         
-        if (system && Object.keys(system).length > 0) {
+        if (security && typeof security === 'object' && Object.keys(security).length > 0) {
+          this.security = {
+            recaptcha_enabled: security.recaptcha_enabled ?? true,
+            session_timeout: security.session_timeout || 60,
+            login_attempts: security.login_attempts || 5,
+            two_factor_auth: security.two_factor_auth ?? false
+          }
+        }
+        
+        if (ml && typeof ml === 'object' && Object.keys(ml).length > 0) {
+          this.ml = {
+            active_model: ml.active_model || 'yolov8',
+            last_training: ml.last_training || null
+          }
+        }
+        
+        if (system && typeof system === 'object' && Object.keys(system).length > 0) {
           this.system = {
             version: system.version || '1.0.0',
             server_status: system.server_status || 'online',
@@ -114,8 +144,12 @@ export const useConfigStore = defineStore('config', {
         
         return true
       } catch (error) {
-        console.error('Error cargando configuración:', error)
-        return false
+        // Solo registrar errores inesperados (no 403 o 500)
+        if (error.response?.status !== 403 && error.response?.status !== 500) {
+          console.error('Error inesperado cargando configuración:', error)
+        }
+        // Usar valores por defecto en caso de error
+        return true
       } finally {
         this.loading = false
       }

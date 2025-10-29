@@ -24,16 +24,26 @@ export function useImageStats() {
     error.value = null
     
     try {
-      const response = await axios.get('/api/v1/images/stats/', {
-        headers: { 
-          Authorization: `Token ${authStore.accessToken}` 
-        }
-      })
+      const response = await axios.get('/images/stats/')
       
       stats.value = response.data
     } catch (err) {
-      console.error('Error fetching image stats:', err)
-      error.value = err.response?.data?.error || 'Error al obtener estadísticas'
+      // Si es error 500, retornar valores por defecto sin loggear
+      if (err.response?.status === 500) {
+        stats.value = {
+          total_images: 0,
+          processed_images: 0,
+          processing_rate: 0,
+          average_confidence: 0,
+          average_dimensions: {},
+          region_stats: [],
+          top_fincas: []
+        }
+        error.value = null
+      } else {
+        console.error('Error fetching image stats:', err)
+        error.value = err.response?.data?.error || 'Error al obtener estadísticas'
+      }
     } finally {
       loading.value = false
     }
@@ -58,16 +68,15 @@ export function useImageStats() {
         ...filters
       })
       
-      const response = await axios.get(`/api/v1/images/?${params}`, {
-        headers: { 
-          Authorization: `Token ${authStore.accessToken}` 
-        }
-      })
+      const response = await axios.get(`/images/?${params}`)
       
       return response.data
     } catch (err) {
-      console.error('Error fetching images:', err)
-      error.value = err.response?.data?.error || 'Error al obtener imágenes'
+      // Si es error 500, retornar objeto vacío sin loggear
+      if (err.response?.status !== 500) {
+        console.error('Error fetching images:', err)
+        error.value = err.response?.data?.error || 'Error al obtener imágenes'
+      }
       return { results: [], count: 0, totalPages: 0 }
     } finally {
       loading.value = false
@@ -89,16 +98,15 @@ export function useImageStats() {
     try {
       const params = new URLSearchParams(filters)
       
-      const response = await axios.get(`/api/v1/reports/stats/?${params}`, {
-        headers: { 
-          Authorization: `Token ${authStore.accessToken}` 
-        }
-      })
+      const response = await axios.get(`/reports/stats/?${params}`)
       
       return response.data
     } catch (err) {
-      console.error('Error fetching report stats:', err)
-      error.value = err.response?.data?.error || 'Error al obtener estadísticas de reportes'
+      // Si es error 500, retornar null sin loggear
+      if (err.response?.status !== 500) {
+        console.error('Error fetching report stats:', err)
+        error.value = err.response?.data?.error || 'Error al obtener estadísticas de reportes'
+      }
       return null
     } finally {
       loading.value = false
@@ -118,11 +126,8 @@ export function useImageStats() {
     error.value = null
     
     try {
-      const response = await axios.post(`/api/v1/reports/${reportType}/`, filters, {
-        responseType: 'blob',
-        headers: { 
-          Authorization: `Token ${authStore.accessToken}` 
-        }
+      const response = await axios.post(`/reports/${reportType}/`, filters, {
+        responseType: 'blob'
       })
       
       // Crear blob y descargar

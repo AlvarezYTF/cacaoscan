@@ -1,6 +1,6 @@
 <template>
   <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-    <div class="bg-gradient-to-r from-green-50 to-green-50 px-6 py-4 border-b border-gray-200">
+    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
       <div class="flex items-center">
         <div class="bg-green-100 p-2 rounded-lg mr-3">
           <svg class="text-xl text-green-600 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-100">
     <!-- Sidebar -->
     <Sidebar
       :brand-name="'CacaoScan'"
@@ -14,9 +14,9 @@
     />
 
     <!-- Main Content -->
-    <div :class="isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'">
+    <div :class="isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'" class="w-full relative">
       <!-- Page Content -->
-      <main class="py-8 px-4 sm:px-6 lg:px-8">
+      <main class="py-8 px-4 sm:px-6 lg:px-8 min-h-screen bg-white relative z-0">
         <div class="max-w-7xl mx-auto space-y-8">
           <!-- Header -->
           <FincasHeader @create="openCreateModal" />
@@ -31,14 +31,17 @@
 
           <!-- Lista de fincas -->
           <FincaList
-            :fincas="fincas"
+            :fincas="Array.isArray(fincas) ? fincas : []"
             :loading="loading"
             :error="error"
+            :user-role="userRole"
             @edit="editFinca"
             @view-lotes="viewLotes"
             @view-finca="viewFinca"
             @create="openCreateModal"
             @retry="loadFincas"
+            @confirm-delete="confirmDelete"
+            @confirm-activate="confirmActivate"
           />
 
           <!-- Modal de formulario -->
@@ -59,23 +62,23 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useFincasStore } from '@/stores/fincas'
 import Sidebar from '@/components/layout/Common/Sidebar.vue'
 import FincaForm from '@/components/FincaForm.vue'
 import FincasHeader from '@/components/common/FincasHeader.vue'
 import FincasFilters from '@/components/common/FincasFilters.vue'
 import FincaList from '@/components/common/FincaList.vue'
 import fincasApi from '@/services/fincasApi'
+import Swal from 'sweetalert2'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const fincasStore = useFincasStore()
 
 // Sidebar collapse state
 const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
 
 // Estado reactivo
-const fincas = ref([])
-const loading = ref(false)
-const error = ref(null)
 const searchQuery = ref('')
 const filters = ref({
   departamento: '',
@@ -87,6 +90,10 @@ const isEditing = ref(false)
 const activeSection = ref('fincas')
 
 // Computed
+const fincas = computed(() => fincasStore.fincas)
+const loading = computed(() => fincasStore.loading)
+const error = computed(() => fincasStore.error)
+
 const userName = computed(() => {
   return authStore.userFullName || 'Usuario'
 })
@@ -101,24 +108,22 @@ const userRole = computed(() => {
 
 // Métodos
 const loadFincas = async () => {
-  loading.value = true
-  error.value = null
-
-  try {
-    const params = {
-      search: searchQuery.value,
-      departamento: filters.value.departamento,
-      activa: filters.value.activa
-    }
-
-    const response = await fincasApi.getFincas(params)
-    fincas.value = response.results || response
-  } catch (err) {
-    error.value = 'Error al cargar las fincas. Intenta nuevamente.'
-    console.error('Error loading fincas:', err)
-  } finally {
-    loading.value = false
+  const params = {}
+  
+  // Solo agregar parámetros que tengan valores
+  if (searchQuery.value && searchQuery.value.trim()) {
+    params.search = searchQuery.value.trim()
   }
+  
+  if (filters.value.departamento && filters.value.departamento.trim()) {
+    params.departamento = filters.value.departamento.trim()
+  }
+  
+  if (filters.value.activa && filters.value.activa !== '') {
+    params.activa = filters.value.activa
+  }
+  
+  await fincasStore.fetchFincas(params)
 }
 
 const applyFilters = () => {
@@ -162,7 +167,77 @@ const closeModal = () => {
 
 const handleFincaSaved = () => {
   closeModal()
-  loadFincas()
+  // No es necesario llamar loadFincas() ya que el store lo hace automáticamente
+}
+
+const confirmDelete = async (finca) => {
+  const result = await Swal.fire({
+    icon: 'warning',
+    title: '¿Desactivar finca?',
+    html: `<p>¿Estás seguro de que deseas desactivar la finca <strong>"${finca.nombre}"</strong>?</p><p class="text-sm text-gray-600 mt-2">La finca ya no aparecerá en tu lista, pero los datos se conservarán. Puedes contactar a un administrador si necesitas reactivarla.</p>`,
+    showCancelButton: true,
+    confirmButtonText: 'Sí, desactivar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    reverseButtons: true
+  })
+  
+  if (result.isConfirmed) {
+    try {
+      await fincasStore.remove(finca.id)
+      Swal.fire({
+        icon: 'success',
+        title: 'Finca desactivada',
+        text: 'La finca se desactivó correctamente. Ya no aparecerá en tu lista.',
+        timer: 3000,
+        showConfirmButton: false
+      })
+    } catch (error) {
+      console.error('Error desactivando finca:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo desactivar la finca. Intenta nuevamente.',
+        timer: 4000
+      })
+    }
+  }
+}
+
+const confirmActivate = async (finca) => {
+  const result = await Swal.fire({
+    icon: 'question',
+    title: '¿Activar finca?',
+    html: `<p>¿Estás seguro de que deseas reactivar la finca <strong>"${finca.nombre}"</strong>?</p><p class="text-sm text-gray-600 mt-2">La finca volverá a estar disponible para el agricultor.</p>`,
+    showCancelButton: true,
+    confirmButtonText: 'Sí, activar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#6b7280',
+    reverseButtons: true
+  })
+  
+  if (result.isConfirmed) {
+    try {
+      await fincasStore.activate(finca.id)
+      Swal.fire({
+        icon: 'success',
+        title: 'Finca activada',
+        text: `La finca "${finca.nombre}" ha sido reactivada. El agricultor podrá verla nuevamente en su gestión.`,
+        timer: 3000,
+        showConfirmButton: false
+      })
+    } catch (error) {
+      console.error('Error activando finca:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo activar la finca. Intenta nuevamente.',
+        timer: 4000
+      })
+    }
+  }
 }
 
 // Sidebar and navbar methods
@@ -211,4 +286,10 @@ onMounted(() => {
 
 <style scoped>
 /* Estilos específicos si son necesarios */
+* {
+  outline: 0 !important;
+}
+
+/* Debug: resaltar elementos problemáticos */
+/* .bg-green { outline: 2px solid red !important; } */
 </style>
