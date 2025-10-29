@@ -783,7 +783,12 @@ const handleSubmit = async () => {
             'primer_apellido': 'lastName',
             'numero_documento': 'numeroDocumento',
             'telefono': 'phoneNumber',
-            'fecha_nacimiento': 'fechaNacimiento'
+            'phone_number': 'phoneNumber',
+            'fecha_nacimiento': 'fechaNacimiento',
+            'tipo_documento': 'tipoDocumento',
+            'genero': 'genero',
+            'departamento': 'departamento',
+            'municipio': 'municipio'
           }
           
           errorKeys.forEach(key => {

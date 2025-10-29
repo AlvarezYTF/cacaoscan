@@ -168,6 +168,7 @@ class PersonaRegistroSerializer(serializers.Serializer):
         Validar que el teléfono sea válido:
         - Solo números (se permiten espacios y guiones que serán eliminados)
         - Longitud entre 7 y 15 dígitos
+        - Único (no registrado previamente)
         """
         # Eliminar espacios, guiones y paréntesis
         cleaned_value = re.sub(r'[\s\-\(\)]', '', value)
@@ -182,6 +183,10 @@ class PersonaRegistroSerializer(serializers.Serializer):
         # Validar longitud
         if len(cleaned_value) < 7 or len(cleaned_value) > 15:
             raise serializers.ValidationError("El teléfono debe tener entre 7 y 15 dígitos.")
+        
+        # Validar unicidad - buscar si ya existe este teléfono
+        if Persona.objects.filter(telefono=value).exists():
+            raise serializers.ValidationError("Este número de teléfono ya está registrado.")
         
         return value
     

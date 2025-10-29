@@ -67,7 +67,11 @@ class Persona(models.Model):
     )
     
     # Contacto
-    telefono = models.CharField(max_length=15, help_text="Número de teléfono")
+    telefono = models.CharField(
+        max_length=15, 
+        unique=True,
+        help_text="Número de teléfono (único)"
+    )
     direccion = models.CharField(
         max_length=255, 
         null=True, 
@@ -117,6 +121,7 @@ class Persona(models.Model):
         ordering = ['primer_apellido', 'primer_nombre']
         indexes = [
             models.Index(fields=['numero_documento']),
+            models.Index(fields=['telefono']),
             models.Index(fields=['user']),
         ]
     
