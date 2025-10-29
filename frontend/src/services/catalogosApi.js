@@ -12,7 +12,9 @@ const catalogosApi = {
   async getParametrosPorTema(codigoTema) {
     try {
       const response = await api.get(`/api/parametros/tema/${codigoTema}/`)
-      return response.data
+      // El backend devuelve {tema: {...}, parametros: [...]}
+      // Retornamos solo el array de parámetros
+      return response.data.parametros || response.data
     } catch (error) {
       console.error(`Error obteniendo parámetros del tema ${codigoTema}:`, error)
       throw error
@@ -75,6 +77,26 @@ const catalogosApi = {
       console.error(`Error obteniendo departamento ${codigo}:`, error)
       throw error
     }
+  },
+
+  /**
+   * Obtiene los municipios de un departamento por ID
+   * @param {number} idDepartamento - ID del departamento
+   * @returns {Promise<Array>} - Lista de municipios
+   */
+  async getMunicipiosByDepartamento(idDepartamento) {
+    try {
+      const response = await api.get(`/api/municipios/?departamento=${idDepartamento}`)
+      return response.data
+    } catch (error) {
+      console.error(`Error obteniendo municipios del departamento ${idDepartamento}:`, error)
+      throw error
+    }
+  },
+
+  // Alias para compatibilidad
+  getParametrosByTema(codigoTema) {
+    return this.getParametrosPorTema(codigoTema)
   }
 }
 

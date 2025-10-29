@@ -39,10 +39,10 @@
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <!-- Componente: Datos Personales -->
             <ProfileSection 
-              :user-profile="userProfile"
+              ref="profileSectionRef"
+              :persona-data="personaData"
               :is-loading="isSaving"
               :is-verified="authStore.isVerified"
-              @update:userProfile="userProfile = $event"
               @save="saveProfile"
             />
 
@@ -106,9 +106,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { personasApi } from '@/services'
 import Sidebar from '@/components/layout/Common/Sidebar.vue'
 import ProfileSection from '@/components/agricultor/configuracion/ProfileSection.vue'
 import PasswordSection from '@/components/agricultor/configuracion/PasswordSection.vue'
@@ -120,6 +121,7 @@ import BackupSyncSection from '@/components/agricultor/configuracion/BackupSyncS
 
 const router = useRouter()
 const authStore = useAuthStore()
+const profileSectionRef = ref(null)
 
 const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
 const activeSection = ref('settings')
@@ -136,36 +138,36 @@ const userRole = computed(() => {
   return 'agricultor'
 })
 
-// Variables para configuración - inicializar con datos del usuario
-const userProfile = ref({
-  fullName: authStore.user?.full_name || `${authStore.user?.first_name || ''} ${authStore.user?.last_name || ''}`.trim() || '',
-  email: authStore.user?.email || '',
-  phone: authStore.user?.phone_number || ''
-})
+// Datos de persona
+const personaData = ref({})
 
 // Función para cargar datos del perfil desde el backend
 const loadUserProfile = async () => {
   try {
-    // Primero actualizar los datos del usuario en el store
-    await authStore.getCurrentUser()
-    
-    // Luego obtener los datos actualizados
-    const currentUser = authStore.user
-    
-    if (currentUser) {
-      userProfile.value = {
-        fullName: currentUser.full_name || `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || '',
-        email: currentUser.email || '',
-        phone: currentUser.phone_number || ''
-      }
-    }
+    const perfilData = await personasApi.getPerfil()
+    personaData.value = perfilData
   } catch (error) {
     console.error('Error cargando perfil:', error)
+    // Si no hay datos de persona, mostrar mensaje
+    if (error.response?.status === 404) {
+      console.warn('Este usuario no tiene un perfil de persona asociado')
+      // Inicializar con datos básicos del usuario para compatibilidad
+      personaData.value = {
+        email: authStore.user?.email || '',
+        primer_nombre: authStore.user?.first_name || '',
+        primer_apellido: authStore.user?.last_name || '',
+        telefono: '',
+        tipo_documento: '',
+        numero_documento: '',
+        genero: '',
+        fecha_nacimiento: '',
+        direccion: '',
+        departamento: null,
+        municipio: null
+      }
+    }
   }
 }
-
-// Cargar perfil al montar el componente
-loadUserProfile()
 
 // Estado de carga
 const isSaving = ref(false)
@@ -260,24 +262,75 @@ const handleLogout = async () => {
 }
 
 // Métodos para gestionar el perfil
-const saveProfile = async () => {
+const saveProfile = async (formData) => {
   isSaving.value = true
   try {
-    // Llamar al API para actualizar el perfil
-    const result = await authStore.updateProfile({
-      fullName: userProfile.value.fullName,
-      phone: userProfile.value.phone
-    })
+    // Preparar datos para envío (solo los campos que pueden modificarse)
+    const dataToUpdate = {
+      primer_nombre: formData.primer_nombre,
+      segundo_nombre: formData.segundo_nombre || '',
+      primer_apellido: formData.primer_apellido,
+      segundo_apellido: formData.segundo_apellido || '',
+      tipo_documento: formData.tipo_documento,
+      numero_documento: formData.numero_documento,
+      genero: formData.genero,
+      fecha_nacimiento: formData.fecha_nacimiento || null,
+      telefono: formData.telefono,
+      direccion: formData.direccion || '',
+      departamento: formData.departamento || null,
+      municipio: formData.municipio || null
+    }
+
+    let result
     
-    if (result.success) {
-      // Mostrar notificación de éxito
-      alert('Perfil actualizado exitosamente')
-    } else {
-      alert(result.error || 'Error al guardar el perfil')
+    // Intentar actualizar, si falla con 404, intentar crear
+    try {
+      result = await personasApi.actualizarPerfil(dataToUpdate)
+    } catch (updateError) {
+      if (updateError.response?.status === 404) {
+        // Si no existe, crear el perfil
+        console.log('📝 Perfil no existe, creando...')
+        result = await personasApi.crearPerfil(dataToUpdate)
+      } else {
+        throw updateError
+      }
+    }
+    
+    if (result.message) {
+      // Actualizar los datos locales
+      personaData.value = result.data
+      
+      // Mostrar mensaje de éxito en el componente
+      if (profileSectionRef.value) {
+        profileSectionRef.value.setStatusMessage(result.message, 'success')
+      }
     }
   } catch (error) {
     console.error('Error al guardar perfil:', error)
-    alert('Error al guardar el perfil')
+    
+    // Extraer mensaje de error
+    let errorMessage = 'Error al actualizar el perfil'
+    if (error.response?.data) {
+      const responseData = error.response.data
+      if (typeof responseData === 'string') {
+        errorMessage = responseData
+      } else if (responseData.error) {
+        errorMessage = responseData.error
+      } else {
+        // Si hay errores de campo específicos, tomar el primero
+        const firstError = Object.values(responseData)[0]
+        if (Array.isArray(firstError)) {
+          errorMessage = firstError[0]
+        } else if (typeof firstError === 'string') {
+          errorMessage = firstError
+        }
+      }
+    }
+    
+    // Mostrar mensaje de error en el componente
+    if (profileSectionRef.value) {
+      profileSectionRef.value.setStatusMessage(errorMessage, 'error')
+    }
   } finally {
     isSaving.value = false
   }
@@ -406,6 +459,11 @@ const exportToPDF = async () => {
     alert('Error al exportar el archivo PDF')
   }
 }
+
+// Cargar datos al montar el componente
+onMounted(() => {
+  loadUserProfile()
+})
 </script>
 
 <style scoped>
