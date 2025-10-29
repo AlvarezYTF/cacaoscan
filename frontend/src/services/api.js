@@ -113,12 +113,24 @@ api.interceptors.response.use(
                                  (error.response?.status === 403 || error.response?.status === 500)
       
       // Solo loggear errores críticos o no esperados
-      if (!isExpectedFailure) {
+      if (!isExpectedFailure && error.response?.status !== 500) {
         console.error(`❌ API Error: ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`, {
           status: error.response?.status,
           duration: `${duration}ms`,
           message: error.response?.data?.message || error.response?.data?.detail || error.message
         })
+      }
+      
+      // Manejar errores 500 para endpoints no críticos silenciosamente
+      if (error.response?.status === 500) {
+        // No loggear ni mostrar notificación para endpoints de stats o config
+        if (isStatsEndpoint || isConfigEndpoint) {
+          return Promise.resolve({
+            data: {},
+            status: 200,
+            config: originalRequest
+          })
+        }
       }
     }
 

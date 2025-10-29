@@ -30,6 +30,233 @@ class CacaoReportExcelGenerator:
         self.workbook = None
         self.ws = None
     
+    def generate_farmers_report(self):
+        """
+        Generar reporte Excel de agricultores con sus fincas.
+        
+        Returns:
+            bytes: Contenido del archivo Excel
+        """
+        try:
+            from django.contrib.auth.models import User
+            
+            self.workbook = Workbook()
+            self.ws = self.workbook.active
+            self.ws.title = "Agricultores"
+            
+            # Configurar columnas
+            columns = [
+                'Agricultor', 'Email', 'Teléfono', 'Departamento', 'Municipio',
+                'Finca', 'Hectáreas', 'Estado Finca', 'Fecha Registro Finca'
+            ]
+            self.ws.append(columns)
+            
+            # Estilo de encabezado
+            header_fill = PatternFill(start_color="4CAF50", end_color="4CAF50", fill_type="solid")
+            header_font = Font(bold=True, color="FFFFFF")
+            
+            for cell in self.ws[1]:
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+            
+            # Obtener todos los usuarios que no son superusuarios (agricultores y analistas)
+            farmers = User.objects.filter(is_superuser=False).prefetch_related('fincas', 'profile')
+            
+            # Contador de filas
+            row_num = 2
+            
+            for farmer in farmers:
+                # Información del agricultor
+                name = f"{farmer.first_name} {farmer.last_name}".strip() or farmer.username
+                email = farmer.email
+                phone = getattr(farmer.profile, 'phone_number', '') if hasattr(farmer, 'profile') else ''
+                
+                # Obtener fincas del agricultor
+                fincas = farmer.fincas.all()
+                
+                if fincas.exists():
+                    # Si tiene fincas, crear una fila por cada finca
+                    for finca in fincas:
+                        self.ws.append([
+                            name,
+                            email,
+                            phone,
+                            finca.departamento,
+                            finca.municipio,
+                            finca.nombre,
+                            float(finca.hectareas),
+                            "Activa" if finca.activa else "Inactiva",
+                            finca.fecha_registro.strftime('%Y-%m-%d') if finca.fecha_registro else ''
+                        ])
+                        row_num += 1
+                else:
+                    # Si no tiene fincas, agregar fila con campos vacíos para finca
+                    self.ws.append([
+                        name,
+                        email,
+                        phone,
+                        '',
+                        '',
+                        '',
+                        '',
+                        '',
+                        farmer.date_joined.strftime('%Y-%m-%d') if farmer.date_joined else ''
+                    ])
+                    row_num += 1
+            
+            # Ajustar ancho de columnas
+            column_widths = {
+                'A': 25,  # Agricultor
+                'B': 30,  # Email
+                'C': 15,  # Teléfono
+                'D': 20,  # Departamento
+                'E': 20,  # Municipio
+                'F': 20,  # Finca
+                'G': 12,  # Hectáreas
+                'H': 15,  # Estado
+                'I': 18,  # Fecha Registro
+            }
+            
+            for col, width in column_widths.items():
+                self.ws.column_dimensions[col].width = width
+            
+            # Centrar encabezados
+            for row in self.ws.iter_rows(min_row=1, max_row=1):
+                for cell in row:
+                    cell.alignment = Alignment(horizontal='center', vertical='center')
+            
+            # Guardar en buffer
+            buffer = io.BytesIO()
+            self.workbook.save(buffer)
+            buffer.seek(0)
+            return buffer.getvalue()
+            
+        except Exception as e:
+            logger.error(f"Error generando reporte Excel de agricultores: {e}", exc_info=True)
+            raise
+    
+    def generate_users_report(self):
+        """
+        Generar reporte Excel de usuarios del sistema.
+        Valida que el archivo generado sea un Excel válido (.xlsx).
+        Si no hay usuarios, muestra mensaje "Sin registros disponibles".
+        
+        Returns:
+            bytes: Contenido del archivo Excel
+        """
+        try:
+            from django.contrib.auth.models import User
+            
+            self.workbook = Workbook()
+            self.ws = self.workbook.active
+            self.ws.title = "Usuarios"
+            
+            # Configurar columnas
+            columns = [
+                'Nombre', 'Correo', 'Usuario', 'Rol', 'Estado', 'Último Login', 'Fecha Registro'
+            ]
+            self.ws.append(columns)
+            
+            # Estilo de encabezado
+            header_fill = PatternFill(start_color="2196F3", end_color="2196F3", fill_type="solid")
+            header_font = Font(bold=True, color="FFFFFF")
+            
+            for cell in self.ws[1]:
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+            
+            # Obtener todos los usuarios ordenados por fecha de registro
+            users = User.objects.all().order_by('-date_joined').prefetch_related('profile')
+            
+            if users.exists():
+                # Si hay usuarios, agregar los registros
+                for user in users:
+                    # Información del usuario
+                    name = f"{user.first_name} {user.last_name}".strip() or user.username
+                    email = user.email
+                    username = user.username
+                    
+                    # Determinar rol
+                    if user.is_superuser:
+                        role = 'Admin'
+                    elif user.groups.filter(name='analyst').exists():
+                        role = 'Analyst'
+                    else:
+                        role = getattr(user, 'profile', None) and getattr(user.profile, 'role', 'Farmer') or 'Farmer'
+                    
+                    # Estado
+                    estado = "Activo" if user.is_active else "Inactivo"
+                    
+                    # Último login
+                    ultimo_login = user.last_login.strftime('%Y-%m-%d') if user.last_login else 'Nunca'
+                    
+                    # Fecha registro
+                    fecha_registro = user.date_joined.strftime('%Y-%m-%d') if user.date_joined else ''
+                    
+                    self.ws.append([
+                        name,
+                        email,
+                        username,
+                        role,
+                        estado,
+                        ultimo_login,
+                        fecha_registro
+                    ])
+                
+                # Ajustar ancho de columnas solo si hay datos
+                column_widths = {
+                    'A': 25,  # Nombre
+                    'B': 35,  # Correo
+                    'C': 20,  # Usuario
+                    'D': 15,  # Rol
+                    'E': 12,  # Estado
+                    'F': 18,  # Último Login
+                    'G': 20,  # Fecha Registro
+                }
+                
+                for col, width in column_widths.items():
+                    self.ws.column_dimensions[col].width = width
+            else:
+                # Si no hay usuarios, mostrar mensaje amigable
+                # Combinar celdas A1:G2 para el mensaje
+                self.ws.merge_cells('A1:G2')
+                cell = self.ws['A1']
+                cell.value = "Sin registros disponibles"
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+                cell.font = Font(bold=True, size=14, color="000000")
+                cell.fill = PatternFill(start_color="F3F4F6", end_color="F3F4F6", fill_type="solid")
+                
+                # Ajustar altura de la fila
+                self.ws.row_dimensions[1].height = 40
+                
+                # Limpiar la fila de encabezado que ya no es necesaria
+                # (el merge ya ocupa las celdas)
+            
+            # Centrar encabezados si hay datos
+            if users.exists():
+                for row in self.ws.iter_rows(min_row=1, max_row=1):
+                    for cell in row:
+                        cell.alignment = Alignment(horizontal='center', vertical='center')
+            
+            # Guardar en buffer de memoria (binario)
+            buffer = io.BytesIO()
+            self.workbook.save(buffer)
+            buffer.seek(0)
+            
+            # Validar que el buffer no esté vacío
+            content = buffer.getvalue()
+            if not content or len(content) < 100:
+                raise ValueError("El archivo Excel generado está vacío o corrupto")
+            
+            logger.info(f"Reporte Excel de usuarios generado correctamente ({len(content)} bytes)")
+            return content
+            
+        except Exception as e:
+            logger.error(f"Error generando reporte Excel de usuarios: {e}", exc_info=True)
+            raise
+    
     def generate_quality_report(self, user, filtros=None):
         """
         Generar reporte de calidad en Excel.

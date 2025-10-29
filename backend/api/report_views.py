@@ -19,6 +19,7 @@ from .models import ReporteGenerado, Finca, Lote
 from .report_generator import CacaoReportPDFGenerator
 from .excel_generator import CacaoReportExcelGenerator
 from .serializers import ErrorResponseSerializer
+from rest_framework.permissions import IsAdminUser
 
 logger = logging.getLogger("cacaoscan.api")
 
@@ -496,11 +497,17 @@ class ReporteStatsView(APIView):
             return Response(stats, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Error obteniendo estadísticas de reportes: {e}")
+            logger.warning(f"⚠️ Error obteniendo estadísticas de reportes: {e}")
+            # Retornar datos vacíos en lugar de 500
             return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                'total_reportes': 0,
+                'reportes_completados': 0,
+                'reportes_generando': 0,
+                'reportes_fallidos': 0,
+                'reportes_por_tipo': {},
+                'reportes_por_formato': {},
+                'reportes_recientes': []
+            }, status=status.HTTP_200_OK)
 
 
 class ReporteCleanupView(APIView):
@@ -548,4 +555,96 @@ class ReporteCleanupView(APIView):
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ReporteAgricultoresView(APIView):
+    """
+    Vista para generar y descargar reporte Excel de agricultores con sus fincas.
+    Solo accesible para administradores.
+    """
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    
+    @swagger_auto_schema(
+        operation_description="Genera y descarga un archivo Excel con información de todos los agricultores y sus fincas",
+        operation_summary="Reporte de agricultores (Excel)",
+        responses={
+            200: openapi.Response(description="Archivo Excel generado exitosamente"),
+            401: ErrorResponseSerializer,
+            403: ErrorResponseSerializer,
+        },
+        tags=['Reportes']
+    )
+    def get(self, request):
+        try:
+            # Generar el reporte Excel
+            generator = CacaoReportExcelGenerator()
+            excel_content = generator.generate_farmers_report()
+            
+            # Crear respuesta HTTP con el archivo
+            response = HttpResponse(
+                excel_content,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            
+            # Configurar nombre del archivo
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'reporte_agricultores_{timestamp}.xlsx'
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            logger.info(f"Reporte de agricultores generado por {request.user.username}")
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error generando reporte de agricultores: {e}", exc_info=True)
+            return Response({
+                'error': 'Error al generar el reporte de agricultores',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ReporteUsuariosView(APIView):
+    """
+    Vista para generar y descargar reporte Excel de usuarios del sistema.
+    Solo accesible para administradores.
+    """
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    
+    @swagger_auto_schema(
+        operation_description="Genera y descarga un archivo Excel con información de todos los usuarios del sistema",
+        operation_summary="Reporte de usuarios (Excel)",
+        responses={
+            200: openapi.Response(description="Archivo Excel generado exitosamente"),
+            401: ErrorResponseSerializer,
+            403: ErrorResponseSerializer,
+        },
+        tags=['Reportes']
+    )
+    def get(self, request):
+        try:
+            # Generar el reporte Excel
+            generator = CacaoReportExcelGenerator()
+            excel_content = generator.generate_users_report()
+            
+            # Crear respuesta HTTP con el archivo
+            response = HttpResponse(
+                excel_content,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            
+            # Configurar nombre del archivo
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'reporte_usuarios_{timestamp}.xlsx'
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            logger.info(f"Reporte de usuarios generado por {request.user.username}")
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error generando reporte de usuarios: {e}", exc_info=True)
+            return Response({
+                'error': 'Error al generar el reporte de usuarios',
+                'detail': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

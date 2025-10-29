@@ -97,6 +97,10 @@ urlpatterns = [
     path('reportes/stats/', views.ReporteStatsView.as_view(), name='reportes-stats'),
     path('reportes/cleanup/', views.ReporteCleanupView.as_view(), name='reportes-cleanup'),
     
+    # Endpoints de reportes especiales (solo admin)
+    path('reports/agricultores/', views.ReporteAgricultoresView.as_view(), name='reporte-agricultores'),
+    path('reports/usuarios/', views.ReporteUsuariosView.as_view(), name='reporte-usuarios'),
+    
     # Endpoints de calibración
     path('calibration/status/', views.CalibrationStatusView.as_view(), name='calibration-status'),
     path('calibration/', views.CalibrationView.as_view(), name='calibration'),

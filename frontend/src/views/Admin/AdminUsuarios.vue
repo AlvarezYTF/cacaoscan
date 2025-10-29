@@ -176,6 +176,7 @@ import { useAdminStore } from '@/stores/admin'
 import { useAuthStore } from '@/stores/auth'
 import { useConfigStore } from '@/stores/config'
 import authApi from '@/services/authApi'
+import reportsApi from '@/services/reportsApi'
 import { useWebSocket } from '@/composables/useWebSocket'
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue'
 import UserFormModal from '@/components/admin/AdminUserComponents/UserFormModal.vue'
@@ -661,29 +662,28 @@ export default {
 
     const exportUsers = async () => {
       try {
-        const response = await adminStore.exportData('users', 'excel', {
-          search: searchQuery.value,
-          role: roleFilter.value,
-          status: statusFilter.value
+        // Mostrar loading
+        Swal.fire({
+          title: 'Generando reporte...',
+          text: 'Por favor espera mientras se genera el reporte Excel',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false,
+          didOpen: () => {
+            Swal.showLoading()
+          }
         })
-
-        // Create download link
-        const blob = new Blob([response.data], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        })
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `usuarios_${new Date().toISOString().split('T')[0]}.xlsx`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
-
+        
+        // Usar el nuevo servicio de reportes
+        await reportsApi.downloadReporteUsuarios()
+        
+        // Mostrar éxito
         Swal.fire({
           icon: 'success',
           title: 'Exportación exitosa',
-          text: 'Los usuarios han sido exportados exitosamente'
+          text: 'Los usuarios han sido exportados exitosamente',
+          timer: 3000,
+          showConfirmButton: false
         })
 
       } catch (error) {

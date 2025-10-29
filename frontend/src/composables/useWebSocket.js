@@ -2,6 +2,37 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
 export function useWebSocket() {
+  // Deshabilitar WebSockets en modo desarrollo para evitar reconexiones infinitas
+  if (import.meta.env.MODE === 'development') {
+    console.log('🔌 WebSockets deshabilitados en modo desarrollo')
+    
+    // Retornar un objeto mock con la misma interfaz
+    return {
+      isConnected: ref(false),
+      isConnecting: ref(false),
+      connectionError: ref(null),
+      connectionStatus: computed(() => 'disabled'),
+      hasAnyConnection: computed(() => false),
+      lastMessage: ref(null),
+      messageHistory: ref([]),
+      reconnectAttempts: ref(0),
+      connect: () => {},
+      disconnect: () => {},
+      reconnect: () => {},
+      ping: () => {},
+      markNotificationRead: () => {},
+      markAllNotificationsRead: () => {},
+      getNotificationStats: () => {},
+      getAuditStats: () => {},
+      getRecentActivity: () => {},
+      getSystemStatus: () => {},
+      getUserStats: () => {},
+      on: () => {},
+      off: () => {},
+      emit: () => {}
+    }
+  }
+  
   const authStore = useAuthStore()
   
   // Estado reactivo

@@ -78,18 +78,35 @@ class SystemGeneralConfigView(APIView):
         """
         try:
             settings = SystemSettings.get_singleton()
+            
+            # Si no hay configuración, retornar valores por defecto
+            if not settings:
+                return Response({
+                    'nombre_sistema': 'CacaoScan',
+                    'email_contacto': 'contacto@cacaoscan.com',
+                    'lema': 'La mejor plataforma para el control de calidad del cacao',
+                    'logo_url': None
+                }, status=status.HTTP_200_OK)
+            
             data = {
-                'nombre_sistema': settings.nombre_sistema,
-                'email_contacto': settings.email_contacto,
-                'lema': settings.lema,
+                'nombre_sistema': settings.nombre_sistema or 'CacaoScan',
+                'email_contacto': settings.email_contacto or 'contacto@cacaoscan.com',
+                'lema': settings.lema or 'La mejor plataforma para el control de calidad del cacao',
                 'logo_url': request.build_absolute_uri(settings.logo.url) if settings.logo else None
             }
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            # Retornar valores por defecto en caso de error
+            import logging
+            logger = logging.getLogger("cacaoscan.api")
+            logger.warning(f"Error cargando configuración general: {e}")
+            
+            return Response({
+                'nombre_sistema': 'CacaoScan',
+                'email_contacto': 'contacto@cacaoscan.com',
+                'lema': 'La mejor plataforma para el control de calidad del cacao',
+                'logo_url': None
+            }, status=status.HTTP_200_OK)
     
     def put(self, request):
         """
@@ -142,18 +159,35 @@ class SystemSecurityConfigView(APIView):
         """
         try:
             settings = SystemSettings.get_singleton()
+            
+            # Si no hay configuración, retornar valores por defecto
+            if not settings:
+                return Response({
+                    'recaptcha_enabled': True,
+                    'session_timeout': 60,
+                    'login_attempts': 5,
+                    'two_factor_auth': False
+                }, status=status.HTTP_200_OK)
+            
             data = {
-                'recaptcha_enabled': settings.recaptcha_enabled,
-                'session_timeout': settings.session_timeout,
-                'login_attempts': settings.login_attempts,
-                'two_factor_auth': settings.two_factor_auth
+                'recaptcha_enabled': settings.recaptcha_enabled if hasattr(settings, 'recaptcha_enabled') else True,
+                'session_timeout': settings.session_timeout if hasattr(settings, 'session_timeout') else 60,
+                'login_attempts': settings.login_attempts if hasattr(settings, 'login_attempts') else 5,
+                'two_factor_auth': settings.two_factor_auth if hasattr(settings, 'two_factor_auth') else False
             }
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            # Retornar valores por defecto en caso de error
+            import logging
+            logger = logging.getLogger("cacaoscan.api")
+            logger.warning(f"Error cargando configuración de seguridad: {e}")
+            
+            return Response({
+                'recaptcha_enabled': True,
+                'session_timeout': 60,
+                'login_attempts': 5,
+                'two_factor_auth': False
+            }, status=status.HTTP_200_OK)
     
     def put(self, request):
         """
@@ -200,16 +234,29 @@ class SystemMLConfigView(APIView):
         """
         try:
             settings = SystemSettings.get_singleton()
+            
+            # Si no hay configuración, retornar valores por defecto
+            if not settings:
+                return Response({
+                    'active_model': 'yolov8',
+                    'last_training': None
+                }, status=status.HTTP_200_OK)
+            
             data = {
-                'active_model': settings.active_model,
-                'last_training': settings.last_training.isoformat() if settings.last_training else None
+                'active_model': settings.active_model if hasattr(settings, 'active_model') else 'yolov8',
+                'last_training': settings.last_training.isoformat() if hasattr(settings, 'last_training') and settings.last_training else None
             }
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            # Retornar valores por defecto en caso de error
+            import logging
+            logger = logging.getLogger("cacaoscan.api")
+            logger.warning(f"Error cargando configuración ML: {e}")
+            
+            return Response({
+                'active_model': 'yolov8',
+                'last_training': None
+            }, status=status.HTTP_200_OK)
     
     def put(self, request):
         """

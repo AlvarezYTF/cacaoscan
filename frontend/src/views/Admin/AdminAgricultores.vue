@@ -32,6 +32,15 @@
             <!-- Acciones principales -->
             <div class="flex items-center space-x-3">
               <button 
+                @click="descargarReporteAgricultores"
+                class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Reporte Agricultores
+              </button>
+              <button 
                 @click="handleNewFarmer"
                 class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg flex items-center gap-2"
               >
@@ -116,6 +125,7 @@ import EditFarmerModal              from '@/components/admin/AdminAgricultorComp
 import { useAuthStore }             from '@/stores/auth';
 import authApi                       from '@/services/authApi';
 import { getFincas, getFincaStats } from '@/services/fincasApi';
+import reportsApi                   from '@/services/reportsApi';
 import Swal                         from 'sweetalert2';
 
 export default {
@@ -388,6 +398,42 @@ export default {
     const selectedFarmer = ref(null);
     const selectedFarmerForEdit = ref(null);
 
+    const descargarReporteAgricultores = async () => {
+      try {
+        // Mostrar loading
+        Swal.fire({
+          title: 'Generando reporte...',
+          text: 'Por favor espera mientras se genera el reporte Excel',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+        
+        // Descargar el reporte
+        await reportsApi.downloadReporteAgricultores();
+        
+        // Mostrar éxito
+        Swal.fire({
+          icon: 'success',
+          title: 'Reporte generado',
+          text: 'El reporte se ha descargado exitosamente',
+          timer: 3000,
+          showConfirmButton: false
+        });
+      } catch (error) {
+        console.error('Error descargando reporte:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo generar el reporte. Por favor intenta nuevamente.',
+          confirmButtonText: 'Aceptar'
+        });
+      }
+    };
+
     const handleNewFarmer = () => {
       if (createFarmerModalRef.value) {
         createFarmerModalRef.value.openModal();
@@ -586,9 +632,16 @@ export default {
     });
 
     const checkScreenSize = () => {
-      if (window.innerWidth <= 768) {
-        sidebarCollapsed.value = true;
-        localStorage.setItem('sidebarCollapsed', 'true');
+      try {
+        if (window.innerWidth <= 768) {
+          isSidebarCollapsed.value = true;
+          localStorage.setItem('sidebarCollapsed', 'true');
+        } else {
+          isSidebarCollapsed.value = false;
+          localStorage.setItem('sidebarCollapsed', 'false');
+        }
+      } catch (err) {
+        console.warn('⚠️ Error en checkScreenSize:', err);
       }
     };
 
