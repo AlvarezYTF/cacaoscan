@@ -155,13 +155,25 @@
 
           <!-- Acciones -->
           <div class="flex gap-2">
+            <!-- Botón Activar para admins (solo si está inactiva) -->
             <button
+              v-if="userRole === 'admin' && !finca.activa"
+              @click.stop="confirmActivate(finca)"
+              class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm transition-colors"
+            >
+              Activar
+            </button>
+            <!-- Botón Editar (solo si está activa o si es admin) -->
+            <button
+              v-if="finca.activa || userRole === 'admin'"
               @click.stop="editFinca(finca)"
               class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm transition-colors"
             >
               Editar
             </button>
+            <!-- Botón Eliminar/Desactivar (solo si está activa) -->
             <button
+              v-if="finca.activa"
               @click.stop="confirmDelete(finca)"
               class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm transition-colors"
             >
@@ -352,6 +364,41 @@ const confirmDelete = async (finca) => {
         icon: 'error',
         title: 'Error',
         text: 'No se pudo desactivar la finca. Intenta nuevamente.',
+        timer: 4000
+      })
+    }
+  }
+}
+
+const confirmActivate = async (finca) => {
+  const result = await Swal.fire({
+    icon: 'question',
+    title: '¿Activar finca?',
+    html: `<p>¿Estás seguro de que deseas reactivar la finca <strong>"${finca.nombre}"</strong>?</p><p class="text-sm text-gray-600 mt-2">La finca volverá a estar disponible para el agricultor.</p>`,
+    showCancelButton: true,
+    confirmButtonText: 'Sí, activar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#6b7280',
+    reverseButtons: true
+  })
+  
+  if (result.isConfirmed) {
+    try {
+      await fincasStore.activate(finca.id)
+      Swal.fire({
+        icon: 'success',
+        title: 'Finca activada',
+        text: `La finca "${finca.nombre}" ha sido reactivada. El agricultor podrá verla nuevamente en su gestión.`,
+        timer: 3000,
+        showConfirmButton: false
+      })
+    } catch (error) {
+      console.error('Error activando finca:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo activar la finca. Intenta nuevamente.',
         timer: 4000
       })
     }
