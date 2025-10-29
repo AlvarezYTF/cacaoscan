@@ -25,8 +25,9 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/v1/', include('api.urls')),
-    path('api/v1/reports/', include('reports.urls')),
+    # path('api/v1/', include('api.urls')),  # Temporalmente deshabilitado
+    # path('api/v1/reports/', include('reports.urls')),  # Temporalmente deshabilitado
+    path('api/personas/', include('personas.urls')),
     
     # Swagger URLs
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),

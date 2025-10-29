@@ -68,67 +68,78 @@ const authApi = {
   },
 
   /**
-   * Registrar nuevo usuario
+   * Registrar nuevo usuario con información de persona
+   * Usa el nuevo endpoint /personas/registrar/ que crea User + Persona
    */
   async register(userData) {
     try {
       console.log('🔍 [authApi] Datos recibidos para registro:', userData);
       
+      // Payload para el nuevo endpoint de personas
       const payload = {
-        username: userData.email, // Usar email como username
+        // Datos del usuario
         email: userData.email,
         password: userData.password,
-        password_confirm: userData.confirm_password || userData.password_confirm, // Aceptar ambos campos
-        first_name: userData.first_name,
-        last_name: userData.last_name,
-        ...(userData.phone_number && { phone_number: userData.phone_number }), // Solo incluir si existe
-        ...(userData.email_notifications !== undefined && { email_notifications: userData.email_notifications })
+        
+        // Datos de la persona
+        tipo_documento: userData.tipo_documento || 'CC', // Por defecto Cédula
+        numero_documento: userData.numero_documento || '',
+        primer_nombre: userData.first_name || userData.primer_nombre || '',
+        segundo_nombre: userData.segundo_nombre || userData.middle_name || '',
+        primer_apellido: userData.last_name || userData.primer_apellido || '',
+        segundo_apellido: userData.segundo_apellido || userData.last_name_2 || '',
+        telefono: userData.phone_number || userData.telefono || '',
+        direccion: userData.direccion || userData.address || '',
+        genero: userData.genero || 'M', // Por defecto Masculino
+        fecha_nacimiento: userData.fecha_nacimiento || userData.birthdate || '',
+        municipio: userData.municipio || '',
+        departamento: userData.departamento || ''
       };
       
-      console.log('📤 [authApi] Payload enviado al backend:', payload);
+      console.log('📤 [authApi] Payload enviado al backend (personas):', payload);
       
-      const response = await api.post('/auth/register/', payload)
+      const response = await api.post('/personas/registrar/', payload)
       
       console.log('🔍 [authApi] Respuesta cruda del backend (registro):', response.data)
       
-      // El backend puede devolver dos estructuras:
-      // 1. { success, data: { access, refresh, user, ... }, message } (con wrapper)
-      // 2. { success, access, refresh, user, ..., message } (plana)
-      
+      // La respuesta del endpoint personas/registrar/ devuelve la persona creada
+      // Necesitamos hacer login para obtener los tokens
       let normalizedData;
       
-      if (response.data && response.data.data) {
-        // Estructura con wrapper 'data'
-        normalizedData = {
-          token: response.data.data.access,
-          refresh: response.data.data.refresh,
-          user: response.data.data.user,
-          access_expires_at: response.data.data.access_expires_at,
-          refresh_expires_at: response.data.data.refresh_expires_at,
-          verification_token: response.data.data.verification_token,
-          verification_required: response.data.data.verification_required,
-          message: response.data.message
+      // Si la respuesta incluye información del usuario, intentar hacer login automático
+      if (response.data && response.data.user) {
+        // Login automático para obtener tokens
+        const loginResponse = await api.post('/auth/login/', {
+          email: userData.email,
+          password: userData.password
+        })
+        
+        if (loginResponse.data && loginResponse.data.access) {
+          normalizedData = {
+            token: loginResponse.data.access,
+            refresh: loginResponse.data.refresh,
+            user: loginResponse.data.user,
+            access_expires_at: loginResponse.data.access_expires_at,
+            refresh_expires_at: loginResponse.data.refresh_expires_at,
+            persona: response.data, // Incluir datos de persona
+            message: 'Registro exitoso. Bienvenido.'
+          }
+        } else {
+          throw new Error('Error al obtener tokens de autenticación')
         }
-      } else if (response.data && response.data.access && response.data.user) {
-        // Estructura plana (la que realmente usa el backend)
+      } else {
+        // Fallback: esperar estructura con tokens directos
         normalizedData = {
           token: response.data.access,
           refresh: response.data.refresh,
           user: response.data.user,
-          access_expires_at: response.data.access_expires_at,
-          refresh_expires_at: response.data.refresh_expires_at,
-          verification_token: response.data.verification_token,
-          verification_required: response.data.verification_required,
-          message: response.data.message
+          persona: response.data,
+          message: response.data.message || 'Registro exitoso'
         }
-      } else {
-        console.error('❌ [authApi] Estructura de respuesta inesperada:', response.data)
-        throw new Error('Respuesta del servidor con formato inválido')
       }
       
       console.log('✅ [authApi] Datos normalizados para el store (registro):', normalizedData)
       
-      // Agregar campo success para compatibilidad con el store
       return {
         success: true,
         ...normalizedData

@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     # Auth apps
     'auth_app',
     'users.apps.UsersConfig',
+    'personas',
     
     # Feature apps
     'fincas_app',
@@ -61,7 +62,7 @@ INSTALLED_APPS = [
     'training',
     
     # Existing apps
-    'api',  # Mantener temporalmente hasta completar migración
+    # 'api',  # Desactivado temporalmente para evitar conflictos
     'reports',
 ]
 
@@ -75,9 +76,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.error_handler.StandardErrorMiddleware',  # Middleware de errores
-    'api.middleware.TokenCleanupMiddleware',  # Limpieza automática de tokens
-    'api.realtime_middleware.RealtimeAuditMiddleware',
-    'api.realtime_middleware.RealtimeLoginMiddleware',
+    # 'api.middleware.TokenCleanupMiddleware',  # Temporalmente deshabilitado
+    # 'api.realtime_middleware.RealtimeAuditMiddleware',  # Temporalmente deshabilitado
+    # 'api.realtime_middleware.RealtimeLoginMiddleware',  # Temporalmente deshabilitado
 ]
 
 ROOT_URLCONF = 'cacaoscan.urls'
