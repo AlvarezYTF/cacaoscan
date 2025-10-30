@@ -102,6 +102,22 @@ export const useAnalysisStore = defineStore('analysis', {
           },
         });
 
+        // Tras crear el lote, disparar la medición para cada imagen subida
+        // Esto garantiza que también se guarden los recortes PNG en processed/
+        for (const file of this.images) {
+          try {
+            const fd = new FormData();
+            fd.append('image', file);
+            await api.post('/scan/measure/', fd, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              timeout: 60000,
+            });
+          } catch (e) {
+            // No romper el flujo si una imagen falla; continuar con las demás
+            console.warn('Medición fallida para una imagen:', e?.message || e);
+          }
+        }
+
         return response.data;
 
       } catch (error) {
