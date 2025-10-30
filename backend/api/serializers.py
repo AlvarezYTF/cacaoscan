@@ -108,11 +108,17 @@ class LoginSerializer(serializers.Serializer):
                     user = None
             
             if user:
-                if user.is_active:
-                    attrs['user'] = user
-                    return attrs
-                else:
-                    raise serializers.ValidationError('Usuario inactivo.')
+                if not user.is_active:
+                    # Verificar si tiene token de verificación pendiente
+                    if hasattr(user, 'api_email_token') and not user.api_email_token.is_verified:
+                        raise serializers.ValidationError(
+                            'Tu cuenta no está verificada. Por favor verifica tu correo electrónico antes de iniciar sesión. '
+                            'Si no recibiste el correo, puedes solicitar uno nuevo desde la página de registro.'
+                        )
+                    else:
+                        raise serializers.ValidationError('Usuario inactivo.')
+                attrs['user'] = user
+                return attrs
             else:
                 raise serializers.ValidationError('Credenciales inválidas.')
         else:
@@ -210,7 +216,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
-            is_active=True  # Usuarios activos por defecto
+            is_active=False  # Usuario inactivo hasta verificar el email
         )
         
         return user
@@ -1006,31 +1012,14 @@ class ModelComparisonSerializer(serializers.Serializer):
 class SystemSettingsSerializer(serializers.ModelSerializer):
     """Serializer para configuración del sistema."""
     logo_url = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = SystemSettings
-        fields = [
-            'nombre_sistema',
-            'email_contacto',
-            'lema',
-            'logo',
-            'logo_url',
-            'recaptcha_enabled',
-            'session_timeout',
-            'login_attempts',
-            'two_factor_auth',
-            'active_model',
-            'last_training',
-            'created_at',
-            'updated_at'
-        ]
-        read_only_fields = ['created_at', 'updated_at']
-    
-    def get_logo_url(self, obj):
-        """Obtener URL del logo si existe."""
-        if obj.logo:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.logo.url)
-            return obj.logo.url
-        return None
+
+
+class SendOtpSerializer(serializers.Serializer):
+    """Serializer para envío de código OTP."""
+    email = serializers.EmailField()
+
+
+class VerifyOtpSerializer(serializers.Serializer):
+    """Serializer para verificación de código OTP."""
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6, min_length=6)

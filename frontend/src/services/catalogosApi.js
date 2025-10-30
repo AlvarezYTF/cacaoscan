@@ -11,7 +11,7 @@ const catalogosApi = {
    */
   async getParametrosPorTema(codigoTema) {
     try {
-      const response = await api.get(`/api/parametros/tema/${codigoTema}/`)
+      const response = await api.get(`/parametros/tema/${codigoTema}/`)
       return response.data
     } catch (error) {
       console.error(`Error obteniendo parámetros del tema ${codigoTema}:`, error)
@@ -25,7 +25,7 @@ const catalogosApi = {
    */
   async getTemas() {
     try {
-      const response = await api.get('/api/temas/')
+      const response = await api.get('/temas/')
       return response.data
     } catch (error) {
       console.error('Error obteniendo temas:', error)
@@ -39,7 +39,7 @@ const catalogosApi = {
    */
   async getDepartamentos() {
     try {
-      const response = await api.get('/api/departamentos/')
+      const response = await api.get('/departamentos/')
       return response.data
     } catch (error) {
       console.error('Error obteniendo departamentos:', error)
@@ -54,7 +54,7 @@ const catalogosApi = {
    */
   async getMunicipiosPorDepartamento(codigoDepartamento) {
     try {
-      const response = await api.get(`/api/municipios/departamento/${codigoDepartamento}/`)
+      const response = await api.get(`/municipios/departamento/${codigoDepartamento}/`)
       return response.data
     } catch (error) {
       console.error(`Error obteniendo municipios del departamento ${codigoDepartamento}:`, error)
@@ -69,7 +69,7 @@ const catalogosApi = {
    */
   async getDepartamentoPorCodigo(codigo) {
     try {
-      const response = await api.get('/api/departamentos/')
+      const response = await api.get('/departamentos/')
       return response.data.find(dept => dept.codigo === codigo)
     } catch (error) {
       console.error(`Error obteniendo departamento ${codigo}:`, error)

@@ -6,7 +6,7 @@ INTEGRACIÓN:
 - Persona ahora usa Departamento y Municipio (ubicaciones) para ubicación
 """
 from django.contrib import admin
-from .models import Persona
+from .models import Persona, PendingRegistration
 
 
 @admin.register(Persona)
@@ -94,3 +94,24 @@ class PersonaAdmin(admin.ModelAdmin):
         """Mostrar el municipio."""
         return obj.municipio.nombre if obj.municipio else '-'
     get_municipio.short_description = 'Municipio'
+
+
+@admin.register(PendingRegistration)
+class PendingRegistrationAdmin(admin.ModelAdmin):
+    """Admin para registros pendientes de verificación."""
+    list_display = [
+        'email',
+        'is_verified',
+        'created_at',
+        'verified_at',
+        'is_expired_display'
+    ]
+    search_fields = ['email', 'verification_token']
+    list_filter = ['is_verified', 'created_at']
+    readonly_fields = ['verification_token', 'created_at', 'verified_at']
+    
+    def is_expired_display(self, obj):
+        """Indica si el registro ha expirado."""
+        return "Sí" if obj.is_expired() else "No"
+    is_expired_display.short_description = 'Expirado'
+    is_expired_display.boolean = True

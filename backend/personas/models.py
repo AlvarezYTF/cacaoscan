@@ -6,8 +6,11 @@ INTEGRACIÓN CON MÓDULOS:
 - Catálogos (Tema-Parámetro): Para tipo_documento y genero
 - Ubicaciones: Para departamento y municipio
 """
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import timedelta
 from catalogos.models import Parametro, Departamento, Municipio
 
 
@@ -121,3 +124,40 @@ class Persona(models.Model):
         if self.segundo_apellido:
             nombre_completo += f" {self.segundo_apellido}"
         return nombre_completo
+
+
+class PendingRegistration(models.Model):
+    """
+    Modelo para almacenar registros pendientes de verificación de correo.
+    Los datos del usuario no se crean hasta que el correo esté verificado.
+    """
+    email = models.EmailField(unique=True, help_text="Email del usuario pendiente de registro")
+    data = models.JSONField(help_text="Datos del formulario de registro en formato JSON")
+    verification_token = models.UUIDField(default=uuid.uuid4, unique=True, help_text="Token único de verificación")
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Fecha y hora de creación del registro pendiente")
+    is_verified = models.BooleanField(default=False, help_text="Indica si el correo ya fue verificado")
+    verified_at = models.DateTimeField(null=True, blank=True, help_text="Fecha y hora de verificación")
+    
+    class Meta:
+        verbose_name = 'Registro Pendiente'
+        verbose_name_plural = 'Registros Pendientes'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['email']),
+            models.Index(fields=['verification_token']),
+            models.Index(fields=['is_verified', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Registro pendiente: {self.email}"
+    
+    def is_expired(self):
+        """Verifica si el token de verificación ha expirado (más de 24 horas)."""
+        expiration_time = self.created_at + timedelta(hours=24)
+        return timezone.now() > expiration_time
+    
+    def verify(self):
+        """Marca el registro como verificado."""
+        self.is_verified = True
+        self.verified_at = timezone.now()
+        self.save()

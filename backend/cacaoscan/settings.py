@@ -9,7 +9,11 @@ from dotenv import load_dotenv
 from datetime import timedelta
 
 # Cargar variables de entorno desde .env
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent
+dotenv_path = os.path.join(BASE_DIR, ".env")
+load_dotenv(dotenv_path)
+print(f"📂 .env cargado desde: {dotenv_path}")
+
 
 # Suprimir warnings molestos
 warnings.filterwarnings('ignore', message='pkg_resources is deprecated')
@@ -293,23 +297,27 @@ LOGGING = {
     },
 }
 
-# Configuración de Email
+# Configuración de Email con fallback TLS/SSL
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() == 'true'
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+# Credenciales Gmail con App Password
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'ch4130949@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'scdtfcpicnqjmiyo')  # Nueva App Password sin espacios
 EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '30'))
+# Configuración de fallback para SSL
+EMAIL_USE_SSL_FALLBACK = os.environ.get('EMAIL_USE_SSL_FALLBACK', 'True').lower() == 'true'
 
 # Configuración de SendGrid (alternativa)
 SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
 SENDGRID_FROM_EMAIL = os.environ.get('SENDGRID_FROM_EMAIL', 'noreply@cacaoscan.com')
 
 # Configuración de emails del sistema
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'CacaoScan <noreply@cacaoscan.com>')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER if EMAIL_HOST_USER else 'CacaoScan <noreply@cacaoscan.com>')
 SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
 ADMINS = [
     ('Admin CacaoScan', os.environ.get('ADMIN_EMAIL', 'admin@cacaoscan.com')),
 ]

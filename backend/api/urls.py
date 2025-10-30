@@ -23,7 +23,16 @@ urlpatterns = [
     
     # Endpoints de verificación de email
     path('auth/verify-email/', views.EmailVerificationView.as_view(), name='auth-verify-email'),
+    path('auth/verify-email/<uuid:token>/', views.EmailVerificationView.as_view(), name='auth-verify-email-token'),
     path('auth/resend-verification/', views.ResendVerificationView.as_view(), name='auth-resend-verification'),
+    
+    # Endpoints OTP de verificación
+    path('auth/send-otp/', views.SendOtpView.as_view(), name='auth-send-otp'),
+    path('auth/verify-otp/', views.VerifyOtpView.as_view(), name='auth-verify-otp'),
+    
+    # Endpoints de pre-registro (verificación previa)
+    path('auth/preregistro/', views.PreRegisterView.as_view(), name='auth-preregister'),
+    path('auth/verificar/<uuid:token>/', views.VerifyEmailPreRegistrationView.as_view(), name='auth-verify-email-pre-registration'),
     
     # Endpoints de recuperación de contraseña
     path('auth/forgot-password/', views.ForgotPasswordView.as_view(), name='auth-forgot-password'),

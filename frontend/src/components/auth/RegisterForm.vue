@@ -414,6 +414,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import authApi from '@/services/authApi'
 import { catalogosApi } from '@/services'
 
 // Router y store
@@ -652,10 +653,21 @@ const handleSubmit = async () => {
     })
 
     if (result.success) {
-      setStatusMessage('¡Registro exitoso! Bienvenido a CacaoScan 🌱', 'success')
-      setTimeout(() => {
-        router.push({ name: 'AgricultorDashboard' })
-      }, 2000)
+      // Redirigir a la página de verificación OTP
+      const email = result.data?.email || form.value.email.trim()
+      
+      // Enviar código OTP automáticamente
+      try {
+        await authApi.sendOtp(email)
+      } catch (error) {
+        console.error('Error enviando código OTP:', error)
+        // Continuar aunque falle el envío automático
+      }
+      
+      router.push({ 
+        name: 'VerifyEmailOTP', 
+        query: { email } 
+      })
     } else {
       setStatusMessage(result.error || 'Error al crear la cuenta', 'error')
     }

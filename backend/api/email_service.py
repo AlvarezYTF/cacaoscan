@@ -141,35 +141,35 @@ class EmailService:
         from_email: str,
         attachments: List[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Envía email usando SMTP."""
+        """Envía email usando SMTP con EmailMultiAlternatives (Django)."""
         try:
-            # Crear mensaje multipart
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From'] = from_email
-            msg['To'] = ', '.join(to_emails)
-            
-            # Agregar contenido de texto
-            if text_content:
-                text_part = MIMEText(text_content, 'plain', 'utf-8')
-                msg.attach(text_part)
-            
-            # Agregar contenido HTML
+            # Construir EmailMultiAlternatives para que Django EmailBackend lo procese correctamente
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=text_content or strip_tags(html_content or ''),
+                from_email=from_email,
+                to=to_emails,
+            )
+
+            # Adjuntar versión HTML si existe
             if html_content:
-                html_part = MIMEText(html_content, 'html', 'utf-8')
-                msg.attach(html_part)
-            
-            # Agregar archivos adjuntos
+                email.attach_alternative(html_content, "text/html")
+
+            # Adjuntar archivos si vienen
             if attachments:
                 for attachment in attachments:
-                    self._add_attachment(msg, attachment)
-            
+                    filename = attachment.get('filename')
+                    content = attachment.get('content')
+                    content_type = attachment.get('content_type', 'application/octet-stream')
+                    if isinstance(content, str):
+                        content = content.encode('utf-8')
+                    email.attach(filename, content, content_type)
+
             # Enviar usando el backend SMTP
             connection = get_connection(backend='django.core.mail.backends.smtp.EmailBackend')
             connection.open()
-            
             try:
-                connection.send_messages([msg])
+                connection.send_messages([email])
                 logger.info(f"Email enviado exitosamente a {to_emails} via SMTP")
                 return {
                     'success': True,
@@ -179,7 +179,7 @@ class EmailService:
                 }
             finally:
                 connection.close()
-                
+
         except Exception as e:
             logger.error(f"Error enviando email via SMTP: {e}")
             return {
@@ -517,9 +517,37 @@ def send_custom_email(
     use_sendgrid: bool = False
 ) -> Dict[str, Any]:
     """
-    Función helper para enviar emails personalizados.
+    Función helper para enviar emails personalizados con fallback TLS/SSL.
     """
-    return email_service.send_email(
-        to_emails, subject, html_content, text_content,
-        from_email, attachments, use_sendgrid
-    )
+    # Intentar primero con TLS, si falla probar SSL
+    try:
+        return email_service.send_email(
+            to_emails, subject, html_content, text_content,
+            from_email, attachments, use_sendgrid
+        )
+    except Exception as e:
+        # Si falla y está habilitado el fallback SSL, intentar SSL
+        if settings.EMAIL_USE_SSL_FALLBACK and 'smtp' in str(e).lower():
+            logger.warning(f"Error con TLS, intentando SSL: {e}")
+            # Cambiar configuración temporalmente para SSL
+            original_tls = settings.EMAIL_USE_TLS
+            original_ssl = settings.EMAIL_USE_SSL
+            original_port = settings.EMAIL_PORT
+            
+            settings.EMAIL_USE_TLS = False
+            settings.EMAIL_USE_SSL = True
+            settings.EMAIL_PORT = 465
+            
+            try:
+                result = email_service.send_email(
+                    to_emails, subject, html_content, text_content,
+                    from_email, attachments, use_sendgrid
+                )
+                return result
+            finally:
+                # Restaurar configuración original
+                settings.EMAIL_USE_TLS = original_tls
+                settings.EMAIL_USE_SSL = original_ssl
+                settings.EMAIL_PORT = original_port
+        else:
+            raise

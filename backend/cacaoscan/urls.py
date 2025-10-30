@@ -27,9 +27,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # API principal de CacaoScan
     path('api/v1/', include('api.urls')),
-    # API de personas (legacy)
-    path('api/personas/', include('personas.urls')),
-    path('api/', include('catalogos.urls')),
+    # API de personas (incluida en v1 con prefijo personas/)
+    path('api/v1/personas/', include('personas.urls')),
+    # API de catálogos (incluida en v1 para consistencia)
+    path('api/v1/', include('catalogos.urls')),
     
     # Swagger URLs
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),

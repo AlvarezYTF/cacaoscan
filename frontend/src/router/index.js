@@ -342,7 +342,34 @@ const router = createRouter({
       component: () => import('../views/EmailVerification.vue'),
       meta: {
         title: 'Verificar Email | CacaoScan',
-        requiresAuth: true,
+        requiresAuth: false, // Permitir acceso sin autenticación para verificar
+      },
+    },
+    {
+      path: '/verify-email-otp',
+      name: 'VerifyEmailOTP',
+      component: () => import('../views/VerifyEmailView.vue'),
+      meta: {
+        title: 'Verificar Código OTP | CacaoScan',
+        requiresGuest: true,
+      },
+    },
+    {
+      path: '/verify-email/:token',
+      name: 'VerifyEmail',
+      component: () => import('../views/EmailVerification.vue'),
+      meta: {
+        title: 'Verificando Email | CacaoScan',
+        requiresAuth: false,
+      },
+    },
+    {
+      path: '/verify-prompt',
+      name: 'VerifyPrompt',
+      component: () => import('../views/VerifyPrompt.vue'),
+      meta: {
+        title: 'Verifica tu correo | CacaoScan',
+        requiresAuth: false,
       },
     },
     {

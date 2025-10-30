@@ -102,47 +102,29 @@ const authApi = {
       
       console.log('🔍 [authApi] Respuesta cruda del backend (registro):', response.data)
       
-      // La respuesta del endpoint personas/registrar/ devuelve la persona creada
-      // Necesitamos hacer login para obtener los tokens
-      let normalizedData;
-      
-      // Si la respuesta incluye información del usuario, intentar hacer login automático
-      if (response.data && response.data.user) {
-        // Login automático para obtener tokens
-        const loginResponse = await api.post('/auth/login/', {
-          email: userData.email,
-          password: userData.password
-        })
-        
-        if (loginResponse.data && loginResponse.data.access) {
-          normalizedData = {
-            token: loginResponse.data.access,
-            refresh: loginResponse.data.refresh,
-            user: loginResponse.data.user,
-            access_expires_at: loginResponse.data.access_expires_at,
-            refresh_expires_at: loginResponse.data.refresh_expires_at,
-            persona: response.data, // Incluir datos de persona
-            message: 'Registro exitoso. Bienvenido.'
-          }
-        } else {
-          throw new Error('Error al obtener tokens de autenticación')
-        }
-      } else {
-        // Fallback: esperar estructura con tokens directos
-        normalizedData = {
-          token: response.data.access,
-          refresh: response.data.refresh,
-          user: response.data.user,
-          persona: response.data,
-          message: response.data.message || 'Registro exitoso'
+      // La respuesta del endpoint personas/registrar/ ahora incluye verification_required
+      // No hacer login automático, el usuario debe verificar su email primero
+      if (response.data && response.data.verification_required) {
+        return {
+          success: true,
+          verification_required: true,
+          data: {
+            email: response.data.email || userData.email,
+            verification_required: true
+          },
+          message: 'Registro exitoso. Por favor verifica tu correo electrónico.'
         }
       }
       
-      console.log('✅ [authApi] Datos normalizados para el store (registro):', normalizedData)
-      
+      // Fallback para estructura legacy (no debería llegar aquí ahora)
       return {
         success: true,
-        ...normalizedData
+        verification_required: true,
+        data: {
+          email: response.data?.email || response.data?.user?.email || userData.email,
+          verification_required: true
+        },
+        message: 'Registro exitoso. Por favor verifica tu correo electrónico.'
       }
     } catch (error) {
       console.error('Error en registro API:', error)
@@ -330,7 +312,7 @@ const authApi = {
   },
 
   /**
-   * Verificar email con token
+   * Verificar email con token (POST con token en body)
    */
   async verifyEmail(uid, token) {
     try {
@@ -346,11 +328,25 @@ const authApi = {
   },
 
   /**
+   * Verificar email con token desde la URL (GET con token en path)
+   */
+  async verifyEmailFromToken(token) {
+    try {
+      const response = await api.get(`/auth/verify-email/${token}/`)
+      return response.data
+    } catch (error) {
+      console.error('Error verificando email desde token:', error)
+      throw error
+    }
+  },
+
+  /**
    * Reenviar email de verificación
    */
-  async resendEmailVerification() {
+  async resendEmailVerification(email = null) {
     try {
-      const response = await api.post('/auth/resend-verification/')
+      const payload = email ? { email } : {}
+      const response = await api.post('/auth/resend-verification/', payload)
       return response.data
     } catch (error) {
       console.error('Error reenviando verificación:', error)
@@ -495,6 +491,32 @@ const authApi = {
       return response.data
     } catch (error) {
       console.error('Error en reset password API:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Enviar código OTP para verificación de email
+   */
+  async sendOtp(email) {
+    try {
+      const response = await api.post('/auth/send-otp/', { email })
+      return response.data
+    } catch (error) {
+      console.error('Error enviando código OTP:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Verificar código OTP
+   */
+  async verifyOtp(email, code) {
+    try {
+      const response = await api.post('/auth/verify-otp/', { email, code })
+      return response.data
+    } catch (error) {
+      console.error('Error verificando código OTP:', error)
       throw error
     }
   }
