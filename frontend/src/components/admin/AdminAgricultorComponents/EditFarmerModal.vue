@@ -60,102 +60,103 @@
             </li>
           </ul>
 
-          <!-- Tab Content: Information -->
-          <div v-if="activeTab === 'info'" class="space-y-4">
+          <!-- Tab Content: Information (estilo ProfileSection) -->
+          <div v-if="activeTab === 'info'" class="space-y-6">
+            <!-- Nombres -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Nombre -->
               <div>
-                <label for="edit_first_name" class="block mb-2 text-sm font-semibold text-gray-700">
-                  Nombre <span class="text-red-500">*</span>
-                </label>
-                <input 
-                  type="text" 
-                  id="edit_first_name" 
-                  v-model="formData.first_name"
-                  class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                  placeholder="Ingrese el nombre"
-                  required 
-                />
-                <p v-if="errors.first_name" class="mt-1 text-sm text-red-600 font-medium">{{ errors.first_name }}</p>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Primer Nombre *</label>
+                <input v-model="personaForm.primer_nombre" type="text" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" :class="{'border-red-500': errors.primer_nombre}" placeholder="Juan" />
+                <p v-if="errors.primer_nombre" class="text-red-600 text-xs mt-1">{{ errors.primer_nombre }}</p>
               </div>
-
-              <!-- Apellido -->
               <div>
-                <label for="edit_last_name" class="block mb-2 text-sm font-semibold text-gray-700">
-                  Apellido <span class="text-red-500">*</span>
-                </label>
-                <input 
-                  type="text" 
-                  id="edit_last_name" 
-                  v-model="formData.last_name"
-                  class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                  placeholder="Ingrese el apellido"
-                  required 
-                />
-                <p v-if="errors.last_name" class="mt-1 text-sm text-red-600 font-medium">{{ errors.last_name }}</p>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Segundo Nombre</label>
+                <input v-model="personaForm.segundo_nombre" type="text" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" placeholder="Carlos (opcional)" />
               </div>
+            </div>
 
-              <!-- Email -->
+            <!-- Apellidos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label for="edit_email" class="block mb-2 text-sm font-semibold text-gray-700">
-                  Email <span class="text-red-500">*</span>
-                </label>
-                <input 
-                  type="email" 
-                  id="edit_email" 
-                  v-model="formData.email"
-                  class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                  placeholder="nombre@email.com"
-                  required 
-                />
-                <p v-if="errors.email" class="mt-1 text-sm text-red-600 font-medium">{{ errors.email }}</p>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Primer Apellido *</label>
+                <input v-model="personaForm.primer_apellido" type="text" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" :class="{'border-red-500': errors.primer_apellido}" placeholder="Pérez" />
+                <p v-if="errors.primer_apellido" class="text-red-600 text-xs mt-1">{{ errors.primer_apellido }}</p>
               </div>
-
-              <!-- Teléfono -->
               <div>
-                <label for="edit_phone_number" class="block mb-2 text-sm font-semibold text-gray-700">
-                  Teléfono
-                </label>
-                <input 
-                  type="tel" 
-                  id="edit_phone_number" 
-                  v-model="formData.phone_number"
-                  class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                  placeholder="+57 300 1234567"
-                />
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Segundo Apellido</label>
+                <input v-model="personaForm.segundo_apellido" type="text" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" placeholder="García (opcional)" />
               </div>
+            </div>
 
-              <!-- Región -->
+            <!-- Tipo Documento y Número -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label for="edit_region" class="block mb-2 text-sm font-semibold text-gray-700">
-                  Región
-                </label>
-                <select 
-                  id="edit_region"
-                  v-model="formData.region"
-                  class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
-                >
-                  <option value="">Seleccionar región</option>
-                  <option value="Antioquia">Antioquia</option>
-                  <option value="Santander">Santander</option>
-                  <option value="Nariño">Nariño</option>
-                  <option value="Huila">Huila</option>
-                  <option value="Cauca">Cauca</option>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Tipo de Documento *</label>
+                <select v-model="personaForm.tipo_documento" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" :class="{'border-red-500': errors.tipo_documento}">
+                  <option value="">Seleccionar...</option>
+                  <option v-for="tipo in tiposDocumento" :key="tipo.codigo" :value="tipo.codigo">{{ tipo.nombre }}</option>
+                </select>
+                <p v-if="errors.tipo_documento" class="text-red-600 text-xs mt-1">{{ errors.tipo_documento }}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Número de Documento *</label>
+                <input v-model="personaForm.numero_documento" type="text" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" :class="{'border-red-500': errors.numero_documento}" placeholder="1012345678" />
+                <p v-if="errors.numero_documento" class="text-red-600 text-xs mt-1">{{ errors.numero_documento }}</p>
+              </div>
+            </div>
+
+            <!-- Género y Fecha de Nacimiento -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Género *</label>
+                <select v-model="personaForm.genero" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" :class="{'border-red-500': errors.genero}">
+                  <option value="">Seleccionar...</option>
+                  <option v-for="gen in generos" :key="gen.codigo" :value="gen.codigo">{{ gen.nombre }}</option>
+                </select>
+                <p v-if="errors.genero" class="text-red-600 text-xs mt-1">{{ errors.genero }}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                <input type="date" v-model="personaForm.fecha_nacimiento" :max="maxBirthdate" :min="minBirthdate" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" :class="{'border-red-500': errors.fecha_nacimiento}" />
+                <p v-if="errors.fecha_nacimiento" class="text-red-600 text-xs mt-1">{{ errors.fecha_nacimiento }}</p>
+              </div>
+            </div>
+
+            <!-- Email y Teléfono -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+                <input v-model="formData.email" type="email" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" :class="{'border-red-500': errors.email}" placeholder="nombre@email.com" />
+                <p v-if="errors.email" class="text-red-600 text-xs mt-1">{{ errors.email }}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Teléfono *</label>
+                <input v-model="personaForm.telefono" type="tel" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" :class="{'border-red-500': errors.telefono}" placeholder="+57 300 123 4567" />
+                <p v-if="errors.telefono" class="text-red-600 text-xs mt-1">{{ errors.telefono }}</p>
+              </div>
+            </div>
+
+            <!-- Dirección -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Dirección</label>
+              <input v-model="personaForm.direccion" type="text" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" placeholder="Calle 10 #5-20" />
+            </div>
+
+            <!-- Ubicación -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Departamento</label>
+                <select v-model="personaForm.departamento" @change="onDepartamentoChange" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500">
+                  <option value="">Seleccionar...</option>
+                  <option v-for="depto in departamentos" :key="depto.id" :value="depto.id">{{ depto.nombre }}</option>
                 </select>
               </div>
-
-              <!-- Municipio -->
               <div>
-                <label for="edit_municipality" class="block mb-2 text-sm font-semibold text-gray-700">
-                  Municipio
-                </label>
-                <input 
-                  type="text" 
-                  id="edit_municipality" 
-                  v-model="formData.municipality"
-                  class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                  placeholder="Ingrese el municipio"
-                />
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Municipio</label>
+                <select v-model="personaForm.municipio" :disabled="!personaForm.departamento" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500">
+                  <option value="">Seleccionar...</option>
+                  <option v-for="mun in municipios" :key="mun.id" :value="mun.id">{{ mun.nombre }}</option>
+                </select>
               </div>
             </div>
           </div>
@@ -395,10 +396,11 @@
 </template>
 
 <script>
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 import Swal from 'sweetalert2';
 import { createFinca, getFincas } from '@/services/fincasApi';
 import authApi from '@/services/authApi';
+import { personasApi, catalogosApi } from '@/services';
 
 export default {
   name: 'EditFarmerModal',
@@ -436,6 +438,28 @@ export default {
       municipality: ''
     });
 
+    // Formulario de persona (similar a ProfileSection)
+    const personaForm = reactive({
+      primer_nombre: '',
+      segundo_nombre: '',
+      primer_apellido: '',
+      segundo_apellido: '',
+      tipo_documento: '',
+      numero_documento: '',
+      genero: '',
+      fecha_nacimiento: '',
+      telefono: '',
+      direccion: '',
+      departamento: null,
+      municipio: null
+    });
+
+    // Catálogos
+    const tiposDocumento = ref([])
+    const generos = ref([])
+    const departamentos = ref([])
+    const municipios = ref([])
+
     const newFinca = reactive({
       nombre: '',
       municipio: '',
@@ -448,8 +472,20 @@ export default {
 
     const errors = reactive({});
 
-    // Cargar datos del agricultor al abrir el modal
-    watch(() => props.farmer, (newFarmer) => {
+    // Fechas válidas (como ProfileSection)
+    const maxBirthdate = computed(() => {
+      const today = new Date()
+      const max = new Date(today.getFullYear() - 14, today.getMonth(), today.getDate())
+      return max.toISOString().split('T')[0]
+    })
+    const minBirthdate = computed(() => {
+      const today = new Date()
+      const min = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate())
+      return min.toISOString().split('T')[0]
+    })
+
+    // Cargar datos del agricultor y su persona al abrir el modal
+    watch(() => props.farmer, async (newFarmer) => {
       if (newFarmer && newFarmer.id) {
         // Extraer first_name y last_name del name
         const nameParts = newFarmer.name?.split(' ') || [];
@@ -461,7 +497,32 @@ export default {
         formData.municipality = newFarmer.municipality || '';
         
         // Cargar las fincas del agricultor desde el backend
-        loadFarmersFincas(newFarmer.id);
+        await loadFarmersFincas(newFarmer.id);
+
+        // Cargar persona
+        try {
+          const personaData = await personasApi.getPersonaByUserId(newFarmer.id)
+          personaForm.primer_nombre = personaData.primer_nombre || ''
+          personaForm.segundo_nombre = personaData.segundo_nombre || ''
+          personaForm.primer_apellido = personaData.primer_apellido || ''
+          personaForm.segundo_apellido = personaData.segundo_apellido || ''
+          personaForm.tipo_documento = personaData.tipo_documento_info?.codigo || ''
+          personaForm.numero_documento = personaData.numero_documento || ''
+          personaForm.genero = personaData.genero_info?.codigo || ''
+          personaForm.fecha_nacimiento = personaData.fecha_nacimiento || ''
+          personaForm.telefono = personaData.telefono || ''
+          personaForm.direccion = personaData.direccion || ''
+          personaForm.departamento = personaData.departamento_info?.id || null
+          personaForm.municipio = personaData.municipio_info?.id || null
+
+          // Cargar municipios si hay departamento
+          if (personaForm.departamento) {
+            await onDepartamentoChange()
+          }
+        } catch (e) {
+          // Si no existe persona, dejar formulario vacío
+          console.warn('Persona no encontrada para el usuario, se podrá crear al guardar')
+        }
       }
     }, { immediate: true });
     
@@ -595,6 +656,29 @@ export default {
 
         // Llamar al endpoint de actualización de usuario
         const response = await authApi.updateUser(props.farmer.id, updateData);
+
+        // Actualizar/crear datos de persona (admin)
+        const personaPayload = {
+          primer_nombre: personaForm.primer_nombre,
+          segundo_nombre: personaForm.segundo_nombre || '',
+          primer_apellido: personaForm.primer_apellido,
+          segundo_apellido: personaForm.segundo_apellido || '',
+          tipo_documento: personaForm.tipo_documento,
+          numero_documento: personaForm.numero_documento,
+          genero: personaForm.genero,
+          fecha_nacimiento: personaForm.fecha_nacimiento || null,
+          telefono: personaForm.telefono,
+          direccion: personaForm.direccion || '',
+          departamento: personaForm.departamento || null,
+          municipio: personaForm.municipio || null
+        }
+        if (Object.keys(personaPayload).length > 0) {
+          try {
+            await personasApi.updatePersonaByUserId(props.farmer.id, personaPayload)
+          } catch (e) {
+            console.warn('⚠️ Error actualizando persona (continuando):', e)
+          }
+        }
         
         console.log('✅ [EditFarmerModal] Respuesta recibida:', response);
 
@@ -646,29 +730,67 @@ export default {
       emit('close');
     };
 
-    const openModal = () => {
+    // Catálogos y municipios
+    const cargarCatalogos = async () => {
+      try {
+        const [tiposDoc, gens, deptos] = await Promise.all([
+          catalogosApi.getParametrosByTema('TIPO_DOC'),
+          catalogosApi.getParametrosByTema('SEXO'),
+          catalogosApi.getDepartamentos()
+        ])
+        tiposDocumento.value = tiposDoc
+        generos.value = gens
+        departamentos.value = deptos
+      } catch (e) {
+        console.error('Error cargando catálogos:', e)
+      }
+    }
+
+    const onDepartamentoChange = async () => {
+      personaForm.municipio = null
+      municipios.value = []
+      if (personaForm.departamento) {
+        try {
+          const munis = await catalogosApi.getMunicipiosByDepartamento(personaForm.departamento)
+          municipios.value = munis
+        } catch (e) {
+          console.error('Error cargando municipios:', e)
+        }
+      }
+    }
+
+    const openModal = async () => {
       if (modalContainer.value) {
         const modalElement = modalContainer.value;
         modalElement.classList.remove('hidden');
         modalElement.setAttribute('aria-hidden', 'false');
       }
+      await cargarCatalogos()
     };
 
     return {
       modalContainer,
       formData,
+      personaForm,
       newFinca,
       errors,
+      maxBirthdate,
+      minBirthdate,
       isSubmitting,
       isCreatingFinca,
       activeTab,
       showCreateFinca,
       fincasList,
+      tiposDocumento,
+      generos,
+      departamentos,
+      municipios,
       resetNewFinca,
       handleCreateFinca,
       handleUpdate,
       closeModal,
-      openModal
+      openModal,
+      onDepartamentoChange
     };
   }
 };

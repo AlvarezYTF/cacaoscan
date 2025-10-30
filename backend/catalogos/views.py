@@ -77,19 +77,21 @@ class ParametroViewSet(viewsets.ModelViewSet):
         return ParametroSerializer
 
     def get_queryset(self):
-        """Permite filtrar por tema y activos"""
+        """Permite filtrar por tema (id o código) y por activos."""
         queryset = super().get_queryset()
-        
-        # Filtrar por tema si se proporciona
-        tema_id = self.request.query_params.get('tema')
-        if tema_id:
-            queryset = queryset.filter(tema_id=tema_id)
-        
-        # Filtrar solo activos si se solicita
+
+        tema_param = (self.request.query_params.get('tema') or '').strip()
+        if tema_param:
+            # Si es numérico -> asumir ID; si no, filtrar por código
+            if tema_param.isdigit():
+                queryset = queryset.filter(tema_id=int(tema_param))
+            else:
+                queryset = queryset.filter(tema__codigo=tema_param)
+
         solo_activos = self.request.query_params.get('activos', 'false').lower() == 'true'
         if solo_activos:
             queryset = queryset.filter(activo=True)
-        
+
         return queryset
 
     @action(detail=False, methods=['get'], url_path='tema/(?P<codigo_tema>[^/.]+)')

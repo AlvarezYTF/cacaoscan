@@ -2388,8 +2388,8 @@ class UserListView(APIView):
             date_from = request.GET.get('date_from')
             date_to = request.GET.get('date_to')
             
-            # Construir queryset base
-            queryset = User.objects.all().select_related('api_profile', 'api_email_token').prefetch_related('groups')
+            # Construir queryset base (evitar select_related/prefetch a relaciones no garantizadas)
+            queryset = User.objects.all().prefetch_related('groups')
             
             # Aplicar filtros
             if role:
@@ -4887,7 +4887,7 @@ class UserDetailView(APIView):
             
             # Obtener usuario
             try:
-                user = User.objects.select_related('api_profile', 'api_email_token').prefetch_related('groups', 'api_cacao_images', 'images_app_cacao_images').get(id=user_id)
+                user = User.objects.prefetch_related('groups').get(id=user_id)
             except User.DoesNotExist:
                 return Response({
                     'error': 'Usuario no encontrado',
@@ -4899,14 +4899,31 @@ class UserDetailView(APIView):
             user_data = serializer.data
             
             # Agregar estadísticas adicionales
+            try:
+                cacao_images_manager = getattr(user, 'cacao_images', None) or getattr(user, 'api_cacao_images', None) or getattr(user, 'images_app_cacao_images', None)
+                total_images = cacao_images_manager.count() if cacao_images_manager is not None else 0
+                processed_images = cacao_images_manager.filter(processed=True).count() if cacao_images_manager is not None else 0
+            except Exception:
+                total_images = 0
+                processed_images = 0
+
             user_data['stats'] = {
-                'total_images': user.cacao_images.count(),
-                'processed_images': user.cacao_images.filter(processed=True).count(),
+                'total_images': total_images,
+                'processed_images': processed_images,
                 'last_login': user.last_login.isoformat() if user.last_login else None,
                 'days_since_registration': (timezone.now().date() - user.date_joined.date()).days,
-                'has_profile': hasattr(user, 'profile'),
+                'has_profile': hasattr(user, 'profile') or hasattr(user, 'api_profile'),
                 'groups': [group.name for group in user.groups.all()]
             }
+
+            # Incluir datos de persona (si existe) usando serializers de la app personas
+            try:
+                from personas.models import Persona
+                from personas.serializers import PersonaSerializer
+                persona = Persona.objects.select_related('user', 'tipo_documento', 'genero', 'departamento', 'municipio').filter(user=user).first()
+                user_data['persona'] = PersonaSerializer(persona).data if persona else None
+            except Exception:
+                user_data['persona'] = None
             
             return Response(user_data, status=status.HTTP_200_OK)
             

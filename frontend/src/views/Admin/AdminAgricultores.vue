@@ -71,7 +71,7 @@
 
         <!-- Tabla de agricultores -->
         <FarmersTable 
-          :filtered-farmers="filteredFarmers"
+          :filtered-farmers="displayedFarmers"
           :search-query="searchQuery"
           :filters="filters"
           :table-columns="tableColumns"
@@ -250,6 +250,42 @@ export default {
           }
         }
         
+        // Fallback: si no llegaron usuarios por error 500, obtenerlos por ID desde fincas
+        if ((!usersResponse || !usersResponse.results || usersResponse.results.length === 0) && fincasResponse.results) {
+          const ids = Array.from(new Set(
+            fincasResponse.results
+              .map(f => (f.agricultor_id || (f.agricultor && f.agricultor.id) || (typeof f.agricultor === 'number' ? f.agricultor : null)))
+              .filter(Boolean)
+          ));
+          if (ids.length) {
+            try {
+              const usersById = await Promise.all(ids.map(id => authApi.getUser(id).catch(() => null)));
+              for (const user of usersById) {
+                if (!user) continue;
+                const names = user.first_name?.split(' ') || user.username?.split(' ') || [];
+                const initials = names.length >= 2 
+                  ? `${names[0].charAt(0)}${names[1].charAt(0)}`.toUpperCase()
+                  : user.username?.substring(0, 2).toUpperCase() || 'AA';
+                agricultoresMap.set(user.id, {
+                  id: user.id,
+                  initials,
+                  name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+                  email: user.email,
+                  farm: 'Sin finca',
+                  hectares: '0 hectáreas',
+                  region: user.region || 'No especificada',
+                  status: user.is_active ? 'Activo' : 'Inactivo',
+                  is_active: user.is_active || false,
+                  isUpdating: false,
+                  fincas: []
+                });
+              }
+            } catch (e) {
+              console.warn('Fallback getUser por ID falló parcialmente', e);
+            }
+          }
+        }
+
         // Luego, actualizar con información de fincas
         if (fincasResponse.results) {
           console.log('🔍 Procesando fincas desde respuesta:', fincasResponse.results);
@@ -341,8 +377,15 @@ export default {
     });
 
     const totalItems = computed(() => filteredFarmers.value.length);
-    const itemsPerPage = ref(4);
+    const itemsPerPage = ref(10);
     const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value));
+
+    // Paginación en cliente: elementos mostrados en la página actual
+    const displayedFarmers = computed(() => {
+      const start = (currentPage.value - 1) * itemsPerPage.value;
+      const end = start + itemsPerPage.value;
+      return filteredFarmers.value.slice(start, end);
+    });
 
     // Métodos auxiliares para estadísticas
     const getTotalFarms = () => {
@@ -699,7 +742,8 @@ export default {
       getTotalFarms,
       getActiveFarmers,
       getTotalArea,
-      loadFarmers
+      loadFarmers,
+      displayedFarmers
     };
   }
 };

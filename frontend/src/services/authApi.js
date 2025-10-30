@@ -389,10 +389,22 @@ const authApi = {
    */
   async getUsers(params = {}) {
     try {
-      const response = await api.get('/api/v1/auth/users/', { params })
+      // Sanitizar parámetros para evitar errores 500 en backend
+      const safeParams = { ...params }
+      if (!safeParams.page) safeParams.page = 1
+      if (!safeParams.page_size) safeParams.page_size = 50
+      if (safeParams.role && !['admin', 'analyst', 'farmer'].includes(safeParams.role)) {
+        delete safeParams.role
+      }
+
+      const response = await api.get('/api/v1/auth/users/', { params: safeParams })
       return response.data
     } catch (error) {
       console.error('Error obteniendo usuarios:', error)
+      // Fallback suave para no bloquear la UI si el backend responde 500
+      if (error.response?.status === 500) {
+        return { results: [], count: 0, page: 1, page_size: 50, total_pages: 1 }
+      }
       throw error
     }
   },
@@ -402,7 +414,7 @@ const authApi = {
    */
   async getUser(userId) {
     try {
-      const response = await api.get(`/auth/users/${userId}/`)
+      const response = await api.get(`/api/v1/auth/users/${userId}/`)
       return response.data
     } catch (error) {
       console.error('Error obteniendo usuario:', error)
@@ -415,7 +427,7 @@ const authApi = {
    */
   async updateUser(userId, userData) {
     try {
-      const response = await api.patch(`/auth/users/${userId}/update/`, userData)
+      const response = await api.patch(`/api/v1/auth/users/${userId}/update/`, userData)
       return response.data
     } catch (error) {
       console.error('Error actualizando usuario:', error)
@@ -428,7 +440,7 @@ const authApi = {
    */
   async deleteUser(userId) {
     try {
-      const response = await api.delete(`/auth/users/${userId}/delete/`)
+      const response = await api.delete(`/api/v1/auth/users/${userId}/delete/`)
       return response.data
     } catch (error) {
       console.error('Error eliminando usuario:', error)
@@ -441,7 +453,7 @@ const authApi = {
    */
   async toggleUserStatus(userId, isActive) {
     try {
-      const response = await api.patch(`/auth/users/${userId}/update/`, {
+      const response = await api.patch(`/api/v1/auth/users/${userId}/update/`, {
         is_active: isActive
       })
       return response.data

@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from django.contrib.auth.models import User
 from django.utils import timezone
 from catalogos.models import Parametro, Departamento, Municipio
 from .serializers import (
@@ -145,6 +146,54 @@ class PersonaPerfilView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
     
+
+class AdminPersonaByUserView(APIView):
+    """Permite a un administrador obtener/crear/actualizar la persona de un usuario específico."""
+    permission_classes = [IsAuthenticated]
+
+    def _is_admin(self, user):
+        return user.is_superuser or user.is_staff
+
+    def get(self, request, user_id):
+        if not self._is_admin(request.user):
+            return Response({'error': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+
+        persona = Persona.objects.select_related(
+            'tipo_documento__tema', 'genero__tema', 'departamento', 'municipio', 'user'
+        ).filter(user_id=user_id).first()
+        if not persona:
+            return Response({'error': 'Persona no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(PersonaSerializer(persona).data, status=status.HTTP_200_OK)
+
+    def patch(self, request, user_id):
+        if not self._is_admin(request.user):
+            return Response({'error': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+        persona = Persona.objects.filter(user=user).first()
+
+        serializer = PersonaActualizacionSerializer(
+            instance=persona,
+            data=request.data,
+            partial=True,
+            context={'persona': persona}
+        )
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        if persona is None:
+            # Crear persona si no existe
+            persona = Persona(user=user)
+        serializer.instance = persona
+        serializer.save()
+
+        return Response(PersonaSerializer(persona).data, status=status.HTTP_200_OK)
+
     def post(self, request):
         """
         Crear perfil de persona para un usuario existente.

@@ -40,6 +40,28 @@ export const personasApi = {
       console.error('Error actualizando perfil:', error)
       throw error
     }
+  },
+
+  // Admin: obtener persona por user_id
+  async getPersonaByUserId(userId) {
+    try {
+      const response = await api.get(`/api/v1/personas/admin/${userId}/`)
+      return response.data
+    } catch (error) {
+      console.error('Error obteniendo persona (admin):', error)
+      throw error
+    }
+  },
+
+  // Admin: actualizar/crear persona por user_id
+  async updatePersonaByUserId(userId, data) {
+    try {
+      const response = await api.patch(`/api/v1/personas/admin/${userId}/`, data)
+      return response.data
+    } catch (error) {
+      console.error('Error actualizando persona (admin):', error)
+      throw error
+    }
   }
 }
 
