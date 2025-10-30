@@ -627,11 +627,11 @@ const cargarCatalogos = async () => {
     
     // Cargar tipos de documento
     const tipoDocResponse = await catalogosApi.getParametrosPorTema('TIPO_DOC')
-    tiposDocumento.value = tipoDocResponse.parametros || []
+    tiposDocumento.value = tipoDocResponse || []
     
     // Cargar géneros
     const sexoResponse = await catalogosApi.getParametrosPorTema('SEXO')
-    generos.value = sexoResponse.parametros || []
+    generos.value = sexoResponse || []
     
     // Cargar departamentos
     const departamentosResponse = await catalogosApi.getDepartamentos()
@@ -655,7 +655,7 @@ const cargarMunicipios = async (codigoDepartamento) => {
   
   try {
     const response = await catalogosApi.getMunicipiosPorDepartamento(codigoDepartamento)
-    municipios.value = response.municipios || []
+    municipios.value = response || []
   } catch (error) {
     console.error('Error cargando municipios:', error)
     municipios.value = []
