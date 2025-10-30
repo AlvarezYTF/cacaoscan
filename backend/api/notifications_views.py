@@ -11,7 +11,10 @@ from django.db.models import Q, Count
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import Notification
+try:
+    from notifications.models import Notification
+except ImportError:
+    Notification = None
 from .serializers import (
     NotificationSerializer,
     NotificationListSerializer,

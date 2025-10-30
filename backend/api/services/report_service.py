@@ -9,7 +9,21 @@ from datetime import timedelta, datetime
 import json
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError, NotFoundServiceError
-from ..models import ReporteGenerado, CacaoPrediction, CacaoImage, Finca, Lote, User
+from ..models import ReporteGenerado
+# Importar desde apps modulares
+try:
+    from images_app.models import CacaoPrediction, CacaoImage
+except ImportError:
+    CacaoPrediction = None
+    CacaoImage = None
+
+try:
+    from fincas_app.models import Finca, Lote
+except ImportError:
+    Finca = None
+    Lote = None
+
+from django.contrib.auth.models import User
 
 logger = logging.getLogger("cacaoscan.services.reports")
 

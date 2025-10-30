@@ -12,7 +12,17 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import Lote, Finca, CacaoImage, CacaoPrediction
+try:
+    from fincas_app.models import Lote, Finca
+except ImportError:
+    Lote = None
+    Finca = None
+
+try:
+    from images_app.models import CacaoImage, CacaoPrediction
+except ImportError:
+    CacaoImage = None
+    CacaoPrediction = None
 from .serializers import ErrorResponseSerializer
 
 logger = logging.getLogger("cacaoscan.api")

@@ -10,7 +10,19 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError
-from ..models import EmailVerificationToken, LoginHistory, ActivityLog, UserProfile
+# Importar desde apps modulares
+try:
+    from auth_app.models import EmailVerificationToken, UserProfile
+except ImportError:
+    EmailVerificationToken = None
+    UserProfile = None
+
+try:
+    from audit.models import ActivityLog
+except ImportError:
+    ActivityLog = None
+
+from ..models import LoginHistory
 
 logger = logging.getLogger("cacaoscan.services.auth")
 

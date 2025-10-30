@@ -13,7 +13,11 @@ from datetime import timedelta
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import ActivityLog, LoginHistory
+from .models import LoginHistory
+try:
+    from audit.models import ActivityLog
+except ImportError:
+    ActivityLog = None
 from .serializers import ErrorResponseSerializer
 
 logger = logging.getLogger("cacaoscan.api")

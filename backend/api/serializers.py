@@ -4,7 +4,36 @@ Serializers para la API de CacaoScan.
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
-from .models import UserProfile, CacaoImage, CacaoPrediction, TrainingJob, Finca, Lote, Notification, ModelMetrics, SystemSettings
+# Importar modelos desde apps modulares
+try:
+    from auth_app.models import UserProfile
+except ImportError:
+    UserProfile = None
+
+try:
+    from images_app.models import CacaoImage, CacaoPrediction
+except ImportError:
+    CacaoImage = None
+    CacaoPrediction = None
+
+try:
+    from training.models import TrainingJob
+except ImportError:
+    TrainingJob = None
+
+try:
+    from fincas_app.models import Finca, Lote
+except ImportError:
+    Finca = None
+    Lote = None
+
+try:
+    from notifications.models import Notification
+except ImportError:
+    Notification = None
+
+# Modelos únicos de API
+from .models import ModelMetrics, SystemSettings
 
 
 class ConfidenceSerializer(serializers.Serializer):
@@ -222,6 +251,78 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
+class ChangePasswordSerializer(serializers.Serializer):
+    """
+    Serializer para cambio de contraseña de usuario autenticado.
+    """
+    old_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        label="Contraseña actual"
+    )
+    new_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        min_length=8,
+        label="Nueva contraseña"
+    )
+    confirm_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        label="Confirmar nueva contraseña"
+    )
+    
+    def validate_old_password(self, value):
+        """Validar que se proporcione la contraseña actual."""
+        if not value:
+            raise serializers.ValidationError("La contraseña actual es requerida.")
+        return value
+    
+    def validate_new_password(self, value):
+        """
+        Validar que la nueva contraseña cumpla con los requisitos de seguridad:
+        - Mínimo 8 caracteres
+        - Al menos una letra mayúscula
+        - Al menos una letra minúscula
+        - Al menos un número
+        """
+        import re
+        
+        if len(value) < 8:
+            raise serializers.ValidationError("La contraseña debe tener al menos 8 caracteres.")
+        
+        if not re.search(r"[A-Z]", value):
+            raise serializers.ValidationError("La contraseña debe contener al menos una letra mayúscula.")
+        
+        if not re.search(r"[a-z]", value):
+            raise serializers.ValidationError("La contraseña debe contener al menos una letra minúscula.")
+        
+        if not re.search(r"[0-9]", value):
+            raise serializers.ValidationError("La contraseña debe contener al menos un número.")
+        
+        return value
+    
+    def validate(self, attrs):
+        """Validaciones generales."""
+        old_password = attrs.get('old_password')
+        new_password = attrs.get('new_password')
+        confirm_password = attrs.get('confirm_password')
+        
+        # Validar que las contraseñas nuevas coincidan
+        if new_password != confirm_password:
+            raise serializers.ValidationError({
+                'confirm_password': 'Las contraseñas nuevas no coinciden.'
+            })
+        
+        # Validar que la nueva contraseña sea diferente a la actual
+        if old_password == new_password:
+            raise serializers.ValidationError({
+                'new_password': 'La nueva contraseña debe ser diferente a la contraseña actual.'
+            })
+        
+        return attrs
+
+
 class EmailVerificationSerializer(serializers.Serializer):
     """Serializer para verificación de email."""
     token = serializers.UUIDField()
@@ -277,8 +378,11 @@ class UserSerializer(serializers.ModelSerializer):
     
     def get_is_verified(self, obj):
         """Obtener estado de verificación del email."""
-        if hasattr(obj, 'api_email_token'):
-            return obj.api_email_token.is_verified
+        try:
+            if hasattr(obj, 'email_verification_token'):
+                return obj.email_verification_token.is_verified
+        except Exception:
+            pass
         return obj.is_active  # Fallback para usuarios sin token de verificación
 
 

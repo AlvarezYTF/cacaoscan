@@ -12,7 +12,12 @@ import io
 import os
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError, NotFoundServiceError
-from ..models import CacaoImage, User
+try:
+    from images_app.models import CacaoImage
+except ImportError:
+    CacaoImage = None
+
+from django.contrib.auth.models import User
 
 logger = logging.getLogger("cacaoscan.services.images")
 

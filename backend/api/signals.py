@@ -7,17 +7,40 @@ from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import Notification, CacaoPrediction, TrainingJob, Finca, Lote
+# Importar desde apps modulares
+try:
+    from notifications.models import Notification
+except ImportError:
+    Notification = None
+
+try:
+    from images_app.models import CacaoPrediction
+except ImportError:
+    CacaoPrediction = None
+
+try:
+    from training.models import TrainingJob
+except ImportError:
+    TrainingJob = None
+
+try:
+    from fincas_app.models import Finca, Lote
+except ImportError:
+    Finca = None
+    Lote = None
+
 from .realtime_service import realtime_service
 
 logger = logging.getLogger("cacaoscan.api")
 
 
-@receiver(post_save, sender=CacaoPrediction)
-def notify_prediction_completed(sender, instance, created, **kwargs):
-    """
-    Notificar cuando se completa una predicción de análisis.
-    """
+# Temporarily disabled to avoid import errors
+if CacaoPrediction:
+    @receiver(post_save, sender=CacaoPrediction)
+    def notify_prediction_completed(sender, instance, created, **kwargs):
+        """
+        Notificar cuando se completa una predicción de análisis.
+        """
     if created:
         try:
             # Determinar el tipo de notificación basado en la calidad
@@ -95,11 +118,12 @@ def notify_prediction_completed(sender, instance, created, **kwargs):
             logger.error(f"Error enviando notificación de análisis completado: {e}")
 
 
-@receiver(post_save, sender=TrainingJob)
-def notify_training_completed(sender, instance, created, **kwargs):
-    """
-    Notificar cuando se completa un trabajo de entrenamiento.
-    """
+if TrainingJob:
+    @receiver(post_save, sender=TrainingJob)
+    def notify_training_completed(sender, instance, created, **kwargs):
+        """
+        Notificar cuando se completa un trabajo de entrenamiento.
+        """
     if not created and instance.status == 'completed':
         try:
             # Notificar al usuario que creó el trabajo

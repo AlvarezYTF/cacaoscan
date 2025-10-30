@@ -9,7 +9,15 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django.conf import settings
 
-from .models import Notification, ActivityLog, LoginHistory
+from .models import LoginHistory
+try:
+    from notifications.models import Notification
+except ImportError:
+    Notification = None
+try:
+    from audit.models import ActivityLog
+except ImportError:
+    ActivityLog = None
 
 logger = logging.getLogger("cacaoscan.websockets")
 
@@ -99,6 +107,9 @@ class RealtimeNotificationService:
         Args:
             user_id (int): ID del usuario
         """
+        if Notification is None:
+            logger.debug("Servicio de notificaciones no disponible; se omite actualización de estadísticas")
+            return
         try:
             user = User.objects.get(id=user_id)
             
@@ -252,6 +263,9 @@ class RealtimeNotificationService:
             mensaje (str): Mensaje de la notificación
             datos_extra (dict): Datos adicionales
         """
+        if Notification is None:
+            logger.debug("Servicio de notificaciones no disponible; no se crea notificación")
+            return None
         try:
             user = User.objects.get(id=user_id)
             

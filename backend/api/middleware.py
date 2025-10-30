@@ -8,7 +8,11 @@ from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import ActivityLog, LoginHistory
+from .models import LoginHistory
+try:
+    from audit.models import ActivityLog
+except ImportError:
+    ActivityLog = None
 
 logger = logging.getLogger("cacaoscan.api")
 

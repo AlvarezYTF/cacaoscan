@@ -8,7 +8,7 @@ import router from '@/router'
 
 // Configuración base de Axios
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
   timeout: 30000, // 30 segundos
   headers: {
     'Content-Type': 'application/json',

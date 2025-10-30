@@ -8,7 +8,13 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError, NotFoundServiceError
-from ..models import Finca, Lote, User
+try:
+    from fincas_app.models import Finca, Lote
+except ImportError:
+    Finca = None
+    Lote = None
+
+from django.contrib.auth.models import User
 
 logger = logging.getLogger("cacaoscan.services.fincas")
 

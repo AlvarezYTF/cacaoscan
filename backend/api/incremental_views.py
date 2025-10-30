@@ -14,7 +14,17 @@ from typing import Dict, List, Any
 
 from .services import analysis_service
 from .utils import create_error_response, create_success_response
-from .models import TrainingJob, CacaoPrediction, CacaoImage
+# Importar desde apps modulares
+try:
+    from training.models import TrainingJob
+except ImportError:
+    TrainingJob = None
+
+try:
+    from images_app.models import CacaoPrediction, CacaoImage
+except ImportError:
+    CacaoPrediction = None
+    CacaoImage = None
 
 logger = logging.getLogger("cacaoscan.api")
 

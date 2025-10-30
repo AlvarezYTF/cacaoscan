@@ -66,8 +66,8 @@ INSTALLED_APPS = [
     'audit',
     'training',
     
-    # API principal de CacaoScan
-    'api',
+    # Existing apps
+    'api',  # API principal (ahora sin conflictos de modelos)
     'reports',
 ]
 
@@ -81,9 +81,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.error_handler.StandardErrorMiddleware',  # Middleware de errores
-    # 'api.middleware.TokenCleanupMiddleware',  # Temporalmente deshabilitado
-    # 'api.realtime_middleware.RealtimeAuditMiddleware',  # Temporalmente deshabilitado
-    # 'api.realtime_middleware.RealtimeLoginMiddleware',  # Temporalmente deshabilitado
+    'api.middleware.TokenCleanupMiddleware',  # Limpieza automática de tokens
+    'api.realtime_middleware.RealtimeAuditMiddleware',  # Auditoría en tiempo real
+    'api.realtime_middleware.RealtimeLoginMiddleware',  # Registro de logins
 ]
 
 ROOT_URLCONF = 'cacaoscan.urls'

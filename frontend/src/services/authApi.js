@@ -24,7 +24,7 @@ const authApi = {
         loginData.username = credentials.username
       }
       
-      const response = await api.post('/auth/login/', loginData)
+      const response = await api.post('/api/v1/auth/login/', loginData)
       
       console.log('🔍 [authApi] Respuesta cruda del backend:', response.data)
       
@@ -113,7 +113,39 @@ const authApi = {
             verification_required: true
           },
           message: 'Registro exitoso. Por favor verifica tu correo electrónico.'
+      
+      // Intentar iniciar sesión automáticamente después del registro
+      let normalizedData = {
+        success: true,
+        message: 'Registro exitoso. Por favor inicia sesión.',
+        user: response.data.user,
+        persona: response.data,
+        redirectToLogin: true
+      }
+
+      try {
+        const loginResponse = await api.post('/api/v1/auth/login/', {
+          email: payload.email,
+          username: payload.email,
+          password: payload.password
+        })
+
+        if (loginResponse.data && loginResponse.data.access && loginResponse.data.user) {
+          normalizedData = {
+            success: true,
+            token: loginResponse.data.access,
+            refresh: loginResponse.data.refresh,
+            user: loginResponse.data.user,
+            access_expires_at: loginResponse.data.access_expires_at,
+            refresh_expires_at: loginResponse.data.refresh_expires_at,
+            persona: response.data,
+            message: 'Registro exitoso. Sesión iniciada automáticamente.',
+            redirectToLogin: false
+          }
+>>>>>>> e3f9fa6c198492795d5d254c93d9901c255ff90d
         }
+      } catch (loginError) {
+        console.warn('⚠️ [authApi] No se pudo iniciar sesión automáticamente después del registro:', loginError)
       }
       
       // Fallback para estructura legacy (no debería llegar aquí ahora)
@@ -126,6 +158,7 @@ const authApi = {
         },
         message: 'Registro exitoso. Por favor verifica tu correo electrónico.'
       }
+      
     } catch (error) {
       console.error('Error en registro API:', error)
       console.error('📋 [authApi] Respuesta completa del error:', {
@@ -167,7 +200,7 @@ const authApi = {
    */
   async logout() {
     try {
-      const response = await api.post('/auth/logout/')
+      const response = await api.post('/api/v1/auth/logout/')
       return response.data
     } catch (error) {
       console.error('Error en logout API:', error)
@@ -180,7 +213,7 @@ const authApi = {
    */
   async refreshToken(refreshToken) {
     try {
-      const response = await api.post('/auth/refresh/', {
+      const response = await api.post('/api/v1/auth/refresh/', {
         refresh: refreshToken
       })
       return response.data
@@ -202,7 +235,7 @@ const authApi = {
    */
   async verifyToken(token) {
     try {
-      const response = await api.post('/auth/verify/', {
+      const response = await api.post('/api/v1/auth/verify/', {
         token: token
       })
       return response.data
@@ -217,7 +250,7 @@ const authApi = {
    */
   async getCurrentUser() {
     try {
-      const response = await api.get('/auth/profile/')
+      const response = await api.get('/api/v1/auth/profile/')
       return response.data
     } catch (error) {
       console.error('Error obteniendo usuario actual:', error)
@@ -240,7 +273,7 @@ const authApi = {
         payload.phone_number = profileData.phoneNumber || profileData.phone
       }
       
-      const response = await api.put('/auth/profile/', payload)
+      const response = await api.put('/api/v1/auth/profile/', payload)
       return response.data
     } catch (error) {
       console.error('Error actualizando perfil:', error)
@@ -253,7 +286,7 @@ const authApi = {
    */
   async getProfile() {
     try {
-      const response = await api.get('/auth/profile/')
+      const response = await api.get('/api/v1/auth/profile/')
       return response.data
     } catch (error) {
       console.error('Error obteniendo perfil:', error)
@@ -266,7 +299,7 @@ const authApi = {
    */
   async changePassword(passwordData) {
     try {
-      const response = await api.post('/auth/users/change-password/', {
+      const response = await api.post('/api/v1/auth/change-password/', {
         old_password: passwordData.oldPassword,
         new_password: passwordData.newPassword,
         confirm_password: passwordData.confirmPassword
@@ -283,7 +316,7 @@ const authApi = {
    */
   async requestPasswordReset(email) {
     try {
-      const response = await api.post('/auth/forgot-password/', {
+      const response = await api.post('/api/v1/auth/forgot-password/', {
         email: email
       })
       return response.data
@@ -298,7 +331,7 @@ const authApi = {
    */
   async confirmPasswordReset(resetData) {
     try {
-      const response = await api.post('/auth/reset-password/', {
+      const response = await api.post('/api/v1/auth/reset-password/', {
         uid: resetData.uid,
         token: resetData.token,
         new_password: resetData.newPassword,
@@ -316,7 +349,7 @@ const authApi = {
    */
   async verifyEmail(uid, token) {
     try {
-      const response = await api.post('/auth/verify-email/', {
+      const response = await api.post('/api/v1/auth/verify-email/', {
         uid: uid,
         token: token
       })
@@ -359,7 +392,7 @@ const authApi = {
    */
   async getUserStats() {
     try {
-      const response = await api.get('/auth/admin/stats/')
+      const response = await api.get('/api/v1/auth/admin/stats/')
       return response.data
     } catch (error) {
       console.error('Error obteniendo estadísticas:', error)
@@ -372,7 +405,7 @@ const authApi = {
    */
   async bulkUserActions(actionData) {
     try {
-      const response = await api.post('/auth/admin/bulk-actions/', {
+      const response = await api.post('/api/v1/auth/admin/bulk-actions/', {
         user_ids: actionData.userIds,
         action: actionData.action
       })
@@ -388,7 +421,7 @@ const authApi = {
    */
   async getUsers(params = {}) {
     try {
-      const response = await api.get('/auth/users/', { params })
+      const response = await api.get('/api/v1/auth/users/', { params })
       return response.data
     } catch (error) {
       console.error('Error obteniendo usuarios:', error)
@@ -455,7 +488,7 @@ const authApi = {
    */
   async getUserStats() {
     try {
-      const response = await api.get('/auth/users/stats/')
+      const response = await api.get('/api/v1/auth/users/stats/')
       return response.data
     } catch (error) {
       console.error('Error obteniendo estadísticas de usuarios:', error)
@@ -468,7 +501,7 @@ const authApi = {
    */
   async forgotPassword(email) {
     try {
-      const response = await api.post('/auth/forgot-password/', {
+      const response = await api.post('/api/v1/auth/forgot-password/', {
         email: email
       })
       return response.data
@@ -483,7 +516,7 @@ const authApi = {
    */
   async resetPassword(token, newPassword, confirmPassword) {
     try {
-      const response = await api.post('/auth/reset-password/', {
+      const response = await api.post('/api/v1/auth/reset-password/', {
         token: token,
         new_password: newPassword,
         confirm_password: confirmPassword

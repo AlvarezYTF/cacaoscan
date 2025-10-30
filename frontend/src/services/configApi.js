@@ -1,10 +1,12 @@
 import api from './api'
 
+const CONFIG_BASE = '/api/v1/config'
+
 const configApi = {
   // Obtener configuración general
   async getGeneralConfig() {
     try {
-      const response = await api.get('/config/general/')
+      const response = await api.get(`${CONFIG_BASE}/general/`)
       return response.data
     } catch (error) {
       // Error 500 o 403 esperado - devolver objeto vacío en lugar de lanzar
@@ -19,7 +21,7 @@ const configApi = {
   // Guardar configuración general
   async saveGeneralConfig(data) {
     try {
-      const response = await api.put('/config/general/', data)
+      const response = await api.put(`${CONFIG_BASE}/general/`, data)
       return response.data
     } catch (error) {
       console.error('Error guardando configuración general:', error)
@@ -30,7 +32,7 @@ const configApi = {
   // Obtener configuración de seguridad
   async getSecurityConfig() {
     try {
-      const response = await api.get('/config/security/')
+      const response = await api.get(`${CONFIG_BASE}/security/`)
       return response.data
     } catch (error) {
       // Error 403 esperado - devolver objeto vacío en lugar de lanzar
@@ -45,7 +47,7 @@ const configApi = {
   // Guardar configuración de seguridad
   async saveSecurityConfig(data) {
     try {
-      const response = await api.put('/config/security/', data)
+      const response = await api.put(`${CONFIG_BASE}/security/`, data)
       return response.data
     } catch (error) {
       console.error('Error guardando configuración de seguridad:', error)
@@ -56,7 +58,7 @@ const configApi = {
   // Obtener configuración de modelos ML
   async getMLConfig() {
     try {
-      const response = await api.get('/config/ml/')
+      const response = await api.get(`${CONFIG_BASE}/ml/`)
       return response.data
     } catch (error) {
       // Error 403 esperado - devolver objeto vacío en lugar de lanzar
@@ -71,7 +73,7 @@ const configApi = {
   // Guardar configuración de modelos ML
   async saveMLConfig(data) {
     try {
-      const response = await api.put('/config/ml/', data)
+      const response = await api.put(`${CONFIG_BASE}/ml/`, data)
       return response.data
     } catch (error) {
       console.error('Error guardando configuración ML:', error)
@@ -82,7 +84,7 @@ const configApi = {
   // Obtener configuración del sistema
   async getSystemConfig() {
     try {
-      const response = await api.get('/config/system/')
+      const response = await api.get(`${CONFIG_BASE}/system/`)
       return response.data
     } catch (error) {
       // Si falla, devolver valores por defecto en lugar de lanzar

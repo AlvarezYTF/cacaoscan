@@ -13,24 +13,6 @@
       </p>
     </div>
 
-    <!-- Mensaje de estado global -->
-    <Transition enter-active-class="transform ease-out duration-300 transition"
-      enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
-      leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
-      <div v-if="statusMessage" class="p-4 rounded-xl flex items-start gap-3 shadow-md" :class="statusMessageClass">
-        <svg v-if="statusType === 'success'" class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
-          viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <svg v-else class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <p class="text-sm font-medium">{{ statusMessage }}</p>
-      </div>
-    </Transition>
-
     <form @submit.prevent="handleSubmit" class="space-y-6">
       <!-- SECCIÓN 1: Información Personal -->
       <div
@@ -53,8 +35,10 @@
             </label>
             <input id="firstName" v-model="form.firstName" type="text" autocomplete="given-name" required
               :disabled="isLoading"
-              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
+              class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
+              :class="errors.firstName ? 'border-red-500' : 'border-gray-300'"
               placeholder="Juan" />
+            <p v-if="errors.firstName" class="text-red-600 text-xs mt-1">{{ errors.firstName }}</p>
           </div>
 
           <!-- Segundo Nombre -->
@@ -74,8 +58,10 @@
             </label>
             <input id="lastName" v-model="form.lastName" type="text" autocomplete="family-name" required
               :disabled="isLoading"
-              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
+              class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
+              :class="errors.lastName ? 'border-red-500' : 'border-gray-300'"
               placeholder="Pérez" />
+            <p v-if="errors.lastName" class="text-red-600 text-xs mt-1">{{ errors.lastName }}</p>
           </div>
 
           <!-- Segundo Apellido -->
@@ -94,8 +80,10 @@
               Teléfono
             </label>
             <input id="phoneNumber" v-model="form.phoneNumber" type="tel" autocomplete="tel" :disabled="isLoading"
-              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
+              class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
+              :class="errors.phoneNumber ? 'border-red-500' : 'border-gray-300'"
               placeholder="+57 300 123 4567" />
+            <p v-if="errors.phoneNumber" class="text-red-600 text-xs mt-1">{{ errors.phoneNumber }}</p>
           </div>
 
           <!-- Género -->
@@ -119,7 +107,10 @@
               Fecha de Nacimiento
             </label>
             <input id="fechaNacimiento" v-model="form.fechaNacimiento" type="date" :disabled="isLoading"
+              :max="maxBirthdate" :min="minBirthdate"
               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200" />
+            <p v-if="errors.fechaNacimiento" class="text-red-600 text-xs mt-1">{{ errors.fechaNacimiento }}</p>
+            <p class="text-gray-500 text-xs mt-1">Debes tener al menos 14 años</p>
           </div>
         </div>
       </div>
@@ -159,8 +150,11 @@
               Número de Documento *
             </label>
             <input id="numeroDocumento" v-model="form.numeroDocumento" type="text" required :disabled="isLoading"
-              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
+              class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
+              :class="errors.numeroDocumento ? 'border-red-500' : 'border-gray-300'"
               placeholder="1234567890" />
+            <p v-if="errors.numeroDocumento" class="text-red-600 text-xs mt-1">{{ errors.numeroDocumento }}</p>
+            <p class="text-gray-500 text-xs mt-1">Solo números, entre 6 y 11 dígitos</p>
           </div>
         </div>
       </div>
@@ -245,8 +239,10 @@
               Email *
             </label>
             <input id="email" v-model="form.email" type="email" autocomplete="email" required :disabled="isLoading"
-              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
+              class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
+              :class="errors.email ? 'border-red-500' : 'border-gray-300'"
               placeholder="juan@ejemplo.com" />
+            <p v-if="errors.email" class="text-red-600 text-xs mt-1">{{ errors.email }}</p>
           </div>
 
           <!-- Contraseña -->
@@ -329,7 +325,8 @@
             <div class="relative">
               <input id="confirmPassword" v-model="form.confirmPassword" :type="showPassword ? 'text' : 'password'"
                 autocomplete="new-password" required :disabled="isLoading"
-                class="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
+                class="w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
+                :class="errors.confirmPassword ? 'border-red-500' : 'border-gray-300'"
                 placeholder="••••••••••••" />
               <div v-if="form.confirmPassword && form.password === form.confirmPassword"
                 class="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -338,6 +335,7 @@
                 </svg>
               </div>
             </div>
+            <p v-if="errors.confirmPassword" class="text-red-600 text-xs mt-1">{{ errors.confirmPassword }}</p>
           </div>
         </div>
       </div>
@@ -371,9 +369,27 @@
         </div>
       </div>
 
+          <!-- Mensaje de estado global -->
+    <Transition enter-active-class="transform ease-out duration-300 transition"
+      enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="statusMessage" class="p-4 rounded-xl flex items-start gap-3 shadow-md" :class="statusMessageClass">
+        <svg v-if="statusType === 'success'" class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+          viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <svg v-else class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p class="text-sm font-medium">{{ statusMessage }}</p>
+      </div>
+    </Transition>
+
       <!-- Botón de envío -->
       <div>
-        <button type="submit" :disabled="isLoading || !isFormValid"
+        <button type="submit" :disabled="isLoading || !isFormValid" @click="console.log('🖱️ Botón clickeado')"
           class="w-full py-3 px-6 rounded-xl shadow-lg text-base font-semibold text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-500/50 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2">
           <svg v-if="isLoading" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -470,20 +486,44 @@ const isPasswordValid = computed(() => {
   return Object.values(passwordChecks.value).every(check => check)
 })
 
+// Computed para fechas: máximo hoy, mínimo 14 años atrás
+const maxBirthdate = computed(() => {
+  const today = new Date()
+  const maxDate = new Date(today.getFullYear() - 14, today.getMonth(), today.getDate())
+  return maxDate.toISOString().split('T')[0]
+})
+
+const minBirthdate = computed(() => {
+  const today = new Date()
+  const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate())
+  return minDate.toISOString().split('T')[0]
+})
+
 const isFormValid = computed(() => {
-  return (
-    form.value.firstName.trim() &&
-    form.value.lastName.trim() &&
-    form.value.email.trim() &&
-    form.value.tipoDocumento &&
-    form.value.numeroDocumento.trim() &&
-    form.value.genero &&
-    form.value.departamento &&
-    form.value.municipio &&
-    isPasswordValid.value &&
-    form.value.password === form.value.confirmPassword &&
-    form.value.acceptTerms
-  )
+  const checks = {
+    firstName: !!form.value.firstName.trim(),
+    lastName: !!form.value.lastName.trim(),
+    email: !!form.value.email.trim(),
+    tipoDocumento: !!form.value.tipoDocumento,
+    numeroDocumento: !!form.value.numeroDocumento.trim(),
+    genero: !!form.value.genero,
+    departamento: !!form.value.departamento,
+    municipio: !!form.value.municipio,
+    passwordValid: isPasswordValid.value,
+    passwordMatch: form.value.password === form.value.confirmPassword,
+    acceptTerms: form.value.acceptTerms
+  }
+  
+  console.log('🔍 Validación del formulario:', checks)
+  console.log('📋 Estado del formulario:', {
+    tipoDocumento: form.value.tipoDocumento,
+    genero: form.value.genero,
+    departamento: form.value.departamento,
+    municipio: form.value.municipio,
+    acceptTerms: form.value.acceptTerms
+  })
+  
+  return Object.values(checks).every(check => check === true)
 })
 
 const statusMessageClass = computed(() => {
@@ -495,14 +535,52 @@ const statusMessageClass = computed(() => {
 const validateForm = () => {
   errors.value = {}
 
+  // Validar primer nombre
   if (!form.value.firstName.trim()) {
     errors.value.firstName = 'El nombre es requerido'
+  } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(form.value.firstName)) {
+    errors.value.firstName = 'El nombre solo puede contener letras'
   }
 
+  // Validar primer apellido
   if (!form.value.lastName.trim()) {
     errors.value.lastName = 'El apellido es requerido'
+  } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(form.value.lastName)) {
+    errors.value.lastName = 'El apellido solo puede contener letras'
   }
 
+  // Validar número de documento
+  if (!form.value.numeroDocumento.trim()) {
+    errors.value.numeroDocumento = 'El número de documento es requerido'
+  } else if (!/^\d+$/.test(form.value.numeroDocumento.trim())) {
+    errors.value.numeroDocumento = 'El documento solo puede contener números'
+  } else if (form.value.numeroDocumento.trim().length < 6 || form.value.numeroDocumento.trim().length > 11) {
+    errors.value.numeroDocumento = 'El documento debe tener entre 6 y 11 dígitos'
+  }
+
+  // Validar teléfono
+  const cleanPhone = form.value.phoneNumber.replace(/[\s\-\(\)]/g, '')
+  if (cleanPhone && !/^\+?\d{7,15}$/.test(cleanPhone)) {
+    errors.value.phoneNumber = 'El teléfono debe tener entre 7 y 15 dígitos'
+  }
+
+  // Validar fecha de nacimiento
+  if (form.value.fechaNacimiento) {
+    const birthDate = new Date(form.value.fechaNacimiento)
+    const today = new Date()
+    const age = today.getFullYear() - birthDate.getFullYear() - 
+                ((today.getMonth() < birthDate.getMonth()) || 
+                 (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate()) ? 1 : 0)
+    
+    if (age < 14) {
+      errors.value.fechaNacimiento = 'Debes tener al menos 14 años'
+    }
+    if (birthDate > today) {
+      errors.value.fechaNacimiento = 'La fecha no puede ser futura'
+    }
+  }
+
+  // Validar email
   if (!form.value.email.trim()) {
     errors.value.email = 'El email es requerido'
   } else if (!isValidEmail(form.value.email)) {
@@ -620,9 +698,16 @@ onMounted(() => {
 })
 
 const handleSubmit = async () => {
+  console.log('🚀 handleSubmit llamado')
+  console.log('📋 isFormValid:', isFormValid.value)
+  console.log('📋 Datos del formulario:', form.value)
+  
   if (!validateForm()) {
+    console.log('❌ Validación falló')
     return
   }
+  
+  console.log('✅ Validación exitosa, continuando con el registro...')
 
   window.dispatchEvent(new CustomEvent('api-loading-start', {
     detail: { type: 'register', message: 'Creando tu cuenta...' }
@@ -635,7 +720,11 @@ const handleSubmit = async () => {
     const departamentoSeleccionado = departamentos.value.find(d => d.codigo === form.value.departamento)
     const municipioSeleccionado = municipios.value.find(m => m.id == form.value.municipio)
     
-    const result = await authStore.register({
+    console.log('🔍 Departamento seleccionado:', departamentoSeleccionado)
+    console.log('🔍 Municipio seleccionado:', municipioSeleccionado)
+    console.log('🔍 Datos del formulario:', form.value)
+    
+    const payload = {
       email: form.value.email.trim(),
       password: form.value.password,
       primer_nombre: form.value.firstName.trim(),
@@ -650,7 +739,10 @@ const handleSubmit = async () => {
       fecha_nacimiento: form.value.fechaNacimiento || '',
       municipio: municipioSeleccionado?.id || null,
       departamento: departamentoSeleccionado?.id || null
-    })
+    }
+    
+    console.log('📤 Payload a enviar:', payload)
+    const result = await authStore.register(payload)
 
     if (result.success) {
       // Redirigir a la página de verificación OTP
@@ -675,25 +767,55 @@ const handleSubmit = async () => {
     console.error('Error en registro:', error)
 
     let errorMessage = 'Error inesperado. Intenta nuevamente.'
+    
+    // Limpiar errores previos
+    errors.value = {}
+    
     if (error.response?.data) {
-      if (error.response.data.detail) {
-        errorMessage = error.response.data.detail
-      } else if (error.response.data.error) {
-        errorMessage = error.response.data.error
-      } else if (typeof error.response.data === 'string') {
-        errorMessage = error.response.data
-      } else if (error.response.data.non_field_errors) {
-        errorMessage = error.response.data.non_field_errors[0]
+      // Si hay errores de validación por campo, mostrarlos en cada input
+      const responseData = error.response.data
+      
+      if (responseData.detail) {
+        errorMessage = responseData.detail
+      } else if (responseData.error) {
+        errorMessage = responseData.error
+      } else if (typeof responseData === 'string') {
+        errorMessage = responseData
+      } else if (responseData.non_field_errors) {
+        errorMessage = responseData.non_field_errors[0]
       } else {
-        const errorKeys = Object.keys(error.response.data)
+        // Mapear errores de campo del backend al formulario
+        const errorKeys = Object.keys(responseData)
         if (errorKeys.length > 0) {
-          const firstKey = errorKeys[0]
-          const firstError = error.response.data[firstKey]
-          if (Array.isArray(firstError)) {
-            errorMessage = firstError[0]
-          } else if (typeof firstError === 'string') {
-            errorMessage = firstError
+          // Mapeo de campos del backend al frontend
+          const fieldMapping = {
+            'email': 'email',
+            'password': 'password',
+            'primer_nombre': 'firstName',
+            'primer_apellido': 'lastName',
+            'numero_documento': 'numeroDocumento',
+            'telefono': 'phoneNumber',
+            'phone_number': 'phoneNumber',
+            'fecha_nacimiento': 'fechaNacimiento',
+            'tipo_documento': 'tipoDocumento',
+            'genero': 'genero',
+            'departamento': 'departamento',
+            'municipio': 'municipio'
           }
+          
+          errorKeys.forEach(key => {
+            const fieldError = responseData[key]
+            const errorText = Array.isArray(fieldError) ? fieldError[0] : fieldError
+            
+            // Asignar error al campo correspondiente
+            const frontendField = fieldMapping[key] || key
+            errors.value[frontendField] = errorText
+          })
+          
+          // Mensaje general con el primer error
+          const firstKey = errorKeys[0]
+          const firstError = responseData[firstKey]
+          errorMessage = Array.isArray(firstError) ? firstError[0] : firstError
         }
       }
     } else if (error.message) {

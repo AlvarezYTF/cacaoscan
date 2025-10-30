@@ -93,7 +93,41 @@ from .serializers import (
     FincaStatsSerializer
 )
 from .utils import create_error_response, create_success_response
-from .models import EmailVerificationToken, CacaoImage, CacaoPrediction, TrainingJob, Finca, Lote, Notification, ActivityLog, LoginHistory, ReporteGenerado
+# Importar desde apps modulares
+try:
+    from auth_app.models import EmailVerificationToken
+except ImportError:
+    EmailVerificationToken = None
+
+try:
+    from images_app.models import CacaoImage, CacaoPrediction
+except ImportError:
+    CacaoImage = None
+    CacaoPrediction = None
+
+try:
+    from training.models import TrainingJob
+except ImportError:
+    TrainingJob = None
+
+try:
+    from fincas_app.models import Finca, Lote
+except ImportError:
+    Finca = None
+    Lote = None
+
+try:
+    from notifications.models import Notification
+except ImportError:
+    Notification = None
+
+try:
+    from audit.models import ActivityLog
+except ImportError:
+    ActivityLog = None
+
+# Modelos únicos de API
+from .models import LoginHistory, ReporteGenerado
 from django.db.models import Prefetch
 from .fincas_views import (
     FincaListCreateView,
@@ -891,35 +925,43 @@ class LoginView(APIView):
         """
         Autentica un usuario y devuelve tokens JWT.
         """
-        serializer = LoginSerializer(data=request.data)
-        
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
+        try:
+            serializer = LoginSerializer(data=request.data)
             
-            # Generar tokens JWT
-            refresh = RefreshToken.for_user(user)
-            access_token = refresh.access_token
+            if serializer.is_valid():
+                user = serializer.validated_data['user']
+                
+                # Generar tokens JWT
+                refresh = RefreshToken.for_user(user)
+                access_token = refresh.access_token
+                
+                # Login en la sesión
+                login(request, user)
+                
+                return create_success_response(
+                    message='Login exitoso',
+                    data={
+                        'access': str(access_token),
+                        'refresh': str(refresh),
+                        'user': UserSerializer(user).data,
+                        'access_expires_at': access_token['exp'],
+                        'refresh_expires_at': refresh['exp']
+                    }
+                )
             
-            # Login en la sesión
-            login(request, user)
-            
-            return create_success_response(
-                message='Login exitoso',
-                data={
-                    'access': str(access_token),
-                    'refresh': str(refresh),
-                    'user': UserSerializer(user).data,
-                    'access_expires_at': access_token['exp'],
-                    'refresh_expires_at': refresh['exp']
-                }
+            return create_error_response(
+                message='Credenciales inválidas',
+                error_type='invalid_credentials',
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                details=serializer.errors
             )
-        
-        return create_error_response(
-            message='Credenciales inválidas',
-            error_type='invalid_credentials',
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            details=serializer.errors
-        )
+        except Exception as e:
+            logger.error(f"Error en LoginView: {str(e)}", exc_info=True)
+            return create_error_response(
+                message='Error interno del servidor',
+                error_type='internal_server_error',
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class RegisterView(APIView):
@@ -1183,6 +1225,81 @@ class RefreshTokenView(APIView):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 details={'error': str(e)}
             )
+
+
+class ChangePasswordView(APIView):
+    """
+    Endpoint para cambiar la contraseña del usuario autenticado.
+    Requiere autenticación y validación de la contraseña actual.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Cambiar la contraseña del usuario autenticado.
+        
+        Requiere:
+        - old_password: Contraseña actual
+        - new_password: Nueva contraseña (mínimo 8 caracteres, mayúscula, minúscula, número)
+        - confirm_password: Confirmación de la nueva contraseña
+        """
+        from .serializers import ChangePasswordSerializer
+        
+        serializer = ChangePasswordSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            user = request.user
+            old_password = serializer.validated_data['old_password']
+            new_password = serializer.validated_data['new_password']
+            
+            # Verificar que la contraseña actual sea correcta
+            if not user.check_password(old_password):
+                return create_error_response(
+                    message='La contraseña actual es incorrecta',
+                    error_type='invalid_old_password',
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    details={'old_password': ['La contraseña actual no es correcta.']}
+                )
+            
+            # Cambiar la contraseña
+            try:
+                user.set_password(new_password)
+                user.save()
+                
+                # Log de auditoría si está disponible
+                try:
+                    from audit.models import ActivityLog
+                    ActivityLog.objects.create(
+                        user=user,
+                        action='change_password',
+                        resource_type='user',
+                        resource_id=str(user.id),
+                        details={'timestamp': timezone.now().isoformat()},
+                        timestamp=timezone.now()
+                    )
+                except Exception:
+                    pass  # Si no hay módulo de auditoría, continuar
+                
+                return create_success_response(
+                    message='Contraseña cambiada exitosamente',
+                    data={'user_id': user.id}
+                )
+                
+            except Exception as e:
+                logger.error(f"Error cambiando contraseña para usuario {user.id}: {str(e)}")
+                return create_error_response(
+                    message='Error al cambiar la contraseña',
+                    error_type='password_change_error',
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        # Si hay errores de validación, devolverlos
+        return create_error_response(
+            message='Errores de validación',
+            error_type='validation_error',
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=serializer.errors
+        )
 
 
 class ImagesListView(APIView, ImagePermissionMixin):

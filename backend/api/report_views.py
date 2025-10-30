@@ -16,7 +16,19 @@ from django.db.models import Count  # Importar Count
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import ReporteGenerado, Finca, Lote
+from .models import ReporteGenerado
+# Importar desde apps modulares
+try:
+    from images_app.models import CacaoImage, CacaoPrediction
+except ImportError:
+    CacaoImage = None
+    CacaoPrediction = None
+
+try:
+    from fincas_app.models import Finca, Lote
+except ImportError:
+    Finca = None
+    Lote = None
 from .report_generator import CacaoReportPDFGenerator
 from .excel_generator import CacaoReportExcelGenerator
 from .serializers import ErrorResponseSerializer

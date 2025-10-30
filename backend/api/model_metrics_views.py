@@ -13,7 +13,12 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from typing import Dict, List, Any
 
-from .models import ModelMetrics, TrainingJob
+from .models import ModelMetrics
+# Importar desde apps modulares
+try:
+    from training.models import TrainingJob
+except ImportError:
+    TrainingJob = None
 from .serializers import (
     ModelMetricsSerializer,
     ModelMetricsListSerializer,

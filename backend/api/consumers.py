@@ -9,7 +9,15 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.conf import settings
 
-from .models import Notification, ActivityLog, LoginHistory
+from .models import LoginHistory
+try:
+    from notifications.models import Notification
+except ImportError:
+    Notification = None
+try:
+    from audit.models import ActivityLog
+except ImportError:
+    ActivityLog = None
 
 logger = logging.getLogger("cacaoscan.websockets")
 

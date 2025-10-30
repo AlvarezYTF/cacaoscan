@@ -12,7 +12,13 @@ import io
 import os
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError
-from ..models import CacaoImage, CacaoPrediction, User
+try:
+    from images_app.models import CacaoImage, CacaoPrediction
+except ImportError:
+    CacaoImage = None
+    CacaoPrediction = None
+
+from django.contrib.auth.models import User
 from ml.prediction.predict import get_predictor, load_artifacts
 
 logger = logging.getLogger("cacaoscan.services.analysis")

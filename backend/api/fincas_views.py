@@ -11,7 +11,10 @@ from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import Finca
+try:
+    from fincas_app.models import Finca
+except ImportError:
+    Finca = None
 from .serializers import (
     FincaSerializer,
     FincaListSerializer,

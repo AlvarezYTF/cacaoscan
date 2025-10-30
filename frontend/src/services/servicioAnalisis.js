@@ -86,4 +86,3 @@ const servicioAnalisis = {
 }
 
 export default servicioAnalisis
-

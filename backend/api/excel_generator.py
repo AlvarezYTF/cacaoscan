@@ -13,10 +13,30 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import BarChart, Reference, PieChart
 
-from .models import (
-    CacaoImage, CacaoPrediction, Finca, Lote, 
-    Notification, ActivityLog, LoginHistory, ReporteGenerado
-)
+# Importar desde apps modulares
+try:
+    from notifications.models import Notification
+except ImportError:
+    Notification = None
+
+try:
+    from images_app.models import CacaoImage, CacaoPrediction
+except ImportError:
+    CacaoImage = None
+    CacaoPrediction = None
+
+try:
+    from fincas_app.models import Finca, Lote
+except ImportError:
+    Finca = None
+    Lote = None
+
+try:
+    from audit.models import ActivityLog
+except ImportError:
+    ActivityLog = None
+
+from .models import LoginHistory, ReporteGenerado
 
 logger = logging.getLogger("cacaoscan.api")
 

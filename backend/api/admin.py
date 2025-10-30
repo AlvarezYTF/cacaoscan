@@ -4,7 +4,24 @@ Configuración del admin de Django para la API de CacaoScan.
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import EmailVerificationToken, UserProfile, CacaoImage, CacaoPrediction, SystemSettings
+
+# Importar desde apps modulares
+try:
+    from auth_app.models import EmailVerificationToken, UserProfile
+except ImportError:
+    EmailVerificationToken = None
+    UserProfile = None
+
+try:
+    from images_app.models import CacaoImage, CacaoPrediction
+except ImportError:
+    CacaoImage = None
+    CacaoPrediction = None
+
+try:
+    from core.models import SystemSettings
+except ImportError:
+    SystemSettings = None
 
 
 # Configuración personalizada para User

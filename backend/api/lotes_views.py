@@ -11,7 +11,11 @@ from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import Lote, Finca
+try:
+    from fincas_app.models import Lote, Finca
+except ImportError:
+    Lote = None
+    Finca = None
 from .serializers import (
     LoteSerializer,
     LoteListSerializer,

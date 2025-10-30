@@ -240,7 +240,14 @@ class BaseService:
             details: Detalles adicionales (opcional)
         """
         try:
-            from ..models import ActivityLog
+            try:
+                from audit.models import ActivityLog
+            except ImportError:
+                ActivityLog = None
+            
+            if ActivityLog is None:
+                self.log_debug("Servicio de auditoría no disponible; se omite creación de log")
+                return
             
             ActivityLog.objects.create(
                 user=user,

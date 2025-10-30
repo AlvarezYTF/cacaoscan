@@ -7,4 +7,6 @@ class ApiConfig(AppConfig):
     
     def ready(self):
         """Importar signals cuando la app esté lista."""
-        import api.signals
+        # Temporarily disabled to avoid import errors
+        # import api.signals
+        pass

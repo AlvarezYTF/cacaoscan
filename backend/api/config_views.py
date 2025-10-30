@@ -5,7 +5,10 @@ from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.utils import timezone
-from .models import SystemSettings
+try:
+    from core.models import SystemSettings
+except ImportError:
+    SystemSettings = None
 from .serializers import SystemSettingsSerializer
 
 
