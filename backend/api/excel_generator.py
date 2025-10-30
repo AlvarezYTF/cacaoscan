@@ -201,7 +201,7 @@ class CacaoReportExcelGenerator:
                 col.border = thin_border
             
             # Obtener todos los usuarios con prefetch de fincas
-            users = User.objects.all().order_by('-date_joined').select_related('api_profile', 'api_email_token').prefetch_related('api_fincas', 'groups')
+            users = User.objects.all().order_by('-date_joined').select_related('api_profile', 'auth_email_token').prefetch_related('api_fincas', 'groups')
             
             if users.exists():
                 # Iterar usuarios y agregar información de fincas

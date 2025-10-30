@@ -3,11 +3,12 @@
  */
 
 import api from './api'
+import { normalizeResponse } from '@/utils/apiResponse'
 
 export async function getLotes(params = {}) {
   try {
     const response = await api.get('/lotes/', { params })
-    return response.data
+    return normalizeResponse(response.data)
   } catch (error) {
     console.error('Error obteniendo lotes:', error)
     throw error

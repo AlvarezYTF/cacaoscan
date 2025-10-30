@@ -599,8 +599,8 @@ class AuthenticationService(BaseService):
     def _check_email_verified(self, user: User) -> bool:
         """Verifica si el email del usuario está verificado."""
         try:
-            if hasattr(user, 'api_email_token'):
-                return user.api_email_token.is_verified
+            if hasattr(user, 'auth_email_token'):
+                return user.auth_email_token.is_verified
             elif hasattr(user, 'auth_email_token'):
                 return user.auth_email_token.is_verified
         except:

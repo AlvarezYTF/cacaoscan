@@ -139,7 +139,7 @@ class LoginSerializer(serializers.Serializer):
             if user:
                 if not user.is_active:
                     # Verificar si tiene token de verificación pendiente
-                    if hasattr(user, 'api_email_token') and not user.api_email_token.is_verified:
+                    if hasattr(user, 'auth_email_token') and not user.auth_email_token.is_verified:
                         raise serializers.ValidationError(
                             'Tu cuenta no está verificada. Por favor verifica tu correo electrónico antes de iniciar sesión. '
                             'Si no recibiste el correo, puedes solicitar uno nuevo desde la página de registro.'
@@ -349,8 +349,8 @@ class ResendVerificationSerializer(serializers.Serializer):
         """Validar que el email existe y no está verificado."""
         try:
             user = User.objects.get(email=value)
-            if user.is_active and hasattr(user, 'api_email_token'):
-                if user.api_email_token.is_verified:
+            if user.is_active and hasattr(user, 'auth_email_token'):
+                if user.auth_email_token.is_verified:
                     raise serializers.ValidationError("Este email ya ha sido verificado.")
             return value
         except User.DoesNotExist:

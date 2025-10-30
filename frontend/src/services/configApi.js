@@ -1,6 +1,6 @@
 import api from './api'
 
-const CONFIG_BASE = '/api/v1/config'
+const CONFIG_BASE = '/config'
 
 const configApi = {
   // Obtener configuración general

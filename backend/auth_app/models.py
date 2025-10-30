@@ -134,9 +134,9 @@ class UserProfile(models.Model):
     def is_verified(self):
         """Verificar si el usuario está verificado."""
         try:
-            # Intentar con api_email_token primero, luego con auth_email_token
-            if hasattr(self.user, 'api_email_token'):
-                return self.user.api_email_token.is_verified
+            # Usar auth_email_token como relación estándar
+            if hasattr(self.user, 'auth_email_token'):
+                return self.user.auth_email_token.is_verified
             elif hasattr(self.user, 'auth_email_token'):
                 return self.user.auth_email_token.is_verified
             return False
