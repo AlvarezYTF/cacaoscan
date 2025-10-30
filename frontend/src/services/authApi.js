@@ -113,39 +113,7 @@ const authApi = {
             verification_required: true
           },
           message: 'Registro exitoso. Por favor verifica tu correo electrónico.'
-      
-      // Intentar iniciar sesión automáticamente después del registro
-      let normalizedData = {
-        success: true,
-        message: 'Registro exitoso. Por favor inicia sesión.',
-        user: response.data.user,
-        persona: response.data,
-        redirectToLogin: true
-      }
-
-      try {
-        const loginResponse = await api.post('/api/v1/auth/login/', {
-          email: payload.email,
-          username: payload.email,
-          password: payload.password
-        })
-
-        if (loginResponse.data && loginResponse.data.access && loginResponse.data.user) {
-          normalizedData = {
-            success: true,
-            token: loginResponse.data.access,
-            refresh: loginResponse.data.refresh,
-            user: loginResponse.data.user,
-            access_expires_at: loginResponse.data.access_expires_at,
-            refresh_expires_at: loginResponse.data.refresh_expires_at,
-            persona: response.data,
-            message: 'Registro exitoso. Sesión iniciada automáticamente.',
-            redirectToLogin: false
-          }
->>>>>>> e3f9fa6c198492795d5d254c93d9901c255ff90d
         }
-      } catch (loginError) {
-        console.warn('⚠️ [authApi] No se pudo iniciar sesión automáticamente después del registro:', loginError)
       }
       
       // Fallback para estructura legacy (no debería llegar aquí ahora)

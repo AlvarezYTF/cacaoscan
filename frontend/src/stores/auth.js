@@ -242,29 +242,21 @@ export const useAuthStore = defineStore('auth', () => {
         if (response.access && response.refresh) {
           setTokens(response)
           await getCurrentUser()
-      // Si el registro fue exitoso
-      if (response.success) {
-        // Si el backend devuelve tokens, guardarlos automáticamente
-        if (response.token && response.user) {
-          setTokens({
-            access: response.token,
-            refresh: response.refresh,
-            user: response.user
-          })
->>>>>>> e3f9fa6c198492795d5d254c93d9901c255ff90d
           updateLastActivity()
           await router.push({ name: 'AgricultorDashboard' })
-        } else {
+          return { success: true }
+        }
+        
+        if (response.success) {
           // Si no hay tokens, asumir que necesita verificación
-          return { 
-            success: true, 
+          return {
+            success: true,
             data: {
               email: response.email || userData.email,
               verification_required: true
             }
           }
         }
-        
       }
 
       return response
