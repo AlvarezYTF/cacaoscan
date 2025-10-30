@@ -38,161 +38,179 @@
 
         <!-- Modal body -->
         <form @submit.prevent="handleSubmit" class="p-6">
-          <div class="space-y-4">
-            <!-- Nombre -->
-            <div>
-              <label for="first_name" class="block mb-2 text-sm font-semibold text-gray-700">
-                Nombre <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="text" 
-                id="first_name" 
-                v-model="formData.first_name"
-                class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                placeholder="Ingrese el nombre del agricultor"
-                required 
-              />
-              <p v-if="errors.first_name" class="mt-1 text-sm text-red-600 font-medium">{{ errors.first_name }}</p>
+          <div class="space-y-6">
+            <!-- Información Personal -->
+            <div class="bg-white rounded-xl border border-gray-200 p-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Nombre *</label>
+                  <input v-model="form.firstName" type="text" required :disabled="isSubmitting" class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100" :class="errors.firstName ? 'border-red-500' : 'border-gray-300'" placeholder="Juan" />
+                  <p v-if="errors.firstName" class="text-red-600 text-xs mt-1">{{ errors.firstName }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Segundo Nombre</label>
+                  <input v-model="form.segundoNombre" type="text" :disabled="isSubmitting" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Apellido *</label>
+                  <input v-model="form.lastName" type="text" required :disabled="isSubmitting" class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" :class="errors.lastName ? 'border-red-500' : 'border-gray-300'" placeholder="Pérez" />
+                  <p v-if="errors.lastName" class="text-red-600 text-xs mt-1">{{ errors.lastName }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Segundo Apellido</label>
+                  <input v-model="form.segundoApellido" type="text" :disabled="isSubmitting" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
+                  <input v-model="form.phoneNumber" type="tel" :disabled="isSubmitting" class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" :class="errors.phoneNumber ? 'border-red-500' : 'border-gray-300'" placeholder="+57 300 123 4567" />
+                  <p v-if="errors.phoneNumber" class="text-red-600 text-xs mt-1">{{ errors.phoneNumber }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Género *</label>
+                  <select v-model="form.genero" required :disabled="isSubmitting || isLoadingCatalogos" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    <option v-if="isLoadingCatalogos" value="">Cargando...</option>
+                    <option v-else-if="generos.length === 0" value="">No hay opciones disponibles</option>
+                    <option v-for="genero in generos" :key="genero.codigo" :value="genero.codigo">{{ genero.nombre }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                  <input v-model="form.fechaNacimiento" type="date" :disabled="isSubmitting" :max="maxBirthdate" :min="minBirthdate" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                  <p v-if="errors.fechaNacimiento" class="text-red-600 text-xs mt-1">{{ errors.fechaNacimiento }}</p>
+                </div>
+              </div>
             </div>
 
-            <!-- Apellido -->
-            <div>
-              <label for="last_name" class="block mb-2 text-sm font-semibold text-gray-700">
-                Apellido <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="text" 
-                id="last_name" 
-                v-model="formData.last_name"
-                class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                placeholder="Ingrese el apellido del agricultor"
-                required 
-              />
-              <p v-if="errors.last_name" class="mt-1 text-sm text-red-600 font-medium">{{ errors.last_name }}</p>
+            <!-- Documentación -->
+            <div class="bg-white rounded-xl border border-gray-200 p-4">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Tipo Documento *</label>
+                  <select v-model="form.tipoDocumento" required :disabled="isSubmitting || isLoadingCatalogos" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    <option v-if="isLoadingCatalogos" value="">Cargando...</option>
+                    <option v-else-if="tiposDocumento.length === 0" value="">No hay opciones disponibles</option>
+                    <option v-for="tipo in tiposDocumento" :key="tipo.codigo" :value="tipo.codigo">{{ tipo.codigo }} - {{ tipo.nombre }}</option>
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Número de Documento *</label>
+                  <input v-model="form.numeroDocumento" type="text" required :disabled="isSubmitting" class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" :class="errors.numeroDocumento ? 'border-red-500' : 'border-gray-300'" placeholder="1234567890" />
+                  <p v-if="errors.numeroDocumento" class="text-red-600 text-xs mt-1">{{ errors.numeroDocumento }}</p>
+                </div>
+              </div>
             </div>
 
-            <!-- Email -->
-            <div>
-              <label for="email" class="block mb-2 text-sm font-semibold text-gray-700">
-                Email <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="email" 
-                id="email" 
-                v-model="formData.email"
-                class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                placeholder="nombre@email.com"
-                required 
-              />
-              <p v-if="errors.email" class="mt-1 text-sm text-red-600 font-medium">{{ errors.email }}</p>
+            <!-- Ubicación -->
+            <div class="bg-white rounded-xl border border-gray-200 p-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Departamento *</label>
+                  <select v-model="form.departamento" @change="onDepartamentoChange" required :disabled="isSubmitting || isLoadingCatalogos" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    <option v-if="isLoadingCatalogos" value="">Cargando...</option>
+                    <option v-else value="">Seleccione un departamento</option>
+                    <option v-for="dept in departamentos" :key="dept.codigo" :value="dept.codigo">{{ dept.nombre }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Municipio *</label>
+                  <select v-model="form.municipio" :required="!!form.departamento" :disabled="isSubmitting || !form.departamento || municipios.length === 0" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    <option v-if="!form.departamento" value="">Seleccione primero un departamento</option>
+                    <option v-else-if="municipios.length === 0" value="">Cargando municipios...</option>
+                    <option v-else value="">Seleccione un municipio</option>
+                    <option v-for="mun in municipios" :key="mun.id" :value="mun.id">{{ mun.nombre }}</option>
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Dirección</label>
+                  <input v-model="form.direccion" type="text" :disabled="isSubmitting" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="Calle 10 #5-20" />
+                </div>
+              </div>
             </div>
 
-            <!-- Teléfono -->
-            <div>
-              <label for="phone_number" class="block mb-2 text-sm font-semibold text-gray-700">
-                Teléfono
-              </label>
-              <input 
-                type="tel" 
-                id="phone_number" 
-                v-model="formData.phone_number"
-                class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                placeholder="+57 300 1234567"
-              />
+            <!-- Credenciales -->
+            <div class="bg-white rounded-xl border border-gray-200 p-4">
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+                  <input v-model="form.email" type="email" required :disabled="isSubmitting" class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" :class="errors.email ? 'border-red-500' : 'border-gray-300'" placeholder="juan@ejemplo.com" />
+                  <p v-if="errors.email" class="text-red-600 text-xs mt-1">{{ errors.email }}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Contraseña *</label>
+                  <div class="relative">
+                    <input v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required :disabled="isSubmitting" class="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="••••••••••••" />
+                    <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-green-600">
+                      <svg v-if="showPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                      <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L12 12m-3.122-3.122l4.243 4.243M12 12l3 3m0 0l6-6" /></svg>
+                    </button>
+                  </div>
+                  <Transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
+                    <div v-if="form.password" class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-xs">
+                      <h4 class="font-semibold text-gray-900 mb-1">Requisitos de la contraseña:</h4>
+                      <ul class="space-y-1">
+                        <li class="flex items-center gap-2" :class="passwordChecks.length ? 'text-green-700' : 'text-gray-600'">
+                          <svg class="h-4 w-4" :class="passwordChecks.length ? 'text-green-600' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="passwordChecks.length ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12'" /></svg>
+                          Al menos 8 caracteres
+                        </li>
+                        <li class="flex items-center gap-2" :class="passwordChecks.uppercase ? 'text-green-700' : 'text-gray-600'">
+                          <svg class="h-4 w-4" :class="passwordChecks.uppercase ? 'text-green-600' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="passwordChecks.uppercase ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12'" /></svg>
+                          Una letra mayúscula
+                        </li>
+                        <li class="flex items-center gap-2" :class="passwordChecks.lowercase ? 'text-green-700' : 'text-gray-600'">
+                          <svg class="h-4 w-4" :class="passwordChecks.lowercase ? 'text-green-600' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="passwordChecks.lowercase ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12'" /></svg>
+                          Una letra minúscula
+                        </li>
+                        <li class="flex items-center gap-2" :class="passwordChecks.number ? 'text-green-700' : 'text-gray-600'">
+                          <svg class="h-4 w-4" :class="passwordChecks.number ? 'text-green-600' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="passwordChecks.number ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12'" /></svg>
+                          Un número
+                        </li>
+                      </ul>
+                    </div>
+                  </Transition>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Confirmar Contraseña *</label>
+                  <div class="relative">
+                    <input v-model="form.confirmPassword" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required :disabled="isSubmitting" class="w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" :class="errors.confirmPassword ? 'border-red-500' : 'border-gray-300'" placeholder="••••••••••••" />
+                    <div v-if="form.confirmPassword && form.password === form.confirmPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                  </div>
+                  <p v-if="errors.confirmPassword" class="text-red-600 text-xs mt-1">{{ errors.confirmPassword }}</p>
+                </div>
+              </div>
             </div>
 
-            <!-- Contraseña -->
-            <div>
-              <label for="password" class="block mb-2 text-sm font-semibold text-gray-700">
-                Contraseña <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="password" 
-                id="password" 
-                v-model="formData.password"
-                class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                placeholder="••••••••"
-                required 
-              />
-              <p class="mt-1 text-xs text-gray-500">
-                Mínimo 8 caracteres, incluyendo mayúsculas, minúsculas y números
-              </p>
-              <p v-if="errors.password" class="mt-1 text-sm text-red-600 font-medium">{{ errors.password }}</p>
+            <!-- Footer -->
+            <div class="space-y-3">
+              <!-- Mensaje de validación cuando hay errores -->
+              <Transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+                <div v-if="!isFormValid && Object.keys(errors).length > 0" class="p-3 bg-amber-50 border border-amber-300 rounded-lg">
+                  <div class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <div class="flex-1">
+                      <p class="text-sm font-semibold text-amber-800 mb-1">Por favor corrige los siguientes errores:</p>
+                      <ul class="text-xs text-amber-700 space-y-1">
+                        <li v-for="(error, field) in errors" :key="field">• {{ error }}</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+              
+              <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" @click="closeModal" class="px-6 py-3 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200">Cancelar</button>
+                <button type="submit" :disabled="isSubmitting || !isFormValid" class="inline-flex items-center px-6 py-3 text-sm font-semibold text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg">
+                <span v-if="!isSubmitting">Crear Agricultor</span>
+                <span v-else class="flex items-center">
+                  <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  Guardando...
+                </span>
+              </button>
+              </div>
             </div>
-
-            <!-- Confirmar Contraseña -->
-            <div>
-              <label for="password_confirm" class="block mb-2 text-sm font-semibold text-gray-700">
-                Confirmar Contraseña <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="password" 
-                id="password_confirm" 
-                v-model="formData.password_confirm"
-                class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                placeholder="••••••••"
-                required 
-              />
-              <p v-if="errors.password_confirm" class="mt-1 text-sm text-red-600 font-medium">{{ errors.password_confirm }}</p>
-            </div>
-
-            <!-- Región -->
-            <div>
-              <label for="region" class="block mb-2 text-sm font-semibold text-gray-700">
-                Región
-              </label>
-              <select 
-                id="region"
-                v-model="formData.region"
-                class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
-              >
-                <option value="">Seleccionar región</option>
-                <option value="Antioquia">Antioquia</option>
-                <option value="Santander">Santander</option>
-                <option value="Nariño">Nariño</option>
-                <option value="Huila">Huila</option>
-                <option value="Cauca">Cauca</option>
-              </select>
-            </div>
-
-            <!-- Municipio -->
-            <div>
-              <label for="municipality" class="block mb-2 text-sm font-semibold text-gray-700">
-                Municipio
-              </label>
-              <input 
-                type="text" 
-                id="municipality" 
-                v-model="formData.municipality"
-                class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                placeholder="Ingrese el municipio"
-              />
-            </div>
-          </div>
-
-          <!-- Modal footer -->
-          <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
-            <button 
-              type="button"
-              @click="closeModal"
-              class="px-6 py-3 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200"
-            >
-              Cancelar
-            </button>
-            <button 
-              type="submit"
-              :disabled="isSubmitting"
-              class="inline-flex items-center px-6 py-3 text-sm font-semibold text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
-            >
-              <span v-if="!isSubmitting">Crear Agricultor</span>
-              <span v-else class="flex items-center">
-                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Guardando...
-              </span>
-            </button>
           </div>
         </form>
       </div>
@@ -201,8 +219,9 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import authApi from '@/services/authApi';
+import { catalogosApi } from '@/services';
 import Swal from 'sweetalert2';
 
 export default {
@@ -212,84 +231,116 @@ export default {
     const modalContainer = ref(null);
     const isSubmitting = ref(false);
 
-    const formData = reactive({
-      first_name: '',
-      last_name: '',
+    // Estado del formulario similar a RegisterForm
+    const form = reactive({
+      firstName: '',
+      lastName: '',
       email: '',
-      phone_number: '',
+      phoneNumber: '',
       password: '',
-      password_confirm: '',
-      region: '',
-      municipality: ''
+      confirmPassword: '',
+      tipoDocumento: 'CC',
+      numeroDocumento: '',
+      segundoNombre: '',
+      segundoApellido: '',
+      direccion: '',
+      genero: '',
+      fechaNacimiento: '',
+      municipio: '',
+      departamento: ''
     });
 
-    const errors = reactive({
-      first_name: '',
-      last_name: '',
-      email: '',
-      password: '',
-      password_confirm: ''
+    const errors = reactive({});
+    const showPassword = ref(false);
+
+    // Catálogos
+    const tiposDocumento = ref([]);
+    const generos = ref([]);
+    const departamentos = ref([]);
+    const municipios = ref([]);
+    const isLoadingCatalogos = ref(true);
+
+    // Password checks
+    const passwordChecks = computed(() => {
+      const password = form.password || '';
+      return {
+        length: password.length >= 8,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /\d/.test(password)
+      };
+    });
+    const isPasswordValid = computed(() => Object.values(passwordChecks.value).every(Boolean));
+
+    // Fechas
+    const maxBirthdate = computed(() => {
+      const today = new Date();
+      const maxDate = new Date(today.getFullYear() - 14, today.getMonth(), today.getDate());
+      return maxDate.toISOString().split('T')[0];
+    });
+    const minBirthdate = computed(() => {
+      const today = new Date();
+      const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate());
+      return minDate.toISOString().split('T')[0];
+    });
+
+    const isFormValid = computed(() => {
+      const checks = {
+        firstName: !!form.firstName.trim(),
+        lastName: !!form.lastName.trim(),
+        email: !!form.email.trim(),
+        tipoDocumento: !!form.tipoDocumento,
+        numeroDocumento: !!form.numeroDocumento.trim(),
+        genero: !!form.genero,
+        departamento: !!form.departamento,
+        municipio: !!form.municipio,
+        passwordValid: isPasswordValid.value,
+        passwordMatch: form.password === form.confirmPassword
+      };
+      return Object.values(checks).every(v => v === true);
     });
 
     const resetForm = () => {
-      formData.first_name = '';
-      formData.last_name = '';
-      formData.email = '';
-      formData.phone_number = '';
-      formData.password = '';
-      formData.password_confirm = '';
-      formData.region = '';
-      formData.municipality = '';
-
-      Object.keys(errors).forEach(key => errors[key] = '');
+      Object.assign(form, {
+        firstName: '', lastName: '', email: '', phoneNumber: '', password: '', confirmPassword: '',
+        tipoDocumento: 'CC', numeroDocumento: '', segundoNombre: '', segundoApellido: '', direccion: '',
+        genero: '', fechaNacimiento: '', municipio: '', departamento: ''
+      });
+      Object.keys(errors).forEach(k => delete errors[k]);
     };
 
+    const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     const validateForm = () => {
-      let isValid = true;
+      Object.keys(errors).forEach(k => delete errors[k]);
 
-      // Validar nombre
-      if (!formData.first_name.trim()) {
-        errors.first_name = 'El nombre es requerido';
-        isValid = false;
+      if (!form.firstName.trim()) errors.firstName = 'El nombre es requerido';
+      if (!form.lastName.trim()) errors.lastName = 'El apellido es requerido';
+
+      if (!form.numeroDocumento.trim()) errors.numeroDocumento = 'El número de documento es requerido';
+      else if (!/^\d+$/.test(form.numeroDocumento.trim())) errors.numeroDocumento = 'El documento solo puede contener números';
+      else if (form.numeroDocumento.trim().length < 6 || form.numeroDocumento.trim().length > 11) errors.numeroDocumento = 'El documento debe tener entre 6 y 11 dígitos';
+
+      const cleanPhone = (form.phoneNumber || '').replace(/[\s\-\(\)]/g, '');
+      if (cleanPhone && !/^\+?\d{7,15}$/.test(cleanPhone)) errors.phoneNumber = 'El teléfono debe tener entre 7 y 15 dígitos';
+
+      if (form.fechaNacimiento) {
+        const birthDate = new Date(form.fechaNacimiento);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear() - ((today.getMonth() < birthDate.getMonth()) || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate()) ? 1 : 0);
+        if (age < 14) errors.fechaNacimiento = 'Debes tener al menos 14 años';
+        if (birthDate > today) errors.fechaNacimiento = 'La fecha no puede ser futura';
       }
 
-      // Validar apellido
-      if (!formData.last_name.trim()) {
-        errors.last_name = 'El apellido es requerido';
-        isValid = false;
-      }
+      if (!form.email.trim()) errors.email = 'El email es requerido';
+      else if (!isValidEmail(form.email)) errors.email = 'Ingresa un email válido';
 
-      // Validar email
-      if (!formData.email.trim()) {
-        errors.email = 'El email es requerido';
-        isValid = false;
-      } else {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(formData.email)) {
-          errors.email = 'Ingresa un email válido';
-          isValid = false;
-        }
-      }
+      if (!form.password) errors.password = 'La contraseña es requerida';
+      else if (form.password.length < 8) errors.password = 'La contraseña debe tener al menos 8 caracteres';
 
-      // Validar contraseña
-      if (!formData.password) {
-        errors.password = 'La contraseña es requerida';
-        isValid = false;
-      } else if (formData.password.length < 8) {
-        errors.password = 'La contraseña debe tener al menos 8 caracteres';
-        isValid = false;
-      }
+      if (!form.confirmPassword) errors.confirmPassword = 'Confirma tu contraseña';
+      else if (form.password !== form.confirmPassword) errors.confirmPassword = 'Las contraseñas no coinciden';
 
-      // Validar confirmación de contraseña
-      if (!formData.password_confirm) {
-        errors.password_confirm = 'Confirma tu contraseña';
-        isValid = false;
-      } else if (formData.password !== formData.password_confirm) {
-        errors.password_confirm = 'Las contraseñas no coinciden';
-        isValid = false;
-      }
-
-      return isValid;
+      return Object.keys(errors).length === 0;
     };
 
     const handleSubmit = async () => {
@@ -300,13 +351,23 @@ export default {
       isSubmitting.value = true;
 
       try {
+        const departamentoSeleccionado = departamentos.value.find(d => d.codigo === form.departamento);
+        const municipioSeleccionado = municipios.value.find(m => m.id == form.municipio);
         const farmerData = {
-          username: formData.email,
-          email: formData.email,
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          password: formData.password,
-          password_confirm: formData.password_confirm
+          email: form.email.trim(),
+          password: form.password,
+          primer_nombre: form.firstName.trim(),
+          segundo_nombre: (form.segundoNombre || '').trim(),
+          primer_apellido: form.lastName.trim(),
+          segundo_apellido: (form.segundoApellido || '').trim(),
+          tipo_documento: form.tipoDocumento,
+          numero_documento: form.numeroDocumento.trim(),
+          telefono: (form.phoneNumber || '').trim(),
+          direccion: (form.direccion || '').trim(),
+          genero: form.genero,
+          fecha_nacimiento: form.fechaNacimiento || '',
+          municipio: municipioSeleccionado?.id || null,
+          departamento: departamentoSeleccionado?.id || null
         };
 
         console.log('📤 [CreateFarmerModal] Enviando datos:', farmerData);
@@ -328,30 +389,83 @@ export default {
       } catch (error) {
         console.error('Error creando agricultor:', error);
         
+        // Limpiar errores previos
+        Object.keys(errors).forEach(k => delete errors[k]);
+        
         // Extraer mensaje de error del backend
         let errorMessage = 'Error al crear el agricultor';
         
         if (error.response?.data) {
           const data = error.response.data;
           
-          // Mensaje principal
-          errorMessage = data.message || data.error || errorMessage;
-          
-          // Agregar detalles de validación si existen
-          if (data.details) {
-            const details = Object.entries(data.details)
-              .map(([key, value]) => `${key}: ${Array.isArray(value) ? value[0] : value}`)
-              .join(', ');
-            
-            if (details) {
-              errorMessage += `\n\nDetalles: ${details}`;
-            }
+          // Si es un HTML (404, etc), mostrar mensaje genérico
+          if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+            errorMessage = 'Error de conexión con el servidor. Verifica que el endpoint esté disponible.';
+            Swal.fire({
+              icon: 'error',
+              title: 'Error de conexión',
+              text: errorMessage,
+              confirmButtonColor: '#ef4444'
+            });
+            return;
           }
+          
+          // Mapear errores de campo del backend al frontend
+          const fieldMapping = {
+            'email': 'email',
+            'password': 'password',
+            'primer_nombre': 'firstName',
+            'primer_apellido': 'lastName',
+            'numero_documento': 'numeroDocumento',
+            'telefono': 'phoneNumber',
+            'phone_number': 'phoneNumber',
+            'fecha_nacimiento': 'fechaNacimiento',
+            'tipo_documento': 'tipoDocumento',
+            'genero': 'genero',
+            'departamento': 'departamento',
+            'municipio': 'municipio',
+            'segundo_nombre': 'segundoNombre',
+            'segundo_apellido': 'segundoApellido',
+            'direccion': 'direccion'
+          };
+          
+          // Procesar errores de campo
+          Object.keys(data).forEach(key => {
+            if (key === 'message' || key === 'error' || key === 'detail' || key === 'non_field_errors') {
+              return; // Estos se manejan como mensaje general
+            }
+            
+            const frontendField = fieldMapping[key] || key;
+            const errorValue = data[key];
+            
+            if (Array.isArray(errorValue) && errorValue.length > 0) {
+              errors[frontendField] = errorValue[0];
+            } else if (typeof errorValue === 'string') {
+              errors[frontendField] = errorValue;
+            }
+          });
+          
+          // Mensaje principal (priorizar detail que es el formato estándar de DRF)
+          if (data.detail) {
+            errorMessage = data.detail;
+          } else if (data.message) {
+            errorMessage = data.message;
+          } else if (data.error) {
+            errorMessage = data.error;
+          } else if (data.non_field_errors) {
+            errorMessage = Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors;
+          } else if (Object.keys(errors).length > 0) {
+            // Si hay errores de campo, usar el primero como mensaje
+            const firstErrorField = Object.keys(errors)[0];
+            errorMessage = errors[firstErrorField];
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
         }
         
         Swal.fire({
           icon: 'error',
-          title: 'Error',
+          title: 'Error al crear el agricultor',
           html: errorMessage.replace(/\n/g, '<br>'),
           confirmButtonColor: '#ef4444'
         });
@@ -370,6 +484,74 @@ export default {
       emit('close');
     };
 
+    onMounted(() => {
+      cargarCatalogos();
+    });
+
+    const cargarCatalogos = async () => {
+      try {
+        isLoadingCatalogos.value = true;
+        const tipoDocResponse = await catalogosApi.getParametrosPorTema('TIPO_DOC');
+        tiposDocumento.value = tipoDocResponse || [];
+        const sexoResponse = await catalogosApi.getParametrosPorTema('SEXO');
+        generos.value = sexoResponse || [];
+        const departamentosResponse = await catalogosApi.getDepartamentos();
+        departamentos.value = departamentosResponse || [];
+      } finally {
+        isLoadingCatalogos.value = false;
+      }
+    };
+
+    const cargarMunicipios = async (codigoDepartamento) => {
+      if (!codigoDepartamento) {
+        municipios.value = [];
+        form.municipio = '';
+        return;
+      }
+      try {
+        console.log('🔄 Cargando municipios para departamento (código):', codigoDepartamento);
+        
+        // Buscar el departamento por código para obtener su ID
+        const departamentoEncontrado = departamentos.value.find(d => d.codigo === codigoDepartamento || d.codigo === String(codigoDepartamento));
+        if (!departamentoEncontrado) {
+          console.error('❌ Departamento no encontrado con código:', codigoDepartamento);
+          municipios.value = [];
+          return;
+        }
+        
+        console.log('📍 Departamento encontrado:', departamentoEncontrado);
+        const departamentoId = departamentoEncontrado.id;
+        
+        // Usar el ID del departamento para cargar municipios
+        const response = await catalogosApi.getMunicipiosPorDepartamento(departamentoId);
+        console.log('📦 Respuesta de municipios:', response);
+        municipios.value = response || [];
+        console.log('✅ Municipios cargados:', municipios.value.length);
+      } catch (error) {
+        console.error('❌ Error cargando municipios:', error);
+        console.error('❌ Detalles del error:', error.response?.data || error.message);
+        municipios.value = [];
+      }
+    };
+
+    const onDepartamentoChange = () => {
+      console.log('📍 Cambio de departamento:', form.departamento);
+      cargarMunicipios(form.departamento);
+      form.municipio = '';
+    };
+
+    // Watcher para detectar cambios en el departamento
+    watch(() => form.departamento, (newValue, oldValue) => {
+      if (newValue !== oldValue && newValue) {
+        console.log('👀 Watcher detectó cambio de departamento:', newValue);
+        cargarMunicipios(newValue);
+        form.municipio = '';
+      } else if (!newValue) {
+        municipios.value = [];
+        form.municipio = '';
+      }
+    });
+
     const openModal = () => {
       if (modalContainer.value) {
         const modalElement = modalContainer.value;
@@ -380,9 +562,20 @@ export default {
 
     return {
       modalContainer,
-      formData,
+      form,
       errors,
       isSubmitting,
+      tiposDocumento,
+      generos,
+      departamentos,
+      municipios,
+      isLoadingCatalogos,
+      maxBirthdate,
+      minBirthdate,
+      passwordChecks,
+      isFormValid,
+      showPassword,
+      onDepartamentoChange,
       handleSubmit,
       closeModal,
       openModal

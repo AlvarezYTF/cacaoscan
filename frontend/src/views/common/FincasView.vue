@@ -46,13 +46,13 @@
 
           <!-- Modal de formulario -->
           <Teleport to="body">
-            <FincaForm
-              v-if="showModal"
-              :finca="selectedFinca"
-              :is-editing="isEditing"
-              @close="closeModal"
-              @saved="handleFincaSaved"
-            />
+          <FincaForm
+            v-if="showModal"
+            :finca="selectedFinca"
+            :is-editing="isEditing"
+            @close="closeModal"
+            @saved="handleFincaSaved"
+          />
           </Teleport>
         </div>
       </main>
