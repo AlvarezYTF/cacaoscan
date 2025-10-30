@@ -12,7 +12,7 @@ import api from './api'
  */
 export async function getFincas(params = {}) {
   try {
-    const response = await api.get('/fincas/', { params })
+    const response = await api.get('/api/v1/fincas/', { params })
     return response.data
   } catch (error) {
     console.error('Error obteniendo fincas:', error)
@@ -27,7 +27,7 @@ export async function getFincas(params = {}) {
  */
 export async function getFincaById(fincaId) {
   try {
-    const response = await api.get(`/fincas/${fincaId}/`)
+    const response = await api.get(`/api/v1/fincas/${fincaId}/`)
     return response.data
   } catch (error) {
     console.error(`Error obteniendo finca ${fincaId}:`, error)
@@ -43,7 +43,7 @@ export async function getFincaById(fincaId) {
 export async function createFinca(fincaData) {
   try {
     console.log('📤 [fincasApi] Enviando datos al backend:', fincaData)
-    const response = await api.post('/fincas/', fincaData)
+    const response = await api.post('/api/v1/fincas/', fincaData)
     console.log('✅ [fincasApi] Respuesta del backend:', response.data)
     return response.data
   } catch (error) {
@@ -61,7 +61,7 @@ export async function createFinca(fincaData) {
  */
 export async function updateFinca(fincaId, fincaData) {
   try {
-    const response = await api.put(`/fincas/${fincaId}/update/`, fincaData)
+    const response = await api.put(`/api/v1/fincas/${fincaId}/update/`, fincaData)
     return response.data
   } catch (error) {
     console.error(`Error actualizando finca ${fincaId}:`, error)
@@ -76,7 +76,7 @@ export async function updateFinca(fincaId, fincaData) {
  */
 export async function deleteFinca(fincaId) {
   try {
-    await api.delete(`/fincas/${fincaId}/delete/`)
+    await api.delete(`/api/v1/fincas/${fincaId}/delete/`)
   } catch (error) {
     console.error(`Error eliminando finca ${fincaId}:`, error)
     throw error
@@ -90,7 +90,7 @@ export async function deleteFinca(fincaId) {
  */
 export async function activateFinca(fincaId) {
   try {
-    const response = await api.post(`/fincas/${fincaId}/activate/`)
+    const response = await api.post(`/api/v1/fincas/${fincaId}/activate/`)
     return response.data
   } catch (error) {
     console.error(`Error reactivando finca ${fincaId}:`, error)
@@ -105,7 +105,7 @@ export async function activateFinca(fincaId) {
  */
 export async function getFincaStats(fincaId) {
   try {
-    const response = await api.get(`/fincas/${fincaId}/stats/`)
+    const response = await api.get(`/api/v1/fincas/${fincaId}/stats/`)
     return response.data
   } catch (error) {
     console.error(`Error obteniendo estadísticas de finca ${fincaId}:`, error)
@@ -121,7 +121,7 @@ export async function getFincaStats(fincaId) {
  */
 export async function getLotesByFinca(fincaId, params = {}) {
   try {
-    const response = await api.get(`/fincas/${fincaId}/lotes/`, { params })
+    const response = await api.get(`/api/v1/fincas/${fincaId}/lotes/`, { params })
     return response.data
   } catch (error) {
     console.error(`Error obteniendo lotes de finca ${fincaId}:`, error)

@@ -294,7 +294,7 @@ export const useReportsStore = defineStore('reports', {
 
     async fetchFincas() {
       try {
-        const response = await api.get('/fincas/')
+        const response = await api.get('/api/v1/fincas/')
         return response
       } catch (error) {
         console.error('Error fetching fincas:', error)
@@ -304,7 +304,7 @@ export const useReportsStore = defineStore('reports', {
 
     async fetchLotesByFinca(fincaId) {
       try {
-        const response = await api.get(`/fincas/${fincaId}/lotes/`)
+        const response = await api.get(`/api/v1/fincas/${fincaId}/lotes/`)
         return response
       } catch (error) {
         console.error('Error fetching lotes:', error)

@@ -336,7 +336,7 @@ const loadLote = async () => {
 
 const loadFinca = async (fincaId) => {
   try {
-    const response = await api.get(`/fincas/${fincaId}/`)
+    const response = await api.get(`/api/v1/fincas/${fincaId}/`)
     finca.value = response.data
   } catch (err) {
     console.error('Error cargando finca:', err)

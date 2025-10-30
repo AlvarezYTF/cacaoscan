@@ -271,7 +271,7 @@ const loadFinca = async () => {
     error.value = null
     
     // Usar la instancia de axios con interceptor JWT
-    const response = await api.get(`/fincas/${route.params.id}/`)
+    const response = await api.get(`/api/v1/fincas/${route.params.id}/`)
     
     finca.value = response.data
     
@@ -309,7 +309,7 @@ const loadFinca = async () => {
 
 const loadLotesRecientes = async () => {
   try {
-    const response = await api.get(`/fincas/${route.params.id}/lotes/`)
+    const response = await api.get(`/api/v1/fincas/${route.params.id}/lotes/`)
     lotesRecientes.value = response.data.results?.slice(0, 5) || []
   } catch (err) {
     console.error('Error cargando lotes:', err)
