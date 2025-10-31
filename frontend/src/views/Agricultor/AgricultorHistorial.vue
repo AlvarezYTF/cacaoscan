@@ -5,7 +5,7 @@
       :brand-name="'CacaoScan'"
       :user-name="userName"
       :user-role="userRole"
-      :current-route="$route.path"
+      :current-route="route.path"
       :active-section="activeSection"
       :collapsed="isSidebarCollapsed"
       @menu-click="handleMenuClick"
@@ -38,132 +38,121 @@
   </div>
 </template>
 
-<script>
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import { useImageStats } from '@/composables/useImageStats';
-import ImageHistoryCard from '@/components/dashboard/ImageHistoryCard.vue';
-import Sidebar from '@/components/layout/Common/Sidebar.vue';
+<script setup>
+// 1. Vue core
+import { ref, computed, onMounted } from 'vue'
 
-export default {
-  name: 'Historial',
-  components: {
-    ImageHistoryCard,
-    Sidebar
-  },
-  setup() {
-    const router = useRouter();
-    const authStore = useAuthStore();
-    const { fetchImages } = useImageStats();
+// 2. Vue router
+import { useRoute, useRouter } from 'vue-router'
 
-    const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
-    const activeSection = ref('history');
-    const recentAnalyses = ref([]);
-    const imagesLoading = ref(false);
+// 3. Stores
+import { useAuthStore } from '@/stores/auth'
 
-    // Computed properties
-    const userName = computed(() => {
-      return authStore.userFullName || 'Usuario';
-    });
+// 4. Composables
+import { useImageStats } from '@/composables/useImageStats'
 
-    const userRole = computed(() => {
-      const role = authStore.userRole || 'Usuario';
-      if (role === 'admin') return 'admin';
-      if (role === 'farmer') return 'agricultor';
-      return 'agricultor';
-    });
+// 5. Components
+import ImageHistoryCard from '@/components/dashboard/ImageHistoryCard.vue'
+import Sidebar from '@/components/layout/Common/Sidebar.vue'
 
-    // Load recent analyses
-    const loadRecentAnalyses = async () => {
-      imagesLoading.value = true;
-      try {
-        const data = await fetchImages(1, { page_size: '10' });
-        recentAnalyses.value = data.results.map(image => ({
-          id: `CAC-${image.id}`,
-          status: image.processed ? 'completed' : 'pending',
-          statusLabel: image.processed ? 'Completado' : 'Pendiente',
-          quality: image.prediction?.quality || 0,
-          date: image.created_at,
-          predictions: image.prediction ? [image.prediction] : [],
-          ...image
-        }));
-      } catch (error) {
-        console.error('Error loading recent analyses:', error);
-      } finally {
-        imagesLoading.value = false;
-      }
-    };
+// Router & Route
+const router = useRouter()
+const route = useRoute()
 
-    const refreshData = () => {
-      loadRecentAnalyses();
-    };
+// Stores
+const authStore = useAuthStore()
 
-    const handleImageSelected = (image) => {
-      console.log('Imagen seleccionada:', image);
-      // Puedes agregar lógica adicional si es necesario
-    };
+// Composables
+const { fetchImages } = useImageStats()
 
-    // Sidebar and navbar methods
-    const handleMenuClick = (item) => {
-      if (item.route && item.route !== null) {
-        const currentPath = router.currentRoute.value.path;
-        if (currentPath !== item.route) {
-          router.push(item.route);
-        }
-      } else {
-        const role = authStore.userRole;
-        if (role === 'farmer' || role === 'Agricultor') {
-          router.push({ 
-            name: 'AgricultorDashboard',
-            query: { section: item.id }
-          });
-        } else {
-          router.push({ 
-            name: 'AdminDashboard',
-            query: { section: item.id }
-          });
-        }
-      }
-    };
+// State
+const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
+const activeSection = ref('history')
+const recentAnalyses = ref([])
+const imagesLoading = ref(false)
 
-    const toggleSidebarCollapse = () => {
-      isSidebarCollapsed.value = !isSidebarCollapsed.value;
-      localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value);
-    };
+// Computed
+const userName = computed(() => {
+  return authStore.userFullName || 'Usuario'
+})
 
-    const handleLogout = async () => {
-      try {
-        await authStore.logout();
-      } catch (error) {
-        console.error('Error during logout:', error);
-      }
-    };
+const userRole = computed(() => {
+  const role = authStore.userRole || 'Usuario'
+  if (role === 'admin') return 'admin'
+  if (role === 'farmer') return 'agricultor'
+  return 'agricultor'
+})
 
-    // Lifecycle
-    onMounted(() => {
-      loadRecentAnalyses();
-    });
-
-    return {
-      activeSection,
-      recentAnalyses,
-      imagesLoading,
-      userName,
-      userRole,
-      isSidebarCollapsed,
-      loadRecentAnalyses,
-      refreshData,
-      handleImageSelected,
-      handleMenuClick,
-      handleLogout,
-      toggleSidebarCollapse
-    };
+// Functions
+const loadRecentAnalyses = async () => {
+  imagesLoading.value = true
+  try {
+    const data = await fetchImages(1, { page_size: '10' })
+    recentAnalyses.value = data.results.map(image => ({
+      id: `CAC-${image.id}`,
+      status: image.processed ? 'completed' : 'pending',
+      statusLabel: image.processed ? 'Completado' : 'Pendiente',
+      quality: image.prediction?.quality || 0,
+      date: image.created_at,
+      predictions: image.prediction ? [image.prediction] : [],
+      ...image
+    }))
+  } catch (error) {
+    console.error('Error loading recent analyses:', error)
+  } finally {
+    imagesLoading.value = false
   }
-};
+}
+
+const refreshData = () => {
+  loadRecentAnalyses()
+}
+
+const handleImageSelected = (image) => {
+  console.log('Imagen seleccionada:', image)
+}
+
+const handleMenuClick = (item) => {
+  if (item.route && item.route !== null) {
+    const currentPath = route.path
+    if (currentPath !== item.route) {
+      router.push(item.route)
+    }
+  } else {
+    const role = authStore.userRole
+    if (role === 'farmer' || role === 'Agricultor') {
+      router.push({ 
+        name: 'AgricultorDashboard',
+        query: { section: item.id }
+      })
+    } else {
+      router.push({ 
+        name: 'AdminDashboard',
+        query: { section: item.id }
+      })
+    }
+  }
+}
+
+const toggleSidebarCollapse = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
+}
+
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+  } catch (error) {
+    console.error('Error during logout:', error)
+  }
+}
+
+// Lifecycle
+onMounted(() => {
+  loadRecentAnalyses()
+})
 </script>
 
 <style scoped>
-/* Estilos específicos si son necesarios */
+/* Solo estilos que no están en Tailwind si es necesario */
 </style>
-

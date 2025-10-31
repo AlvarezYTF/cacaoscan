@@ -1,5 +1,5 @@
 <template>
-  <div class="lotes-view">
+  <div class="max-w-7xl mx-auto px-4 py-6">
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
       <div>
@@ -8,7 +8,8 @@
       </div>
       <button
         @click="openCreateModal"
-        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+        type="button"
+        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -18,23 +19,25 @@
     </div>
 
     <!-- Filtros -->
-    <div class="bg-white rounded-lg shadow-sm border p-4 mb-6">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+          <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
           <input
+            id="search"
             v-model="searchQuery"
             type="text"
             placeholder="Identificador, variedad..."
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200"
             @input="debouncedSearch"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Finca</label>
+          <label for="finca-filter" class="block text-sm font-medium text-gray-700 mb-1">Finca</label>
           <select
+            id="finca-filter"
             v-model="filters.finca"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200"
             @change="applyFilters"
           >
             <option value="">Todas las fincas</option>
@@ -44,10 +47,11 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+          <label for="estado-filter" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
           <select
+            id="estado-filter"
             v-model="filters.estado"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200"
             @change="applyFilters"
           >
             <option value="">Todos</option>
@@ -59,7 +63,8 @@
         <div class="flex items-end">
           <button
             @click="clearFilters"
-            class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors"
+            type="button"
+            class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
           >
             Limpiar Filtros
           </button>
@@ -87,7 +92,7 @@
       <div
         v-for="lote in lotes"
         :key="lote.id"
-        class="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow cursor-pointer"
+        class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
         @click="viewLote(lote)"
       >
         <div class="p-6">
@@ -113,7 +118,7 @@
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
               </svg>
-              {{ lote.finca.nombre }}
+              {{ lote.finca?.nombre || 'Sin finca' }}
             </div>
             <div class="flex items-center text-sm text-gray-600">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,13 +150,15 @@
           <div class="flex gap-2">
             <button
               @click.stop="editLote(lote)"
-              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm transition-colors"
+              type="button"
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Editar
             </button>
             <button
               @click.stop="viewAnalisis(lote)"
-              class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm transition-colors"
+              type="button"
+              class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               Ver Análisis
             </button>
@@ -170,7 +177,8 @@
       <div class="mt-6">
         <button
           @click="openCreateModal"
-          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
+          type="button"
+          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
         >
           Crear Primer Lote
         </button>
@@ -189,15 +197,23 @@
 </template>
 
 <script setup>
+// 1. Vue core
 import { ref, onMounted, computed } from 'vue'
+
+// 2. Vue router
 import { useRouter } from 'vue-router'
+
+// 3. Components
 import LoteForm from '@/components/LoteForm.vue'
+
+// 4. Services
 import lotesApi from '@/services/lotesApi'
 import fincasApi from '@/services/fincasApi'
 
+// Router
 const router = useRouter()
 
-// Estado reactivo
+// State
 const lotes = ref([])
 const fincas = ref([])
 const loading = ref(false)
@@ -223,7 +239,7 @@ const debouncedSearch = () => {
   }, 500)
 }
 
-// Métodos
+// Functions
 const loadLotes = async () => {
   loading.value = true
   error.value = null
@@ -319,6 +335,7 @@ const getEstadoLabel = (estado) => {
 }
 
 const formatDate = (dateString) => {
+  if (!dateString) return 'N/A'
   return new Date(dateString).toLocaleDateString('es-CO')
 }
 
@@ -330,9 +347,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.lotes-view {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem;
-}
+/* Solo estilos que no están en Tailwind si es necesario */
 </style>

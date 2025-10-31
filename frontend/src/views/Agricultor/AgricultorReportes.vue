@@ -5,7 +5,7 @@
       :brand-name="'CacaoScan'"
       :user-name="userName"
       :user-role="userRole"
-      :current-route="$route.path"
+      :current-route="route.path"
       :active-section="activeSection"
       :collapsed="isSidebarCollapsed"
       @menu-click="handleMenuClick"
@@ -35,85 +35,79 @@
   </div>
 </template>
 
-<script>
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import Sidebar from '@/components/layout/Common/Sidebar.vue';
+<script setup>
+// 1. Vue core
+import { ref, computed } from 'vue'
 
-export default {
-  name: 'Reportes',
-  components: {
-    Sidebar
-  },
-  setup() {
-    const router = useRouter();
-    const authStore = useAuthStore();
+// 2. Vue router
+import { useRoute, useRouter } from 'vue-router'
 
-    const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
-    const activeSection = ref('reports');
+// 3. Stores
+import { useAuthStore } from '@/stores/auth'
 
-    // Computed properties
-    const userName = computed(() => {
-      return authStore.userFullName || 'Usuario';
-    });
+// 4. Components
+import Sidebar from '@/components/layout/Common/Sidebar.vue'
 
-    const userRole = computed(() => {
-      const role = authStore.userRole || 'Usuario';
-      if (role === 'admin') return 'admin';
-      if (role === 'farmer') return 'agricultor';
-      return 'agricultor';
-    });
+// Router & Route
+const router = useRouter()
+const route = useRoute()
 
-    // Sidebar methods
-    const handleMenuClick = (item) => {
-      if (item.route && item.route !== null) {
-        const currentPath = router.currentRoute.value.path;
-        if (currentPath !== item.route) {
-          router.push(item.route);
-        }
-      } else {
-        const role = authStore.userRole;
-        if (role === 'farmer' || role === 'Agricultor') {
-          router.push({ 
-            name: 'AgricultorDashboard',
-            query: { section: item.id }
-          });
-        } else {
-          router.push({ 
-            name: 'AdminDashboard',
-            query: { section: item.id }
-          });
-        }
-      }
-    };
+// Stores
+const authStore = useAuthStore()
 
-    const toggleSidebarCollapse = () => {
-      isSidebarCollapsed.value = !isSidebarCollapsed.value;
-      localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value);
-    };
+// State
+const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
+const activeSection = ref('reports')
 
-    const handleLogout = async () => {
-      try {
-        await authStore.logout();
-      } catch (error) {
-        console.error('Error during logout:', error);
-      }
-    };
+// Computed
+const userName = computed(() => {
+  return authStore.userFullName || 'Usuario'
+})
 
-    return {
-      activeSection,
-      userName,
-      userRole,
-      isSidebarCollapsed,
-      handleMenuClick,
-      handleLogout,
-      toggleSidebarCollapse
-    };
+const userRole = computed(() => {
+  const role = authStore.userRole || 'Usuario'
+  if (role === 'admin') return 'admin'
+  if (role === 'farmer') return 'agricultor'
+  return 'agricultor'
+})
+
+// Functions
+const handleMenuClick = (item) => {
+  if (item.route && item.route !== null) {
+    const currentPath = route.path
+    if (currentPath !== item.route) {
+      router.push(item.route)
+    }
+  } else {
+    const role = authStore.userRole
+    if (role === 'farmer' || role === 'Agricultor') {
+      router.push({ 
+        name: 'AgricultorDashboard',
+        query: { section: item.id }
+      })
+    } else {
+      router.push({ 
+        name: 'AdminDashboard',
+        query: { section: item.id }
+      })
+    }
   }
-};
+}
+
+const toggleSidebarCollapse = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
+}
+
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+  } catch (error) {
+    console.error('Error during logout:', error)
+  }
+}
 </script>
 
 <style scoped>
-/* Estilos específicos si son necesarios */
+/* Solo estilos que no están en Tailwind si es necesario */
 </style>
