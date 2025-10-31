@@ -439,11 +439,11 @@
             <label for="acceptTerms"
               class="text-sm text-gray-700 cursor-pointer group-hover:text-gray-900 transition-colors">
               Acepto los
-              <a href="#" class="font-semibold text-green-600 hover:text-green-700 transition-colors">términos y
-                condiciones</a>
+              <router-link to="/legal/terms" target="_blank" class="font-semibold text-green-600 hover:text-green-700 transition-colors underline">términos y
+                condiciones</router-link>
               y la
-              <a href="#" class="font-semibold text-green-600 hover:text-green-700 transition-colors">política de
-                privacidad</a>
+              <router-link to="/legal/privacy" target="_blank" class="font-semibold text-green-600 hover:text-green-700 transition-colors underline">política de
+                privacidad</router-link>
             </label>
           </div>
 

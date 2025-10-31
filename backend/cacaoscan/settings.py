@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     # Existing apps
     'api',  # API principal (ahora sin conflictos de modelos)
     'reports',
+    'legal',  # App para documentos legales
 ]
 
 MIDDLEWARE = [

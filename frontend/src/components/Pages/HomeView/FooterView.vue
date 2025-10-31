@@ -69,20 +69,20 @@
             <h3 class="text-lg font-bold text-white mb-6">Información legal</h3>
             <ul class="space-y-3">
               <li>
-                <a href="#" class="text-gray-400 hover:text-green-400 transition-colors flex items-center gap-2 group">
+                <router-link to="/legal/privacy" class="text-gray-400 hover:text-green-400 transition-colors flex items-center gap-2 group">
                   <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                   Política de privacidad
-                </a>
+                </router-link>
               </li>
               <li>
-                <a href="#" class="text-gray-400 hover:text-green-400 transition-colors flex items-center gap-2 group">
+                <router-link to="/legal/terms" class="text-gray-400 hover:text-green-400 transition-colors flex items-center gap-2 group">
                   <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Términos de servicio
-                </a>
+                </router-link>
               </li>
             </ul>
           </div>

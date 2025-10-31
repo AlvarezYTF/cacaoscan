@@ -92,6 +92,26 @@ const router = createRouter({
       },
     },
 
+    // DOCUMENTOS LEGALES
+    {
+      path: '/legal/terms',
+      name: 'LegalTerms',
+      component: () => import('@/views/LegalTermsView.vue'),
+      meta: {
+        title: 'Términos y Condiciones | CacaoScan',
+        requiresAuth: false,
+      },
+    },
+    {
+      path: '/legal/privacy',
+      name: 'PrivacyPolicy',
+      component: () => import('@/views/PrivacyPolicyView.vue'),
+      meta: {
+        title: 'Política de Privacidad | CacaoScan',
+        requiresAuth: false,
+      },
+    },
+
     // RUTAS DEL ADMINISTRADOR
     {
       path: '/admin',
