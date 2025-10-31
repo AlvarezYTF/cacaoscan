@@ -48,7 +48,7 @@
         @view-lotes="$emit('view-lotes', $event)"
         @confirm-delete="$emit('confirm-delete', $event)"
         @confirm-activate="$emit('confirm-activate', $event)"
-        @click="$emit('view-finca', $event)"
+        @view-details="$emit('view-details', $event)"
       />
     </div>
 
@@ -98,7 +98,7 @@ defineProps({
   }
 })
 
-defineEmits(['edit', 'view-lotes', 'view-finca', 'create', 'retry', 'confirm-delete', 'confirm-activate'])
+defineEmits(['edit', 'view-lotes', 'view-details', 'create', 'retry', 'confirm-delete', 'confirm-activate'])
 </script>
 
 <style scoped>

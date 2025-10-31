@@ -740,9 +740,29 @@ class FincaDetailSerializer(FincaSerializer):
         """Obtener lotes de la finca."""
         # ImportaciÃ³n diferida para evitar circular imports
         try:
-            from .serializers import LoteSerializer
-            return LoteSerializer(obj.lotes.all(), many=True).data
-        except ImportError:
+            # LoteSerializer se define después en el mismo archivo
+            # Importamos directamente el nombre de la clase usando forward reference
+            from fincas_app.models import Lote
+            lotes = obj.lotes.all()[:10]  # Limitar a 10 lotes para evitar sobrecarga
+            
+            # Serializar manualmente para evitar dependencias circulares
+            lotes_data = []
+            for lote in lotes:
+                lotes_data.append({
+                    'id': lote.id,
+                    'identificador': lote.identificador,
+                    'variedad': lote.variedad,
+                    'estado': lote.estado,
+                    'activo': lote.activo,
+                    'fecha_plantacion': lote.fecha_plantacion.isoformat() if lote.fecha_plantacion else None,
+                    'area_hectareas': float(lote.area_hectareas) if lote.area_hectareas else None,
+                })
+            return lotes_data
+        except Exception as e:
+            # Si hay algún error, retornar lista vacía en lugar de fallar
+            import logging
+            logger = logging.getLogger("cacaoscan.api")
+            logger.warning(f"Error serializando lotes de finca {obj.id}: {e}")
             return []
 
 

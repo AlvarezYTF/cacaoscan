@@ -92,17 +92,15 @@
                   <h6 class="text-muted">Descripción</h6>
                   <p class="text-muted">{{ finca.descripcion }}</p>
                 </div>
-
-                <!-- Coordenadas GPS -->
-                <div v-if="finca.coordenadas_lat && finca.coordenadas_lng" class="mt-3">
-                  <h6 class="text-muted">Coordenadas GPS</h6>
-                  <p class="text-muted">
-                    <i class="fas fa-globe me-2"></i>
-                    {{ finca.coordenadas_lat }}, {{ finca.coordenadas_lng }}
-                  </p>
-                </div>
               </div>
             </div>
+
+            <!-- 🌍 Mapa de ubicación -->
+            <FincaLocationMap
+              :nombre="finca.nombre"
+              :latitud="finca.coordenadas_lat"
+              :longitud="finca.coordenadas_lng"
+            />
 
             <!-- Estadísticas -->
             <div class="card mt-4">
@@ -240,12 +238,24 @@
 </template>
 
 <script setup>
+// 1. Vue core
 import { ref, onMounted, computed } from 'vue'
+
+// 2. Router
 import { useRoute, useRouter } from 'vue-router'
+
+// 3. Stores
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
+
+// 4. Services
 import api from '@/services/api'
+
+// 5. Libraries
 import Swal from 'sweetalert2'
+
+// 6. Components
+import FincaLocationMap from '@/components/fincas/FincaLocationMap.vue'
 
 const route = useRoute()
 const router = useRouter()

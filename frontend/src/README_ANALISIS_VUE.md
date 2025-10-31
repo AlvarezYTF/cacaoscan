@@ -1054,17 +1054,23 @@
 ### 📄 Archivo: `views/PredictionView.vue`
 
 **Severidad:** 🟧 Medio  
-**Líneas:** ~351
+**Líneas:** ~351  
+**Estado:** ✅ REFACTORIZADO
 
 **Problemas detectados:**
-- ❌ NO usa `<script setup>` - Usa `export default` (línea 150)
+- ❌ NO usa `<script setup>` - Usa `export default` con `setup()` (línea 150)
 - ⚠️ Componente moderado en extensión
 - ⚠️ Lógica de predicción mezclada con vista
+- ❌ CSS personalizado extenso (animaciones que pueden usarse con Tailwind/Transition)
 
-**Sugerencias:**
-- Migrar a `<script setup>`
-- Extraer lógica a composable `usePredictionView.js`
-- Separar lógica de presentación
+**Cambios aplicados:**
+- ✅ Migrado a `<script setup>` completamente
+- ✅ Imports organizados por categorías (Vue core, components, services)
+- ✅ Eliminados estilos CSS duplicados, usando Tailwind y Vue Transition
+- ✅ Reemplazada animación CSS personalizada por Vue `<Transition>` component
+- ✅ Mejoras de accesibilidad (type="button" en botones, focus states)
+- ✅ Código simplificado y más legible
+- ✅ Reducción significativa de líneas (~280 líneas vs 351 originales)
 
 ---
 

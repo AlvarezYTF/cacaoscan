@@ -37,7 +37,7 @@
             :user-role="userRole"
             @edit="editFinca"
             @view-lotes="viewLotes"
-            @view-finca="viewFinca"
+            @view-details="viewFincaDetails"
             @create="openCreateModal"
             @retry="loadFincas"
             @confirm-delete="confirmDelete"
@@ -52,6 +52,18 @@
               :is-editing="isEditing"
               @close="closeModal"
               @saved="handleFincaSaved"
+            />
+          </Teleport>
+
+          <!-- Modal de detalles -->
+          <Teleport to="body">
+            <FincaDetailModal
+              :show="showDetailModal"
+              :finca="selectedFincaDetail"
+              :user-role="userRole"
+              @close="closeDetailModal"
+              @edit="editFinca"
+              @view-lotes="viewLotes"
             />
           </Teleport>
         </div>
@@ -77,6 +89,7 @@ import FincaForm from '@/components/FincaForm.vue'
 import FincasHeader from '@/components/common/FincasViewComponents/FincasHeader.vue'
 import FincasFilters from '@/components/common/FincasViewComponents/FincasFilters.vue'
 import FincaList from '@/components/common/FincasViewComponents/FincaList.vue'
+import FincaDetailModal from '@/components/common/FincasViewComponents/FincaDetailModal.vue'
 
 // 5. Services
 import fincasApi from '@/services/fincasApi'
@@ -104,6 +117,8 @@ const filters = ref({
 const showModal = ref(false)
 const selectedFinca = ref(null)
 const isEditing = ref(false)
+const showDetailModal = ref(false)
+const selectedFincaDetail = ref(null)
 const activeSection = ref('fincas')
 
 // Computed
@@ -180,6 +195,18 @@ const editFinca = (finca) => {
 
 const viewFinca = (finca) => {
   router.push(`/fincas/${finca.id}`)
+}
+
+const viewFincaDetails = (finca) => {
+  selectedFincaDetail.value = finca
+  showDetailModal.value = true
+}
+
+const closeDetailModal = () => {
+  showDetailModal.value = false
+  setTimeout(() => {
+    selectedFincaDetail.value = null
+  }, 300)
 }
 
 const viewLotes = (finca) => {

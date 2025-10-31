@@ -1,5 +1,8 @@
 <template>
-  <div class="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 cursor-pointer group">
+  <div 
+    class="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 cursor-pointer group"
+    @click="$emit('view-details', finca)"
+  >
     <div class="p-6">
       <!-- Header de la tarjeta -->
       <div class="flex justify-between items-start mb-4">
@@ -121,7 +124,7 @@ defineProps({
   }
 })
 
-defineEmits(['edit', 'view-lotes', 'confirm-delete', 'confirm-activate'])
+defineEmits(['edit', 'view-lotes', 'confirm-delete', 'confirm-activate', 'view-details'])
 </script>
 
 <style scoped>
