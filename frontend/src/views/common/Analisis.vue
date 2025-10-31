@@ -42,11 +42,11 @@
           <!-- Main Content Card mejorado -->
           <div class="bg-white shadow-lg border-2 border-gray-200 rounded-2xl overflow-hidden">
             <div class="p-8 space-y-8">
-              <!-- Progress Indicator -->
-              <ProgressIndicator v-if="isUploading" :progress="uploadProgress" label="Procesando imágenes..." />
+              <!-- Progress Indicator (solo mientras se sube/procesa) -->
+              <ProgressIndicator v-if="isUploading || isSubmitting" :progress="uploadProgress" label="Procesando imágenes..." />
 
-              <!-- Success Alert -->
-              <div v-if="analysisResult" class="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-8 shadow-lg">
+              <!-- Success Alert (mostrar resultados cuando existan) -->
+              <div v-if="analysisResult && !isUploading && !isSubmitting" class="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-8 shadow-lg">
                 <div class="flex items-start">
                   <div class="flex-shrink-0">
                     <div class="flex items-center justify-center w-16 h-16 bg-green-500 rounded-full">
@@ -84,24 +84,24 @@
 
                     <!-- Estadísticas adicionales -->
                     <div v-if="analysisResult.average_dimensions || analysisResult.total_weight" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                      <div v-if="analysisResult.average_dimensions" class="bg-white rounded-lg p-3 border border-green-200">
+                      <div v-if="analysisResult.average_dimensions && analysisResult.average_dimensions.alto" class="bg-white rounded-lg p-3 border border-green-200">
                         <p class="text-xs text-gray-600 mb-1">Alto Promedio</p>
-                        <p class="text-base font-semibold text-green-900">{{ analysisResult.average_dimensions.alto.toFixed(2) }} mm</p>
+                        <p class="text-base font-semibold text-green-900">{{ (analysisResult.average_dimensions.alto || 0).toFixed(2) }} mm</p>
                       </div>
                       
-                      <div v-if="analysisResult.average_dimensions" class="bg-white rounded-lg p-3 border border-green-200">
+                      <div v-if="analysisResult.average_dimensions && analysisResult.average_dimensions.ancho" class="bg-white rounded-lg p-3 border border-green-200">
                         <p class="text-xs text-gray-600 mb-1">Ancho Promedio</p>
-                        <p class="text-base font-semibold text-green-900">{{ analysisResult.average_dimensions.ancho.toFixed(2) }} mm</p>
+                        <p class="text-base font-semibold text-green-900">{{ (analysisResult.average_dimensions.ancho || 0).toFixed(2) }} mm</p>
                       </div>
                       
-                      <div v-if="analysisResult.average_dimensions" class="bg-white rounded-lg p-3 border border-green-200">
+                      <div v-if="analysisResult.average_dimensions && analysisResult.average_dimensions.grosor" class="bg-white rounded-lg p-3 border border-green-200">
                         <p class="text-xs text-gray-600 mb-1">Grosor Promedio</p>
-                        <p class="text-base font-semibold text-green-900">{{ analysisResult.average_dimensions.grosor.toFixed(2) }} mm</p>
+                        <p class="text-base font-semibold text-green-900">{{ (analysisResult.average_dimensions.grosor || 0).toFixed(2) }} mm</p>
                       </div>
                       
                       <div v-if="analysisResult.total_weight" class="bg-white rounded-lg p-3 border border-green-200">
                         <p class="text-xs text-gray-600 mb-1">Peso Total</p>
-                        <p class="text-base font-semibold text-green-900">{{ analysisResult.total_weight }} g</p>
+                        <p class="text-base font-semibold text-green-900">{{ (analysisResult.total_weight || 0).toFixed(2) }} g</p>
                       </div>
                     </div>
 
@@ -115,8 +115,78 @@
                       </p>
                     </div>
 
+                    <!-- Resultados individuales por imagen -->
+                    <div v-if="analysisResult.predictions && analysisResult.predictions.length > 0" class="mt-6">
+                      <h4 class="text-lg font-semibold text-green-900 mb-4">Resultados Individuales</h4>
+                      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                        <div 
+                          v-for="(prediction, index) in analysisResult.predictions" 
+                          :key="index"
+                          :class="[
+                            'bg-white rounded-lg p-4 border-2 transition-all duration-200',
+                            prediction.success === false || !prediction || prediction.error
+                              ? 'border-red-300 bg-red-50' 
+                              : 'border-green-200 hover:border-green-400 shadow-sm'
+                          ]"
+                        >
+                          <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-semibold text-gray-700">Imagen #{{ index + 1 }}</span>
+                            <span 
+                              v-if="prediction.success === false || prediction.error"
+                              class="px-2 py-1 bg-red-500 text-white text-xs rounded-full"
+                            >
+                              Error
+                            </span>
+                            <span 
+                              v-else-if="prediction.model_version"
+                              class="px-2 py-1 bg-blue-500 text-white text-xs rounded-full"
+                            >
+                              v{{ prediction.model_version }}
+                            </span>
+                          </div>
+                          
+                          <div v-if="prediction.success === false || prediction.error" class="text-sm text-red-600">
+                            {{ prediction.error || 'Error desconocido' }}
+                          </div>
+                          
+                          <div v-else-if="prediction && !prediction.error" class="space-y-2">
+                            <div class="grid grid-cols-2 gap-2">
+                              <div>
+                                <p class="text-xs text-gray-600">Alto</p>
+                                <p class="text-sm font-semibold text-green-900">{{ (prediction.alto_mm || 0).toFixed(2) }} mm</p>
+                                <p v-if="prediction.confidences && prediction.confidences.alto" class="text-xs text-gray-500">
+                                  Conf: {{ ((prediction.confidences.alto || 0) * 100).toFixed(0) }}%
+                                </p>
+                              </div>
+                              <div>
+                                <p class="text-xs text-gray-600">Ancho</p>
+                                <p class="text-sm font-semibold text-green-900">{{ (prediction.ancho_mm || 0).toFixed(2) }} mm</p>
+                                <p v-if="prediction.confidences && prediction.confidences.ancho" class="text-xs text-gray-500">
+                                  Conf: {{ ((prediction.confidences.ancho || 0) * 100).toFixed(0) }}%
+                                </p>
+                              </div>
+                              <div>
+                                <p class="text-xs text-gray-600">Grosor</p>
+                                <p class="text-sm font-semibold text-green-900">{{ (prediction.grosor_mm || 0).toFixed(2) }} mm</p>
+                                <p v-if="prediction.confidences && prediction.confidences.grosor" class="text-xs text-gray-500">
+                                  Conf: {{ ((prediction.confidences.grosor || 0) * 100).toFixed(0) }}%
+                                </p>
+                              </div>
+                              <div>
+                                <p class="text-xs text-gray-600">Peso</p>
+                                <p class="text-sm font-semibold text-green-900">{{ (prediction.peso_g || 0).toFixed(2) }} g</p>
+                                <p v-if="prediction.confidences && prediction.confidences.peso" class="text-xs text-gray-500">
+                                  Conf: {{ ((prediction.confidences.peso || 0) * 100).toFixed(0) }}%
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <!-- Botones de acción -->
-                    <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex flex-col sm:flex-row gap-3 mt-6">
                       <router-link 
                         :to="{ name: 'LoteDetail', params: { id: analysisResult.lote_id } }"
                         class="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white text-base font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 shadow-md"
@@ -141,8 +211,8 @@
                 </div>
               </div>
 
-              <!-- Batch Info Form mejorado -->
-              <div v-if="!analysisResult" class="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-8 shadow-sm">
+              <!-- Batch Info Form mejorado (ocultar cuando hay resultados) -->
+              <div v-if="!analysisResult && !isSubmitting && !isUploading" class="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-8 shadow-sm">
                 <div class="flex items-center gap-3 mb-6">
                   <div class="p-2 bg-green-100 rounded-xl">
                     <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,8 +231,8 @@
                 />
               </div>
 
-              <!-- Image Capture Section -->
-              <div v-if="!analysisResult" class="space-y-6">
+              <!-- Image Capture Section (ocultar cuando hay resultados) -->
+              <div v-if="!analysisResult && !isSubmitting && !isUploading" class="space-y-6">
                 <div class="text-center">
                   <h2 class="text-2xl font-semibold text-gray-900 mb-3">Imágenes del Lote</h2>
                   <p class="text-gray-600 text-lg">Captura fotos de alta calidad de los granos de cacao para un análisis preciso</p>
@@ -236,8 +306,8 @@
                 </div>
           </div>
 
-              <!-- Submit Button mejorado -->
-              <div v-if="!analysisResult" class="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-8 shadow-sm">
+              <!-- Botón de acción final (ocultar cuando hay resultados) -->
+              <div v-if="!analysisResult && !isSubmitting && !isUploading" class="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-8 shadow-sm">
                 <div class="text-center mb-6">
                   <div class="flex items-center justify-center mb-3">
                     <div class="p-2 bg-green-600 rounded-full">
@@ -476,15 +546,16 @@ export default {
         const result = await analysisStore.submitBatch();
 
         // Handle success
-        analysisResult.value = result;
-
-        // Reset form after successful submission
         if (result) {
+          analysisResult.value = result;
+          // Reset form after successful submission (pero mantener los resultados visibles)
           resetForm();
         }
 
       } catch (error) {
         console.error('Error submitting analysis:', error);
+        // En caso de error, limpiar el estado de carga
+        analysisResult.value = null;
       } finally {
         isSubmitting.value = false;
       }
