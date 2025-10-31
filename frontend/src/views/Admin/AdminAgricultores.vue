@@ -743,7 +743,8 @@ export default {
       getActiveFarmers,
       getTotalArea,
       loadFarmers,
-      displayedFarmers
+      displayedFarmers,
+      descargarReporteAgricultores
     };
   }
 };

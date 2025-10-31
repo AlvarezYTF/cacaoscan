@@ -81,7 +81,7 @@ class CacaoReportExcelGenerator:
                 cell.alignment = Alignment(horizontal='center', vertical='center')
             
             # Obtener todos los usuarios que no son superusuarios (agricultores y analistas)
-            farmers = User.objects.filter(is_superuser=False).select_related('auth_profile').prefetch_related('api_fincas')
+            farmers = User.objects.filter(is_superuser=False).select_related('auth_profile').prefetch_related('fincas_app_fincas')
             
             # Contador de filas
             row_num = 2
@@ -93,19 +93,19 @@ class CacaoReportExcelGenerator:
                 phone = getattr(farmer, 'auth_profile', None) and getattr(farmer.auth_profile, 'phone_number', '') or ''
                 
                 # Obtener fincas del agricultor
-                fincas = farmer.api_fincas.all()
+                fincas = farmer.fincas_app_fincas.all()
                 
                 if fincas.exists():
                     # Si tiene fincas, crear una fila por cada finca
                     for finca in fincas:
                         self.ws.append([
-                            name,
-                            email,
-                            phone,
-                            finca.departamento,
-                            finca.municipio,
-                            finca.nombre,
-                            float(finca.hectareas),
+                            name or '',
+                            email or '',
+                            phone or '',
+                            finca.departamento or '',
+                            finca.municipio or '',
+                            finca.nombre or '',
+                            float(finca.hectareas) if finca.hectareas is not None else 0.0,
                             "Activa" if finca.activa else "Inactiva",
                             finca.fecha_registro.strftime('%Y-%m-%d') if finca.fecha_registro else ''
                         ])
@@ -167,7 +167,6 @@ class CacaoReportExcelGenerator:
         """
         try:
             from django.contrib.auth.models import User
-            from .models import Finca
             from openpyxl.styles import Border, Side
             
             self.workbook = Workbook()
@@ -201,12 +200,12 @@ class CacaoReportExcelGenerator:
                 col.border = thin_border
             
             # Obtener todos los usuarios con prefetch de fincas
-            users = User.objects.all().order_by('-date_joined').select_related('auth_profile', 'auth_email_token').prefetch_related('api_fincas', 'groups')
+            users = User.objects.all().order_by('-date_joined').select_related('auth_profile', 'auth_email_token').prefetch_related('fincas_app_fincas', 'groups')
             
             if users.exists():
                 # Iterar usuarios y agregar información de fincas
                 for user in users:
-                    fincas = user.api_fincas.all()
+                    fincas = user.fincas_app_fincas.all()
                     
                     # Determinar rol del usuario
                     if user.is_superuser or user.is_staff:
