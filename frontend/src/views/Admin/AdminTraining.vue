@@ -297,6 +297,63 @@
 
         <!-- Right Column: Stats and Quick Actions -->
         <div class="space-y-6">
+          <!-- Start Training Section -->
+          <div
+            class="bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-green-200 transition-all duration-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-xl font-bold text-gray-900">Iniciar Entrenamiento</h3>
+              <p class="text-sm text-gray-600 mt-1">Entrena modelos ML con configuración mejorada</p>
+            </div>
+
+            <div class="p-6">
+              <div class="space-y-4">
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 class="font-semibold text-green-900 mb-2">Configuración Mejorada</h4>
+                  <ul class="text-sm text-green-800 space-y-1">
+                    <li>✓ 150 épocas (aprendizaje profundo)</li>
+                    <li>✓ Validación automática de crops</li>
+                    <li>✓ Regeneración de crops malos</li>
+                    <li>✓ Confianza mejorada (≥80%)</li>
+                    <li>✓ Detección YOLO mejorada</li>
+                  </ul>
+                </div>
+
+                <button 
+                  @click="startTraining" 
+                  :disabled="isStartingTraining || hasActiveTraining"
+                  :title="hasActiveTraining ? `Hay ${activeTrainings.length} entrenamiento${activeTrainings.length > 1 ? 's' : ''} en ejecución. Espera a que ${activeTrainings.length > 1 ? 'terminen' : 'termine'}.` : 'Iniciar nuevo entrenamiento'"
+                  class="w-full inline-flex items-center justify-center px-6 py-3 text-base font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+                  <svg v-if="isStartingTraining" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none"
+                    viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                  </svg>
+                  <svg v-else class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {{ isStartingTraining ? 'Iniciando entrenamiento...' : (hasActiveTraining ? `Hay ${activeTrainings.length} entrenamiento${activeTrainings.length > 1 ? 's' : ''} activo${activeTrainings.length > 1 ? 's' : ''}` : 'Iniciar Entrenamiento') }}
+                </button>
+
+                <div v-if="lastTrainingResult" class="mt-4 p-3 rounded-lg"
+                  :class="lastTrainingResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+                  <p class="text-sm font-medium"
+                    :class="lastTrainingResult.success ? 'text-green-800' : 'text-red-800'">
+                    {{ lastTrainingResult.message }}
+                  </p>
+                  <p v-if="lastTrainingResult.job_id" class="text-xs mt-1"
+                    :class="lastTrainingResult.success ? 'text-green-600' : 'text-red-600'">
+                    Job ID: {{ lastTrainingResult.job_id }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Quick Statistics -->
           <div
             class="bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-green-200 transition-all duration-200">
@@ -364,11 +421,11 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue';
-import { getTrainingHistory, cancelTrainingJob, getModelMetrics, compareModels } from '@/services/adminApi.js';
+import { getTrainingHistory, cancelTrainingJob, getModelMetrics, compareModels, startMLTraining } from '@/services/adminApi.js';
 
 export default {
   name: 'AdminTraining',
@@ -423,6 +480,11 @@ export default {
     const isSubmittingDataset = ref(false);
     const fileInput = ref(null);
 
+    // Training start state
+    const isStartingTraining = ref(false);
+    const lastTrainingResult = ref(null);
+    const refreshIntervalRef = ref(null);
+
     // Computed
     const filteredTrainingHistory = computed(() => {
       let filtered = trainingHistory.value;
@@ -439,7 +501,20 @@ export default {
     });
 
     const activeTrainings = computed(() => {
-      return trainingHistory.value.filter(job => job.status === 'running');
+      // Incluir solo entrenamientos que realmente están activos (running o pending)
+      return trainingHistory.value.filter(job => 
+        job.status === 'running' || job.status === 'pending'
+      );
+    });
+
+    const hasActiveTraining = computed(() => {
+      // Verificar que haya entrenamientos activos y que no estén completados o fallidos
+      const active = activeTrainings.value.filter(job => 
+        job.status !== 'completed' && 
+        job.status !== 'failed' && 
+        job.status !== 'cancelled'
+      );
+      return active.length > 0;
     });
 
     const completedJobs = computed(() => {
@@ -661,9 +736,108 @@ export default {
       }
     };
 
+    const startTraining = async () => {
+      if (hasActiveTraining.value) {
+        alert('Ya hay un entrenamiento en ejecución. Espera a que termine o cancélalo primero.');
+        return;
+      }
+
+      // Limpiar intervalo anterior si existe
+      if (refreshIntervalRef.value) {
+        clearInterval(refreshIntervalRef.value);
+        refreshIntervalRef.value = null;
+      }
+
+      isStartingTraining.value = true;
+      lastTrainingResult.value = null;
+
+      try {
+        console.log('Iniciando entrenamiento ML...');
+        const result = await startMLTraining();
+        
+        // El backend devuelve job_id directamente o en job.job_id
+        const jobId = result.job_id || result.job?.job_id || result.data?.job_id || result.data?.job?.job_id;
+        
+        lastTrainingResult.value = {
+          success: true,
+          message: 'Entrenamiento iniciado exitosamente',
+          job_id: jobId
+        };
+
+        // Actualizar historial después de iniciar
+        await refreshTrainingData();
+
+        // Recargar historial periódicamente (solo si el entrenamiento se inició correctamente)
+        if (jobId) {
+          
+          // Limpiar cualquier intervalo anterior
+          if (refreshIntervalRef.value) {
+            clearInterval(refreshIntervalRef.value);
+          }
+          
+          refreshIntervalRef.value = setInterval(async () => {
+            try {
+              await refreshTrainingData();
+              
+              // Verificar si el job actual ya terminó (completed, failed, o cancelled)
+              const currentJob = trainingHistory.value.find(job => job.job_id === jobId);
+              if (currentJob && (currentJob.status === 'completed' || currentJob.status === 'failed' || currentJob.status === 'cancelled')) {
+                // Job terminado, detener polling
+                if (refreshIntervalRef.value) {
+                  clearInterval(refreshIntervalRef.value);
+                  refreshIntervalRef.value = null;
+                }
+                return;
+              }
+              
+              // Verificar si hay algún entrenamiento activo
+              const stillActive = trainingHistory.value.filter(job => 
+                (job.status === 'running' || job.status === 'pending') &&
+                job.status !== 'completed' && 
+                job.status !== 'failed' && 
+                job.status !== 'cancelled'
+              );
+              
+              // Si no hay entrenamientos activos, detener polling
+              if (stillActive.length === 0 && refreshIntervalRef.value) {
+                clearInterval(refreshIntervalRef.value);
+                refreshIntervalRef.value = null;
+              }
+            } catch (error) {
+              console.error('Error en actualización periódica:', error);
+              // No detener polling en caso de error, solo continuar
+            }
+          }, 5000);
+        }
+
+      } catch (error) {
+        console.error('Error iniciando entrenamiento:', error);
+        lastTrainingResult.value = {
+          success: false,
+          message: error.message || 'Error al iniciar el entrenamiento. Verifica que el worker de Celery esté corriendo.',
+          job_id: null
+        };
+        
+        // Limpiar intervalo si hay error
+        if (refreshIntervalRef.value) {
+          clearInterval(refreshIntervalRef.value);
+          refreshIntervalRef.value = null;
+        }
+      } finally {
+        isStartingTraining.value = false;
+      }
+    };
+
     // Lifecycle
     onMounted(() => {
       refreshTrainingData();
+    });
+
+    onBeforeUnmount(() => {
+      if (refreshIntervalRef.value) {
+        clearInterval(refreshIntervalRef.value);
+        refreshIntervalRef.value = null;
+      }
     });
 
     return {
@@ -691,6 +865,9 @@ export default {
       isDragOver,
       isSubmittingDataset,
       fileInput,
+      isStartingTraining,
+      lastTrainingResult,
+      refreshIntervalRef,
 
       // Computed
       filteredTrainingHistory,
@@ -698,6 +875,7 @@ export default {
       completedJobs,
       stats,
       canSubmitDataset,
+      hasActiveTraining,
 
       // Methods
       refreshTrainingData,
@@ -713,7 +891,8 @@ export default {
       handleDragEnter,
       handleDragLeave,
       removeImage,
-      submitDataset
+      submitDataset,
+      startTraining
     };
   }
 };
