@@ -447,7 +447,6 @@ ESCALABILIDAD:
 
 MANTENIMIENTO:
 --------------
-- Los modelos deben reentrenarse periódicamente con nuevos datos para
   mantener la precisión
 - La base de datos crece con el tiempo y puede necesitar limpieza periódica
 - Los logs y crops de runtime deben limpiarse ocasionalmente para ahorrar
