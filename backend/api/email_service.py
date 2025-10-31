@@ -564,8 +564,21 @@ def send_email_notification(
 
         email.attach_alternative(html_content, "text/html")
 
+        # === Logs de depuración ===
+        logger.info(f"[DEBUG EMAIL] Intentando enviar a {user_email}")
+        logger.info(f"[DEBUG EMAIL] Template HTML: {html_template}")
+        logger.info(f"[DEBUG EMAIL] Template TXT: {text_template}")
+        logger.info(f"[DEBUG EMAIL] Remitente (from_email): {from_email}")
+        logger.info(f"[DEBUG EMAIL] SMTP User: {settings.EMAIL_HOST_USER}")
+        logger.info(f"[DEBUG EMAIL] SMTP Host: {settings.EMAIL_HOST}:{settings.EMAIL_PORT}")
+        logger.info(f"[DEBUG EMAIL] TLS habilitado: {settings.EMAIL_USE_TLS}")
+        logger.info(f"[DEBUG EMAIL] Asunto: {subject}")
+        logger.info(f"[DEBUG EMAIL] Contexto recibido: {list(context.keys())}")
+
         # === Enviar correo ===
+        logger.info(f"[DEBUG EMAIL] Abriendo conexión SMTP...")
         sent_count = email.send(fail_silently=False)
+        logger.info(f"[DEBUG EMAIL] Email enviado. Contador: {sent_count}")
 
         if sent_count:
             logger.info(f"[EMAIL] ✅ Correo '{notification_type}' enviado a {user_email}")
@@ -580,6 +593,13 @@ def send_email_notification(
 
     except Exception as e:
         logger.error(f"[EMAIL] ⚠️ Error al enviar correo a {user_email}: {e}", exc_info=True)
+        logger.error(f"[DEBUG EMAIL] Tipo de excepción: {type(e).__name__}")
+        logger.error(f"[DEBUG EMAIL] Detalles del error: {str(e)}")
+        # Log adicional para errores SMTP específicos
+        if hasattr(e, 'smtp_code'):
+            logger.error(f"[DEBUG EMAIL] Código SMTP: {e.smtp_code}")
+        if hasattr(e, 'smtp_error'):
+            logger.error(f"[DEBUG EMAIL] Error SMTP: {e.smtp_error}")
 
         # === Fallback de emergencia ===
         try:
