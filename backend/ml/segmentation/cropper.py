@@ -207,7 +207,9 @@ class CacaoCropper:
                 'mask_path': mask_path,
                 'confidence': prediction['confidence'],
                 'area': prediction['area'],
-                'bbox': prediction['bbox']
+                'bbox': prediction['bbox'],
+                'mask': prediction.get('mask'),  # Incluir máscara de YOLO para refinamiento
+                'original_image_path': str(image_path)  # Para refinamiento con imagen original
             }
             
         except Exception as e:
