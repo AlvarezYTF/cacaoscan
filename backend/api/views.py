@@ -2411,11 +2411,11 @@ class UserListView(APIView):
             if is_verified is not None:
                 verified_bool = is_verified.lower() in ['true', '1', 'yes']
                 if verified_bool:
-                    queryset = queryset.filter(api_email_token__is_verified=True)
+                    queryset = queryset.filter(auth_email_token__is_verified=True)
                 else:
                     queryset = queryset.filter(
-                        Q(api_email_token__is_verified=False) | 
-                        Q(api_email_token__isnull=True)
+                        Q(auth_email_token__is_verified=False) | 
+                        Q(auth_email_token__isnull=True)
                     )
             
             if search:
@@ -2791,7 +2791,7 @@ class UserStatsView(APIView):
             
             # Usuarios por estado de verificación
             verified_users = User.objects.filter(
-                api_email_token__is_verified=True
+                auth_email_token__is_verified=True
             ).count()
             
             # Usuarios nuevos esta semana
@@ -5033,7 +5033,7 @@ class UserDetailView(APIView):
             
             # Obtener usuario
             try:
-                user = User.objects.prefetch_related('groups').get(id=user_id)
+                user = User.objects.select_related('api_profile', 'api_email_token').prefetch_related('groups', 'api_cacao_images', 'images_app_cacao_images').get(id=user_id)
             except User.DoesNotExist:
                 return Response({
                     'error': 'Usuario no encontrado',

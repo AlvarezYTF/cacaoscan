@@ -81,7 +81,7 @@ class CacaoReportExcelGenerator:
                 cell.alignment = Alignment(horizontal='center', vertical='center')
             
             # Obtener todos los usuarios que no son superusuarios (agricultores y analistas)
-            farmers = User.objects.filter(is_superuser=False).select_related('api_profile').prefetch_related('api_fincas')
+            farmers = User.objects.filter(is_superuser=False).select_related('auth_profile').prefetch_related('api_fincas')
             
             # Contador de filas
             row_num = 2
@@ -90,7 +90,7 @@ class CacaoReportExcelGenerator:
                 # Información del agricultor
                 name = f"{farmer.first_name} {farmer.last_name}".strip() or farmer.username
                 email = farmer.email
-                phone = getattr(farmer, 'api_profile', None) and getattr(farmer.api_profile, 'phone_number', '') or ''
+                phone = getattr(farmer, 'auth_profile', None) and getattr(farmer.auth_profile, 'phone_number', '') or ''
                 
                 # Obtener fincas del agricultor
                 fincas = farmer.api_fincas.all()
@@ -201,7 +201,7 @@ class CacaoReportExcelGenerator:
                 col.border = thin_border
             
             # Obtener todos los usuarios con prefetch de fincas
-            users = User.objects.all().order_by('-date_joined').select_related('api_profile', 'api_email_token').prefetch_related('api_fincas', 'groups')
+            users = User.objects.all().order_by('-date_joined').select_related('auth_profile', 'auth_email_token').prefetch_related('api_fincas', 'groups')
             
             if users.exists():
                 # Iterar usuarios y agregar información de fincas

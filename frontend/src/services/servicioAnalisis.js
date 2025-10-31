@@ -4,6 +4,7 @@
  */
 
 import api from './api'
+import { normalizeResponse } from '@/utils/apiResponse'
 
 const servicioAnalisis = {
   /**
@@ -12,7 +13,7 @@ const servicioAnalisis = {
   async getAnalisis(params = {}) {
     try {
       const response = await api.get('/analisis/', { params })
-      return response.data
+      return normalizeResponse(response.data)
     } catch (error) {
       console.error('Error obteniendo análisis:', error)
       throw error

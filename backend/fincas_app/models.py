@@ -46,6 +46,7 @@ class Finca(TimeStampedModel):
     activa = models.BooleanField(default=True, help_text="Indica si la finca está activa")
     
     class Meta:
+        db_table = 'api_finca'
         verbose_name = 'Finca'
         verbose_name_plural = 'Fincas'
         ordering = ['-created_at']

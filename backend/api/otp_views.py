@@ -205,10 +205,10 @@ class VerifyOtpView(APIView):
                     )
 
                     # Marcar verificado si aplica
-                    if hasattr(user, 'api_email_token'):
-                        user.api_email_token.is_verified = True
-                        user.api_email_token.verified_at = timezone.now()
-                        user.api_email_token.save()
+                    if hasattr(user, 'auth_email_token'):
+                        user.auth_email_token.is_verified = True
+                        user.auth_email_token.verified_at = timezone.now()
+                        user.auth_email_token.save()
 
                     # Crear Persona si el modelo existe
                     try:

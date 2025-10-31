@@ -1,3 +1,5 @@
+<<<<<<< Current (Your changes)
+=======
 <template>
   <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
     <div class="flex items-center justify-between flex-wrap gap-4">
@@ -41,3 +43,4 @@ const handleCreate = () => {
 <style scoped>
 /* Estilos adicionales si son necesarios */
 </style>
+>>>>>>> Incoming (Background Agent changes)

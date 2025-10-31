@@ -46,13 +46,13 @@
 
           <!-- Modal de formulario -->
           <Teleport to="body">
-          <FincaForm
-            v-if="showModal"
-            :finca="selectedFinca"
-            :is-editing="isEditing"
-            @close="closeModal"
-            @saved="handleFincaSaved"
-          />
+            <FincaForm
+              v-if="showModal"
+              :finca="selectedFinca"
+              :is-editing="isEditing"
+              @close="closeModal"
+              @saved="handleFincaSaved"
+            />
           </Teleport>
         </div>
       </main>
@@ -61,16 +61,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed }   from 'vue'
-import { useRouter }                  from 'vue-router'
-import { useAuthStore }               from '@/stores/auth'
-import { useFincasStore }             from '@/stores/fincas'
-import Sidebar                        from '@/components/layout/Common/Sidebar.vue'
-import FincaForm                      from '@/components/common/FincasViewComponents/FincaForm.vue'
-import FincasHeader                   from '@/components/common/FincasViewComponents/FincasHeader.vue'
-import FincasFilters                  from '@/components/common/FincasViewComponents/FincasFilters.vue'
-import FincaList                      from '@/components/common/FincasViewComponents/FincaList.vue'
-import Swal                           from 'sweetalert2'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { useFincasStore } from '@/stores/fincas'
+import Sidebar from '@/components/layout/Common/Sidebar.vue'
+import FincaForm from '@/components/FincaForm.vue'
+import FincasHeader from '@/components/common/FincasViewComponents/FincasHeader.vue'
+import FincasFilters from '@/components/common/FincasViewComponents/FincasFilters.vue'
+import FincaList from '@/components/common/FincasViewComponents/FincaList.vue'
+import fincasApi from '@/services/fincasApi'
+import Swal from 'sweetalert2'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -107,6 +108,15 @@ const userRole = computed(() => {
   return 'agricultor' // Default to agricultor
 })
 
+// Flag de admin para decidir qué formulario mostrar en creación
+const isAdmin = computed(() => {
+  return (
+    authStore.user?.is_staff === true ||
+    authStore.user?.is_superuser === true ||
+    authStore.userRole === 'admin'
+  )
+})
+
 // Métodos
 const loadFincas = async () => {
   const params = {}
@@ -141,6 +151,7 @@ const clearFilters = () => {
 }
 
 const openCreateModal = () => {
+  console.debug('[Fincas] openCreateModal called, isAdmin:', isAdmin.value)
   selectedFinca.value = null
   isEditing.value = false
   showModal.value = true
@@ -175,7 +186,7 @@ const confirmDelete = async (finca) => {
   const result = await Swal.fire({
     icon: 'warning',
     title: '¿Desactivar finca?',
-    html: `<p>¿Estás seguro de que deseas desactivar la finca <strong>"${finca.nombre}"</strong>?</p><p class="text-sm text-gray-600 mt-2">La finca ya no aparecerá en tu lista, pero los datos se conservarán. Puedes contactar a un administrador si necesitas reactivarla.</p>`,
+    html: "<p>¿Estás seguro de que deseas desactivar la finca <strong>\"" + finca.nombre + "\"</strong>?</p><p class=\"text-sm text-gray-600 mt-2\">La finca ya no aparecerá en tu lista, pero los datos se conservarán. Puedes contactar a un administrador si necesitas reactivarla.</p>",
     showCancelButton: true,
     confirmButtonText: 'Sí, desactivar',
     cancelButtonText: 'Cancelar',
@@ -210,7 +221,7 @@ const confirmActivate = async (finca) => {
   const result = await Swal.fire({
     icon: 'question',
     title: '¿Activar finca?',
-    html: `<p>¿Estás seguro de que deseas reactivar la finca <strong>"${finca.nombre}"</strong>?</p><p class="text-sm text-gray-600 mt-2">La finca volverá a estar disponible para el agricultor.</p>`,
+    html: "<p>¿Estás seguro de que deseas reactivar la finca <strong>\"" + finca.nombre + "\"</strong>?</p><p class=\"text-sm text-gray-600 mt-2\">La finca volverá a estar disponible para el agricultor.</p>",
     showCancelButton: true,
     confirmButtonText: 'Sí, activar',
     cancelButtonText: 'Cancelar',
@@ -225,7 +236,7 @@ const confirmActivate = async (finca) => {
       Swal.fire({
         icon: 'success',
         title: 'Finca activada',
-        text: `La finca "${finca.nombre}" ha sido reactivada. El agricultor podrá verla nuevamente en su gestión.`,
+        text: "La finca \"" + finca.nombre + "\" ha sido reactivada. El agricultor podrá verla nuevamente en su gestión.",
         timer: 3000,
         showConfirmButton: false
       })
