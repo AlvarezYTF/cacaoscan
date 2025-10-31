@@ -98,7 +98,7 @@ const authApi = {
       
       console.log('📤 [authApi] Payload enviado al backend (personas):', payload);
       
-      const response = await api.post('/personas/registrar/', payload)
+      const response = await api.post('/api/v1/personas/registrar/', payload)
       
       console.log('🔍 [authApi] Respuesta cruda del backend (registro):', response.data)
       

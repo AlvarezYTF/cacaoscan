@@ -316,6 +316,9 @@ class PersonaRegistroSerializer(serializers.Serializer):
         departamento = validated_data.pop('departamento_obj', None)
         municipio = validated_data.pop('municipio_obj', None)
         
+        # Verificar si se debe omitir la verificación de email (para admins)
+        skip_email_verification = self.context.get('skip_email_verification', False)
+        
         # Crear el usuario (username será el email)
         user = User.objects.create_user(
             username=email,
@@ -323,39 +326,46 @@ class PersonaRegistroSerializer(serializers.Serializer):
             password=password,
             first_name=validated_data.get('primer_nombre', ''),
             last_name=validated_data.get('primer_apellido', ''),
-            is_active=False  # Usuario inactivo hasta verificar el email
+            is_active=True if skip_email_verification else False  # Activo si es admin
         )
         
         # Crear token de verificación de email
         from api.models import EmailVerificationToken
         verification_token = EmailVerificationToken.create_for_user(user)
         
-        # Enviar email de verificación
-        try:
-            from django.conf import settings
-            from api.email_service import send_custom_email
-            
-            verification_url = f"{settings.FRONTEND_URL}/verify-email/{verification_token.token}"
-            
-            html_content = f"""
-            <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #4CAF50;">¡Bienvenido a CacaoScan, {user.get_full_name() or user.username}!</h2>
-                    <p>Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu dirección de correo electrónico haciendo clic en el siguiente enlace:</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="{verification_url}" style="background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Verificar mi correo</a>
+        # Si es creación por admin, marcar como verificado
+        if skip_email_verification:
+            verification_token.is_verified = True
+            verification_token.verified_at = timezone.now()
+            verification_token.save()
+        
+        # Enviar email de verificación solo si no se omite
+        if not skip_email_verification:
+            try:
+                from django.conf import settings
+                from api.email_service import send_custom_email
+                
+                verification_url = f"{settings.FRONTEND_URL}/verify-email/{verification_token.token}"
+                
+                html_content = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #4CAF50;">¡Bienvenido a CacaoScan, {user.get_full_name() or user.username}!</h2>
+                        <p>Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu dirección de correo electrónico haciendo clic en el siguiente enlace:</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{verification_url}" style="background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Verificar mi correo</a>
+                        </div>
+                        <p>O copia y pega este enlace en tu navegador:</p>
+                        <p style="word-break: break-all; color: #666;">{verification_url}</p>
+                        <p style="margin-top: 30px; font-size: 12px; color: #999;">Este enlace expirará en 24 horas.</p>
+                        <p style="font-size: 12px; color: #999;">Si no creaste esta cuenta, puedes ignorar este correo.</p>
                     </div>
-                    <p>O copia y pega este enlace en tu navegador:</p>
-                    <p style="word-break: break-all; color: #666;">{verification_url}</p>
-                    <p style="margin-top: 30px; font-size: 12px; color: #999;">Este enlace expirará en 24 horas.</p>
-                    <p style="font-size: 12px; color: #999;">Si no creaste esta cuenta, puedes ignorar este correo.</p>
-                </div>
-            </body>
-            </html>
-            """
-            
-            text_content = f"""
+                </body>
+                </html>
+                """
+                
+                text_content = f"""
 Bienvenido a CacaoScan, {user.get_full_name() or user.username}!
 
 Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu dirección de correo electrónico visitando el siguiente enlace:
@@ -365,18 +375,18 @@ Gracias por registrarte en nuestra plataforma. Para completar tu registro, por f
 Este enlace expirará en 24 horas.
 
 Si no creaste esta cuenta, puedes ignorar este correo.
-            """
-            
-            send_custom_email(
-                to_emails=[user.email],
-                subject="Verifica tu correo electrónico - CacaoScan",
-                html_content=html_content,
-                text_content=text_content
-            )
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error enviando email de verificación: {e}")
+                """
+                
+                send_custom_email(
+                    to_emails=[user.email],
+                    subject="Verifica tu correo electrónico - CacaoScan",
+                    html_content=html_content,
+                    text_content=text_content
+                )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error enviando email de verificación: {e}")
         
         # Crear la persona asociada al usuario con catálogos y ubicaciones normalizadas
         persona = Persona.objects.create(

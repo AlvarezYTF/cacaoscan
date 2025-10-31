@@ -45,14 +45,15 @@
           />
 
           <!-- Modal de formulario -->
-          <div v-if="showModal">
+          <Teleport to="body">
             <FincaForm
+              v-if="showModal"
               :finca="selectedFinca"
               :is-editing="isEditing"
               @close="closeModal"
               @saved="handleFincaSaved"
             />
-          </div>
+          </Teleport>
         </div>
       </main>
     </div>

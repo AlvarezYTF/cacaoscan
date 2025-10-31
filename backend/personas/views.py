@@ -21,8 +21,18 @@ from .models import Persona
 
 
 class PersonaRegistroView(APIView):
-    """Inicia flujo de verificación por OTP. No crea usuario/persona aquí."""
+    """
+    Endpoint para registro de usuario y persona.
+    - Si el usuario está autenticado y es admin/staff: crea el usuario directamente sin verificación
+    - Si no está autenticado o no es admin: inicia flujo de verificación por OTP
+    """
     permission_classes = [AllowAny]
+
+    def _is_admin(self, user):
+        """Verificar si el usuario es administrador."""
+        if not user or not user.is_authenticated:
+            return False
+        return user.is_superuser or user.is_staff
 
     def post(self, request):
         """Dispara envío de OTP guardando el formulario en temp_data sin reenviar la request."""
@@ -37,6 +47,34 @@ class PersonaRegistroView(APIView):
             if User.objects.filter(email=email).exists():
                 return Response({'detail': 'El email ya está registrado.'}, status=status.HTTP_400_BAD_REQUEST)
 
+            # Si el usuario es admin, crear directamente sin verificación
+            if self._is_admin(request.user):
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Admin {request.user.username} creando usuario: {email}")
+
+                # Validar y crear usando el serializer
+                serializer = PersonaRegistroSerializer(
+                    data=request.data,
+                    context={'skip_email_verification': True}
+                )
+                if not serializer.is_valid():
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+                # Crear usuario y persona directamente (sin verificación de email)
+                # El serializer ya maneja la activación y verificación cuando skip_email_verification=True
+                persona = serializer.save()
+
+                logger.info(f"Usuario {email} creado exitosamente por admin {request.user.username}")
+
+                return Response({
+                    'message': 'Agricultor creado exitosamente.',
+                    'email': email,
+                    'persona_id': persona.id,
+                    'user_id': persona.user.id
+                }, status=status.HTTP_201_CREATED)
+
+            # Si no es admin, seguir flujo OTP normal
             # Rate limit y creación/actualización del pending
             from auth_app.models import PendingEmailVerification
             existing = PendingEmailVerification.objects.filter(email=email).first()
@@ -82,7 +120,10 @@ class PersonaRegistroView(APIView):
             return Response({'message': 'Código enviado con éxito al correo.', 'email': email}, status=status.HTTP_202_ACCEPTED)
 
         except Exception as e:
-            return Response({'detail': f'Error iniciando verificación: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error en registro: {str(e)}", exc_info=True)
+            return Response({'detail': f'Error procesando registro: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class PersonaListaView(APIView):
