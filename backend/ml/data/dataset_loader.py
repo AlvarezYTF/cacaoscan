@@ -99,8 +99,8 @@ class CacaoDatasetLoader:
             logger.info(f"Archivo CSV detectado automáticamente: {csv_file}")
             return csv_file
         
-        # Múltiples archivos CSV - priorizar dataset_sin_comillas.csv
-        preferred_names = ["dataset_sin_comillas.csv", "dataset.csv"]
+        # Múltiples archivos CSV - priorizar dataset_cacao.clean.csv
+        preferred_names = ["dataset_cacao.clean.csv", "dataset_sin_comillas.csv", "dataset.csv"]
         
         for preferred_name in preferred_names:
             for csv_file in csv_files:
@@ -139,7 +139,7 @@ class CacaoDatasetLoader:
         if missing_columns:
             raise ValueError(f"Columnas faltantes en el dataset: {missing_columns}")
         
-        logger.info(f"✅ Columnas validadas: {list(df.columns)}")
+        logger.info(f"[OK] Columnas validadas: {list(df.columns)}")
         
         # Convertir tipos de datos y manejar valores nulos
         initial_count = len(df)
@@ -186,7 +186,7 @@ class CacaoDatasetLoader:
             df = df.drop_duplicates(subset=['id'], keep='first')
             logger.info(f"Dataset después de eliminar duplicados: {len(df)} registros")
         
-        logger.info(f"✅ Dataset cargado exitosamente: {len(df)} registros válidos")
+        logger.info(f"[OK] Dataset cargado exitosamente: {len(df)} registros válidos")
         logger.info(f"Columnas finales: {list(df.columns)}")
         
         return df
@@ -214,17 +214,17 @@ class CacaoDatasetLoader:
                 valid_records.append(row)
             else:
                 missing_ids.append(int(image_id))
-                logger.debug(f"❌ Imagen faltante para ID {image_id}: {image_path}")
+                logger.debug(f"[ERROR] Imagen faltante para ID {image_id}: {image_path}")
         
         # Guardar log de IDs faltantes
         if missing_ids:
             log_message = f"IDs con imágenes faltantes: {sorted(missing_ids)}"
             write_log(self.missing_log_path, log_message)
-            logger.warning(f"📝 Guardado log de {len(missing_ids)} IDs faltantes en {self.missing_log_path}")
+            logger.warning(f"[INFO] Guardado log de {len(missing_ids)} IDs faltantes en {self.missing_log_path}")
         
         valid_df = pd.DataFrame(valid_records) if valid_records else pd.DataFrame()
         
-        logger.info(f"✅ Validación completada: {len(valid_df)} imágenes válidas / ❌ {len(missing_ids)} faltantes")
+        logger.info(f"[OK] Validación completada: {len(valid_df)} imágenes válidas / [ERROR] {len(missing_ids)} faltantes")
         
         return valid_df, missing_ids
     
@@ -263,7 +263,7 @@ class CacaoDatasetLoader:
             }
             valid_records.append(record)
         
-        logger.info(f"✅ Generados {len(valid_records)} registros válidos")
+        logger.info(f"[OK] Generados {len(valid_records)} registros válidos")
         return valid_records
     
     def get_dataset_stats(self) -> Dict:
