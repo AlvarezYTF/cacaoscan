@@ -5,7 +5,7 @@
       :brand-name="'CacaoScan'"
       :user-name="userName"
       :user-role="userRole"
-      :current-route="$route.path"
+      :current-route="route.path"
       :active-section="activeSection"
       :collapsed="isSidebarCollapsed"
       @menu-click="handleMenuClick"
@@ -61,19 +61,34 @@
 </template>
 
 <script setup>
+// 1. Vue core
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+
+// 2. Vue router
+import { useRoute, useRouter } from 'vue-router'
+
+// 3. Stores
 import { useAuthStore } from '@/stores/auth'
 import { useFincasStore } from '@/stores/fincas'
+
+// 4. Components
 import Sidebar from '@/components/layout/Common/Sidebar.vue'
 import FincaForm from '@/components/FincaForm.vue'
 import FincasHeader from '@/components/common/FincasViewComponents/FincasHeader.vue'
 import FincasFilters from '@/components/common/FincasViewComponents/FincasFilters.vue'
 import FincaList from '@/components/common/FincasViewComponents/FincaList.vue'
+
+// 5. Services
 import fincasApi from '@/services/fincasApi'
+
+// 6. Libraries
 import Swal from 'sweetalert2'
 
+// Router & Route
 const router = useRouter()
+const route = useRoute()
+
+// Stores
 const authStore = useAuthStore()
 const fincasStore = useFincasStore()
 
@@ -297,11 +312,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Estilos específicos si son necesarios */
-* {
-  outline: 0 !important;
-}
-
-/* Debug: resaltar elementos problemáticos */
-/* .bg-green { outline: 2px solid red !important; } */
+/* Solo estilos que no están en Tailwind si es necesario */
 </style>

@@ -370,16 +370,52 @@
 
 ### 📄 Archivo: `components/admin/AdminUserComponents/UserFormModal.vue`
 
-**Severidad:** 🟥 Alto
+**Severidad:** 🟥 Alto  
+**Líneas:** ~715  
+**Estado:** ✅ REFACTORIZADO
 
 **Problemas detectados:**
-- ❌ Probablemente no usa `<script setup>` (verificar)
-- ⚠️ Componente modal complejo - Verificar si está dividido
+- ❌ NO usa `<script setup>` - Usa `export default` con `setup()`
+- ⚠️ Componente modal complejo
+- ❌ Usa Font Awesome icons (`<i class="fas fa-...">`)
+- ❌ CSS personalizado extenso (podría migrarse a Tailwind)
+- ❌ Validación de formulario inline
 
-**Sugerencias:**
-- Migrar a `<script setup>`
-- Verificar división de componentes
-- Implementar props tipados
+**Cambios aplicados:**
+- ✅ Migrado a `<script setup>` completamente
+- ✅ Props definidos con `defineProps`
+- ✅ Emits definidos con `defineEmits`
+- ✅ Integrado `useFormValidation` para validación (isValidEmail, isValidPhone, validatePassword)
+- ✅ Reemplazados Font Awesome icons por SVG inline
+- ✅ Migrados estilos CSS a Tailwind CSS completamente
+- ✅ Imports organizados por categorías (Vue core, stores, composables, libraries)
+- ✅ Mejoras de accesibilidad (aria-label, type="button")
+- ✅ Código simplificado y más legible
+- ✅ Reducción significativa de líneas (~450 líneas vs 715 originales)
+
+**Sugerencias adicionales:**
+- Considerar dividir en subcomponentes si crece más (UserFormFields.vue, UserFormCheckboxes.vue)
+
+---
+
+### 📄 Archivo: `views/LotesView.vue`
+
+**Severidad:** 🟧 Medio  
+**Líneas:** ~339  
+**Estado:** ✅ REFACTORIZADO
+
+**Problemas detectados:**
+- ✅ Ya usa `<script setup>` (línea 191)
+- ⚠️ Imports desordenados
+- ⚠️ Falta type="button" en botones
+- ⚠️ Uso de CSS personalizado mínimo (.lotes-view)
+
+**Cambios aplicados:**
+- ✅ Imports organizados por categorías (Vue core, router, components, services)
+- ✅ Mejoras de accesibilidad (type="button" en todos los botones, labels con for, ids únicos)
+- ✅ Eliminado CSS personalizado - migrado completamente a Tailwind
+- ✅ Mejoras en manejo de datos (safe navigation con `?.` para finca)
+- ✅ Código simplificado y más legible
 
 ---
 
@@ -831,16 +867,31 @@
 
 ### 📄 Archivo: `views/Admin/AdminUsuarios.vue`
 
-**Severidad:** 🟥 Alto
+**Severidad:** 🟥 Alto  
+**Líneas:** ~1000  
+**Estado:** ✅ REFACTORIZADO
 
 **Problemas detectados:**
-- ❌ NO usa `<script setup>` - Usa `export default` (línea 190)
-- ⚠️ Componente probablemente extenso
+- ❌ NO usa `<script setup>` - Usa `export default` con `setup()` (línea 190)
+- ❌ **COMPONENTE CRÍTICO - MUY EXTENSO** (~1000 líneas)
+- ❌ CSS personalizado extenso duplicado (ya está en Tailwind)
+- ⚠️ Falta type="button" en botones
 
-**Sugerencias:**
-- Migrar a `<script setup>`
-- Verificar extensión y dividir si es necesario
-- Extraer lógica a composables
+**Cambios aplicados:**
+- ✅ Migrado a `<script setup>` completamente
+- ✅ Eliminados todos los estilos CSS duplicados (ya están en Tailwind)
+- ✅ Imports organizados por categorías (Vue core, router, stores, services, composables, components, libraries)
+- ✅ Mejoras de accesibilidad (type="button" en todos los botones)
+- ✅ Uso de `useRoute()` en lugar de `$route`
+- ✅ Código simplificado y más legible
+- ✅ Reducción significativa de líneas (~650 líneas vs 1000 originales)
+
+**Sugerencias adicionales:**
+- Considerar extraer lógica a composables si crece más:
+  - `useUserManagement.js` - Gestión de usuarios
+  - `useUsersFilters.js` - Filtrado y búsqueda
+  - `useUsersPagination.js` - Paginación
+  - `useBulkUserActions.js` - Acciones masivas
 
 ---
 
@@ -904,56 +955,85 @@
 
 ### 📄 Archivo: `views/common/FincasView.vue`
 
-**Severidad:** 🟩 Bajo
+**Severidad:** 🟩 Bajo  
+**Líneas:** ~308  
+**Estado:** ✅ MEJORADO
 
 **Problemas detectados:**
-- ✅ Usa `<script setup>` (línea 63)
+- ✅ Ya usa `<script setup>` (línea 63)
 - ✅ Estructura bien organizada
-- ✅ Usa composables y stores correctamente
+- ⚠️ Usa `$route` en lugar de `useRoute()`
+- ⚠️ Imports desordenados
+- ⚠️ CSS personalizado mínimo
 
-**Sugerencias:**
-- ✅ Componente bien estructurado
-- ⚠️ Verificar tipado de props si se añaden
+**Cambios aplicados:**
+- ✅ Organizados imports por categorías (Vue core, router, stores, components, services, libraries)
+- ✅ Reemplazado `$route.path` por `route.path` usando `useRoute()`
+- ✅ Eliminado CSS personalizado innecesario
+- ✅ Código más limpio y consistente
 
 ---
 
 ### 📄 Archivo: `views/Agricultor/AgricultorDashboard.vue`
 
-**Severidad:** 🟧 Medio
+**Severidad:** 🟧 Medio  
+**Líneas:** ~268  
+**Estado:** ✅ REFACTORIZADO
 
 **Problemas detectados:**
-- ❌ NO usa `<script setup>` - Usa `export default` (línea 57)
+- ❌ NO usa `<script setup>` - Usa `export default` con `setup()` (línea 57)
 - ⚠️ Componente moderado en extensión
+- ❌ CSS personalizado duplicado (ya está en Tailwind)
+- ❌ Usa `mounted()` y `beforeUnmount()` del Options API
 
-**Sugerencias:**
-- Migrar a `<script setup>`
-- Verificar si requiere división
+**Cambios aplicados:**
+- ✅ Migrado a `<script setup>` completamente
+- ✅ Eliminados estilos CSS duplicados (ya están en Tailwind)
+- ✅ Imports organizados por categorías (Vue core, router, stores, composables, components)
+- ✅ Reemplazados `mounted()` y `beforeUnmount()` con `onMounted()` y `onUnmounted()`
+- ✅ Uso de `useRoute()` en lugar de `router.currentRoute.value`
+- ✅ Código simplificado y más legible
+- ✅ Reducción significativa de líneas (~240 líneas vs 268 originales)
 
 ---
 
 ### 📄 Archivo: `views/Agricultor/AgricultorHistorial.vue`
 
-**Severidad:** 🟧 Medio
+**Severidad:** 🟧 Medio  
+**Líneas:** ~169  
+**Estado:** ✅ REFACTORIZADO
 
 **Problemas detectados:**
-- ❌ NO usa `<script setup>` - Usa `export default` (línea 49)
+- ❌ NO usa `<script setup>` - Usa `export default` con `setup()` (línea 49)
+- ⚠️ Usa `$route.path` en lugar de `useRoute()`
+- ⚠️ Imports desordenados
 
-**Sugerencias:**
-- Migrar a `<script setup>`
-- Verificar tipado de props
+**Cambios aplicados:**
+- ✅ Migrado a `<script setup>` completamente
+- ✅ Imports organizados por categorías (Vue core, router, stores, composables, components)
+- ✅ Uso de `useRoute()` en lugar de `$route.path`
+- ✅ Uso de `route.path` en lugar de `router.currentRoute.value.path`
+- ✅ Código simplificado y más legible
 
 ---
 
 ### 📄 Archivo: `views/Agricultor/AgricultorReportes.vue`
 
-**Severidad:** 🟧 Medio
+**Severidad:** 🟧 Medio  
+**Líneas:** ~120  
+**Estado:** ✅ REFACTORIZADO
 
 **Problemas detectados:**
-- ❌ NO usa `<script setup>` - Usa `export default` (línea 44)
+- ❌ NO usa `<script setup>` - Usa `export default` con `setup()` (línea 44)
+- ⚠️ Usa `$route.path` en lugar de `useRoute()`
+- ⚠️ Imports desordenados
 
-**Sugerencias:**
-- Migrar a `<script setup>`
-- Verificar tipado de props
+**Cambios aplicados:**
+- ✅ Migrado a `<script setup>` completamente
+- ✅ Imports organizados por categorías (Vue core, router, stores, components)
+- ✅ Uso de `useRoute()` en lugar de `$route.path`
+- ✅ Uso de `route.path` en lugar de `router.currentRoute.value.path`
+- ✅ Código simplificado y más legible
 
 ---
 
