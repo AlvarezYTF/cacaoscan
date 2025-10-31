@@ -65,7 +65,24 @@ class CacaoScalers:
                 else:
                     raise ValueError(f"Columna '{target}' no encontrada en DataFrame")
         else:
-            target_data = data
+            # Si es diccionario, asegurar que los arrays sean 2D para los scalers
+            target_data = {}
+            for target in TARGETS:
+                if target not in data:
+                    raise ValueError(f"Target '{target}' no encontrado en datos")
+                
+                target_array = data[target]
+                # Asegurar que sea array numpy
+                if not isinstance(target_array, np.ndarray):
+                    target_array = np.array(target_array)
+                
+                # Reshape a 2D si es 1D
+                if target_array.ndim == 1:
+                    target_data[target] = target_array.reshape(-1, 1)
+                elif target_array.ndim == 2:
+                    target_data[target] = target_array
+                else:
+                    raise ValueError(f"Array de target '{target}' tiene dimensión inválida: {target_array.ndim}")
         
         # Crear y ajustar escalador para cada target
         for target in TARGETS:
@@ -103,7 +120,24 @@ class CacaoScalers:
                 else:
                     raise ValueError(f"Columna '{target}' no encontrada en DataFrame")
         else:
-            target_data = data
+            # Si es diccionario, asegurar que los arrays sean 2D para los scalers
+            target_data = {}
+            for target in TARGETS:
+                if target not in data:
+                    raise ValueError(f"Target '{target}' no encontrado en datos")
+                
+                target_array = data[target]
+                # Asegurar que sea array numpy
+                if not isinstance(target_array, np.ndarray):
+                    target_array = np.array(target_array)
+                
+                # Reshape a 2D si es 1D
+                if target_array.ndim == 1:
+                    target_data[target] = target_array.reshape(-1, 1)
+                elif target_array.ndim == 2:
+                    target_data[target] = target_array
+                else:
+                    raise ValueError(f"Array de target '{target}' tiene dimensión inválida: {target_array.ndim}")
         
         transformed_data = {}
         for target in TARGETS:
@@ -173,16 +207,16 @@ class CacaoScalers:
                 
                 # Verificar que el archivo se guardó correctamente
                 if scaler_path.exists() and scaler_path.stat().st_size > 0:
-                    logger.debug(f"✅ Escalador guardado para {target} en {scaler_path} ({scaler_path.stat().st_size} bytes)")
+                    logger.debug(f"[OK] Escalador guardado para {target} en {scaler_path} ({scaler_path.stat().st_size} bytes)")
                     saved_scalers.append(target)
                 else:
-                    logger.error(f"❌ Error: Escalador no se guardó para {target}: {scaler_path}")
+                    logger.error(f"[ERROR] Error: Escalador no se guardó para {target}: {scaler_path}")
                     raise IOError(f"No se pudo guardar el escalador para {target}")
             
-            logger.info(f"✅ Todos los escaladores guardados exitosamente en {artifacts_dir}: {saved_scalers}")
+            logger.info(f"[OK] Todos los escaladores guardados exitosamente en {artifacts_dir}: {saved_scalers}")
             
         except Exception as e:
-            logger.error(f"❌ Error guardando escaladores: {e}")
+            logger.error(f"[ERROR] Error guardando escaladores: {e}")
             raise
     
     def load(self, file_prefix: str = "") -> None:
