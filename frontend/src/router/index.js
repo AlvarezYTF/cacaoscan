@@ -96,7 +96,7 @@ const router = createRouter({
     {
       path: '/legal/terms',
       name: 'LegalTerms',
-      component: () => import('@/views/LegalTermsView.vue'),
+      component: () => import('@/views/Pages/LegalTermsView.vue'),
       meta: {
         title: 'Términos y Condiciones | CacaoScan',
         requiresAuth: false,
@@ -105,7 +105,7 @@ const router = createRouter({
     {
       path: '/legal/privacy',
       name: 'PrivacyPolicy',
-      component: () => import('@/views/PrivacyPolicyView.vue'),
+      component: () => import('@/views/Pages/PrivacyPolicyView.vue'),
       meta: {
         title: 'Política de Privacidad | CacaoScan',
         requiresAuth: false,

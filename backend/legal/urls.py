@@ -1,10 +1,15 @@
 """
 URLs para documentos legales de CacaoScan.
-"""
-from django.urls import path
-from .views import TermsView, PrivacyView
 
-urlpatterns = [
-    path("terms/", TermsView.as_view(), name="legal-terms"),
-    path("privacy/", PrivacyView.as_view(), name="legal-privacy"),
-]
+NOTA: Las URLs del backend han sido eliminadas ya que el contenido
+de términos y condiciones y política de privacidad ahora se manejan
+directamente en las vistas de Vue del frontend.
+
+El backend se enfoca únicamente en la lógica de negocio y APIs.
+El contenido estático legal está en:
+- frontend/src/views/Pages/LegalTermsView.vue
+- frontend/src/views/Pages/PrivacyPolicyView.vue
+"""
+
+# URLs eliminadas - el contenido ahora está en el frontend
+urlpatterns = []
