@@ -77,9 +77,16 @@ class RegressionEvaluator:
         all_targets = []
         
         with torch.no_grad():
-            for images, targets in self.test_loader:
+            for images, targets_batch in self.test_loader:
                 images = images.to(self.device)
-                targets = targets.to(self.device)
+                
+                # Manejar targets como diccionario o tensor
+                if isinstance(targets_batch, dict):
+                    # Si es diccionario, extraer el target específico
+                    targets = targets_batch[target].to(self.device)
+                else:
+                    # Si es tensor, usarlo directamente
+                    targets = targets_batch.to(self.device)
                 
                 outputs = self.model(images)
                 
