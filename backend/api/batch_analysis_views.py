@@ -143,6 +143,29 @@ class BatchAnalysisView(APIView):
                 f"Lote ID: {lote.id}, Imágenes procesadas: {stats['processed_images']}/{stats['total_images']}"
             )
             
+            # Preparar resultados individuales para el frontend
+            predictions_list = []
+            for r in results:
+                if r.get('success', False):
+                    pred = r.get('prediction', {})
+                    predictions_list.append({
+                        'image_id': r.get('image_id'),
+                        'alto_mm': pred.get('alto_mm', 0),
+                        'ancho_mm': pred.get('ancho_mm', 0),
+                        'grosor_mm': pred.get('grosor_mm', 0),
+                        'peso_g': pred.get('peso_g', 0),
+                        'confidences': pred.get('confidences', {}),
+                        'crop_url': pred.get('crop_url', ''),
+                        'model_version': pred.get('debug', {}).get('models_version', 'v1.0'),
+                        'processing_time_ms': pred.get('processing_time_ms', 0)
+                    })
+                else:
+                    predictions_list.append({
+                        'image_id': r.get('image_id'),
+                        'error': r.get('error', 'Error desconocido'),
+                        'success': False
+                    })
+            
             return Response({
                 'lote_id': lote.id,
                 'lote_name': lote.identificador,
@@ -152,6 +175,7 @@ class BatchAnalysisView(APIView):
                 'average_confidence': stats['average_confidence'],
                 'average_dimensions': stats['average_dimensions'],
                 'total_weight': stats['total_weight'],
+                'predictions': predictions_list,  # Resultados individuales
                 'status': 'completed',
                 'processing_time_seconds': round(total_time, 2)
             }, status=status.HTTP_201_CREATED)
@@ -283,11 +307,20 @@ class BatchAnalysisView(APIView):
                 prediction_result = None
                 if predictor and predictor.models_loaded:
                     try:
-                        # Convertir imagen a PIL
+                        # Leer imagen desde el archivo guardado en disco
                         from PIL import Image
-                        image_bytes = image_file.read()
-                        image_file.seek(0)  # Reset file pointer
-                        pil_image = Image.open(io.BytesIO(image_bytes))
+                        # Opción 1: Intentar leer desde el archivo en memoria primero
+                        try:
+                            image_file.seek(0)  # Reset file pointer si es posible
+                            image_bytes = image_file.read()
+                            if image_bytes:
+                                pil_image = Image.open(io.BytesIO(image_bytes))
+                            else:
+                                # Si está vacío, leer desde disco
+                                pil_image = Image.open(cacao_image.image.path)
+                        except (AttributeError, ValueError, IOError):
+                            # Si falla, leer desde el archivo guardado en disco
+                            pil_image = Image.open(cacao_image.image.path)
                         
                         prediction_start = time.time()
                         result = predictor.predict(pil_image)
@@ -355,7 +388,11 @@ class BatchAnalysisView(APIView):
         
         # Calcular promedios
         avg_confidence = 0
-        avg_dimensions = {}
+        avg_dimensions = {
+            'alto': 0,
+            'ancho': 0,
+            'grosor': 0
+        }
         total_weight = 0
         
         if successful_results:
