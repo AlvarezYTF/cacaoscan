@@ -852,11 +852,14 @@ class ReporteAgricultoresView(APIView):
             # Guardar el archivo en memoria
             output = BytesIO()
             wb.save(output)
-            output.seek(0)
+            output.seek(0)  # MUY IMPORTANTE: reposicionar el puntero al inicio del archivo
+            
+            # Obtener el contenido del buffer
             excel_content = output.getvalue()
             
             # Validar contenido generado
             if not excel_content or len(excel_content) < 50:
+                output.close()
                 logger.error("[ERROR] El archivo Excel generado está vacío o demasiado pequeño: %d bytes", 
                            len(excel_content) if excel_content else 0)
                 return HttpResponse(
@@ -868,16 +871,20 @@ class ReporteAgricultoresView(APIView):
             logger.info("[SUCCESS] Reporte generado correctamente (%d bytes) para usuario %s", 
                        len(excel_content), request.user.username)
             
-            # Crear HttpResponse directamente con todos los headers necesarios
-            # DRF detectará que es HttpResponse y lo retornará sin procesamiento adicional
-            filename = f"reporte_agricultores_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            # Nombre del archivo con formato seguro
+            fecha_actual = timezone.now().strftime("%Y-%m-%d_%H-%M-%S")
+            filename = f"reporte_agricultores_{fecha_actual}.xlsx"
             
+            # Retornar el archivo correctamente formateado
             response = HttpResponse(
                 excel_content,
-                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
             response["Content-Disposition"] = f'attachment; filename="{escape_uri_path(filename)}"'
-            response["Content-Length"] = str(len(excel_content))
+            response["Content-Length"] = str(output.getbuffer().nbytes)
+            
+            # Cerrar el buffer correctamente
+            output.close()
             
             # Retornar HttpResponse directamente - DRF lo detectará y no intentará serializarlo
             return response
