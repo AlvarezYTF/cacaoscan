@@ -4,6 +4,7 @@
  */
 
 import api from './api'
+import { normalizeResponse } from '@/utils/apiResponse'
 
 /**
  * Obtener lista de fincas del usuario autenticado
@@ -13,7 +14,7 @@ import api from './api'
 export async function getFincas(params = {}) {
   try {
     const response = await api.get('/fincas/', { params })
-    return response.data
+    return normalizeResponse(response.data)
   } catch (error) {
     console.error('Error obteniendo fincas:', error)
     throw error
@@ -122,11 +123,25 @@ export async function getFincaStats(fincaId) {
 export async function getLotesByFinca(fincaId, params = {}) {
   try {
     const response = await api.get(`/fincas/${fincaId}/lotes/`, { params })
-    return response.data
+    return normalizeResponse(response.data)
   } catch (error) {
     console.error(`Error obteniendo lotes de finca ${fincaId}:`, error)
     throw error
   }
+}
+
+// Nuevas funciones no intrusivas para la administración/agricultor
+// Obtener lista de agricultores (usa endpoint existente de usuarios con role=farmer)
+export const getAgricultores = (params = {}) => {
+  // Usar solo role=farmer (rol='agricultor' no existe como parámetro)
+  const query = { role: 'farmer', page_size: 100, ...params }
+  return api.get('/auth/users/', { params: query })
+}
+
+// Obtener fincas filtradas por agricultor (devuelve respuesta Axios para compatibilidad)
+export const getFincasByAgricultor = (id, params = {}) => {
+  const query = { agricultor: id, page_size: 100, ...params }
+  return api.get('/fincas/', { params: query })
 }
 
 /**

@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-      <!-- Agricultor (First) -->
+      <!-- Agricultor -->
       <div>
         <label for="farmer" class="flex items-center gap-2 text-sm font-semibold text-gray-700">
           <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -10,7 +10,7 @@
           Agricultor <span class="text-red-500">*</span>
         </label>
         
-        <!-- Select for admin mejorado -->
+        <!-- Select for admin -->
         <select
           v-if="userRole === 'admin'"
           id="farmer"
@@ -25,7 +25,7 @@
           </option>
         </select>
         
-        <!-- Input readonly for agricultor mejorado -->
+        <!-- Input readonly for agricultor -->
         <input
           v-else
           type="text"
@@ -152,7 +152,7 @@
           @input="updateForm"
           class="mt-1 block w-full rounded-xl border-2 border-gray-200 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/30 transition-all duration-200"
           :class="{ 'border-red-500 focus:border-red-500 focus:ring-red-500/30': errors.collectionDate }"
-          max=""
+          :max="maxDate"
         />
         <p v-if="errors.collectionDate" class="mt-1 text-sm text-red-600 font-medium">{{ errors.collectionDate }}</p>
       </div>
@@ -182,7 +182,7 @@
       </div>
     </div>
 
-    <!-- Observaciones mejoradas -->
+    <!-- Observaciones -->
     <div>
       <label for="notes" class="flex items-center gap-2 text-sm font-semibold text-gray-700">
         <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,195 +204,171 @@
   </div>
 </template>
 
-<script>
-import { ref, watch, onMounted } from 'vue';
-import { getFincas } from '@/services/fincasApi';
-import { useAuthStore } from '@/stores/auth';
-import authApi from '@/services/authApi';
+<script setup>
+// 1. Vue core
+import { ref, watch, onMounted } from 'vue'
 
-export default {
-  name: 'BatchInfoForm',
-  props: {
-    modelValue: {
-      type: Object,
-      required: true
-    },
-    errors: {
-      type: Object,
-      default: () => ({})
-    },
-    userRole: {
-      type: String,
-      default: 'admin'
-    },
-    userName: {
-      type: String,
-      default: ''
-    },
-    userId: {
-      type: Number,
-      default: null
-    }
+// 2. Stores
+import { useAuthStore } from '@/stores/auth'
+
+// 3. Services
+import { getFincas } from '@/services/fincasApi'
+import authApi from '@/services/authApi'
+
+// Props
+const props = defineProps({
+  modelValue: {
+    type: Object,
+    required: true
   },
-  emits: ['update:modelValue'],
-  setup(props, { emit }) {
-    const authStore = useAuthStore();
-    const formData = ref({
-      farm: '',
-      originPlace: '',
-      farmer: '',
-      genetics: '',
-      ...props.modelValue
-    });
-
-    const fincas = ref([]);
-    const loadingFincas = ref(false);
-    
-    const agricultores = ref([]);
-    const loadingAgricultores = ref(false);
-    
-    // All fincas (keep track of all loaded fincas to filter them)
-    const allFincas = ref([]);
-
-    
-    // Load agricultores from backend (only for admin)
-    const loadAgricultores = async () => {
-      if (props.userRole !== 'admin') return;
-      
-      loadingAgricultores.value = true;
-      try {
-        const response = await authApi.getUsers();
-        // Filter to get only farmers (non-admin, non-staff users)
-        agricultores.value = response.results?.filter(user => 
-          !user.is_superuser && !user.is_staff && user.role === 'farmer'
-        ) || [];
-      } catch (error) {
-        console.error('Error loading agricultores:', error);
-        agricultores.value = [];
-      } finally {
-        loadingAgricultores.value = false;
-      }
-    };
-
-    // Set max date to today and auto-fill farmer name for agricultor role
-    onMounted(async () => {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('collectionDate')?.setAttribute('max', today);
-      
-      // Load all fincas
-      await loadAllFincas();
-      
-      // Load agricultores (only for admin)
-      await loadAgricultores();
-      
-      // Set initial fincas based on role
-      if (props.userRole === 'agricultor' && props.userId) {
-        // Filter only fincas owned by the current user
-        console.log('🔍 Filtering fincas for agricultor ID:', props.userId);
-        console.log('🔍 All fincas:', allFincas.value);
-        fincas.value = allFincas.value.filter(finca => finca.agricultor_id === props.userId) || [];
-        console.log('🔍 Filtered fincas:', fincas.value);
-      } else {
-        // Admin sees all fincas initially
-        fincas.value = allFincas.value;
-      }
-      
-      // Auto-fill farmer name if user is agricultor
-      if (props.userRole === 'agricultor' && props.userName && !formData.value.farmer) {
-        formData.value.farmer = props.userName;
-        emit('update:modelValue', { ...formData.value });
-      }
-    });
-
-    // Load all fincas from backend
-    const loadAllFincas = async () => {
-      try {
-        const response = await getFincas();
-        allFincas.value = response.results || [];
-      } catch (error) {
-        console.error('Error loading all fincas:', error);
-        allFincas.value = [];
-      }
-    };
-
-    const updateForm = () => {
-      // Mapear los campos al formato que espera el store
-      const mappedData = {
-        name: formData.value.name || '',
-        farm: formData.value.farm || '',
-        originPlace: formData.value.originPlace || '',
-        genetics: formData.value.genetics || '',
-        collectionDate: formData.value.collectionDate || '',
-        origin: '',  // Este campo no se usa por ahora
-        notes: formData.value.notes || '',
-        farmer: formData.value.farmer || '',
-      };
-      emit('update:modelValue', mappedData);
-    };
-
-    // When farmer changes, filter fincas by that farmer
-    const handleFarmerChange = () => {
-      if (props.userRole === 'agricultor') return;
-      
-      if (formData.value.farmer) {
-        const selectedAgricultor = agricultores.value.find(a => a.username === formData.value.farmer);
-        console.log('🔍 Selected agricultor:', selectedAgricultor);
-        if (selectedAgricultor) {
-          fincas.value = allFincas.value.filter(finca => finca.agricultor_id === selectedAgricultor.id);
-          console.log('🔍 Filtered fincas for agricultor:', fincas.value);
-        } else {
-          fincas.value = allFincas.value;
-        }
-      } else {
-        fincas.value = allFincas.value;
-      }
-      
-      updateForm();
-    };
-
-    // When finca changes, auto-select the associated farmer
-    const handleFincaChange = () => {
-      if (props.userRole === 'agricultor') return;
-      
-      if (formData.value.farm) {
-        const selectedFinca = allFincas.value.find(f => f.nombre === formData.value.farm);
-        console.log('🔍 Selected finca:', selectedFinca);
-        if (selectedFinca && selectedFinca.agricultor_id) {
-          const associatedAgricultor = agricultores.value.find(a => a.id === selectedFinca.agricultor_id);
-          console.log('🔍 Associated agricultor:', associatedAgricultor);
-          if (associatedAgricultor) {
-            formData.value.farmer = associatedAgricultor.username;
-          }
-        }
-      }
-      
-      updateForm();
-    };
-
-    // Watch for changes in modelValue from parent
-    watch(() => props.modelValue, (newValue) => {
-      formData.value = { ...newValue };
-    }, { deep: true });
-    
-    // Watch for farmer changes
-    watch(() => formData.value.farmer, () => {
-      handleFarmerChange();
-    });
-    
-    // Watch for finca changes
-    watch(() => formData.value.farm, () => {
-      handleFincaChange();
-    });
-
-    return {
-      formData,
-      updateForm,
-      userRole: props.userRole,
-      fincas,
-      loadingFincas,
-      agricultores,
-      loadingAgricultores
-    };
+  errors: {
+    type: Object,
+    default: () => ({})
+  },
+  userRole: {
+    type: String,
+    default: 'admin'
+  },
+  userName: {
+    type: String,
+    default: ''
+  },
+  userId: {
+    type: Number,
+    default: null
   }
-};
+})
+
+// Emits
+const emit = defineEmits(['update:modelValue'])
+
+// Stores
+const authStore = useAuthStore()
+
+// State
+const formData = ref({
+  farm: '',
+  originPlace: '',
+  farmer: '',
+  genetics: '',
+  ...props.modelValue
+})
+
+const fincas = ref([])
+const loadingFincas = ref(false)
+const agricultores = ref([])
+const loadingAgricultores = ref(false)
+const allFincas = ref([])
+
+// Computed
+const maxDate = new Date().toISOString().split('T')[0]
+
+// Functions
+const loadAgricultores = async () => {
+  if (props.userRole !== 'admin') return
+  
+  loadingAgricultores.value = true
+  try {
+    const response = await authApi.getUsers()
+    agricultores.value = response.results?.filter(user => 
+      !user.is_superuser && !user.is_staff && user.role === 'farmer'
+    ) || []
+  } catch (error) {
+    console.error('Error loading agricultores:', error)
+    agricultores.value = []
+  } finally {
+    loadingAgricultores.value = false
+  }
+}
+
+const loadAllFincas = async () => {
+  try {
+    const response = await getFincas()
+    allFincas.value = response.results || []
+  } catch (error) {
+    console.error('Error loading all fincas:', error)
+    allFincas.value = []
+  }
+}
+
+const updateForm = () => {
+  const mappedData = {
+    name: formData.value.name || '',
+    farm: formData.value.farm || '',
+    originPlace: formData.value.originPlace || '',
+    genetics: formData.value.genetics || '',
+    collectionDate: formData.value.collectionDate || '',
+    origin: '',
+    notes: formData.value.notes || '',
+    farmer: formData.value.farmer || ''
+  }
+  emit('update:modelValue', mappedData)
+}
+
+const handleFarmerChange = () => {
+  if (props.userRole === 'agricultor') return
+  
+  if (formData.value.farmer) {
+    const selectedAgricultor = agricultores.value.find(a => a.username === formData.value.farmer)
+    if (selectedAgricultor) {
+      fincas.value = allFincas.value.filter(finca => finca.agricultor_id === selectedAgricultor.id)
+    } else {
+      fincas.value = allFincas.value
+    }
+  } else {
+    fincas.value = allFincas.value
+  }
+  
+  updateForm()
+}
+
+const handleFincaChange = () => {
+  if (props.userRole === 'agricultor') return
+  
+  if (formData.value.farm) {
+    const selectedFinca = allFincas.value.find(f => f.nombre === formData.value.farm)
+    if (selectedFinca && selectedFinca.agricultor_id) {
+      const associatedAgricultor = agricultores.value.find(a => a.id === selectedFinca.agricultor_id)
+      if (associatedAgricultor) {
+        formData.value.farmer = associatedAgricultor.username
+      }
+    }
+  }
+  
+  updateForm()
+}
+
+// Watchers
+watch(() => props.modelValue, (newValue) => {
+  formData.value = { ...newValue }
+}, { deep: true })
+
+watch(() => formData.value.farmer, () => {
+  handleFarmerChange()
+})
+
+watch(() => formData.value.farm, () => {
+  handleFincaChange()
+})
+
+// Lifecycle
+onMounted(async () => {
+  await loadAllFincas()
+  await loadAgricultores()
+  
+  if (props.userRole === 'agricultor' && props.userId) {
+    fincas.value = allFincas.value.filter(finca => finca.agricultor_id === props.userId) || []
+  } else {
+    fincas.value = allFincas.value
+  }
+  
+  if (props.userRole === 'agricultor' && props.userName && !formData.value.farmer) {
+    formData.value.farmer = props.userName
+    emit('update:modelValue', { ...formData.value })
+  }
+})
 </script>
+
+<style scoped>
+/* Solo estilos que no están en Tailwind si es necesario */
+</style>

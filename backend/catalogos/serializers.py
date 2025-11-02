@@ -1,9 +1,9 @@
-from rest_framework import serializers
+﻿from rest_framework import serializers
 from .models import Tema, Parametro, Departamento, Municipio
 
 
 class ParametroSerializer(serializers.ModelSerializer):
-    """Serializer para Parámetro (sin tema anidado)"""
+    """Serializer para ParÃ¡metro (sin tema anidado)"""
     
     class Meta:
         model = Parametro
@@ -12,7 +12,7 @@ class ParametroSerializer(serializers.ModelSerializer):
 
 
 class ParametroDetalleSerializer(serializers.ModelSerializer):
-    """Serializer para Parámetro con información del tema"""
+    """Serializer para ParÃ¡metro con informaciÃ³n del tema"""
     tema_nombre = serializers.CharField(source='tema.nombre', read_only=True)
     tema_codigo = serializers.CharField(source='tema.codigo', read_only=True)
     
@@ -23,7 +23,7 @@ class ParametroDetalleSerializer(serializers.ModelSerializer):
 
 
 class TemaSerializer(serializers.ModelSerializer):
-    """Serializer para Tema sin parámetros"""
+    """Serializer para Tema sin parÃ¡metros"""
     
     class Meta:
         model = Tema
@@ -32,7 +32,7 @@ class TemaSerializer(serializers.ModelSerializer):
 
 
 class TemaConParametrosSerializer(serializers.ModelSerializer):
-    """Serializer para Tema con sus parámetros incluidos"""
+    """Serializer para Tema con sus parÃ¡metros incluidos"""
     parametros = ParametroSerializer(many=True, read_only=True)
     parametros_activos = serializers.SerializerMethodField()
     
@@ -42,20 +42,20 @@ class TemaConParametrosSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
     
     def get_parametros_activos(self, obj):
-        """Devuelve solo los parámetros activos"""
+        """Devuelve solo los parÃ¡metros activos"""
         parametros = obj.parametros.filter(activo=True)
         return ParametroSerializer(parametros, many=True).data
 
 
 class ParametroCreateSerializer(serializers.ModelSerializer):
-    """Serializer para crear un nuevo parámetro"""
+    """Serializer para crear un nuevo parÃ¡metro"""
     
     class Meta:
         model = Parametro
         fields = ['tema', 'codigo', 'nombre', 'descripcion', 'activo']
     
     def validate(self, data):
-        """Valida que el código del parámetro sea único dentro del tema"""
+        """Valida que el cÃ³digo del parÃ¡metro sea Ãºnico dentro del tema"""
         tema = data.get('tema')
         codigo = data.get('codigo')
         
@@ -63,7 +63,7 @@ class ParametroCreateSerializer(serializers.ModelSerializer):
             existe = Parametro.objects.filter(tema=tema, codigo=codigo).exists()
             if existe and self.instance is None:
                 raise serializers.ValidationError({
-                    'codigo': f'Ya existe un parámetro con el código "{codigo}" para el tema "{tema.nombre}"'
+                    'codigo': f'Ya existe un parÃ¡metro con el cÃ³digo "{codigo}" para el tema "{tema.nombre}"'
                 })
         
         return data
@@ -81,7 +81,7 @@ class MunicipioSerializer(serializers.ModelSerializer):
 
 
 class MunicipioDetalleSerializer(serializers.ModelSerializer):
-    """Serializer para Municipio con información del departamento"""
+    """Serializer para Municipio con informaciÃ³n del departamento"""
     departamento_nombre = serializers.CharField(source='departamento.nombre', read_only=True)
     departamento_codigo = serializers.CharField(source='departamento.codigo', read_only=True)
     
@@ -118,7 +118,7 @@ class MunicipioCreateSerializer(serializers.ModelSerializer):
         fields = ['departamento', 'codigo', 'nombre']
     
     def validate(self, data):
-        """Valida que el código del municipio sea único dentro del departamento"""
+        """Valida que el cÃ³digo del municipio sea Ãºnico dentro del departamento"""
         departamento = data.get('departamento')
         codigo = data.get('codigo')
         
@@ -126,7 +126,9 @@ class MunicipioCreateSerializer(serializers.ModelSerializer):
             existe = Municipio.objects.filter(departamento=departamento, codigo=codigo).exists()
             if existe and self.instance is None:
                 raise serializers.ValidationError({
-                    'codigo': f'Ya existe un municipio con el código "{codigo}" en el departamento "{departamento.nombre}"'
+                    'codigo': f'Ya existe un municipio con el cÃ³digo "{codigo}" en el departamento "{departamento.nombre}"'
                 })
         
         return data
+
+

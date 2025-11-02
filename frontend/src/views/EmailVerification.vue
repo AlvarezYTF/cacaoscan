@@ -295,16 +295,17 @@ const resendVerification = async () => {
 }
 
 const verifyEmailFromUrl = async () => {
-  const { uid, token } = route.query
+  // Obtener token desde la URL (path params o query params)
+  const token = route.params.token || route.query.token
   
-  if (!uid || !token) {
+  if (!token) {
     return
   }
 
   autoVerifying.value = true
   
   try {
-    const result = await authStore.verifyEmail(uid, token)
+    const result = await authStore.verifyEmailFromToken(token)
     
     if (result.success) {
       verificationStatus.value = 'success'
@@ -336,8 +337,8 @@ onMounted(async () => {
     setStatusMessage(route.query.message, 'info')
   }
   
-  // Si hay parámetros de verificación en la URL, intentar verificar automáticamente
-  if (route.query.uid && route.query.token) {
+  // Si hay token en la URL (path o query), intentar verificar automáticamente
+  if (route.params.token || route.query.token) {
     await verifyEmailFromUrl()
   }
 })

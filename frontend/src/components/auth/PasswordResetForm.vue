@@ -1,6 +1,6 @@
 <template>
   <!-- Formulario de solicitud de reset con diseño mejorado -->
-  <form @submit.prevent="$emit('submit', form.email)" class="space-y-6">
+  <form @submit.prevent="handleSubmit" class="space-y-6">
     <!-- Email con ícono y validación visual -->
     <div>
       <label for="email" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
@@ -143,6 +143,20 @@ onMounted(() => {
     form.value.email = props.initialEmail
   }
 })
+
+const emit = defineEmits(['submit'])
+
+const handleSubmit = () => {
+  // Asegurarse de que tenemos el email del formulario
+  const email = form.value.email?.trim() || ''
+  
+  if (!email) {
+    return // La validación del input required lo manejará
+  }
+  
+  // Emitir el email limpio
+  emit('submit', email)
+}
 
 defineExpose({
   form

@@ -1,5 +1,5 @@
-"""
-Modelos para imágenes y predicciones en CacaoScan.
+﻿"""
+Modelos para imÃ¡genes y predicciones en CacaoScan.
 """
 from django.db import models
 from django.contrib.auth.models import User
@@ -8,19 +8,27 @@ from core.models import TimeStampedModel
 
 class CacaoImage(TimeStampedModel):
     """
-    Modelo para almacenar imágenes de granos de cacao procesadas.
+    Modelo para almacenar imÃ¡genes de granos de cacao procesadas.
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='images_app_cacao_images')
     
-    # Archivo de imagen (original) - guardar en carpeta raw
-    image = models.ImageField(upload_to='cacao_images/raw/%Y/%m/%d/')
+    # Archivo de imagen
+    image = models.ImageField(upload_to='dataset/')
     
     # Metadatos de procesamiento
     uploaded_at = models.DateTimeField(auto_now_add=True)
     processed = models.BooleanField(default=False)
     
     # Metadatos del grano/finca
-    finca = models.CharField(max_length=200, blank=True, null=True)
+    finca = models.ForeignKey(
+        'fincas_app.Finca', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='cacao_images',
+        help_text="Finca a la que pertenece esta imagen"
+    )
+    finca_nombre = models.CharField(max_length=200, blank=True, null=True, help_text="Nombre de la finca (campo de respaldo)")
     region = models.CharField(max_length=100, blank=True, null=True)
     lote = models.ForeignKey(
         'fincas_app.Lote', 
@@ -34,14 +42,14 @@ class CacaoImage(TimeStampedModel):
     fecha_cosecha = models.DateField(blank=True, null=True)
     notas = models.TextField(blank=True, null=True)
     
-    # Información técnica del archivo
+    # InformaciÃ³n tÃ©cnica del archivo
     file_name = models.CharField(max_length=255, blank=True, null=True)
     file_size = models.PositiveIntegerField(blank=True, null=True)
     file_type = models.CharField(max_length=50, blank=True, null=True)
     
     class Meta:
         verbose_name = 'Imagen de Cacao'
-        verbose_name_plural = 'Imágenes de Cacao'
+        verbose_name_plural = 'ImÃ¡genes de Cacao'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['user', '-created_at']),
@@ -54,14 +62,14 @@ class CacaoImage(TimeStampedModel):
     
     @property
     def file_size_mb(self):
-        """Obtener tamaño del archivo en MB."""
+        """Obtener tamaÃ±o del archivo en MB."""
         if self.file_size:
             return round(self.file_size / (1024 * 1024), 2)
         return None
     
     @property
     def has_prediction(self):
-        """Verificar si tiene predicción asociada."""
+        """Verificar si tiene predicciÃ³n asociada."""
         return hasattr(self, 'prediction') and self.prediction is not None
 
 
@@ -87,7 +95,7 @@ class CacaoPrediction(models.Model):
     processing_time_ms = models.PositiveIntegerField(help_text="Tiempo de procesamiento en milisegundos")
     crop_url = models.URLField(max_length=500, blank=True, null=True, help_text="URL del crop procesado")
     
-    # Información técnica del modelo
+    # InformaciÃ³n tÃ©cnica del modelo
     model_version = models.CharField(max_length=50, default='v1.0')
     device_used = models.CharField(max_length=20, default='cpu', choices=[
         ('cpu', 'CPU'),
@@ -99,7 +107,7 @@ class CacaoPrediction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        verbose_name = 'Predicción de Cacao'
+        verbose_name = 'PredicciÃ³n de Cacao'
         verbose_name_plural = 'Predicciones de Cacao'
         ordering = ['-created_at']
         indexes = [
@@ -109,7 +117,7 @@ class CacaoPrediction(models.Model):
         ]
     
     def __str__(self):
-        return f"Predicción {self.id} - {self.image.user.username} ({self.created_at.strftime('%Y-%m-%d %H:%M')})"
+        return f"PredicciÃ³n {self.id} - {self.image.user.username} ({self.created_at.strftime('%Y-%m-%d %H:%M')})"
     
     @property
     def average_confidence(self):
@@ -125,7 +133,7 @@ class CacaoPrediction(models.Model):
     
     @property
     def volume_cm3(self):
-        """Calcular volumen aproximado en cm³."""
+        """Calcular volumen aproximado en cmÂ³."""
         import math
         a = float(self.alto_mm) / 10
         b = float(self.ancho_mm) / 10
@@ -135,8 +143,10 @@ class CacaoPrediction(models.Model):
     
     @property
     def density_g_cm3(self):
-        """Calcular densidad aproximada en g/cm³."""
+        """Calcular densidad aproximada en g/cmÂ³."""
         if self.volume_cm3 > 0:
             density = float(self.peso_g) / self.volume_cm3
             return round(density, 3)
         return None
+
+

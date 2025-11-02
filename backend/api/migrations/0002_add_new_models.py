@@ -1,4 +1,4 @@
-# Generated manually for new models
+﻿# Generated manually for new models
 
 from django.conf import settings
 from django.db import migrations, models
@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('farm_name', models.CharField(blank=True, max_length=200, null=True)),
                 ('years_experience', models.PositiveIntegerField(blank=True, null=True)),
                 ('farm_size_hectares', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)),
-                ('preferred_language', models.CharField(choices=[('es', 'Español'), ('en', 'English')], default='es', max_length=10)),
+                ('preferred_language', models.CharField(choices=[('es', 'EspaÃ±ol'), ('en', 'English')], default='es', max_length=10)),
                 ('email_notifications', models.BooleanField(default=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
@@ -56,7 +56,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 'verbose_name': 'Imagen de Cacao',
-                'verbose_name_plural': 'Imágenes de Cacao',
+                'verbose_name_plural': 'ImÃ¡genes de Cacao',
                 'ordering': ['-created_at'],
             },
         ),
@@ -80,7 +80,7 @@ class Migration(migrations.Migration):
                 ('image', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='prediction', to='api.cacaoimage')),
             ],
             options={
-                'verbose_name': 'Predicción de Cacao',
+                'verbose_name': 'PredicciÃ³n de Cacao',
                 'verbose_name_plural': 'Predicciones de Cacao',
                 'ordering': ['-created_at'],
             },
@@ -110,3 +110,5 @@ class Migration(migrations.Migration):
             index=models.Index(fields=['model_version'], name='api_cacaopr_model_version_idx'),
         ),
     ]
+
+

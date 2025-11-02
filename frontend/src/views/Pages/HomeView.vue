@@ -3,9 +3,12 @@
     <!-- Header -->
     <HeaderView />
 
+    
     <!-- Hero -->
     <HeroView />
-
+    
+    <!-- Landing Section -->
+    <LandingView />
 
     <!-- Features -->
     <FeaturesView />
@@ -24,6 +27,7 @@
 // import { useMainStore } from '@/stores/main'
 // const store = useMainStore()
 import HeaderView     from '@/components/Pages/HomeView/HeaderView.vue';
+import LandingView    from '@/components/Pages/HomeView/LandingView.vue';
 import HeroView       from '@/components/Pages/HomeView/HeroView.vue';
 import FooterView     from '@/components/Pages/HomeView/FooterView.vue';
 import FeaturesView   from '@/components/Pages/HomeView/FeaturesView.vue';

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Optimizaciones de performance para consultas de base de datos.
 """
 from django.db.models import Prefetch, Q, Count, Avg, Sum, Max, Min
@@ -68,22 +68,22 @@ class QueryOptimizer:
         )
 
 class CacheManager:
-    """Gestor de caché para optimizar consultas frecuentes."""
+    """Gestor de cachÃ© para optimizar consultas frecuentes."""
     
     CACHE_TIMEOUT = 300  # 5 minutos por defecto
     
     @classmethod
     def get_or_set(cls, key, callable_func, timeout=None):
-        """Obtiene del caché o ejecuta función y guarda resultado."""
+        """Obtiene del cachÃ© o ejecuta funciÃ³n y guarda resultado."""
         timeout = timeout or cls.CACHE_TIMEOUT
         
-        # Intentar obtener del caché
+        # Intentar obtener del cachÃ©
         result = cache.get(key)
         if result is not None:
             logger.debug(f"Cache hit for key: {key}")
             return result
         
-        # Ejecutar función y guardar en caché
+        # Ejecutar funciÃ³n y guardar en cachÃ©
         logger.debug(f"Cache miss for key: {key}")
         result = callable_func()
         cache.set(key, result, timeout)
@@ -91,9 +91,9 @@ class CacheManager:
     
     @classmethod
     def invalidate_pattern(cls, pattern):
-        """Invalida todas las claves que coincidan con el patrón."""
+        """Invalida todas las claves que coincidan con el patrÃ³n."""
         try:
-            # En producción usar Redis con SCAN
+            # En producciÃ³n usar Redis con SCAN
             if hasattr(cache, 'delete_pattern'):
                 cache.delete_pattern(pattern)
             else:
@@ -104,7 +104,7 @@ class CacheManager:
     
     @classmethod
     def invalidate_user_cache(cls, user_id):
-        """Invalida caché relacionado con un usuario específico."""
+        """Invalida cachÃ© relacionado con un usuario especÃ­fico."""
         patterns = [
             f"user_stats_{user_id}_*",
             f"user_activity_{user_id}_*",
@@ -116,23 +116,23 @@ class CacheManager:
             cls.invalidate_pattern(pattern)
 
 class PaginationOptimizer:
-    """Optimizador para paginación eficiente."""
+    """Optimizador para paginaciÃ³n eficiente."""
     
     @staticmethod
     def optimize_pagination(queryset, page, page_size, max_page_size=100):
-        """Optimiza la paginación con límites y validaciones."""
-        # Limitar tamaño de página
+        """Optimiza la paginaciÃ³n con lÃ­mites y validaciones."""
+        # Limitar tamaÃ±o de pÃ¡gina
         page_size = min(page_size, max_page_size)
         
         # Calcular offset
         offset = (page - 1) * page_size
         
-        # Usar slicing para paginación eficiente
+        # Usar slicing para paginaciÃ³n eficiente
         return queryset[offset:offset + page_size]
     
     @staticmethod
     def get_pagination_info(queryset, page, page_size):
-        """Obtiene información de paginación optimizada."""
+        """Obtiene informaciÃ³n de paginaciÃ³n optimizada."""
         total_count = queryset.count()
         total_pages = (total_count + page_size - 1) // page_size
         
@@ -150,7 +150,7 @@ class DatabaseOptimizer:
     
     @staticmethod
     def add_database_indexes():
-        """Sugiere índices para optimizar consultas."""
+        """Sugiere Ã­ndices para optimizar consultas."""
         indexes = [
             # CacaoImage indexes
             ('api_cacaoimage', 'usuario_id'),
@@ -190,7 +190,7 @@ class DatabaseOptimizer:
     
     @staticmethod
     def optimize_queryset_for_list(queryset, model_name):
-        """Optimiza queryset para listados según el modelo."""
+        """Optimiza queryset para listados segÃºn el modelo."""
         optimizers = {
             'CacaoImage': QueryOptimizer.optimize_cacao_images_query,
             'Finca': QueryOptimizer.optimize_fincas_query,
@@ -208,7 +208,7 @@ class DatabaseOptimizer:
     
     @staticmethod
     def get_optimized_stats_query(model_class, user_id=None):
-        """Obtiene consulta optimizada para estadísticas."""
+        """Obtiene consulta optimizada para estadÃ­sticas."""
         base_query = model_class.objects.all()
         
         if user_id:
@@ -216,7 +216,7 @@ class DatabaseOptimizer:
         
         return base_query.aggregate(
             total=Count('id'),
-            # Agregar más agregaciones según el modelo
+            # Agregar mÃ¡s agregaciones segÃºn el modelo
         )
 
 class PerformanceMonitor:
@@ -230,8 +230,8 @@ class PerformanceMonitor:
     
     @staticmethod
     def get_query_stats():
-        """Obtiene estadísticas de consultas."""
-        # En producción, esto se conectaría con herramientas de monitoreo
+        """Obtiene estadÃ­sticas de consultas."""
+        # En producciÃ³n, esto se conectarÃ­a con herramientas de monitoreo
         return {
             'total_queries': 0,
             'slow_queries': 0,
@@ -241,7 +241,7 @@ class PerformanceMonitor:
 
 # Funciones de utilidad para uso en vistas
 def get_cached_user_stats(user_id):
-    """Obtiene estadísticas de usuario desde caché."""
+    """Obtiene estadÃ­sticas de usuario desde cachÃ©."""
     cache_key = f"user_stats_{user_id}_{timezone.now().date()}"
     
     def calculate_stats():
@@ -264,7 +264,7 @@ def get_cached_user_stats(user_id):
     return CacheManager.get_or_set(cache_key, calculate_stats, timeout=600)
 
 def get_cached_system_stats():
-    """Obtiene estadísticas del sistema desde caché."""
+    """Obtiene estadÃ­sticas del sistema desde cachÃ©."""
     cache_key = f"system_stats_{timezone.now().date()}"
     
     def calculate_system_stats():
@@ -284,5 +284,7 @@ def get_cached_system_stats():
     return CacheManager.get_or_set(cache_key, calculate_system_stats, timeout=300)
 
 def invalidate_user_related_cache(user_id):
-    """Invalida caché relacionado con un usuario."""
+    """Invalida cachÃ© relacionado con un usuario."""
     CacheManager.invalidate_user_cache(user_id)
+
+

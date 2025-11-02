@@ -1,12 +1,11 @@
-"""
-Script de evaluación para modelos de regresión de dimensiones de cacao.
+﻿"""
+Script de evaluaciÃ³n para modelos de regresiÃ³n de dimensiones de cacao.
 """
 import torch
 import torch.nn as nn
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+# Importación perezosa de matplotlib/seaborn para evitar MemoryError en Windows con multiprocessing
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 import json
@@ -25,7 +24,7 @@ logger = get_ml_logger("cacaoscan.ml.regression")
 
 
 class RegressionEvaluator:
-    """Evaluador para modelos de regresión de cacao."""
+    """Evaluador para modelos de regresiÃ³n de cacao."""
     
     def __init__(
         self,
@@ -40,15 +39,15 @@ class RegressionEvaluator:
         Args:
             model: Modelo a evaluar
             test_loader: DataLoader de test
-            scalers: Escaladores para desnormalización (opcional)
-            device: Dispositivo para evaluación
+            scalers: Escaladores para desnormalizaciÃ³n (opcional)
+            device: Dispositivo para evaluaciÃ³n
         """
         self.model = model.to(device)
         self.test_loader = test_loader
         self.scalers = scalers
         self.device = device
         
-        # Resultados de evaluación
+        # Resultados de evaluaciÃ³n
         self.results = {}
         self.predictions = {}
         self.targets = {}
@@ -61,14 +60,14 @@ class RegressionEvaluator:
         denormalize: bool = True
     ) -> Dict[str, float]:
         """
-        Evalúa un modelo individual.
+        EvalÃºa un modelo individual.
         
         Args:
             target: Target a evaluar
             denormalize: Si desnormalizar las predicciones
             
         Returns:
-            Diccionario con métricas de evaluación
+            Diccionario con mÃ©tricas de evaluaciÃ³n
         """
         logger.info(f"Evaluando modelo para target: {target}")
         
@@ -103,7 +102,7 @@ class RegressionEvaluator:
         # Desnormalizar si se especifica
         if denormalize and self.scalers is not None:
             try:
-                # Crear diccionario temporal para desnormalización
+                # Crear diccionario temporal para desnormalizaciÃ³n
                 temp_data = {target: all_predictions}
                 denorm_pred = self.scalers.inverse_transform(temp_data)
                 all_predictions = denorm_pred[target]
@@ -116,7 +115,7 @@ class RegressionEvaluator:
             except Exception as e:
                 logger.warning(f"Error desnormalizando para {target}: {e}")
         
-        # Calcular métricas
+        # Calcular mÃ©tricas
         mae = mean_absolute_error(all_targets, all_predictions)
         mse = mean_squared_error(all_targets, all_predictions)
         rmse = np.sqrt(mse)
@@ -143,7 +142,7 @@ class RegressionEvaluator:
         self.targets[target] = all_targets
         self.results[target] = metrics
         
-        logger.info(f"Métricas para {target}: MAE={mae:.4f}, RMSE={rmse:.4f}, R²={r2:.4f}")
+        logger.info(f"MÃ©tricas para {target}: MAE={mae:.4f}, RMSE={rmse:.4f}, RÂ²={r2:.4f}")
         
         return metrics
     
@@ -152,13 +151,13 @@ class RegressionEvaluator:
         denormalize: bool = True
     ) -> Dict[str, Dict[str, float]]:
         """
-        Evalúa un modelo multi-head.
+        EvalÃºa un modelo multi-head.
         
         Args:
             denormalize: Si desnormalizar las predicciones
             
         Returns:
-            Diccionario con métricas por target
+            Diccionario con mÃ©tricas por target
         """
         logger.info("Evaluando modelo multi-head")
         
@@ -197,7 +196,7 @@ class RegressionEvaluator:
             except Exception as e:
                 logger.warning(f"Error desnormalizando modelo multi-head: {e}")
         
-        # Calcular métricas para cada target
+        # Calcular mÃ©tricas para cada target
         results = {}
         for target in TARGETS:
             predictions = all_predictions[target]
@@ -220,7 +219,7 @@ class RegressionEvaluator:
                 'n_samples': len(predictions)
             }
             
-            logger.info(f"{target}: MAE={mae:.4f}, RMSE={rmse:.4f}, R²={r2:.4f}")
+            logger.info(f"{target}: MAE={mae:.4f}, RMSE={rmse:.4f}, RÂ²={r2:.4f}")
         
         # Guardar predicciones y targets
         self.predictions = all_predictions
@@ -235,15 +234,19 @@ class RegressionEvaluator:
         figsize: Tuple[int, int] = (15, 12)
     ) -> None:
         """
-        Genera gráficos de paridad (predicción vs realidad).
+        Genera grÃ¡ficos de paridad (predicciÃ³n vs realidad).
         
         Args:
-            save_path: Ruta para guardar los gráficos
-            figsize: Tamaño de la figura
+            save_path: Ruta para guardar los grÃ¡ficos
+            figsize: TamaÃ±o de la figura
         """
         if not self.results:
-            logger.warning("No hay resultados para graficar. Ejecutar evaluación primero.")
+            logger.warning("No hay resultados para graficar. Ejecutar evaluaciÃ³n primero.")
             return
+        
+        # Importación perezosa de matplotlib/seaborn (lazy import) para evitar MemoryError en Windows con multiprocessing
+        import matplotlib.pyplot as plt
+        import seaborn as sns
         
         # Configurar estilo
         plt.style.use('default')
@@ -255,7 +258,7 @@ class RegressionEvaluator:
         axes = axes.flatten()
         
         for idx, (target, metrics) in enumerate(self.results.items()):
-            if idx >= 4:  # Máximo 4 subplots
+            if idx >= 4:  # MÃ¡ximo 4 subplots
                 break
             
             ax = axes[idx]
@@ -265,19 +268,19 @@ class RegressionEvaluator:
             # Scatter plot
             ax.scatter(targets, predictions, alpha=0.6, s=20)
             
-            # Línea perfecta (y = x)
+            # LÃ­nea perfecta (y = x)
             min_val = min(targets.min(), predictions.min())
             max_val = max(targets.max(), predictions.max())
-            ax.plot([min_val, max_val], [min_val, max_val], 'r--', lw=2, label='Predicción perfecta')
+            ax.plot([min_val, max_val], [min_val, max_val], 'r--', lw=2, label='PredicciÃ³n perfecta')
             
-            # Configurar gráfico
+            # Configurar grÃ¡fico
             ax.set_xlabel(f'Valor Real ({TARGET_NAMES[target]})')
-            ax.set_ylabel(f'Predicción ({TARGET_NAMES[target]})')
-            ax.set_title(f'{TARGET_NAMES[target]} - R² = {metrics["r2"]:.3f}')
+            ax.set_ylabel(f'PredicciÃ³n ({TARGET_NAMES[target]})')
+            ax.set_title(f'{TARGET_NAMES[target]} - RÂ² = {metrics["r2"]:.3f}')
             ax.legend()
             ax.grid(True, alpha=0.3)
             
-            # Añadir texto con métricas
+            # AÃ±adir texto con mÃ©tricas
             textstr = f'MAE: {metrics["mae"]:.3f}\\nRMSE: {metrics["rmse"]:.3f}\\nMAPE: {metrics["mape"]:.1f}%'
             props = dict(boxstyle='round', facecolor='wheat', alpha=0.8)
             ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=10,
@@ -293,7 +296,7 @@ class RegressionEvaluator:
         if save_path:
             ensure_dir_exists(save_path.parent)
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Gráficos de paridad guardados en {save_path}")
+            logger.info(f"GrÃ¡ficos de paridad guardados en {save_path}")
         
         plt.show()
     
@@ -303,15 +306,19 @@ class RegressionEvaluator:
         figsize: Tuple[int, int] = (15, 12)
     ) -> None:
         """
-        Genera gráficos de residuos.
+        Genera grÃ¡ficos de residuos.
         
         Args:
-            save_path: Ruta para guardar los gráficos
-            figsize: Tamaño de la figura
+            save_path: Ruta para guardar los grÃ¡ficos
+            figsize: TamaÃ±o de la figura
         """
         if not self.results:
-            logger.warning("No hay resultados para graficar. Ejecutar evaluación primero.")
+            logger.warning("No hay resultados para graficar. Ejecutar evaluaciÃ³n primero.")
             return
+        
+        # Importación perezosa de matplotlib/seaborn (lazy import) para evitar MemoryError en Windows con multiprocessing
+        import matplotlib.pyplot as plt
+        import seaborn as sns
         
         # Configurar estilo
         plt.style.use('default')
@@ -323,7 +330,7 @@ class RegressionEvaluator:
         axes = axes.flatten()
         
         for idx, (target, metrics) in enumerate(self.results.items()):
-            if idx >= 4:  # Máximo 4 subplots
+            if idx >= 4:  # MÃ¡ximo 4 subplots
                 break
             
             ax = axes[idx]
@@ -335,13 +342,13 @@ class RegressionEvaluator:
             ax.scatter(targets, residuals, alpha=0.6, s=20)
             ax.axhline(y=0, color='r', linestyle='--', lw=2)
             
-            # Configurar gráfico
+            # Configurar grÃ¡fico
             ax.set_xlabel(f'Valor Real ({TARGET_NAMES[target]})')
             ax.set_ylabel(f'Residuos ({TARGET_NAMES[target]})')
             ax.set_title(f'Residuos - {TARGET_NAMES[target]}')
             ax.grid(True, alpha=0.3)
             
-            # Añadir texto con estadísticas de residuos
+            # AÃ±adir texto con estadÃ­sticas de residuos
             mean_residual = np.mean(residuals)
             std_residual = np.std(residuals)
             textstr = f'Media: {mean_residual:.3f}\\nStd: {std_residual:.3f}'
@@ -359,7 +366,7 @@ class RegressionEvaluator:
         if save_path:
             ensure_dir_exists(save_path.parent)
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Gráficos de residuos guardados en {save_path}")
+            logger.info(f"GrÃ¡ficos de residuos guardados en {save_path}")
         
         plt.show()
     
@@ -368,7 +375,7 @@ class RegressionEvaluator:
         save_path: Optional[Path] = None
     ) -> Dict[str, Union[Dict, List]]:
         """
-        Genera reporte completo de evaluación.
+        Genera reporte completo de evaluaciÃ³n.
         
         Args:
             save_path: Ruta para guardar el reporte JSON
@@ -377,10 +384,10 @@ class RegressionEvaluator:
             Diccionario con reporte completo
         """
         if not self.results:
-            logger.warning("No hay resultados para reportar. Ejecutar evaluación primero.")
+            logger.warning("No hay resultados para reportar. Ejecutar evaluaciÃ³n primero.")
             return {}
         
-        # Calcular métricas agregadas
+        # Calcular mÃ©tricas agregadas
         total_mae = np.mean([metrics['mae'] for metrics in self.results.values()])
         total_rmse = np.mean([metrics['rmse'] for metrics in self.results.values()])
         total_r2 = np.mean([metrics['r2'] for metrics in self.results.values()])
@@ -406,16 +413,16 @@ class RegressionEvaluator:
         if save_path:
             ensure_dir_exists(save_path.parent)
             save_json(report, save_path)
-            logger.info(f"Reporte de evaluación guardado en {save_path}")
+            logger.info(f"Reporte de evaluaciÃ³n guardado en {save_path}")
         
         # Log de resumen
-        logger.info("=== REPORTE DE EVALUACIÓN ===")
+        logger.info("=== REPORTE DE EVALUACIÃ“N ===")
         logger.info(f"Promedio MAE: {total_mae:.4f}")
         logger.info(f"Promedio RMSE: {total_rmse:.4f}")
-        logger.info(f"Promedio R²: {total_r2:.4f}")
+        logger.info(f"Promedio RÂ²: {total_r2:.4f}")
         
         for target, metrics in self.results.items():
-            logger.info(f"{target.upper()}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, R²={metrics['r2']:.4f}")
+            logger.info(f"{target.upper()}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, RÂ²={metrics['r2']:.4f}")
         
         return report
 
@@ -426,7 +433,7 @@ def load_model_for_evaluation(
     device: torch.device
 ) -> nn.Module:
     """
-    Carga un modelo para evaluación.
+    Carga un modelo para evaluaciÃ³n.
     
     Args:
         model_path: Ruta al archivo del modelo
@@ -459,18 +466,18 @@ def evaluate_model_from_file(
     target: Optional[str] = None
 ) -> Dict[str, Union[Dict, float]]:
     """
-    Evalúa un modelo cargado desde archivo.
+    EvalÃºa un modelo cargado desde archivo.
     
     Args:
         model_path: Ruta al archivo del modelo
         model_class: Clase del modelo
         test_loader: DataLoader de test
-        scalers: Escaladores para desnormalización
-        device: Dispositivo para evaluación
-        target: Target específico (para modelos individuales)
+        scalers: Escaladores para desnormalizaciÃ³n
+        device: Dispositivo para evaluaciÃ³n
+        target: Target especÃ­fico (para modelos individuales)
         
     Returns:
-        Resultados de evaluación
+        Resultados de evaluaciÃ³n
     """
     model = load_model_for_evaluation(model_path, model_class, device)
     
@@ -487,3 +494,5 @@ def evaluate_model_from_file(
         results = evaluator.evaluate_multi_head_model()
     
     return results
+
+

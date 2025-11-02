@@ -1,4 +1,4 @@
-from django.apps import AppConfig
+﻿from django.apps import AppConfig
 
 
 class ApiConfig(AppConfig):
@@ -6,5 +6,9 @@ class ApiConfig(AppConfig):
     name = 'api'
     
     def ready(self):
-        """Importar signals cuando la app esté lista."""
-        import api.signals
+        """Importar signals cuando la app estÃ© lista."""
+        # Temporarily disabled to avoid import errors
+        # import api.signals
+        pass
+
+

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Generador de reportes PDF para CacaoScan.
 """
 from reportlab.lib.pagesizes import A4
@@ -17,7 +17,7 @@ from datetime import datetime
 
 class CacaoReportPDFGenerator:
     """
-    Generador de reportes PDF para análisis de cacao.
+    Generador de reportes PDF para anÃ¡lisis de cacao.
     """
     
     def __init__(self):
@@ -26,7 +26,7 @@ class CacaoReportPDFGenerator:
     
     def _setup_custom_styles(self):
         """Configurar estilos personalizados."""
-        # Estilo para título principal
+        # Estilo para tÃ­tulo principal
         self.styles.add(ParagraphStyle(
             name='CustomTitle',
             parent=self.styles['Title'],
@@ -36,7 +36,7 @@ class CacaoReportPDFGenerator:
             textColor=colors.darkgreen
         ))
         
-        # Estilo para subtítulos
+        # Estilo para subtÃ­tulos
         self.styles.add(ParagraphStyle(
             name='CustomHeading',
             parent=self.styles['Heading2'],
@@ -69,33 +69,33 @@ class CacaoReportPDFGenerator:
         doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=1*inch)
         elements = []
         
-        # Título principal
+        # TÃ­tulo principal
         title = Paragraph(f"Reporte de Calidad de Cacao", self.styles['CustomTitle'])
         elements.append(title)
         
-        # Información del usuario y fecha
+        # InformaciÃ³n del usuario y fecha
         user_info = f"<b>Usuario:</b> {user.get_full_name() or user.username}<br/>"
         user_info += f"<b>Email:</b> {user.email}<br/>"
-        user_info += f"<b>Fecha de generación:</b> {timezone.now().strftime('%d/%m/%Y %H:%M')}"
+        user_info += f"<b>Fecha de generaciÃ³n:</b> {timezone.now().strftime('%d/%m/%Y %H:%M')}"
         
         if filters:
             user_info += "<br/><b>Filtros aplicados:</b><br/>"
             for key, value in filters.items():
                 if value:
-                    user_info += f"• {key}: {value}<br/>"
+                    user_info += f"â€¢ {key}: {value}<br/>"
         
         user_paragraph = Paragraph(user_info, self.styles['CustomNormal'])
         elements.append(user_paragraph)
         elements.append(Spacer(1, 20))
         
-        # Estadísticas generales
+        # EstadÃ­sticas generales
         stats = self._calculate_statistics(images_queryset)
         elements.extend(self._add_statistics_section(stats))
         
         # Tabla de datos detallados
         elements.extend(self._add_data_table(images_queryset))
         
-        # Gráfico de distribución (si hay datos)
+        # GrÃ¡fico de distribuciÃ³n (si hay datos)
         if images_queryset.exists():
             elements.extend(self._add_distribution_chart(images_queryset))
         
@@ -112,23 +112,23 @@ class CacaoReportPDFGenerator:
         doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=1*inch)
         elements = []
         
-        # Título
+        # TÃ­tulo
         title = Paragraph("Reporte de Defectos de Cacao", self.styles['CustomTitle'])
         elements.append(title)
         
-        # Información del usuario
+        # InformaciÃ³n del usuario
         user_info = f"<b>Usuario:</b> {user.get_full_name() or user.username}<br/>"
         user_info += f"<b>Fecha:</b> {timezone.now().strftime('%d/%m/%Y %H:%M')}"
         elements.append(Paragraph(user_info, self.styles['CustomNormal']))
         elements.append(Spacer(1, 20))
         
-        # Análisis de defectos por confianza baja
+        # AnÃ¡lisis de defectos por confianza baja
         low_confidence_images = images_queryset.filter(
             prediction__average_confidence__lt=0.7
         ).select_related('prediction')
         
         if low_confidence_images.exists():
-            elements.append(Paragraph("Análisis de Defectos Detectados", self.styles['CustomHeading']))
+            elements.append(Paragraph("AnÃ¡lisis de Defectos Detectados", self.styles['CustomHeading']))
             
             # Tabla de defectos
             defect_data = [['ID', 'Finca', 'Confianza Promedio', 'Problema Detectado']]
@@ -146,7 +146,7 @@ class CacaoReportPDFGenerator:
             defect_table.setStyle(self._get_table_style())
             elements.append(defect_table)
         else:
-            elements.append(Paragraph("No se detectaron defectos significativos en el período analizado.", 
+            elements.append(Paragraph("No se detectaron defectos significativos en el perÃ­odo analizado.", 
                                     self.styles['CustomNormal']))
         
         doc.build(elements)
@@ -155,27 +155,27 @@ class CacaoReportPDFGenerator:
     
     def generate_performance_report(self, images_queryset, user, filters=None):
         """
-        Generar reporte de rendimiento por período.
+        Generar reporte de rendimiento por perÃ­odo.
         """
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=1*inch)
         elements = []
         
-        # Título
+        # TÃ­tulo
         title = Paragraph("Reporte de Rendimiento", self.styles['CustomTitle'])
         elements.append(title)
         
-        # Información del usuario
+        # InformaciÃ³n del usuario
         user_info = f"<b>Usuario:</b> {user.get_full_name() or user.username}<br/>"
         user_info += f"<b>Fecha:</b> {timezone.now().strftime('%d/%m/%Y %H:%M')}"
         elements.append(Paragraph(user_info, self.styles['CustomNormal']))
         elements.append(Spacer(1, 20))
         
-        # Métricas de rendimiento
+        # MÃ©tricas de rendimiento
         performance_stats = self._calculate_performance_metrics(images_queryset)
         elements.extend(self._add_performance_metrics(performance_stats))
         
-        # Análisis temporal
+        # AnÃ¡lisis temporal
         elements.extend(self._add_temporal_analysis(images_queryset))
         
         doc.build(elements)
@@ -183,7 +183,7 @@ class CacaoReportPDFGenerator:
         return buffer
     
     def _calculate_statistics(self, images_queryset):
-        """Calcular estadísticas generales."""
+        """Calcular estadÃ­sticas generales."""
         images_with_predictions = images_queryset.filter(prediction__isnull=False)
         
         if not images_with_predictions.exists():
@@ -196,7 +196,7 @@ class CacaoReportPDFGenerator:
                 'fincas': []
             }
         
-        # Estadísticas de dimensiones
+        # EstadÃ­sticas de dimensiones
         predictions = [img.prediction for img in images_with_predictions]
         
         avg_alto = sum(p.alto_mm for p in predictions) / len(predictions)
@@ -205,7 +205,7 @@ class CacaoReportPDFGenerator:
         avg_peso = sum(p.peso_g for p in predictions) / len(predictions)
         avg_confidence = sum(p.average_confidence for p in predictions) / len(predictions)
         
-        # Regiones y fincas más comunes
+        # Regiones y fincas mÃ¡s comunes
         regions = images_queryset.values_list('region', flat=True).exclude(region__isnull=True).exclude(region='')
         fincas = images_queryset.values_list('finca', flat=True).exclude(finca__isnull=True).exclude(finca='')
         
@@ -224,16 +224,16 @@ class CacaoReportPDFGenerator:
         }
     
     def _add_statistics_section(self, stats):
-        """Agregar sección de estadísticas."""
+        """Agregar secciÃ³n de estadÃ­sticas."""
         elements = []
         
-        elements.append(Paragraph("Estadísticas Generales", self.styles['CustomHeading']))
+        elements.append(Paragraph("EstadÃ­sticas Generales", self.styles['CustomHeading']))
         
-        # Tabla de estadísticas
+        # Tabla de estadÃ­sticas
         stats_data = [
-            ['Métrica', 'Valor'],
-            ['Total de imágenes', str(stats['total_images'])],
-            ['Imágenes procesadas', str(stats['processed_images'])],
+            ['MÃ©trica', 'Valor'],
+            ['Total de imÃ¡genes', str(stats['total_images'])],
+            ['ImÃ¡genes procesadas', str(stats['processed_images'])],
             ['Tasa de procesamiento', f"{(stats['processed_images']/stats['total_images']*100):.1f}%" if stats['total_images'] > 0 else "0%"],
             ['Confianza promedio', f"{stats['avg_confidence']:.2%}"],
             ['', ''],
@@ -258,7 +258,7 @@ class CacaoReportPDFGenerator:
         elements.append(Paragraph("Datos Detallados", self.styles['CustomHeading']))
         
         # Preparar datos de la tabla
-        table_data = [['ID', 'Finca', 'Región', 'Alto (mm)', 'Ancho (mm)', 'Grosor (mm)', 'Peso (g)', 'Confianza']]
+        table_data = [['ID', 'Finca', 'RegiÃ³n', 'Alto (mm)', 'Ancho (mm)', 'Grosor (mm)', 'Peso (g)', 'Confianza']]
         
         images_with_predictions = images_queryset.filter(prediction__isnull=False).select_related('prediction')[:50]  # Limitar a 50 registros
         
@@ -275,7 +275,7 @@ class CacaoReportPDFGenerator:
                 f"{pred.average_confidence:.2%}"
             ])
         
-        if len(table_data) > 1:  # Si hay datos además del header
+        if len(table_data) > 1:  # Si hay datos ademÃ¡s del header
             data_table = Table(table_data)
             data_table.setStyle(self._get_table_style())
             elements.append(data_table)
@@ -286,20 +286,20 @@ class CacaoReportPDFGenerator:
         return elements
     
     def _add_distribution_chart(self, images_queryset):
-        """Agregar análisis de distribución."""
+        """Agregar anÃ¡lisis de distribuciÃ³n."""
         elements = []
         
-        elements.append(Paragraph("Análisis de Distribución", self.styles['CustomHeading']))
+        elements.append(Paragraph("AnÃ¡lisis de DistribuciÃ³n", self.styles['CustomHeading']))
         
-        # Análisis por región
+        # AnÃ¡lisis por regiÃ³n
         region_stats = images_queryset.values('region').annotate(
             count=models.Count('id')
         ).exclude(region__isnull=True).exclude(region='').order_by('-count')[:5]
         
         if region_stats:
-            region_data = [['Región', 'Cantidad de Imágenes']]
+            region_data = [['RegiÃ³n', 'Cantidad de ImÃ¡genes']]
             for stat in region_stats:
-                region_data.append([stat['region'] or 'Sin región', str(stat['count'])])
+                region_data.append([stat['region'] or 'Sin regiÃ³n', str(stat['count'])])
             
             region_table = Table(region_data)
             region_table.setStyle(self._get_table_style())
@@ -309,16 +309,16 @@ class CacaoReportPDFGenerator:
         return elements
     
     def _add_performance_metrics(self, performance_stats):
-        """Agregar métricas de rendimiento."""
+        """Agregar mÃ©tricas de rendimiento."""
         elements = []
         
-        elements.append(Paragraph("Métricas de Rendimiento", self.styles['CustomHeading']))
+        elements.append(Paragraph("MÃ©tricas de Rendimiento", self.styles['CustomHeading']))
         
         perf_data = [
-            ['Métrica', 'Valor'],
-            ['Imágenes procesadas hoy', str(performance_stats.get('today', 0))],
-            ['Imágenes procesadas esta semana', str(performance_stats.get('this_week', 0))],
-            ['Imágenes procesadas este mes', str(performance_stats.get('this_month', 0))],
+            ['MÃ©trica', 'Valor'],
+            ['ImÃ¡genes procesadas hoy', str(performance_stats.get('today', 0))],
+            ['ImÃ¡genes procesadas esta semana', str(performance_stats.get('this_week', 0))],
+            ['ImÃ¡genes procesadas este mes', str(performance_stats.get('this_month', 0))],
             ['Tiempo promedio de procesamiento', f"{performance_stats.get('avg_processing_time', 0):.0f} ms"],
             ['Confianza promedio', f"{performance_stats.get('avg_confidence', 0):.2%}"]
         ]
@@ -331,10 +331,10 @@ class CacaoReportPDFGenerator:
         return elements
     
     def _add_temporal_analysis(self, images_queryset):
-        """Agregar análisis temporal."""
+        """Agregar anÃ¡lisis temporal."""
         elements = []
         
-        elements.append(Paragraph("Análisis Temporal", self.styles['CustomHeading']))
+        elements.append(Paragraph("AnÃ¡lisis Temporal", self.styles['CustomHeading']))
         
         # Agrupar por fecha
         from django.db.models import Count
@@ -352,7 +352,7 @@ class CacaoReportPDFGenerator:
         ).values('day').annotate(count=Count('id')).order_by('day')
         
         if daily_stats:
-            temporal_data = [['Fecha', 'Imágenes Procesadas']]
+            temporal_data = [['Fecha', 'ImÃ¡genes Procesadas']]
             for stat in daily_stats:
                 temporal_data.append([stat['day'].strftime('%d/%m/%Y'), str(stat['count'])])
             
@@ -363,7 +363,7 @@ class CacaoReportPDFGenerator:
         return elements
     
     def _calculate_performance_metrics(self, images_queryset):
-        """Calcular métricas de rendimiento."""
+        """Calcular mÃ©tricas de rendimiento."""
         from django.utils import timezone
         from datetime import timedelta
         
@@ -397,9 +397,9 @@ class CacaoReportPDFGenerator:
         min_confidence = min(confidences)
         
         if min_confidence < 0.5:
-            return "Defecto severo - medición poco confiable"
+            return "Defecto severo - mediciÃ³n poco confiable"
         elif min_confidence < 0.7:
-            return "Defecto moderado - medición con dudas"
+            return "Defecto moderado - mediciÃ³n con dudas"
         else:
             return "Sin defectos detectados"
     
@@ -422,3 +422,5 @@ class CacaoReportPDFGenerator:
 
 # Importar modelos necesarios
 from django.db import models
+
+

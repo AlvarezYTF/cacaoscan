@@ -1,5 +1,5 @@
-"""
-Vistas API para métricas de modelos de CacaoScan.
+﻿"""
+Vistas API para mÃ©tricas de modelos de CacaoScan.
 """
 import logging
 from rest_framework.permissions import IsAuthenticated
@@ -13,7 +13,12 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from typing import Dict, List, Any
 
-from .models import ModelMetrics, TrainingJob
+from .models import ModelMetrics
+# Importar desde apps modulares
+try:
+    from training.models import TrainingJob
+except ImportError:
+    TrainingJob = None
 from .serializers import (
     ModelMetricsSerializer,
     ModelMetricsListSerializer,
@@ -30,7 +35,7 @@ logger = logging.getLogger("cacaoscan.api")
 
 
 class ModelMetricsPagination(PageNumberPagination):
-    """Paginación para métricas de modelos."""
+    """PaginaciÃ³n para mÃ©tricas de modelos."""
     page_size = 20
     page_size_query_param = 'page_size'
     max_page_size = 100
@@ -38,14 +43,14 @@ class ModelMetricsPagination(PageNumberPagination):
 
 class ModelMetricsListView(APIView):
     """
-    Endpoint para listar métricas de modelos con filtros y paginación.
+    Endpoint para listar mÃ©tricas de modelos con filtros y paginaciÃ³n.
     """
     permission_classes = [IsAuthenticated]
     pagination_class = ModelMetricsPagination
     
     @swagger_auto_schema(
-        operation_description="Lista métricas de modelos con filtros opcionales",
-        operation_summary="Listar métricas de modelos",
+        operation_description="Lista mÃ©tricas de modelos con filtros opcionales",
+        operation_summary="Listar mÃ©tricas de modelos",
         manual_parameters=[
             openapi.Parameter(
                 'model_name',
@@ -70,7 +75,7 @@ class ModelMetricsListView(APIView):
             openapi.Parameter(
                 'metric_type',
                 openapi.IN_QUERY,
-                description="Filtrar por tipo de métricas",
+                description="Filtrar por tipo de mÃ©tricas",
                 type=openapi.TYPE_STRING,
                 enum=['training', 'validation', 'test', 'incremental']
             ),
@@ -83,27 +88,27 @@ class ModelMetricsListView(APIView):
             openapi.Parameter(
                 'is_production',
                 openapi.IN_QUERY,
-                description="Filtrar solo modelos en producción",
+                description="Filtrar solo modelos en producciÃ³n",
                 type=openapi.TYPE_BOOLEAN
             ),
             openapi.Parameter(
                 'page',
                 openapi.IN_QUERY,
-                description="Número de página",
+                description="NÃºmero de pÃ¡gina",
                 type=openapi.TYPE_INTEGER,
                 default=1
             ),
             openapi.Parameter(
                 'page_size',
                 openapi.IN_QUERY,
-                description="Tamaño de página",
+                description="TamaÃ±o de pÃ¡gina",
                 type=openapi.TYPE_INTEGER,
                 default=20
             ),
         ],
         responses={
             200: openapi.Response(
-                description="Lista de métricas obtenida exitosamente",
+                description="Lista de mÃ©tricas obtenida exitosamente",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -115,11 +120,11 @@ class ModelMetricsListView(APIView):
             ),
             401: openapi.Response(description="No autorizado"),
         },
-        tags=['Métricas de Modelos']
+        tags=['MÃ©tricas de Modelos']
     )
     def get(self, request):
         """
-        Lista métricas de modelos con filtros opcionales.
+        Lista mÃ©tricas de modelos con filtros opcionales.
         """
         try:
             # Construir queryset base
@@ -150,10 +155,10 @@ class ModelMetricsListView(APIView):
             if is_production is not None:
                 queryset = queryset.filter(is_production_model=is_production.lower() == 'true')
             
-            # Ordenar por fecha de creación descendente
+            # Ordenar por fecha de creaciÃ³n descendente
             queryset = queryset.order_by('-created_at')
             
-            # Aplicar paginación
+            # Aplicar paginaciÃ³n
             paginator = self.pagination_class()
             page = paginator.paginate_queryset(queryset, request)
             
@@ -173,14 +178,14 @@ class ModelMetricsListView(APIView):
                         'metrics': serializer.data,
                         'total_count': queryset.count()
                     },
-                    message="Métricas de modelos obtenidas exitosamente",
+                    message="MÃ©tricas de modelos obtenidas exitosamente",
                     status_code=status.HTTP_200_OK
                 )
                 
         except Exception as e:
-            logger.error(f"Error listando métricas de modelos: {str(e)}")
+            logger.error(f"Error listando mÃ©tricas de modelos: {str(e)}")
             return create_error_response(
-                message="Error interno listando métricas",
+                message="Error interno listando mÃ©tricas",
                 errors={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
@@ -188,13 +193,13 @@ class ModelMetricsListView(APIView):
 
 class ModelMetricsDetailView(APIView):
     """
-    Endpoint para obtener detalles de métricas de un modelo específico.
+    Endpoint para obtener detalles de mÃ©tricas de un modelo especÃ­fico.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene detalles completos de métricas de un modelo",
-        operation_summary="Detalles de métricas de modelo",
+        operation_description="Obtiene detalles completos de mÃ©tricas de un modelo",
+        operation_summary="Detalles de mÃ©tricas de modelo",
         responses={
             200: openapi.Response(
                 description="Detalles obtenidos exitosamente",
@@ -207,14 +212,14 @@ class ModelMetricsDetailView(APIView):
                     }
                 )
             ),
-            404: openapi.Response(description="Métricas no encontradas"),
+            404: openapi.Response(description="MÃ©tricas no encontradas"),
             401: openapi.Response(description="No autorizado"),
         },
-        tags=['Métricas de Modelos']
+        tags=['MÃ©tricas de Modelos']
     )
     def get(self, request, metrics_id):
         """
-        Obtiene detalles completos de métricas de un modelo.
+        Obtiene detalles completos de mÃ©tricas de un modelo.
         """
         try:
             metrics = ModelMetrics.objects.get(id=metrics_id)
@@ -222,17 +227,17 @@ class ModelMetricsDetailView(APIView):
             
             return create_success_response(
                 data=serializer.data,
-                message="Detalles de métricas obtenidos exitosamente",
+                message="Detalles de mÃ©tricas obtenidos exitosamente",
                 status_code=status.HTTP_200_OK
             )
             
         except ModelMetrics.DoesNotExist:
             return create_error_response(
-                message="Métricas de modelo no encontradas",
+                message="MÃ©tricas de modelo no encontradas",
                 status_code=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            logger.error(f"Error obteniendo detalles de métricas: {str(e)}")
+            logger.error(f"Error obteniendo detalles de mÃ©tricas: {str(e)}")
             return create_error_response(
                 message="Error interno obteniendo detalles",
                 errors={"error": str(e)},
@@ -242,17 +247,17 @@ class ModelMetricsDetailView(APIView):
 
 class ModelMetricsCreateView(APIView):
     """
-    Endpoint para crear nuevas métricas de modelos.
+    Endpoint para crear nuevas mÃ©tricas de modelos.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Crea nuevas métricas de modelo",
-        operation_summary="Crear métricas de modelo",
+        operation_description="Crea nuevas mÃ©tricas de modelo",
+        operation_summary="Crear mÃ©tricas de modelo",
         request_body=ModelMetricsCreateSerializer,
         responses={
             201: openapi.Response(
-                description="Métricas creadas exitosamente",
+                description="MÃ©tricas creadas exitosamente",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -262,14 +267,14 @@ class ModelMetricsCreateView(APIView):
                     }
                 )
             ),
-            400: openapi.Response(description="Datos inválidos"),
+            400: openapi.Response(description="Datos invÃ¡lidos"),
             401: openapi.Response(description="No autorizado"),
         },
-        tags=['Métricas de Modelos']
+        tags=['MÃ©tricas de Modelos']
     )
     def post(self, request):
         """
-        Crea nuevas métricas de modelo.
+        Crea nuevas mÃ©tricas de modelo.
         """
         try:
             serializer = ModelMetricsCreateSerializer(data=request.data)
@@ -282,7 +287,7 @@ class ModelMetricsCreateView(APIView):
                 if metrics.is_best_model:
                     metrics.mark_as_best()
                 
-                # Si se marca como modelo en producción, actualizar otros modelos
+                # Si se marca como modelo en producciÃ³n, actualizar otros modelos
                 if metrics.is_production_model:
                     metrics.mark_as_production()
                 
@@ -290,20 +295,20 @@ class ModelMetricsCreateView(APIView):
                 
                 return create_success_response(
                     data=response_serializer.data,
-                    message="Métricas de modelo creadas exitosamente",
+                    message="MÃ©tricas de modelo creadas exitosamente",
                     status_code=status.HTTP_201_CREATED
                 )
             else:
                 return create_error_response(
-                    message="Datos de métricas inválidos",
+                    message="Datos de mÃ©tricas invÃ¡lidos",
                     errors=serializer.errors,
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
                 
         except Exception as e:
-            logger.error(f"Error creando métricas de modelo: {str(e)}")
+            logger.error(f"Error creando mÃ©tricas de modelo: {str(e)}")
             return create_error_response(
-                message="Error interno creando métricas",
+                message="Error interno creando mÃ©tricas",
                 errors={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
@@ -311,17 +316,17 @@ class ModelMetricsCreateView(APIView):
 
 class ModelMetricsUpdateView(APIView):
     """
-    Endpoint para actualizar métricas de modelos existentes.
+    Endpoint para actualizar mÃ©tricas de modelos existentes.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Actualiza métricas de modelo existente",
-        operation_summary="Actualizar métricas de modelo",
+        operation_description="Actualiza mÃ©tricas de modelo existente",
+        operation_summary="Actualizar mÃ©tricas de modelo",
         request_body=ModelMetricsUpdateSerializer,
         responses={
             200: openapi.Response(
-                description="Métricas actualizadas exitosamente",
+                description="MÃ©tricas actualizadas exitosamente",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -331,15 +336,15 @@ class ModelMetricsUpdateView(APIView):
                     }
                 )
             ),
-            400: openapi.Response(description="Datos inválidos"),
-            404: openapi.Response(description="Métricas no encontradas"),
+            400: openapi.Response(description="Datos invÃ¡lidos"),
+            404: openapi.Response(description="MÃ©tricas no encontradas"),
             401: openapi.Response(description="No autorizado"),
         },
-        tags=['Métricas de Modelos']
+        tags=['MÃ©tricas de Modelos']
     )
     def put(self, request, metrics_id):
         """
-        Actualiza métricas de modelo existente.
+        Actualiza mÃ©tricas de modelo existente.
         """
         try:
             metrics = ModelMetrics.objects.get(id=metrics_id)
@@ -352,7 +357,7 @@ class ModelMetricsUpdateView(APIView):
                 if updated_metrics.is_best_model:
                     updated_metrics.mark_as_best()
                 
-                # Si se marca como modelo en producción, actualizar otros modelos
+                # Si se marca como modelo en producciÃ³n, actualizar otros modelos
                 if updated_metrics.is_production_model:
                     updated_metrics.mark_as_production()
                 
@@ -360,25 +365,25 @@ class ModelMetricsUpdateView(APIView):
                 
                 return create_success_response(
                     data=response_serializer.data,
-                    message="Métricas de modelo actualizadas exitosamente",
+                    message="MÃ©tricas de modelo actualizadas exitosamente",
                     status_code=status.HTTP_200_OK
                 )
             else:
                 return create_error_response(
-                    message="Datos de métricas inválidos",
+                    message="Datos de mÃ©tricas invÃ¡lidos",
                     errors=serializer.errors,
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
                 
         except ModelMetrics.DoesNotExist:
             return create_error_response(
-                message="Métricas de modelo no encontradas",
+                message="MÃ©tricas de modelo no encontradas",
                 status_code=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            logger.error(f"Error actualizando métricas de modelo: {str(e)}")
+            logger.error(f"Error actualizando mÃ©tricas de modelo: {str(e)}")
             return create_error_response(
-                message="Error interno actualizando métricas",
+                message="Error interno actualizando mÃ©tricas",
                 errors={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
@@ -386,16 +391,16 @@ class ModelMetricsUpdateView(APIView):
 
 class ModelMetricsDeleteView(APIView):
     """
-    Endpoint para eliminar métricas de modelos.
+    Endpoint para eliminar mÃ©tricas de modelos.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Elimina métricas de modelo",
-        operation_summary="Eliminar métricas de modelo",
+        operation_description="Elimina mÃ©tricas de modelo",
+        operation_summary="Eliminar mÃ©tricas de modelo",
         responses={
             200: openapi.Response(
-                description="Métricas eliminadas exitosamente",
+                description="MÃ©tricas eliminadas exitosamente",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -404,14 +409,14 @@ class ModelMetricsDeleteView(APIView):
                     }
                 )
             ),
-            404: openapi.Response(description="Métricas no encontradas"),
+            404: openapi.Response(description="MÃ©tricas no encontradas"),
             401: openapi.Response(description="No autorizado"),
         },
-        tags=['Métricas de Modelos']
+        tags=['MÃ©tricas de Modelos']
     )
     def delete(self, request, metrics_id):
         """
-        Elimina métricas de modelo.
+        Elimina mÃ©tricas de modelo.
         """
         try:
             metrics = ModelMetrics.objects.get(id=metrics_id)
@@ -419,19 +424,19 @@ class ModelMetricsDeleteView(APIView):
             
             return create_success_response(
                 data={},
-                message="Métricas de modelo eliminadas exitosamente",
+                message="MÃ©tricas de modelo eliminadas exitosamente",
                 status_code=status.HTTP_200_OK
             )
             
         except ModelMetrics.DoesNotExist:
             return create_error_response(
-                message="Métricas de modelo no encontradas",
+                message="MÃ©tricas de modelo no encontradas",
                 status_code=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            logger.error(f"Error eliminando métricas de modelo: {str(e)}")
+            logger.error(f"Error eliminando mÃ©tricas de modelo: {str(e)}")
             return create_error_response(
-                message="Error interno eliminando métricas",
+                message="Error interno eliminando mÃ©tricas",
                 errors={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
@@ -439,16 +444,16 @@ class ModelMetricsDeleteView(APIView):
 
 class ModelMetricsStatsView(APIView):
     """
-    Endpoint para obtener estadísticas de métricas de modelos.
+    Endpoint para obtener estadÃ­sticas de mÃ©tricas de modelos.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene estadísticas generales de métricas de modelos",
-        operation_summary="Estadísticas de métricas de modelos",
+        operation_description="Obtiene estadÃ­sticas generales de mÃ©tricas de modelos",
+        operation_summary="EstadÃ­sticas de mÃ©tricas de modelos",
         responses={
             200: openapi.Response(
-                description="Estadísticas obtenidas exitosamente",
+                description="EstadÃ­sticas obtenidas exitosamente",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -460,31 +465,31 @@ class ModelMetricsStatsView(APIView):
             ),
             401: openapi.Response(description="No autorizado"),
         },
-        tags=['Métricas de Modelos']
+        tags=['MÃ©tricas de Modelos']
     )
     def get(self, request):
         """
-        Obtiene estadísticas generales de métricas de modelos.
+        Obtiene estadÃ­sticas generales de mÃ©tricas de modelos.
         """
         try:
-            # Estadísticas básicas
+            # EstadÃ­sticas bÃ¡sicas
             total_models = ModelMetrics.objects.count()
             
-            # Estadísticas por tipo de modelo
+            # EstadÃ­sticas por tipo de modelo
             models_by_type = dict(ModelMetrics.objects.values_list('model_type').annotate(
                 count=Count('id')
             ).values_list('model_type', 'count'))
             
-            # Estadísticas por target
+            # EstadÃ­sticas por target
             models_by_target = dict(ModelMetrics.objects.values_list('target').annotate(
                 count=Count('id')
             ).values_list('target', 'count'))
             
-            # Mejores modelos y modelos en producción
+            # Mejores modelos y modelos en producciÃ³n
             best_models_count = ModelMetrics.objects.filter(is_best_model=True).count()
             production_models_count = ModelMetrics.objects.filter(is_production_model=True).count()
             
-            # Estadísticas de rendimiento
+            # EstadÃ­sticas de rendimiento
             performance_stats = ModelMetrics.objects.aggregate(
                 average_r2_score=Avg('r2_score'),
                 best_r2_score=Max('r2_score'),
@@ -509,14 +514,14 @@ class ModelMetricsStatsView(APIView):
             
             return create_success_response(
                 data=stats_data,
-                message="Estadísticas de métricas obtenidas exitosamente",
+                message="EstadÃ­sticas de mÃ©tricas obtenidas exitosamente",
                 status_code=status.HTTP_200_OK
             )
             
         except Exception as e:
-            logger.error(f"Error obteniendo estadísticas de métricas: {str(e)}")
+            logger.error(f"Error obteniendo estadÃ­sticas de mÃ©tricas: {str(e)}")
             return create_error_response(
-                message="Error interno obteniendo estadísticas",
+                message="Error interno obteniendo estadÃ­sticas",
                 errors={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
@@ -524,12 +529,12 @@ class ModelMetricsStatsView(APIView):
 
 class ModelPerformanceTrendView(APIView):
     """
-    Endpoint para obtener tendencia de rendimiento de un modelo específico.
+    Endpoint para obtener tendencia de rendimiento de un modelo especÃ­fico.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene tendencia de rendimiento de un modelo específico",
+        operation_description="Obtiene tendencia de rendimiento de un modelo especÃ­fico",
         operation_summary="Tendencia de rendimiento de modelo",
         manual_parameters=[
             openapi.Parameter(
@@ -550,7 +555,7 @@ class ModelPerformanceTrendView(APIView):
             openapi.Parameter(
                 'metric_type',
                 openapi.IN_QUERY,
-                description="Tipo de métricas",
+                description="Tipo de mÃ©tricas",
                 type=openapi.TYPE_STRING,
                 enum=['training', 'validation', 'test', 'incremental'],
                 default='validation'
@@ -568,14 +573,14 @@ class ModelPerformanceTrendView(APIView):
                     }
                 )
             ),
-            400: openapi.Response(description="Parámetros inválidos"),
+            400: openapi.Response(description="ParÃ¡metros invÃ¡lidos"),
             401: openapi.Response(description="No autorizado"),
         },
-        tags=['Métricas de Modelos']
+        tags=['MÃ©tricas de Modelos']
     )
     def get(self, request):
         """
-        Obtiene tendencia de rendimiento de un modelo específico.
+        Obtiene tendencia de rendimiento de un modelo especÃ­fico.
         """
         try:
             model_name = request.GET.get('model_name')
@@ -584,7 +589,7 @@ class ModelPerformanceTrendView(APIView):
             
             if not model_name or not target:
                 return create_error_response(
-                    message="model_name y target son parámetros requeridos",
+                    message="model_name y target son parÃ¡metros requeridos",
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
             
@@ -597,7 +602,7 @@ class ModelPerformanceTrendView(APIView):
                     status_code=status.HTTP_404_NOT_FOUND
                 )
             
-            # Obtener métricas actuales
+            # Obtener mÃ©tricas actuales
             current_metrics = ModelMetrics.objects.filter(
                 model_name=model_name,
                 target=target,
@@ -642,12 +647,12 @@ class ModelPerformanceTrendView(APIView):
 
 class ModelComparisonView(APIView):
     """
-    Endpoint para comparar dos modelos específicos.
+    Endpoint para comparar dos modelos especÃ­ficos.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Compara dos modelos específicos",
+        operation_description="Compara dos modelos especÃ­ficos",
         operation_summary="Comparar modelos",
         manual_parameters=[
             openapi.Parameter(
@@ -667,7 +672,7 @@ class ModelComparisonView(APIView):
         ],
         responses={
             200: openapi.Response(
-                description="Comparación obtenida exitosamente",
+                description="ComparaciÃ³n obtenida exitosamente",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -677,15 +682,15 @@ class ModelComparisonView(APIView):
                     }
                 )
             ),
-            400: openapi.Response(description="Parámetros inválidos"),
+            400: openapi.Response(description="ParÃ¡metros invÃ¡lidos"),
             404: openapi.Response(description="Modelos no encontrados"),
             401: openapi.Response(description="No autorizado"),
         },
-        tags=['Métricas de Modelos']
+        tags=['MÃ©tricas de Modelos']
     )
     def get(self, request):
         """
-        Compara dos modelos específicos.
+        Compara dos modelos especÃ­ficos.
         """
         try:
             model_a_id = request.GET.get('model_a_id')
@@ -693,7 +698,7 @@ class ModelComparisonView(APIView):
             
             if not model_a_id or not model_b_id:
                 return create_error_response(
-                    message="model_a_id y model_b_id son parámetros requeridos",
+                    message="model_a_id y model_b_id son parÃ¡metros requeridos",
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
             
@@ -706,7 +711,7 @@ class ModelComparisonView(APIView):
                     status_code=status.HTTP_404_NOT_FOUND
                 )
             
-            # Comparar métricas principales
+            # Comparar mÃ©tricas principales
             comparison_metrics = {
                 'mae': {
                     'model_a': model_a.mae,
@@ -760,7 +765,7 @@ class ModelComparisonView(APIView):
             
             return create_success_response(
                 data=comparison_response,
-                message="Comparación de modelos obtenida exitosamente",
+                message="ComparaciÃ³n de modelos obtenida exitosamente",
                 status_code=status.HTTP_200_OK
             )
             
@@ -796,7 +801,7 @@ class BestModelsView(APIView):
             ),
             401: openapi.Response(description="No autorizado"),
         },
-        tags=['Métricas de Modelos']
+        tags=['MÃ©tricas de Modelos']
     )
     def get(self, request):
         """
@@ -826,16 +831,16 @@ class BestModelsView(APIView):
 
 class ProductionModelsView(APIView):
     """
-    Endpoint para obtener todos los modelos en producción.
+    Endpoint para obtener todos los modelos en producciÃ³n.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene todos los modelos marcados como en producción",
-        operation_summary="Modelos en producción",
+        operation_description="Obtiene todos los modelos marcados como en producciÃ³n",
+        operation_summary="Modelos en producciÃ³n",
         responses={
             200: openapi.Response(
-                description="Modelos en producción obtenidos exitosamente",
+                description="Modelos en producciÃ³n obtenidos exitosamente",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -847,11 +852,11 @@ class ProductionModelsView(APIView):
             ),
             401: openapi.Response(description="No autorizado"),
         },
-        tags=['Métricas de Modelos']
+        tags=['MÃ©tricas de Modelos']
     )
     def get(self, request):
         """
-        Obtiene todos los modelos marcados como en producción.
+        Obtiene todos los modelos marcados como en producciÃ³n.
         """
         try:
             production_models = ModelMetrics.get_production_models()
@@ -862,14 +867,16 @@ class ProductionModelsView(APIView):
                     'production_models': serializer.data,
                     'count': production_models.count()
                 },
-                message="Modelos en producción obtenidos exitosamente",
+                message="Modelos en producciÃ³n obtenidos exitosamente",
                 status_code=status.HTTP_200_OK
             )
             
         except Exception as e:
-            logger.error(f"Error obteniendo modelos en producción: {str(e)}")
+            logger.error(f"Error obteniendo modelos en producciÃ³n: {str(e)}")
             return create_error_response(
-                message="Error interno obteniendo modelos en producción",
+                message="Error interno obteniendo modelos en producciÃ³n",
                 errors={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+

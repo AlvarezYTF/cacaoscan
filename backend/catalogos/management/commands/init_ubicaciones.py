@@ -1,4 +1,4 @@
-from django.core.management.base import BaseCommand
+﻿from django.core.management.base import BaseCommand
 from catalogos.models import Departamento, Municipio
 
 
@@ -6,7 +6,7 @@ class Command(BaseCommand):
     help = 'Inicializa los departamentos y municipios de Colombia.'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.SUCCESS('Iniciando inicialización de ubicaciones de Colombia...'))
+        self.stdout.write(self.style.SUCCESS('Iniciando inicializaciÃ³n de ubicaciones de Colombia...'))
 
         # Datos iniciales de departamentos y sus municipios
         # Solo incluimos algunos departamentos importantes como ejemplo
@@ -15,36 +15,36 @@ class Command(BaseCommand):
                 'codigo': '05',
                 'nombre': 'Antioquia',
                 'municipios': [
-                    {'codigo': '001', 'nombre': 'Medellín'},
+                    {'codigo': '001', 'nombre': 'MedellÃ­n'},
                     {'codigo': '002', 'nombre': 'Bello'},
-                    {'codigo': '003', 'nombre': 'Itagüí'},
+                    {'codigo': '003', 'nombre': 'ItagÃ¼Ã­'},
                     {'codigo': '004', 'nombre': 'Envigado'},
                     {'codigo': '005', 'nombre': 'Rionegro'},
                 ]
             },
             {
                 'codigo': '11',
-                'nombre': 'Bogotá D.C.',
+                'nombre': 'BogotÃ¡ D.C.',
                 'municipios': [
-                    {'codigo': '001', 'nombre': 'Bogotá D.C.'},
+                    {'codigo': '001', 'nombre': 'BogotÃ¡ D.C.'},
                 ]
             },
             {
                 'codigo': '54',
                 'nombre': 'Norte de Santander',
                 'municipios': [
-                    {'codigo': '001', 'nombre': 'Cúcuta'},
-                    {'codigo': '002', 'nombre': 'Ocaña'},
+                    {'codigo': '001', 'nombre': 'CÃºcuta'},
+                    {'codigo': '002', 'nombre': 'OcaÃ±a'},
                     {'codigo': '003', 'nombre': 'Pamplona'},
                 ]
             },
             {
                 'codigo': '13',
-                'nombre': 'Bolívar',
+                'nombre': 'BolÃ­var',
                 'municipios': [
                     {'codigo': '001', 'nombre': 'Cartagena'},
-                    {'codigo': '002', 'nombre': 'Magangué'},
-                    {'codigo': '003', 'nombre': 'Mompós'},
+                    {'codigo': '002', 'nombre': 'MaganguÃ©'},
+                    {'codigo': '003', 'nombre': 'MompÃ³s'},
                 ]
             },
             {
@@ -61,7 +61,7 @@ class Command(BaseCommand):
                 'codigo': '95',
                 'nombre': 'Guaviare',
                 'municipios': [
-                    {'codigo': '001', 'nombre': 'San José del Guaviare'},
+                    {'codigo': '001', 'nombre': 'San JosÃ© del Guaviare'},
                     {'codigo': '002', 'nombre': 'Calamar'},
                     {'codigo': '003', 'nombre': 'El Retorno'},
                     {'codigo': '004', 'nombre': 'Miraflores'},
@@ -82,9 +82,9 @@ class Command(BaseCommand):
             )
             
             if created:
-                self.stdout.write(self.style.SUCCESS(f'✓ Departamento creado: {departamento.codigo} - {departamento.nombre}'))
+                self.stdout.write(self.style.SUCCESS(f'âœ“ Departamento creado: {departamento.codigo} - {departamento.nombre}'))
             else:
-                self.stdout.write(self.style.WARNING(f'• Departamento ya existe: {departamento.codigo} - {departamento.nombre}'))
+                self.stdout.write(self.style.WARNING(f'â€¢ Departamento ya existe: {departamento.codigo} - {departamento.nombre}'))
             
             # Crear municipios del departamento
             for mun_data in municipios_data:
@@ -97,8 +97,10 @@ class Command(BaseCommand):
                 )
                 
                 if mun_created:
-                    self.stdout.write(self.style.SUCCESS(f'  ✓ Municipio creado: {municipio.nombre}'))
+                    self.stdout.write(self.style.SUCCESS(f'  âœ“ Municipio creado: {municipio.nombre}'))
                 else:
-                    self.stdout.write(self.style.WARNING(f'  • Municipio ya existe: {municipio.nombre}'))
+                    self.stdout.write(self.style.WARNING(f'  â€¢ Municipio ya existe: {municipio.nombre}'))
 
-        self.stdout.write(self.style.SUCCESS('\n✓ Inicialización de ubicaciones completada'))
+        self.stdout.write(self.style.SUCCESS('\nâœ“ InicializaciÃ³n de ubicaciones completada'))
+
+

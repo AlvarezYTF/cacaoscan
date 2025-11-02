@@ -1,6 +1,6 @@
 <template>
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- System Alerts mejorado -->
+    <!-- System Alerts -->
     <div class="bg-white rounded-2xl border-2 border-gray-200 hover:shadow-xl hover:border-green-300 transition-all duration-300">
       <div class="px-6 py-4 border-b border-gray-200">
         <h3 class="text-xl font-bold text-gray-900">{{ alertsTitle }}</h3>
@@ -16,7 +16,7 @@
           <div 
             v-for="alert in alerts" 
             :key="alert.id"
-            class="flex items-start p-4 rounded-lg border-l-4"
+            class="flex items-start p-4 rounded-lg border-l-4 animate-slide-in"
             :class="getAlertBorderClass(alert.type)"
           >
             <div class="flex-shrink-0">
@@ -32,6 +32,7 @@
             <div class="ml-3 flex-shrink-0">
               <button 
                 @click="handleDismissAlert(alert.id)"
+                type="button"
                 class="text-gray-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                 :title="`Descartar alerta: ${alert.title}`"
               >
@@ -45,7 +46,7 @@
       </div>
     </div>
 
-    <!-- Reports Statistics mejorado -->
+    <!-- Reports Statistics -->
     <div class="bg-white rounded-2xl border-2 border-gray-200 hover:shadow-xl hover:border-green-300 transition-all duration-300">
       <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
         <h3 class="text-xl font-bold text-gray-900">{{ reportsTitle }}</h3>
@@ -80,150 +81,119 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'DashboardAlerts',
-  props: {
-    alertsTitle: {
-      type: String,
-      default: 'Alertas del Sistema'
-    },
-    noAlertsMessage: {
-      type: String,
-      default: 'No hay alertas activas'
-    },
-    reportsTitle: {
-      type: String,
-      default: 'Reportes Generados'
-    },
-    reportsLink: {
-      type: String,
-      default: '/admin/reports'
-    },
-    reportsLinkText: {
-      type: String,
-      default: 'Gestionar Reportes'
-    },
-    totalReportsLabel: {
-      type: String,
-      default: 'Total Reportes'
-    },
-    completedReportsLabel: {
-      type: String,
-      default: 'Completados'
-    },
-    generatingReportsLabel: {
-      type: String,
-      default: 'Generando'
-    },
-    failedReportsLabel: {
-      type: String,
-      default: 'Fallidos'
-    },
-    alerts: {
-      type: Array,
-      default: () => []
-    },
-    reportStats: {
-      type: Object,
-      default: () => ({
-        total_reportes: 0,
-        reportes_completados: 0,
-        reportes_generando: 0,
-        reportes_fallidos: 0
-      })
-    }
+<script setup>
+// 1. Vue core
+import { defineProps, defineEmits } from 'vue'
+
+// Props
+const props = defineProps({
+  alertsTitle: {
+    type: String,
+    default: 'Alertas del Sistema'
   },
-  emits: ['dismiss-alert'],
-  methods: {
-    handleDismissAlert(alertId) {
-      this.$emit('dismiss-alert', alertId)
-    },
-    
-    getAlertBorderClass(type) {
-      const borderClasses = {
-        'success': 'border-green-400 bg-green-50',
-        'warning': 'border-yellow-400 bg-yellow-50',
-        'error': 'border-red-400 bg-red-50',
-        'info': 'border-blue-400 bg-blue-50',
-        'critical': 'border-red-600 bg-red-100'
-      }
-      return borderClasses[type?.toLowerCase()] || 'border-gray-400 bg-gray-50'
-    },
-    
-    getAlertIconClass(type) {
-      const iconClasses = {
-        'success': 'text-green-500',
-        'warning': 'text-yellow-500',
-        'error': 'text-red-500',
-        'info': 'text-blue-500',
-        'critical': 'text-red-600'
-      }
-      return iconClasses[type?.toLowerCase()] || 'text-gray-500'
-    },
-    
-    getAlertIconPath(type) {
-      const iconPaths = {
-        'success': 'M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z',
-        'warning': 'M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z',
-        'error': 'M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z',
-        'info': 'M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z',
-        'critical': 'M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
-      }
-      return iconPaths[type?.toLowerCase()] || iconPaths['info']
-    },
-    
-    formatDateTime(dateString) {
-      if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleString('es-ES', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    }
+  noAlertsMessage: {
+    type: String,
+    default: 'No hay alertas activas'
+  },
+  reportsTitle: {
+    type: String,
+    default: 'Reportes Generados'
+  },
+  reportsLink: {
+    type: String,
+    default: '/admin/reports'
+  },
+  reportsLinkText: {
+    type: String,
+    default: 'Gestionar Reportes'
+  },
+  totalReportsLabel: {
+    type: String,
+    default: 'Total Reportes'
+  },
+  completedReportsLabel: {
+    type: String,
+    default: 'Completados'
+  },
+  generatingReportsLabel: {
+    type: String,
+    default: 'Generando'
+  },
+  failedReportsLabel: {
+    type: String,
+    default: 'Fallidos'
+  },
+  alerts: {
+    type: Array,
+    default: () => []
+  },
+  reportStats: {
+    type: Object,
+    default: () => ({
+      total_reportes: 0,
+      reportes_completados: 0,
+      reportes_generando: 0,
+      reportes_fallidos: 0
+    })
   }
+})
+
+// Emits
+const emit = defineEmits(['dismiss-alert'])
+
+// Functions
+const handleDismissAlert = (alertId) => {
+  emit('dismiss-alert', alertId)
+}
+
+const getAlertBorderClass = (type) => {
+  const borderClasses = {
+    'success': 'border-green-400 bg-green-50',
+    'warning': 'border-yellow-400 bg-yellow-50',
+    'error': 'border-red-400 bg-red-50',
+    'info': 'border-blue-400 bg-blue-50',
+    'critical': 'border-red-600 bg-red-100'
+  }
+  return borderClasses[type?.toLowerCase()] || 'border-gray-400 bg-gray-50'
+}
+
+const getAlertIconClass = (type) => {
+  const iconClasses = {
+    'success': 'text-green-500',
+    'warning': 'text-yellow-500',
+    'error': 'text-red-500',
+    'info': 'text-blue-500',
+    'critical': 'text-red-600'
+  }
+  return iconClasses[type?.toLowerCase()] || 'text-gray-500'
+}
+
+const getAlertIconPath = (type) => {
+  const iconPaths = {
+    'success': 'M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z',
+    'warning': 'M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z',
+    'error': 'M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z',
+    'info': 'M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z',
+    'critical': 'M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
+  }
+  return iconPaths[type?.toLowerCase()] || iconPaths['info']
+}
+
+const formatDateTime = (dateString) => {
+  if (!dateString) return 'N/A'
+  const date = new Date(dateString)
+  return date.toLocaleString('es-ES', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 </script>
 
 <style scoped>
-/* Smooth transitions for hover effects */
-.transition-colors {
-  transition: background-color 0.2s ease-in-out;
-}
-
-.transition-all {
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
-}
-
-/* Hover effects for buttons */
-.hover\:bg-gray-100:hover {
-  background-color: #f3f4f6;
-}
-
-.hover\:bg-red-50:hover {
-  background-color: #fef2f2;
-}
-
-.hover\:bg-green-100:hover {
-  background-color: #dcfce7;
-}
-
-.hover\:bg-blue-100:hover {
-  background-color: #dbeafe;
-}
-
-/* Focus states for accessibility */
-button:focus-visible {
-  outline: 2px solid rgb(34 197 94);
-  outline-offset: 2px;
-}
-
-/* Alert animations */
+/* Solo animación personalizada que no está en Tailwind */
 @keyframes slideIn {
   from {
     opacity: 0;
@@ -235,7 +205,7 @@ button:focus-visible {
   }
 }
 
-.space-y-3 > div {
+.animate-slide-in {
   animation: slideIn 0.3s ease-out;
 }
 
@@ -248,62 +218,5 @@ button:focus-visible {
   .space-y-3 > div {
     padding: 0.75rem;
   }
-}
-
-/* Estilos para elementos de estado */
-.text-green-600 {
-  color: rgb(34 197 94);
-}
-
-.text-green-700 {
-  color: rgb(21 128 61);
-}
-
-.text-red-600 {
-  color: rgb(220 38 38);
-}
-
-.bg-green-50 {
-  background-color: rgb(240 253 244);
-}
-
-.bg-green-100 {
-  background-color: rgb(220 252 231);
-}
-
-.bg-red-50 {
-  background-color: rgb(254 242 242);
-}
-
-.bg-blue-50 {
-  background-color: rgb(239 246 255);
-}
-
-.bg-blue-100 {
-  background-color: rgb(219 234 254);
-}
-
-.border-green-200 {
-  border-color: rgb(187 247 208);
-}
-
-.hover\:border-green-200:hover {
-  border-color: rgb(187 247 208);
-}
-
-.hover\:text-green-700:hover {
-  color: rgb(21 128 61);
-}
-
-.hover\:text-red-600:hover {
-  color: rgb(220 38 38);
-}
-
-.focus\:ring-green-500:focus {
-  --tw-ring-color: rgb(34 197 94);
-}
-
-.focus\:ring-red-500:focus {
-  --tw-ring-color: rgb(239 68 68);
 }
 </style>

@@ -53,6 +53,65 @@
 
           <!-- Modal body -->
           <div class="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
+            <!-- Datos Personales -->
+            <div v-if="persona" class="mb-6">
+              <div class="bg-gradient-to-r from-green-50 to-green-50 px-4 py-3 border-b border-gray-200 rounded-t-lg">
+                <div class="flex items-center">
+                  <div class="bg-green-100 p-2 rounded-lg mr-3">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 10-6 0 3 3 0 006 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 class="text-lg font-bold text-gray-900">Datos Personales</h4>
+                    <p class="text-sm text-gray-600">Información registrada del agricultor</p>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white border border-gray-200 rounded-b-lg p-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p class="text-xs text-gray-500">Documento</p>
+                    <p class="text-sm font-semibold text-gray-900">
+                      {{ persona.tipo_documento_info?.codigo || persona.tipo_documento || '-' }}
+                      {{ persona.numero_documento || '' }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500">Nombre completo</p>
+                    <p class="text-sm font-semibold text-gray-900">
+                      {{ persona.primer_nombre }} {{ persona.segundo_nombre }} {{ persona.primer_apellido }} {{ persona.segundo_apellido }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500">Teléfono</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ persona.telefono || '-' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500">Género</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ persona.genero_info?.nombre || '-' }}</p>
+                  </div>
+                  <div class="md:col-span-2">
+                    <p class="text-xs text-gray-500">Dirección</p>
+                    <p class="text-sm font-semibold text-gray-900">
+                      {{ persona.direccion || '-' }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500">Departamento</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ persona.departamento_info?.nombre || '-' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500">Municipio</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ persona.municipio_info?.nombre || '-' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500">Fecha de nacimiento</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ persona.fecha_nacimiento || '-' }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
             <!-- Stats cards -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
@@ -246,6 +305,7 @@
 import { ref, computed, watch } from 'vue';
 import Swal from 'sweetalert2';
 import { getFincas } from '@/services/fincasApi';
+import authApi from '@/services/authApi';
 
 export default {
   name: 'FarmerDetailModal',
@@ -267,6 +327,7 @@ export default {
     const modalContainer = ref(null);
     const loading = ref(false);
     const fincasList = ref([]); // Estado local para las fincas
+    const persona = ref(null);
 
     const totalArea = computed(() => {
       if (fincasList.value.length === 0) {
@@ -313,6 +374,20 @@ export default {
       }
     };
 
+    // Cargar detalles completos de usuario (incluye persona)
+    const loadFarmerDetails = async (userId) => {
+      try {
+        loading.value = true;
+        const data = await authApi.getUser(userId);
+        persona.value = data?.persona || null;
+      } catch (error) {
+        console.error('❌ [FarmerDetailModal] Error cargando persona:', error);
+        persona.value = null;
+      } finally {
+        loading.value = false;
+      }
+    };
+
     // Watch for farmer changes and load data
     // Función para cargar las fincas del agricultor
     const loadFarmersFincas = async (agricultorId) => {
@@ -332,6 +407,8 @@ export default {
         console.log('Loading details for farmer:', newFarmer);
         // Cargar las fincas del agricultor
         await loadFarmersFincas(newFarmer.id);
+        // Cargar datos de persona
+        await loadFarmerDetails(newFarmer.id);
       }
     });
 
@@ -343,7 +420,8 @@ export default {
       getStatusClasses,
       closeModal,
       openModal,
-      fincasList
+      fincasList,
+      persona
     };
   }
 };

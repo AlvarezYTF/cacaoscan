@@ -1,5 +1,5 @@
-"""
-Vistas para gestión de notificaciones en CacaoScan.
+﻿"""
+Vistas para gestiÃ³n de notificaciones en CacaoScan.
 """
 import logging
 from rest_framework.permissions import IsAuthenticated
@@ -11,7 +11,10 @@ from django.db.models import Q, Count
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import Notification
+try:
+    from notifications.models import Notification
+except ImportError:
+    Notification = None
 from .serializers import (
     NotificationSerializer,
     NotificationListSerializer,
@@ -26,7 +29,7 @@ class NotificationListCreateView(APIView):
     """
     Vista para listar y crear notificaciones.
     GET: Lista notificaciones del usuario
-    POST: Crea nueva notificación (solo admin)
+    POST: Crea nueva notificaciÃ³n (solo admin)
     """
     permission_classes = [IsAuthenticated]
     
@@ -35,10 +38,10 @@ class NotificationListCreateView(APIView):
         operation_summary="Listar notificaciones",
         manual_parameters=[
             openapi.Parameter('tipo', openapi.IN_QUERY, description="Filtrar por tipo", type=openapi.TYPE_STRING),
-            openapi.Parameter('leida', openapi.IN_QUERY, description="Filtrar por estado leído", type=openapi.TYPE_BOOLEAN),
-            openapi.Parameter('search', openapi.IN_QUERY, description="Búsqueda por título", type=openapi.TYPE_STRING),
-            openapi.Parameter('page', openapi.IN_QUERY, description="Número de página", type=openapi.TYPE_INTEGER),
-            openapi.Parameter('page_size', openapi.IN_QUERY, description="Tamaño de página", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('leida', openapi.IN_QUERY, description="Filtrar por estado leÃ­do", type=openapi.TYPE_BOOLEAN),
+            openapi.Parameter('search', openapi.IN_QUERY, description="BÃºsqueda por tÃ­tulo", type=openapi.TYPE_STRING),
+            openapi.Parameter('page', openapi.IN_QUERY, description="NÃºmero de pÃ¡gina", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page_size', openapi.IN_QUERY, description="TamaÃ±o de pÃ¡gina", type=openapi.TYPE_INTEGER),
         ],
         responses={
             200: openapi.Response(description="Lista de notificaciones obtenida exitosamente"),
@@ -49,7 +52,19 @@ class NotificationListCreateView(APIView):
     def get(self, request):
         """Listar notificaciones con filtros."""
         try:
-            queryset = Notification.objects.filter(user=request.user)
+            if Notification is None:
+                # Si el modelo no estÃ¡ disponible, retornar vacÃ­o
+                return Response({
+                    'results': [],
+                    'count': 0,
+                    'page': 1,
+                    'page_size': 20,
+                    'total_pages': 0,
+                    'next': None,
+                    'previous': None,
+                }, status=status.HTTP_200_OK)
+            
+            queryset = Notification.objects.filter(user=request.user).order_by('-fecha_creacion')
             
             # Aplicar filtros
             tipo = request.GET.get('tipo', '').strip()
@@ -65,7 +80,7 @@ class NotificationListCreateView(APIView):
             if search:
                 queryset = queryset.filter(titulo__icontains=search)
             
-            # Paginación
+            # PaginaciÃ³n
             page = int(request.GET.get('page', 1))
             page_size = int(request.GET.get('page_size', 20))
             
@@ -95,22 +110,22 @@ class NotificationListCreateView(APIView):
 
 class NotificationDetailView(APIView):
     """
-    Vista para obtener detalles de una notificación específica.
+    Vista para obtener detalles de una notificaciÃ³n especÃ­fica.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene los detalles de una notificación específica",
-        operation_summary="Detalles de notificación",
+        operation_description="Obtiene los detalles de una notificaciÃ³n especÃ­fica",
+        operation_summary="Detalles de notificaciÃ³n",
         responses={
-            200: openapi.Response(description="Detalles de notificación obtenidos exitosamente"),
+            200: openapi.Response(description="Detalles de notificaciÃ³n obtenidos exitosamente"),
             404: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
         },
         tags=['Notificaciones']
     )
     def get(self, request, notification_id):
-        """Obtener detalles de notificación."""
+        """Obtener detalles de notificaciÃ³n."""
         try:
             notification = Notification.objects.get(id=notification_id, user=request.user)
             
@@ -119,11 +134,11 @@ class NotificationDetailView(APIView):
             
         except Notification.DoesNotExist:
             return Response({
-                'error': 'Notificación no encontrada',
+                'error': 'NotificaciÃ³n no encontrada',
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error obteniendo detalles de notificación {notification_id}: {e}")
+            logger.error(f"Error obteniendo detalles de notificaciÃ³n {notification_id}: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
@@ -132,41 +147,41 @@ class NotificationDetailView(APIView):
 
 class NotificationMarkReadView(APIView):
     """
-    Vista para marcar una notificación como leída.
+    Vista para marcar una notificaciÃ³n como leÃ­da.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Marca una notificación como leída",
-        operation_summary="Marcar notificación como leída",
+        operation_description="Marca una notificaciÃ³n como leÃ­da",
+        operation_summary="Marcar notificaciÃ³n como leÃ­da",
         responses={
-            200: openapi.Response(description="Notificación marcada como leída exitosamente"),
+            200: openapi.Response(description="NotificaciÃ³n marcada como leÃ­da exitosamente"),
             404: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
         },
         tags=['Notificaciones']
     )
     def post(self, request, notification_id):
-        """Marcar notificación como leída."""
+        """Marcar notificaciÃ³n como leÃ­da."""
         try:
             notification = Notification.objects.get(id=notification_id, user=request.user)
             
             notification.mark_as_read()
             
-            logger.info(f"Notificación {notification_id} marcada como leída por usuario {request.user.username}")
+            logger.info(f"NotificaciÃ³n {notification_id} marcada como leÃ­da por usuario {request.user.username}")
             
             return Response({
-                'message': 'Notificación marcada como leída',
+                'message': 'NotificaciÃ³n marcada como leÃ­da',
                 'status': 'success'
             }, status=status.HTTP_200_OK)
             
         except Notification.DoesNotExist:
             return Response({
-                'error': 'Notificación no encontrada',
+                'error': 'NotificaciÃ³n no encontrada',
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error marcando notificación {notification_id} como leída: {e}")
+            logger.error(f"Error marcando notificaciÃ³n {notification_id} como leÃ­da: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
@@ -175,33 +190,33 @@ class NotificationMarkReadView(APIView):
 
 class NotificationMarkAllReadView(APIView):
     """
-    Vista para marcar todas las notificaciones como leídas.
+    Vista para marcar todas las notificaciones como leÃ­das.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Marca todas las notificaciones del usuario como leídas",
-        operation_summary="Marcar todas las notificaciones como leídas",
+        operation_description="Marca todas las notificaciones del usuario como leÃ­das",
+        operation_summary="Marcar todas las notificaciones como leÃ­das",
         responses={
-            200: openapi.Response(description="Todas las notificaciones marcadas como leídas exitosamente"),
+            200: openapi.Response(description="Todas las notificaciones marcadas como leÃ­das exitosamente"),
             401: ErrorResponseSerializer,
         },
         tags=['Notificaciones']
     )
     def post(self, request):
-        """Marcar todas las notificaciones como leídas."""
+        """Marcar todas las notificaciones como leÃ­das."""
         try:
             Notification.mark_all_as_read(request.user)
             
-            logger.info(f"Todas las notificaciones marcadas como leídas por usuario {request.user.username}")
+            logger.info(f"Todas las notificaciones marcadas como leÃ­das por usuario {request.user.username}")
             
             return Response({
-                'message': 'Todas las notificaciones han sido marcadas como leídas',
+                'message': 'Todas las notificaciones han sido marcadas como leÃ­das',
                 'status': 'success'
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Error marcando todas las notificaciones como leídas: {e}")
+            logger.error(f"Error marcando todas las notificaciones como leÃ­das: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
@@ -210,13 +225,13 @@ class NotificationMarkAllReadView(APIView):
 
 class NotificationUnreadCountView(APIView):
     """
-    Vista para obtener el contador de notificaciones no leídas.
+    Vista para obtener el contador de notificaciones no leÃ­das.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene el número de notificaciones no leídas del usuario",
-        operation_summary="Contador de notificaciones no leídas",
+        operation_description="Obtiene el nÃºmero de notificaciones no leÃ­das del usuario",
+        operation_summary="Contador de notificaciones no leÃ­das",
         responses={
             200: openapi.Response(description="Contador obtenido exitosamente"),
             401: ErrorResponseSerializer,
@@ -224,7 +239,7 @@ class NotificationUnreadCountView(APIView):
         tags=['Notificaciones']
     )
     def get(self, request):
-        """Obtener contador de notificaciones no leídas."""
+        """Obtener contador de notificaciones no leÃ­das."""
         try:
             unread_count = Notification.get_unread_count(request.user)
             
@@ -234,7 +249,7 @@ class NotificationUnreadCountView(APIView):
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Error obteniendo contador de notificaciones no leídas: {e}")
+            logger.error(f"Error obteniendo contador de notificaciones no leÃ­das: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
@@ -243,23 +258,23 @@ class NotificationUnreadCountView(APIView):
 
 class NotificationStatsView(APIView):
     """
-    Vista para obtener estadísticas de notificaciones del usuario.
+    Vista para obtener estadÃ­sticas de notificaciones del usuario.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene estadísticas de notificaciones del usuario",
-        operation_summary="Estadísticas de notificaciones",
+        operation_description="Obtiene estadÃ­sticas de notificaciones del usuario",
+        operation_summary="EstadÃ­sticas de notificaciones",
         responses={
-            200: openapi.Response(description="Estadísticas obtenidas exitosamente"),
+            200: openapi.Response(description="EstadÃ­sticas obtenidas exitosamente"),
             401: ErrorResponseSerializer,
         },
         tags=['Notificaciones']
     )
     def get(self, request):
-        """Obtener estadísticas de notificaciones."""
+        """Obtener estadÃ­sticas de notificaciones."""
         try:
-            # Estadísticas básicas
+            # EstadÃ­sticas bÃ¡sicas
             total_notifications = Notification.objects.filter(user=request.user).count()
             unread_count = Notification.get_unread_count(request.user)
             
@@ -271,7 +286,7 @@ class NotificationStatsView(APIView):
                 .values_list('tipo', 'count')
             )
             
-            # Notificaciones recientes (últimas 5)
+            # Notificaciones recientes (Ãºltimas 5)
             recent_notifications = NotificationListSerializer(
                 Notification.objects.filter(user=request.user)[:5],
                 many=True
@@ -287,7 +302,7 @@ class NotificationStatsView(APIView):
             return Response(stats, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Error obteniendo estadísticas de notificaciones: {e}")
+            logger.error(f"Error obteniendo estadÃ­sticas de notificaciones: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
@@ -305,21 +320,21 @@ class NotificationCreateView(APIView):
         return user.is_superuser or user.is_staff
     
     @swagger_auto_schema(
-        operation_description="Crea una nueva notificación (solo administradores)",
-        operation_summary="Crear notificación",
+        operation_description="Crea una nueva notificaciÃ³n (solo administradores)",
+        operation_summary="Crear notificaciÃ³n",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
                 'user': openapi.Schema(type=openapi.TYPE_INTEGER, description="ID del usuario destinatario"),
-                'tipo': openapi.Schema(type=openapi.TYPE_STRING, description="Tipo de notificación"),
-                'titulo': openapi.Schema(type=openapi.TYPE_STRING, description="Título de la notificación"),
-                'mensaje': openapi.Schema(type=openapi.TYPE_STRING, description="Mensaje de la notificación"),
+                'tipo': openapi.Schema(type=openapi.TYPE_STRING, description="Tipo de notificaciÃ³n"),
+                'titulo': openapi.Schema(type=openapi.TYPE_STRING, description="TÃ­tulo de la notificaciÃ³n"),
+                'mensaje': openapi.Schema(type=openapi.TYPE_STRING, description="Mensaje de la notificaciÃ³n"),
                 'datos_extra': openapi.Schema(type=openapi.TYPE_OBJECT, description="Datos adicionales"),
             },
             required=['user', 'tipo', 'titulo', 'mensaje']
         ),
         responses={
-            201: openapi.Response(description="Notificación creada exitosamente"),
+            201: openapi.Response(description="NotificaciÃ³n creada exitosamente"),
             400: ErrorResponseSerializer,
             403: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
@@ -327,7 +342,7 @@ class NotificationCreateView(APIView):
         tags=['Notificaciones']
     )
     def post(self, request):
-        """Crear nueva notificación."""
+        """Crear nueva notificaciÃ³n."""
         try:
             if not self._is_admin_user(request.user):
                 return Response({
@@ -340,20 +355,22 @@ class NotificationCreateView(APIView):
             if serializer.is_valid():
                 notification = serializer.save()
                 
-                logger.info(f"Notificación '{notification.titulo}' creada por admin {request.user.username}")
+                logger.info(f"NotificaciÃ³n '{notification.titulo}' creada por admin {request.user.username}")
                 
                 response_serializer = NotificationSerializer(notification)
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response({
-                    'error': 'Datos de entrada inválidos',
+                    'error': 'Datos de entrada invÃ¡lidos',
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Exception as e:
-            logger.error(f"Error creando notificación: {e}")
+            logger.error(f"Error creando notificaciÃ³n: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+

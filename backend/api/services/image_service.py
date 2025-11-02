@@ -1,5 +1,5 @@
-"""
-Servicio de gestión de imágenes para CacaoScan.
+﻿"""
+Servicio de gestiÃ³n de imÃ¡genes para CacaoScan.
 """
 import logging
 from typing import Dict, Any, Optional, List
@@ -12,14 +12,19 @@ import io
 import os
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError, NotFoundServiceError
-from ..models import CacaoImage, User
+try:
+    from images_app.models import CacaoImage
+except ImportError:
+    CacaoImage = None
+
+from django.contrib.auth.models import User
 
 logger = logging.getLogger("cacaoscan.services.images")
 
 
 class ImageManagementService(BaseService):
     """
-    Servicio para manejar gestión de imágenes de cacao.
+    Servicio para manejar gestiÃ³n de imÃ¡genes de cacao.
     """
     
     def __init__(self):
@@ -61,7 +66,7 @@ class ImageManagementService(BaseService):
             
             cacao_image.save()
             
-            # Crear log de auditoría
+            # Crear log de auditorÃ­a
             self.create_audit_log(
                 user=user,
                 action="image_uploaded",
@@ -100,16 +105,16 @@ class ImageManagementService(BaseService):
     
     def get_user_images(self, user: User, page: int = 1, page_size: int = 20, filters: Dict[str, Any] = None) -> ServiceResult:
         """
-        Obtiene imágenes de un usuario.
+        Obtiene imÃ¡genes de un usuario.
         
         Args:
             user: Usuario
-            page: Número de página
-            page_size: Tamaño de página
+            page: NÃºmero de pÃ¡gina
+            page_size: TamaÃ±o de pÃ¡gina
             filters: Filtros adicionales
             
         Returns:
-            ServiceResult con imágenes paginadas
+            ServiceResult con imÃ¡genes paginadas
         """
         try:
             # Construir queryset
@@ -155,18 +160,18 @@ class ImageManagementService(BaseService):
                     'images': images,
                     'pagination': paginated_data['pagination']
                 },
-                message="Imágenes obtenidas exitosamente"
+                message="ImÃ¡genes obtenidas exitosamente"
             )
             
         except Exception as e:
-            self.log_error(f"Error obteniendo imágenes: {str(e)}")
+            self.log_error(f"Error obteniendo imÃ¡genes: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Error interno obteniendo imágenes", details={"original_error": str(e)})
+                ValidationServiceError("Error interno obteniendo imÃ¡genes", details={"original_error": str(e)})
             )
     
     def get_image_details(self, image_id: int, user: User) -> ServiceResult:
         """
-        Obtiene detalles de una imagen específica.
+        Obtiene detalles de una imagen especÃ­fica.
         
         Args:
             image_id: ID de la imagen
@@ -246,7 +251,7 @@ class ImageManagementService(BaseService):
             image.metadata = metadata
             image.save()
             
-            # Crear log de auditoría
+            # Crear log de auditorÃ­a
             self.create_audit_log(
                 user=user,
                 action="image_metadata_updated",
@@ -285,7 +290,7 @@ class ImageManagementService(BaseService):
             user: Usuario
             
         Returns:
-            ServiceResult con resultado de la eliminación
+            ServiceResult con resultado de la eliminaciÃ³n
         """
         try:
             try:
@@ -293,10 +298,10 @@ class ImageManagementService(BaseService):
             except CacaoImage.DoesNotExist:
                 return ServiceResult.not_found_error("Imagen no encontrada")
             
-            # Obtener información para el log
+            # Obtener informaciÃ³n para el log
             predictions_count = image.predictions.count()
             
-            # Crear log de auditoría antes de eliminar
+            # Crear log de auditorÃ­a antes de eliminar
             self.create_audit_log(
                 user=user,
                 action="image_deleted",
@@ -309,7 +314,7 @@ class ImageManagementService(BaseService):
                 }
             )
             
-            # Eliminar imagen (esto también eliminará las predicciones por CASCADE)
+            # Eliminar imagen (esto tambiÃ©n eliminarÃ¡ las predicciones por CASCADE)
             image.delete()
             
             self.log_info(f"Imagen {image_id} eliminada por usuario {user.username}")
@@ -326,14 +331,14 @@ class ImageManagementService(BaseService):
     
     def get_image_statistics(self, user: User, filters: Dict[str, Any] = None) -> ServiceResult:
         """
-        Obtiene estadísticas de imágenes de un usuario.
+        Obtiene estadÃ­sticas de imÃ¡genes de un usuario.
         
         Args:
             user: Usuario
             filters: Filtros adicionales
             
         Returns:
-            ServiceResult con estadísticas
+            ServiceResult con estadÃ­sticas
         """
         try:
             # Construir queryset base
@@ -346,7 +351,7 @@ class ImageManagementService(BaseService):
                 if 'date_to' in filters:
                     queryset = queryset.filter(created_at__lte=filters['date_to'])
             
-            # Calcular estadísticas
+            # Calcular estadÃ­sticas
             stats = {
                 'total_images': queryset.count(),
                 'processed_images': queryset.filter(processed=True).count(),
@@ -369,40 +374,40 @@ class ImageManagementService(BaseService):
             
             return ServiceResult.success(
                 data=stats,
-                message="Estadísticas obtenidas exitosamente"
+                message="EstadÃ­sticas obtenidas exitosamente"
             )
             
         except Exception as e:
-            self.log_error(f"Error obteniendo estadísticas: {str(e)}")
+            self.log_error(f"Error obteniendo estadÃ­sticas: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Error interno obteniendo estadísticas", details={"original_error": str(e)})
+                ValidationServiceError("Error interno obteniendo estadÃ­sticas", details={"original_error": str(e)})
             )
     
     def bulk_delete_images(self, image_ids: List[int], user: User) -> ServiceResult:
         """
-        Elimina múltiples imágenes.
+        Elimina mÃºltiples imÃ¡genes.
         
         Args:
-            image_ids: Lista de IDs de imágenes
+            image_ids: Lista de IDs de imÃ¡genes
             user: Usuario
             
         Returns:
-            ServiceResult con resultado de la eliminación masiva
+            ServiceResult con resultado de la eliminaciÃ³n masiva
         """
         try:
             if not image_ids:
-                return ServiceResult.validation_error("Lista de IDs de imágenes vacía")
+                return ServiceResult.validation_error("Lista de IDs de imÃ¡genes vacÃ­a")
             
-            # Verificar que todas las imágenes pertenezcan al usuario
+            # Verificar que todas las imÃ¡genes pertenezcan al usuario
             images = CacaoImage.objects.filter(id__in=image_ids, user=user)
             
             if len(images) != len(image_ids):
                 return ServiceResult.validation_error(
-                    "Algunas imágenes no existen o no pertenecen al usuario",
+                    "Algunas imÃ¡genes no existen o no pertenecen al usuario",
                     details={"requested_count": len(image_ids), "found_count": len(images)}
                 )
             
-            # Crear log de auditoría
+            # Crear log de auditorÃ­a
             self.create_audit_log(
                 user=user,
                 action="bulk_image_delete",
@@ -414,21 +419,21 @@ class ImageManagementService(BaseService):
                 }
             )
             
-            # Eliminar imágenes
+            # Eliminar imÃ¡genes
             deleted_count = images.count()
             images.delete()
             
-            self.log_info(f"{deleted_count} imágenes eliminadas por usuario {user.username}")
+            self.log_info(f"{deleted_count} imÃ¡genes eliminadas por usuario {user.username}")
             
             return ServiceResult.success(
                 data={'deleted_count': deleted_count},
-                message=f"{deleted_count} imágenes eliminadas exitosamente"
+                message=f"{deleted_count} imÃ¡genes eliminadas exitosamente"
             )
             
         except Exception as e:
-            self.log_error(f"Error eliminando imágenes masivamente: {str(e)}")
+            self.log_error(f"Error eliminando imÃ¡genes masivamente: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Error interno eliminando imágenes", details={"original_error": str(e)})
+                ValidationServiceError("Error interno eliminando imÃ¡genes", details={"original_error": str(e)})
             )
     
     def _validate_image_file(self, image_file: UploadedFile) -> ServiceResult:
@@ -439,38 +444,40 @@ class ImageManagementService(BaseService):
             image_file: Archivo de imagen
             
         Returns:
-            ServiceResult con resultado de validación
+            ServiceResult con resultado de validaciÃ³n
         """
         try:
             # Validar tipo de archivo
             if image_file.content_type not in self.allowed_image_types:
                 return ServiceResult.validation_error(
-                    f"Tipo de archivo no válido. Tipos permitidos: {', '.join(self.allowed_image_types)}",
+                    f"Tipo de archivo no vÃ¡lido. Tipos permitidos: {', '.join(self.allowed_image_types)}",
                     details={"field": "content_type", "allowed_types": self.allowed_image_types}
                 )
             
-            # Validar tamaño del archivo
+            # Validar tamaÃ±o del archivo
             if image_file.size > self.max_file_size:
                 return ServiceResult.validation_error(
-                    f"Archivo demasiado grande. Máximo {self.max_file_size // (1024*1024)}MB permitido",
+                    f"Archivo demasiado grande. MÃ¡ximo {self.max_file_size // (1024*1024)}MB permitido",
                     details={"field": "file_size", "max_size": self.max_file_size, "actual_size": image_file.size}
                 )
             
-            # Validar que sea una imagen válida
+            # Validar que sea una imagen vÃ¡lida
             try:
                 image_data = image_file.read()
-                image_file.seek(0)  # Resetear posición del archivo
+                image_file.seek(0)  # Resetear posiciÃ³n del archivo
                 Image.open(io.BytesIO(image_data))
             except Exception as e:
                 return ServiceResult.validation_error(
-                    "Archivo de imagen inválido o corrupto",
+                    "Archivo de imagen invÃ¡lido o corrupto",
                     details={"field": "image_validity", "error": str(e)}
                 )
             
-            return ServiceResult.success(message="Archivo de imagen válido")
+            return ServiceResult.success(message="Archivo de imagen vÃ¡lido")
             
         except Exception as e:
             self.log_error(f"Error validando imagen: {str(e)}")
             return ServiceResult.error(
                 ValidationServiceError("Error interno validando imagen", details={"original_error": str(e)})
             )
+
+

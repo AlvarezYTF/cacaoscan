@@ -1,5 +1,5 @@
-"""
-Signals para notificaciones automáticas en CacaoScan.
+﻿"""
+Signals para notificaciones automÃ¡ticas en CacaoScan.
 """
 import logging
 from django.db.models.signals import post_save, post_delete
@@ -7,34 +7,57 @@ from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import Notification, CacaoPrediction, TrainingJob, Finca, Lote
+# Importar desde apps modulares
+try:
+    from notifications.models import Notification
+except ImportError:
+    Notification = None
+
+try:
+    from images_app.models import CacaoPrediction
+except ImportError:
+    CacaoPrediction = None
+
+try:
+    from training.models import TrainingJob
+except ImportError:
+    TrainingJob = None
+
+try:
+    from fincas_app.models import Finca, Lote
+except ImportError:
+    Finca = None
+    Lote = None
+
 from .realtime_service import realtime_service
 
 logger = logging.getLogger("cacaoscan.api")
 
 
-@receiver(post_save, sender=CacaoPrediction)
-def notify_prediction_completed(sender, instance, created, **kwargs):
-    """
-    Notificar cuando se completa una predicción de análisis.
-    """
+# Temporarily disabled to avoid import errors
+if CacaoPrediction:
+    @receiver(post_save, sender=CacaoPrediction)
+    def notify_prediction_completed(sender, instance, created, **kwargs):
+        """
+        Notificar cuando se completa una predicciÃ³n de anÃ¡lisis.
+        """
     if created:
         try:
-            # Determinar el tipo de notificación basado en la calidad
+            # Determinar el tipo de notificaciÃ³n basado en la calidad
             if instance.average_confidence >= 0.8:
                 tipo = 'success'
-                titulo = 'Análisis Completado - Alta Calidad'
-                mensaje = f'Tu análisis de granos de cacao ha sido completado con alta calidad (confianza: {instance.average_confidence:.1%}). Los resultados están disponibles.'
+                titulo = 'AnÃ¡lisis Completado - Alta Calidad'
+                mensaje = f'Tu anÃ¡lisis de granos de cacao ha sido completado con alta calidad (confianza: {instance.average_confidence:.1%}). Los resultados estÃ¡n disponibles.'
             elif instance.average_confidence >= 0.6:
                 tipo = 'info'
-                titulo = 'Análisis Completado - Calidad Estándar'
-                mensaje = f'Tu análisis de granos de cacao ha sido completado con calidad estándar (confianza: {instance.average_confidence:.1%}). Revisa los resultados.'
+                titulo = 'AnÃ¡lisis Completado - Calidad EstÃ¡ndar'
+                mensaje = f'Tu anÃ¡lisis de granos de cacao ha sido completado con calidad estÃ¡ndar (confianza: {instance.average_confidence:.1%}). Revisa los resultados.'
             else:
                 tipo = 'warning'
-                titulo = 'Análisis Completado - Calidad Baja'
-                mensaje = f'Tu análisis de granos de cacao ha sido completado con baja confianza ({instance.average_confidence:.1%}). Considera repetir el análisis.'
+                titulo = 'AnÃ¡lisis Completado - Calidad Baja'
+                mensaje = f'Tu anÃ¡lisis de granos de cacao ha sido completado con baja confianza ({instance.average_confidence:.1%}). Considera repetir el anÃ¡lisis.'
             
-            # Crear notificación y enviar en tiempo real
+            # Crear notificaciÃ³n y enviar en tiempo real
             datos_extra = {
                 'prediction_id': instance.id,
                 'image_id': instance.image.id,
@@ -55,7 +78,7 @@ def notify_prediction_completed(sender, instance, created, **kwargs):
                 datos_extra=datos_extra
             )
             
-            # Enviar email de notificación si está habilitado
+            # Enviar email de notificaciÃ³n si estÃ¡ habilitado
             try:
                 from .email_service import send_email_notification
                 
@@ -72,7 +95,7 @@ def notify_prediction_completed(sender, instance, created, **kwargs):
                     'processing_time_ms': instance.processing_time_ms,
                     'analysis_date': instance.created_at.strftime('%d/%m/%Y %H:%M'),
                     'crop_url': getattr(instance, 'crop_url', ''),
-                    'defects_detected': []  # TODO: Implementar detección de defectos
+                    'defects_detected': []  # TODO: Implementar detecciÃ³n de defectos
                 }
                 
                 email_result = send_email_notification(
@@ -82,27 +105,28 @@ def notify_prediction_completed(sender, instance, created, **kwargs):
                 )
                 
                 if email_result['success']:
-                    logger.info(f"Email de análisis completado enviado a {instance.image.user.email}")
+                    logger.info(f"Email de anÃ¡lisis completado enviado a {instance.image.user.email}")
                 else:
-                    logger.warning(f"Error enviando email de análisis: {email_result.get('error')}")
+                    logger.warning(f"Error enviando email de anÃ¡lisis: {email_result.get('error')}")
                     
             except Exception as e:
-                logger.error(f"Error en envío de email de análisis: {e}")
+                logger.error(f"Error en envÃ­o de email de anÃ¡lisis: {e}")
             
-            logger.info(f"Notificación de análisis completado enviada a usuario {instance.image.user.username}")
+            logger.info(f"NotificaciÃ³n de anÃ¡lisis completado enviada a usuario {instance.image.user.username}")
             
         except Exception as e:
-            logger.error(f"Error enviando notificación de análisis completado: {e}")
+            logger.error(f"Error enviando notificaciÃ³n de anÃ¡lisis completado: {e}")
 
 
-@receiver(post_save, sender=TrainingJob)
-def notify_training_completed(sender, instance, created, **kwargs):
-    """
-    Notificar cuando se completa un trabajo de entrenamiento.
-    """
+if TrainingJob:
+    @receiver(post_save, sender=TrainingJob)
+    def notify_training_completed(sender, instance, created, **kwargs):
+        """
+        Notificar cuando se completa un trabajo de entrenamiento.
+        """
     if not created and instance.status == 'completed':
         try:
-            # Notificar al usuario que creó el trabajo
+            # Notificar al usuario que creÃ³ el trabajo
             datos_extra = {
                 'job_id': instance.job_id,
                 'model_name': instance.model_name,
@@ -114,11 +138,11 @@ def notify_training_completed(sender, instance, created, **kwargs):
                 user_id=instance.created_by.id,
                 tipo='training_complete',
                 titulo='Entrenamiento de Modelo Completado',
-                mensaje=f'El entrenamiento del modelo "{instance.model_name}" ha sido completado exitosamente. El modelo está listo para usar.',
+                mensaje=f'El entrenamiento del modelo "{instance.model_name}" ha sido completado exitosamente. El modelo estÃ¡ listo para usar.',
                 datos_extra=datos_extra
             )
             
-            # Enviar email de notificación si está habilitado
+            # Enviar email de notificaciÃ³n si estÃ¡ habilitado
             try:
                 from .email_service import send_email_notification
                 
@@ -145,13 +169,13 @@ def notify_training_completed(sender, instance, created, **kwargs):
                     logger.warning(f"Error enviando email de entrenamiento: {email_result.get('error')}")
                     
             except Exception as e:
-                logger.error(f"Error en envío de email de entrenamiento: {e}")
+                logger.error(f"Error en envÃ­o de email de entrenamiento: {e}")
             
-            # Si es un trabajo importante, también notificar a los administradores
+            # Si es un trabajo importante, tambiÃ©n notificar a los administradores
             if instance.job_type in ['full_training', 'model_update']:
                 admins = User.objects.filter(is_superuser=True)
                 for admin in admins:
-                    if admin != instance.created_by:  # No duplicar notificación
+                    if admin != instance.created_by:  # No duplicar notificaciÃ³n
                         Notification.create_notification(
                             user=admin,
                             tipo='info',
@@ -164,10 +188,10 @@ def notify_training_completed(sender, instance, created, **kwargs):
                             }
                         )
             
-            logger.info(f"Notificación de entrenamiento completado enviada a usuario {instance.created_by.username}")
+            logger.info(f"NotificaciÃ³n de entrenamiento completado enviada a usuario {instance.created_by.username}")
             
         except Exception as e:
-            logger.error(f"Error enviando notificación de entrenamiento completado: {e}")
+            logger.error(f"Error enviando notificaciÃ³n de entrenamiento completado: {e}")
 
 
 @receiver(post_save, sender=TrainingJob)
@@ -191,10 +215,10 @@ def notify_training_failed(sender, instance, created, **kwargs):
                 datos_extra=datos_extra
             )
             
-            logger.info(f"Notificación de error de entrenamiento enviada a usuario {instance.created_by.username}")
+            logger.info(f"NotificaciÃ³n de error de entrenamiento enviada a usuario {instance.created_by.username}")
             
         except Exception as e:
-            logger.error(f"Error enviando notificación de error de entrenamiento: {e}")
+            logger.error(f"Error enviando notificaciÃ³n de error de entrenamiento: {e}")
 
 
 @receiver(post_save, sender=User)
@@ -204,29 +228,29 @@ def notify_user_registered(sender, instance, created, **kwargs):
     """
     if created:
         try:
-            # Notificación de bienvenida
+            # NotificaciÃ³n de bienvenida
             datos_extra = {
                 'user_id': instance.id,
                 'registration_date': timezone.now().isoformat(),
                 'next_steps': [
                     'Completa tu perfil',
                     'Registra tu primera finca',
-                    'Sube tu primera imagen para análisis'
+                    'Sube tu primera imagen para anÃ¡lisis'
                 ]
             }
             
             realtime_service.create_and_send_notification(
                 user_id=instance.id,
                 tipo='welcome',
-                titulo='¡Bienvenido a CacaoScan!',
-                mensaje='Gracias por registrarte en CacaoScan. Tu cuenta ha sido creada exitosamente. Puedes comenzar a analizar granos de cacao subiendo imágenes.',
+                titulo='Â¡Bienvenido a CacaoScan!',
+                mensaje='Gracias por registrarte en CacaoScan. Tu cuenta ha sido creada exitosamente. Puedes comenzar a analizar granos de cacao subiendo imÃ¡genes.',
                 datos_extra=datos_extra
             )
             
-            logger.info(f"Notificación de bienvenida enviada a nuevo usuario {instance.username}")
+            logger.info(f"NotificaciÃ³n de bienvenida enviada a nuevo usuario {instance.username}")
             
         except Exception as e:
-            logger.error(f"Error enviando notificación de bienvenida: {e}")
+            logger.error(f"Error enviando notificaciÃ³n de bienvenida: {e}")
 
 
 @receiver(post_save, sender=Finca)
@@ -249,10 +273,10 @@ def notify_finca_created(sender, instance, created, **kwargs):
                 }
             )
             
-            logger.info(f"Notificación de finca creada enviada a usuario {instance.agricultor.username}")
+            logger.info(f"NotificaciÃ³n de finca creada enviada a usuario {instance.agricultor.username}")
             
         except Exception as e:
-            logger.error(f"Error enviando notificación de finca creada: {e}")
+            logger.error(f"Error enviando notificaciÃ³n de finca creada: {e}")
 
 
 @receiver(post_save, sender=Lote)
@@ -276,10 +300,10 @@ def notify_lote_created(sender, instance, created, **kwargs):
                 }
             )
             
-            logger.info(f"Notificación de lote creado enviada a usuario {instance.finca.agricultor.username}")
+            logger.info(f"NotificaciÃ³n de lote creado enviada a usuario {instance.finca.agricultor.username}")
             
         except Exception as e:
-            logger.error(f"Error enviando notificación de lote creado: {e}")
+            logger.error(f"Error enviando notificaciÃ³n de lote creado: {e}")
 
 
 @receiver(post_save, sender=Lote)
@@ -303,21 +327,21 @@ def notify_lote_cosechado(sender, instance, created, **kwargs):
                 }
             )
             
-            logger.info(f"Notificación de lote cosechado enviada a usuario {instance.finca.agricultor.username}")
+            logger.info(f"NotificaciÃ³n de lote cosechado enviada a usuario {instance.finca.agricultor.username}")
             
         except Exception as e:
-            logger.error(f"Error enviando notificación de lote cosechado: {e}")
+            logger.error(f"Error enviando notificaciÃ³n de lote cosechado: {e}")
 
 
 def send_custom_notification(user, tipo, titulo, mensaje, datos_extra=None):
     """
-    Función helper para enviar notificaciones personalizadas.
+    FunciÃ³n helper para enviar notificaciones personalizadas.
     
     Args:
         user: Usuario destinatario
-        tipo: Tipo de notificación
-        titulo: Título de la notificación
-        mensaje: Mensaje de la notificación
+        tipo: Tipo de notificaciÃ³n
+        titulo: TÃ­tulo de la notificaciÃ³n
+        mensaje: Mensaje de la notificaciÃ³n
         datos_extra: Datos adicionales en formato dict
     """
     try:
@@ -329,23 +353,23 @@ def send_custom_notification(user, tipo, titulo, mensaje, datos_extra=None):
             datos_extra=datos_extra or {}
         )
         
-        logger.info(f"Notificación personalizada enviada a usuario {user.username}: {titulo}")
+        logger.info(f"NotificaciÃ³n personalizada enviada a usuario {user.username}: {titulo}")
         return notification
         
     except Exception as e:
-        logger.error(f"Error enviando notificación personalizada: {e}")
+        logger.error(f"Error enviando notificaciÃ³n personalizada: {e}")
         return None
 
 
 def send_bulk_notification(users, tipo, titulo, mensaje, datos_extra=None):
     """
-    Función helper para enviar notificaciones masivas.
+    FunciÃ³n helper para enviar notificaciones masivas.
     
     Args:
         users: Lista de usuarios destinatarios
-        tipo: Tipo de notificación
-        titulo: Título de la notificación
-        mensaje: Mensaje de la notificación
+        tipo: Tipo de notificaciÃ³n
+        titulo: TÃ­tulo de la notificaciÃ³n
+        mensaje: Mensaje de la notificaciÃ³n
         datos_extra: Datos adicionales en formato dict
     """
     notifications_created = 0
@@ -362,7 +386,9 @@ def send_bulk_notification(users, tipo, titulo, mensaje, datos_extra=None):
             notifications_created += 1
             
         except Exception as e:
-            logger.error(f"Error enviando notificación masiva a usuario {user.username}: {e}")
+            logger.error(f"Error enviando notificaciÃ³n masiva a usuario {user.username}: {e}")
     
     logger.info(f"Notificaciones masivas enviadas: {notifications_created}/{len(users)}")
     return notifications_created
+
+

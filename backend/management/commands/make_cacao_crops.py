@@ -1,4 +1,4 @@
-"""
+﻿"""
 Comando Django para generar recortes de granos de cacao.
 """
 import time
@@ -15,7 +15,7 @@ logger = get_ml_logger("cacaoscan.ml.commands")
 
 
 class Command(BaseCommand):
-    help = 'Genera recortes de granos de cacao usando segmentación YOLOv8-seg'
+    help = 'Genera recortes de granos de cacao usando segmentaciÃ³n YOLOv8-seg'
     
     def add_arguments(self, parser):
         parser.add_argument(
@@ -28,12 +28,12 @@ class Command(BaseCommand):
             '--limit',
             type=int,
             default=0,
-            help='Límite de imágenes a procesar (0 = todas, default: 0)'
+            help='LÃ­mite de imÃ¡genes a procesar (0 = todas, default: 0)'
         )
         parser.add_argument(
             '--input-dir',
             type=str,
-            help='Directorio de imágenes de entrada (default: media/cacao_images/raw)'
+            help='Directorio de imÃ¡genes de entrada (default: media/cacao_images/raw)'
         )
         parser.add_argument(
             '--output-dir',
@@ -48,13 +48,13 @@ class Command(BaseCommand):
         parser.add_argument(
             '--save-masks',
             action='store_true',
-            help='Guardar máscaras para debug'
+            help='Guardar mÃ¡scaras para debug'
         )
         parser.add_argument(
             '--crop-size',
             type=int,
             default=512,
-            help='Tamaño del crop cuadrado (default: 512)'
+            help='TamaÃ±o del crop cuadrado (default: 512)'
         )
         parser.add_argument(
             '--padding',
@@ -65,14 +65,14 @@ class Command(BaseCommand):
         parser.add_argument(
             '--validate-only',
             action='store_true',
-            help='Solo validar dataset sin procesar imágenes'
+            help='Solo validar dataset sin procesar imÃ¡genes'
         )
     
     def handle(self, *args, **options):
-        """Maneja la ejecución del comando."""
+        """Maneja la ejecuciÃ³n del comando."""
         start_time = time.time()
         
-        # Configurar parámetros
+        # Configurar parÃ¡metros
         confidence = options['conf']
         limit = options['limit']
         overwrite = options['overwrite']
@@ -88,7 +88,7 @@ class Command(BaseCommand):
         )
         
         # Debug info
-        self.stdout.write(f"DEBUG: Parámetros - conf={confidence}, limit={limit}, overwrite={overwrite}")
+        self.stdout.write(f"DEBUG: ParÃ¡metros - conf={confidence}, limit={limit}, overwrite={overwrite}")
         self.stdout.write(f"DEBUG: crop_size={crop_size}, padding={padding}, validate_only={validate_only}")
         
         try:
@@ -101,14 +101,14 @@ class Command(BaseCommand):
                 stats = dataset_loader.get_dataset_stats()
                 self.stdout.write(
                     f"Dataset stats: {stats['total_records']} total, "
-                    f"{stats['valid_records']} válidos, "
-                    f"{stats['missing_images']} imágenes faltantes"
+                    f"{stats['valid_records']} vÃ¡lidos, "
+                    f"{stats['missing_images']} imÃ¡genes faltantes"
                 )
                 
                 if stats['missing_images'] > 0:
                     self.stdout.write(
                         self.style.WARNING(
-                            f"IDs con imágenes faltantes: {stats['missing_ids']}"
+                            f"IDs con imÃ¡genes faltantes: {stats['missing_ids']}"
                         )
                     )
                 
@@ -117,21 +117,21 @@ class Command(BaseCommand):
             
             if validate_only:
                 self.stdout.write(
-                    self.style.SUCCESS("Validación completada. No se procesaron imágenes.")
+                    self.style.SUCCESS("ValidaciÃ³n completada. No se procesaron imÃ¡genes.")
                 )
                 return
             
-            # Obtener registros válidos
-            self.stdout.write("Obteniendo registros válidos...")
+            # Obtener registros vÃ¡lidos
+            self.stdout.write("Obteniendo registros vÃ¡lidos...")
             valid_records = dataset_loader.get_valid_records()
             
             if not valid_records:
-                raise CommandError("No se encontraron registros válidos para procesar")
+                raise CommandError("No se encontraron registros vÃ¡lidos para procesar")
             
-            # Aplicar límite si se especifica
+            # Aplicar lÃ­mite si se especifica
             if limit > 0:
                 valid_records = valid_records[:limit]
-                self.stdout.write(f"Limitando procesamiento a {limit} imágenes")
+                self.stdout.write(f"Limitando procesamiento a {limit} imÃ¡genes")
             
             # Crear procesador de crops
             self.stdout.write("Inicializando procesador de crops...")
@@ -149,18 +149,18 @@ class Command(BaseCommand):
                 self.stdout.write(f"DEBUG: Error creando cropper: {e}")
                 raise CommandError(f"Error inicializando procesador: {e}")
             
-            # Procesar imágenes
-            self.stdout.write(f"Procesando {len(valid_records)} imágenes...")
+            # Procesar imÃ¡genes
+            self.stdout.write(f"Procesando {len(valid_records)} imÃ¡genes...")
             
             def progress_callback(current, total, result):
                 if current % 10 == 0 or current == total:
-                    status = "✓" if result.get('success', False) else "✗"
-                    self.stdout.write(f"Procesadas {current}/{total} imágenes {status}")
+                    status = "âœ“" if result.get('success', False) else "âœ—"
+                    self.stdout.write(f"Procesadas {current}/{total} imÃ¡genes {status}")
             
             try:
                 processing_stats = cropper.process_batch(
                     valid_records,
-                    limit=0,  # Ya aplicamos el límite arriba
+                    limit=0,  # Ya aplicamos el lÃ­mite arriba
                     progress_callback=progress_callback
                 )
                 
@@ -174,7 +174,7 @@ class Command(BaseCommand):
             self.stdout.write("\n" + "="*50)
             self.stdout.write("RESULTADOS DEL PROCESAMIENTO")
             self.stdout.write("="*50)
-            self.stdout.write(f"Total de imágenes: {processing_stats['total']}")
+            self.stdout.write(f"Total de imÃ¡genes: {processing_stats['total']}")
             self.stdout.write(f"Procesadas: {processing_stats['processed']}")
             self.stdout.write(f"Exitosas: {processing_stats['successful']}")
             self.stdout.write(f"Fallidas: {processing_stats['failed']}")
@@ -184,7 +184,7 @@ class Command(BaseCommand):
                 processing_stats['successful'] / processing_stats['processed'] * 100
                 if processing_stats['processed'] > 0 else 0
             )
-            self.stdout.write(f"Tasa de éxito: {success_rate:.2f}%")
+            self.stdout.write(f"Tasa de Ã©xito: {success_rate:.2f}%")
             self.stdout.write(f"Tiempo total: {processing_time:.2f} segundos")
             
             if processing_stats['failed'] > 0:
@@ -195,21 +195,21 @@ class Command(BaseCommand):
                     )
                 if len(processing_stats['errors']) > 10:
                     self.stdout.write(
-                        self.style.WARNING(f"  ... y {len(processing_stats['errors']) - 10} errores más")
+                        self.style.WARNING(f"  ... y {len(processing_stats['errors']) - 10} errores mÃ¡s")
                     )
             
-            # Mostrar ubicación de archivos
+            # Mostrar ubicaciÃ³n de archivos
             crops_dir = Path(settings.MEDIA_ROOT) / "cacao_images" / "crops"
             self.stdout.write(f"\nCrops guardados en: {crops_dir}")
             
             if save_masks:
                 masks_dir = Path(settings.MEDIA_ROOT) / "cacao_images" / "masks"
-                self.stdout.write(f"Máscaras guardadas en: {masks_dir}")
+                self.stdout.write(f"MÃ¡scaras guardadas en: {masks_dir}")
             
             # Mensaje final
             if processing_stats['failed'] == 0:
                 self.stdout.write(
-                    self.style.SUCCESS("¡Procesamiento completado exitosamente!")
+                    self.style.SUCCESS("Â¡Procesamiento completado exitosamente!")
                 )
             else:
                 self.stdout.write(
@@ -222,3 +222,5 @@ class Command(BaseCommand):
             raise
         except Exception as e:
             raise CommandError(f"Error inesperado: {e}")
+
+

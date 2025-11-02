@@ -86,6 +86,7 @@
         <button
           v-if="!photoTaken"
           @click="capturePhoto"
+          type="button"
           class="capture-button"
           :disabled="isLoading || !isCameraReady"
           :class="{ 'disabled': isLoading || !isCameraReady }"
@@ -102,6 +103,7 @@
         <div v-if="photoTaken" class="photo-actions">
           <button
             @click="retakePhoto"
+            type="button"
             class="action-button retake"
           >
             <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,6 +114,7 @@
 
           <button
             @click="savePhoto"
+            type="button"
             class="action-button save"
           >
             <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,7 +135,7 @@
             <h4 class="error-title">Error de cámara</h4>
             <p class="error-message">{{ error }}</p>
           </div>
-          <button @click="retryCamera" class="retry-button">
+          <button @click="retryCamera" type="button" class="retry-button">
             <svg class="retry-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
             </svg>
@@ -144,133 +147,118 @@
   </div>
 </template>
 
-<script>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+<script setup>
+// 1. Vue core
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 
-export default {
-  name: 'CameraCapture',
-  emits: ['capture'],
-  setup(props, { emit }) {
-    const video = ref(null);
-    const canvas = ref(null);
-    const stream = ref(null);
-    const photoTaken = ref(false);
-    const isLoading = ref(true);
-    const isCameraReady = ref(false);
-    const hasError = ref(false);
-    const error = ref('');
+// Emits
+const emit = defineEmits(['capture'])
 
-    const startCamera = async () => {
-      try {
-        isLoading.value = true;
-        error.value = '';
-        hasError.value = false;
-        
-        // Stop any existing stream
-        if (stream.value) {
-          stopCamera();
-        }
+// State
+const video = ref(null)
+const canvas = ref(null)
+const stream = ref(null)
+const photoTaken = ref(false)
+const isLoading = ref(true)
+const isCameraReady = ref(false)
+const hasError = ref(false)
+const error = ref('')
 
-        // Request camera access
-        stream.value = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: 'environment' // Use the back camera by default
-          },
-          audio: false
-        });
+// Functions
+const startCamera = async () => {
+  try {
+    isLoading.value = true
+    error.value = ''
+    hasError.value = false
+    
+    if (stream.value) {
+      stopCamera()
+    }
 
-        // Set video source
+    stream.value = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        facingMode: 'environment'
+      },
+      audio: false
+    })
+
+    if (video.value) {
+      video.value.srcObject = stream.value
+      await new Promise((resolve) => {
         if (video.value) {
-          video.value.srcObject = stream.value;
-          await new Promise((resolve) => {
-            video.value.onloadedmetadata = () => {
-              video.value.play();
-              resolve();
-            };
-          });
-          isCameraReady.value = true;
+          video.value.onloadedmetadata = () => {
+            video.value?.play()
+            resolve()
+          }
         }
-      } catch (err) {
-        console.error('Error accessing camera:', err);
-        error.value = 'No se pudo acceder a la cámara. Asegúrate de otorgar los permisos necesarios.';
-        hasError.value = true;
-      } finally {
-        isLoading.value = false;
-      }
-    };
-
-    const stopCamera = () => {
-      if (stream.value) {
-        const tracks = stream.value.getTracks();
-        tracks.forEach(track => track.stop());
-        stream.value = null;
-      }
-      isCameraReady.value = false;
-    };
-
-    const capturePhoto = () => {
-      if (!video.value || !canvas.value) return;
-
-      const context = canvas.value.getContext('2d');
-      canvas.value.width = video.value.videoWidth;
-      canvas.value.height = video.value.videoHeight;
-      
-      // Draw the current frame from the video on the canvas
-      context.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height);
-      
-      // Stop the camera preview
-      stopCamera();
-      photoTaken.value = true;
-    };
-
-    const retakePhoto = async () => {
-      photoTaken.value = false;
-      await startCamera();
-    };
-
-    const savePhoto = () => {
-      if (!canvas.value) return;
-      
-      // Convert canvas to blob and emit the captured photo
-      canvas.value.toBlob((blob) => {
-        const file = new File([blob], `cocoa-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        emit('capture', file);
-      }, 'image/jpeg', 0.9);
-    };
-
-    const retryCamera = async () => {
-      await startCamera();
-    };
-
-    // Lifecycle hooks
-    onMounted(async () => {
-      await startCamera();
-    });
-
-    onBeforeUnmount(() => {
-      stopCamera();
-    });
-
-    return {
-      video,
-      canvas,
-      photoTaken,
-      isLoading,
-      isCameraReady,
-      hasError,
-      error,
-      capturePhoto,
-      retakePhoto,
-      savePhoto,
-      retryCamera
-    };
+      })
+      isCameraReady.value = true
+    }
+  } catch (err) {
+    console.error('Error accessing camera:', err)
+    error.value = 'No se pudo acceder a la cámara. Asegúrate de otorgar los permisos necesarios.'
+    hasError.value = true
+  } finally {
+    isLoading.value = false
   }
-};
+}
+
+const stopCamera = () => {
+  if (stream.value) {
+    const tracks = stream.value.getTracks()
+    tracks.forEach(track => track.stop())
+    stream.value = null
+  }
+  isCameraReady.value = false
+}
+
+const capturePhoto = () => {
+  if (!video.value || !canvas.value) return
+
+  const context = canvas.value.getContext('2d')
+  canvas.value.width = video.value.videoWidth
+  canvas.value.height = video.value.videoHeight
+  
+  context.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
+  
+  stopCamera()
+  photoTaken.value = true
+}
+
+const retakePhoto = async () => {
+  photoTaken.value = false
+  await startCamera()
+}
+
+const savePhoto = () => {
+  if (!canvas.value) return
+  
+  canvas.value.toBlob((blob) => {
+    if (blob) {
+      const file = new File([blob], `cocoa-${Date.now()}.jpg`, { type: 'image/jpeg' })
+      emit('capture', file)
+    }
+  }, 'image/jpeg', 0.9)
+}
+
+const retryCamera = async () => {
+  await startCamera()
+}
+
+// Lifecycle
+onMounted(async () => {
+  await startCamera()
+})
+
+onBeforeUnmount(() => {
+  stopCamera()
+})
 </script>
 
 <style scoped>
+/* Estilos personalizados necesarios para el diseño de la cámara */
 .camera-capture {
   width: 100%;
 }
@@ -316,7 +304,6 @@ export default {
   object-fit: cover;
 }
 
-/* Loading State */
 .camera-loading {
   position: absolute;
   top: 50%;
@@ -344,7 +331,6 @@ export default {
   opacity: 0.9;
 }
 
-/* Camera Overlay */
 .camera-overlay {
   position: absolute;
   top: 0;
@@ -417,7 +403,6 @@ export default {
   border-radius: 50%;
 }
 
-/* Camera Status */
 .camera-status {
   position: absolute;
   top: 1rem;
@@ -450,7 +435,6 @@ export default {
   height: 1rem;
 }
 
-/* Camera Info Bar */
 .camera-info {
   display: flex;
   justify-content: center;
@@ -472,7 +456,6 @@ export default {
   height: 1.25rem;
 }
 
-/* Camera Controls */
 .camera-controls {
   display: flex;
   justify-content: center;
@@ -523,7 +506,6 @@ export default {
   color: white;
 }
 
-/* Photo Actions */
 .photo-actions {
   display: flex;
   gap: 1rem;
@@ -568,7 +550,6 @@ export default {
   height: 1.25rem;
 }
 
-/* Error Display */
 .error-display {
   margin-top: 1.5rem;
   background: #fef2f2;
@@ -630,7 +611,6 @@ export default {
   height: 1rem;
 }
 
-/* Responsive Design */
 @media (max-width: 640px) {
   .camera-preview {
     height: 300px;

@@ -15,31 +15,29 @@
 
     <!-- Main Content with Navbar -->
     <div :class="isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'">
-      <!-- Navbar -->
-
       <!-- Page Content -->
       <main class="py-6 px-4 sm:px-6 lg:px-8">
         <div class="max-w-5xl mx-auto">
-          <!-- Page Header mejorado -->
+          <!-- Page Header -->
           <div class="mb-8">
             <div class="bg-gradient-to-r from-white to-green-50 rounded-2xl border-2 border-gray-200 hover:shadow-xl hover:border-green-300 transition-all duration-300">
-            <div class="px-8 py-6">
-              <div class="flex items-center gap-4">
-                <div class="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg">
-                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                </div>
-                <div>
-                  <h1 class="text-3xl font-bold text-gray-900 mb-1">Nuevo Análisis de Lote</h1>
-                  <p class="text-gray-600 text-base">Sube imágenes de granos de cacao y completa la información del lote para iniciar un análisis de calidad detallado y preciso.</p>
+              <div class="px-8 py-6">
+                <div class="flex items-center gap-4">
+                  <div class="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-1">Nuevo Análisis de Lote</h1>
+                    <p class="text-gray-600 text-base">Sube imágenes de granos de cacao y completa la información del lote para iniciar un análisis de calidad detallado y preciso.</p>
+                  </div>
                 </div>
               </div>
             </div>
-            </div>
           </div>
 
-          <!-- Main Content Card mejorado -->
+          <!-- Main Content Card -->
           <div class="bg-white shadow-lg border-2 border-gray-200 rounded-2xl overflow-hidden">
             <div class="p-8 space-y-8">
               <!-- Progress Indicator (solo mientras se sube/procesa) -->
@@ -199,6 +197,7 @@
                       
                       <button
                         @click="resetAndCreateNew"
+                        type="button"
                         class="inline-flex items-center justify-center px-6 py-3 bg-white text-green-700 text-base font-semibold rounded-lg hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 border-2 border-green-300 shadow-md"
                       >
                         Crear nuevo análisis
@@ -238,13 +237,14 @@
                   <p class="text-gray-600 text-lg">Captura fotos de alta calidad de los granos de cacao para un análisis preciso</p>
                 </div>
 
-                <!-- Tabs mejorados -->
+                <!-- Tabs -->
                 <div class="bg-gray-50 border-2 border-gray-200 rounded-2xl p-2">
                   <nav class="flex space-x-2">
                     <button
                       v-for="tab in tabs"
                       :key="tab.name"
                       @click="currentTab = tab.name"
+                      type="button"
                       :class="[
                         currentTab === tab.name
                           ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg'
@@ -259,7 +259,7 @@
 
                 <!-- Tab Content -->
                 <div class="mt-6">
-                  <!-- File Upload Tab mejorado -->
+                  <!-- File Upload Tab -->
                   <div v-if="currentTab === 'upload'" class="bg-gray-50 border border-gray-200 rounded-2xl p-8">
                     <ImageUploader
                       v-model="images"
@@ -273,7 +273,7 @@
                       <CameraCapture @capture="handleCapturedImage" />
                     </div>
 
-                    <!-- Captured Images Preview mejorado -->
+                    <!-- Captured Images Preview -->
                     <div v-if="capturedImages.length > 0" class="bg-white border-2 border-gray-200 rounded-2xl p-8 shadow-sm">
                       <div class="flex items-center gap-3 mb-6">
                         <div class="p-2 bg-green-100 rounded-xl">
@@ -285,12 +285,13 @@
                         <span class="px-3 py-1 bg-green-600 text-white rounded-full text-sm font-bold">{{ capturedImages.length }}</span>
                       </div>
                       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        <div v-for="(img, index) in capturedImages" :key="index" class="relative group">
+                        <div v-for="(img, index) in capturedImages" :key="getImageKey(img, index)" class="relative group">
                           <div class="aspect-square rounded-2xl overflow-hidden bg-gray-200 border-2 border-gray-200 group-hover:border-green-300 transition-all duration-300">
                             <img :src="URL.createObjectURL(img)" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                           </div>
                           <button
                             @click="removeCapturedImage(index)"
+                            type="button"
                             class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-lg hover:bg-red-600 hover:scale-110 transition-all duration-200 opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500"
                             title="Eliminar foto"
                           >
@@ -358,7 +359,7 @@
                 </div>
               </div>
 
-              <!-- Error Alert mejorado -->
+              <!-- Error Alert -->
               <div v-if="error" class="bg-red-50 border-2 border-red-300 rounded-2xl p-8 shadow-sm">
                 <div class="flex items-start gap-4">
                   <div class="p-2 bg-red-100 rounded-xl">
@@ -384,289 +385,239 @@
   </div>
 </template>
 
-<script>
-import { ref, computed, onMounted, watch }  from 'vue';
-import { useRouter }                        from 'vue-router';
-import { useAuthStore }                     from '@/stores/auth';
-import { useAnalysisStore }                 from '@/stores/analysis';
-import Sidebar                              from '@/components/layout/Common/Sidebar.vue';
-import ProgressIndicator                    from '@/components/admin/AdminAnalisisComponents/ProgressIndicator.vue';
-import BatchInfoForm                        from '@/components/admin/AdminAnalisisComponents/BatchInfoForm.vue';
-import ImageUploader                        from '@/components/admin/AdminAnalisisComponents/ImageUploader.vue';
-import CameraCapture                        from '@/components/admin/AdminAnalisisComponents/CameraCapture.vue';
+<script setup>
+// 1. Vue core
+import { ref, computed, onMounted, watch } from 'vue'
 
-export default {
-  name: 'NuevoAnalisis',
-  components: {
-    Sidebar,
-    ProgressIndicator,
-    BatchInfoForm,
-    ImageUploader,
-    CameraCapture
-  },
-  setup() {
-    const router = useRouter();
-    const authStore = useAuthStore();
-    const analysisStore = useAnalysisStore();
+// 2. Vue router
+import { useRouter, useRoute } from 'vue-router'
 
-    // Sidebar collapse state
-    const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true');
+// 3. Components
+import Sidebar from '@/components/layout/Common/Sidebar.vue'
+import ProgressIndicator from '@/components/admin/AdminAnalisisComponents/ProgressIndicator.vue'
+import BatchInfoForm from '@/components/admin/AdminAnalisisComponents/BatchInfoForm.vue'
+import ImageUploader from '@/components/admin/AdminAnalisisComponents/ImageUploader.vue'
+import CameraCapture from '@/components/admin/AdminAnalisisComponents/CameraCapture.vue'
 
-    // Local state
-    const batchData = ref({
-      name: '',
-      collectionDate: '',
-      origin: '',
-      notes: '',
-      farm: '',
-      originPlace: '',
-      genetics: '',
-      farmer: ''
-    });
+// 4. Stores
+import { useAuthStore } from '@/stores/auth'
+import { useAnalysisStore } from '@/stores/analysis'
 
-    const images = ref([]);
-    const capturedImages = ref([]);
-    const currentTab = ref('upload');
-    const isSubmitting = ref(false);
-    const formErrors = ref({});
-    const analysisResult = ref(null);
+// Router and stores
+const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
+const analysisStore = useAnalysisStore()
 
-    // Tabs configuration
-    const tabs = [
-      { name: 'upload', label: 'Subir imágenes' },
-      { name: 'camera', label: 'Tomar foto' }
-    ];
+// Sidebar collapse state
+const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
 
-    // Watch for changes in captured images and update the main images array
-    watch(capturedImages, (newVal) => {
-      // Combine uploaded images and captured images
-      const uploadedImages = images.value.filter(img => !capturedImages.value.includes(img));
-      images.value = [...uploadedImages, ...newVal];
-    }, { deep: true });
+// Local state
+const batchData = ref({
+  name: '',
+  collectionDate: '',
+  origin: '',
+  notes: '',
+  farm: '',
+  originPlace: '',
+  genetics: '',
+  farmer: ''
+})
 
-    // Computed properties
-    const isFormValid = computed(() => {
-      return (
-        batchData.value.name.trim() !== '' &&
-        batchData.value.collectionDate &&
-        batchData.value.farm &&
-        batchData.value.genetics &&
-        images.value.length > 0
-      );
-    });
+const images = ref([])
+const capturedImages = ref([])
+const currentTab = ref('upload')
+const isSubmitting = ref(false)
+const formErrors = ref({})
+const analysisResult = ref(null)
+const activeSection = ref('analysis')
 
-    const uploadProgress = computed(() => {
-      return analysisStore.uploadProgress;
-    });
+// Tabs configuration
+const tabs = [
+  { name: 'upload', label: 'Subir imágenes' },
+  { name: 'camera', label: 'Tomar foto' }
+]
 
-    const isUploading = computed(() => {
-      return analysisStore.isUploading;
-    });
+// Watch for changes in captured images and update the main images array
+watch(capturedImages, (newVal) => {
+  const uploadedImages = images.value.filter(img => !capturedImages.value.includes(img))
+  images.value = [...uploadedImages, ...newVal]
+}, { deep: true })
 
-    const error = computed(() => {
-      return analysisStore.uploadError;
-    });
+// Computed properties
+const isFormValid = computed(() => {
+  return (
+    batchData.value.name.trim() !== '' &&
+    batchData.value.collectionDate &&
+    batchData.value.farm &&
+    batchData.value.genetics &&
+    images.value.length > 0
+  )
+})
 
-    // User data for sidebar and navbar
-    const userName = computed(() => {
-      return authStore.userFullName || 'Usuario';
-    });
+const uploadProgress = computed(() => {
+  return analysisStore.uploadProgress
+})
 
-    const userRole = computed(() => {
-      const role = authStore.userRole || 'Usuario';
-      // Normalize role for sidebar
-      if (role === 'farmer' || role === 'Agricultor') return 'agricultor';
-      if (role === 'admin' || role === 'Administrador') return 'admin';
-      return role;
-    });
+const isUploading = computed(() => {
+  return analysisStore.isUploading
+})
 
-    const userEmail = computed(() => {
-      return authStore.user?.email || '';
-    });
+const error = computed(() => {
+  return analysisStore.uploadError
+})
 
-    const activeSection = ref('analysis');
+const userName = computed(() => {
+  return authStore.userFullName || 'Usuario'
+})
 
-    // Methods
-    const updateBatchData = (data) => {
-      batchData.value = { ...data };
-    };
+const userRole = computed(() => {
+  const role = authStore.userRole || 'Usuario'
+  if (role === 'farmer' || role === 'Agricultor') return 'agricultor'
+  if (role === 'admin' || role === 'Administrador') return 'admin'
+  return role
+})
 
-    const updateImages = (newImages) => {
-      // Only update non-captured images
-      const nonCapturedImages = newImages.filter(img => !capturedImages.value.includes(img));
-      images.value = [...nonCapturedImages, ...capturedImages.value];
-    };
+const userEmail = computed(() => {
+  return authStore.user?.email || ''
+})
 
-    const handleCapturedImage = (imageFile) => {
-      // Add the captured image to our array
-      if (!capturedImages.value.some(img => img.name === imageFile.name)) {
-        capturedImages.value = [...capturedImages.value, imageFile];
-      }
-    };
-
-    const removeCapturedImage = (index) => {
-      const updatedImages = [...capturedImages.value];
-      updatedImages.splice(index, 1);
-      capturedImages.value = updatedImages;
-    };
-
-    const validateForm = () => {
-      const errors = {};
-
-      if (!batchData.value.name.trim()) {
-        errors.name = 'El nombre del lote es requerido';
-      }
-
-      if (!batchData.value.collectionDate) {
-        errors.collectionDate = 'La fecha de recolección es requerida';
-      }
-
-      if (images.value.length === 0) {
-        errors.images = 'Debes subir al menos una imagen';
-      }
-
-      formErrors.value = errors;
-      return Object.keys(errors).length === 0;
-    };
-
-    const submitAnalysis = async () => {
-      if (!validateForm()) return;
-
-      try {
-        isSubmitting.value = true;
-        analysisResult.value = null;
-
-        // Update store with form data
-        analysisStore.setBatchData(batchData.value);
-
-        // Add images to store
-        analysisStore.images = [...images.value];
-
-        // Submit to API
-        const result = await analysisStore.submitBatch();
-
-        // Handle success
-        if (result) {
-          analysisResult.value = result;
-          // Reset form after successful submission (pero mantener los resultados visibles)
-          resetForm();
-        }
-
-      } catch (error) {
-        console.error('Error submitting analysis:', error);
-        // En caso de error, limpiar el estado de carga
-        analysisResult.value = null;
-      } finally {
-        isSubmitting.value = false;
-      }
-    };
-
-    const resetForm = () => {
-      batchData.value = {
-        name: '',
-        collectionDate: '',
-        origin: '',
-        notes: '',
-        farm: '',
-        originPlace: '',
-        genetics: '',
-        farmer: ''
-      };
-      images.value = [];
-      capturedImages.value = [];
-      currentTab.value = 'upload';
-      formErrors.value = {};
-    };
-
-    // Sidebar and navbar methods
-    const handleMenuClick = (item) => {
-      if (item.route && item.route !== null) {
-        // Navigate to external routes
-        const currentPath = router.currentRoute.value.path;
-        if (currentPath !== item.route) {
-          router.push(item.route);
-        }
-      } else {
-        // For internal sections without routes, navigate to dashboard with query param
-        const role = authStore.userRole;
-        if (role === 'farmer' || role === 'Agricultor') {
-          router.push({ 
-            name: 'AgricultorDashboard',
-            query: { section: item.id }
-          });
-        } else {
-          router.push({ 
-            name: 'AdminDashboard',
-            query: { section: item.id }
-          });
-        }
-      }
-    };
-
-    const toggleSidebarCollapse = () => {
-      isSidebarCollapsed.value = !isSidebarCollapsed.value;
-      localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value);
-    };
-
-    const handleLogout = async () => {
-      try {
-        await authStore.logout();
-      } catch (error) {
-        console.error('Error during logout:', error);
-      }
-    };
-
-    const resetAndCreateNew = () => {
-      analysisResult.value = null;
-      resetForm();
-    };
-
-    // Lifecycle hooks
-    onMounted(() => {
-      // Reset store when component is mounted
-      analysisStore.clearBatch();
-    });
-
-    return {
-      // Stores
-      authStore,
-      // State
-      batchData,
-      images,
-      capturedImages,
-      currentTab,
-      tabs,
-      isSubmitting,
-      formErrors,
-      analysisResult,
-      isSidebarCollapsed,
-
-      // Computed
-      isFormValid,
-      uploadProgress,
-      isUploading,
-      error,
-      userName,
-      userRole,
-      userEmail,
-      activeSection,
-
-      // Methods
-      updateBatchData,
-      updateImages,
-      handleCapturedImage,
-      removeCapturedImage,
-      submitAnalysis,
-      resetForm,
-      handleMenuClick,
-      handleLogout,
-      toggleSidebarCollapse,
-      resetAndCreateNew
-    };
+// Helper function to generate unique keys for images
+const getImageKey = (img, index) => {
+  if (img instanceof File) {
+    return img.name + '-' + img.size + '-' + img.lastModified || `img-${index}`
   }
-};
+  return img.id || img.url || `img-${index}`
+}
+
+// Functions
+const updateBatchData = (data) => {
+  batchData.value = { ...data }
+}
+
+const updateImages = (newImages) => {
+  const nonCapturedImages = newImages.filter(img => !capturedImages.value.includes(img))
+  images.value = [...nonCapturedImages, ...capturedImages.value]
+}
+
+const handleCapturedImage = (imageFile) => {
+  if (!capturedImages.value.some(img => img.name === imageFile.name && img.size === imageFile.size)) {
+    capturedImages.value = [...capturedImages.value, imageFile]
+  }
+}
+
+const removeCapturedImage = (index) => {
+  const updatedImages = [...capturedImages.value]
+  updatedImages.splice(index, 1)
+  capturedImages.value = updatedImages
+}
+
+const validateForm = () => {
+  const errors = {}
+
+  if (!batchData.value.name.trim()) {
+    errors.name = 'El nombre del lote es requerido'
+  }
+
+  if (!batchData.value.collectionDate) {
+    errors.collectionDate = 'La fecha de recolección es requerida'
+  }
+
+  if (images.value.length === 0) {
+    errors.images = 'Debes subir al menos una imagen'
+  }
+
+  formErrors.value = errors
+  return Object.keys(errors).length === 0
+}
+
+const submitAnalysis = async () => {
+  if (!validateForm()) return
+
+  try {
+    isSubmitting.value = true
+    analysisResult.value = null
+
+    analysisStore.setBatchData(batchData.value)
+    analysisStore.images = [...images.value]
+
+    const result = await analysisStore.submitBatch()
+
+    analysisResult.value = result
+
+    if (result) {
+      resetForm()
+    }
+  } catch (error) {
+    console.error('Error submitting analysis:', error)
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+const resetForm = () => {
+  batchData.value = {
+    name: '',
+    collectionDate: '',
+    origin: '',
+    notes: '',
+    farm: '',
+    originPlace: '',
+    genetics: '',
+    farmer: ''
+  }
+  images.value = []
+  capturedImages.value = []
+  currentTab.value = 'upload'
+  formErrors.value = {}
+}
+
+const handleMenuClick = (item) => {
+  if (item.route && item.route !== null) {
+    const currentPath = route.path
+    if (currentPath !== item.route) {
+      router.push(item.route)
+    }
+  } else {
+    const role = authStore.userRole
+    if (role === 'farmer' || role === 'Agricultor') {
+      router.push({ 
+        name: 'AgricultorDashboard',
+        query: { section: item.id }
+      })
+    } else {
+      router.push({ 
+        name: 'AdminDashboard',
+        query: { section: item.id }
+      })
+    }
+  }
+}
+
+const toggleSidebarCollapse = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
+}
+
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+  } catch (error) {
+    console.error('Error during logout:', error)
+  }
+}
+
+const resetAndCreateNew = () => {
+  analysisResult.value = null
+  resetForm()
+}
+
+// Lifecycle
+onMounted(() => {
+  analysisStore.clearBatch()
+})
 </script>
 
 <style scoped>
-/* Add any custom styles here */
+/* Solo estilos que no están en Tailwind si es necesario */
 </style>

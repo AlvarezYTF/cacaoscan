@@ -24,7 +24,7 @@ export function useImageStats() {
     error.value = null
     
     try {
-      const response = await axios.get('/images/stats/')
+      const response = await axios.get('/api/v1/images/stats/')
       
       stats.value = response.data
     } catch (err) {
@@ -64,11 +64,17 @@ export function useImageStats() {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        page_size: '20',
-        ...filters
+        page_size: filters.page_size ? filters.page_size.toString() : '20'
       })
       
-      const response = await axios.get(`/images/?${params}`)
+      // Agregar otros filtros si existen
+      Object.keys(filters).forEach(key => {
+        if (key !== 'page_size' && filters[key] !== undefined && filters[key] !== null) {
+          params.append(key, filters[key].toString())
+        }
+      })
+      
+      const response = await axios.get(`/api/v1/images/?${params}`)
       
       return response.data
     } catch (err) {

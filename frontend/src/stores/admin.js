@@ -25,11 +25,15 @@ export const useAdminStore = defineStore('admin', () => {
       error.value = null
       
       const response = await api.get('/auth/admin/stats/')
+      console.log('🔍 [admin store] Respuesta completa:', response)
+      console.log('📊 [admin store] response.data:', response.data)
       stats.value = response.data
+      console.log('✅ [admin store] stats.value actualizado:', stats.value)
       
       return response
     } catch (err) {
       error.value = err.response?.data?.detail || 'Error al cargar estadísticas'
+      console.error('❌ [admin store] Error cargando stats:', err)
       throw err
     } finally {
       loading.value = false
@@ -64,13 +68,32 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.get(`/audit/activity-logs/?limit=${limit}`)
-      activities.value = response.data.results
+      // El backend usa page_size, no limit
+      const response = await api.get('/audit/activity-logs/', {
+        params: {
+          page_size: limit,
+          page: 1,
+          ordering: '-timestamp' // Ordenar por más reciente primero
+        }
+      })
+      
+      activities.value = response.data.results || []
+      console.log('📊 [admin store] Activities response:', response.data)
+      console.log('📊 [admin store] Activities count:', activities.value.length)
       
       return response
     } catch (err) {
+      // Si es error 500 o el endpoint no está disponible, retornar vacío silenciosamente
+      if (err.response?.status === 500) {
+        console.warn('⚠️ [admin store] Activity logs endpoint returned 500, returning empty array')
+        activities.value = []
+        return { data: { results: [] } }
+      }
       error.value = err.response?.data?.detail || 'Error al cargar actividades recientes'
-      throw err
+      console.error('❌ [admin store] Error loading activities:', err)
+      // No lanzar el error para evitar notificaciones molestas
+      activities.value = []
+      return { data: { results: [] } }
     } finally {
       loading.value = false
     }
@@ -82,13 +105,37 @@ export const useAdminStore = defineStore('admin', () => {
       error.value = null
       
       // Las alertas se manejan a través de notificaciones
-      const response = await api.get('/notifications/')
-      alerts.value = response.data.results || response.data
+      // Obtener solo las no leídas y limitar a 10
+      const response = await api.get('/notifications/', {
+        params: {
+          leida: false,
+          page_size: 10,
+          page: 1,
+          ordering: '-fecha_creacion'
+        }
+      })
+      
+      const data = response.data || {}
+      const notificationsArray = data.results || data.data || Array.isArray(data) ? data : []
+      
+      console.log('🚨 [admin store] Notifications response:', data)
+      console.log('🚨 [admin store] Notifications count:', notificationsArray.length)
+      
+      alerts.value = notificationsArray
       
       return response
     } catch (err) {
+      // Si es error 500 o el endpoint no está disponible, retornar vacío silenciosamente
+      if (err.response?.status === 500) {
+        console.warn('⚠️ [admin store] Notifications endpoint returned 500, returning empty array')
+        alerts.value = []
+        return { data: { results: [] } }
+      }
       error.value = err.response?.data?.detail || 'Error al cargar alertas'
-      throw err
+      console.error('❌ [admin store] Error loading alerts:', err)
+      // No lanzar el error para evitar notificaciones molestas
+      alerts.value = []
+      return { data: { results: [] } }
     } finally {
       loading.value = false
     }
@@ -120,8 +167,13 @@ export const useAdminStore = defineStore('admin', () => {
       
       return response
     } catch (err) {
+      // Si es error 500 o el endpoint no está disponible, retornar vacío silenciosamente
+      if (err.response?.status === 500) {
+        return { data: { results: [] } }
+      }
       error.value = err.response?.data?.detail || 'Error al cargar datos de actividad'
-      throw err
+      // No lanzar el error para evitar notificaciones molestas
+      return { data: { results: [] } }
     } finally {
       loading.value = false
     }
@@ -149,14 +201,18 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.patch(`/notifications/${alertId}/read/`)
+      // Usar el endpoint correcto del backend
+      const response = await api.post(`/notifications/${alertId}/read/`)
       
       // Remove alert from local state
       alerts.value = alerts.value.filter(alert => alert.id !== alertId)
       
+      console.log('✅ [admin store] Alert dismissed:', alertId)
+      
       return response
     } catch (err) {
       error.value = err.response?.data?.detail || 'Error al descartar alerta'
+      console.error('❌ [admin store] Error dismissing alert:', err)
       throw err
     } finally {
       loading.value = false

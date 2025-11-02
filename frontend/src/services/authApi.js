@@ -26,8 +26,6 @@ const authApi = {
       
       const response = await api.post('/auth/login/', loginData)
       
-      console.log('🔍 [authApi] Respuesta cruda del backend:', response.data)
-      
       // El backend puede devolver dos estructuras:
       // 1. { success, data: { access, refresh, user, ... }, message } (con wrapper)
       // 2. { success, access, refresh, user, ..., message } (plana)
@@ -55,14 +53,11 @@ const authApi = {
           message: response.data.message
         }
       } else {
-        console.error('❌ [authApi] Estructura de respuesta inesperada:', response.data)
         throw new Error('Respuesta del servidor con formato inválido')
       }
       
-      console.log('✅ [authApi] Datos normalizados para el store:', normalizedData)
       return normalizedData
     } catch (error) {
-      console.error('Error en login API:', error)
       throw error
     }
   },
@@ -73,8 +68,6 @@ const authApi = {
    */
   async register(userData) {
     try {
-      console.log('🔍 [authApi] Datos recibidos para registro:', userData);
-      
       // Payload para el nuevo endpoint de personas
       const payload = {
         // Datos del usuario
@@ -96,62 +89,34 @@ const authApi = {
         departamento: userData.departamento || ''
       };
       
-      console.log('📤 [authApi] Payload enviado al backend (personas):', payload);
-      
       const response = await api.post('/personas/registrar/', payload)
       
-      console.log('🔍 [authApi] Respuesta cruda del backend (registro):', response.data)
-      
-      // La respuesta del endpoint personas/registrar/ devuelve la persona creada
-      // Necesitamos hacer login para obtener los tokens
-      let normalizedData;
-      
-      // Si la respuesta incluye información del usuario, intentar hacer login automático
-      if (response.data && response.data.user) {
-        // Login automático para obtener tokens
-        const loginResponse = await api.post('/auth/login/', {
-          email: userData.email,
-          password: userData.password
-        })
-        
-        if (loginResponse.data && loginResponse.data.access) {
-          normalizedData = {
-            token: loginResponse.data.access,
-            refresh: loginResponse.data.refresh,
-            user: loginResponse.data.user,
-            access_expires_at: loginResponse.data.access_expires_at,
-            refresh_expires_at: loginResponse.data.refresh_expires_at,
-            persona: response.data, // Incluir datos de persona
-            message: 'Registro exitoso. Bienvenido.'
-          }
-        } else {
-          throw new Error('Error al obtener tokens de autenticación')
-        }
-      } else {
-        // Fallback: esperar estructura con tokens directos
-        normalizedData = {
-          token: response.data.access,
-          refresh: response.data.refresh,
-          user: response.data.user,
-          persona: response.data,
-          message: response.data.message || 'Registro exitoso'
+      // La respuesta del endpoint personas/registrar/ ahora incluye verification_required
+      // No hacer login automático, el usuario debe verificar su email primero
+      if (response.data && response.data.verification_required) {
+        return {
+          success: true,
+          verification_required: true,
+          data: {
+            email: response.data.email || userData.email,
+            verification_required: true
+          },
+          message: 'Registro exitoso. Por favor verifica tu correo electrónico.'
         }
       }
       
-      console.log('✅ [authApi] Datos normalizados para el store (registro):', normalizedData)
-      
+      // Fallback para estructura legacy (no debería llegar aquí ahora)
       return {
         success: true,
-        ...normalizedData
+        verification_required: true,
+        data: {
+          email: response.data?.email || response.data?.user?.email || userData.email,
+          verification_required: true
+        },
+        message: 'Registro exitoso. Por favor verifica tu correo electrónico.'
       }
-    } catch (error) {
-      console.error('Error en registro API:', error)
-      console.error('📋 [authApi] Respuesta completa del error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        headers: error.response?.headers
-      })
       
+    } catch (error) {
       // Extraer mensaje de error más detallado
       if (error.response?.data) {
         // Si hay errores de validación específicos
@@ -188,7 +153,6 @@ const authApi = {
       const response = await api.post('/auth/logout/')
       return response.data
     } catch (error) {
-      console.error('Error en logout API:', error)
       throw error
     }
   },
@@ -203,7 +167,6 @@ const authApi = {
       })
       return response.data
     } catch (error) {
-      console.error('Error refrescando token:', error)
       throw error
     }
   },
@@ -225,7 +188,6 @@ const authApi = {
       })
       return response.data
     } catch (error) {
-      console.error('Error verificando token:', error)
       throw error
     }
   },
@@ -238,7 +200,6 @@ const authApi = {
       const response = await api.get('/auth/profile/')
       return response.data
     } catch (error) {
-      console.error('Error obteniendo usuario actual:', error)
       throw error
     }
   },
@@ -261,7 +222,6 @@ const authApi = {
       const response = await api.put('/auth/profile/', payload)
       return response.data
     } catch (error) {
-      console.error('Error actualizando perfil:', error)
       throw error
     }
   },
@@ -274,7 +234,6 @@ const authApi = {
       const response = await api.get('/auth/profile/')
       return response.data
     } catch (error) {
-      console.error('Error obteniendo perfil:', error)
       throw error
     }
   },
@@ -284,14 +243,13 @@ const authApi = {
    */
   async changePassword(passwordData) {
     try {
-      const response = await api.post('/auth/users/change-password/', {
+      const response = await api.post('/auth/change-password/', {
         old_password: passwordData.oldPassword,
         new_password: passwordData.newPassword,
         confirm_password: passwordData.confirmPassword
       })
       return response.data
     } catch (error) {
-      console.error('Error cambiando contraseña:', error)
       throw error
     }
   },
@@ -306,7 +264,6 @@ const authApi = {
       })
       return response.data
     } catch (error) {
-      console.error('Error solicitando reset de contraseña:', error)
       throw error
     }
   },
@@ -324,13 +281,12 @@ const authApi = {
       })
       return response.data
     } catch (error) {
-      console.error('Error confirmando reset de contraseña:', error)
       throw error
     }
   },
 
   /**
-   * Verificar email con token
+   * Verificar email con token (POST con token en body)
    */
   async verifyEmail(uid, token) {
     try {
@@ -340,7 +296,18 @@ const authApi = {
       })
       return response.data
     } catch (error) {
-      console.error('Error verificando email:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Verificar email con token desde la URL (GET con token en path)
+   */
+  async verifyEmailFromToken(token) {
+    try {
+      const response = await api.get(`/auth/verify-email/${token}/`)
+      return response.data
+    } catch (error) {
       throw error
     }
   },
@@ -348,12 +315,12 @@ const authApi = {
   /**
    * Reenviar email de verificación
    */
-  async resendEmailVerification() {
+  async resendEmailVerification(email = null) {
     try {
-      const response = await api.post('/auth/resend-verification/')
+      const payload = email ? { email } : {}
+      const response = await api.post('/auth/resend-verification/', payload)
       return response.data
     } catch (error) {
-      console.error('Error reenviando verificación:', error)
       throw error
     }
   },
@@ -366,7 +333,6 @@ const authApi = {
       const response = await api.get('/auth/admin/stats/')
       return response.data
     } catch (error) {
-      console.error('Error obteniendo estadísticas:', error)
       throw error
     }
   },
@@ -382,7 +348,6 @@ const authApi = {
       })
       return response.data
     } catch (error) {
-      console.error('Error en acciones masivas:', error)
       throw error
     }
   },
@@ -395,7 +360,10 @@ const authApi = {
       const response = await api.get('/auth/users/', { params })
       return response.data
     } catch (error) {
-      console.error('Error obteniendo usuarios:', error)
+      // Fallback suave para no bloquear la UI si el backend responde 500
+      if (error.response?.status === 500) {
+        return { results: [], count: 0, page: 1, page_size: 50, total_pages: 1 }
+      }
       throw error
     }
   },
@@ -408,7 +376,6 @@ const authApi = {
       const response = await api.get(`/auth/users/${userId}/`)
       return response.data
     } catch (error) {
-      console.error('Error obteniendo usuario:', error)
       throw error
     }
   },
@@ -421,7 +388,6 @@ const authApi = {
       const response = await api.patch(`/auth/users/${userId}/update/`, userData)
       return response.data
     } catch (error) {
-      console.error('Error actualizando usuario:', error)
       throw error
     }
   },
@@ -434,7 +400,6 @@ const authApi = {
       const response = await api.delete(`/auth/users/${userId}/delete/`)
       return response.data
     } catch (error) {
-      console.error('Error eliminando usuario:', error)
       throw error
     }
   },
@@ -449,7 +414,6 @@ const authApi = {
       })
       return response.data
     } catch (error) {
-      console.error('Error cambiando estado de usuario:', error)
       throw error
     }
   },
@@ -462,7 +426,6 @@ const authApi = {
       const response = await api.get('/auth/users/stats/')
       return response.data
     } catch (error) {
-      console.error('Error obteniendo estadísticas de usuarios:', error)
       throw error
     }
   },
@@ -477,7 +440,6 @@ const authApi = {
       })
       return response.data
     } catch (error) {
-      console.error('Error en forgot password API:', error)
       throw error
     }
   },
@@ -494,7 +456,30 @@ const authApi = {
       })
       return response.data
     } catch (error) {
-      console.error('Error en reset password API:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Enviar código OTP para verificación de email
+   */
+  async sendOtp(email) {
+    try {
+      const response = await api.post('/auth/send-otp/', { email })
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  /**
+   * Verificar código OTP
+   */
+  async verifyOtp(email, code) {
+    try {
+      const response = await api.post('/auth/verify-otp/', { email, code })
+      return response.data
+    } catch (error) {
       throw error
     }
   }

@@ -1,5 +1,5 @@
-"""
-Inferencia con YOLOv8-seg para segmentación de granos de cacao.
+﻿"""
+Inferencia con YOLOv8-seg para segmentaciÃ³n de granos de cacao.
 """
 import numpy as np
 import cv2
@@ -11,7 +11,7 @@ try:
     from ultralytics import YOLO
 except ImportError:
     YOLO = None
-    logging.warning("Ultralytics no está instalado. La funcionalidad de segmentación no estará disponible.")
+    logging.warning("Ultralytics no estÃ¡ instalado. La funcionalidad de segmentaciÃ³n no estarÃ¡ disponible.")
 
 from ..utils.paths import get_yolo_artifacts_dir, ensure_dir_exists
 from ..utils.logs import get_ml_logger
@@ -21,18 +21,18 @@ logger = get_ml_logger("cacaoscan.ml.segmentation")
 
 
 class YOLOSegmentationInference:
-    """Clase para inferencia de segmentación con YOLOv8-seg."""
+    """Clase para inferencia de segmentaciÃ³n con YOLOv8-seg."""
     
     def __init__(self, model_path: Optional[Path] = None, confidence_threshold: float = 0.5):
         """
-        Inicializa el modelo de segmentación.
+        Inicializa el modelo de segmentaciÃ³n.
         
         Args:
             model_path: Ruta al modelo personalizado. Si es None, usa el modelo base.
             confidence_threshold: Umbral de confianza para las predicciones
         """
         if YOLO is None:
-            raise ImportError("Ultralytics no está instalado. Instalar con: pip install ultralytics")
+            raise ImportError("Ultralytics no estÃ¡ instalado. Instalar con: pip install ultralytics")
         
         self.confidence_threshold = confidence_threshold
         self.model = None
@@ -61,14 +61,14 @@ class YOLOSegmentationInference:
     
     def predict(self, image_path: Path, conf_threshold: Optional[float] = None) -> List[Dict[str, Any]]:
         """
-        Realiza predicción de segmentación en una imagen.
+        Realiza predicciÃ³n de segmentaciÃ³n en una imagen.
         
         Args:
             image_path: Ruta a la imagen
             conf_threshold: Umbral de confianza (usa self.confidence_threshold si es None)
             
         Returns:
-            Lista de predicciones con información de detección y segmentación
+            Lista de predicciones con informaciÃ³n de detecciÃ³n y segmentaciÃ³n
         """
         if not image_path.exists():
             raise FileNotFoundError(f"Imagen no encontrada: {image_path}")
@@ -84,17 +84,17 @@ class YOLOSegmentationInference:
             
             for result in results:
                 if result.masks is not None and len(result.masks) > 0:
-                    # Obtener información de las detecciones
+                    # Obtener informaciÃ³n de las detecciones
                     boxes = result.boxes
                     masks = result.masks
                     
                     for i in range(len(boxes)):
-                        # Información de la caja delimitadora
+                        # InformaciÃ³n de la caja delimitadora
                         box = boxes[i]
                         conf = float(box.conf[0])
                         cls = int(box.cls[0])
                         
-                        # Información de la máscara
+                        # InformaciÃ³n de la mÃ¡scara
                         mask = masks[i]
                         mask_data = mask.data[0].cpu().numpy()
                         
@@ -190,30 +190,30 @@ class YOLOSegmentationInference:
             return predictions
             
         except Exception as e:
-            logger.error(f"Error en la predicción para {image_path}: {e}")
+            logger.error(f"Error en la predicciÃ³n para {image_path}: {e}")
             return []
     
     def _calculate_mask_center(self, mask: np.ndarray) -> Tuple[int, int]:
-        """Calcula el centro de masa de una máscara."""
+        """Calcula el centro de masa de una mÃ¡scara."""
         moments = cv2.moments(mask.astype(np.uint8))
         if moments['m00'] != 0:
             cx = int(moments['m10'] / moments['m00'])
             cy = int(moments['m01'] / moments['m00'])
             return (cx, cy)
         else:
-            # Fallback: centro geométrico
+            # Fallback: centro geomÃ©trico
             h, w = mask.shape
             return (w // 2, h // 2)
     
     def get_best_prediction(self, image_path: Path) -> Optional[Dict[str, Any]]:
         """
-        Obtiene la mejor predicción (mayor confianza) para una imagen.
+        Obtiene la mejor predicciÃ³n (mayor confianza) para una imagen.
         
         Args:
             image_path: Ruta a la imagen
             
         Returns:
-            Mejor predicción o None si no hay detecciones
+            Mejor predicciÃ³n o None si no hay detecciones
         """
         predictions = self.predict(image_path)
         return predictions[0] if predictions else None
@@ -224,7 +224,7 @@ class YOLOSegmentationInference:
         target_classes: List[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        Filtra predicciones por clase específica.
+        Filtra predicciones por clase especÃ­fica.
         
         Args:
             predictions: Lista de predicciones
@@ -245,27 +245,27 @@ class YOLOSegmentationInference:
     
     def validate_prediction_quality(self, prediction: Dict[str, Any]) -> bool:
         """
-        Valida la calidad de una predicción.
+        Valida la calidad de una predicciÃ³n.
         
         Args:
-            prediction: Predicción a validar
+            prediction: PredicciÃ³n a validar
             
         Returns:
-            True si la predicción es de buena calidad
+            True si la predicciÃ³n es de buena calidad
         """
         if not prediction:
             return False
         
-        # Verificar confianza mínima
+        # Verificar confianza mÃ­nima
         if prediction['confidence'] < self.confidence_threshold:
             return False
         
-        # Verificar área mínima de la máscara
-        min_area = 100  # píxeles
+        # Verificar Ã¡rea mÃ­nima de la mÃ¡scara
+        min_area = 100  # pÃ­xeles
         if prediction['area'] < min_area:
             return False
         
-        # Verificar que la máscara no esté vacía
+        # Verificar que la mÃ¡scara no estÃ© vacÃ­a
         mask = prediction['mask']
         if np.sum(mask > 0.5) == 0:
             return False
@@ -279,16 +279,16 @@ class YOLOSegmentationInference:
         output_dir: Path
     ) -> None:
         """
-        Guarda información de debug de una predicción.
+        Guarda informaciÃ³n de debug de una predicciÃ³n.
         
         Args:
             image_path: Ruta a la imagen original
-            prediction: Predicción a guardar
+            prediction: PredicciÃ³n a guardar
             output_dir: Directorio de salida
         """
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Guardar máscara
+        # Guardar mÃ¡scara
         mask = prediction['mask']
         mask_normalized = (mask * 255).astype(np.uint8)
         mask_path = output_dir / f"{image_path.stem}_mask.png"
@@ -300,7 +300,7 @@ class YOLOSegmentationInference:
         x1, y1, x2, y2 = map(int, bbox)
         cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
         
-        # Añadir texto con confianza
+        # AÃ±adir texto con confianza
         conf_text = f"Conf: {prediction['confidence']:.3f}"
         cv2.putText(image, conf_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         
@@ -315,7 +315,7 @@ def create_yolo_inference(
     confidence_threshold: float = 0.5
 ) -> YOLOSegmentationInference:
     """
-    Función de conveniencia para crear una instancia de inferencia YOLO.
+    FunciÃ³n de conveniencia para crear una instancia de inferencia YOLO.
     
     Args:
         model_path: Ruta al modelo personalizado
@@ -325,3 +325,5 @@ def create_yolo_inference(
         Instancia de YOLOSegmentationInference
     """
     return YOLOSegmentationInference(model_path, confidence_threshold)
+
+

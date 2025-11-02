@@ -1,5 +1,5 @@
-"""
-Módulo de medición y calibración para CacaoScan.
+﻿"""
+MÃ³dulo de mediciÃ³n y calibraciÃ³n para CacaoScan.
 """
 
 from .calibration import (
@@ -29,3 +29,5 @@ __all__ = [
     'convert_pixels_to_mm',
     'convert_mm_to_pixels'
 ]
+
+

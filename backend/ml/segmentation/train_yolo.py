@@ -1,5 +1,5 @@
-"""
-Entrenamiento de YOLOv8-seg personalizado para segmentación de granos de cacao.
+﻿"""
+Entrenamiento de YOLOv8-seg personalizado para segmentaciÃ³n de granos de cacao.
 """
 import os
 import yaml
@@ -18,7 +18,7 @@ try:
 except ImportError:
     YOLO = None
     LOGGER = None
-    logging.warning("Ultralytics no está instalado. La funcionalidad de entrenamiento no estará disponible.")
+    logging.warning("Ultralytics no estÃ¡ instalado. La funcionalidad de entrenamiento no estarÃ¡ disponible.")
 
 from ..utils.paths import (
     get_yolo_artifacts_dir, 
@@ -52,18 +52,18 @@ class YOLOTrainingManager:
         Inicializa el gestor de entrenamiento.
         
         Args:
-            dataset_size: Número de imágenes para el dataset
-            train_split: Proporción para entrenamiento
-            val_split: Proporción para validación
-            test_split: Proporción para testing
-            image_size: Tamaño de imagen para entrenamiento
-            epochs: Número de épocas
-            batch_size: Tamaño del batch
+            dataset_size: NÃºmero de imÃ¡genes para el dataset
+            train_split: ProporciÃ³n para entrenamiento
+            val_split: ProporciÃ³n para validaciÃ³n
+            test_split: ProporciÃ³n para testing
+            image_size: TamaÃ±o de imagen para entrenamiento
+            epochs: NÃºmero de Ã©pocas
+            batch_size: TamaÃ±o del batch
             confidence_threshold: Umbral de confianza
             iou_threshold: Umbral de IoU
         """
         if YOLO is None:
-            raise ImportError("Ultralytics no está instalado. Instalar con: pip install ultralytics")
+            raise ImportError("Ultralytics no estÃ¡ instalado. Instalar con: pip install ultralytics")
         
         self.dataset_size = dataset_size
         self.train_split = train_split
@@ -85,11 +85,11 @@ class YOLOTrainingManager:
         ensure_dir_exists(self.dataset_dir)
         ensure_dir_exists(self.models_dir)
         
-        # Configuración de clases
+        # ConfiguraciÃ³n de clases
         self.class_names = ["cacao_grain"]
         self.num_classes = len(self.class_names)
         
-        logger.info(f"YOLO Training Manager inicializado para {self.dataset_size} imágenes")
+        logger.info(f"YOLO Training Manager inicializado para {self.dataset_size} imÃ¡genes")
         logger.info(f"Split: Train={train_split:.1%}, Val={val_split:.1%}, Test={test_split:.1%}")
     
     def create_dataset_structure(self) -> Path:
@@ -116,12 +116,12 @@ class YOLOTrainingManager:
     
     def generate_annotations_from_crops(self) -> Dict[str, List[Dict]]:
         """
-        Genera anotaciones automáticas basadas en los crops existentes.
+        Genera anotaciones automÃ¡ticas basadas en los crops existentes.
         
         Returns:
             Diccionario con anotaciones por imagen
         """
-        logger.info("Generando anotaciones automáticas desde crops existentes...")
+        logger.info("Generando anotaciones automÃ¡ticas desde crops existentes...")
         
         # Cargar dataset
         loader = CacaoDatasetLoader()
@@ -129,7 +129,7 @@ class YOLOTrainingManager:
         valid_df, missing_ids = loader.validate_images_exist(df)
         
         if len(valid_df) < self.dataset_size:
-            logger.warning(f"Solo {len(valid_df)} imágenes disponibles, solicitadas {self.dataset_size}")
+            logger.warning(f"Solo {len(valid_df)} imÃ¡genes disponibles, solicitadas {self.dataset_size}")
             self.dataset_size = len(valid_df)
         
         # Seleccionar muestras aleatorias
@@ -144,17 +144,17 @@ class YOLOTrainingManager:
             if not image_path.exists():
                 continue
             
-            # Generar anotación automática (centro de la imagen)
+            # Generar anotaciÃ³n automÃ¡tica (centro de la imagen)
             annotation = self._generate_automatic_annotation(image_path)
             if annotation:
                 annotations[str(image_id)] = annotation
         
-        logger.info(f"Generadas {len(annotations)} anotaciones automáticas")
+        logger.info(f"Generadas {len(annotations)} anotaciones automÃ¡ticas")
         return annotations
     
     def _generate_automatic_annotation(self, image_path: Path) -> Optional[List[Dict]]:
         """
-        Genera una anotación automática para una imagen.
+        Genera una anotaciÃ³n automÃ¡tica para una imagen.
         
         Args:
             image_path: Ruta a la imagen
@@ -170,11 +170,11 @@ class YOLOTrainingManager:
             
             height, width = image.shape[:2]
             
-            # Crear anotación centrada (asumiendo que el grano está en el centro)
+            # Crear anotaciÃ³n centrada (asumiendo que el grano estÃ¡ en el centro)
             center_x = width // 2
             center_y = height // 2
             
-            # Calcular bounding box (20% del tamaño de la imagen)
+            # Calcular bounding box (20% del tamaÃ±o de la imagen)
             bbox_width = int(width * 0.2)
             bbox_height = int(height * 0.2)
             
@@ -189,7 +189,7 @@ class YOLOTrainingManager:
             bbox_w = (x2 - x1) / width
             bbox_h = (y2 - y1) / height
             
-            # Crear máscara simple (rectángulo)
+            # Crear mÃ¡scara simple (rectÃ¡ngulo)
             mask = np.zeros((height, width), dtype=np.uint8)
             mask[y1:y2, x1:x2] = 255
             
@@ -203,7 +203,7 @@ class YOLOTrainingManager:
             return [annotation]
             
         except Exception as e:
-            logger.error(f"Error generando anotación para {image_path}: {e}")
+            logger.error(f"Error generando anotaciÃ³n para {image_path}: {e}")
             return None
     
     def create_yolo_dataset(
@@ -212,10 +212,10 @@ class YOLOTrainingManager:
         manual_annotations: Optional[Dict] = None
     ) -> Dict[str, List[str]]:
         """
-        Crea el dataset YOLO con imágenes y etiquetas.
+        Crea el dataset YOLO con imÃ¡genes y etiquetas.
         
         Args:
-            annotations: Anotaciones automáticas
+            annotations: Anotaciones automÃ¡ticas
             manual_annotations: Anotaciones manuales opcionales
             
         Returns:
@@ -223,7 +223,7 @@ class YOLOTrainingManager:
         """
         logger.info("Creando dataset YOLO...")
         
-        # Combinar anotaciones automáticas y manuales
+        # Combinar anotaciones automÃ¡ticas y manuales
         all_annotations = annotations.copy()
         if manual_annotations:
             all_annotations.update(manual_annotations)
@@ -251,7 +251,7 @@ class YOLOTrainingManager:
         
         # Procesar cada split
         for split_name, ids in splits.items():
-            logger.info(f"Procesando split {split_name}: {len(ids)} imágenes")
+            logger.info(f"Procesando split {split_name}: {len(ids)} imÃ¡genes")
             
             images_dir = self.dataset_dir / split_name / "images"
             labels_dir = self.dataset_dir / split_name / "labels"
@@ -278,7 +278,7 @@ class YOLOTrainingManager:
                 except Exception as e:
                     logger.error(f"Error procesando imagen {image_id}: {e}")
         
-        # Crear archivo de configuración del dataset
+        # Crear archivo de configuraciÃ³n del dataset
         self._create_dataset_yaml()
         
         logger.info("Dataset YOLO creado exitosamente")
@@ -302,7 +302,7 @@ class YOLOTrainingManager:
                 f.write(line)
     
     def _create_dataset_yaml(self) -> None:
-        """Crea archivo de configuración del dataset."""
+        """Crea archivo de configuraciÃ³n del dataset."""
         dataset_config = {
             'path': str(self.dataset_dir),
             'train': 'train/images',
@@ -316,7 +316,7 @@ class YOLOTrainingManager:
         with open(yaml_path, 'w') as f:
             yaml.dump(dataset_config, f, default_flow_style=False)
         
-        logger.info(f"Archivo de configuración creado: {yaml_path}")
+        logger.info(f"Archivo de configuraciÃ³n creado: {yaml_path}")
     
     def train_model(
         self,
@@ -344,7 +344,7 @@ class YOLOTrainingManager:
         # Cargar modelo
         model = YOLO(f"{model_name}.pt" if pretrained else model_name)
         
-        # Configuración de entrenamiento
+        # ConfiguraciÃ³n de entrenamiento
         train_config = {
             'data': str(self.dataset_dir / "dataset.yaml"),
             'epochs': self.epochs,
@@ -386,7 +386,7 @@ class YOLOTrainingManager:
             # Iniciar entrenamiento
             results = model.train(**train_config)
             
-            # Guardar información del entrenamiento
+            # Guardar informaciÃ³n del entrenamiento
             training_info = {
                 'model_name': model_name,
                 'dataset_size': self.dataset_size,
@@ -399,7 +399,7 @@ class YOLOTrainingManager:
                 'last_model_path': str(results.save_dir / "weights" / "last.pt")
             }
             
-            # Guardar información en JSON
+            # Guardar informaciÃ³n en JSON
             info_path = results.save_dir / "training_info.json"
             with open(info_path, 'w') as f:
                 json.dump(training_info, f, indent=2, default=str)
@@ -421,7 +421,7 @@ class YOLOTrainingManager:
             model_path: Ruta al modelo entrenado
             
         Returns:
-            Diccionario con métricas de validación
+            Diccionario con mÃ©tricas de validaciÃ³n
         """
         logger.info(f"Validando modelo: {model_path}")
         
@@ -440,7 +440,7 @@ class YOLOTrainingManager:
                 save_json=True
             )
             
-            # Extraer métricas principales
+            # Extraer mÃ©tricas principales
             metrics = {
                 'mAP50': results.box.map50,
                 'mAP50-95': results.box.map,
@@ -451,7 +451,7 @@ class YOLOTrainingManager:
                 'mask_mAP50-95': results.seg.map if hasattr(results, 'seg') else 0
             }
             
-            logger.info(f"Métricas de validación:")
+            logger.info(f"MÃ©tricas de validaciÃ³n:")
             logger.info(f"  mAP50: {metrics['mAP50']:.3f}")
             logger.info(f"  mAP50-95: {metrics['mAP50-95']:.3f}")
             logger.info(f"  Precision: {metrics['precision']:.3f}")
@@ -525,7 +525,7 @@ class YOLOTrainingManager:
             }
             
             logger.info("=== PIPELINE COMPLETADO EXITOSAMENTE ===")
-            logger.info(f"Duración total: {duration:.2f} segundos")
+            logger.info(f"DuraciÃ³n total: {duration:.2f} segundos")
             logger.info(f"Mejor modelo: {training_results['best_model_path']}")
             
             return final_results
@@ -545,12 +545,12 @@ def create_yolo_trainer(
     batch_size: int = 16
 ) -> YOLOTrainingManager:
     """
-    Función de conveniencia para crear un entrenador YOLO.
+    FunciÃ³n de conveniencia para crear un entrenador YOLO.
     
     Args:
-        dataset_size: Número de imágenes para el dataset
-        epochs: Número de épocas
-        batch_size: Tamaño del batch
+        dataset_size: NÃºmero de imÃ¡genes para el dataset
+        epochs: NÃºmero de Ã©pocas
+        batch_size: TamaÃ±o del batch
         
     Returns:
         Instancia de YOLOTrainingManager
@@ -569,12 +569,12 @@ def train_cacao_yolo_model(
     model_name: str = "yolov8s-seg"
 ) -> Dict[str, Any]:
     """
-    Función de conveniencia para entrenar modelo YOLO de cacao.
+    FunciÃ³n de conveniencia para entrenar modelo YOLO de cacao.
     
     Args:
-        dataset_size: Número de imágenes para el dataset
-        epochs: Número de épocas
-        batch_size: Tamaño del batch
+        dataset_size: NÃºmero de imÃ¡genes para el dataset
+        epochs: NÃºmero de Ã©pocas
+        batch_size: TamaÃ±o del batch
         model_name: Nombre del modelo base
         
     Returns:
@@ -582,3 +582,5 @@ def train_cacao_yolo_model(
     """
     trainer = create_yolo_trainer(dataset_size, epochs, batch_size)
     return trainer.run_full_training_pipeline(model_name)
+
+

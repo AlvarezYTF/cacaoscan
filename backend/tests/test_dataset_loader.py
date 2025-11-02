@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests para el cargador de dataset.
 """
 import pytest
@@ -13,19 +13,19 @@ class TestCacaoDatasetLoader:
     """Tests para CacaoDatasetLoader."""
     
     def setup_method(self):
-        """Configuración antes de cada test."""
+        """ConfiguraciÃ³n antes de cada test."""
         self.loader = CacaoDatasetLoader()
     
     def test_init(self):
-        """Test de inicialización."""
+        """Test de inicializaciÃ³n."""
         assert self.loader.csv_path is not None
         assert self.loader.raw_images_dir is not None
         assert self.loader.missing_log_path is not None
     
     @patch('ml.data.dataset_loader.pd.read_csv')
     def test_load_dataset_valid_csv(self, mock_read_csv):
-        """Test de carga de dataset válido."""
-        # Mock de datos válidos
+        """Test de carga de dataset vÃ¡lido."""
+        # Mock de datos vÃ¡lidos
         mock_data = pd.DataFrame({
             'ID': [1, 2, 3],
             'ALTO': [10.5, 11.2, 9.8],
@@ -84,7 +84,7 @@ class TestCacaoDatasetLoader:
     
     @patch('ml.data.dataset_loader.write_log')
     def test_validate_images_exist(self, mock_write_log):
-        """Test de validación de imágenes."""
+        """Test de validaciÃ³n de imÃ¡genes."""
         # Mock de DataFrame
         df = pd.DataFrame({
             'ID': [1, 2, 3],
@@ -112,7 +112,7 @@ class TestCacaoDatasetLoader:
         mock_write_log.assert_called_once()
     
     def test_get_valid_records(self):
-        """Test de obtención de registros válidos."""
+        """Test de obtenciÃ³n de registros vÃ¡lidos."""
         with patch.object(self.loader, 'load_dataset') as mock_load, \
              patch.object(self.loader, 'validate_images_exist') as mock_validate, \
              patch('ml.data.dataset_loader.get_file_timestamp') as mock_timestamp:
@@ -138,3 +138,5 @@ class TestCacaoDatasetLoader:
             assert records[0]['alto'] == 10.5
             assert records[0]['raw_image_path'] is not None
             assert records[0]['timestamp'] == 1234567890.0
+
+

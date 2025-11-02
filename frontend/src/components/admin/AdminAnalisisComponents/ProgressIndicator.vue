@@ -1,5 +1,5 @@
 <template>
-  <!-- Progress Indicator mejorado -->
+  <!-- Progress Indicator -->
   <div v-if="show" class="space-y-3 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 shadow-sm">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
@@ -21,23 +21,28 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ProgressIndicator',
-  props: {
-    progress: {
-      type: Number,
-      required: true,
-      validator: value => value >= 0 && value <= 100
-    },
-    label: {
-      type: String,
-      default: ''
-    },
-    show: {
-      type: Boolean,
-      default: true
-    }
+<script setup>
+// 1. Vue core
+import { defineProps } from 'vue'
+
+// Props
+const props = defineProps({
+  progress: {
+    type: Number,
+    required: true,
+    validator: (value) => value >= 0 && value <= 100
+  },
+  label: {
+    type: String,
+    default: ''
+  },
+  show: {
+    type: Boolean,
+    default: true
   }
-}
+})
 </script>
+
+<style scoped>
+/* Solo estilos que no están en Tailwind si es necesario */
+</style>

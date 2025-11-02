@@ -1,5 +1,5 @@
-"""
-Servicio de gestión de fincas y lotes para CacaoScan.
+﻿"""
+Servicio de gestiÃ³n de fincas y lotes para CacaoScan.
 """
 import logging
 from typing import Dict, Any, Optional, List
@@ -8,14 +8,20 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError, NotFoundServiceError
-from ..models import Finca, Lote, User
+try:
+    from fincas_app.models import Finca, Lote
+except ImportError:
+    Finca = None
+    Lote = None
+
+from django.contrib.auth.models import User
 
 logger = logging.getLogger("cacaoscan.services.fincas")
 
 
 class FincaService(BaseService):
     """
-    Servicio para manejar gestión de fincas.
+    Servicio para manejar gestiÃ³n de fincas.
     """
     
     def __init__(self):
@@ -67,7 +73,7 @@ class FincaService(BaseService):
             
             finca.save()
             
-            # Crear log de auditoría
+            # Crear log de auditorÃ­a
             self.create_audit_log(
                 user=user,
                 action="finca_created",
@@ -102,8 +108,8 @@ class FincaService(BaseService):
         
         Args:
             user: Usuario
-            page: Número de página
-            page_size: Tamaño de página
+            page: NÃºmero de pÃ¡gina
+            page_size: TamaÃ±o de pÃ¡gina
             filters: Filtros adicionales
             
         Returns:
@@ -159,7 +165,7 @@ class FincaService(BaseService):
     
     def get_finca_details(self, finca_id: int, user: User) -> ServiceResult:
         """
-        Obtiene detalles de una finca específica.
+        Obtiene detalles de una finca especÃ­fica.
         
         Args:
             finca_id: ID de la finca
@@ -179,7 +185,7 @@ class FincaService(BaseService):
             except Finca.DoesNotExist:
                 return ServiceResult.not_found_error("Finca no encontrada")
             
-            # Obtener estadísticas de lotes
+            # Obtener estadÃ­sticas de lotes
             lotes_stats = finca.lotes.aggregate(
                 total_lotes=Count('id'),
                 hectareas_cultivadas=Sum('hectareas'),
@@ -257,7 +263,7 @@ class FincaService(BaseService):
             if 'hectareas' in finca_data:
                 if finca_data['hectareas'] < 0.01:
                     return ServiceResult.validation_error(
-                        "Las hectáreas deben ser mayor a 0.01",
+                        "Las hectÃ¡reas deben ser mayor a 0.01",
                         details={"field": "hectareas"}
                     )
             
@@ -278,7 +284,7 @@ class FincaService(BaseService):
             
             finca.save()
             
-            # Crear log de auditoría
+            # Crear log de auditorÃ­a
             self.create_audit_log(
                 user=user,
                 action="finca_updated",
@@ -314,7 +320,7 @@ class FincaService(BaseService):
             user: Usuario
             
         Returns:
-            ServiceResult con resultado de la eliminación
+            ServiceResult con resultado de la eliminaciÃ³n
         """
         try:
             try:
@@ -333,7 +339,7 @@ class FincaService(BaseService):
                     details={"lotes_count": lotes_count}
                 )
             
-            # Crear log de auditoría antes de eliminar
+            # Crear log de auditorÃ­a antes de eliminar
             self.create_audit_log(
                 user=user,
                 action="finca_deleted",
@@ -366,14 +372,14 @@ class FincaService(BaseService):
     
     def get_finca_statistics(self, user: User, filters: Dict[str, Any] = None) -> ServiceResult:
         """
-        Obtiene estadísticas de fincas de un usuario.
+        Obtiene estadÃ­sticas de fincas de un usuario.
         
         Args:
             user: Usuario
             filters: Filtros adicionales
             
         Returns:
-            ServiceResult con estadísticas
+            ServiceResult con estadÃ­sticas
         """
         try:
             # Construir queryset base
@@ -389,7 +395,7 @@ class FincaService(BaseService):
                 if 'activa' in filters:
                     queryset = queryset.filter(activa=filters['activa'])
             
-            # Calcular estadísticas
+            # Calcular estadÃ­sticas
             stats = {
                 'total_fincas': queryset.count(),
                 'fincas_activas': queryset.filter(activa=True).count(),
@@ -408,13 +414,13 @@ class FincaService(BaseService):
             
             return ServiceResult.success(
                 data=stats,
-                message="Estadísticas obtenidas exitosamente"
+                message="EstadÃ­sticas obtenidas exitosamente"
             )
             
         except Exception as e:
-            self.log_error(f"Error obteniendo estadísticas: {str(e)}")
+            self.log_error(f"Error obteniendo estadÃ­sticas: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Error interno obteniendo estadísticas", details={"original_error": str(e)})
+                ValidationServiceError("Error interno obteniendo estadÃ­sticas", details={"original_error": str(e)})
             )
     
     def _serialize_finca(self, finca: Finca) -> Dict[str, Any]:
@@ -450,7 +456,7 @@ class FincaService(BaseService):
 
 class LoteService(BaseService):
     """
-    Servicio para manejar gestión de lotes.
+    Servicio para manejar gestiÃ³n de lotes.
     """
     
     def __init__(self):
@@ -481,7 +487,7 @@ class LoteService(BaseService):
             except Finca.DoesNotExist:
                 return ServiceResult.not_found_error("Finca no encontrada")
             
-            # Validar identificador único en la finca
+            # Validar identificador Ãºnico en la finca
             if Lote.objects.filter(finca=finca, identificador=lote_data['identificador']).exists():
                 return ServiceResult.validation_error(
                     "Ya existe un lote con este identificador en la finca",
@@ -519,7 +525,7 @@ class LoteService(BaseService):
             
             lote.save()
             
-            # Crear log de auditoría
+            # Crear log de auditorÃ­a
             self.create_audit_log(
                 user=user,
                 action="lote_created",
@@ -551,13 +557,13 @@ class LoteService(BaseService):
     
     def get_finca_lotes(self, finca_id: int, user: User, page: int = 1, page_size: int = 20, filters: Dict[str, Any] = None) -> ServiceResult:
         """
-        Obtiene lotes de una finca específica.
+        Obtiene lotes de una finca especÃ­fica.
         
         Args:
             finca_id: ID de la finca
             user: Usuario
-            page: Número de página
-            page_size: Tamaño de página
+            page: NÃºmero de pÃ¡gina
+            page_size: TamaÃ±o de pÃ¡gina
             filters: Filtros adicionales
             
         Returns:
@@ -620,7 +626,7 @@ class LoteService(BaseService):
     
     def get_lote_details(self, lote_id: int, user: User) -> ServiceResult:
         """
-        Obtiene detalles de un lote específico.
+        Obtiene detalles de un lote especÃ­fico.
         
         Args:
             lote_id: ID del lote
@@ -690,7 +696,7 @@ class LoteService(BaseService):
             except Lote.DoesNotExist:
                 return ServiceResult.not_found_error("Lote no encontrado")
             
-            # Validar identificador único si se está cambiando
+            # Validar identificador Ãºnico si se estÃ¡ cambiando
             if 'identificador' in lote_data and lote_data['identificador'] != lote.identificador:
                 if Lote.objects.filter(finca=lote.finca, identificador=lote_data['identificador']).exists():
                     return ServiceResult.validation_error(
@@ -713,7 +719,7 @@ class LoteService(BaseService):
             
             lote.save()
             
-            # Crear log de auditoría
+            # Crear log de auditorÃ­a
             self.create_audit_log(
                 user=user,
                 action="lote_updated",
@@ -750,7 +756,7 @@ class LoteService(BaseService):
             user: Usuario
             
         Returns:
-            ServiceResult con resultado de la eliminación
+            ServiceResult con resultado de la eliminaciÃ³n
         """
         try:
             try:
@@ -761,7 +767,7 @@ class LoteService(BaseService):
             except Lote.DoesNotExist:
                 return ServiceResult.not_found_error("Lote no encontrado")
             
-            # Crear log de auditoría antes de eliminar
+            # Crear log de auditorÃ­a antes de eliminar
             self.create_audit_log(
                 user=user,
                 action="lote_deleted",
@@ -793,14 +799,14 @@ class LoteService(BaseService):
     
     def get_lote_statistics(self, user: User, filters: Dict[str, Any] = None) -> ServiceResult:
         """
-        Obtiene estadísticas de lotes de un usuario.
+        Obtiene estadÃ­sticas de lotes de un usuario.
         
         Args:
             user: Usuario
             filters: Filtros adicionales
             
         Returns:
-            ServiceResult con estadísticas
+            ServiceResult con estadÃ­sticas
         """
         try:
             # Construir queryset base
@@ -818,7 +824,7 @@ class LoteService(BaseService):
                 if 'variedad' in filters:
                     queryset = queryset.filter(variedad=filters['variedad'])
             
-            # Calcular estadísticas
+            # Calcular estadÃ­sticas
             stats = {
                 'total_lotes': queryset.count(),
                 'lotes_activos': queryset.filter(estado='activo').count(),
@@ -835,13 +841,13 @@ class LoteService(BaseService):
             
             return ServiceResult.success(
                 data=stats,
-                message="Estadísticas obtenidas exitosamente"
+                message="EstadÃ­sticas obtenidas exitosamente"
             )
             
         except Exception as e:
-            self.log_error(f"Error obteniendo estadísticas: {str(e)}")
+            self.log_error(f"Error obteniendo estadÃ­sticas: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Error interno obteniendo estadísticas", details={"original_error": str(e)})
+                ValidationServiceError("Error interno obteniendo estadÃ­sticas", details={"original_error": str(e)})
             )
     
     def _serialize_lote(self, lote: Lote) -> Dict[str, Any]:
@@ -878,3 +884,5 @@ class LoteService(BaseService):
             'finca_id': lote.finca.id,
             'finca_nombre': lote.finca.nombre
         }
+
+

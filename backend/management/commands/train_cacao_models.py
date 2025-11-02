@@ -1,5 +1,5 @@
-"""
-Comando Django para entrenar modelos de regresión de cacao.
+﻿"""
+Comando Django para entrenar modelos de regresiÃ³n de cacao.
 """
 import time
 from django.core.management.base import BaseCommand, CommandError
@@ -15,7 +15,7 @@ logger = get_ml_logger("cacaoscan.ml.commands")
 
 
 class Command(BaseCommand):
-    help = 'Entrena modelos de regresión para dimensiones y peso de granos de cacao'
+    help = 'Entrena modelos de regresiÃ³n para dimensiones y peso de granos de cacao'
     
     def add_arguments(self, parser):
         # Argumentos del modelo
@@ -37,19 +37,19 @@ class Command(BaseCommand):
             '--epochs',
             type=int,
             default=50,
-            help='Número de épocas de entrenamiento (default: 50)'
+            help='NÃºmero de Ã©pocas de entrenamiento (default: 50)'
         )
         parser.add_argument(
             '--batch-size',
             type=int,
             default=32,
-            help='Tamaño de batch (default: 32)'
+            help='TamaÃ±o de batch (default: 32)'
         )
         parser.add_argument(
             '--img-size',
             type=int,
             default=224,
-            help='Tamaño de imagen de entrada (default: 224)'
+            help='TamaÃ±o de imagen de entrada (default: 224)'
         )
         parser.add_argument(
             '--learning-rate',
@@ -66,17 +66,17 @@ class Command(BaseCommand):
             help='Targets a entrenar: alto,ancho,grosor,peso o "all" (default: all)'
         )
         
-        # Argumentos de configuración
+        # Argumentos de configuraciÃ³n
         parser.add_argument(
             '--resume',
             action='store_true',
-            help='Resumir entrenamiento desde checkpoint (no implementado aún)'
+            help='Resumir entrenamiento desde checkpoint (no implementado aÃºn)'
         )
         parser.add_argument(
             '--num-workers',
             type=int,
             default=2,
-            help='Número de workers para data loading (default: 2)'
+            help='NÃºmero de workers para data loading (default: 2)'
         )
         parser.add_argument(
             '--early-stopping-patience',
@@ -91,7 +91,7 @@ class Command(BaseCommand):
             help='Tasa de dropout (default: 0.2)'
         )
         
-        # Argumentos de validación
+        # Argumentos de validaciÃ³n
         parser.add_argument(
             '--validate-only',
             action='store_true',
@@ -100,14 +100,14 @@ class Command(BaseCommand):
         parser.add_argument(
             '--test-mode',
             action='store_true',
-            help='Modo de prueba con configuración reducida'
+            help='Modo de prueba con configuraciÃ³n reducida'
         )
     
     def handle(self, *args, **options):
-        """Maneja la ejecución del comando."""
+        """Maneja la ejecuciÃ³n del comando."""
         start_time = time.time()
         
-        # Configurar parámetros
+        # Configurar parÃ¡metros
         config = self._create_config(options)
         
         self.stdout.write(
@@ -117,10 +117,10 @@ class Command(BaseCommand):
         )
         
         try:
-            # Validar configuración
+            # Validar configuraciÃ³n
             self._validate_config(config)
             
-            # Mostrar configuración
+            # Mostrar configuraciÃ³n
             self._display_config(config)
             
             if options['validate_only']:
@@ -140,7 +140,7 @@ class Command(BaseCommand):
             raise CommandError(f"Error durante el entrenamiento: {e}")
     
     def _create_config(self, options: dict) -> dict:
-        """Crea la configuración del entrenamiento."""
+        """Crea la configuraciÃ³n del entrenamiento."""
         config = {
             'multi_head': options['multihead'],
             'model_type': options['model_type'],
@@ -165,7 +165,7 @@ class Command(BaseCommand):
                 'early_stopping_patience': 3
             })
             self.stdout.write(
-                self.style.WARNING("Modo de prueba activado - configuración reducida")
+                self.style.WARNING("Modo de prueba activado - configuraciÃ³n reducida")
             )
         
         return config
@@ -180,12 +180,12 @@ class Command(BaseCommand):
         
         for target in targets:
             if target not in valid_targets:
-                raise ValueError(f"Target inválido: {target}. Targets válidos: {valid_targets}")
+                raise ValueError(f"Target invÃ¡lido: {target}. Targets vÃ¡lidos: {valid_targets}")
         
         return targets
     
     def _validate_config(self, config: dict) -> None:
-        """Valida la configuración."""
+        """Valida la configuraciÃ³n."""
         # Validar que los crops existan
         crops_dir = Path(settings.MEDIA_ROOT) / "cacao_images" / "crops"
         if not crops_dir.exists():
@@ -199,7 +199,7 @@ class Command(BaseCommand):
                 "Se necesitan al menos 10 para entrenamiento."
             )
         
-        # Validar configuración de modelo
+        # Validar configuraciÃ³n de modelo
         if config['multi_head'] and config['model_type'] == 'convnext_tiny':
             try:
                 import timm
@@ -208,34 +208,34 @@ class Command(BaseCommand):
                     "timm es requerido para ConvNeXt. Instalar con: pip install timm"
                 )
         
-        # Validar parámetros de entrenamiento
+        # Validar parÃ¡metros de entrenamiento
         if config['epochs'] < 1:
-            raise CommandError("Número de épocas debe ser >= 1")
+            raise CommandError("NÃºmero de Ã©pocas debe ser >= 1")
         
         if config['batch_size'] < 1:
-            raise CommandError("Tamaño de batch debe ser >= 1")
+            raise CommandError("TamaÃ±o de batch debe ser >= 1")
         
         if config['learning_rate'] <= 0:
             raise CommandError("Learning rate debe ser > 0")
     
     def _display_config(self, config: dict) -> None:
-        """Muestra la configuración del entrenamiento."""
+        """Muestra la configuraciÃ³n del entrenamiento."""
         self.stdout.write("\n" + "="*50)
-        self.stdout.write("CONFIGURACIÓN DE ENTRENAMIENTO")
+        self.stdout.write("CONFIGURACIÃ“N DE ENTRENAMIENTO")
         self.stdout.write("="*50)
         
         self.stdout.write(f"Modelo: {config['model_type']}")
         self.stdout.write(f"Multi-head: {config['multi_head']}")
         self.stdout.write(f"Targets: {config['targets']}")
-        self.stdout.write(f"Épocas: {config['epochs']}")
+        self.stdout.write(f"Ã‰pocas: {config['epochs']}")
         self.stdout.write(f"Batch size: {config['batch_size']}")
-        self.stdout.write(f"Tamaño de imagen: {config['img_size']}")
+        self.stdout.write(f"TamaÃ±o de imagen: {config['img_size']}")
         self.stdout.write(f"Learning rate: {config['learning_rate']}")
         self.stdout.write(f"Dropout rate: {config['dropout_rate']}")
         self.stdout.write(f"Early stopping patience: {config['early_stopping_patience']}")
         self.stdout.write(f"Workers: {config['num_workers']}")
         
-        # Mostrar información de datos
+        # Mostrar informaciÃ³n de datos
         crops_dir = Path(settings.MEDIA_ROOT) / "cacao_images" / "crops"
         crop_files = list(crops_dir.glob("*.png"))
         self.stdout.write(f"Crops disponibles: {len(crop_files)}")
@@ -253,7 +253,7 @@ class Command(BaseCommand):
             valid_records = loader.get_valid_records()
             
             if not valid_records:
-                raise CommandError("No se encontraron registros válidos")
+                raise CommandError("No se encontraron registros vÃ¡lidos")
             
             # Contar crops disponibles
             crops_available = 0
@@ -261,7 +261,7 @@ class Command(BaseCommand):
                 if record['crop_image_path'] and record['crop_image_path'].exists():
                     crops_available += 1
             
-            self.stdout.write(f"Registros válidos: {len(valid_records)}")
+            self.stdout.write(f"Registros vÃ¡lidos: {len(valid_records)}")
             self.stdout.write(f"Crops disponibles: {crops_available}")
             
             if crops_available < 10:
@@ -270,9 +270,9 @@ class Command(BaseCommand):
                     "Se necesitan al menos 10 para entrenamiento."
                 )
             
-            # Mostrar estadísticas
+            # Mostrar estadÃ­sticas
             stats = loader.get_dataset_stats()
-            self.stdout.write("\nEstadísticas del dataset:")
+            self.stdout.write("\nEstadÃ­sticas del dataset:")
             for target in ['alto', 'ancho', 'grosor', 'peso']:
                 if target in stats.get('dimensions_stats', {}):
                     target_stats = stats['dimensions_stats'][target]
@@ -284,7 +284,7 @@ class Command(BaseCommand):
                     )
             
             self.stdout.write(
-                self.style.SUCCESS("Validación de datos completada exitosamente")
+                self.style.SUCCESS("ValidaciÃ³n de datos completada exitosamente")
             )
             
         except Exception as e:
@@ -300,10 +300,10 @@ class Command(BaseCommand):
         
         self.stdout.write(f"Tiempo total: {total_time:.2f} segundos")
         
-        # Mostrar resultados de evaluación
+        # Mostrar resultados de evaluaciÃ³n
         if 'evaluation_results' in results:
             eval_results = results['evaluation_results']
-            self.stdout.write("\nMétricas de evaluación:")
+            self.stdout.write("\nMÃ©tricas de evaluaciÃ³n:")
             
             if results['config']['multi_head'] and 'multihead' in eval_results:
                 multihead_results = eval_results['multihead']
@@ -314,7 +314,7 @@ class Command(BaseCommand):
                             f"  {target.upper()}: "
                             f"MAE={metrics['mae']:.4f}, "
                             f"RMSE={metrics['rmse']:.4f}, "
-                            f"R²={metrics['r2']:.4f}"
+                            f"RÂ²={metrics['r2']:.4f}"
                         )
             else:
                 for target in ['alto', 'ancho', 'grosor', 'peso']:
@@ -324,10 +324,10 @@ class Command(BaseCommand):
                             f"  {target.upper()}: "
                             f"MAE={metrics['mae']:.4f}, "
                             f"RMSE={metrics['rmse']:.4f}, "
-                            f"R²={metrics['r2']:.4f}"
+                            f"RÂ²={metrics['r2']:.4f}"
                         )
         
-        # Mostrar ubicación de archivos
+        # Mostrar ubicaciÃ³n de archivos
         artifacts_dir = Path(settings.MEDIA_ROOT).parent / "ml" / "artifacts" / "regressors"
         self.stdout.write(f"\nModelos guardados en: {artifacts_dir}")
         
@@ -342,5 +342,7 @@ class Command(BaseCommand):
         self.stdout.write("="*50)
         
         self.stdout.write(
-            self.style.SUCCESS("¡Entrenamiento completado exitosamente!")
+            self.style.SUCCESS("Â¡Entrenamiento completado exitosamente!")
         )
+
+

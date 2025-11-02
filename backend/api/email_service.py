@@ -1,6 +1,6 @@
-"""
+﻿"""
 Servicio de emails para CacaoScan.
-Maneja el envío de emails usando SMTP y SendGrid como alternativas.
+Maneja el envÃ­o de emails usando SMTP y SendGrid como alternativas.
 """
 import logging
 import smtplib
@@ -14,6 +14,7 @@ from django.conf import settings
 from django.core.mail import send_mail, EmailMultiAlternatives, get_connection
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.utils import timezone
 from django.core.mail.backends.smtp import EmailBackend
 import sendgrid
 from sendgrid.helpers.mail import Mail, Email, To, Content, Attachment, FileContent, FileName, FileType, Disposition
@@ -26,7 +27,7 @@ logger = logging.getLogger("cacaoscan.email")
 
 class EmailService:
     """
-    Servicio principal para el envío de emails en CacaoScan.
+    Servicio principal para el envÃ­o de emails en CacaoScan.
     Soporta tanto SMTP como SendGrid como backends.
     """
     
@@ -52,7 +53,7 @@ class EmailService:
                 )
                 logger.info("Backend SMTP inicializado correctamente")
             
-            # Inicializar SendGrid si está configurado
+            # Inicializar SendGrid si estÃ¡ configurado
             if settings.SENDGRID_API_KEY:
                 self.sendgrid_client = sendgrid.SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
                 logger.info("Cliente SendGrid inicializado correctamente")
@@ -73,7 +74,7 @@ class EmailService:
         context: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         """
-        Envía un email usando el backend especificado.
+        EnvÃ­a un email usando el backend especificado.
         
         Args:
             to_emails: Email(s) destinatario(s)
@@ -87,7 +88,7 @@ class EmailService:
             context: Contexto para el template
             
         Returns:
-            Dict con el resultado del envío
+            Dict con el resultado del envÃ­o
         """
         try:
             # Preparar emails destinatarios
@@ -141,35 +142,35 @@ class EmailService:
         from_email: str,
         attachments: List[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Envía email usando SMTP."""
+        """EnvÃ­a email usando SMTP con EmailMultiAlternatives (Django)."""
         try:
-            # Crear mensaje multipart
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From'] = from_email
-            msg['To'] = ', '.join(to_emails)
-            
-            # Agregar contenido de texto
-            if text_content:
-                text_part = MIMEText(text_content, 'plain', 'utf-8')
-                msg.attach(text_part)
-            
-            # Agregar contenido HTML
+            # Construir EmailMultiAlternatives para que Django EmailBackend lo procese correctamente
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=text_content or strip_tags(html_content or ''),
+                from_email=from_email,
+                to=to_emails,
+            )
+
+            # Adjuntar versiÃ³n HTML si existe
             if html_content:
-                html_part = MIMEText(html_content, 'html', 'utf-8')
-                msg.attach(html_part)
-            
-            # Agregar archivos adjuntos
+                email.attach_alternative(html_content, "text/html")
+
+            # Adjuntar archivos si vienen
             if attachments:
                 for attachment in attachments:
-                    self._add_attachment(msg, attachment)
-            
+                    filename = attachment.get('filename')
+                    content = attachment.get('content')
+                    content_type = attachment.get('content_type', 'application/octet-stream')
+                    if isinstance(content, str):
+                        content = content.encode('utf-8')
+                    email.attach(filename, content, content_type)
+
             # Enviar usando el backend SMTP
             connection = get_connection(backend='django.core.mail.backends.smtp.EmailBackend')
             connection.open()
-            
             try:
-                connection.send_messages([msg])
+                connection.send_messages([email])
                 logger.info(f"Email enviado exitosamente a {to_emails} via SMTP")
                 return {
                     'success': True,
@@ -179,7 +180,7 @@ class EmailService:
                 }
             finally:
                 connection.close()
-                
+
         except Exception as e:
             logger.error(f"Error enviando email via SMTP: {e}")
             return {
@@ -197,7 +198,7 @@ class EmailService:
         from_email: str,
         attachments: List[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Envía email usando SendGrid."""
+        """EnvÃ­a email usando SendGrid."""
         try:
             # Crear objeto Mail
             from_email_obj = Email(from_email)
@@ -337,16 +338,16 @@ class EmailNotificationService:
         subject_override: str = None
     ) -> Dict[str, Any]:
         """
-        Envía un email de notificación específico.
+        EnvÃ­a un email de notificaciÃ³n especÃ­fico.
         
         Args:
             user_email: Email del usuario
-            notification_type: Tipo de notificación
+            notification_type: Tipo de notificaciÃ³n
             context: Contexto para el template
             subject_override: Asunto personalizado
             
         Returns:
-            Resultado del envío
+            Resultado del envÃ­o
         """
         if not settings.EMAIL_NOTIFICATIONS_ENABLED:
             return {
@@ -358,7 +359,7 @@ class EmailNotificationService:
         if notification_type not in self.notification_types:
             return {
                 'success': False,
-                'error': f'Tipo de notificación no soportado: {notification_type}',
+                'error': f'Tipo de notificaciÃ³n no soportado: {notification_type}',
                 'skipped': True
             }
         
@@ -388,9 +389,9 @@ class EmailNotificationService:
             )
             
             if result['success']:
-                logger.info(f"Notificación {notification_type} enviada a {user_email}")
+                logger.info(f"NotificaciÃ³n {notification_type} enviada a {user_email}")
             else:
-                logger.error(f"Error enviando notificación {notification_type} a {user_email}: {result.get('error')}")
+                logger.error(f"Error enviando notificaciÃ³n {notification_type} a {user_email}: {result.get('error')}")
             
             return result
             
@@ -403,11 +404,12 @@ class EmailNotificationService:
             }
     
     def _get_default_subject(self, notification_type: str, context: Dict[str, Any]) -> str:
-        """Obtiene el asunto por defecto para un tipo de notificación."""
+        """Obtiene el asunto por defecto para un tipo de notificaciÃ³n."""
         subjects = {
-            'welcome': f"¡Bienvenido a CacaoScan, {context.get('user_name', 'Usuario')}!",
-            'password_reset': "Restablecimiento de contraseña - CacaoScan",
-            'analysis_complete': "Análisis completado - CacaoScan",
+            'welcome': f"Â¡Bienvenido a CacaoScan, {context.get('user_name', 'Usuario')}!",
+            'password_reset': "Restablecimiento de contraseÃ±a - CacaoScan",
+            'password_reset_success': "Contraseña restablecida exitosamente - CacaoScan",
+            'analysis_complete': "AnÃ¡lisis completado - CacaoScan",
             'report_ready': "Reporte listo - CacaoScan",
             'training_complete': "Entrenamiento completado - CacaoScan",
             'defect_alert': "Alerta de defectos detectados - CacaoScan",
@@ -415,7 +417,7 @@ class EmailNotificationService:
             'weekly_summary': "Resumen semanal - CacaoScan"
         }
         
-        return subjects.get(notification_type, "Notificación - CacaoScan")
+        return subjects.get(notification_type, "NotificaciÃ³n - CacaoScan")
     
     def send_bulk_notification(
         self,
@@ -425,16 +427,16 @@ class EmailNotificationService:
         batch_size: int = None
     ) -> Dict[str, Any]:
         """
-        Envía notificaciones masivas por email.
+        EnvÃ­a notificaciones masivas por email.
         
         Args:
             user_emails: Lista de emails de usuarios
-            notification_type: Tipo de notificación
+            notification_type: Tipo de notificaciÃ³n
             context: Contexto para el template
-            batch_size: Tamaño del lote (por defecto usa configuración)
+            batch_size: TamaÃ±o del lote (por defecto usa configuraciÃ³n)
             
         Returns:
-            Resultado del envío masivo
+            Resultado del envÃ­o masivo
         """
         if not batch_size:
             batch_size = settings.EMAIL_BATCH_SIZE
@@ -486,11 +488,132 @@ def send_email_notification(
     subject_override: str = None
 ) -> Dict[str, Any]:
     """
-    Función helper para enviar notificaciones por email.
+    Envía notificaciones por correo (recuperación, verificación, etc.) usando Gmail SMTP.
+    Mejorada para evitar bloqueos y filtrado en SPAM.
+    
+    Args:
+        user_email: Email del destinatario
+        notification_type: Tipo de notificación (password_reset, welcome, etc.)
+        context: Contexto para renderizar templates
+        subject_override: Asunto personalizado (opcional)
+        
+    Returns:
+        Dict con 'success': True/False y detalles del envío
     """
-    return email_notification_service.send_notification_email(
-        user_email, notification_type, context, subject_override
-    )
+    try:
+        # === Seguridad: validar campos mínimos ===
+        if not user_email or '@' not in user_email:
+            logger.error(f"[EMAIL] Dirección inválida: {user_email}")
+            return {"success": False, "error": "Correo inválido"}
+
+        # === Configurar asunto y plantillas ===
+        subject_prefix = getattr(settings, "EMAIL_SUBJECT_PREFIX", "[CacaoScan] ")
+        
+        # Usar subject_override si se proporciona, sino usar el predeterminado del servicio
+        if subject_override:
+            subject = subject_override
+        else:
+            # Intentar obtener asunto del servicio de notificaciones
+            try:
+                subject = email_notification_service._get_default_subject(notification_type, context)
+            except:
+                subject = f"{subject_prefix} Notificación de CacaoScan"
+
+        # Selección automática de template
+        html_template = f"emails/{notification_type}.html"
+        text_template = f"emails/{notification_type}.txt"
+
+        try:
+            html_content = render_to_string(html_template, context)
+            text_content = render_to_string(text_template, context)
+        except Exception as e:
+            logger.error(f"[EMAIL] Error renderizando templates: {e}")
+            return {"success": False, "error": f"Error renderizando templates: {str(e)}"}
+
+        # === Configurar remitente profesional ===
+        # Usar el mismo email que el usuario autenticado en SMTP para evitar bloqueos de Gmail
+        from_email = getattr(
+            settings, "DEFAULT_FROM_EMAIL",
+            f"CacaoScan <{settings.EMAIL_HOST_USER}>"
+        )
+
+        # === Conexión SMTP segura ===
+        connection = get_connection(
+            backend='django.core.mail.backends.smtp.EmailBackend',
+            host=settings.EMAIL_HOST,
+            port=settings.EMAIL_PORT,
+            username=settings.EMAIL_HOST_USER,
+            password=settings.EMAIL_HOST_PASSWORD,
+            use_tls=settings.EMAIL_USE_TLS,
+            timeout=30,
+        )
+
+        # === Construir correo ===
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_content,
+            from_email=from_email,
+            to=[user_email],
+            connection=connection,
+            headers={
+                "Reply-To": "cacaoscan.soporte@gmail.com",
+                "X-Mailer": "CacaoScanMailer",
+                "X-Priority": "3",
+            },
+        )
+
+        email.attach_alternative(html_content, "text/html")
+
+        # === Logs de depuración ===
+        logger.info(f"[DEBUG EMAIL] Intentando enviar a {user_email}")
+        logger.info(f"[DEBUG EMAIL] Template HTML: {html_template}")
+        logger.info(f"[DEBUG EMAIL] Template TXT: {text_template}")
+        logger.info(f"[DEBUG EMAIL] Remitente (from_email): {from_email}")
+        logger.info(f"[DEBUG EMAIL] SMTP User: {settings.EMAIL_HOST_USER}")
+        logger.info(f"[DEBUG EMAIL] SMTP Host: {settings.EMAIL_HOST}:{settings.EMAIL_PORT}")
+        logger.info(f"[DEBUG EMAIL] TLS habilitado: {settings.EMAIL_USE_TLS}")
+        logger.info(f"[DEBUG EMAIL] Asunto: {subject}")
+        logger.info(f"[DEBUG EMAIL] Contexto recibido: {list(context.keys())}")
+
+        # === Enviar correo ===
+        logger.info(f"[DEBUG EMAIL] Abriendo conexión SMTP...")
+        sent_count = email.send(fail_silently=False)
+        logger.info(f"[DEBUG EMAIL] Email enviado. Contador: {sent_count}")
+
+        if sent_count:
+            logger.info(f"[EMAIL] ✅ Correo '{notification_type}' enviado a {user_email}")
+            return {
+                "success": True,
+                "sent_to": user_email,
+                "timestamp": timezone.now().isoformat()
+            }
+        else:
+            logger.warning(f"[EMAIL] ❌ Correo no enviado a {user_email}")
+            return {"success": False, "error": "No se envió el correo"}
+
+    except Exception as e:
+        logger.error(f"[EMAIL] ⚠️ Error al enviar correo a {user_email}: {e}", exc_info=True)
+        logger.error(f"[DEBUG EMAIL] Tipo de excepción: {type(e).__name__}")
+        logger.error(f"[DEBUG EMAIL] Detalles del error: {str(e)}")
+        # Log adicional para errores SMTP específicos
+        if hasattr(e, 'smtp_code'):
+            logger.error(f"[DEBUG EMAIL] Código SMTP: {e.smtp_code}")
+        if hasattr(e, 'smtp_error'):
+            logger.error(f"[DEBUG EMAIL] Error SMTP: {e.smtp_error}")
+
+        # === Fallback de emergencia ===
+        try:
+            # Si Gmail falla, imprimir en consola para debugging
+            subject_fallback = subject if 'subject' in locals() else "Notificación de CacaoScan"
+            text_fallback = text_content if 'text_content' in locals() else "Error al renderizar contenido"
+            print(f"\n[EMAIL Fallback] --- Envío simulado ---\n"
+                  f"Para: {user_email}\n"
+                  f"Asunto: {subject_fallback}\n"
+                  f"Contenido:\n{text_fallback}\n")
+        except Exception:
+            pass
+
+        return {"success": False, "error": str(e)}
 
 
 def send_bulk_email_notification(
@@ -500,7 +623,7 @@ def send_bulk_email_notification(
     batch_size: int = None
 ) -> Dict[str, Any]:
     """
-    Función helper para enviar notificaciones masivas por email.
+    FunciÃ³n helper para enviar notificaciones masivas por email.
     """
     return email_notification_service.send_bulk_notification(
         user_emails, notification_type, context, batch_size
@@ -517,9 +640,39 @@ def send_custom_email(
     use_sendgrid: bool = False
 ) -> Dict[str, Any]:
     """
-    Función helper para enviar emails personalizados.
+    FunciÃ³n helper para enviar emails personalizados con fallback TLS/SSL.
     """
-    return email_service.send_email(
-        to_emails, subject, html_content, text_content,
-        from_email, attachments, use_sendgrid
-    )
+    # Intentar primero con TLS, si falla probar SSL
+    try:
+        return email_service.send_email(
+            to_emails, subject, html_content, text_content,
+            from_email, attachments, use_sendgrid
+        )
+    except Exception as e:
+        # Si falla y estÃ¡ habilitado el fallback SSL, intentar SSL
+        if settings.EMAIL_USE_SSL_FALLBACK and 'smtp' in str(e).lower():
+            logger.warning(f"Error con TLS, intentando SSL: {e}")
+            # Cambiar configuraciÃ³n temporalmente para SSL
+            original_tls = settings.EMAIL_USE_TLS
+            original_ssl = settings.EMAIL_USE_SSL
+            original_port = settings.EMAIL_PORT
+            
+            settings.EMAIL_USE_TLS = False
+            settings.EMAIL_USE_SSL = True
+            settings.EMAIL_PORT = 465
+            
+            try:
+                result = email_service.send_email(
+                    to_emails, subject, html_content, text_content,
+                    from_email, attachments, use_sendgrid
+                )
+                return result
+            finally:
+                # Restaurar configuraciÃ³n original
+                settings.EMAIL_USE_TLS = original_tls
+                settings.EMAIL_USE_SSL = original_ssl
+                settings.EMAIL_PORT = original_port
+        else:
+            raise
+
+

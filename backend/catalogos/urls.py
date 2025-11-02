@@ -1,4 +1,4 @@
-from django.urls import path, include
+﻿from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     TemaViewSet, 
@@ -17,3 +17,5 @@ router.register(r'municipios', MunicipioViewSet, basename='municipio')
 urlpatterns = [
     path('', include(router.urls)),
 ]
+
+

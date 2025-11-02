@@ -15,7 +15,7 @@
     </div>
     <div class="p-6">
       <div class="space-y-3">
-        <div v-for="analysis in recentAnalyses" :key="analysis.id" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-green-50 transition-colors duration-200 cursor-pointer border border-gray-200 hover:border-green-300">
+        <div v-for="analysis in recentAnalyses" :key="analysis.id" @click="$emit('select-analysis', analysis)" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-green-50 transition-colors duration-200 cursor-pointer border border-gray-200 hover:border-green-300">
           <div class="flex items-center space-x-3">
             <div class="bg-green-500 p-2 rounded-lg">
               <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,6 +40,7 @@
 <script>
 export default {
   name: 'RecentActivity',
+  emits: ['select-analysis'],
   props: {
     recentAnalyses: {
       type: Array,

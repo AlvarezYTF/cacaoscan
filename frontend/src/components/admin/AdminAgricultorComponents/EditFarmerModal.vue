@@ -45,6 +45,7 @@
                 @click="activeTab = 'info'"
                 :class="activeTab === 'info' ? 'text-green-600 border-green-600' : 'text-gray-500 border-transparent'"
                 class="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-600 transition-all duration-200"
+                type="button"
               >
                 Información Personal
               </button>
@@ -54,6 +55,7 @@
                 @click="activeTab = 'fincas'"
                 :class="activeTab === 'fincas' ? 'text-green-600 border-green-600' : 'text-gray-500 border-transparent'"
                 class="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-600 transition-all duration-200"
+                type="button"
               >
                 Fincas ({{ fincasList.length }})
               </button>
@@ -61,114 +63,183 @@
           </ul>
 
           <!-- Tab Content: Information -->
-          <div v-if="activeTab === 'info'" class="space-y-4">
+          <div v-if="activeTab === 'info'" class="space-y-6">
+            <!-- Nombres -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Nombre -->
               <div>
-                <label for="edit_first_name" class="block mb-2 text-sm font-semibold text-gray-700">
-                  Nombre <span class="text-red-500">*</span>
-                </label>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Primer Nombre *</label>
                 <input 
+                  v-model="personaForm.primer_nombre" 
                   type="text" 
-                  id="edit_first_name" 
-                  v-model="formData.first_name"
-                  class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                  placeholder="Ingrese el nombre"
-                  required 
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
+                  :class="{'border-red-500': errors.primer_nombre}" 
+                  placeholder="Juan" 
                 />
-                <p v-if="errors.first_name" class="mt-1 text-sm text-red-600 font-medium">{{ errors.first_name }}</p>
+                <p v-if="errors.primer_nombre" class="text-red-600 text-xs mt-1">{{ errors.primer_nombre }}</p>
               </div>
-
-              <!-- Apellido -->
               <div>
-                <label for="edit_last_name" class="block mb-2 text-sm font-semibold text-gray-700">
-                  Apellido <span class="text-red-500">*</span>
-                </label>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Segundo Nombre</label>
                 <input 
+                  v-model="personaForm.segundo_nombre" 
                   type="text" 
-                  id="edit_last_name" 
-                  v-model="formData.last_name"
-                  class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                  placeholder="Ingrese el apellido"
-                  required 
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
+                  placeholder="Carlos (opcional)" 
                 />
-                <p v-if="errors.last_name" class="mt-1 text-sm text-red-600 font-medium">{{ errors.last_name }}</p>
               </div>
+            </div>
 
-              <!-- Email -->
+            <!-- Apellidos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label for="edit_email" class="block mb-2 text-sm font-semibold text-gray-700">
-                  Email <span class="text-red-500">*</span>
-                </label>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Primer Apellido *</label>
                 <input 
-                  type="email" 
-                  id="edit_email" 
-                  v-model="formData.email"
-                  class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                  placeholder="nombre@email.com"
-                  required 
+                  v-model="personaForm.primer_apellido" 
+                  type="text" 
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
+                  :class="{'border-red-500': errors.primer_apellido}" 
+                  placeholder="Pérez" 
                 />
-                <p v-if="errors.email" class="mt-1 text-sm text-red-600 font-medium">{{ errors.email }}</p>
+                <p v-if="errors.primer_apellido" class="text-red-600 text-xs mt-1">{{ errors.primer_apellido }}</p>
               </div>
-
-              <!-- Teléfono -->
               <div>
-                <label for="edit_phone_number" class="block mb-2 text-sm font-semibold text-gray-700">
-                  Teléfono
-                </label>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Segundo Apellido</label>
                 <input 
-                  type="tel" 
-                  id="edit_phone_number" 
-                  v-model="formData.phone_number"
-                  class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                  placeholder="+57 300 1234567"
+                  v-model="personaForm.segundo_apellido" 
+                  type="text" 
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
+                  placeholder="García (opcional)" 
                 />
               </div>
+            </div>
 
-              <!-- Región -->
+            <!-- Tipo Documento y Número -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label for="edit_region" class="block mb-2 text-sm font-semibold text-gray-700">
-                  Región
-                </label>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Tipo de Documento *</label>
                 <select 
-                  id="edit_region"
-                  v-model="formData.region"
-                  class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
+                  v-model="personaForm.tipo_documento" 
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
+                  :class="{'border-red-500': errors.tipo_documento}"
                 >
-                  <option value="">Seleccionar región</option>
-                  <option value="Antioquia">Antioquia</option>
-                  <option value="Santander">Santander</option>
-                  <option value="Nariño">Nariño</option>
-                  <option value="Huila">Huila</option>
-                  <option value="Cauca">Cauca</option>
+                  <option value="">Seleccionar...</option>
+                  <option v-for="tipo in tiposDocumento" :key="tipo.codigo" :value="tipo.codigo">{{ tipo.nombre }}</option>
+                </select>
+                <p v-if="errors.tipo_documento" class="text-red-600 text-xs mt-1">{{ errors.tipo_documento }}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Número de Documento *</label>
+                <input 
+                  v-model="personaForm.numero_documento" 
+                  type="text" 
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
+                  :class="{'border-red-500': errors.numero_documento}" 
+                  placeholder="1012345678" 
+                />
+                <p v-if="errors.numero_documento" class="text-red-600 text-xs mt-1">{{ errors.numero_documento }}</p>
+              </div>
+            </div>
+
+            <!-- Género y Fecha de Nacimiento -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Género *</label>
+                <select 
+                  v-model="personaForm.genero" 
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
+                  :class="{'border-red-500': errors.genero}"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option v-for="gen in generos" :key="gen.codigo" :value="gen.codigo">{{ gen.nombre }}</option>
+                </select>
+                <p v-if="errors.genero" class="text-red-600 text-xs mt-1">{{ errors.genero }}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                <input 
+                  type="date" 
+                  v-model="personaForm.fecha_nacimiento" 
+                  :max="maxBirthdate" 
+                  :min="minBirthdate" 
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
+                  :class="{'border-red-500': errors.fecha_nacimiento}" 
+                />
+                <p v-if="errors.fecha_nacimiento" class="text-red-600 text-xs mt-1">{{ errors.fecha_nacimiento }}</p>
+              </div>
+            </div>
+
+            <!-- Email y Teléfono -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+                <input 
+                  v-model="formData.email" 
+                  type="email" 
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
+                  :class="{'border-red-500': errors.email}" 
+                  placeholder="nombre@email.com" 
+                />
+                <p v-if="errors.email" class="text-red-600 text-xs mt-1">{{ errors.email }}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Teléfono *</label>
+                <input 
+                  v-model="personaForm.telefono" 
+                  type="tel" 
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
+                  :class="{'border-red-500': errors.telefono}" 
+                  placeholder="+57 300 123 4567" 
+                />
+                <p v-if="errors.telefono" class="text-red-600 text-xs mt-1">{{ errors.telefono }}</p>
+              </div>
+            </div>
+
+            <!-- Dirección -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Dirección</label>
+              <input 
+                v-model="personaForm.direccion" 
+                type="text" 
+                class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
+                placeholder="Calle 10 #5-20" 
+              />
+            </div>
+
+            <!-- Ubicación -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Departamento</label>
+                <select 
+                  v-model="personaForm.departamento" 
+                  @change="onDepartamentoChange" 
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option v-for="depto in departamentos" :key="depto.id" :value="depto.id">{{ depto.nombre }}</option>
                 </select>
               </div>
-
-              <!-- Municipio -->
               <div>
-                <label for="edit_municipality" class="block mb-2 text-sm font-semibold text-gray-700">
-                  Municipio
-                </label>
-                <input 
-                  type="text" 
-                  id="edit_municipality" 
-                  v-model="formData.municipality"
-                  class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200" 
-                  placeholder="Ingrese el municipio"
-                />
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Municipio</label>
+                <select 
+                  v-model="personaForm.municipio" 
+                  :disabled="!personaForm.departamento" 
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option v-for="mun in municipios" :key="mun.id" :value="mun.id">{{ mun.nombre }}</option>
+                </select>
               </div>
             </div>
           </div>
 
           <!-- Tab Content: Fincas -->
           <div v-else-if="activeTab === 'fincas'">
-            <!-- Lista de fincas existentes -->
             <div class="mb-6">
               <div class="flex items-center justify-between mb-4">
                 <h4 class="text-lg font-bold text-gray-900">Fincas Registradas</h4>
                 <button 
                   @click="showCreateFinca = !showCreateFinca"
                   class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-all duration-200"
+                  type="button"
                 >
                   <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -285,6 +356,7 @@
                   <button 
                     @click="showCreateFinca = false; resetNewFinca()"
                     class="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                    type="button"
                   >
                     Cancelar
                   </button>
@@ -292,6 +364,7 @@
                     @click="handleCreateFinca"
                     :disabled="isCreatingFinca"
                     class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    type="button"
                   >
                     <span v-if="!isCreatingFinca">Crear Finca</span>
                     <span v-else class="flex items-center">
@@ -308,8 +381,8 @@
               <!-- Lista de fincas -->
               <div v-if="fincasList.length > 0" class="space-y-3">
                 <div 
-                  v-for="(finca, index) in fincasList" 
-                  :key="index"
+                  v-for="finca in fincasList" 
+                  :key="finca.id || finca.nombre"
                   class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200"
                 >
                   <div class="flex items-start justify-between">
@@ -332,7 +405,10 @@
                           </svg>
                           {{ finca.hectareas }} hectáreas
                         </span>
-                        <span :class="finca.activa ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" class="px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5">
+                        <span 
+                          :class="finca.activa ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" 
+                          class="px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5"
+                        >
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                           </svg>
@@ -394,283 +470,346 @@
   </div>
 </template>
 
-<script>
-import { ref, reactive, watch } from 'vue';
-import Swal from 'sweetalert2';
-import { createFinca, getFincas } from '@/services/fincasApi';
-import authApi from '@/services/authApi';
+<script setup>
+// 1. Vue core
+import { ref, reactive, watch, computed } from 'vue'
 
-export default {
-  name: 'EditFarmerModal',
-  props: {
-    farmer: {
-      type: Object,
-      default: () => ({
-        id: null,
-        name: '',
-        email: '',
-        first_name: '',
-        last_name: '',
-        phone_number: '',
-        region: '',
-        municipality: '',
-        fincas: []
-      })
-    }
-  },
-  emits: ['farmer-updated', 'close'],
-  setup(props, { emit }) {
-    const modalContainer = ref(null);
-    const isSubmitting = ref(false);
-    const isCreatingFinca = ref(false);
-    const activeTab = ref('info');
-    const showCreateFinca = ref(false);
-    const fincasList = ref([]); // Estado local para las fincas
+// 2. Services
+import { createFinca, getFincas } from '@/services/fincasApi'
+import authApi from '@/services/authApi'
+import { personasApi } from '@/services'
 
-    const formData = reactive({
+// 3. Composables
+import { useCatalogos } from '@/composables/useCatalogos'
+import { useFormValidation } from '@/composables/useFormValidation'
+import { useBirthdateRange } from '@/composables/useBirthdateRange'
+import { useModal } from '@/composables/useModal'
+
+// 4. Utils
+import Swal from 'sweetalert2'
+
+// Props
+const props = defineProps({
+  farmer: {
+    type: Object,
+    default: () => ({
+      id: null,
+      name: '',
+      email: '',
       first_name: '',
       last_name: '',
-      email: '',
       phone_number: '',
       region: '',
-      municipality: ''
-    });
-
-    const newFinca = reactive({
-      nombre: '',
-      municipio: '',
-      departamento: '',
-      hectareas: '',
-      ubicacion: '',
-      coordenadas_lat: null,
-      coordenadas_lng: null
-    });
-
-    const errors = reactive({});
-
-    // Cargar datos del agricultor al abrir el modal
-    watch(() => props.farmer, (newFarmer) => {
-      if (newFarmer && newFarmer.id) {
-        // Extraer first_name y last_name del name
-        const nameParts = newFarmer.name?.split(' ') || [];
-        formData.first_name = nameParts[0] || '';
-        formData.last_name = nameParts.slice(1).join(' ') || '';
-        formData.email = newFarmer.email || '';
-        formData.phone_number = newFarmer.phone_number || '';
-        formData.region = newFarmer.region || '';
-        formData.municipality = newFarmer.municipality || '';
-        
-        // Cargar las fincas del agricultor desde el backend
-        loadFarmersFincas(newFarmer.id);
-      }
-    }, { immediate: true });
-    
-    // Función para cargar las fincas del agricultor
-    const loadFarmersFincas = async (agricultorId) => {
-      try {
-        const response = await getFincas({ agricultor: agricultorId });
-        console.log('✅ [EditFarmerModal] Fincas cargadas:', response.results);
-        
-        // Actualizar el estado local de fincas
-        fincasList.value = response.results || [];
-      } catch (error) {
-        console.error('❌ [EditFarmerModal] Error cargando fincas:', error);
-        fincasList.value = [];
-      }
-    };
-
-    const resetNewFinca = () => {
-      newFinca.nombre = '';
-      newFinca.municipio = '';
-      newFinca.departamento = '';
-      newFinca.hectareas = '';
-      newFinca.ubicacion = '';
-      newFinca.coordenadas_lat = null;
-      newFinca.coordenadas_lng = null;
-    };
-
-    const handleCreateFinca = async () => {
-      // Validar campos requeridos
-      if (!newFinca.nombre || !newFinca.municipio || !newFinca.departamento || !newFinca.hectareas) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Por favor completa todos los campos requeridos',
-          confirmButtonColor: '#ef4444'
-        });
-        return;
-      }
-
-      isCreatingFinca.value = true;
-
-      try {
-        // Obtener el ID del agricultor del prop farmer
-        const agricultorId = props.farmer.id;
-
-        const fincaData = {
-          nombre: newFinca.nombre,
-          municipio: newFinca.municipio,
-          departamento: newFinca.departamento,
-          hectareas: parseFloat(newFinca.hectareas),
-          ubicacion: newFinca.ubicacion || '',
-          agricultor: props.farmer.id,  // Incluir el ID del agricultor
-          coordenadas_lat: newFinca.coordenadas_lat || null,
-          coordenadas_lng: newFinca.coordenadas_lng || null
-        };
-
-        console.log('📤 [EditFarmerModal] Creando finca:', fincaData);
-        console.log('📤 [EditFarmerModal] Agricultor ID:', props.farmer.id);
-
-        // Crear la finca asignando el agricultor al que pertenece la finca
-        const createdFinca = await createFinca(fincaData);
-        console.log('✅ [EditFarmerModal] Finca creada:', createdFinca);
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Finca creada',
-          text: 'La finca ha sido registrada exitosamente',
-          confirmButtonColor: '#10b981'
-        });
-
-        // Reset form
-        resetNewFinca();
-        showCreateFinca.value = false;
-
-        // Recargar las fincas del agricultor
-        await loadFarmersFincas(props.farmer.id);
-
-        // Emit event to reload data
-        emit('farmer-updated', { type: 'finca-created' });
-
-      } catch (error) {
-        console.error('Error creando finca:', error);
-        
-        let errorMessage = 'Error al crear la finca';
-        if (error.response?.data) {
-          const data = error.response.data;
-          errorMessage = data.message || data.error || errorMessage;
-          if (data.details) {
-            const details = Object.entries(data.details)
-              .map(([key, value]) => `${key}: ${Array.isArray(value) ? value[0] : value}`)
-              .join(', ');
-            if (details) {
-              errorMessage += `\n\nDetalles: ${details}`;
-            }
-          }
-        }
-
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          html: errorMessage.replace(/\n/g, '<br>'),
-          confirmButtonColor: '#ef4444'
-        });
-      } finally {
-        isCreatingFinca.value = false;
-      }
-    };
-
-    const handleUpdate = async () => {
-      // Validar campos requeridos
-      if (!formData.first_name || !formData.last_name || !formData.email) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Por favor completa todos los campos requeridos',
-          confirmButtonColor: '#ef4444'
-        });
-        return;
-      }
-
-      isSubmitting.value = true;
-
-      try {
-        const updateData = {
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          email: formData.email
-        };
-
-        console.log('📤 [EditFarmerModal] Actualizando agricultor:', props.farmer.id, updateData);
-
-        // Llamar al endpoint de actualización de usuario
-        const response = await authApi.updateUser(props.farmer.id, updateData);
-        
-        console.log('✅ [EditFarmerModal] Respuesta recibida:', response);
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Agricultor actualizado',
-          text: 'La información del agricultor ha sido actualizada exitosamente',
-          confirmButtonColor: '#10b981'
-        });
-
-        emit('farmer-updated', { type: 'user-updated', user: response.user });
-        closeModal();
-      } catch (error) {
-        console.error('Error actualizando agricultor:', error);
-        
-        let errorMessage = 'Error al actualizar el agricultor';
-        if (error.response?.data) {
-          const data = error.response.data;
-          errorMessage = data.message || data.error || errorMessage;
-          if (data.details) {
-            const details = Object.entries(data.details)
-              .map(([key, value]) => `${key}: ${Array.isArray(value) ? value[0] : value}`)
-              .join(', ');
-            if (details) {
-              errorMessage += `\n\nDetalles: ${details}`;
-            }
-          }
-        }
-
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          html: errorMessage.replace(/\n/g, '<br>'),
-          confirmButtonColor: '#ef4444'
-        });
-      } finally {
-        isSubmitting.value = false;
-      }
-    };
-
-    const closeModal = () => {
-      if (modalContainer.value) {
-        const modalElement = modalContainer.value;
-        modalElement.classList.add('hidden');
-        modalElement.setAttribute('aria-hidden', 'true');
-      }
-      showCreateFinca.value = false;
-      resetNewFinca();
-      emit('close');
-    };
-
-    const openModal = () => {
-      if (modalContainer.value) {
-        const modalElement = modalContainer.value;
-        modalElement.classList.remove('hidden');
-        modalElement.setAttribute('aria-hidden', 'false');
-      }
-    };
-
-    return {
-      modalContainer,
-      formData,
-      newFinca,
-      errors,
-      isSubmitting,
-      isCreatingFinca,
-      activeTab,
-      showCreateFinca,
-      fincasList,
-      resetNewFinca,
-      handleCreateFinca,
-      handleUpdate,
-      closeModal,
-      openModal
-    };
+      municipality: '',
+      fincas: []
+    })
   }
-};
+})
+
+// Emits
+const emit = defineEmits(['farmer-updated', 'close'])
+
+// Composables
+const { 
+  tiposDocumento, 
+  generos, 
+  departamentos, 
+  municipios, 
+  isLoadingCatalogos,
+  cargarCatalogos,
+  cargarMunicipios,
+  limpiarMunicipios
+} = useCatalogos()
+
+const { errors, isValidEmail, isValidPhone, isValidDocument, clearErrors } = useFormValidation()
+const { maxBirthdate, minBirthdate } = useBirthdateRange()
+const { modalContainer, openModal: openModalBase, closeModal: closeModalBase } = useModal('edit-farmer-modal')
+
+// State
+const isSubmitting = ref(false)
+const isCreatingFinca = ref(false)
+const activeTab = ref('info')
+const showCreateFinca = ref(false)
+const fincasList = ref([])
+
+const formData = reactive({
+  first_name: '',
+  last_name: '',
+  email: '',
+  phone_number: '',
+  region: '',
+  municipality: ''
+})
+
+const personaForm = reactive({
+  primer_nombre: '',
+  segundo_nombre: '',
+  primer_apellido: '',
+  segundo_apellido: '',
+  tipo_documento: '',
+  numero_documento: '',
+  genero: '',
+  fecha_nacimiento: '',
+  telefono: '',
+  direccion: '',
+  departamento: null,
+  municipio: null
+})
+
+const newFinca = reactive({
+  nombre: '',
+  municipio: '',
+  departamento: '',
+  hectareas: '',
+  ubicacion: '',
+  coordenadas_lat: null,
+  coordenadas_lng: null
+})
+
+// Load farmer data when prop changes
+watch(() => props.farmer, async (newFarmer) => {
+  if (newFarmer && newFarmer.id) {
+    // Extract first_name and last_name from name
+    const nameParts = newFarmer.name?.split(' ') || []
+    formData.first_name = nameParts[0] || ''
+    formData.last_name = nameParts.slice(1).join(' ') || ''
+    formData.email = newFarmer.email || ''
+    formData.phone_number = newFarmer.phone_number || ''
+    formData.region = newFarmer.region || ''
+    formData.municipality = newFarmer.municipality || ''
+    
+    // Load fincas
+    await loadFarmersFincas(newFarmer.id)
+
+    // Load persona data
+    try {
+      const personaData = await personasApi.getPersonaByUserId(newFarmer.id)
+      personaForm.primer_nombre = personaData.primer_nombre || ''
+      personaForm.segundo_nombre = personaData.segundo_nombre || ''
+      personaForm.primer_apellido = personaData.primer_apellido || ''
+      personaForm.segundo_apellido = personaData.segundo_apellido || ''
+      personaForm.tipo_documento = personaData.tipo_documento_info?.codigo || ''
+      personaForm.numero_documento = personaData.numero_documento || ''
+      personaForm.genero = personaData.genero_info?.codigo || ''
+      personaForm.fecha_nacimiento = personaData.fecha_nacimiento || ''
+      personaForm.telefono = personaData.telefono || ''
+      personaForm.direccion = personaData.direccion || ''
+      personaForm.departamento = personaData.departamento_info?.id || null
+      personaForm.municipio = personaData.municipio_info?.id || null
+
+      // Load municipios if there's a departamento
+      if (personaForm.departamento) {
+        await onDepartamentoChange()
+      }
+    } catch (e) {
+      console.warn('Persona no encontrada para el usuario, se podrá crear al guardar')
+    }
+  }
+}, { immediate: true })
+
+// Functions
+const loadFarmersFincas = async (agricultorId) => {
+  try {
+    const response = await getFincas({ agricultor: agricultorId })
+    fincasList.value = response.results || []
+  } catch (error) {
+    console.error('Error cargando fincas:', error)
+    fincasList.value = []
+  }
+}
+
+const resetNewFinca = () => {
+  newFinca.nombre = ''
+  newFinca.municipio = ''
+  newFinca.departamento = ''
+  newFinca.hectareas = ''
+  newFinca.ubicacion = ''
+  newFinca.coordenadas_lat = null
+  newFinca.coordenadas_lng = null
+}
+
+const handleCreateFinca = async () => {
+  // Validate required fields
+  if (!newFinca.nombre || !newFinca.municipio || !newFinca.departamento || !newFinca.hectareas) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Por favor completa todos los campos requeridos',
+      confirmButtonColor: '#ef4444'
+    })
+    return
+  }
+
+  isCreatingFinca.value = true
+
+  try {
+    const fincaData = {
+      nombre: newFinca.nombre,
+      municipio: newFinca.municipio,
+      departamento: newFinca.departamento,
+      hectareas: parseFloat(newFinca.hectareas),
+      ubicacion: newFinca.ubicacion || '',
+      agricultor: props.farmer.id,
+      coordenadas_lat: newFinca.coordenadas_lat || null,
+      coordenadas_lng: newFinca.coordenadas_lng || null
+    }
+
+    await createFinca(fincaData)
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Finca creada',
+      text: 'La finca ha sido registrada exitosamente',
+      confirmButtonColor: '#10b981'
+    })
+
+    resetNewFinca()
+    showCreateFinca.value = false
+
+    // Reload fincas
+    await loadFarmersFincas(props.farmer.id)
+
+    emit('farmer-updated', { type: 'finca-created' })
+
+  } catch (error) {
+    console.error('Error creando finca:', error)
+    
+    let errorMessage = 'Error al crear la finca'
+    if (error.response?.data) {
+      const data = error.response.data
+      errorMessage = data.message || data.error || errorMessage
+      if (data.details) {
+        const details = Object.entries(data.details)
+          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value[0] : value}`)
+          .join(', ')
+        if (details) {
+          errorMessage += `\n\nDetalles: ${details}`
+        }
+      }
+    }
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      html: errorMessage.replace(/\n/g, '<br>'),
+      confirmButtonColor: '#ef4444'
+    })
+  } finally {
+    isCreatingFinca.value = false
+  }
+}
+
+const handleUpdate = async () => {
+  // Validate required fields
+  clearErrors()
+  
+  if (!formData.first_name || !formData.last_name || !formData.email) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Por favor completa todos los campos requeridos',
+      confirmButtonColor: '#ef4444'
+    })
+    return
+  }
+
+  isSubmitting.value = true
+
+  try {
+    const updateData = {
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      email: formData.email
+    }
+
+    const response = await authApi.updateUser(props.farmer.id, updateData)
+
+    // Update/create persona data
+    const personaPayload = {
+      primer_nombre: personaForm.primer_nombre,
+      segundo_nombre: personaForm.segundo_nombre || '',
+      primer_apellido: personaForm.primer_apellido,
+      segundo_apellido: personaForm.segundo_apellido || '',
+      tipo_documento: personaForm.tipo_documento,
+      numero_documento: personaForm.numero_documento,
+      genero: personaForm.genero,
+      fecha_nacimiento: personaForm.fecha_nacimiento || null,
+      telefono: personaForm.telefono,
+      direccion: personaForm.direccion || '',
+      departamento: personaForm.departamento || null,
+      municipio: personaForm.municipio || null
+    }
+    
+    if (Object.keys(personaPayload).length > 0) {
+      try {
+        await personasApi.updatePersonaByUserId(props.farmer.id, personaPayload)
+      } catch (e) {
+        console.warn('Error actualizando persona (continuando):', e)
+      }
+    }
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Agricultor actualizado',
+      text: 'La información del agricultor ha sido actualizada exitosamente',
+      confirmButtonColor: '#10b981'
+    })
+
+    emit('farmer-updated', { type: 'user-updated', user: response.user })
+    closeModal()
+  } catch (error) {
+    console.error('Error actualizando agricultor:', error)
+    
+    let errorMessage = 'Error al actualizar el agricultor'
+    if (error.response?.data) {
+      const data = error.response.data
+      errorMessage = data.message || data.error || errorMessage
+      if (data.details) {
+        const details = Object.entries(data.details)
+          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value[0] : value}`)
+          .join(', ')
+        if (details) {
+          errorMessage += `\n\nDetalles: ${details}`
+        }
+      }
+    }
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      html: errorMessage.replace(/\n/g, '<br>'),
+      confirmButtonColor: '#ef4444'
+    })
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+const onDepartamentoChange = async () => {
+  personaForm.municipio = null
+  limpiarMunicipios()
+  if (personaForm.departamento) {
+    await cargarMunicipios(personaForm.departamento)
+  }
+}
+
+const closeModal = () => {
+  closeModalBase()
+  showCreateFinca.value = false
+  resetNewFinca()
+  emit('close')
+}
+
+const openModal = async () => {
+  openModalBase()
+  await cargarCatalogos()
+}
+
+defineExpose({
+  openModal
+})
 </script>
 
+<style scoped>
+/* Solo estilos que no están en Tailwind si es necesario */
+</style>

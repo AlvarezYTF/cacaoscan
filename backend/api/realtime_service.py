@@ -1,4 +1,4 @@
-"""
+﻿"""
 Servicio para notificaciones en tiempo real usando WebSockets.
 """
 import json
@@ -9,14 +9,22 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django.conf import settings
 
-from .models import Notification, ActivityLog, LoginHistory
+from .models import LoginHistory
+try:
+    from notifications.models import Notification
+except ImportError:
+    Notification = None
+try:
+    from audit.models import ActivityLog
+except ImportError:
+    ActivityLog = None
 
 logger = logging.getLogger("cacaoscan.websockets")
 
 
 class RealtimeNotificationService:
     """
-    Servicio para enviar notificaciones en tiempo real a través de WebSockets.
+    Servicio para enviar notificaciones en tiempo real a travÃ©s de WebSockets.
     """
     
     def __init__(self):
@@ -24,11 +32,11 @@ class RealtimeNotificationService:
     
     def send_notification_to_user(self, user_id, notification_data):
         """
-        Enviar notificación a un usuario específico.
+        Enviar notificaciÃ³n a un usuario especÃ­fico.
         
         Args:
             user_id (int): ID del usuario
-            notification_data (dict): Datos de la notificación
+            notification_data (dict): Datos de la notificaciÃ³n
         """
         if not settings.REALTIME_NOTIFICATIONS_ENABLED:
             return
@@ -44,17 +52,17 @@ class RealtimeNotificationService:
                 }
             )
             
-            logger.info(f"Notificación enviada a usuario {user_id}: {notification_data.get('titulo', 'Sin título')}")
+            logger.info(f"NotificaciÃ³n enviada a usuario {user_id}: {notification_data.get('titulo', 'Sin tÃ­tulo')}")
             
         except Exception as e:
-            logger.error(f"Error enviando notificación a usuario {user_id}: {e}")
+            logger.error(f"Error enviando notificaciÃ³n a usuario {user_id}: {e}")
     
     def send_notification_to_all_users(self, notification_data):
         """
-        Enviar notificación a todos los usuarios conectados.
+        Enviar notificaciÃ³n a todos los usuarios conectados.
         
         Args:
-            notification_data (dict): Datos de la notificación
+            notification_data (dict): Datos de la notificaciÃ³n
         """
         if not settings.NOTIFICATION_BROADCAST_ENABLED:
             return
@@ -66,17 +74,17 @@ class RealtimeNotificationService:
             for user in active_users:
                 self.send_notification_to_user(user.id, notification_data)
             
-            logger.info(f"Notificación broadcast enviada a {active_users.count()} usuarios")
+            logger.info(f"NotificaciÃ³n broadcast enviada a {active_users.count()} usuarios")
             
         except Exception as e:
-            logger.error(f"Error enviando notificación broadcast: {e}")
+            logger.error(f"Error enviando notificaciÃ³n broadcast: {e}")
     
     def send_notification_to_admins(self, notification_data):
         """
-        Enviar notificación solo a administradores.
+        Enviar notificaciÃ³n solo a administradores.
         
         Args:
-            notification_data (dict): Datos de la notificación
+            notification_data (dict): Datos de la notificaciÃ³n
         """
         try:
             admin_users = User.objects.filter(
@@ -87,18 +95,21 @@ class RealtimeNotificationService:
             for admin in admin_users:
                 self.send_notification_to_user(admin.id, notification_data)
             
-            logger.info(f"Notificación enviada a {admin_users.count()} administradores")
+            logger.info(f"NotificaciÃ³n enviada a {admin_users.count()} administradores")
             
         except Exception as e:
-            logger.error(f"Error enviando notificación a administradores: {e}")
+            logger.error(f"Error enviando notificaciÃ³n a administradores: {e}")
     
     def update_notification_stats(self, user_id):
         """
-        Actualizar estadísticas de notificaciones para un usuario.
+        Actualizar estadÃ­sticas de notificaciones para un usuario.
         
         Args:
             user_id (int): ID del usuario
         """
+        if Notification is None:
+            logger.debug("Servicio de notificaciones no disponible; se omite actualizaciÃ³n de estadÃ­sticas")
+            return
         try:
             user = User.objects.get(id=user_id)
             
@@ -128,13 +139,13 @@ class RealtimeNotificationService:
             )
             
         except User.DoesNotExist:
-            logger.error(f"Usuario {user_id} no encontrado para actualizar estadísticas")
+            logger.error(f"Usuario {user_id} no encontrado para actualizar estadÃ­sticas")
         except Exception as e:
-            logger.error(f"Error actualizando estadísticas de notificaciones: {e}")
+            logger.error(f"Error actualizando estadÃ­sticas de notificaciones: {e}")
     
     def send_activity_log(self, activity_data):
         """
-        Enviar nueva actividad de auditoría a administradores.
+        Enviar nueva actividad de auditorÃ­a a administradores.
         
         Args:
             activity_data (dict): Datos de la actividad
@@ -156,10 +167,10 @@ class RealtimeNotificationService:
                     }
                 )
             
-            logger.info(f"Actividad de auditoría enviada a {admin_users.count()} administradores")
+            logger.info(f"Actividad de auditorÃ­a enviada a {admin_users.count()} administradores")
             
         except Exception as e:
-            logger.error(f"Error enviando actividad de auditoría: {e}")
+            logger.error(f"Error enviando actividad de auditorÃ­a: {e}")
     
     def send_login_activity(self, login_data):
         """
@@ -192,7 +203,7 @@ class RealtimeNotificationService:
     
     def send_system_status_update(self, status_data):
         """
-        Enviar actualización de estado del sistema.
+        Enviar actualizaciÃ³n de estado del sistema.
         
         Args:
             status_data (dict): Datos del estado del sistema
@@ -206,10 +217,10 @@ class RealtimeNotificationService:
                 }
             )
             
-            logger.info("Actualización de estado del sistema enviada")
+            logger.info("ActualizaciÃ³n de estado del sistema enviada")
             
         except Exception as e:
-            logger.error(f"Error enviando actualización de estado del sistema: {e}")
+            logger.error(f"Error enviando actualizaciÃ³n de estado del sistema: {e}")
     
     def send_system_alert(self, alert_data):
         """
@@ -228,7 +239,7 @@ class RealtimeNotificationService:
                 }
             )
             
-            # También enviar como notificación a administradores
+            # TambiÃ©n enviar como notificaciÃ³n a administradores
             self.send_notification_to_admins({
                 'tipo': 'error',
                 'titulo': alert_data.get('title', 'Alerta del Sistema'),
@@ -236,26 +247,29 @@ class RealtimeNotificationService:
                 'datos_extra': alert_data
             })
             
-            logger.info(f"Alerta del sistema enviada: {alert_data.get('title', 'Sin título')}")
+            logger.info(f"Alerta del sistema enviada: {alert_data.get('title', 'Sin tÃ­tulo')}")
             
         except Exception as e:
             logger.error(f"Error enviando alerta del sistema: {e}")
     
     def create_and_send_notification(self, user_id, tipo, titulo, mensaje, datos_extra=None):
         """
-        Crear notificación en la base de datos y enviarla en tiempo real.
+        Crear notificaciÃ³n en la base de datos y enviarla en tiempo real.
         
         Args:
             user_id (int): ID del usuario
-            tipo (str): Tipo de notificación
-            titulo (str): Título de la notificación
-            mensaje (str): Mensaje de la notificación
+            tipo (str): Tipo de notificaciÃ³n
+            titulo (str): TÃ­tulo de la notificaciÃ³n
+            mensaje (str): Mensaje de la notificaciÃ³n
             datos_extra (dict): Datos adicionales
         """
+        if Notification is None:
+            logger.debug("Servicio de notificaciones no disponible; no se crea notificaciÃ³n")
+            return None
         try:
             user = User.objects.get(id=user_id)
             
-            # Crear notificación en la base de datos
+            # Crear notificaciÃ³n en la base de datos
             notification = Notification.create_notification(
                 user=user,
                 tipo=tipo,
@@ -276,20 +290,22 @@ class RealtimeNotificationService:
             
             self.send_notification_to_user(user_id, notification_data)
             
-            # Actualizar estadísticas
+            # Actualizar estadÃ­sticas
             self.update_notification_stats(user_id)
             
-            logger.info(f"Notificación creada y enviada: {titulo}")
+            logger.info(f"NotificaciÃ³n creada y enviada: {titulo}")
             
             return notification
             
         except User.DoesNotExist:
-            logger.error(f"Usuario {user_id} no encontrado para crear notificación")
+            logger.error(f"Usuario {user_id} no encontrado para crear notificaciÃ³n")
             return None
         except Exception as e:
-            logger.error(f"Error creando y enviando notificación: {e}")
+            logger.error(f"Error creando y enviando notificaciÃ³n: {e}")
             return None
 
 
 # Instancia global del servicio
 realtime_service = RealtimeNotificationService()
+
+

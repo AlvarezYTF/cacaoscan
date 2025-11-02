@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests para la API REST de CacaoScan.
 """
 import pytest
@@ -16,10 +16,10 @@ from ml.prediction.predict import CacaoPredictor
 
 
 class TestScanMeasureAPI(TestCase):
-    """Tests para el endpoint de medición."""
+    """Tests para el endpoint de mediciÃ³n."""
     
     def setUp(self):
-        """Configuración antes de cada test."""
+        """ConfiguraciÃ³n antes de cada test."""
         self.client = APIClient()
         self.url = reverse('scan-measure')
         
@@ -38,7 +38,7 @@ class TestScanMeasureAPI(TestCase):
         self.assertIn('Campo "image" requerido', response.data['error'])
     
     def test_scan_measure_invalid_file_type(self):
-        """Test con tipo de archivo inválido."""
+        """Test con tipo de archivo invÃ¡lido."""
         # Crear archivo de texto
         text_file = io.StringIO("This is not an image")
         
@@ -67,7 +67,7 @@ class TestScanMeasureAPI(TestCase):
         self.assertIn('demasiado grande', response.data['error'])
     
     def test_scan_measure_invalid_content_type(self):
-        """Test con tipo de contenido inválido."""
+        """Test con tipo de contenido invÃ¡lido."""
         invalid_file = Mock()
         invalid_file.size = 1024
         invalid_file.name = 'test.txt'
@@ -82,7 +82,7 @@ class TestScanMeasureAPI(TestCase):
         self.assertIn('error', response.data)
     
     def test_scan_measure_invalid_filename(self):
-        """Test con nombre de archivo inválido."""
+        """Test con nombre de archivo invÃ¡lido."""
         invalid_file = Mock()
         invalid_file.size = 1024
         invalid_file.name = 'x' * 300  # Nombre muy largo
@@ -98,7 +98,7 @@ class TestScanMeasureAPI(TestCase):
     
     @patch('api.views.get_predictor')
     def test_scan_measure_models_not_loaded(self, mock_get_predictor):
-        """Test cuando los modelos no están cargados."""
+        """Test cuando los modelos no estÃ¡n cargados."""
         # Mock predictor sin modelos cargados
         mock_predictor = Mock()
         mock_predictor.models_loaded = False
@@ -114,7 +114,7 @@ class TestScanMeasureAPI(TestCase):
     
     @patch('api.views.get_predictor')
     def test_scan_measure_success(self, mock_get_predictor):
-        """Test de predicción exitosa."""
+        """Test de predicciÃ³n exitosa."""
         # Mock predictor con modelos cargados
         mock_predictor = Mock()
         mock_predictor.models_loaded = True
@@ -170,11 +170,11 @@ class TestScanMeasureAPI(TestCase):
     
     @patch('api.views.get_predictor')
     def test_scan_measure_prediction_error(self, mock_get_predictor):
-        """Test con error en predicción."""
-        # Mock predictor que lanza excepción
+        """Test con error en predicciÃ³n."""
+        # Mock predictor que lanza excepciÃ³n
         mock_predictor = Mock()
         mock_predictor.models_loaded = True
-        mock_predictor.predict.side_effect = Exception("Error de predicción")
+        mock_predictor.predict.side_effect = Exception("Error de predicciÃ³n")
         mock_get_predictor.return_value = mock_predictor
         
         response = self.client.post(self.url, {
@@ -189,13 +189,13 @@ class TestModelsStatusAPI(TestCase):
     """Tests para el endpoint de estado de modelos."""
     
     def setUp(self):
-        """Configuración antes de cada test."""
+        """ConfiguraciÃ³n antes de cada test."""
         self.client = APIClient()
         self.url = reverse('models-status')
     
     @patch('api.views.get_predictor')
     def test_models_status_loaded(self, mock_get_predictor):
-        """Test cuando los modelos están cargados."""
+        """Test cuando los modelos estÃ¡n cargados."""
         # Mock predictor con modelos cargados
         mock_predictor = Mock()
         mock_predictor.get_model_info.return_value = {
@@ -222,14 +222,14 @@ class TestModelsStatusAPI(TestCase):
         for field in expected_fields:
             self.assertIn(field, response.data)
         
-        # Verificar que todos los modelos están cargados
+        # Verificar que todos los modelos estÃ¡n cargados
         regression_models = response.data['regression_models']
         for target in ['alto', 'ancho', 'grosor', 'peso']:
             self.assertEqual(regression_models[target], 'loaded')
     
     @patch('api.views.get_predictor')
     def test_models_status_not_loaded(self, mock_get_predictor):
-        """Test cuando los modelos no están cargados."""
+        """Test cuando los modelos no estÃ¡n cargados."""
         # Mock predictor sin modelos cargados
         mock_predictor = Mock()
         mock_predictor.get_model_info.return_value = {
@@ -242,7 +242,7 @@ class TestModelsStatusAPI(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['status'], 'not_loaded')
         
-        # Verificar que todos los modelos están marcados como no cargados
+        # Verificar que todos los modelos estÃ¡n marcados como no cargados
         regression_models = response.data['regression_models']
         for target in ['alto', 'ancho', 'grosor', 'peso']:
             self.assertEqual(regression_models[target], 'not_loaded')
@@ -262,7 +262,7 @@ class TestLoadModelsAPI(TestCase):
     """Tests para el endpoint de carga de modelos."""
     
     def setUp(self):
-        """Configuración antes de cada test."""
+        """ConfiguraciÃ³n antes de cada test."""
         self.client = APIClient()
         self.url = reverse('load-models')
     
@@ -290,7 +290,7 @@ class TestLoadModelsAPI(TestCase):
     
     @patch('api.views.load_artifacts')
     def test_load_models_exception(self, mock_load_artifacts):
-        """Test con excepción en carga de modelos."""
+        """Test con excepciÃ³n en carga de modelos."""
         mock_load_artifacts.side_effect = Exception("Error de carga")
         
         response = self.client.post(self.url)
@@ -301,17 +301,17 @@ class TestLoadModelsAPI(TestCase):
 
 
 class TestDatasetValidationAPI(TestCase):
-    """Tests para el endpoint de validación de dataset."""
+    """Tests para el endpoint de validaciÃ³n de dataset."""
     
     def setUp(self):
-        """Configuración antes de cada test."""
+        """ConfiguraciÃ³n antes de cada test."""
         self.client = APIClient()
         self.url = reverse('dataset-validation')
     
     @patch('api.views.CacaoDatasetLoader')
     def test_dataset_validation_success(self, mock_loader_class):
-        """Test de validación exitosa del dataset."""
-        # Mock loader con datos válidos
+        """Test de validaciÃ³n exitosa del dataset."""
+        # Mock loader con datos vÃ¡lidos
         mock_loader = Mock()
         mock_loader.get_dataset_stats.return_value = {
             'total_records': 100,
@@ -332,11 +332,11 @@ class TestDatasetValidationAPI(TestCase):
             self.assertIn(field, response.data)
         
         self.assertEqual(response.data['status'], 'success')
-        self.assertFalse(response.data['valid'])  # Hay imágenes faltantes
+        self.assertFalse(response.data['valid'])  # Hay imÃ¡genes faltantes
     
     @patch('api.views.CacaoDatasetLoader')
     def test_dataset_validation_error(self, mock_loader_class):
-        """Test con error en validación del dataset."""
+        """Test con error en validaciÃ³n del dataset."""
         mock_loader_class.side_effect = Exception("Error de dataset")
         
         response = self.client.get(self.url)
@@ -347,10 +347,10 @@ class TestDatasetValidationAPI(TestCase):
 
 
 class TestAPIIntegration(TestCase):
-    """Tests de integración para la API."""
+    """Tests de integraciÃ³n para la API."""
     
     def setUp(self):
-        """Configuración antes de cada test."""
+        """ConfiguraciÃ³n antes de cada test."""
         self.client = APIClient()
     
     def test_api_endpoints_exist(self):
@@ -370,10 +370,10 @@ class TestAPIIntegration(TestCase):
             self.assertNotEqual(response.status_code, 404, f"Endpoint {endpoint} no encontrado")
     
     def test_cors_headers(self):
-        """Test que los headers CORS están presentes."""
+        """Test que los headers CORS estÃ¡n presentes."""
         response = self.client.get(reverse('models-status'))
         
-        # Verificar que CORS está configurado
+        # Verificar que CORS estÃ¡ configurado
         self.assertIn('Access-Control-Allow-Origin', response)
     
     def test_content_type_json(self):
@@ -387,14 +387,14 @@ class TestAPIErrorHandling(TestCase):
     """Tests para manejo de errores en la API."""
     
     def setUp(self):
-        """Configuración antes de cada test."""
+        """ConfiguraciÃ³n antes de cada test."""
         self.client = APIClient()
     
     def test_invalid_json_response_format(self):
         """Test que las respuestas de error siguen el formato JSON correcto."""
         response = self.client.post(reverse('scan-measure'))
         
-        # Debe devolver JSON válido
+        # Debe devolver JSON vÃ¡lido
         self.assertEqual(response['Content-Type'], 'application/json')
         
         # Debe tener campos de error
@@ -402,11 +402,13 @@ class TestAPIErrorHandling(TestCase):
         self.assertIn('status', response.data)
     
     def test_error_status_codes(self):
-        """Test que se devuelven códigos de estado HTTP correctos."""
+        """Test que se devuelven cÃ³digos de estado HTTP correctos."""
         # 400 Bad Request
         response = self.client.post(reverse('scan-measure'))
         self.assertEqual(response.status_code, 400)
         
-        # 200 OK para endpoints válidos
+        # 200 OK para endpoints vÃ¡lidos
         response = self.client.get(reverse('models-status'))
         self.assertIn(response.status_code, [200, 500])  # 500 si hay error interno
+
+

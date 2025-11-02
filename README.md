@@ -1,134 +1,211 @@
-# 🌱 CacaoScan - Sistema de Control de Calidad del Cacao
+# 🌱 CacaoScan — Plataforma de Análisis Digital de Granos de Cacao
 
-Plataforma completa para el análisis y gestión de calidad de granos de cacao mediante inteligencia artificial.
+**CacaoScan** es un sistema web desarrollado por aprendices del **SENA (Tecnólogo ADSO)** que permite registrar, analizar y gestionar información de productores de cacao mediante **visión por computadora, aprendizaje automático (PyTorch, YOLOv8)** y un panel administrativo interactivo.
 
-## 🎯 Características
+---
 
-- **Análisis Automatizado**: Medición precisa de dimensiones (alto, ancho, grosor, peso) de granos de cacao
-- **Machine Learning**: Modelos de visión computacional (YOLOv8) y regresión para predicciones precisas
-- **Gestión de Fincas**: Control de fincas, lotes y cosechas
-- **Reportes Avanzados**: Generación de reportes en PDF y Excel
-- **Tiempo Real**: Notificaciones y actualizaciones en vivo
-- **API REST**: Documentación completa con Swagger
+## 🚀 Tecnologías Principales
 
-## 🏗️ Arquitectura
+| Componente | Tecnología | Descripción |
+|-------------|-------------|-------------|
+| **Backend** | Django 4.2 + Django REST Framework | API REST principal y gestión de modelos ML |
+| **Base de Datos** | PostgreSQL 15 | Base de datos relacional |
+| **Frontend** | Vue.js 3 + Vite + Pinia + TailwindCSS + Flowbite | Interfaz web moderna y responsive |
+| **ML/IA** | PyTorch, scikit-learn, YOLOv8, OpenCV | Procesamiento de imágenes y predicción de peso y dimensiones |
+| **Autenticación** | JWT (JSON Web Tokens) | Inicio de sesión seguro con roles y permisos |
+| **Despliegue** | Render / Railway / Docker (opcional) | Listo para producción |
 
-### Frontend
-- Vue.js 3 con Composition API
-- Vite como bundler
-- Tailwind CSS para estilos
-- Pinia para gestión de estado
+---
 
-### Backend
-- Django REST Framework
-- PostgreSQL
-- Machine Learning con PyTorch
-- WebSockets con Django Channels
+## 🧠 Funcionalidades Clave
 
-## 📁 Estructura del Proyecto
+- 🔐 Registro, autenticación y roles de usuario (admin, agricultor, técnico)
+- 🌾 Gestión de fincas y lotes agrícolas
+- 📷 Escaneo y análisis de granos de cacao con IA
+- 📊 Reportes descargables en Excel (agricultores, usuarios, métricas)
+- 🧾 Sistema de auditoría y notificaciones
+- ⚙️ Configuración y calibración de modelos ML desde panel administrativo
 
+---
+
+## 🖥️ Requisitos Previos
+
+Asegúrate de tener instalados:
+
+| Requisito | Versión recomendada |
+|------------|--------------------|
+| Python | 3.12 o superior |
+| Node.js | 18 o superior |
+| PostgreSQL | 15 o superior |
+| Git | Última versión estable |
+| PowerShell o Bash | (para comandos de terminal) |
+
+---
+
+## ⚙️ Instalación del Proyecto
+
+### 1️⃣ Clonar el repositorio
+
+```bash
+git clone https://github.com/tu_usuario/cacaoscan.git
+cd cacaoscan
 ```
-cacaoscan/
-├── frontend/          # Aplicación Vue.js
-├── backend/           # API Django
-│   ├── core/         # App core con utilidades
-│   ├── auth_app/     # Autenticación
-│   ├── fincas_app/   # Gestión de fincas
-│   ├── images_app/   # Análisis de imágenes
-│   ├── notifications/# Sistema de notificaciones
-│   ├── audit/        # Auditoría y logs
-│   ├── training/     # Entrenamiento de modelos ML
-│   ├── reports/      # Generación de reportes
-│   └── ml/           # Módulo de Machine Learning
-└── docs/             # Documentación
+
+### 2️⃣ Configurar el Backend (Django)
+
+⚠️ **Asegúrate de tener instalado Python 3.12** (no versiones anteriores ni posteriores, para evitar incompatibilidades con dependencias del proyecto).
+
+Si tienes varias versiones instaladas, usa siempre el comando `python3.12`.  
+Puedes verificar tu versión con:
+
+```bash
+python3.12 --version
 ```
 
-## 🚀 Instalación
+Si necesitas instalar Python 3.12, revisa la documentación oficial según tu sistema operativo: https://www.python.org/downloads/release/python-3120/
 
-### Requisitos
-- Python 3.9+
-- Node.js 16+
-- PostgreSQL 13+
-- pip y npm
-
-### Backend
 
 ```bash
 cd backend
+python -3.12 -m venv venv
+
+# En Windows
+venv\Scripts\activate
+
+# En Linux/Mac
+# source venv/bin/activate
+
 pip install -r requirements.txt
+```
+
+Crea el archivo `.env` en la carpeta `backend/` con el siguiente contenido:
+
+```env
+DEBUG=True
+SECRET_KEY=tu_clave_segura
+ALLOWED_HOSTS=127.0.0.1,localhost
+DB_NAME=cacaoscan_db
+DB_USER=postgres
+DB_PASSWORD=tu_contraseña
+DB_HOST=localhost
+DB_PORT=5432
+```
+
+Aplica las migraciones:
+
+```bash
+python manage.py makemigrations
 python manage.py migrate
+```
+
+Aplica los seeders
+
+```bash
+python manage.py init_catalogos
+python manage.py seed_colombia
+```
+
+Crea el superusuario:
+
+```bash
 python manage.py createsuperuser
+```
+
+Inicia el servidor:
+
+```bash
 python manage.py runserver
 ```
 
+✅ El backend estará disponible en: **http://127.0.0.1:8000**
+
+### 3️⃣ Configurar el Frontend (Vue)
+
+```bash
+cd ../frontend
+pnpm install
+pnpm dev
+```
+
+✅ El frontend estará disponible en: **http://127.0.0.1:5173**
+
+---
+
+## 📂 Estructura del Proyecto
+
+```
+cacaoscan/
+├── backend/
+│   ├── api/
+│   ├── personas/
+│   ├── fincas_app/
+│   ├── reports/
+│   ├── legal/               # Términos y política de privacidad
+│   ├── cacaoscan/settings.py
+│   ├── manage.py
+│   └── requirements.txt
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── views/
+│   │   ├── stores/
+│   │   ├── router/
+│   │   └── services/
+│   ├── package.json
+│   └── vite.config.js
+│
+└── README.md
+```
+
+---
+
+## 📦 Scripts Útiles
+
+### Backend
+
+| Comando | Descripción |
+|---------|-------------|
+| `python manage.py runserver` | Ejecuta el servidor de desarrollo |
+| `python manage.py shell` | Abre la consola interactiva Django |
+| `python manage.py showmigrations` | Lista migraciones aplicadas |
+| `python manage.py createsuperuser` | Crea un administrador |
+
 ### Frontend
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+| Comando | Descripción |
+|---------|-------------|
+| `pnpm dev` | Inicia el servidor de desarrollo |
+| `pnpm build` | Genera la versión de producción |
+| `pnpm preview` | Previsualiza el build localmente |
 
-## 🧪 Modelos de Machine Learning
+---
 
-El sistema utiliza dos tipos de modelos:
+## 🧩 Endpoints Principales
 
-1. **YOLOv8 Seg**: Segmentación de granos de cacao en imágenes
-2. **Regresión**: Predicción de dimensiones físicas (alto, ancho, grosor, peso)
+| Endpoint | Descripción |
+|----------|-------------|
+| `/api/v1/auth/login/` | Inicio de sesión (JWT) |
+| `/api/v1/fincas/` | Gestión de fincas |
+| `/api/v1/lotes/` | Gestión de lotes |
+| `/api/v1/reports/agricultores/` | Reporte Excel de agricultores |
+| `/api/v1/legal/terms/` | Términos y condiciones |
+| `/api/v1/legal/privacy/` | Política de privacidad |
 
-Los modelos se almacenan en `backend/ml/artifacts/` y se cargan automáticamente al iniciar el servidor.
+---
 
-## 📊 API Endpoints Principales
+## 🧠 Autores
 
-- `POST /api/v1/scan/measure/` - Analizar imagen de grano
-- `GET /api/v1/images/` - Listar imágenes analizadas
-- `GET /api/v1/fincas/` - Gestión de fincas
-- `GET /api/v1/lotes/` - Gestión de lotes
-- `GET /api/v1/reports/` - Generar reportes
-- `GET /api/docs/` - Documentación Swagger
+Proyecto desarrollado por aprendices de **Análisis y Desarrollo de Software (ADSO)** — Ficha 2923560, SENA Regional Guaviare
 
-## 🔧 Configuración
+- 👨‍💻 **Camilo Andres Hernández Gonzales**
+- 👨‍💻 **Jeferson Alexander Alvarez Rodríguez**
+- 👨‍💻 **Cristian Camilo Camacho Morales**
 
-1. Copiar `backend/env.example` a `backend/.env`
-2. Configurar variables de entorno (base de datos, email, etc.)
-3. Ejecutar migraciones
-4. Ejecutar comandos de management para entrenar modelos iniciales
+---
 
-## 🧪 Tests
+## 🪪 Licencia
 
-```bash
-# Backend
-cd backend
-pytest
+Este proyecto es de uso académico y no comercial, protegido bajo la licencia MIT.
 
-# Frontend
-cd frontend
-npm run test
-```
-
-## 📝 Variables de Entorno
-
-Configurar en `backend/.env`:
-```env
-DB_NAME=cacaoscan_db
-DB_USER=postgres
-DB_PASSWORD=your_password
-SECRET_KEY=your_secret_key
-```
-
-## 🤝 Contribuir
-
-1. Fork el proyecto
-2. Crea una rama para tu feature
-3. Commit tus cambios
-4. Push a la rama
-5. Abre un Pull Request
-
-## 📄 Licencia
-
-Este proyecto es propiedad privada.
-
-## 👥 Equipo
-
-Desarrollado con ❤️ para el sector cacaotero.
-
+© 2025 CacaoScan — Todos los derechos reservados.

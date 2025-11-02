@@ -5,7 +5,7 @@
       :brand-name="'CacaoScan'"
       :user-name="userName"
       :user-role="userRole"
-      :current-route="$route.path"
+      :current-route="route.path"
       :active-section="activeSection"
       :collapsed="isSidebarCollapsed"
       @menu-click="handleMenuClick"
@@ -37,7 +37,7 @@
             :user-role="userRole"
             @edit="editFinca"
             @view-lotes="viewLotes"
-            @view-finca="viewFinca"
+            @view-details="viewFincaDetails"
             @create="openCreateModal"
             @retry="loadFincas"
             @confirm-delete="confirmDelete"
@@ -45,13 +45,27 @@
           />
 
           <!-- Modal de formulario -->
-          <FincaForm
-            v-if="showModal"
-            :finca="selectedFinca"
-            :is-editing="isEditing"
-            @close="closeModal"
-            @saved="handleFincaSaved"
-          />
+          <Teleport to="body">
+            <FincaForm
+              v-if="showModal"
+              :finca="selectedFinca"
+              :is-editing="isEditing"
+              @close="closeModal"
+              @saved="handleFincaSaved"
+            />
+          </Teleport>
+
+          <!-- Modal de detalles -->
+          <Teleport to="body">
+            <FincaDetailModal
+              :show="showDetailModal"
+              :finca="selectedFincaDetail"
+              :user-role="userRole"
+              @close="closeDetailModal"
+              @edit="editFinca"
+              @view-lotes="viewLotes"
+            />
+          </Teleport>
         </div>
       </main>
     </div>
@@ -59,19 +73,35 @@
 </template>
 
 <script setup>
+// 1. Vue core
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+
+// 2. Vue router
+import { useRoute, useRouter } from 'vue-router'
+
+// 3. Stores
 import { useAuthStore } from '@/stores/auth'
 import { useFincasStore } from '@/stores/fincas'
+
+// 4. Components
 import Sidebar from '@/components/layout/Common/Sidebar.vue'
 import FincaForm from '@/components/FincaForm.vue'
-import FincasHeader from '@/components/common/FincasHeader.vue'
-import FincasFilters from '@/components/common/FincasFilters.vue'
-import FincaList from '@/components/common/FincaList.vue'
+import FincasHeader from '@/components/common/FincasViewComponents/FincasHeader.vue'
+import FincasFilters from '@/components/common/FincasViewComponents/FincasFilters.vue'
+import FincaList from '@/components/common/FincasViewComponents/FincaList.vue'
+import FincaDetailModal from '@/components/common/FincasViewComponents/FincaDetailModal.vue'
+
+// 5. Services
 import fincasApi from '@/services/fincasApi'
+
+// 6. Libraries
 import Swal from 'sweetalert2'
 
+// Router & Route
 const router = useRouter()
+const route = useRoute()
+
+// Stores
 const authStore = useAuthStore()
 const fincasStore = useFincasStore()
 
@@ -87,6 +117,8 @@ const filters = ref({
 const showModal = ref(false)
 const selectedFinca = ref(null)
 const isEditing = ref(false)
+const showDetailModal = ref(false)
+const selectedFincaDetail = ref(null)
 const activeSection = ref('fincas')
 
 // Computed
@@ -104,6 +136,15 @@ const userRole = computed(() => {
   if (role === 'admin') return 'admin'
   if (role === 'farmer') return 'agricultor'
   return 'agricultor' // Default to agricultor
+})
+
+// Flag de admin para decidir qué formulario mostrar en creación
+const isAdmin = computed(() => {
+  return (
+    authStore.user?.is_staff === true ||
+    authStore.user?.is_superuser === true ||
+    authStore.userRole === 'admin'
+  )
 })
 
 // Métodos
@@ -155,6 +196,18 @@ const viewFinca = (finca) => {
   router.push(`/fincas/${finca.id}`)
 }
 
+const viewFincaDetails = (finca) => {
+  selectedFincaDetail.value = finca
+  showDetailModal.value = true
+}
+
+const closeDetailModal = () => {
+  showDetailModal.value = false
+  setTimeout(() => {
+    selectedFincaDetail.value = null
+  }, 300)
+}
+
 const viewLotes = (finca) => {
   router.push(`/fincas/${finca.id}/lotes`)
 }
@@ -174,7 +227,7 @@ const confirmDelete = async (finca) => {
   const result = await Swal.fire({
     icon: 'warning',
     title: '¿Desactivar finca?',
-    html: `<p>¿Estás seguro de que deseas desactivar la finca <strong>"${finca.nombre}"</strong>?</p><p class="text-sm text-gray-600 mt-2">La finca ya no aparecerá en tu lista, pero los datos se conservarán. Puedes contactar a un administrador si necesitas reactivarla.</p>`,
+    html: "<p>¿Estás seguro de que deseas desactivar la finca <strong>\"" + finca.nombre + "\"</strong>?</p><p class=\"text-sm text-gray-600 mt-2\">La finca ya no aparecerá en tu lista, pero los datos se conservarán. Puedes contactar a un administrador si necesitas reactivarla.</p>",
     showCancelButton: true,
     confirmButtonText: 'Sí, desactivar',
     cancelButtonText: 'Cancelar',
@@ -194,7 +247,6 @@ const confirmDelete = async (finca) => {
         showConfirmButton: false
       })
     } catch (error) {
-      console.error('Error desactivando finca:', error)
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -209,7 +261,7 @@ const confirmActivate = async (finca) => {
   const result = await Swal.fire({
     icon: 'question',
     title: '¿Activar finca?',
-    html: `<p>¿Estás seguro de que deseas reactivar la finca <strong>"${finca.nombre}"</strong>?</p><p class="text-sm text-gray-600 mt-2">La finca volverá a estar disponible para el agricultor.</p>`,
+    html: "<p>¿Estás seguro de que deseas reactivar la finca <strong>\"" + finca.nombre + "\"</strong>?</p><p class=\"text-sm text-gray-600 mt-2\">La finca volverá a estar disponible para el agricultor.</p>",
     showCancelButton: true,
     confirmButtonText: 'Sí, activar',
     cancelButtonText: 'Cancelar',
@@ -224,12 +276,11 @@ const confirmActivate = async (finca) => {
       Swal.fire({
         icon: 'success',
         title: 'Finca activada',
-        text: `La finca "${finca.nombre}" ha sido reactivada. El agricultor podrá verla nuevamente en su gestión.`,
+        text: "La finca \"" + finca.nombre + "\" ha sido reactivada. El agricultor podrá verla nuevamente en su gestión.",
         timer: 3000,
         showConfirmButton: false
       })
     } catch (error) {
-      console.error('Error activando finca:', error)
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -274,7 +325,7 @@ const handleLogout = async () => {
   try {
     await authStore.logout()
   } catch (error) {
-    console.error('Error during logout:', error)
+    // Error durante logout - silenciar
   }
 }
 
@@ -285,11 +336,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Estilos específicos si son necesarios */
-* {
-  outline: 0 !important;
-}
-
-/* Debug: resaltar elementos problemáticos */
-/* .bg-green { outline: 2px solid red !important; } */
+/* Solo estilos que no están en Tailwind si es necesario */
 </style>

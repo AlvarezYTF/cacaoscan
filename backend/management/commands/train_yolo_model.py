@@ -1,4 +1,4 @@
-"""
+﻿"""
 Comando Django para entrenar modelo YOLOv8-seg personalizado.
 """
 from django.core.management.base import BaseCommand, CommandError
@@ -11,26 +11,26 @@ from ml.segmentation.train_yolo import YOLOTrainingManager, train_cacao_yolo_mod
 
 
 class Command(BaseCommand):
-    help = 'Entrena modelo YOLOv8-seg personalizado para segmentación de granos de cacao'
+    help = 'Entrena modelo YOLOv8-seg personalizado para segmentaciÃ³n de granos de cacao'
 
     def add_arguments(self, parser):
         parser.add_argument(
             '--dataset-size',
             type=int,
             default=150,
-            help='Número de imágenes para el dataset (default: 150)'
+            help='NÃºmero de imÃ¡genes para el dataset (default: 150)'
         )
         parser.add_argument(
             '--epochs',
             type=int,
             default=100,
-            help='Número de épocas de entrenamiento (default: 100)'
+            help='NÃºmero de Ã©pocas de entrenamiento (default: 100)'
         )
         parser.add_argument(
             '--batch-size',
             type=int,
             default=16,
-            help='Tamaño del batch (default: 16)'
+            help='TamaÃ±o del batch (default: 16)'
         )
         parser.add_argument(
             '--model-name',
@@ -43,7 +43,7 @@ class Command(BaseCommand):
             '--image-size',
             type=int,
             default=640,
-            help='Tamaño de imagen para entrenamiento (default: 640)'
+            help='TamaÃ±o de imagen para entrenamiento (default: 640)'
         )
         parser.add_argument(
             '--confidence',
@@ -61,19 +61,19 @@ class Command(BaseCommand):
             '--train-split',
             type=float,
             default=0.7,
-            help='Proporción para entrenamiento (default: 0.7)'
+            help='ProporciÃ³n para entrenamiento (default: 0.7)'
         )
         parser.add_argument(
             '--val-split',
             type=float,
             default=0.2,
-            help='Proporción para validación (default: 0.2)'
+            help='ProporciÃ³n para validaciÃ³n (default: 0.2)'
         )
         parser.add_argument(
             '--test-split',
             type=float,
             default=0.1,
-            help='Proporción para testing (default: 0.1)'
+            help='ProporciÃ³n para testing (default: 0.1)'
         )
         parser.add_argument(
             '--device',
@@ -86,7 +86,7 @@ class Command(BaseCommand):
             '--workers',
             type=int,
             default=4,
-            help='Número de workers para data loading (default: 4)'
+            help='NÃºmero de workers para data loading (default: 4)'
         )
         parser.add_argument(
             '--patience',
@@ -116,23 +116,23 @@ class Command(BaseCommand):
             '--warmup-epochs',
             type=int,
             default=3,
-            help='Épocas de warmup (default: 3)'
+            help='Ã‰pocas de warmup (default: 3)'
         )
         parser.add_argument(
             '--save-period',
             type=int,
             default=10,
-            help='Período para guardar checkpoints (default: 10)'
+            help='PerÃ­odo para guardar checkpoints (default: 10)'
         )
         parser.add_argument(
             '--cache',
             action='store_true',
-            help='Cachear imágenes en memoria'
+            help='Cachear imÃ¡genes en memoria'
         )
         parser.add_argument(
             '--plots',
             action='store_true',
-            help='Generar gráficos de entrenamiento'
+            help='Generar grÃ¡ficos de entrenamiento'
         )
         parser.add_argument(
             '--verbose',
@@ -142,7 +142,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--dry-run',
             action='store_true',
-            help='Solo mostrar configuración sin entrenar'
+            help='Solo mostrar configuraciÃ³n sin entrenar'
         )
         parser.add_argument(
             '--output-dir',
@@ -156,12 +156,12 @@ class Command(BaseCommand):
         # Validar argumentos
         self._validate_arguments(options)
         
-        # Mostrar configuración
+        # Mostrar configuraciÃ³n
         self._display_configuration(options)
         
         if options['dry_run']:
             self.stdout.write(
-                self.style.SUCCESS('Dry run completado. No se realizó entrenamiento.')
+                self.style.SUCCESS('Dry run completado. No se realizÃ³ entrenamiento.')
             )
             return
         
@@ -225,7 +225,7 @@ class Command(BaseCommand):
         # Validar epochs
         if options['epochs'] < 1:
             raise CommandError(
-                f'Épocas debe ser al menos 1, actual: {options["epochs"]}'
+                f'Ã‰pocas debe ser al menos 1, actual: {options["epochs"]}'
             )
         
         # Validar batch size
@@ -241,16 +241,16 @@ class Command(BaseCommand):
             )
     
     def _display_configuration(self, options):
-        """Muestra la configuración del entrenamiento."""
+        """Muestra la configuraciÃ³n del entrenamiento."""
         
         self.stdout.write('\n' + '='*60)
-        self.stdout.write(self.style.SUCCESS('CONFIGURACIÓN DE ENTRENAMIENTO YOLO'))
+        self.stdout.write(self.style.SUCCESS('CONFIGURACIÃ“N DE ENTRENAMIENTO YOLO'))
         self.stdout.write('='*60)
         
         config_items = [
             ('Dataset Size', options['dataset_size']),
             ('Modelo Base', options['model_name']),
-            ('Épocas', options['epochs']),
+            ('Ã‰pocas', options['epochs']),
             ('Batch Size', options['batch_size']),
             ('Image Size', options['image_size']),
             ('Device', options['device']),
@@ -265,9 +265,9 @@ class Command(BaseCommand):
             ('Train Split', f"{options['train_split']:.1%}"),
             ('Val Split', f"{options['val_split']:.1%}"),
             ('Test Split', f"{options['test_split']:.1%}"),
-            ('Cache', 'Sí' if options['cache'] else 'No'),
-            ('Plots', 'Sí' if options['plots'] else 'No'),
-            ('Verbose', 'Sí' if options['verbose'] else 'No'),
+            ('Cache', 'SÃ­' if options['cache'] else 'No'),
+            ('Plots', 'SÃ­' if options['plots'] else 'No'),
+            ('Verbose', 'SÃ­' if options['verbose'] else 'No'),
         ]
         
         for key, value in config_items:
@@ -276,14 +276,14 @@ class Command(BaseCommand):
         self.stdout.write('='*60)
     
     def _confirm_training(self, options):
-        """Solicita confirmación antes de entrenar."""
+        """Solicita confirmaciÃ³n antes de entrenar."""
         
-        self.stdout.write('\n' + self.style.WARNING('⚠️  ADVERTENCIA:'))
+        self.stdout.write('\n' + self.style.WARNING('âš ï¸  ADVERTENCIA:'))
         self.stdout.write('El entrenamiento puede tomar varias horas.')
-        self.stdout.write('Asegúrate de tener suficientes recursos disponibles.')
+        self.stdout.write('AsegÃºrate de tener suficientes recursos disponibles.')
         
-        response = input('\n¿Continuar con el entrenamiento? (y/N): ')
-        return response.lower() in ['y', 'yes', 'sí', 'si']
+        response = input('\nÂ¿Continuar con el entrenamiento? (y/N): ')
+        return response.lower() in ['y', 'yes', 'sÃ­', 'si']
     
     def _display_results(self, results, duration):
         """Muestra los resultados del entrenamiento."""
@@ -293,20 +293,20 @@ class Command(BaseCommand):
         self.stdout.write('='*60)
         
         if results['success']:
-            # Información del dataset
+            # InformaciÃ³n del dataset
             dataset_info = results['dataset_info']
-            self.stdout.write(f'Dataset Size: {dataset_info["total_images"]} imágenes')
-            self.stdout.write(f'  - Train: {dataset_info["train_images"]} imágenes')
-            self.stdout.write(f'  - Val: {dataset_info["val_images"]} imágenes')
-            self.stdout.write(f'  - Test: {dataset_info["test_images"]} imágenes')
+            self.stdout.write(f'Dataset Size: {dataset_info["total_images"]} imÃ¡genes')
+            self.stdout.write(f'  - Train: {dataset_info["train_images"]} imÃ¡genes')
+            self.stdout.write(f'  - Val: {dataset_info["val_images"]} imÃ¡genes')
+            self.stdout.write(f'  - Test: {dataset_info["test_images"]} imÃ¡genes')
             
-            # Duración
-            self.stdout.write(f'Duración: {duration:.2f} segundos ({duration/60:.1f} minutos)')
+            # DuraciÃ³n
+            self.stdout.write(f'DuraciÃ³n: {duration:.2f} segundos ({duration/60:.1f} minutos)')
             
-            # Métricas de validación
+            # MÃ©tricas de validaciÃ³n
             if 'validation_metrics' in results:
                 metrics = results['validation_metrics']
-                self.stdout.write('\nMétricas de Validación:')
+                self.stdout.write('\nMÃ©tricas de ValidaciÃ³n:')
                 self.stdout.write(f'  mAP50: {metrics["mAP50"]:.3f}')
                 self.stdout.write(f'  mAP50-95: {metrics["mAP50-95"]:.3f}')
                 self.stdout.write(f'  Precision: {metrics["precision"]:.3f}')
@@ -321,15 +321,15 @@ class Command(BaseCommand):
             model_paths = results['model_paths']
             self.stdout.write('\nArchivos Generados:')
             self.stdout.write(f'  Mejor Modelo: {model_paths["best_model"]}')
-            self.stdout.write(f'  Último Modelo: {model_paths["last_model"]}')
+            self.stdout.write(f'  Ãšltimo Modelo: {model_paths["last_model"]}')
             self.stdout.write(f'  Config Dataset: {model_paths["dataset_config"]}')
             
-            self.stdout.write('\n' + self.style.SUCCESS('✅ Entrenamiento completado exitosamente!'))
+            self.stdout.write('\n' + self.style.SUCCESS('âœ… Entrenamiento completado exitosamente!'))
             
         else:
-            self.stdout.write(self.style.ERROR('❌ Entrenamiento falló'))
+            self.stdout.write(self.style.ERROR('âŒ Entrenamiento fallÃ³'))
             self.stdout.write(f'Error: {results.get("error", "Error desconocido")}')
-            self.stdout.write(f'Duración: {duration:.2f} segundos')
+            self.stdout.write(f'DuraciÃ³n: {duration:.2f} segundos')
         
         self.stdout.write('='*60)
     
@@ -363,3 +363,5 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.WARNING(f'No se pudieron guardar los resultados: {e}')
             )
+
+

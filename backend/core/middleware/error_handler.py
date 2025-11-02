@@ -1,4 +1,4 @@
-"""
+﻿"""
 Middleware para estandarizar el formato de errores en CacaoScan.
 """
 from django.http import JsonResponse
@@ -7,12 +7,12 @@ from django.utils.deprecation import MiddlewareMixin
 
 class StandardErrorMiddleware(MiddlewareMixin):
     """
-    Middleware que estandariza el formato de errores en toda la aplicación.
+    Middleware que estandariza el formato de errores en toda la aplicaciÃ³n.
     """
     
     def process_exception(self, request, exception):
         """
-        Procesa excepciones no manejadas y las convierte al formato estándar.
+        Procesa excepciones no manejadas y las convierte al formato estÃ¡ndar.
         """
         # Solo procesar errores en rutas de API
         if request.path.startswith('/api/'):
@@ -23,4 +23,6 @@ class StandardErrorMiddleware(MiddlewareMixin):
             }, status=500)
         
         return None
+
+
 

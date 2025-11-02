@@ -1,4 +1,4 @@
-"""
+﻿"""
 Utilidades para crear respuestas estandarizadas de la API.
 """
 from rest_framework import status
@@ -7,12 +7,12 @@ from rest_framework.response import Response
 
 def create_error_response(message, error_type=None, status_code=400, details=None):
     """
-    Función utilitaria para crear respuestas de error estandarizadas.
+    FunciÃ³n utilitaria para crear respuestas de error estandarizadas.
     
     Args:
         message (str): Mensaje de error descriptivo
         error_type (str, optional): Tipo de error para debugging
-        status_code (int): Código de estado HTTP
+        status_code (int): CÃ³digo de estado HTTP
         details (dict, optional): Detalles adicionales del error
     
     Returns:
@@ -34,15 +34,15 @@ def create_error_response(message, error_type=None, status_code=400, details=Non
 
 def create_success_response(message, data=None, status_code=200):
     """
-    Función utilitaria para crear respuestas de éxito estandarizadas.
+    FunciÃ³n utilitaria para crear respuestas de Ã©xito estandarizadas.
     
     Args:
-        message (str): Mensaje de éxito
+        message (str): Mensaje de Ã©xito
         data (dict, optional): Datos adicionales
-        status_code (int): Código de estado HTTP
+        status_code (int): CÃ³digo de estado HTTP
     
     Returns:
-        Response: Respuesta de éxito estandarizada
+        Response: Respuesta de Ã©xito estandarizada
     """
     response_data = {
         'success': True,
@@ -53,4 +53,6 @@ def create_success_response(message, data=None, status_code=200):
         response_data.update(data)
     
     return Response(response_data, status=status_code)
+
+
 

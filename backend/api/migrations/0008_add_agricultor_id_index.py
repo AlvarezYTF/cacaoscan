@@ -1,4 +1,4 @@
-# Generated manually for optimization
+﻿# Generated manually for optimization
 
 from django.db import migrations, models
 
@@ -15,4 +15,6 @@ class Migration(migrations.Migration):
             index=models.Index(fields=['agricultor_id'], name='api_finca_agricultor_id_idx'),
         ),
     ]
+
+
 

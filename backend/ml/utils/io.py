@@ -1,4 +1,4 @@
-"""
+﻿"""
 Utilidades para operaciones de entrada y salida.
 """
 import json
@@ -68,14 +68,14 @@ def write_log(log_path: Path, message: str) -> None:
 
 
 def get_file_timestamp(file_path: Path) -> Optional[float]:
-    """Obtiene el timestamp de modificación de un archivo."""
+    """Obtiene el timestamp de modificaciÃ³n de un archivo."""
     if file_path.exists():
         return file_path.stat().st_mtime
     return None
 
 
 def file_exists_and_newer(source_path: Path, target_path: Path) -> bool:
-    """Verifica si el archivo fuente es más nuevo que el objetivo."""
+    """Verifica si el archivo fuente es mÃ¡s nuevo que el objetivo."""
     if not target_path.exists():
         return False
     
@@ -89,5 +89,7 @@ def file_exists_and_newer(source_path: Path, target_path: Path) -> bool:
 
 
 def ensure_dir_exists(dir_path: Path) -> None:
-    """Asegura que un directorio existe, creándolo si es necesario."""
+    """Asegura que un directorio existe, creÃ¡ndolo si es necesario."""
     dir_path.mkdir(parents=True, exist_ok=True)
+
+

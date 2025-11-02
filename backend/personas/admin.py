@@ -1,12 +1,12 @@
-"""
-Configuración del admin para la app personas.
+﻿"""
+ConfiguraciÃ³n del admin para la app personas.
 
-INTEGRACIÓN:
-- Persona ahora usa Parametro (catálogos) para tipo_documento y genero
-- Persona ahora usa Departamento y Municipio (ubicaciones) para ubicación
+INTEGRACIÃ“N:
+- Persona ahora usa Parametro (catÃ¡logos) para tipo_documento y genero
+- Persona ahora usa Departamento y Municipio (ubicaciones) para ubicaciÃ³n
 """
 from django.contrib import admin
-from .models import Persona
+from .models import Persona, PendingRegistration
 
 
 @admin.register(Persona)
@@ -46,23 +46,23 @@ class PersonaAdmin(admin.ModelAdmin):
     readonly_fields = ['fecha_creacion']
     
     fieldsets = (
-        ('Información del Usuario', {
+        ('InformaciÃ³n del Usuario', {
             'fields': ('user',)
         }),
         ('Documento de Identidad', {
             'fields': ('tipo_documento', 'numero_documento'),
-            'description': 'Tipo de documento es un Parametro del catálogo TIPO_DOC'
+            'description': 'Tipo de documento es un Parametro del catÃ¡logo TIPO_DOC'
         }),
         ('Nombres', {
             'fields': ('primer_nombre', 'segundo_nombre', 'primer_apellido', 'segundo_apellido')
         }),
-        ('Información Personal', {
+        ('InformaciÃ³n Personal', {
             'fields': ('telefono', 'direccion', 'genero', 'fecha_nacimiento'),
-            'description': 'Género es un Parametro del catálogo SEXO'
+            'description': 'GÃ©nero es un Parametro del catÃ¡logo SEXO'
         }),
-        ('Ubicación (Normalizada)', {
+        ('UbicaciÃ³n (Normalizada)', {
             'fields': ('departamento', 'municipio'),
-            'description': 'Ubicación usa las tablas normalizadas de ubicaciones'
+            'description': 'UbicaciÃ³n usa las tablas normalizadas de ubicaciones'
         }),
         ('Fechas', {
             'fields': ('fecha_creacion',)
@@ -94,3 +94,25 @@ class PersonaAdmin(admin.ModelAdmin):
         """Mostrar el municipio."""
         return obj.municipio.nombre if obj.municipio else '-'
     get_municipio.short_description = 'Municipio'
+
+
+@admin.register(PendingRegistration)
+class PendingRegistrationAdmin(admin.ModelAdmin):
+    """Admin para registros pendientes de verificaciÃ³n."""
+    list_display = [
+        'email',
+        'is_verified',
+        'created_at',
+        'verified_at',
+        'is_expired_display'
+    ]
+    search_fields = ['email', 'verification_token']
+    list_filter = ['is_verified', 'created_at']
+    readonly_fields = ['verification_token', 'created_at', 'verified_at']
+    
+    def is_expired_display(self, obj):
+        """Indica si el registro ha expirado."""
+        return "SÃ­" if obj.is_expired() else "No"
+    is_expired_display.short_description = 'Expirado'
+    is_expired_display.boolean = True
+

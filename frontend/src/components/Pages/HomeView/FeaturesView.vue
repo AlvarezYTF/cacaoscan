@@ -1,6 +1,6 @@
 <template>
     <!-- Features Section: Destaca las capacidades del sistema -->
-    <section id="features" class="py-20 bg-gradient-to-b from-gray-50 to-white">
+    <section id="features" class=" bg-gradient-to-b from-gray-50 to-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Encabezado con badge -->
         <div class="text-center mb-16">

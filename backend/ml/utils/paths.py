@@ -1,4 +1,4 @@
-"""
+﻿"""
 Utilidades para manejo de rutas del proyecto.
 """
 import os
@@ -7,7 +7,7 @@ from django.conf import settings
 
 
 def get_project_root():
-    """Obtiene la ruta raíz del proyecto."""
+    """Obtiene la ruta raÃ­z del proyecto."""
     return Path(settings.BASE_DIR)
 
 
@@ -22,12 +22,12 @@ def get_datasets_dir():
 
 
 def get_cacao_images_dir():
-    """Obtiene la ruta del directorio de imágenes de cacao."""
+    """Obtiene la ruta del directorio de imÃ¡genes de cacao."""
     return get_media_root() / "cacao_images"
 
 
 def get_raw_images_dir():
-    """Obtiene la ruta del directorio de imágenes raw."""
+    """Obtiene la ruta del directorio de imÃ¡genes raw."""
     return get_cacao_images_dir() / "raw"
 
 
@@ -37,7 +37,7 @@ def get_crops_dir():
 
 
 def get_masks_dir():
-    """Obtiene la ruta del directorio de máscaras."""
+    """Obtiene la ruta del directorio de mÃ¡scaras."""
     return get_cacao_images_dir() / "masks"
 
 
@@ -93,5 +93,7 @@ def get_crop_image_path(image_id: int):
 
 
 def get_mask_image_path(image_id: int):
-    """Obtiene la ruta de una máscara por ID."""
+    """Obtiene la ruta de una mÃ¡scara por ID."""
     return get_masks_dir() / f"{image_id}.png"
+
+

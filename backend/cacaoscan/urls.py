@@ -1,4 +1,4 @@
-"""
+﻿"""
 URL configuration for cacaoscan project.
 """
 from django.contrib import admin
@@ -14,7 +14,7 @@ schema_view = get_schema_view(
     openapi.Info(
         title="CacaoScan API",
         default_version='v1',
-        description="API para medición de dimensiones y peso de granos de cacao usando ML",
+        description="API para mediciÃ³n de dimensiones y peso de granos de cacao usando ML",
         terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(email="contact@cacaoscan.local"),
         license=openapi.License(name="BSD License"),
@@ -25,11 +25,16 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # API principal de CacaoScan
+    # API de documentos legales - COMENTADA: el contenido ahora está en el frontend
+    # path('api/v1/legal/', include('legal.urls')),
+    # API de personas (incluida en v1 con prefijo personas/)
+    path('api/v1/personas/', include('personas.urls')),
+    # API de catÃ¡logos (incluida en v1 para consistencia)
+    path('api/v1/', include('catalogos.urls')),
+    # API de imágenes (debe ir antes de api.urls para evitar conflictos)
+    path('api/v1/', include('images_app.urls')),
+    # API principal de CacaoScan (debe ir después de rutas específicas)
     path('api/v1/', include('api.urls')),
-    # API de personas (legacy)
-    path('api/personas/', include('personas.urls')),
-    path('api/', include('catalogos.urls')),
     
     # Swagger URLs
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
@@ -39,3 +44,5 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Base classes para servicios en CacaoScan.
 """
 import logging
@@ -12,7 +12,7 @@ logger = logging.getLogger("cacaoscan.services")
 
 
 class ServiceError(Exception):
-    """Excepción base para errores de servicios."""
+    """ExcepciÃ³n base para errores de servicios."""
     
     def __init__(self, message: str, error_code: str = None, details: Dict[str, Any] = None):
         self.message = message
@@ -22,7 +22,7 @@ class ServiceError(Exception):
 
 
 class ValidationServiceError(ServiceError):
-    """Error de validación en servicios."""
+    """Error de validaciÃ³n en servicios."""
     pass
 
 
@@ -46,7 +46,7 @@ class BaseService:
         self.logger = logging.getLogger(f"cacaoscan.services.{self.__class__.__name__}")
     
     def log_info(self, message: str, **kwargs):
-        """Log de información."""
+        """Log de informaciÃ³n."""
         self.logger.info(message, extra=kwargs)
     
     def log_warning(self, message: str, **kwargs):
@@ -64,7 +64,7 @@ class BaseService:
         Args:
             user: Usuario a validar
             permission: Permiso requerido
-            resource: Recurso específico (opcional)
+            resource: Recurso especÃ­fico (opcional)
             
         Returns:
             True si tiene permisos, False en caso contrario
@@ -72,17 +72,17 @@ class BaseService:
         if user.is_superuser or user.is_staff:
             return True
         
-        # Implementar lógica específica de permisos según el servicio
+        # Implementar lÃ³gica especÃ­fica de permisos segÃºn el servicio
         return False
     
     def check_user_permission(self, user: User, permission: str, resource: Any = None):
         """
-        Verifica permisos de usuario y lanza excepción si no los tiene.
+        Verifica permisos de usuario y lanza excepciÃ³n si no los tiene.
         
         Args:
             user: Usuario a validar
             permission: Permiso requerido
-            resource: Recurso específico (opcional)
+            resource: Recurso especÃ­fico (opcional)
             
         Raises:
             PermissionServiceError: Si no tiene permisos
@@ -95,7 +95,7 @@ class BaseService:
     
     def validate_required_fields(self, data: Dict[str, Any], required_fields: List[str]):
         """
-        Valida que los campos requeridos estén presentes.
+        Valida que los campos requeridos estÃ©n presentes.
         
         Args:
             data: Datos a validar
@@ -114,7 +114,7 @@ class BaseService:
     
     def validate_field_values(self, data: Dict[str, Any], validations: Dict[str, Any]):
         """
-        Valida valores de campos específicos.
+        Valida valores de campos especÃ­ficos.
         
         Args:
             data: Datos a validar
@@ -127,7 +127,7 @@ class BaseService:
             if field in data:
                 value = data[field]
                 
-                # Validación de tipo
+                # ValidaciÃ³n de tipo
                 if 'type' in validation:
                     expected_type = validation['type']
                     if not isinstance(value, expected_type):
@@ -137,7 +137,7 @@ class BaseService:
                             details={"field": field, "expected_type": expected_type.__name__, "actual_type": type(value).__name__}
                         )
                 
-                # Validación de rango
+                # ValidaciÃ³n de rango
                 if 'min' in validation and value < validation['min']:
                     raise ValidationServiceError(
                         f"Campo '{field}' debe ser mayor o igual a {validation['min']}",
@@ -152,7 +152,7 @@ class BaseService:
                         details={"field": field, "max": validation['max'], "actual": value}
                     )
                 
-                # Validación de longitud
+                # ValidaciÃ³n de longitud
                 if 'min_length' in validation and len(str(value)) < validation['min_length']:
                     raise ValidationServiceError(
                         f"Campo '{field}' debe tener al menos {validation['min_length']} caracteres",
@@ -162,33 +162,33 @@ class BaseService:
                 
                 if 'max_length' in validation and len(str(value)) > validation['max_length']:
                     raise ValidationServiceError(
-                        f"Campo '{field}' debe tener máximo {validation['max_length']} caracteres",
+                        f"Campo '{field}' debe tener mÃ¡ximo {validation['max_length']} caracteres",
                         error_code="field_too_long",
                         details={"field": field, "max_length": validation['max_length'], "actual_length": len(str(value))}
                     )
     
     def execute_with_transaction(self, func, *args, **kwargs):
         """
-        Ejecuta una función dentro de una transacción de base de datos.
+        Ejecuta una funciÃ³n dentro de una transacciÃ³n de base de datos.
         
         Args:
-            func: Función a ejecutar
-            *args: Argumentos de la función
-            **kwargs: Argumentos con nombre de la función
+            func: FunciÃ³n a ejecutar
+            *args: Argumentos de la funciÃ³n
+            **kwargs: Argumentos con nombre de la funciÃ³n
             
         Returns:
-            Resultado de la función
+            Resultado de la funciÃ³n
             
         Raises:
-            ServiceError: Si ocurre un error durante la transacción
+            ServiceError: Si ocurre un error durante la transacciÃ³n
         """
         try:
             with transaction.atomic():
                 return func(*args, **kwargs)
         except Exception as e:
-            self.log_error(f"Error en transacción: {str(e)}")
+            self.log_error(f"Error en transacciÃ³n: {str(e)}")
             raise ServiceError(
-                f"Error en operación de base de datos: {str(e)}",
+                f"Error en operaciÃ³n de base de datos: {str(e)}",
                 error_code="transaction_error",
                 details={"original_error": str(e)}
             )
@@ -199,8 +199,8 @@ class BaseService:
         
         Args:
             queryset: QuerySet a paginar
-            page: Número de página (empezando en 1)
-            page_size: Tamaño de página
+            page: NÃºmero de pÃ¡gina (empezando en 1)
+            page_size: TamaÃ±o de pÃ¡gina
             
         Returns:
             Diccionario con datos paginados
@@ -230,17 +230,24 @@ class BaseService:
     
     def create_audit_log(self, user: User, action: str, resource_type: str, resource_id: Any = None, details: Dict[str, Any] = None):
         """
-        Crea un log de auditoría.
+        Crea un log de auditorÃ­a.
         
         Args:
-            user: Usuario que realiza la acción
-            action: Acción realizada
+            user: Usuario que realiza la acciÃ³n
+            action: AcciÃ³n realizada
             resource_type: Tipo de recurso
             resource_id: ID del recurso (opcional)
             details: Detalles adicionales (opcional)
         """
         try:
-            from ..models import ActivityLog
+            try:
+                from audit.models import ActivityLog
+            except ImportError:
+                ActivityLog = None
+            
+            if ActivityLog is None:
+                self.log_debug("Servicio de auditorÃ­a no disponible; se omite creaciÃ³n de log")
+                return
             
             ActivityLog.objects.create(
                 user=user,
@@ -251,7 +258,7 @@ class BaseService:
                 timestamp=timezone.now()
             )
         except Exception as e:
-            self.log_warning(f"Error creando log de auditoría: {str(e)}")
+            self.log_warning(f"Error creando log de auditorÃ­a: {str(e)}")
 
 
 class ServiceResult:
@@ -294,7 +301,7 @@ class ServiceResult:
     
     @classmethod
     def validation_error(cls, message: str, details: Dict[str, Any] = None):
-        """Crea un resultado de error de validación."""
+        """Crea un resultado de error de validaciÃ³n."""
         error = ValidationServiceError(message, details=details)
         return cls(success=False, error=error)
     
@@ -309,3 +316,5 @@ class ServiceResult:
         """Crea un resultado de error de recurso no encontrado."""
         error = NotFoundServiceError(message)
         return cls(success=False, error=error)
+
+

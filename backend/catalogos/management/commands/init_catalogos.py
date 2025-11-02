@@ -1,22 +1,22 @@
-from django.core.management.base import BaseCommand
+﻿from django.core.management.base import BaseCommand
 from catalogos.models import Tema, Parametro
 
 
 class Command(BaseCommand):
-    help = 'Inicializa los temas y parámetros básicos del sistema.'
+    help = 'Inicializa los temas y parÃ¡metros bÃ¡sicos del sistema.'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.SUCCESS('Iniciando inicialización de catálogos...'))
+        self.stdout.write(self.style.SUCCESS('Iniciando inicializaciÃ³n de catÃ¡logos...'))
 
-        # Datos iniciales: Temas y Parámetros
+        # Datos iniciales: Temas y ParÃ¡metros
         temas_data = [
             {
                 'codigo': 'TIPO_DOC',
                 'nombre': 'Tipo de Documento',
-                'descripcion': 'Tipos de documentos de identificación válidos en Colombia',
+                'descripcion': 'Tipos de documentos de identificaciÃ³n vÃ¡lidos en Colombia',
                 'parametros': [
-                    {'codigo': 'CC', 'nombre': 'Cédula de Ciudadanía', 'descripcion': 'Documento nacional de identidad para mayores de edad'},
-                    {'codigo': 'CE', 'nombre': 'Cédula de Extranjería', 'descripcion': 'Documento para extranjeros residentes en Colombia'},
+                    {'codigo': 'CC', 'nombre': 'CÃ©dula de CiudadanÃ­a', 'descripcion': 'Documento nacional de identidad para mayores de edad'},
+                    {'codigo': 'CE', 'nombre': 'CÃ©dula de ExtranjerÃ­a', 'descripcion': 'Documento para extranjeros residentes en Colombia'},
                     {'codigo': 'PA', 'nombre': 'Pasaporte', 'descripcion': 'Documento de viaje internacional'},
                     {'codigo': 'TI', 'nombre': 'Tarjeta de Identidad', 'descripcion': 'Documento para menores de edad'},
                     {'codigo': 'RC', 'nombre': 'Registro Civil', 'descripcion': 'Documento de registro de nacimiento'},
@@ -25,11 +25,11 @@ class Command(BaseCommand):
             {
                 'codigo': 'SEXO',
                 'nombre': 'Sexo',
-                'descripcion': 'Opciones de género/sexo disponibles',
+                'descripcion': 'Opciones de gÃ©nero/sexo disponibles',
                 'parametros': [
                     {'codigo': 'M', 'nombre': 'Masculino', 'descripcion': 'Sexo masculino'},
                     {'codigo': 'F', 'nombre': 'Femenino', 'descripcion': 'Sexo femenino'},
-                    {'codigo': 'O', 'nombre': 'Otro', 'descripcion': 'Otro género'},
+                    {'codigo': 'O', 'nombre': 'Otro', 'descripcion': 'Otro gÃ©nero'},
                 ]
             },
             {
@@ -41,13 +41,13 @@ class Command(BaseCommand):
                     {'codigo': 'CAS', 'nombre': 'Casado', 'descripcion': 'Persona casada'},
                     {'codigo': 'DIV', 'nombre': 'Divorciado', 'descripcion': 'Persona divorciada'},
                     {'codigo': 'VIU', 'nombre': 'Viudo', 'descripcion': 'Persona viuda'},
-                    {'codigo': 'UNL', 'nombre': 'Unión Libre', 'descripcion': 'Persona en unión libre'},
+                    {'codigo': 'UNL', 'nombre': 'UniÃ³n Libre', 'descripcion': 'Persona en uniÃ³n libre'},
                 ]
             },
             {
                 'codigo': 'GENETICA',
-                'nombre': 'Genética',
-                'descripcion': 'Tipos de genética del cacao',
+                'nombre': 'GenÃ©tica',
+                'descripcion': 'Tipos de genÃ©tica del cacao',
                 'parametros': [
                     {'codigo': 'FOR', 'nombre': 'Forastero', 'descripcion': 'Tipo de cacao Forastero'},
                     {'codigo': 'TRI', 'nombre': 'Trinitario', 'descripcion': 'Tipo de cacao Trinitario'},
@@ -57,7 +57,7 @@ class Command(BaseCommand):
             },
         ]
 
-        # Crear temas y parámetros
+        # Crear temas y parÃ¡metros
         for tema_data in temas_data:
             parametros_data = tema_data.pop('parametros')
             
@@ -72,11 +72,11 @@ class Command(BaseCommand):
             )
             
             if created:
-                self.stdout.write(self.style.SUCCESS(f'✓ Tema creado: {tema.codigo} - {tema.nombre}'))
+                self.stdout.write(self.style.SUCCESS(f'âœ“ Tema creado: {tema.codigo} - {tema.nombre}'))
             else:
-                self.stdout.write(self.style.WARNING(f'• Tema ya existe: {tema.codigo} - {tema.nombre}'))
+                self.stdout.write(self.style.WARNING(f'â€¢ Tema ya existe: {tema.codigo} - {tema.nombre}'))
             
-            # Crear parámetros del tema
+            # Crear parÃ¡metros del tema
             for param_data in parametros_data:
                 parametro, param_created = Parametro.objects.get_or_create(
                     tema=tema,
@@ -89,8 +89,10 @@ class Command(BaseCommand):
                 )
                 
                 if param_created:
-                    self.stdout.write(self.style.SUCCESS(f'  ✓ Parámetro creado: {parametro.codigo} - {parametro.nombre}'))
+                    self.stdout.write(self.style.SUCCESS(f'  âœ“ ParÃ¡metro creado: {parametro.codigo} - {parametro.nombre}'))
                 else:
-                    self.stdout.write(self.style.WARNING(f'  • Parámetro ya existe: {parametro.codigo}'))
+                    self.stdout.write(self.style.WARNING(f'  â€¢ ParÃ¡metro ya existe: {parametro.codigo}'))
 
-        self.stdout.write(self.style.SUCCESS('\n✓ Inicialización de catálogos completada'))
+        self.stdout.write(self.style.SUCCESS('\nâœ“ InicializaciÃ³n de catÃ¡logos completada'))
+
+

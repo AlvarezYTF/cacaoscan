@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-4">
-    <!-- Drop Zone mejorado -->
+    <!-- Drop Zone -->
     <div 
       @dragover.prevent="isDragging = true"
       @dragleave="isDragging = false"
       @drop.prevent="handleDrop"
-      @click="$refs.fileInput.click()"
+      @click="fileInput?.click()"
       class="border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 group"
       :class="{
         'border-green-500 bg-green-50 shadow-lg scale-[1.02]': isDragging,
@@ -20,13 +20,13 @@
             stroke="currentColor" 
             viewBox="0 0 24 24"
           >
-          <path 
-            stroke-linecap="round" 
-            stroke-linejoin="round" 
-            stroke-width="1.5" 
-            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-          />
-        </svg>
+            <path 
+              stroke-linecap="round" 
+              stroke-linejoin="round" 
+              stroke-width="1.5" 
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
         </div>
         <p class="text-xl font-bold text-gray-800 group-hover:text-green-700 transition-colors">
           Arrastra tus imágenes aquí o haz clic para seleccionarlas
@@ -45,22 +45,23 @@
       />
     </div>
 
-    <!-- Image Previews mejorados -->
+    <!-- Image Previews -->
     <div v-if="images.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
       <div 
-        v-for="(image, index) in images" 
-        :key="index"
+        v-for="image in images" 
+        :key="getImageKey(image)"
         class="relative group overflow-hidden border-2 border-gray-200 hover:border-green-300 rounded-2xl transition-all duration-300 hover:shadow-lg"
       >
         <img 
           :src="getImageUrl(image)" 
-          :alt="`Imagen ${index + 1}`"
+          :alt="image.name || 'Imagen'"
           class="w-full h-32 object-cover"
         />
         <button
-          @click.stop="removeImage(index)"
-          class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-          aria-label="Eliminar imagen"
+          @click.stop="removeImage(image)"
+          type="button"
+          class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+          :aria-label="`Eliminar imagen ${image.name}`"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -76,114 +77,124 @@
   </div>
 </template>
 
-<script>
-import { ref, toRefs } from 'vue';
+<script setup>
+// 1. Vue core
+import { ref, watch } from 'vue'
 
-export default {
-  name: 'ImageUploader',
-  props: {
-    modelValue: {
-      type: Array,
-      default: () => []
-    },
-    maxFiles: {
-      type: Number,
-      default: 10
-    },
-    maxFileSize: {
-      type: Number, // in MB
-      default: 5
-    }
+// Props
+const props = defineProps({
+  modelValue: {
+    type: Array,
+    default: () => []
   },
-  emits: ['update:modelValue'],
-  setup(props, { emit }) {
-    const { modelValue } = toRefs(props);
-    const isDragging = ref(false);
-    const fileInput = ref(null);
-    const error = ref('');
-
-    const images = ref([...modelValue.value]);
-
-    const getImageUrl = (file) => {
-      return URL.createObjectURL(file);
-    };
-
-    const validateFile = (file) => {
-      const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-      const maxSize = props.maxFileSize * 1024 * 1024; // Convert MB to bytes
-
-      if (!validTypes.includes(file.type)) {
-        return 'Tipo de archivo no soportado. Por favor, sube solo imágenes JPG o PNG.';
-      }
-
-      if (file.size > maxSize) {
-        return `El archivo ${file.name} es demasiado grande. Tamaño máximo: ${props.maxFileSize}MB.`;
-      }
-
-      return '';
-    };
-
-    const handleFileSelect = (event) => {
-      error.value = '';
-      const files = Array.from(event.target.files);
-      processFiles(files);
-      // Reset file input to allow selecting the same file again
-      if (fileInput.value) {
-        fileInput.value.value = '';
-      }
-    };
-
-    const handleDrop = (event) => {
-      isDragging.value = false;
-      error.value = '';
-      const files = Array.from(event.dataTransfer.files);
-      processFiles(files);
-    };
-
-    const processFiles = (files) => {
-      if (files.length === 0) return;
-
-      // Check if adding these files would exceed maxFiles
-      if (images.value.length + files.length > props.maxFiles) {
-        error.value = `Solo puedes subir un máximo de ${props.maxFiles} imágenes.`;
-        return;
-      }
-
-      let hasError = false;
-      const validFiles = [];
-
-      files.forEach(file => {
-        const validationError = validateFile(file);
-        if (validationError) {
-          error.value = validationError;
-          hasError = true;
-          return;
-        }
-        validFiles.push(file);
-      });
-
-      if (hasError && validFiles.length === 0) return;
-
-      // Add valid files to the images array
-      images.value = [...images.value, ...validFiles];
-      emit('update:modelValue', images.value);
-    };
-
-    const removeImage = (index) => {
-      images.value.splice(index, 1);
-      emit('update:modelValue', images.value);
-    };
-
-    return {
-      isDragging,
-      fileInput,
-      error,
-      images,
-      getImageUrl,
-      handleFileSelect,
-      handleDrop,
-      removeImage
-    };
+  maxFiles: {
+    type: Number,
+    default: 10
+  },
+  maxFileSize: {
+    type: Number,
+    default: 5 // in MB
   }
-};
+})
+
+// Emits
+const emit = defineEmits(['update:modelValue'])
+
+// State
+const isDragging = ref(false)
+const fileInput = ref(null)
+const error = ref('')
+const images = ref([...props.modelValue])
+
+// Helper function to generate unique keys for images
+const getImageKey = (file) => {
+  if (file instanceof File) {
+    return `${file.name}-${file.size}-${file.lastModified}`
+  }
+  return file.id || file.url || file.name || String(Math.random())
+}
+
+// Functions
+const getImageUrl = (file) => {
+  if (file instanceof File) {
+    return URL.createObjectURL(file)
+  }
+  return file.url || file
+}
+
+const validateFile = (file) => {
+  const validTypes = ['image/jpeg', 'image/png', 'image/jpg']
+  const maxSize = props.maxFileSize * 1024 * 1024
+
+  if (!validTypes.includes(file.type)) {
+    return 'Tipo de archivo no soportado. Por favor, sube solo imágenes JPG o PNG.'
+  }
+
+  if (file.size > maxSize) {
+    return `El archivo ${file.name} es demasiado grande. Tamaño máximo: ${props.maxFileSize}MB.`
+  }
+
+  return ''
+}
+
+const handleFileSelect = (event) => {
+  error.value = ''
+  const files = Array.from(event.target.files)
+  processFiles(files)
+  
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+const handleDrop = (event) => {
+  isDragging.value = false
+  error.value = ''
+  const files = Array.from(event.dataTransfer.files)
+  processFiles(files)
+}
+
+const processFiles = (files) => {
+  if (files.length === 0) return
+
+  if (images.value.length + files.length > props.maxFiles) {
+    error.value = `Solo puedes subir un máximo de ${props.maxFiles} imágenes.`
+    return
+  }
+
+  let hasError = false
+  const validFiles = []
+
+  files.forEach(file => {
+    const validationError = validateFile(file)
+    if (validationError) {
+      error.value = validationError
+      hasError = true
+      return
+    }
+    validFiles.push(file)
+  })
+
+  if (hasError && validFiles.length === 0) return
+
+  images.value = [...images.value, ...validFiles]
+  emit('update:modelValue', images.value)
+}
+
+const removeImage = (imageToRemove) => {
+  const index = images.value.findIndex(img => getImageKey(img) === getImageKey(imageToRemove))
+  if (index > -1) {
+    images.value.splice(index, 1)
+    emit('update:modelValue', images.value)
+  }
+}
+
+// Watch for changes in modelValue from parent
+watch(() => props.modelValue, (newValue) => {
+  images.value = [...newValue]
+}, { deep: true })
 </script>
+
+<style scoped>
+/* Solo estilos que no están en Tailwind si es necesario */
+</style>

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Servicios para CacaoScan API.
 """
 
@@ -12,14 +12,14 @@ from .base import (
     NotFoundServiceError
 )
 
-# Importar servicios específicos
+# Importar servicios especÃ­ficos
 from .auth_service import AuthenticationService
 from .analysis_service import AnalysisService
 from .image_service import ImageManagementService
 from .finca_service import FincaService, LoteService
 from .report_service import ReportService
 
-# Crear instancias de servicios para uso fácil
+# Crear instancias de servicios para uso fÃ¡cil
 auth_service = AuthenticationService()
 analysis_service = AnalysisService()
 image_service = ImageManagementService()
@@ -37,7 +37,7 @@ __all__ = [
     'PermissionServiceError',
     'NotFoundServiceError',
     
-    # Servicios específicos
+    # Servicios especÃ­ficos
     'AuthenticationService',
     'AnalysisService', 
     'ImageManagementService',
@@ -53,3 +53,5 @@ __all__ = [
     'lote_service',
     'report_service'
 ]
+
+

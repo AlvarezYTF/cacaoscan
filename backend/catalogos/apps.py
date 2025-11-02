@@ -1,7 +1,8 @@
-from django.apps import AppConfig
+﻿from django.apps import AppConfig
 
 
 class CatalogosConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'catalogos'
-    verbose_name = 'Catálogos del Sistema'
+    verbose_name = 'CatÃ¡logos del Sistema'
+

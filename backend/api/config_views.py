@@ -1,17 +1,20 @@
-"""
-Vistas para la configuración del sistema.
+﻿"""
+Vistas para la configuraciÃ³n del sistema.
 """
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.utils import timezone
-from .models import SystemSettings
+try:
+    from core.models import SystemSettings
+except ImportError:
+    SystemSettings = None
 from .serializers import SystemSettingsSerializer
 
 
 class SystemSettingsView(APIView):
     """
-    Vista para obtener y actualizar la configuración del sistema.
+    Vista para obtener y actualizar la configuraciÃ³n del sistema.
     """
     permission_classes = [permissions.IsAuthenticated]
     
@@ -25,7 +28,7 @@ class SystemSettingsView(APIView):
     
     def get(self, request):
         """
-        Obtener la configuración del sistema.
+        Obtener la configuraciÃ³n del sistema.
         """
         try:
             settings = SystemSettings.get_singleton()
@@ -39,7 +42,7 @@ class SystemSettingsView(APIView):
     
     def put(self, request):
         """
-        Actualizar la configuración del sistema.
+        Actualizar la configuraciÃ³n del sistema.
         Solo permite actualizar, no crear (es un singleton).
         """
         try:
@@ -68,18 +71,18 @@ class SystemSettingsView(APIView):
 
 class SystemGeneralConfigView(APIView):
     """
-    Vista específica para la configuración general.
+    Vista especÃ­fica para la configuraciÃ³n general.
     """
     permission_classes = [permissions.AllowAny]
     
     def get(self, request):
         """
-        Obtener solo la configuración general.
+        Obtener solo la configuraciÃ³n general.
         """
         try:
             settings = SystemSettings.get_singleton()
             
-            # Si no hay configuración, retornar valores por defecto
+            # Si no hay configuraciÃ³n, retornar valores por defecto
             if not settings:
                 return Response({
                     'nombre_sistema': 'CacaoScan',
@@ -99,7 +102,7 @@ class SystemGeneralConfigView(APIView):
             # Retornar valores por defecto en caso de error
             import logging
             logger = logging.getLogger("cacaoscan.api")
-            logger.warning(f"Error cargando configuración general: {e}")
+            logger.warning(f"Error cargando configuraciÃ³n general: {e}")
             
             return Response({
                 'nombre_sistema': 'CacaoScan',
@@ -110,12 +113,12 @@ class SystemGeneralConfigView(APIView):
     
     def put(self, request):
         """
-        Actualizar la configuración general.
+        Actualizar la configuraciÃ³n general.
         """
         # Verificar permisos de admin para PUT
         if not request.user.is_authenticated or not request.user.is_staff:
             return Response(
-                {'error': 'No tienes permisos para editar la configuración'},
+                {'error': 'No tienes permisos para editar la configuraciÃ³n'},
                 status=status.HTTP_403_FORBIDDEN
             )
             
@@ -149,18 +152,18 @@ class SystemGeneralConfigView(APIView):
 
 class SystemSecurityConfigView(APIView):
     """
-    Vista específica para la configuración de seguridad.
+    Vista especÃ­fica para la configuraciÃ³n de seguridad.
     """
     permission_classes = [permissions.IsAdminUser]
     
     def get(self, request):
         """
-        Obtener solo la configuración de seguridad.
+        Obtener solo la configuraciÃ³n de seguridad.
         """
         try:
             settings = SystemSettings.get_singleton()
             
-            # Si no hay configuración, retornar valores por defecto
+            # Si no hay configuraciÃ³n, retornar valores por defecto
             if not settings:
                 return Response({
                     'recaptcha_enabled': True,
@@ -180,7 +183,7 @@ class SystemSecurityConfigView(APIView):
             # Retornar valores por defecto en caso de error
             import logging
             logger = logging.getLogger("cacaoscan.api")
-            logger.warning(f"Error cargando configuración de seguridad: {e}")
+            logger.warning(f"Error cargando configuraciÃ³n de seguridad: {e}")
             
             return Response({
                 'recaptcha_enabled': True,
@@ -191,7 +194,7 @@ class SystemSecurityConfigView(APIView):
     
     def put(self, request):
         """
-        Actualizar la configuración de seguridad.
+        Actualizar la configuraciÃ³n de seguridad.
         """
         try:
             settings = SystemSettings.get_singleton()
@@ -224,18 +227,18 @@ class SystemSecurityConfigView(APIView):
 
 class SystemMLConfigView(APIView):
     """
-    Vista específica para la configuración de modelos ML.
+    Vista especÃ­fica para la configuraciÃ³n de modelos ML.
     """
     permission_classes = [permissions.IsAdminUser]
     
     def get(self, request):
         """
-        Obtener solo la configuración de ML.
+        Obtener solo la configuraciÃ³n de ML.
         """
         try:
             settings = SystemSettings.get_singleton()
             
-            # Si no hay configuración, retornar valores por defecto
+            # Si no hay configuraciÃ³n, retornar valores por defecto
             if not settings:
                 return Response({
                     'active_model': 'yolov8',
@@ -251,7 +254,7 @@ class SystemMLConfigView(APIView):
             # Retornar valores por defecto en caso de error
             import logging
             logger = logging.getLogger("cacaoscan.api")
-            logger.warning(f"Error cargando configuración ML: {e}")
+            logger.warning(f"Error cargando configuraciÃ³n ML: {e}")
             
             return Response({
                 'active_model': 'yolov8',
@@ -260,7 +263,7 @@ class SystemMLConfigView(APIView):
     
     def put(self, request):
         """
-        Actualizar la configuración de ML.
+        Actualizar la configuraciÃ³n de ML.
         """
         try:
             settings = SystemSettings.get_singleton()
@@ -287,14 +290,14 @@ class SystemMLConfigView(APIView):
 
 class SystemInfoView(APIView):
     """
-    Vista para obtener información del sistema.
-    Accesible públicamente para verificar estado del servidor.
+    Vista para obtener informaciÃ³n del sistema.
+    Accesible pÃºblicamente para verificar estado del servidor.
     """
     permission_classes = [permissions.AllowAny]
     
     def get(self, request):
         """
-        Obtener información del sistema.
+        Obtener informaciÃ³n del sistema.
         """
         try:
             import django
@@ -319,7 +322,7 @@ class SystemInfoView(APIView):
             
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
-            # Retornar datos mínimos incluso si hay error
+            # Retornar datos mÃ­nimos incluso si hay error
             return Response({
                 'system': 'CacaoScan',
                 'version': '1.0.0',
@@ -328,4 +331,6 @@ class SystemInfoView(APIView):
                 'author': 'Equipo SENA Guaviare',
                 'error': 'Error al obtener detalles completos'
             }, status=status.HTTP_200_OK)
+
+
 

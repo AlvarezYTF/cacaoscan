@@ -35,7 +35,8 @@
                 <p class="text-sm text-red-700 mt-1">{{ globalError }}</p>
                 <button
                   @click="clearError"
-                  class="text-sm text-red-600 hover:text-red-500 underline mt-2"
+                  type="button"
+                  class="text-sm text-red-600 hover:text-red-500 underline mt-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded"
                 >
                   Cerrar
                 </button>
@@ -101,7 +102,7 @@
                 v-for="prediction in recentPredictions"
                 :key="prediction.id"
                 @click="currentPrediction = prediction"
-                class="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                class="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200"
               >
                 <div class="flex items-center space-x-3">
                   <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -126,225 +127,149 @@
       </div>
 
       <!-- Success Message -->
-      <div 
-        v-if="showSuccessMessage" 
-        class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300"
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 translate-x-full"
+        enter-to-class="opacity-100 translate-x-0"
+        leave-active-class="transition-all duration-300 ease-in"
+        leave-from-class="opacity-100 translate-x-0"
+        leave-to-class="opacity-0 translate-x-full"
       >
-        <div class="flex items-center">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-          {{ successMessage }}
+        <div 
+          v-if="showSuccessMessage" 
+          class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50"
+        >
+          <div class="flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            {{ successMessage }}
+          </div>
         </div>
-      </div>
+      </Transition>
     </div>
   </div>
 </template>
 
-<script>
-import { ref, onMounted } from 'vue';
-import ImageUpload from '@/components/user/ImageUpload.vue';
-import PredictionResults from '@/components/user/PredictionResults.vue';
-import { getImageHistory } from '@/services/predictionApi.js';
+<script setup>
+// 1. Vue core
+import { ref, onMounted } from 'vue'
 
-export default {
-  name: 'PredictionView',
-  components: {
-    ImageUpload,
-    PredictionResults
-  },
+// 2. Components
+import ImageUpload from '@/components/user/ImageUpload.vue'
+import PredictionResults from '@/components/user/PredictionResults.vue'
+
+// 3. Services
+import { getImageHistory } from '@/services/predictionApi.js'
+
+// State
+const currentPrediction = ref(null)
+const recentPredictions = ref([])
+const globalError = ref('')
+const showSuccessMessage = ref(false)
+const successMessage = ref('')
+
+// Functions
+const handlePredictionResult = (result) => {
+  console.log('Predicción recibida:', result)
   
-  setup() {
-    // Estado reactivo
-    const currentPrediction = ref(null);
-    const recentPredictions = ref([]);
-    const globalError = ref('');
-    const showSuccessMessage = ref(false);
-    const successMessage = ref('');
-    
-    // Manejo de resultados de predicción
-    const handlePredictionResult = (result) => {
-      console.log('Predicción recibida:', result);
-      
-      currentPrediction.value = result;
-      
-      // Agregar a historial reciente (al principio)
-      recentPredictions.value.unshift(result);
-      
-      // Mantener solo los últimos 5 análisis
-      if (recentPredictions.value.length > 5) {
-        recentPredictions.value = recentPredictions.value.slice(0, 5);
-      }
-      
-      // Mostrar mensaje de éxito
-      showSuccess('¡Análisis completado exitosamente!');
-      
-      // Limpiar errores
-      globalError.value = '';
-    };
-    
-    const handlePredictionError = (error) => {
-      console.error('Error en predicción:', error);
-      globalError.value = error.message || 'Error desconocido en la predicción';
-      currentPrediction.value = null;
-    };
-    
-    const handleNewAnalysis = () => {
-      currentPrediction.value = null;
-      globalError.value = '';
-    };
-    
-    const handleSaveAnalysis = () => {
-      // Aquí se podría implementar guardar en una base de datos local o remota
-      showSuccess('Análisis guardado en el historial');
-    };
-    
-    const clearError = () => {
-      globalError.value = '';
-    };
-    
-    const showSuccess = (message) => {
-      successMessage.value = message;
-      showSuccessMessage.value = true;
-      
-      setTimeout(() => {
-        showSuccessMessage.value = false;
-      }, 3000);
-    };
-    
-    // Cargar historial reciente al montar
-    const loadRecentPredictions = async () => {
-      try {
-        const response = await getImageHistory({ 
-          processed: true,
-          page: 1,
-          page_size: 5 // Solo los últimos 5
-        });
-        
-        if (response.results) {
-          recentPredictions.value = response.results;
-        }
-      } catch (error) {
-        console.warn('No se pudo cargar el historial:', error.message);
-        // No mostrar error al usuario, ya que es opcional
-      }
-    };
-    
-    // Métodos de formateo
-    const formatNumber = (value) => {
-      if (value === null || value === undefined) return 'N/A';
-      const num = parseFloat(value);
-      return isNaN(num) ? 'N/A' : num.toFixed(2);
-    };
-    
-    const formatDimensions = (prediction) => {
-      return `${formatNumber(prediction.width)} × ${formatNumber(prediction.height)} × ${formatNumber(prediction.thickness)} mm`;
-    };
-    
-    const formatRelativeTime = (dateString) => {
-      if (!dateString) return '';
-      
-      const now = new Date();
-      const date = new Date(dateString);
-      const diffMs = now - date;
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffHours = Math.floor(diffMs / 3600000);
-      const diffDays = Math.floor(diffMs / 86400000);
-      
-      if (diffMins < 1) return 'Hace un momento';
-      if (diffMins < 60) return `Hace ${diffMins} minuto${diffMins !== 1 ? 's' : ''}`;
-      if (diffHours < 24) return `Hace ${diffHours} hora${diffHours !== 1 ? 's' : ''}`;
-      if (diffDays < 7) return `Hace ${diffDays} día${diffDays !== 1 ? 's' : ''}`;
-      
-      return date.toLocaleDateString('es-ES');
-    };
-    
-    // Lifecycle
-    onMounted(() => {
-      loadRecentPredictions();
-    });
-    
-    return {
-      // Estado
-      currentPrediction,
-      recentPredictions,
-      globalError,
-      showSuccessMessage,
-      successMessage,
-      
-      // Métodos
-      handlePredictionResult,
-      handlePredictionError,
-      handleNewAnalysis,
-      handleSaveAnalysis,
-      clearError,
-      formatNumber,
-      formatDimensions,
-      formatRelativeTime
-    };
+  currentPrediction.value = result
+  
+  // Agregar a historial reciente (al principio)
+  recentPredictions.value.unshift(result)
+  
+  // Mantener solo los últimos 5 análisis
+  if (recentPredictions.value.length > 5) {
+    recentPredictions.value = recentPredictions.value.slice(0, 5)
   }
-};
+  
+  // Mostrar mensaje de éxito
+  showSuccess('¡Análisis completado exitosamente!')
+  
+  // Limpiar errores
+  globalError.value = ''
+}
+
+const handlePredictionError = (error) => {
+  console.error('Error en predicción:', error)
+  globalError.value = error.message || 'Error desconocido en la predicción'
+  currentPrediction.value = null
+}
+
+const handleNewAnalysis = () => {
+  currentPrediction.value = null
+  globalError.value = ''
+}
+
+const handleSaveAnalysis = () => {
+  // Aquí se podría implementar guardar en una base de datos local o remota
+  showSuccess('Análisis guardado en el historial')
+}
+
+const clearError = () => {
+  globalError.value = ''
+}
+
+const showSuccess = (message) => {
+  successMessage.value = message
+  showSuccessMessage.value = true
+  
+  setTimeout(() => {
+    showSuccessMessage.value = false
+  }, 3000)
+}
+
+const loadRecentPredictions = async () => {
+  try {
+    const response = await getImageHistory({ 
+      processed: true,
+      page: 1,
+      page_size: 5 // Solo los últimos 5
+    })
+    
+    if (response.results) {
+      recentPredictions.value = response.results
+    }
+  } catch (error) {
+    console.warn('No se pudo cargar el historial:', error.message)
+    // No mostrar error al usuario, ya que es opcional
+  }
+}
+
+const formatNumber = (value) => {
+  if (value === null || value === undefined) return 'N/A'
+  const num = parseFloat(value)
+  return isNaN(num) ? 'N/A' : num.toFixed(2)
+}
+
+const formatDimensions = (prediction) => {
+  return `${formatNumber(prediction.width)} × ${formatNumber(prediction.height)} × ${formatNumber(prediction.thickness)} mm`
+}
+
+const formatRelativeTime = (dateString) => {
+  if (!dateString) return ''
+  
+  const now = new Date()
+  const date = new Date(dateString)
+  const diffMs = now - date
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+  
+  if (diffMins < 1) return 'Hace un momento'
+  if (diffMins < 60) return `Hace ${diffMins} minuto${diffMins !== 1 ? 's' : ''}`
+  if (diffHours < 24) return `Hace ${diffHours} hora${diffHours !== 1 ? 's' : ''}`
+  if (diffDays < 7) return `Hace ${diffDays} día${diffDays !== 1 ? 's' : ''}`
+  
+  return date.toLocaleDateString('es-ES')
+}
+
+// Lifecycle
+onMounted(() => {
+  loadRecentPredictions()
+})
 </script>
 
 <style scoped>
-/* Animaciones */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-up-enter-from {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-
-/* Efectos hover mejorados */
-.recent-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Responsive adjustments */
-@media (max-width: 1280px) {
-  .grid-cols-1.xl\:grid-cols-2 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-}
-
-/* Mejoras de accesibilidad */
-.focus-visible:focus {
-  outline: 2px solid #10b981;
-  outline-offset: 2px;
-}
-
-/* Animación del mensaje de éxito */
-.success-message {
-  animation: slideInRight 0.3s ease-out;
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
+/* Solo estilos que no están en Tailwind si es necesario */
 </style>

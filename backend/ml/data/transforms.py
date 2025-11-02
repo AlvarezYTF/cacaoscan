@@ -389,7 +389,7 @@ def validate_crop_quality(image_rgb: np.ndarray, mask: np.ndarray, min_aspect_ra
         min_area: Área mínima en píxeles del objeto detectado
         
     Returns:
-        True si el recorte es válido, False en caso contrario
+        True si el recorte es vÃ¡lido, False en caso contrario
     """
     if image_rgb is None or mask is None:
         return False
@@ -491,6 +491,37 @@ def create_transparent_crop(image_rgb: np.ndarray, mask: np.ndarray, padding: in
         return rgba
     else:
         # Si crop_only, solo recortar sin refinamiento adicional
+        # VALIDACIÓN: Verificar que el crop no sea casi toda la imagen
+        original_area = image_rgb.shape[0] * image_rgb.shape[1]
+        crop_area = w * h
+        crop_ratio = crop_area / original_area
+        
+        # Si el crop ocupa más del 80% de la imagen, algo está mal - rechazar
+        if crop_ratio > 0.80:
+            # Calcular el área real del objeto (píxeles con máscara > 0)
+            object_area = np.sum(final_mask > 128)
+            object_ratio = object_area / original_area
+            
+            # Si el objeto también ocupa más del 80%, rechazar completamente
+            if object_ratio > 0.80:
+                raise ValueError(
+                    f"El objeto detectado ocupa más del 80% de la imagen ({object_ratio:.1%}). "
+                    f"Esto sugiere que no se detectó correctamente el grano o la segmentación falló. "
+                    f"Área objeto: {object_area}px, Área imagen: {original_area}px"
+                )
+            # Si el objeto es pequeño pero el bbox es grande, ajustar el bbox al objeto
+            else:
+                # Recalcular bbox basado solo en los píxeles del objeto
+                coords = np.where(final_mask > 128)
+                if len(coords[0]) > 0:
+                    y_min, y_max = coords[0].min(), coords[0].max()
+                    x_min, x_max = coords[1].min(), coords[1].max()
+                    # Aplicar padding mínimo
+                    x = max(0, x_min - padding)
+                    y = max(0, y_min - padding)
+                    w = min(image_rgb.shape[1] - x, (x_max - x_min) + 2 * padding)
+                    h = min(image_rgb.shape[0] - y, (y_max - y_min) + 2 * padding)
+        
         crop_rgb = image_rgb[y:y+h, x:x+w].copy()
         crop_alpha = final_mask[y:y+h, x:x+w].copy()
 

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Endpoints API para entrenamiento incremental de modelos de cacao.
 """
 import logging
@@ -14,7 +14,17 @@ from typing import Dict, List, Any
 
 from .services import analysis_service
 from .utils import create_error_response, create_success_response
-from .models import TrainingJob, CacaoPrediction, CacaoImage
+# Importar desde apps modulares
+try:
+    from training.models import TrainingJob
+except ImportError:
+    TrainingJob = None
+
+try:
+    from images_app.models import CacaoPrediction, CacaoImage
+except ImportError:
+    CacaoPrediction = None
+    CacaoImage = None
 
 logger = logging.getLogger("cacaoscan.api")
 
@@ -125,7 +135,7 @@ class IncrementalTrainingView(APIView):
                     }
                 )
             ),
-            400: openapi.Response(description="Datos inválidos"),
+            400: openapi.Response(description="Datos invÃ¡lidos"),
             401: openapi.Response(description="No autorizado"),
         },
         tags=['Entrenamiento Incremental']
@@ -213,7 +223,7 @@ class IncrementalTrainingView(APIView):
                 training_job.completed_at = timezone.now()
                 training_job.results = {
                     'success': False,
-                    'error': 'Entrenamiento incremental falló'
+                    'error': 'Entrenamiento incremental fallÃ³'
                 }
             
             training_job.save()
@@ -273,14 +283,14 @@ class IncrementalDataUploadView(APIView):
             openapi.Parameter(
                 'images_zip',
                 openapi.IN_FORM,
-                description="Archivo ZIP con imágenes correspondientes",
+                description="Archivo ZIP con imÃ¡genes correspondientes",
                 type=openapi.TYPE_FILE,
                 required=False
             ),
             openapi.Parameter(
                 'target',
                 openapi.IN_FORM,
-                description="Target específico",
+                description="Target especÃ­fico",
                 type=openapi.TYPE_STRING,
                 enum=['alto', 'ancho', 'grosor', 'peso'],
                 default='alto'
@@ -298,7 +308,7 @@ class IncrementalDataUploadView(APIView):
                     }
                 )
             ),
-            400: openapi.Response(description="Datos inválidos"),
+            400: openapi.Response(description="Datos invÃ¡lidos"),
             401: openapi.Response(description="No autorizado"),
         },
         tags=['Entrenamiento Incremental']
@@ -355,7 +365,7 @@ class IncrementalDataUploadView(APIView):
                 }
                 new_data.append(record)
             
-            # Procesar imágenes ZIP si se proporciona
+            # Procesar imÃ¡genes ZIP si se proporciona
             if images_zip:
                 import zipfile
                 import tempfile
@@ -365,7 +375,7 @@ class IncrementalDataUploadView(APIView):
                     with zipfile.ZipFile(images_zip, 'r') as zip_ref:
                         zip_ref.extractall(temp_dir)
                     
-                    # Mover imágenes a directorio correcto
+                    # Mover imÃ¡genes a directorio correcto
                     images_dir = Path("backend/media/cacao_images/raw")
                     images_dir.mkdir(parents=True, exist_ok=True)
                     
@@ -389,7 +399,7 @@ class IncrementalDataUploadView(APIView):
                     'target': target,
                     'data_preview': new_data[:5]  # Primeros 5 registros como preview
                 },
-                message=f"Datos subidos exitosamente. Versión {version} creada con {len(new_data)} muestras",
+                message=f"Datos subidos exitosamente. VersiÃ³n {version} creada con {len(new_data)} muestras",
                 status_code=status.HTTP_200_OK
             )
             
@@ -409,20 +419,20 @@ class IncrementalModelVersionsView(APIView):
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene información de versiones de modelos incrementales",
+        operation_description="Obtiene informaciÃ³n de versiones de modelos incrementales",
         operation_summary="Versiones de modelos incrementales",
         manual_parameters=[
             openapi.Parameter(
                 'target',
                 openapi.IN_QUERY,
-                description="Target específico",
+                description="Target especÃ­fico",
                 type=openapi.TYPE_STRING,
                 enum=['alto', 'ancho', 'grosor', 'peso']
             ),
             openapi.Parameter(
                 'limit',
                 openapi.IN_QUERY,
-                description="Límite de versiones a retornar",
+                description="LÃ­mite de versiones a retornar",
                 type=openapi.TYPE_INTEGER,
                 default=10
             )
@@ -445,7 +455,7 @@ class IncrementalModelVersionsView(APIView):
     )
     def get(self, request):
         """
-        Obtiene información de versiones de modelos incrementales.
+        Obtiene informaciÃ³n de versiones de modelos incrementales.
         """
         try:
             target = request.GET.get('target')
@@ -494,13 +504,13 @@ class IncrementalDataVersionsView(APIView):
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene información de versiones de datos incrementales",
+        operation_description="Obtiene informaciÃ³n de versiones de datos incrementales",
         operation_summary="Versiones de datos incrementales",
         manual_parameters=[
             openapi.Parameter(
                 'limit',
                 openapi.IN_QUERY,
-                description="Límite de versiones a retornar",
+                description="LÃ­mite de versiones a retornar",
                 type=openapi.TYPE_INTEGER,
                 default=10
             )
@@ -523,7 +533,7 @@ class IncrementalDataVersionsView(APIView):
     )
     def get(self, request):
         """
-        Obtiene información de versiones de datos incrementales.
+        Obtiene informaciÃ³n de versiones de datos incrementales.
         """
         try:
             limit = int(request.GET.get('limit', 10))
@@ -554,3 +564,5 @@ class IncrementalDataVersionsView(APIView):
                 errors={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+

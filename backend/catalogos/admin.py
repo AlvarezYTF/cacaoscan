@@ -1,4 +1,4 @@
-from django.contrib import admin
+﻿from django.contrib import admin
 from .models import Tema, Parametro, Departamento, Municipio
 
 
@@ -10,7 +10,7 @@ class TemaAdmin(admin.ModelAdmin):
     list_editable = ['activo']
     
     fieldsets = (
-        ('Información Básica', {
+        ('InformaciÃ³n BÃ¡sica', {
             'fields': ('codigo', 'nombre', 'descripcion')
         }),
         ('Estado', {
@@ -19,9 +19,9 @@ class TemaAdmin(admin.ModelAdmin):
     )
     
     def parametros_count(self, obj):
-        """Muestra el número de parámetros del tema"""
+        """Muestra el nÃºmero de parÃ¡metros del tema"""
         return obj.parametros.filter(activo=True).count()
-    parametros_count.short_description = 'Parámetros Activos'
+    parametros_count.short_description = 'ParÃ¡metros Activos'
 
 
 @admin.register(Parametro)
@@ -32,7 +32,7 @@ class ParametroAdmin(admin.ModelAdmin):
     list_editable = ['activo']
     
     fieldsets = (
-        ('Información Básica', {
+        ('InformaciÃ³n BÃ¡sica', {
             'fields': ('tema', 'codigo', 'nombre', 'descripcion')
         }),
         ('Estado', {
@@ -48,13 +48,13 @@ class DepartamentoAdmin(admin.ModelAdmin):
     list_filter = []
     
     fieldsets = (
-        ('Información', {
+        ('InformaciÃ³n', {
             'fields': ('codigo', 'nombre')
         }),
     )
     
     def municipios_count(self, obj):
-        """Muestra el número de municipios del departamento"""
+        """Muestra el nÃºmero de municipios del departamento"""
         return obj.municipios.count()
     municipios_count.short_description = 'Municipios'
 
@@ -66,7 +66,8 @@ class MunicipioAdmin(admin.ModelAdmin):
     search_fields = ['codigo', 'nombre', 'departamento__nombre']
     
     fieldsets = (
-        ('Información', {
+        ('InformaciÃ³n', {
             'fields': ('departamento', 'codigo', 'nombre')
         }),
     )
+

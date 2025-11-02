@@ -1,0 +1,478 @@
+================================================================================
+                    FLUJO DE ENTRENAMIENTO - SISTEMA CACAOSCAN
+================================================================================
+
+CONTENIDO:
+1. Flujo Actual del Entrenamiento
+2. Flujo Mejorado con Calibración de Píxeles
+3. Comparación de Ambos Flujos
+4. Detalles de Implementación
+5. Mejoras Propuestas
+
+================================================================================
+1. FLUJO ACTUAL DEL ENTRENAMIENTO
+================================================================================
+
+INICIO
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ COMANDO: python manage.py train_cacao_models                            │
+│ Argumentos: --epochs, --batch-size, --model-type, etc.                  │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 1: CARGAR DATASET                                                  │
+│   - Lee dataset_cacao.clean.csv                                         │
+│   - Valida que existan imágenes .bmp en raw/                             │
+│   - Obtiene registros válidos con datos:                                │
+│     * ID, Alto (mm), Ancho (mm), Grosor (mm), Peso (g)                  │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 2: VERIFICAR/GENERAR CROPS                                         │
+│   - Busca imágenes segmentadas (crops) en media/cacao_images/crops/     │
+│   - Si no existe crop para una imagen:                                  │
+│     * Usa CacaoCropper para segmentar                                   │
+│     * Guarda PNG segmentado en crops/                                    │
+│   - Filtra registros que tienen crops válidos                           │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 3: VALIDAR CALIDAD DE CROPS                                        │
+│   - Verifica tamaño mínimo (100x100 píxeles)                           │
+│   - Valida que no sea principalmente fondo blanco                       │
+│   - Si crop es de mala calidad, lo regenera                             │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 4: PREPARAR DATASET PARA ENTRENAMIENTO                             │
+│   - Crea lista de rutas a crops (.png)                                  │
+│   - Extrae targets del CSV (alto, ancho, grosor, peso)                  │
+│   - Normaliza imágenes a 224x224                                         │
+│   - Aplica transformaciones (resize, normalize, augmentación)            │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 5: CREAR SPLITS (Train/Val/Test)                                   │
+│   - Split 70% train, 15% validation, 15% test                           │
+│   - Aleatorio con semilla para reproducibilidad                         │
+│   - Crea DataLoaders con batches configurados                           │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 6: CREAR ESCALADORES                                               │
+│   - Usa StandardScaler para normalizar targets                          │
+│   - Calcula mean y std del conjunto de entrenamiento                    │
+│   - Guarda scalers para usar en predicción                              │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 7: CREAR MODELO                                                    │
+│   - Backbone: ResNet18 o ConvNeXt Tiny (pretrained)                     │
+│   - Opciones:                                                            │
+│     * Modelos individuales (uno por target)                             │
+│     * Modelo multi-head (uno para todos los targets)                    │
+│   - Head de regresión: Fully Connected → 4 outputs                      │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 8: ENTRENAR MODELO                                                 │
+│   Por cada época:                                                        │
+│   - Forward pass: Imagen → CNN → Regresión Head → Predicción            │
+│   - Calcular Loss: MSE(predicción, target_real)                         │
+│   - Backward pass: Calcular gradientes                                  │
+│   - Optimizer step: Actualizar pesos                                    │
+│   - Validar en conjunto de validación                                   │
+│   - Early stopping si no mejora                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 9: EVALUAR MODELO                                                  │
+│   - Evaluar en conjunto de test                                         │
+│   - Calcular métricas: MAE, RMSE, R²                                    │
+│   - Generar gráficos de paridad (predicted vs real)                     │
+│   - Guardar reporte de evaluación                                       │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 10: GUARDAR MODELOS Y ARTEFACTOS                                   │
+│   - Guarda modelos entrenados (.pth)                                    │
+│   - Guarda escaladores (scalers.pkl)                                    │
+│   - Guarda estadísticas de entrenamiento (JSON)                         │
+│   - Guarda gráficos de evaluación                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+FIN DEL ENTRENAMIENTO
+
+
+================================================================================
+2. FLUJO MEJORADO CON CALIBRACIÓN DE PÍXELES
+================================================================================
+
+INICIO
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ COMANDO: python manage.py train_cacao_models                             │
+│   Con calibración habilitada: --use-pixel-calibration                   │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 1: PREPARACIÓN INICIAL                                             │
+│   - Lee dataset_cacao.clean.csv                                         │
+│   - Verifica existencia de pixel_calibration.json                       │
+│   - Si no existe calibración:                                           │
+│     * Opcionalmente ejecuta calibrate_dataset_pixels.py                 │
+│     * Genera calibración antes de entrenar                              │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 2: GENERAR/VERIFICAR CROPS SEGMENTADOS                             │
+│   - Para cada imagen sin crop:                                          │
+│     * Usa segment_and_crop_cacao_bean()                                 │
+│     * Guarda PNG segmentado (sin fondo)                                 │
+│   - Si calibración existe:                                              │
+│     * Verifica calidad usando datos de calibración                      │
+│     * Regenera crops de baja calidad                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 3: ENRIQUECER DATOS CON CALIBRACIÓN                               │
+│   - Para cada registro del dataset:                                     │
+│     * Busca registro correspondiente en pixel_calibration.json          │
+│     * Obtiene medidas de píxeles:                                       │
+│       - pixel_width (ancho en píxeles)                                   │
+│       - pixel_height (alto en píxeles)                                   │
+│       - pixel_area (área en píxeles)                                    │
+│       - scale_factor (mm/píxel)                                         │
+│       - aspect_ratio (relación aspecto)                                │
+│     * Añade estas features al registro                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 4: PREPARAR DATASET ENRIQUECIDO                                    │
+│   - Imágenes: PNG segmentadas (224x224, RGB)                            │
+│   - Targets: Valores reales del CSV (alto, ancho, grosor, peso)          │
+│   - Features adicionales: Medidas de píxeles (5 features)               │
+│   - Metadata: Factores de escala por imagen                              │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 5: SPLIT DE DATOS MEJORADO                                         │
+│   - 70% train, 15% validation, 15% test                                 │
+│   - Estratificado por tamaño de grano (basado en pixel_area)            │
+│   - Balanceado por scale_factor para evitar sesgos                      │
+│   - Validación de que calibración esté distribuida en todos los splits  │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 6: CREAR MODELO HÍBRIDO                                            │
+│   Arquitectura:                                                          │
+│   ┌─────────────────┐                                                   │
+│   │ Imagen RGB      │ → CNN Backbone (ResNet18) → Features (512)       │
+│   │ (224x224x3)     │                                                   │
+│   └─────────────────┘                                                   │
+│   ┌─────────────────┐                                                   │
+│   │ Features Píxeles│ → MLP (5→64→128) → Features (128)                │
+│   │ [5 features]     │                                                   │
+│   └─────────────────┘                                                   │
+│                      │                                                   │
+│                      ▼                                                   │
+│              ┌───────────────┐                                           │
+│              │ Fusion Layer  │ Concatenate [512 + 128] → 640            │
+│              └───────────────┘                                           │
+│                      │                                                   │
+│                      ▼                                                   │
+│              ┌───────────────┐                                           │
+│              │ Regression    │ 640 → 256 → 4 outputs                    │
+│              │ Head          │ (alto, ancho, grosor, peso)              │
+│              └───────────────┘                                           │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 7: ENTRENAMIENTO CON LOSS MEJORADO                                 │
+│   Loss Function Híbrida:                                                 │
+│   L_total = L_standard + λ * L_pixel                                    │
+│                                                                          │
+│   Donde:                                                                 │
+│   - L_standard = MSE(predicción_modelo, target_real)                    │
+│   - L_pixel = MSE(predicción_píxeles, target_píxeles_calibrado)        │
+│   - λ = 0.3 (peso de validación de píxeles)                             │
+│                                                                          │
+│   Por cada época:                                                        │
+│   - Forward pass:                                                        │
+│     * Imagen → CNN → Features_CNN                                       │
+│     * Píxeles → MLP → Features_Píxeles                                  │
+│     * Concatena → Fusion → Regression → Predicción                      │
+│   - Calcular ambas pérdidas                                             │
+│   - Backward pass con pérdida combinada                                 │
+│   - Optimizer step                                                      │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 8: VALIDACIÓN MEJORADA                                             │
+│   En cada época de validación:                                          │
+│   - Validar contra targets reales (MAE, RMSE)                           │
+│   - Validar contra predicción de píxeles (si está disponible)           │
+│   - Verificar rangos razonables usando calibración:                     │
+│     * Buscar registro similar en calibración                             │
+│     * Comparar predicción vs predicción basada en píxeles               │
+│     * Error debe estar dentro de umbral (20%)                           │
+│   - Early stopping si ambas métricas mejoran                            │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 9: EVALUACIÓN FINAL                                                │
+│   Métricas calculadas:                                                   │
+│   - MAE, RMSE, R² vs targets reales                                     │
+│   - MAE, RMSE vs predicción basada en píxeles                            │
+│   - Error promedio entre predicción modelo y predicción píxeles         │
+│   - Gráficos de paridad (ambas fuentes)                                 │
+│   - Reporte comparativo                                                  │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PASO 10: GUARDAR MODELOS Y METADATOS                                    │
+│   - Guarda modelos entrenados (.pth)                                    │
+│   - Guarda escaladores (scalers.pkl)                                    │
+│   - Guarda estadísticas de entrenamiento (JSON)                         │
+│   - Guarda referencia a calibración usada (timestamp, path)            │
+│   - Guarda gráficos de evaluación                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+FIN DEL ENTRENAMIENTO MEJORADO
+
+
+================================================================================
+3. COMPARACIÓN: FLUJO ACTUAL vs MEJORADO
+================================================================================
+
+┌─────────────────────┬──────────────────────────┬──────────────────────────┐
+│ ASPECTO             │ FLUJO ACTUAL            │ FLUJO MEJORADO          │
+├─────────────────────┼──────────────────────────┼──────────────────────────┤
+│ Input de datos      │ CSV + Crops              │ CSV + Crops +           │
+│                     │                          │ Calibración Píxeles      │
+├─────────────────────┼──────────────────────────┼──────────────────────────┤
+│ Features            │ Solo imagen RGB          │ Imagen RGB +            │
+│                     │                          │ Features de píxeles     │
+├─────────────────────┼──────────────────────────┼──────────────────────────┤
+│ Modelo              │ CNN pura                 │ Modelo híbrido          │
+│                     │ (ResNet18 → Regresión)   │ (CNN + MLP + Fusion)    │
+├─────────────────────┼──────────────────────────┼──────────────────────────┤
+│ Loss function       │ MSE estándar             │ MSE híbrida             │
+│                     │                          │ (Modelo + Píxeles)      │
+├─────────────────────┼──────────────────────────┼──────────────────────────┤
+│ Validación          │ Solo vs targets reales   │ Doble validación        │
+│                     │                          │ (Modelo + Píxeles)      │
+├─────────────────────┼──────────────────────────┼──────────────────────────┤
+│ Precisión           │ Buena                    │ Mejorada                 │
+│                     │                          │ (aprende de 2 fuentes)  │
+├─────────────────────┼──────────────────────────┼──────────────────────────┤
+│ Robustez            │ Moderada                 │ Alta                     │
+│                     │                          │ (validación doble)      │
+└─────────────────────┴──────────────────────────┴──────────────────────────┘
+
+
+================================================================================
+4. DETALLES DE IMPLEMENTACIÓN
+================================================================================
+
+4.1. CALIBRACIÓN DE PÍXELES
+────────────────────────────────────────────────────────────────────────────
+Proceso:
+  1. Ejecutar: python manage.py calibrate_dataset_pixels
+  2. Para cada imagen en el CSV:
+     - Segmenta imagen (quita fondo) → PNG
+     - Mide píxeles del grano:
+       * Área total en píxeles
+       * Ancho del bounding box
+       * Alto del bounding box
+     - Calcula factores de escala:
+       * scale_alto = alto_real / height_pixels
+       * scale_ancho = ancho_real / width_pixels
+       * scale_promedio = (scale_alto + scale_ancho) / 2
+  3. Guarda en pixel_calibration.json:
+     * Datos reales (CSV)
+     * Medidas en píxeles
+     * Factores de escala
+     * Estadísticas agregadas
+
+Archivo generado: media/datasets/pixel_calibration.json
+
+
+4.2. DATASET ENRIQUECIDO
+────────────────────────────────────────────────────────────────────────────
+Estructura del registro:
+{
+    'id': int,                    # ID de la imagen
+    'image_path': Path,          # Ruta a PNG segmentado
+    'alto': float,               # Target real (mm)
+    'ancho': float,              # Target real (mm)
+    'grosor': float,             # Target real (mm)
+    'peso': float,               # Target real (g)
+    'pixel_width': int,          # Ancho en píxeles
+    'pixel_height': int,         # Alto en píxeles
+    'pixel_area': int,           # Área en píxeles
+    'scale_factor': float,       # Factor de escala (mm/píxel)
+    'aspect_ratio': float        # Relación aspecto
+}
+
+
+4.3. MODELO HÍBRIDO
+────────────────────────────────────────────────────────────────────────────
+Arquitectura:
+  Input Imagen: [batch, 3, 224, 224]
+    ↓
+  CNN Backbone (ResNet18): [batch, 512]
+  
+  Input Píxeles: [batch, 5]
+    ↓
+  MLP (5→64→128): [batch, 128]
+  
+  Concatenate: [batch, 512+128] = [batch, 640]
+    ↓
+  Fusion Layer: [batch, 640] → [batch, 256]
+    ↓
+  Regression Head: [batch, 256] → [batch, 4]
+    ↓
+  Output: [alto, ancho, grosor, peso]
+
+
+4.4. LOSS FUNCTION MEJORADA
+────────────────────────────────────────────────────────────────────────────
+def hybrid_loss(pred_model, target_real, pred_pixel, target_pixel, lambda_p=0.3):
+    """
+    Combina pérdida estándar con validación contra predicción de píxeles.
+    """
+    # Pérdida estándar
+    loss_standard = MSE(pred_model, target_real)
+    
+    # Pérdida de validación con píxeles (si disponible)
+    if pred_pixel is not None:
+        loss_pixel = MSE(pred_pixel, target_pixel)
+        return loss_standard + lambda_p * loss_pixel
+    
+    return loss_standard
+
+
+4.5. VALIDACIÓN CON CALIBRACIÓN
+────────────────────────────────────────────────────────────────────────────
+En cada época de validación:
+  1. Predecir con modelo híbrido
+  2. Para cada predicción:
+     a. Obtener medidas de píxeles de la imagen
+     b. Buscar registro similar en calibración
+     c. Calcular predicción basada en píxeles:
+        prediccion_pixel = pixel_measurement * scale_factor_similar
+     d. Comparar predicción_modelo vs prediccion_pixel
+     e. Error debe estar dentro de umbral (20%)
+
+
+================================================================================
+5. MEJORAS PROPUESTAS
+================================================================================
+
+5.1. INTEGRACIÓN AUTOMÁTICA
+────────────────────────────────────────────────────────────────────────────
+- El entrenamiento automáticamente detecta si existe pixel_calibration.json
+- Si existe, lo usa para enriquecer el dataset
+- Si no existe, puede opcionalmente generarlo antes de entrenar
+
+
+5.2. FEATURES ADICIONALES
+────────────────────────────────────────────────────────────────────────────
+Pueden añadirse más features basadas en píxeles:
+- pixel_perimeter (perímetro del grano)
+- pixel_compactness (área / perímetro²)
+- pixel_extent (área / bbox_area)
+- pixel_solidity (área / área_convex_hull)
+- pixel_eccentricity (elongación)
+
+
+5.3. AUGMENTACIÓN INTELIGENTE
+────────────────────────────────────────────────────────────────────────────
+Durante augmentación:
+- Mantener aspect_ratio real del grano
+- Ajustar scale_factor proporcionalmente
+- Validar que medidas de píxeles sean consistentes
+- No distorsionar proporciones físicas
+
+
+5.4. VALIDACIÓN CRUZADA
+────────────────────────────────────────────────────────────────────────────
+- K-fold cross-validation con calibración
+- Cada fold mantiene distribución de calibración
+- Evaluación más robusta y confiable
+
+
+5.5. TRANSFER LEARNING MEJORADO
+────────────────────────────────────────────────────────────────────────────
+- Fine-tuning del backbone CNN
+- Ajuste fino de la rama de píxeles
+- Optimización conjunta de ambas ramas
+
+
+================================================================================
+6. FLUJO COMPLETO INTEGRADO
+================================================================================
+
+PRIMERA VEZ (Setup):
+  1. python manage.py calibrate_dataset_pixels
+     → Genera pixel_calibration.json
+  
+  2. python manage.py train_cacao_models --use-pixel-calibration
+     → Entrena con calibración
+
+ENTRENAMIENTOS SUBSECUENTES:
+  1. python manage.py train_cacao_models --use-pixel-calibration
+     → Detecta calibración existente
+     → Entrena con datos enriquecidos
+
+SI SE AGREGAN NUEVAS IMÁGENES:
+  1. Actualizar dataset_cacao.clean.csv
+  2. python manage.py calibrate_dataset_pixels
+     → Actualiza calibración con nuevas imágenes
+  3. python manage.py train_cacao_models --use-pixel-calibration
+     → Re-entrena con dataset actualizado
+
+
+================================================================================
+7. VENTAJAS DEL FLUJO MEJORADO
+================================================================================
+
+✓ Mayor Precisión: Modelo aprende de imagen + medidas de píxeles
+✓ Mejor Generalización: Features adicionales ayudan con casos difíciles
+✓ Validación Robusta: Doble validación (modelo + píxeles) reduce errores
+✓ Consistencia: Predicciones más consistentes con mediciones reales
+✓ Debugging: Identifica qué fuente falla (imagen vs píxeles)
+✓ Escalabilidad: Fácil añadir más imágenes al dataset
+✓ Calibración Automática: Sistema se calibra automáticamente con datos reales
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================
+

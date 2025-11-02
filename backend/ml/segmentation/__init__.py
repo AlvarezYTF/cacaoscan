@@ -1,5 +1,5 @@
-"""
-Módulo de segmentación para CacaoScan.
+﻿"""
+MÃ³dulo de segmentaciÃ³n para CacaoScan.
 
 Incluye:
 - Inferencia con YOLOv8-seg
@@ -24,3 +24,5 @@ __all__ = [
     'create_yolo_trainer',
     'train_cacao_yolo_model'
 ]
+
+

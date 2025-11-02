@@ -3,8 +3,12 @@
     <div class="bg-gradient-to-r from-green-50 to-green-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
       <h3 class="text-xl font-bold text-gray-900">Lista de Usuarios</h3>
       <div class="flex items-center space-x-3">
-        <button @click="$emit('export')" :disabled="loading"
-          class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+        <button 
+          @click="handleExport" 
+          :disabled="loading"
+          type="button"
+          class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+        >
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
@@ -31,12 +35,16 @@
     </div>
 
     <div v-else class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+      <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gradient-to-r from-gray-50 to-gray-50">
           <tr>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <input type="checkbox" v-model="selectAll" @change="$emit('toggle-select-all', selectAll)"
-                class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+              <input 
+                type="checkbox" 
+                :checked="selectAll" 
+                @change="handleToggleSelectAll"
+                class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+              >
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
@@ -48,13 +56,21 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="user in users" :key="user.id"
+          <tr 
+            v-for="user in users" 
+            :key="user.id"
             :class="{ 'bg-green-100': selectedUsers.includes(user.id) }"
-            class="hover:bg-green-50 transition-all duration-200 cursor-pointer group">
-              <td class="px-6 py-4 whitespace-nowrap">
-                <input type="checkbox" :value="user.id" :checked="selectedUsers.includes(user.id)" @change="$emit('toggle-user-select', user.id)"
-                  class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
-              </td>
+            class="hover:bg-green-50 transition-all duration-200 cursor-pointer group"
+          >
+            <td class="px-6 py-4 whitespace-nowrap">
+              <input 
+                type="checkbox" 
+                :value="user.id" 
+                :checked="selectedUsers.includes(user.id)" 
+                @change="handleToggleUserSelect(user.id)"
+                class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+              >
+            </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-10 w-10">
@@ -75,14 +91,17 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ user.email }}</td>
             <td class="px-6 py-4 whitespace-nowrap">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                :class="getRoleBadgeClass(user.role)">
+              <span 
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                :class="getRoleBadgeClass(user.role)"
+              >
                 {{ user.role || 'Sin rol' }}
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <button 
-                @click="$emit('toggle-status', user)"
+                @click="handleToggleStatus(user)"
+                type="button"
                 :class="[
                   'px-3 py-1.5 text-xs font-semibold rounded-full transition-colors duration-200 inline-flex items-center gap-1.5 hover:opacity-80',
                   user.is_active 
@@ -114,9 +133,12 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(user.date_joined) }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
               <div class="flex items-center space-x-2">
-                <button @click="$emit('view-user', user)"
+                <button 
+                  @click="handleViewUser(user)"
+                  type="button"
                   class="text-green-600 hover:text-green-700 p-2 rounded-lg hover:bg-green-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  title="Ver detalles">
+                  title="Ver detalles"
+                >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -125,26 +147,36 @@
                     </path>
                   </svg>
                 </button>
-                <button @click="$emit('edit-user', user)"
+                <button 
+                  @click="handleEditUser(user)"
+                  type="button"
                   class="text-amber-600 hover:text-amber-700 p-2 rounded-lg hover:bg-amber-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  title="Editar">
+                  title="Editar"
+                >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
                     </path>
                   </svg>
                 </button>
-                <button @click="$emit('view-activity', user)"
+                <button 
+                  @click="handleViewActivity(user)"
+                  type="button"
                   class="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  title="Ver actividad">
+                  title="Ver actividad"
+                >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                 </button>
-                <button @click="$emit('delete-user', user)"
+                <button 
+                  @click="handleDeleteUser(user)"
+                  type="button"
                   class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Eliminar" :disabled="user.is_superuser">
+                  title="Eliminar" 
+                  :disabled="user.is_superuser"
+                >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
@@ -160,60 +192,98 @@
   </div>
 </template>
 
-<script>
+<script setup>
+// 1. Vue core
 import { computed } from 'vue'
+
+// 2. Components
 import LoadingSpinner from '@/components/admin/AdminGeneralComponents/LoadingSpinner.vue'
 
-export default {
-  name: 'UsersTable',
-  components: {
-    LoadingSpinner
+// Props
+const props = defineProps({
+  users: {
+    type: Array,
+    required: true
   },
-  props: {
-    users: {
-      type: Array,
-      required: true
-    },
-    selectedUsers: {
-      type: Array,
-      required: true
-    },
-    loading: {
-      type: Boolean,
-      default: false
-    }
+  selectedUsers: {
+    type: Array,
+    required: true
   },
-  emits: ['toggle-select-all', 'toggle-user-select', 'toggle-status', 'view-user', 'edit-user', 'delete-user', 'view-activity', 'export'],
-  setup(props, { emit }) {
-    const selectAll = computed({
-      get: () => props.selectedUsers.length === props.users.length && props.users.length > 0,
-      set: (value) => emit('toggle-select-all', value)
-    })
-
-    const formatDate = (date) => {
-      return new Date(date).toLocaleDateString('es-ES')
-    }
-
-    const formatDateTime = (date) => {
-      return new Date(date).toLocaleString('es-ES')
-    }
-
-    const getRoleBadgeClass = (role) => {
-      const classes = {
-        'Administrador': 'bg-purple-100 text-purple-800',
-        'Agricultor': 'bg-green-100 text-green-800',
-        'Técnico': 'bg-blue-100 text-blue-800'
-      }
-      return classes[role] || 'bg-gray-100 text-gray-800'
-    }
-
-    return {
-      selectAll,
-      formatDate,
-      formatDateTime,
-      getRoleBadgeClass
-    }
+  loading: {
+    type: Boolean,
+    default: false
   }
+})
+
+// Emits
+const emit = defineEmits([
+  'toggle-select-all',
+  'toggle-user-select',
+  'toggle-status',
+  'view-user',
+  'edit-user',
+  'delete-user',
+  'view-activity',
+  'export'
+])
+
+// Computed
+const selectAll = computed({
+  get: () => props.selectedUsers.length === props.users.length && props.users.length > 0,
+  set: (value) => emit('toggle-select-all', value)
+})
+
+// Functions
+const handleToggleSelectAll = () => {
+  emit('toggle-select-all', !selectAll.value)
+}
+
+const handleToggleUserSelect = (userId) => {
+  emit('toggle-user-select', userId)
+}
+
+const handleToggleStatus = (user) => {
+  emit('toggle-status', user)
+}
+
+const handleViewUser = (user) => {
+  emit('view-user', user)
+}
+
+const handleEditUser = (user) => {
+  emit('edit-user', user)
+}
+
+const handleViewActivity = (user) => {
+  emit('view-activity', user)
+}
+
+const handleDeleteUser = (user) => {
+  emit('delete-user', user)
+}
+
+const handleExport = () => {
+  emit('export')
+}
+
+const formatDate = (date) => {
+  return new Date(date).toLocaleDateString('es-ES')
+}
+
+const formatDateTime = (date) => {
+  return new Date(date).toLocaleString('es-ES')
+}
+
+const getRoleBadgeClass = (role) => {
+  const classes = {
+    'Administrador': 'bg-purple-100 text-purple-800',
+    'Agricultor': 'bg-green-100 text-green-800',
+    'Técnico': 'bg-blue-100 text-blue-800'
+  }
+  return classes[role] || 'bg-gray-100 text-gray-800'
 }
 </script>
 
+<style scoped>
+/* Solo estilos que no están en Tailwind si es necesario */
+</style>

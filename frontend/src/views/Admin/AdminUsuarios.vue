@@ -1,9 +1,16 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Sidebar Component -->
-    <AdminSidebar :brand-name="brandName" :user-name="userName" :user-role="userRole" :current-route="$route.path"
+    <AdminSidebar 
+      :brand-name="brandName" 
+      :user-name="userName" 
+      :user-role="userRole" 
+      :current-route="route.path"
       :collapsed="isSidebarCollapsed"
-      @menu-click="handleMenuClick" @logout="handleLogout" @toggle-collapse="toggleSidebarCollapse" />
+      @menu-click="handleMenuClick" 
+      @logout="handleLogout" 
+      @toggle-collapse="toggleSidebarCollapse" 
+    />
 
     <!-- Main Content -->
     <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'">
@@ -21,8 +28,11 @@
               <p class="text-gray-600 mt-1">Administra todos los usuarios del sistema CacaoScan</p>
             </div>
           </div>
-          <button @click="openCreateModal"
-            class="inline-flex items-center px-6 py-3 text-sm font-semibold text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 shadow-md hover:shadow-lg">
+          <button 
+            @click="openCreateModal"
+            type="button"
+            class="inline-flex items-center px-6 py-3 text-sm font-semibold text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 shadow-md hover:shadow-lg"
+          >
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
             </svg>
@@ -71,12 +81,20 @@
       <div v-if="totalPages > 1"
         class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 rounded-b-lg sm:px-6">
         <div class="flex-1 flex justify-between sm:hidden">
-          <button @click="changePage(currentPage - 1)" :disabled="currentPage === 1"
-            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button 
+            @click="changePage(currentPage - 1)" 
+            :disabled="currentPage === 1"
+            type="button"
+            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Anterior
           </button>
-          <button @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages"
-            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button 
+            @click="changePage(currentPage + 1)" 
+            :disabled="currentPage === totalPages"
+            type="button"
+            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Siguiente
           </button>
         </div>
@@ -88,8 +106,12 @@
           </div>
           <div>
             <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-              <button @click="changePage(currentPage - 1)" :disabled="currentPage === 1"
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+              <button 
+                @click="changePage(currentPage - 1)" 
+                :disabled="currentPage === 1"
+                type="button"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd"
                     d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
@@ -97,14 +119,23 @@
                 </svg>
               </button>
 
-              <button v-for="page in visiblePages" :key="page" @click="changePage(page)"
+              <button 
+                v-for="page in visiblePages" 
+                :key="page" 
+                @click="changePage(page)"
+                type="button"
                 :class="page === currentPage ? 'z-10 bg-green-50 border-green-500 text-green-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'"
-                class="relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+              >
                 {{ page }}
               </button>
 
-              <button @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages"
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+              <button 
+                @click="changePage(currentPage + 1)" 
+                :disabled="currentPage === totalPages"
+                type="button"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd"
                     d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
@@ -124,16 +155,22 @@
             {{ selectedUsers.length }} usuario(s) seleccionado(s)
           </span>
           <div class="flex items-center space-x-2">
-            <button @click="bulkActivate"
-              class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+            <button 
+              @click="bulkActivate"
+              type="button"
+              class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+            >
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               Activar
             </button>
-            <button @click="bulkDeactivate"
-              class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-lg hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors duration-200">
+            <button 
+              @click="bulkDeactivate"
+              type="button"
+              class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-lg hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors duration-200"
+            >
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728">
@@ -141,8 +178,11 @@
               </svg>
               Desactivar
             </button>
-            <button @click="bulkDelete"
-              class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200">
+            <button 
+              @click="bulkDelete"
+              type="button"
+              class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+            >
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
@@ -168,16 +208,26 @@
   </div>
 </template>
 
-<script>
+<script setup>
+// 1. Vue core
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import Swal from 'sweetalert2'
+
+// 2. Vue router
+import { useRoute, useRouter } from 'vue-router'
+
+// 3. Stores
 import { useAdminStore } from '@/stores/admin'
 import { useAuthStore } from '@/stores/auth'
 import { useConfigStore } from '@/stores/config'
+
+// 4. Services
 import authApi from '@/services/authApi'
 import reportsApi from '@/services/reportsApi'
+
+// 5. Composables
 import { useWebSocket } from '@/composables/useWebSocket'
+
+// 6. Components
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue'
 import UserFormModal from '@/components/admin/AdminUserComponents/UserFormModal.vue'
 import UserDetailsModal from '@/components/admin/AdminUserComponents/UserDetailsModal.vue'
@@ -187,105 +237,102 @@ import UsersSearchBar from '@/components/admin/AdminUserComponents/UsersSearchBa
 import UsersTable from '@/components/admin/AdminUserComponents/UsersTable.vue'
 import LoadingSpinner from '@/components/admin/AdminGeneralComponents/LoadingSpinner.vue'
 
-export default {
-  name: 'UserManagement',
-  components: {
-    AdminSidebar,
-    UserFormModal,
-    UserDetailsModal,
-    UserActivityModal,
-    UsersStatsCards,
-    UsersSearchBar,
-    UsersTable,
-    LoadingSpinner
-  },
-  setup() {
-    const router = useRouter()
-    const adminStore = useAdminStore()
-    const authStore = useAuthStore()
-    const configStore = useConfigStore()
-    const websocket = useWebSocket()
+// 7. Libraries
+import Swal from 'sweetalert2'
 
-    // Sidebar properties
-    const brandName = computed(() => configStore.brandName)
-    const userName = computed(() => {
-      const user = authStore.user
-      return user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username : 'Usuario'
-    })
-    const isSidebarCollapsed = ref(false)
+// Router & Route
+const router = useRouter()
+const route = useRoute()
 
-    const toggleSidebarCollapse = () => {
-      isSidebarCollapsed.value = !isSidebarCollapsed.value
-      localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
-    }
-    const userRole = computed(() => {
-      const role = authStore.userRole || 'Usuario'
-      // Normalize role for sidebar - Backend returns: 'admin', 'analyst', or 'farmer'
-      if (role === 'admin') return 'admin'
-      if (role === 'farmer') return 'agricultor'
-      return 'admin' // Default to admin
-    })
+// Stores
+const adminStore = useAdminStore()
+const authStore = useAuthStore()
+const configStore = useConfigStore()
 
-    // Navbar properties
-    const navbarTitle = ref('Gestión de Usuarios')
-    const navbarSubtitle = ref('Administra todos los usuarios del sistema')
-    const searchPlaceholder = ref('Buscar usuarios...')
-    const refreshButtonText = ref('Actualizar')
+// Composables
+const websocket = useWebSocket()
 
-    // Reactive data
-    const loading = ref(false)
-    const users = ref([])
-    const selectedUsers = ref([])
-    const selectAll = ref(false)
+// Sidebar properties
+const brandName = computed(() => configStore.brandName)
+const userName = computed(() => {
+  const user = authStore.user
+  return user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username : 'Usuario'
+})
+const isSidebarCollapsed = ref(false)
 
-    // Filters and search
-    const searchQuery = ref('')
-    const roleFilter = ref('')
-    const statusFilter = ref('')
-    const sortBy = ref('-date_joined')
+const toggleSidebarCollapse = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
+}
 
-    // Pagination
-    const currentPage = ref(1)
-    const pageSize = ref(20)
-    const totalUsersCount = ref(0)
-    const totalPages = ref(0)
+const userRole = computed(() => {
+  const role = authStore.userRole || 'Usuario'
+  // Normalize role for sidebar - Backend returns: 'admin', 'analyst', or 'farmer'
+  if (role === 'admin') return 'admin'
+  if (role === 'farmer') return 'agricultor'
+  return 'admin' // Default to admin
+})
 
-    // Modals
-    const showUserModal = ref(false)
-    const showDetailsModal = ref(false)
-    const showActivityModal = ref(false)
-    const modalMode = ref('create') // 'create' or 'edit'
-    const editingUser = ref(null)
-    const viewingUser = ref(null)
-    const activityUser = ref(null)
+// Navbar properties
+const navbarTitle = ref('Gestión de Usuarios')
+const navbarSubtitle = ref('Administra todos los usuarios del sistema')
+const searchPlaceholder = ref('Buscar usuarios...')
+const refreshButtonText = ref('Actualizar')
 
-    // Stats from backend
-    const userStats = ref({
-      total: 0,
-      active: 0,
-      online: 0,
-      new_today: 0
-    })
+// Reactive data
+const loading = ref(false)
+const users = ref([])
+const selectedUsers = ref([])
+const selectAll = ref(false)
 
-    // Computed - now using backend stats
-    const activeUsers = computed(() => userStats.value.active)
-    const totalUsers = computed(() => userStats.value.total)
-    const onlineUsers = computed(() => userStats.value.online)
-    const newUsersToday = computed(() => userStats.value.new_today)
+// Filters and search
+const searchQuery = ref('')
+const roleFilter = ref('')
+const statusFilter = ref('')
+const sortBy = ref('-date_joined')
 
-    const visiblePages = computed(() => {
-      const pages = []
-      const start = Math.max(1, currentPage.value - 2)
-      const end = Math.min(totalPages.value, start + 4)
+// Pagination
+const currentPage = ref(1)
+const pageSize = ref(20)
+const totalUsersCount = ref(0)
+const totalPages = ref(0)
 
-      for (let i = start; i <= end; i++) {
-        pages.push(i)
-      }
-      return pages
-    })
+// Modals
+const showUserModal = ref(false)
+const showDetailsModal = ref(false)
+const showActivityModal = ref(false)
+const modalMode = ref('create') // 'create' or 'edit'
+const editingUser = ref(null)
+const viewingUser = ref(null)
+const activityUser = ref(null)
 
-    // Methods
-    const debounce = (func, wait) => {
+// Stats from backend
+const userStats = ref({
+  total: 0,
+  active: 0,
+  online: 0,
+  new_today: 0
+})
+
+// Computed - now using backend stats
+const activeUsers = computed(() => userStats.value.active)
+const totalUsers = computed(() => userStats.value.total)
+const onlineUsers = computed(() => userStats.value.online)
+const newUsersToday = computed(() => userStats.value.new_today)
+
+const visiblePages = computed(() => {
+  const pages = []
+  const start = Math.max(1, currentPage.value - 2)
+  const end = Math.min(totalPages.value, start + 4)
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+  return pages
+})
+
+// Methods
+const debounce = (func, wait) => {
       let timeout
       return function executedFunction(...args) {
         const later = () => {
@@ -297,7 +344,7 @@ export default {
       }
     }
 
-    const loadUserStats = async () => {
+const loadUserStats = async () => {
       try {
         const stats = await authApi.getUserStats()
         userStats.value = {
@@ -851,181 +898,9 @@ export default {
       }
     }
 
-    return {
-      // Sidebar & Navbar
-      isSidebarCollapsed,
-      toggleSidebarCollapse,
-      brandName,
-      userName,
-      userRole,
-      navbarTitle,
-      navbarSubtitle,
-      searchPlaceholder,
-      refreshButtonText,
-
-      // Data
-      loading,
-      users,
-      selectedUsers,
-      selectAll,
-      searchQuery,
-      roleFilter,
-      statusFilter,
-      sortBy,
-      currentPage,
-      totalUsers,
-      totalPages,
-      showUserModal,
-      showDetailsModal,
-      showActivityModal,
-      modalMode,
-      editingUser,
-      viewingUser,
-      activityUser,
-
-      // Computed
-      activeUsers,
-      newUsersToday,
-      onlineUsers,
-      visiblePages,
-
-      // Methods
-      loadUserStats,
-      loadUsers,
-      debouncedSearch,
-      applyFilters,
-      clearFilters,
-      changePage,
-      toggleSelectAll,
-      handleUserSelect,
-      openCreateModal,
-      editUser,
-      viewUser,
-      viewUserActivity,
-      closeUserModal,
-      closeDetailsModal,
-      closeActivityModal,
-      editUserFromDetails,
-      handleUserSaved,
-      confirmDeleteUser,
-      bulkActivate,
-      bulkDeactivate,
-      bulkDelete,
-      handleToggleStatus,
-      exportUsers,
-      formatDate,
-      formatDateTime,
-      getRoleBadgeClass,
-      getUserStatusClass,
-      handleMenuClick,
-      handleLogout,
-      handleSearch,
-      handleRefresh
-    }
-  }
-}
+// Exposed to template - all reactive state and methods are automatically exposed in <script setup>
 </script>
 
 <style scoped>
-/* Estilos específicos para UserManagement */
-.user-management {
-  padding: 0;
-  background-color: transparent;
-  min-height: auto;
-}
-
-/* Transiciones suaves */
-.transition-colors {
-  transition-property: color, background-color, border-color;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
-}
-
-.transition-all {
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
-}
-
-/* Mejoras de accesibilidad */
-button:focus-visible {
-  outline: 2px solid rgb(34 197 94);
-  outline-offset: 2px;
-}
-
-input:focus-visible {
-  outline: 2px solid rgb(34 197 94);
-  outline-offset: 2px;
-}
-
-select:focus-visible {
-  outline: 2px solid rgb(34 197 94);
-  outline-offset: 2px;
-}
-
-/* Estilos para elementos de estado */
-.text-green-600 {
-  color: rgb(34 197 94);
-}
-
-.text-green-700 {
-  color: rgb(21 128 61);
-}
-
-.text-green-800 {
-  color: rgb(22 101 52);
-}
-
-.bg-green-50 {
-  background-color: rgb(240 253 244);
-}
-
-.bg-green-100 {
-  background-color: rgb(220 252 231);
-}
-
-.border-green-200 {
-  border-color: rgb(187 247 208);
-}
-
-.border-green-500 {
-  border-color: rgb(34 197 94);
-}
-
-.hover\:border-green-200:hover {
-  border-color: rgb(187 247 208);
-}
-
-.hover\:text-green-700:hover {
-  color: rgb(21 128 61);
-}
-
-.hover\:bg-green-50:hover {
-  background-color: rgb(240 253 244);
-}
-
-.focus\:ring-green-500:focus {
-  --tw-ring-color: rgb(34 197 94);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .grid-cols-1 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-
-  .md\:grid-cols-2 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-
-  .lg\:grid-cols-4 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .lg\:grid-cols-4 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-}
+/* Solo estilos que no están en Tailwind si es necesario */
 </style>

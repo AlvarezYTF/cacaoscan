@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests unitarios para modelos de CacaoScan.
 """
 import uuid
@@ -28,7 +28,7 @@ class EmailVerificationTokenModelTest(TestCase):
     """Tests para el modelo EmailVerificationToken."""
     
     def setUp(self):
-        """Configuración inicial."""
+        """ConfiguraciÃ³n inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -36,7 +36,7 @@ class EmailVerificationTokenModelTest(TestCase):
         )
     
     def test_token_creation(self):
-        """Test de creación de token de verificación."""
+        """Test de creaciÃ³n de token de verificaciÃ³n."""
         token = EmailVerificationToken.create_for_user(self.user)
         
         self.assertIsNotNone(token.token)
@@ -46,7 +46,7 @@ class EmailVerificationTokenModelTest(TestCase):
         self.assertIsNotNone(token.expires_at)
     
     def test_token_expiration(self):
-        """Test de expiración de token."""
+        """Test de expiraciÃ³n de token."""
         token = EmailVerificationToken.create_for_user(self.user)
         
         # Verificar que el token expira en 24 horas
@@ -54,7 +54,7 @@ class EmailVerificationTokenModelTest(TestCase):
         self.assertEqual(token.expires_at, expected_expiry)
     
     def test_token_verification(self):
-        """Test de verificación de token."""
+        """Test de verificaciÃ³n de token."""
         token = EmailVerificationToken.create_for_user(self.user)
         
         # Verificar token
@@ -65,22 +65,22 @@ class EmailVerificationTokenModelTest(TestCase):
         self.assertIsNotNone(token.verified_at)
     
     def test_get_valid_token(self):
-        """Test de obtención de token válido."""
+        """Test de obtenciÃ³n de token vÃ¡lido."""
         token = EmailVerificationToken.create_for_user(self.user)
         
-        # Obtener token válido
+        # Obtener token vÃ¡lido
         valid_token = EmailVerificationToken.get_valid_token(str(token.token))
         
         self.assertEqual(valid_token, token)
     
     def test_get_invalid_token(self):
-        """Test de obtención de token inválido."""
+        """Test de obtenciÃ³n de token invÃ¡lido."""
         invalid_token = EmailVerificationToken.get_valid_token('invalid-token')
         
         self.assertIsNone(invalid_token)
     
     def test_get_expired_token(self):
-        """Test de obtención de token expirado."""
+        """Test de obtenciÃ³n de token expirado."""
         token = EmailVerificationToken.create_for_user(self.user)
         
         # Simular token expirado
@@ -93,7 +93,7 @@ class EmailVerificationTokenModelTest(TestCase):
         self.assertIsNone(expired_token)
     
     def test_str_representation(self):
-        """Test de representación string del modelo."""
+        """Test de representaciÃ³n string del modelo."""
         token = EmailVerificationToken.create_for_user(self.user)
         
         expected_str = f"Token para {self.user.email}"
@@ -104,7 +104,7 @@ class UserProfileModelTest(TestCase):
     """Tests para el modelo UserProfile."""
     
     def setUp(self):
-        """Configuración inicial."""
+        """ConfiguraciÃ³n inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -114,7 +114,7 @@ class UserProfileModelTest(TestCase):
         )
     
     def test_profile_creation(self):
-        """Test de creación de perfil."""
+        """Test de creaciÃ³n de perfil."""
         profile = UserProfile.objects.create(
             user=self.user,
             phone_number='+1234567890',
@@ -184,18 +184,18 @@ class UserProfileModelTest(TestCase):
         # Usuario no verificado por defecto
         self.assertFalse(profile.is_verified)
         
-        # Crear token de verificación
+        # Crear token de verificaciÃ³n
         token = EmailVerificationToken.create_for_user(self.user)
         token.verify()
         
         # Refrescar perfil
         profile.refresh_from_db()
         
-        # Debería seguir siendo False porque no hay lógica de verificación implementada
+        # DeberÃ­a seguir siendo False porque no hay lÃ³gica de verificaciÃ³n implementada
         self.assertFalse(profile.is_verified)
     
     def test_str_representation(self):
-        """Test de representación string del modelo."""
+        """Test de representaciÃ³n string del modelo."""
         profile = UserProfile.objects.create(user=self.user)
         
         expected_str = f"Perfil de {self.user.get_full_name() or self.user.username}"
@@ -206,7 +206,7 @@ class CacaoImageModelTest(TestCase):
     """Tests para el modelo CacaoImage."""
     
     def setUp(self):
-        """Configuración inicial."""
+        """ConfiguraciÃ³n inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -214,7 +214,7 @@ class CacaoImageModelTest(TestCase):
         )
     
     def test_image_creation(self):
-        """Test de creación de imagen."""
+        """Test de creaciÃ³n de imagen."""
         image = CacaoImage.objects.create(
             user=self.user,
             filename='test_image.jpg',
@@ -247,7 +247,7 @@ class CacaoImageModelTest(TestCase):
         self.assertIsNotNone(image.uploaded_at)
     
     def test_str_representation(self):
-        """Test de representación string del modelo."""
+        """Test de representaciÃ³n string del modelo."""
         image = CacaoImage.objects.create(
             user=self.user,
             filename='test_image.jpg'
@@ -261,7 +261,7 @@ class CacaoPredictionModelTest(TestCase):
     """Tests para el modelo CacaoPrediction."""
     
     def setUp(self):
-        """Configuración inicial."""
+        """ConfiguraciÃ³n inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -273,7 +273,7 @@ class CacaoPredictionModelTest(TestCase):
         )
     
     def test_prediction_creation(self):
-        """Test de creación de predicción."""
+        """Test de creaciÃ³n de predicciÃ³n."""
         prediction = CacaoPrediction.objects.create(
             image=self.image,
             user=self.user,
@@ -295,7 +295,7 @@ class CacaoPredictionModelTest(TestCase):
         self.assertEqual(prediction.processing_time, Decimal('2.5'))
     
     def test_prediction_defaults(self):
-        """Test de valores por defecto de predicción."""
+        """Test de valores por defecto de predicciÃ³n."""
         prediction = CacaoPrediction.objects.create(
             image=self.image,
             user=self.user
@@ -308,14 +308,14 @@ class CacaoPredictionModelTest(TestCase):
         self.assertIsNotNone(prediction.created_at)
     
     def test_str_representation(self):
-        """Test de representación string del modelo."""
+        """Test de representaciÃ³n string del modelo."""
         prediction = CacaoPrediction.objects.create(
             image=self.image,
             user=self.user,
             quality_score=Decimal('85.5')
         )
         
-        expected_str = f"Predicción para {self.image.filename} - Calidad: 85.5"
+        expected_str = f"PredicciÃ³n para {self.image.filename} - Calidad: 85.5"
         self.assertEqual(str(prediction), expected_str)
 
 
@@ -323,7 +323,7 @@ class FincaModelTest(TestCase):
     """Tests para el modelo Finca."""
     
     def setUp(self):
-        """Configuración inicial."""
+        """ConfiguraciÃ³n inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -331,7 +331,7 @@ class FincaModelTest(TestCase):
         )
     
     def test_finca_creation(self):
-        """Test de creación de finca."""
+        """Test de creaciÃ³n de finca."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             ubicacion='Test Location',
@@ -370,7 +370,7 @@ class FincaModelTest(TestCase):
         self.assertIsNotNone(finca.fecha_actualizacion)
     
     def test_str_representation(self):
-        """Test de representación string del modelo."""
+        """Test de representaciÃ³n string del modelo."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             propietario=self.user
@@ -384,7 +384,7 @@ class LoteModelTest(TestCase):
     """Tests para el modelo Lote."""
     
     def setUp(self):
-        """Configuración inicial."""
+        """ConfiguraciÃ³n inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -397,7 +397,7 @@ class LoteModelTest(TestCase):
         )
     
     def test_lote_creation(self):
-        """Test de creación de lote."""
+        """Test de creaciÃ³n de lote."""
         lote = Lote.objects.create(
             finca=self.finca,
             nombre='Lote Test',
@@ -432,19 +432,19 @@ class LoteModelTest(TestCase):
         self.assertIsNotNone(lote.fecha_actualizacion)
     
     def test_lote_area_validation(self):
-        """Test de validación de área del lote."""
-        # Crear lote con área mayor que la finca
+        """Test de validaciÃ³n de Ã¡rea del lote."""
+        # Crear lote con Ã¡rea mayor que la finca
         lote = Lote.objects.create(
             finca=self.finca,
             nombre='Lote Test',
-            area=Decimal('25.0')  # Mayor que el área total de la finca (20.0)
+            area=Decimal('25.0')  # Mayor que el Ã¡rea total de la finca (20.0)
         )
         
-        # El modelo no tiene validación automática, pero podemos verificar
+        # El modelo no tiene validaciÃ³n automÃ¡tica, pero podemos verificar
         self.assertEqual(lote.area, Decimal('25.0'))
     
     def test_str_representation(self):
-        """Test de representación string del modelo."""
+        """Test de representaciÃ³n string del modelo."""
         lote = Lote.objects.create(
             finca=self.finca,
             nombre='Lote Test'
@@ -458,7 +458,7 @@ class NotificationModelTest(TestCase):
     """Tests para el modelo Notification."""
     
     def setUp(self):
-        """Configuración inicial."""
+        """ConfiguraciÃ³n inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -466,7 +466,7 @@ class NotificationModelTest(TestCase):
         )
     
     def test_notification_creation(self):
-        """Test de creación de notificación."""
+        """Test de creaciÃ³n de notificaciÃ³n."""
         notification = Notification.objects.create(
             user=self.user,
             title='Test Notification',
@@ -482,7 +482,7 @@ class NotificationModelTest(TestCase):
         self.assertFalse(notification.is_read)
     
     def test_notification_defaults(self):
-        """Test de valores por defecto de notificación."""
+        """Test de valores por defecto de notificaciÃ³n."""
         notification = Notification.objects.create(
             user=self.user,
             title='Test Notification',
@@ -494,14 +494,14 @@ class NotificationModelTest(TestCase):
         self.assertIsNotNone(notification.created_at)
     
     def test_str_representation(self):
-        """Test de representación string del modelo."""
+        """Test de representaciÃ³n string del modelo."""
         notification = Notification.objects.create(
             user=self.user,
             title='Test Notification',
             message='Test message'
         )
         
-        expected_str = f"Notificación para {self.user.username}: Test Notification"
+        expected_str = f"NotificaciÃ³n para {self.user.username}: Test Notification"
         self.assertEqual(str(notification), expected_str)
 
 
@@ -509,7 +509,7 @@ class ActivityLogModelTest(TestCase):
     """Tests para el modelo ActivityLog."""
     
     def setUp(self):
-        """Configuración inicial."""
+        """ConfiguraciÃ³n inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -517,7 +517,7 @@ class ActivityLogModelTest(TestCase):
         )
     
     def test_activity_log_creation(self):
-        """Test de creación de log de actividad."""
+        """Test de creaciÃ³n de log de actividad."""
         log = ActivityLog.objects.create(
             user=self.user,
             action='test_action',
@@ -546,7 +546,7 @@ class ActivityLogModelTest(TestCase):
         self.assertIsNotNone(log.timestamp)
     
     def test_str_representation(self):
-        """Test de representación string del modelo."""
+        """Test de representaciÃ³n string del modelo."""
         log = ActivityLog.objects.create(
             user=self.user,
             action='test_action'
@@ -560,7 +560,7 @@ class LoginHistoryModelTest(TestCase):
     """Tests para el modelo LoginHistory."""
     
     def setUp(self):
-        """Configuración inicial."""
+        """ConfiguraciÃ³n inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -568,7 +568,7 @@ class LoginHistoryModelTest(TestCase):
         )
     
     def test_login_history_creation(self):
-        """Test de creación de historial de login."""
+        """Test de creaciÃ³n de historial de login."""
         login_history = LoginHistory.objects.create(
             user=self.user,
             ip_address='127.0.0.1',
@@ -593,7 +593,7 @@ class LoginHistoryModelTest(TestCase):
         self.assertIsNotNone(login_history.login_time)
     
     def test_str_representation(self):
-        """Test de representación string del modelo."""
+        """Test de representaciÃ³n string del modelo."""
         login_history = LoginHistory.objects.create(
             user=self.user,
             login_successful=True
@@ -607,7 +607,7 @@ class ReporteGeneradoModelTest(TestCase):
     """Tests para el modelo ReporteGenerado."""
     
     def setUp(self):
-        """Configuración inicial."""
+        """ConfiguraciÃ³n inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -615,7 +615,7 @@ class ReporteGeneradoModelTest(TestCase):
         )
     
     def test_reporte_creation(self):
-        """Test de creación de reporte."""
+        """Test de creaciÃ³n de reporte."""
         reporte = ReporteGenerado.objects.create(
             usuario=self.user,
             tipo_reporte='analisis_periodo',
@@ -623,7 +623,7 @@ class ReporteGeneradoModelTest(TestCase):
             ruta_archivo='/path/to/test_report.pdf',
             parametros={'fecha_inicio': '2024-01-01', 'fecha_fin': '2024-01-31'},
             estado='completado',
-            tamaño_archivo=1024
+            tamaÃ±o_archivo=1024
         )
         
         self.assertEqual(reporte.usuario, self.user)
@@ -632,7 +632,7 @@ class ReporteGeneradoModelTest(TestCase):
         self.assertEqual(reporte.ruta_archivo, '/path/to/test_report.pdf')
         self.assertEqual(reporte.parametros, {'fecha_inicio': '2024-01-01', 'fecha_fin': '2024-01-31'})
         self.assertEqual(reporte.estado, 'completado')
-        self.assertEqual(reporte.tamaño_archivo, 1024)
+        self.assertEqual(reporte.tamaÃ±o_archivo, 1024)
     
     def test_reporte_defaults(self):
         """Test de valores por defecto de reporte."""
@@ -645,7 +645,7 @@ class ReporteGeneradoModelTest(TestCase):
         self.assertIsNotNone(reporte.fecha_generacion)
     
     def test_str_representation(self):
-        """Test de representación string del modelo."""
+        """Test de representaciÃ³n string del modelo."""
         reporte = ReporteGenerado.objects.create(
             usuario=self.user,
             tipo_reporte='analisis_periodo',
@@ -654,3 +654,5 @@ class ReporteGeneradoModelTest(TestCase):
         
         expected_str = f"Reporte {reporte.tipo_reporte} - {reporte.nombre_archivo}"
         self.assertEqual(str(reporte), expected_str)
+
+
