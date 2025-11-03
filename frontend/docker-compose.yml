@@ -1,0 +1,44 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://backend:8000/api/v1}
+    container_name: cacaoscan_frontend
+    env_file:
+      - .env
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://backend:8000/api/v1}
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - cacaoscan_network
+
+  # Backend (opcional para desarrollo local)
+  backend:
+    image: cacaoscan-backend:latest
+    container_name: cacaoscan_backend
+    environment:
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-cacaoscan_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres123}
+    ports:
+      - "8000:8000"
+    networks:
+      - cacaoscan_network
+
+networks:
+  cacaoscan_network:
+    driver: bridge
+

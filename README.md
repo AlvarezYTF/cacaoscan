@@ -131,6 +131,73 @@ pnpm dev
 
 ---
 
+## 🐳 Instalación con Docker (Recomendado)
+
+La forma más fácil de ejecutar CacaoScan es usando Docker Compose.
+
+### Requisitos
+- Docker Desktop instalado ([descargar aquí](https://www.docker.com/products/docker-desktop))
+- Docker Compose v3.8 o superior
+
+### Pasos de instalación
+
+1. **Clonar el repositorio**:
+```bash
+git clone https://github.com/tu_usuario/cacaoscan.git
+cd cacaoscan
+```
+
+2. **Configurar variables de entorno**:
+```bash
+# Copia el archivo de ejemplo
+cp .env.example .env
+
+# Edita el archivo .env con tus configuraciones (opcional)
+```
+
+3. **Construir y ejecutar los contenedores**:
+```bash
+docker-compose up -d --build
+```
+
+4. **Verificar que todo esté funcionando**:
+```bash
+docker-compose ps
+docker-compose logs -f
+```
+
+5. **Acceder a la aplicación**:
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000/api/v1/
+- **Admin Django**: http://localhost:8000/admin/
+
+### Comandos útiles de Docker
+
+```bash
+# Ver logs en tiempo real
+docker-compose logs -f
+
+# Detener todos los servicios
+docker-compose down
+
+# Detener y eliminar volúmenes (⚠️ borra datos)
+docker-compose down -v
+
+# Reiniciar un servicio específico
+docker-compose restart backend
+
+# Ejecutar comandos Django en el contenedor
+docker-compose exec backend python manage.py migrate
+docker-compose exec backend python manage.py createsuperuser
+
+# Reconstruir las imágenes
+docker-compose build --no-cache
+```
+
+> 📖 **Más información**: Consulta el archivo [DOCKER_README.md](DOCKER_README.md) para documentación completa sobre Docker.
+
+---
+
 ## 📂 Estructura del Proyecto
 
 ```

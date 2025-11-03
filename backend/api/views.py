@@ -4916,7 +4916,7 @@ class TrainingJobCreateView(APIView):
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)A
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def _simulate_training_start(self, training_job):
         """

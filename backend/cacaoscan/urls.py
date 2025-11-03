@@ -5,25 +5,44 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
-from rest_framework import permissions
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
+from django.http import JsonResponse
 
-# Swagger schema view
-schema_view = get_schema_view(
-    openapi.Info(
-        title="CacaoScan API",
-        default_version='v1',
-        description="API para mediciÃ³n de dimensiones y peso de granos de cacao usando ML",
-        terms_of_service="https://www.google.com/policies/terms/",
-        contact=openapi.Contact(email="contact@cacaoscan.local"),
-        license=openapi.License(name="BSD License"),
-    ),
-    public=True,
-    permission_classes=[permissions.AllowAny],
-)
+# Swagger schema view - cargado de forma lazy para evitar problemas de memoria con pkg_resources
+def get_schema_view_lazy():
+    """Carga drf_yasg solo cuando se necesita para evitar problemas de memoria al iniciar."""
+    try:
+        from rest_framework import permissions
+        from drf_yasg.views import get_schema_view
+        from drf_yasg import openapi
+        
+        return get_schema_view(
+            openapi.Info(
+                title="CacaoScan API",
+                default_version='v1',
+                description="API para mediciÃ³n de dimensiones y peso de granos de cacao usando ML",
+                terms_of_service="https://www.google.com/policies/terms/",
+                contact=openapi.Contact(email="contact@cacaoscan.local"),
+                license=openapi.License(name="BSD License"),
+            ),
+            public=True,
+            permission_classes=[permissions.AllowAny],
+        )
+    except Exception as e:
+        # Si hay error al cargar drf_yasg, retornar una vista dummy
+        from django.views.generic import TemplateView
+        return type('DummySchemaView', (), {
+            'without_ui': lambda format: TemplateView.as_view(template_name='drf_yasg/error.html'),
+            'with_ui': lambda ui, cache_timeout: TemplateView.as_view(template_name='drf_yasg/error.html'),
+        })()
+
+schema_view = get_schema_view_lazy()
+
+def health_check(request):
+    """Endpoint simple para health check."""
+    return JsonResponse({'status': 'ok', 'service': 'cacaoscan-backend'}, status=200)
 
 urlpatterns = [
+    path('health', health_check, name='health-check'),
     path('admin/', admin.site.urls),
     # API de documentos legales - COMENTADA: el contenido ahora está en el frontend
     # path('api/v1/legal/', include('legal.urls')),

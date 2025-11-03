@@ -1,0 +1,124 @@
+services:
+  celery_worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: cacaoscan_celery_worker
+    env_file:
+      - .env
+    environment:
+      # Database
+      DB_NAME: ${DB_NAME:-cacaoscan_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres123}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
+      
+      # Django
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-change-this-in-production}
+      DEBUG: ${DEBUG:-True}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      
+      # Redis y Celery
+      USE_REDIS: ${USE_REDIS:-True}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+    volumes:
+      - ../backend:/app
+      - celery_static:/app/staticfiles
+      - celery_media:/app/media
+    depends_on:
+      - db
+      - redis
+    networks:
+      - cacaoscan_network
+    command: celery -A cacaoscan worker --loglevel=info --concurrency=4
+
+  celery_beat:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: cacaoscan_celery_beat
+    env_file:
+      - .env
+    environment:
+      # Database
+      DB_NAME: ${DB_NAME:-cacaoscan_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres123}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
+      
+      # Django
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-change-this-in-production}
+      DEBUG: ${DEBUG:-True}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      
+      # Redis y Celery
+      USE_REDIS: ${USE_REDIS:-True}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+    volumes:
+      - ../backend:/app
+      - celery_static:/app/staticfiles
+      - celery_media:/app/media
+    depends_on:
+      - db
+      - redis
+      - celery_worker
+    networks:
+      - cacaoscan_network
+    command: celery -A cacaoscan beat --loglevel=info
+
+  # Base de datos (opcional para desarrollo local)
+  db:
+    image: postgres:16-alpine
+    container_name: cacaoscan_db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-cacaoscan_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-cacaoscan_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cacaoscan_network
+
+  # Redis (opcional para desarrollo local)
+  redis:
+    image: redis:7-alpine
+    container_name: cacaoscan_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - cacaoscan_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  celery_static:
+    driver: local
+  celery_media:
+    driver: local
+
+networks:
+  cacaoscan_network:
+    driver: bridge
+

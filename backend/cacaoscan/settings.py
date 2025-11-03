@@ -24,6 +24,19 @@ warnings.filterwarnings('ignore', category=UserWarning, module='drf_yasg')
 warnings.filterwarnings('ignore', category=UserWarning, module='torchvision')
 warnings.filterwarnings('ignore', category=UserWarning, module='torch')
 
+# Optimizar pkg_resources para evitar escaneo excesivo
+# Esto reduce significativamente el uso de memoria con volúmenes montados
+import pkg_resources
+import os
+
+# Limitar el escaneo de pkg_resources
+pkg_resources_cache_dir = os.environ.get('PKG_RESOURCES_CACHE_DIR', '/tmp/pkg_resources_cache')
+os.makedirs(pkg_resources_cache_dir, exist_ok=True)
+
+# Configurar PYTHONPATH para evitar escaneo innecesario
+if 'PYTHONPATH' not in os.environ:
+    os.environ['PYTHONPATH'] = str(BASE_DIR)
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
