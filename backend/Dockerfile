@@ -10,7 +10,9 @@ FROM python:3.11-slim AS builder
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=100 \
+    PIP_CONNECT_TIMEOUT=60
 
 # Instalar dependencias del sistema necesarias para compilar paquetes
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -28,8 +30,8 @@ WORKDIR /app
 
 # Copiar y instalar dependencias de Python
 COPY requirements.txt .
-RUN pip install --upgrade pip && \
-    pip install --user -r requirements.txt
+RUN pip install --upgrade pip --default-timeout=100 --retries=5 && \
+    pip install --user -r requirements.txt --default-timeout=100 --retries=5
 
 # ========================================
 # Etapa 2: Runtime - Imagen final
@@ -70,11 +72,12 @@ COPY --from=builder /root/.local /root/.local
 COPY . .
 
 # Crear directorios necesarios
-RUN mkdir -p staticfiles media/logs media/cacao_images media/datasets media/reportes
+RUN mkdir -p staticfiles logs media/logs media/cacao_images media/datasets media/reportes
 
-# Script de inicio
+# Script de inicio - convertir finales de línea Windows (CRLF) a Unix (LF)
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+RUN sed -i 's/\r$//' /docker-entrypoint.sh && \
+    chmod +x /docker-entrypoint.sh
 
 EXPOSE 8000
 
