@@ -15,6 +15,9 @@ export PYTHONUNBUFFERED=1
 export PKG_RESOURCES_CACHE_DIR=/tmp/pkg_resources_cache
 mkdir -p "$PKG_RESOURCES_CACHE_DIR" 2>/dev/null || true
 
+# Crear directorios necesarios para la aplicación
+mkdir -p /app/logs /app/media/logs /app/staticfiles 2>/dev/null || true
+
 # Verificar que gunicorn está disponible
 if ! python -m gunicorn --version > /dev/null 2>&1; then
     echo "⚠️  Gunicorn no encontrado, instalando..."
@@ -47,11 +50,15 @@ python manage.py collectstatic --noinput 2>&1 || {
 
 # Ejecutar comando
 echo "✅ Iniciando servidor..."
-# Convertir argumentos del CMD a array si es necesario
-if [ "$1" = "python" ] && [ "$2" = "-m" ] && [ "$3" = "gunicorn" ]; then
-    # Ya viene con python -m gunicorn
+# Detectar el tipo de comando a ejecutar
+if [ "$1" = "celery" ]; then
+    # Comando de Celery (worker o beat)
+    echo "Iniciando Celery..."
+    exec "$@"
+elif [ "$1" = "python" ] && [ "$2" = "-m" ] && [ "$3" = "gunicorn" ]; then
+    # Comando de Gunicorn explícito
     exec "$@"
 else
-    # Usar python -m gunicorn por defecto
+    # Usar python -m gunicorn por defecto para el backend
     exec python -m gunicorn cacaoscan.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120
 fi

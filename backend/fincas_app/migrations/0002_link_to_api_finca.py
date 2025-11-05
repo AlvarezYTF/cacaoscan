@@ -8,8 +8,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL(
-            sql='-- Linking Finca model to existing table api_finca; no schema change.',
-            reverse_sql='-- Unlink note only; no schema change to reverse.'
+            sql='SELECT 1; -- Linking Finca model to existing table api_finca; no schema change.',
+            reverse_sql='SELECT 1; -- Unlink note only; no schema change to reverse.'
         ),
     ]
 
