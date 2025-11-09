@@ -9,7 +9,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 
 # ======================================================
-# 🧠 MODELO: U-Net ligero para segmentación de fondo
+#  MODELO: U-Net ligero para segmentacin de fondo
 # ======================================================
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -58,7 +58,7 @@ class UNet(nn.Module):
 
 
 # ======================================================
-# 📦 DATASET AUTOMÁTICO (crea máscaras si no existen)
+#  DATASET AUTOMTICO (crea mscaras si no existen)
 # ======================================================
 class CacaoDataset(Dataset):
     def __init__(self, img_dir, mask_dir, transform=None, auto_generate=False):
@@ -75,10 +75,10 @@ class CacaoDataset(Dataset):
                 if not os.path.exists(mask_path):
                     mask = self._auto_mask(os.path.join(img_dir, img))
                     cv2.imwrite(mask_path, mask)
-                    print(f"✅ Máscara creada: {mask_path}")
+                    print(f" Mscara creada: {mask_path}")
 
     def _auto_mask(self, image_path):
-        """Usa OpenCV (grabCut) para generar máscara base automática."""
+        """Usa OpenCV (grabCut) para generar mscara base automtica."""
         img = cv2.imread(image_path)
         mask = np.zeros(img.shape[:2], np.uint8)
         rect = (10, 10, img.shape[1]-20, img.shape[0]-20)
@@ -105,7 +105,7 @@ class CacaoDataset(Dataset):
 
 
 # ======================================================
-# ⚙️ ENTRENAMIENTO DEL MODELO
+#  ENTRENAMIENTO DEL MODELO
 # ======================================================
 def train_background_ai(image_dir="ml/data/dataset/images", mask_dir="ml/data/dataset/masks", epochs=10):
     transform = T.Compose([
@@ -133,20 +133,20 @@ def train_background_ai(image_dir="ml/data/dataset/images", mask_dir="ml/data/da
 
     os.makedirs("ml/segmentation", exist_ok=True)
     torch.save(model.state_dict(), "ml/segmentation/cacao_unet.pth")
-    print("✅ Modelo entrenado y guardado en ml/segmentation/cacao_unet.pth")
+    print(" Modelo entrenado y guardado en ml/segmentation/cacao_unet.pth")
 
 
 # ======================================================
-# 🎯 USO DEL MODELO PARA QUITAR FONDO
+#  USO DEL MODELO PARA QUITAR FONDO
 # ======================================================
 def remove_background_ai(image_path: str) -> Image.Image:
     """
     Quita el fondo usando el modelo IA entrenado (U-Net) con refinamiento OpenCV.
-    Elimina bordes blancos y detecta cada píxel del cacao con precisión.
+    Elimina bordes blancos y detecta cada pxel del cacao con precisin.
     """
     model_path = "ml/segmentation/cacao_unet.pth"
     if not os.path.exists(model_path):
-        raise FileNotFoundError("❌ No se encontró el modelo entrenado. Ejecuta train_background_ai() primero.")
+        raise FileNotFoundError("[ERROR] No se encontr el modelo entrenado. Ejecuta train_background_ai() primero.")
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = UNet().to(device)
@@ -165,21 +165,21 @@ def remove_background_ai(image_path: str) -> Image.Image:
     ])
     tensor = transform(img).unsqueeze(0).to(device)
 
-    # Obtener máscara del modelo U-Net
+    # Obtener mscara del modelo U-Net
     with torch.no_grad():
         mask_pred = model(tensor)[0][0].cpu().numpy()
 
-    # Normalizar máscara
+    # Normalizar mscara
     mask_pred = (mask_pred - mask_pred.min()) / (mask_pred.max() - mask_pred.min() + 1e-8)
     
-    # Redimensionar máscara al tamaño original
+    # Redimensionar mscara al tamao original
     mask = cv2.resize(mask_pred, original_size, interpolation=cv2.INTER_LINEAR)
     mask = (mask * 255).astype(np.uint8)
     
     # REFINAMIENTO PRECISO CON OPENCV
     mask_refined = _refine_mask_opencv_precise(img_array, mask)
     
-    # Crear imagen RGBA con máscara refinada
+    # Crear imagen RGBA con mscara refinada
     rgba = np.dstack((img_array, mask_refined))
     
     return Image.fromarray(rgba, "RGBA")
@@ -187,19 +187,19 @@ def remove_background_ai(image_path: str) -> Image.Image:
 
 def _refine_mask_opencv_precise(rgb: np.ndarray, mask: np.ndarray) -> np.ndarray:
     """
-    Refina la máscara usando OpenCV para detección precisa de píxeles del cacao.
+    Refina la mscara usando OpenCV para deteccin precisa de pxeles del cacao.
     Elimina bordes blancos residuales y ajusta pixel por pixel.
     
     Args:
         rgb: Imagen RGB original (H, W, 3)
-        mask: Máscara inicial del modelo (H, W) valores 0-255
+        mask: Mscara inicial del modelo (H, W) valores 0-255
         
     Returns:
-        Máscara refinada (H, W) valores 0-255
+        Mscara refinada (H, W) valores 0-255
     """
     h, w = mask.shape
     
-    # 1. Convertir máscara a binaria
+    # 1. Convertir mscara a binaria
     _, mask_binary = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
     
     # 2. Eliminar ruido inicial
@@ -210,46 +210,46 @@ def _refine_mask_opencv_precise(rgb: np.ndarray, mask: np.ndarray) -> np.ndarray
     # 3. Detectar y eliminar bordes blancos
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     
-    # Identificar píxeles blancos/claros (fondo residual)
+    # Identificar pxeles blancos/claros (fondo residual)
     white_threshold = 220
     is_white = gray > white_threshold
     
-    # Dilatar máscara para encontrar área cercana al borde
+    # Dilatar mscara para encontrar rea cercana al borde
     kernel_dilate = np.ones((3, 3), np.uint8)
     mask_dilated = cv2.dilate(mask_clean, kernel_dilate, iterations=1)
     border_region = mask_dilated.astype(bool) & ~(mask_clean.astype(bool))
     
-    # Eliminar píxeles blancos en la región del borde
+    # Eliminar pxeles blancos en la regin del borde
     mask_clean = np.where(border_region & is_white, 0, mask_clean).astype(np.uint8)
     
     # 4. Erosionar ligeramente para eliminar bordes residuales blancos
     kernel_erode = np.ones((3, 3), np.uint8)
     mask_clean = cv2.erode(mask_clean, kernel_erode, iterations=1)
     
-    # Eliminar áreas blancas dentro del objeto erosionado
+    # Eliminar reas blancas dentro del objeto erosionado
     mask_eroded_white = np.where(is_white & (mask_clean > 128), 0, mask_clean).astype(np.uint8)
     
-    # 5. Operaciones morfológicas MINIMALISTAS para evitar halos
+    # 5. Operaciones morfolgicas MINIMALISTAS para evitar halos
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     mask_clean = cv2.morphologyEx(mask_eroded_white, cv2.MORPH_CLOSE, kernel, iterations=1)
     mask_clean = cv2.morphologyEx(mask_clean, cv2.MORPH_OPEN, kernel, iterations=1)
     
-    # 6. Detectar contorno más grande (el grano de cacao)
+    # 6. Detectar contorno ms grande (el grano de cacao)
     contours, _ = cv2.findContours(mask_clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     if contours:
-        # Encontrar el contorno más grande
+        # Encontrar el contorno ms grande
         largest_contour = max(contours, key=cv2.contourArea)
         
-        # Crear máscara solo del contorno más grande
+        # Crear mscara solo del contorno ms grande
         mask_final = np.zeros((h, w), dtype=np.uint8)
         cv2.drawContours(mask_final, [largest_contour], -1, 255, thickness=-1)
         
-        # 7. Usar GrabCut para refinar aún más (mejora precisión pixel por pixel)
+        # 7. Usar GrabCut para refinar an ms (mejora precisin pixel por pixel)
         try:
             bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
             
-            # Preparar máscara para GrabCut
+            # Preparar mscara para GrabCut
             gc_mask = np.where(mask_final > 128, cv2.GC_PR_FGD, cv2.GC_PR_BGD).astype(np.uint8)
             
             # Aplicar GrabCut
@@ -257,28 +257,28 @@ def _refine_mask_opencv_precise(rgb: np.ndarray, mask: np.ndarray) -> np.ndarray
             fgd_model = np.zeros((1, 65), np.float64)
             cv2.grabCut(bgr, gc_mask, None, bgd_model, fgd_model, 5, cv2.GC_INIT_WITH_MASK)
             
-            # Crear máscara final de GrabCut
+            # Crear mscara final de GrabCut
             mask_grabcut = np.where((gc_mask == cv2.GC_FGD) | (gc_mask == cv2.GC_PR_FGD), 255, 0).astype(np.uint8)
             
-            # Combinar: usar GrabCut pero mantener solo el área del contorno más grande
+            # Combinar: usar GrabCut pero mantener solo el rea del contorno ms grande
             mask_final = cv2.bitwise_and(mask_grabcut, mask_final)
             
         except Exception as e:
             # Si GrabCut falla, usar solo el contorno
             pass
         
-        # 8. Eliminar pequeños artefactos (componentes conectados pequeños)
+        # 8. Eliminar pequeos artefactos (componentes conectados pequeos)
         num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask_final, connectivity=8)
         if num_labels > 1:
-            # Mantener solo el componente más grande (el grano)
+            # Mantener solo el componente ms grande (el grano)
             largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
             mask_final = (labels == largest_label).astype(np.uint8) * 255
         
         # 9. NO suavizar - mantener bordes precisos sin halos
-        # mask_final ya está listo
+        # mask_final ya est listo
         
     else:
-        # Si no hay contornos, usar máscara limpia
+        # Si no hay contornos, usar mscara limpia
         mask_final = mask_clean
     
     return mask_final
@@ -290,7 +290,7 @@ def resize_crop_to_square(
     fill_color: tuple[int, int, int, int] = (0, 0, 0, 0),
 ) -> np.ndarray:
     """
-    Redimensiona una imagen RGBA manteniendo proporción y la centra
+    Redimensiona una imagen RGBA manteniendo proporcin y la centra
     en un lienzo cuadrado target_size x target_size con fill_color.
     """
     if image_rgba is None:
@@ -320,7 +320,7 @@ def resize_with_padding(
     fill_color: tuple[int, int, int] = (0, 0, 0),
 ) -> np.ndarray:
     """
-    Redimensiona manteniendo proporción y rellena hasta target_size (alto, ancho).
+    Redimensiona manteniendo proporcin y rellena hasta target_size (alto, ancho).
     Acepta imagen GRAY/RGB/RGBA.
     """
     if image is None:
@@ -383,18 +383,18 @@ def validate_crop_quality(image_rgb: np.ndarray, mask: np.ndarray, min_aspect_ra
     
     Args:
         image_rgb: Imagen RGB (H, W, 3)
-        mask: Máscara binaria (H, W) con valores 0-255
-        min_aspect_ratio: Ratio mínimo permitido (ancho/alto) - más permisivo para granos variados
-        max_aspect_ratio: Ratio máximo permitido (ancho/alto) - más permisivo para granos variados
-        min_area: Área mínima en píxeles del objeto detectado
+        mask: Mscara binaria (H, W) con valores 0-255
+        min_aspect_ratio: Ratio mnimo permitido (ancho/alto) - ms permisivo para granos variados
+        max_aspect_ratio: Ratio mximo permitido (ancho/alto) - ms permisivo para granos variados
+        min_area: rea mnima en pxeles del objeto detectado
         
     Returns:
-        True si el recorte es vÃ¡lido, False en caso contrario
+        True si el recorte es válido, False en caso contrario
     """
     if image_rgb is None or mask is None:
         return False
     
-    # Convertir máscara a binaria si es necesario
+    # Convertir mscara a binaria si es necesario
     if mask.dtype != np.uint8 or mask.max() > 1:
         mask_binary = (mask > 128).astype(np.uint8)
     else:
@@ -405,24 +405,24 @@ def validate_crop_quality(image_rgb: np.ndarray, mask: np.ndarray, min_aspect_ra
     if not contours:
         return False
     
-    # Usar el contorno más grande
+    # Usar el contorno ms grande
     largest_contour = max(contours, key=cv2.contourArea)
     x, y, w, h = cv2.boundingRect(largest_contour)
     
-    # Validar que el recorte tenga un área mínima (más flexible)
+    # Validar que el recorte tenga un rea mnima (ms flexible)
     area = w * h
     if area < min_area:
         return False
     
-    # Validar dimensiones mínimas (más flexible)
+    # Validar dimensiones mnimas (ms flexible)
     if w < 5 or h < 5:
         return False
     
     # Calcular aspect ratio
     aspect_ratio = w / h if h > 0 else 0
     
-    # Validar aspect ratio con rangos más permisivos para granos de cacao
-    # Los granos pueden ser redondos (ratio ~1.0) o más alargados
+    # Validar aspect ratio con rangos ms permisivos para granos de cacao
+    # Los granos pueden ser redondos (ratio ~1.0) o ms alargados
     if aspect_ratio < min_aspect_ratio or aspect_ratio > max_aspect_ratio:
         # Log para debug (opcional, solo si hay problemas)
         return False
@@ -433,51 +433,51 @@ def validate_crop_quality(image_rgb: np.ndarray, mask: np.ndarray, min_aspect_ra
 def create_transparent_crop(image_rgb: np.ndarray, mask: np.ndarray, padding: int = 10, crop_only: bool = False) -> np.ndarray:
     """
     Elimina TODO el fondo y deja solo el grano de cacao con bordes suaves y fondo 100% transparente.
-    Usa refinamiento OpenCV para detectar cada píxel del cacao con precisión y eliminar bordes blancos.
+    Usa refinamiento OpenCV para detectar cada pxel del cacao con precisin y eliminar bordes blancos.
     """
     if image_rgb is None or mask is None:
         raise ValueError("image_rgb y mask no pueden ser None")
 
-    # Asegurar tamaños
+    # Asegurar tamaos
     if mask.shape[:2] != image_rgb.shape[:2]:
         mask = cv2.resize(mask, (image_rgb.shape[1], image_rgb.shape[0]), interpolation=cv2.INTER_LINEAR)
 
-    # Normalizar máscara
+    # Normalizar mscara
     if mask.max() <= 1.0:
         mask = (mask * 255).astype(np.uint8)
     else:
         mask = np.clip(mask, 0, 255).astype(np.uint8)
 
-    # REFINAMIENTO PRECISO DE LA MÁSCARA CON OPENCV
+    # REFINAMIENTO PRECISO DE LA MSCARA CON OPENCV
     mask_refined = _refine_mask_opencv_precise(image_rgb, mask)
 
-    # 1️⃣ Detección de contornos y selección del grano más grande
+    # 1 Deteccin de contornos y seleccin del grano ms grande
     contours, _ = cv2.findContours(mask_refined, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
-        # Si no hay contornos, devolver imagen completa con máscara original
+        # Si no hay contornos, devolver imagen completa con mscara original
         rgba = np.dstack([image_rgb, mask_refined])
         return rgba
 
     largest_contour = max(contours, key=cv2.contourArea)
     x, y, w, h = cv2.boundingRect(largest_contour)
 
-    # 2️⃣ Aplicar padding mínimo (solo para no cortar bordes del grano)
+    # 2 Aplicar padding mnimo (solo para no cortar bordes del grano)
     x = max(0, x - padding)
     y = max(0, y - padding)
     w = min(image_rgb.shape[1] - x, w + 2 * padding)
     h = min(image_rgb.shape[0] - y, h + 2 * padding)
 
-    # 3️⃣ Crear máscara final del contorno más grande
+    # 3 Crear mscara final del contorno ms grande
     final_mask = np.zeros(mask_refined.shape, dtype=np.uint8)
     cv2.drawContours(final_mask, [largest_contour], -1, 255, thickness=-1)
     
-    # Si no crop_only, aplicar refinamiento adicional en la región del crop
+    # Si no crop_only, aplicar refinamiento adicional en la regin del crop
     if not crop_only:
-        # Recortar región para procesamiento más preciso
+        # Recortar regin para procesamiento ms preciso
         region_rgb = image_rgb[y:y+h, x:x+w].copy()
         region_mask = final_mask[y:y+h, x:x+w].copy()
         
-        # Refinar máscara en la región recortada (más preciso)
+        # Refinar mscara en la regin recortada (ms preciso)
         region_mask_refined = _refine_mask_opencv_precise(region_rgb, region_mask)
         
         # NO suavizar - mantener bordes precisos sin halos
@@ -491,32 +491,32 @@ def create_transparent_crop(image_rgb: np.ndarray, mask: np.ndarray, padding: in
         return rgba
     else:
         # Si crop_only, solo recortar sin refinamiento adicional
-        # VALIDACIÓN: Verificar que el crop no sea casi toda la imagen
+        # VALIDACIN: Verificar que el crop no sea casi toda la imagen
         original_area = image_rgb.shape[0] * image_rgb.shape[1]
         crop_area = w * h
         crop_ratio = crop_area / original_area
         
-        # Si el crop ocupa más del 80% de la imagen, algo está mal - rechazar
+        # Si el crop ocupa ms del 80% de la imagen, algo est mal - rechazar
         if crop_ratio > 0.80:
-            # Calcular el área real del objeto (píxeles con máscara > 0)
+            # Calcular el rea real del objeto (pxeles con mscara > 0)
             object_area = np.sum(final_mask > 128)
             object_ratio = object_area / original_area
             
-            # Si el objeto también ocupa más del 80%, rechazar completamente
+            # Si el objeto tambin ocupa ms del 80%, rechazar completamente
             if object_ratio > 0.80:
                 raise ValueError(
-                    f"El objeto detectado ocupa más del 80% de la imagen ({object_ratio:.1%}). "
-                    f"Esto sugiere que no se detectó correctamente el grano o la segmentación falló. "
-                    f"Área objeto: {object_area}px, Área imagen: {original_area}px"
+                    f"El objeto detectado ocupa ms del 80% de la imagen ({object_ratio:.1%}). "
+                    f"Esto sugiere que no se detect correctamente el grano o la segmentacin fall. "
+                    f"rea objeto: {object_area}px, rea imagen: {original_area}px"
                 )
-            # Si el objeto es pequeño pero el bbox es grande, ajustar el bbox al objeto
+            # Si el objeto es pequeo pero el bbox es grande, ajustar el bbox al objeto
             else:
-                # Recalcular bbox basado solo en los píxeles del objeto
+                # Recalcular bbox basado solo en los pxeles del objeto
                 coords = np.where(final_mask > 128)
                 if len(coords[0]) > 0:
                     y_min, y_max = coords[0].min(), coords[0].max()
                     x_min, x_max = coords[1].min(), coords[1].max()
-                    # Aplicar padding mínimo
+                    # Aplicar padding mnimo
                     x = max(0, x_min - padding)
                     y = max(0, y_min - padding)
                     w = min(image_rgb.shape[1] - x, (x_max - x_min) + 2 * padding)

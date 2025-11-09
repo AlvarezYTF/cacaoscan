@@ -1,5 +1,5 @@
-﻿"""
-Pipeline completo de entrenamiento para modelos de regresiÃ³n de cacao.
+"""
+Pipeline completo de entrenamiento para modelos de regresión de cacao.
 """
 import argparse
 import json
@@ -20,7 +20,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import QuantileTransformer
 
-# AÃ±adir el directorio del proyecto al path
+# Añadir el directorio del proyecto al path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -58,10 +58,10 @@ class CacaoDataset:
         Inicializa el dataset.
         
         Args:
-            image_paths: Lista de rutas a imÃ¡genes
+            image_paths: Lista de rutas a imágenes
             targets: Diccionario con targets normalizados
             transform: Transformaciones a aplicar
-            pixel_features: Diccionario con features de píxeles (opcional)
+            pixel_features: Diccionario con features de pxeles (opcional)
         """
         self.image_paths = image_paths
         self.targets = targets
@@ -103,7 +103,7 @@ class CacaoDataset:
             target_name = available_targets[0]
             target = self.targets[target_name][idx]
             
-            # Añadir features de píxeles si están disponibles
+            # Aadir features de pxeles si estn disponibles
             if self.pixel_features is not None:
                 pixel_feat = torch.tensor([
                     self.pixel_features['pixel_width'][idx],
@@ -116,14 +116,14 @@ class CacaoDataset:
             else:
                 return image, torch.tensor(target, dtype=torch.float32)
         else:
-            # Modelo multi-head o híbrido
+            # Modelo multi-head o hbrido
             targets_dict = {}
             for target_name in available_targets:
                 targets_dict[target_name] = torch.tensor(
                     self.targets[target_name][idx], dtype=torch.float32
                 )
             
-            # Para modelo híbrido, devolver target como tensor de 4 valores
+            # Para modelo hbrido, devolver target como tensor de 4 valores
             if len(available_targets) == 4:  # alto, ancho, grosor, peso
                 target_tensor = torch.tensor([
                     targets_dict['alto'],
@@ -134,7 +134,7 @@ class CacaoDataset:
             else:
                 target_tensor = torch.stack(list(targets_dict.values()))
             
-            # Añadir features de píxeles si están disponibles
+            # Aadir features de pxeles si estn disponibles
             if self.pixel_features is not None:
                 pixel_feat = torch.tensor([
                     self.pixel_features['pixel_width'][idx],
@@ -156,7 +156,7 @@ class CacaoTrainingPipeline:
         Inicializa el pipeline.
         
         Args:
-            config: ConfiguraciÃ³n del entrenamiento
+            config: Configuración del entrenamiento
         """
         self.config = config
         self.device = get_device()
@@ -165,25 +165,25 @@ class CacaoTrainingPipeline:
         self.val_loader = None
         self.test_loader = None
         
-        logger.info(f"Pipeline inicializado con configuraciÃ³n: {config}")
+        logger.info(f"Pipeline inicializado con configuración: {config}")
     
     def load_data(self) -> Tuple[List[Path], Dict[str, np.ndarray], Optional[Dict[str, np.ndarray]]]:
         """
-        Carga y prepara los datos, incluyendo features de píxeles si están disponibles.
+        Carga y prepara los datos, incluyendo features de pxeles si estn disponibles.
         
         Returns:
-            Tuple con (rutas de imÃ¡genes, targets, pixel_features)
+            Tuple con (rutas de imágenes, targets, pixel_features)
         """
         logger.info("Cargando datos...")
         
-        # Cargar registros vÃ¡lidos
+        # Cargar registros válidos
         loader = CacaoDatasetLoader()
         valid_records = loader.get_valid_records()
         
         if not valid_records:
-            raise ValueError("No se encontraron registros vÃ¡lidos")
+            raise ValueError("No se encontraron registros válidos")
         
-        logger.info(f"Encontrados {len(valid_records)} registros vÃ¡lidos")
+        logger.info(f"Encontrados {len(valid_records)} registros válidos")
         
         # Filtrar registros que tienen crops
         crop_records = []
@@ -199,7 +199,7 @@ class CacaoTrainingPipeline:
         logger.info(f"Registros con crops disponibles: {len(crop_records)}")
         logger.info(f"Registros sin crops: {len(missing_crop_records)}")
         
-        # Validar y regenerar crops de mala calidad si está configurado
+        # Validar y regenerar crops de mala calidad si est configurado
         validate_crops = self.config.get('validate_crops_quality', True)
         regenerate_bad = self.config.get('regenerate_bad_crops', True)
         
@@ -232,16 +232,16 @@ class CacaoTrainingPipeline:
                     
                     crop_img_rgb = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB)
                     
-                    # Validar tamaño mínimo
+                    # Validar tamao mnimo
                     h, w = crop_img_rgb.shape[:2]
                     if h < 100 or w < 100:
-                        logger.warning(f"Crop demasiado pequeño ({w}x{h}) para {crop_path.name}")
+                        logger.warning(f"Crop demasiado pequeo ({w}x{h}) para {crop_path.name}")
                         bad_crop_records.append(record)
                         continue
                     
                     # Verificar que no sea solo fondo (puede ser RGBA)
                     if crop_img_rgb.shape[2] == 4:
-                        # RGBA: verificar que haya píxeles no transparentes
+                        # RGBA: verificar que haya pxeles no transparentes
                         alpha = crop_img_rgb[:, :, 3]
                         if np.sum(alpha > 128) < (h * w * 0.1):  # Menos del 10% es visible
                             logger.warning(f"Crop con muy poco contenido visible para {crop_path.name}")
@@ -254,7 +254,7 @@ class CacaoTrainingPipeline:
                     logger.warning(f"Error validando crop {record.get('id', 'unknown')}: {e}")
                     bad_crop_records.append(record)
             
-            logger.info(f"Crops válidos: {len(good_crop_records)}, crops inválidos: {len(bad_crop_records)}")
+            logger.info(f"Crops vlidos: {len(good_crop_records)}, crops invlidos: {len(bad_crop_records)}")
             
             if regenerate_bad and bad_crop_records:
                 logger.info(f"Regenerando {len(bad_crop_records)} crops de mala calidad...")
@@ -272,30 +272,30 @@ class CacaoTrainingPipeline:
         
         # Generar crops para los que faltan
         if missing_crop_records:
-            logger.info(f"Generando crops para {len(missing_crop_records)} imÃ¡genes faltantes...")
+            logger.info(f"Generando crops para {len(missing_crop_records)} imágenes faltantes...")
             new_crop_records = self._generate_crops_for_missing(missing_crop_records)
             crop_records.extend(new_crop_records)
             
-            logger.info(f"Total de registros con crops despuÃ©s de generaciÃ³n: {len(crop_records)}")
+            logger.info(f"Total de registros con crops después de generación: {len(crop_records)}")
             
             if len(crop_records) < 10:
-                raise ValueError(f"Muy pocos registros con crops despuÃ©s de generaciÃ³n: {len(crop_records)}")
+                raise ValueError(f"Muy pocos registros con crops después de generación: {len(crop_records)}")
         else:
-            logger.info("[OK] Todos los crops ya existen y están validados.")
+            logger.info("[OK] Todos los crops ya existen y estn validados.")
         
-        # Extraer rutas de imÃ¡genes y targets
+        # Extraer rutas de imágenes y targets
         image_paths = [record['crop_image_path'] for record in crop_records]
         targets = {target: np.array([record[target] for record in crop_records]) for target in TARGETS}
         
-        # Extraer features de píxeles si la calibración está disponible
+        # Extraer features de pxeles si la calibracin est disponible
         pixel_features = None
         if pixel_calibration is not None:
             calibration_records = pixel_calibration.get('calibration_records', [])
             if calibration_records:
-                # Crear diccionario de calibración por ID para búsqueda rápida
+                # Crear diccionario de calibracin por ID para bsqueda rpida
                 calibration_by_id = {rec['id']: rec for rec in calibration_records}
                 
-                # Extraer features de píxeles para cada registro
+                # Extraer features de pxeles para cada registro
                 pixel_features = {
                     'pixel_width': [],
                     'pixel_height': [],
@@ -318,7 +318,7 @@ class CacaoTrainingPipeline:
                         pixel_features['scale_factor'].append(scale_factors.get('average_mm_per_pixel', 0))
                         pixel_features['aspect_ratio'].append(pixel_meas.get('aspect_ratio', 0))
                     else:
-                        # Si no hay calibración para esta imagen, usar valores por defecto
+                        # Si no hay calibracin para esta imagen, usar valores por defecto
                         pixel_features['pixel_width'].append(0)
                         pixel_features['pixel_height'].append(0)
                         pixel_features['pixel_area'].append(0)
@@ -328,11 +328,11 @@ class CacaoTrainingPipeline:
                 # Convertir a arrays numpy
                 pixel_features = {k: np.array(v, dtype=np.float32) for k, v in pixel_features.items()}
                 
-                logger.info(f"✅ Features de píxeles cargadas para {len([r for r in crop_records if calibration_by_id.get(r['id'])])}/{len(crop_records)} registros")
+                logger.info(f" Features de pxeles cargadas para {len([r for r in crop_records if calibration_by_id.get(r['id'])])}/{len(crop_records)} registros")
             else:
-                logger.warning("⚠️ pixel_calibration.json existe pero no tiene registros")
+                logger.warning("[WARN] pixel_calibration.json existe pero no tiene registros")
         else:
-            logger.info("ℹ️ Calibración de píxeles no disponible. Entrenando sin features de píxeles.")
+            logger.info(" Calibracin de pxeles no disponible. Entrenando sin features de pxeles.")
         
         return image_paths, targets, pixel_features
     
@@ -347,13 +347,13 @@ class CacaoTrainingPipeline:
         Crea split estratificado basado en cuantiles de peso y dimensiones.
         
         Args:
-            image_paths: Rutas de imÃ¡genes
+            image_paths: Rutas de imágenes
             targets: Targets
-            test_size: ProporciÃ³n para test
-            val_size: ProporciÃ³n para validaciÃ³n
+            test_size: Proporción para test
+            val_size: Proporción para validación
             
         Returns:
-            Tuples con splits de imÃ¡genes y targets
+            Tuples con splits de imágenes y targets
         """
         logger.info("Creando split estratificado...")
         
@@ -361,10 +361,10 @@ class CacaoTrainingPipeline:
         
         # Crear estratos basados en cuantiles de peso
         peso_values = targets['peso']
-        n_quantiles = min(5, n_samples // 10)  # Ajustar nÃºmero de cuantiles
+        n_quantiles = min(5, n_samples // 10)  # Ajustar número de cuantiles
         
         if n_quantiles < 2:
-            logger.warning("Muy pocos muestras para estratificaciÃ³n, usando split aleatorio")
+            logger.warning("Muy pocos muestras para estratificación, usando split aleatorio")
             # Split aleatorio simple
             train_idx, test_idx = train_test_split(
                 range(n_samples), test_size=test_size, random_state=42
@@ -374,11 +374,11 @@ class CacaoTrainingPipeline:
             )
         else:
             try:
-                # EstratificaciÃ³n por cuantiles de peso
+                # Estratificación por cuantiles de peso
                 quantile_transformer = QuantileTransformer(n_quantiles=n_quantiles, random_state=42)
                 peso_quantiles = quantile_transformer.fit_transform(peso_values.reshape(-1, 1)).flatten()
                 
-                # Convertir a bins para estratificaciÃ³n
+                # Convertir a bins para estratificación
                 strata = pd.cut(peso_quantiles, bins=n_quantiles, labels=False)
                 
                 # Verificar que todos los estratos tengan al menos 2 muestras
@@ -386,8 +386,8 @@ class CacaoTrainingPipeline:
                 min_strata_count = strata_counts.min()
                 
                 if min_strata_count < 2:
-                    logger.warning(f"Algunos estratos tienen menos de 2 muestras (mÃ­nimo: {min_strata_count}). Usando split aleatorio.")
-                    raise ValueError("EstratificaciÃ³n no viable")
+                    logger.warning(f"Algunos estratos tienen menos de 2 muestras (mínimo: {min_strata_count}). Usando split aleatorio.")
+                    raise ValueError("Estratificación no viable")
                 
                 # Split estratificado
                 train_idx, test_idx = train_test_split(
@@ -398,9 +398,9 @@ class CacaoTrainingPipeline:
                 train_strata = strata[train_idx]
                 train_strata_counts = pd.Series(train_strata).value_counts()
                 
-                # Verificar que los estratos del train tambiÃ©n tengan al menos 2 muestras
+                # Verificar que los estratos del train también tengan al menos 2 muestras
                 if train_strata_counts.min() < 2:
-                    logger.warning("EstratificaciÃ³n no viable para validaciÃ³n. Usando split aleatorio para validaciÃ³n.")
+                    logger.warning("Estratificación no viable para validación. Usando split aleatorio para validación.")
                     train_idx, val_idx = train_test_split(
                         train_idx, test_size=val_size/(1-test_size), random_state=42
                     )
@@ -410,7 +410,7 @@ class CacaoTrainingPipeline:
                     )
                     
             except (ValueError, Exception) as e:
-                logger.warning(f"Error en estratificaciÃ³n: {e}. Usando split aleatorio.")
+                logger.warning(f"Error en estratificación: {e}. Usando split aleatorio.")
                 # Fallback a split aleatorio
                 train_idx, test_idx = train_test_split(
                     range(n_samples), test_size=test_size, random_state=42
@@ -419,7 +419,7 @@ class CacaoTrainingPipeline:
                     train_idx, test_size=val_size/(1-test_size), random_state=42
                 )
         
-        # Crear splits de imÃ¡genes
+        # Crear splits de imágenes
         train_images = [image_paths[i] for i in train_idx]
         val_images = [image_paths[i] for i in val_idx]
         test_images = [image_paths[i] for i in test_idx]
@@ -446,7 +446,7 @@ class CacaoTrainingPipeline:
         test_pixel_features: Optional[Dict[str, np.ndarray]] = None
     ) -> None:
         """
-        Crea los data loaders, incluyendo features de píxeles si están disponibles.
+        Crea los data loaders, incluyendo features de pxeles si estn disponibles.
         """
         logger.info("Creando data loaders...")
         
@@ -455,7 +455,7 @@ class CacaoTrainingPipeline:
         # Transformaciones de entrenamiento avanzadas
         from ..regression.augmentation import create_advanced_train_transform, create_advanced_val_transform
         
-        # Usar augmentation avanzado si está configurado
+        # Usar augmentation avanzado si est configurado
         use_advanced_aug = self.config.get('use_advanced_augmentation', True)
         
         if use_advanced_aug:
@@ -471,18 +471,18 @@ class CacaoTrainingPipeline:
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
         
-        # Transformaciones de validación/test avanzadas
+        # Transformaciones de validacin/test avanzadas
         if use_advanced_aug:
             val_transform = create_advanced_val_transform(self.config['img_size'])
         else:
-            # Transformaciones de validación/test estándar (fallback)
+            # Transformaciones de validacin/test estndar (fallback)
             val_transform = transforms.Compose([
                 transforms.Resize((self.config['img_size'], self.config['img_size'])),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
         
-        # Crear datasets con pixel_features si están disponibles
+        # Crear datasets con pixel_features si estn disponibles
         train_dataset = CacaoDataset(train_images, train_targets, train_transform, train_pixel_features)
         val_dataset = CacaoDataset(val_images, val_targets, val_transform, val_pixel_features)
         test_dataset = CacaoDataset(test_images, test_targets, val_transform, test_pixel_features)
@@ -528,7 +528,7 @@ class CacaoTrainingPipeline:
         """
         Prepara y ajusta los escaladores.
         
-        NOTA: Este método ahora es redundante ya que los escaladores se preparan
+        NOTA: Este mtodo ahora es redundante ya que los escaladores se preparan
         antes de normalizar los targets en run_pipeline(). Se mantiene por compatibilidad.
         """
         if self.scalers is None:
@@ -609,7 +609,7 @@ class CacaoTrainingPipeline:
                 pin_memory=pin_memory_single
             )
             
-            # Preparar informaciÃ³n del dataset
+            # Preparar información del dataset
             dataset_info = {
                 'train_size': len(train_loader_single.dataset),
                 'val_size': len(val_loader_single.dataset),
@@ -635,28 +635,28 @@ class CacaoTrainingPipeline:
         return histories
     
     def _train_multi_head_model(self) -> Dict[str, Union[Dict, List]]:
-        """Entrena modelo multi-head o híbrido."""
-        # Verificar si es modelo híbrido
+        """Entrena modelo multi-head o hbrido."""
+        # Verificar si es modelo hbrido
         is_hybrid = self.config.get('hybrid', False) or self.config.get('model_type') == 'hybrid'
         use_pixel_features = self.config.get('use_pixel_features', True)
         
         if is_hybrid:
-            logger.info("Entrenando modelo HÍBRIDO (ResNet18 + ConvNeXt + Píxeles)...")
+            logger.info("Entrenando modelo HBRIDO (ResNet18 + ConvNeXt + Pxeles)...")
         else:
             logger.info("Entrenando modelo multi-head...")
         
-        # Crear modelo multi-head o híbrido
+        # Crear modelo multi-head o hbrido
         model = create_model(
             model_type=self.config['model_type'],
             num_outputs=4,
             pretrained=self.config.get('pretrained', True),
             dropout_rate=self.config.get('dropout_rate', 0.2),
-            multi_head=not is_hybrid,  # Si es híbrido, no usar multi_head (usa hybrid=True)
+            multi_head=not is_hybrid,  # Si es hbrido, no usar multi_head (usa hybrid=True)
             hybrid=is_hybrid,
             use_pixel_features=use_pixel_features
         )
         
-        # Preparar informaciÃ³n del dataset
+        # Preparar información del dataset
         dataset_info = {
             'train_size': len(self.train_loader.dataset),
             'val_size': len(self.val_loader.dataset),
@@ -680,13 +680,13 @@ class CacaoTrainingPipeline:
     
     def evaluate_models(self, multi_head: bool = False) -> Dict[str, Union[Dict, List]]:
         """
-        EvalÃºa los modelos entrenados.
+        Evalúa los modelos entrenados.
         
         Args:
             multi_head: Si evaluar modelo multi-head o individuales
             
         Returns:
-            Resultados de evaluaciÃ³n
+            Resultados de evaluación
         """
         logger.info(f"Evaluando modelos (multi_head={multi_head})...")
         
@@ -696,7 +696,7 @@ class CacaoTrainingPipeline:
             return self._evaluate_individual_models()
     
     def _evaluate_individual_models(self) -> Dict[str, Dict]:
-        """EvalÃºa modelos individuales."""
+        """Evalúa modelos individuales."""
         results = {}
         
         for target in TARGETS:
@@ -720,7 +720,7 @@ class CacaoTrainingPipeline:
             checkpoint = torch.load(model_path, map_location=self.device)
             model.load_state_dict(checkpoint['model_state_dict'])
             
-            # Crear un DataLoader específico para este target
+            # Crear un DataLoader especfico para este target
             # El dataset devuelve (image, tensor) para modelos individuales
             from torch.utils.data import DataLoader
             from ml.pipeline.train_all import CacaoDataset
@@ -741,7 +741,7 @@ class CacaoTrainingPipeline:
                 test_transform
             )
             
-            # Crear loader específico para este target
+            # Crear loader especfico para este target
             is_windows = platform.system() == 'Windows'
             num_workers = 0 if is_windows else self.config.get('num_workers', 2)
             target_loader = DataLoader(
@@ -752,7 +752,7 @@ class CacaoTrainingPipeline:
                 pin_memory=not is_windows
             )
             
-            # Crear evaluador con el loader específico
+            # Crear evaluador con el loader especfico
             evaluator = RegressionEvaluator(
                 model=model,
                 test_loader=target_loader,
@@ -767,7 +767,7 @@ class CacaoTrainingPipeline:
         return results
     
     def _evaluate_multi_head_model(self) -> Dict[str, Dict]:
-        """EvalÃºa modelo multi-head."""
+        """Evalúa modelo multi-head."""
         logger.info("Evaluando modelo multi-head...")
         
         # Cargar modelo
@@ -823,7 +823,7 @@ class CacaoTrainingPipeline:
             if not model_path.exists():
                 missing_files.append(f"Modelo {target}: {model_path}")
             elif model_path.stat().st_size == 0:
-                missing_files.append(f"Modelo {target} estÃ¡ vacÃ­o: {model_path}")
+                missing_files.append(f"Modelo {target} está vacío: {model_path}")
         
         # Verificar escaladores
         for target in TARGETS:
@@ -831,10 +831,10 @@ class CacaoTrainingPipeline:
             if not scaler_path.exists():
                 missing_files.append(f"Escalador {target}: {scaler_path}")
             elif scaler_path.stat().st_size == 0:
-                missing_files.append(f"Escalador {target} estÃ¡ vacÃ­o: {scaler_path}")
+                missing_files.append(f"Escalador {target} está vacío: {scaler_path}")
         
         if missing_files:
-            error_msg = f"[ERROR] Archivos faltantes o vacíos: {missing_files}"
+            error_msg = f"[ERROR] Archivos faltantes o vacos: {missing_files}"
             logger.error(error_msg)
             raise IOError(error_msg)
         else:
@@ -850,10 +850,10 @@ class CacaoTrainingPipeline:
     
     def generate_reports(self, evaluation_results: Dict, save_dir: Optional[Path] = None) -> None:
         """
-        Genera reportes y grÃ¡ficos.
+        Genera reportes y gráficos.
         
         Args:
-            evaluation_results: Resultados de evaluaciÃ³n
+            evaluation_results: Resultados de evaluación
             save_dir: Directorio para guardar reportes
         """
         if save_dir is None:
@@ -873,14 +873,14 @@ class CacaoTrainingPipeline:
         
         Args:
             new_data: Nuevos datos para entrenamiento incremental
-            target: Target especÃ­fico a entrenar
+            target: Target específico a entrenar
             
         Returns:
             Resultados del entrenamiento incremental
         """
         logger.info(f"Iniciando entrenamiento incremental para {target}")
         
-        # ConfiguraciÃ³n para entrenamiento incremental
+        # Configuración para entrenamiento incremental
         incremental_config = {
             'strategy_type': 'elastic_weight_consolidation',
             'learning_rate': self.config.get('learning_rate', 1e-4),
@@ -972,12 +972,12 @@ class CacaoTrainingPipeline:
             
             logger.info(f"Splits creados - Train: {len(train_images)}, Val: {len(val_images)}, Test: {len(test_images)}")
             
-            # Guardar splits para evaluación posterior (valores originales sin normalizar)
+            # Guardar splits para evaluacin posterior (valores originales sin normalizar)
             self.train_images = train_images
             self.val_images = val_images
             self.test_images = test_images
             
-            # Guardar targets originales sin normalizar para evaluación
+            # Guardar targets originales sin normalizar para evaluacin
             train_images_indices = [image_paths.index(img) for img in train_images]
             val_images_indices = [image_paths.index(img) for img in val_images]
             test_images_indices = [image_paths.index(img) for img in test_images]
@@ -991,7 +991,7 @@ class CacaoTrainingPipeline:
             self.val_targets = val_targets
             self.test_targets = test_targets
             
-            # Dividir pixel_features por splits si están disponibles
+            # Dividir pixel_features por splits si estn disponibles
             train_pixel_features = None
             val_pixel_features = None
             test_pixel_features = None
@@ -1000,7 +1000,7 @@ class CacaoTrainingPipeline:
                 train_pixel_features = {k: v[train_images_indices] for k, v in pixel_features.items()}
                 val_pixel_features = {k: v[val_images_indices] for k, v in pixel_features.items()}
                 test_pixel_features = {k: v[test_images_indices] for k, v in pixel_features.items()}
-                logger.info("✅ Features de píxeles divididas por splits")
+                logger.info(" Features de pxeles divididas por splits")
             
             # Guardar pixel_features para usar en datasets
             self.pixel_features = pixel_features
@@ -1041,7 +1041,7 @@ class CacaoTrainingPipeline:
             }
             
         except ValueError as e:
-            logger.error(f"Error de validaciÃ³n en pipeline: {e}")
+            logger.error(f"Error de validación en pipeline: {e}")
             raise
         except Exception as e:
             logger.error(f"Error inesperado en pipeline: {e}")
@@ -1060,7 +1060,7 @@ class CacaoTrainingPipeline:
         Returns:
             Lista de registros con crops generados exitosamente
         """
-        logger.info(f"[INICIO] Generando crops para {len(missing_records)} imágenes faltantes...")
+        logger.info(f"[INICIO] Generando crops para {len(missing_records)} imgenes faltantes...")
         
         from pathlib import Path
         from PIL import Image
@@ -1086,7 +1086,7 @@ class CacaoTrainingPipeline:
                     failed += 1
                     continue
                 
-                # Verificar si el crop ya existe (doble verificaciÃ³n)
+                # Verificar si el crop ya existe (doble verificación)
                 if crop_path.exists():
                     logger.debug(f"Crop ya existe (saltando): {crop_path}")
                     crop_records.append(record)
@@ -1102,7 +1102,7 @@ class CacaoTrainingPipeline:
                 crop_records.append(record)
                 successful += 1
                 
-                # Log de progreso cada 10 imÃ¡genes
+                # Log de progreso cada 10 imágenes
                 if (i + 1) % 10 == 0:
                     logger.info(f"Generados {i + 1}/{len(missing_records)} crops faltantes...")
                     
@@ -1110,20 +1110,20 @@ class CacaoTrainingPipeline:
                 logger.error(f"Error generando crop para ID {record['id']}: {e}")
                 failed += 1
         
-        logger.info(f"[OK] Generación de crops faltantes completada: {successful} exitosos, {failed} fallidos")
+        logger.info(f"[OK] Generacin de crops faltantes completada: {successful} exitosos, {failed} fallidos")
         return crop_records
     
     def _generate_crops_automatically(self, valid_records: List[Dict]) -> List[Dict]:
         """
-        Genera crops automÃ¡ticamente para los registros vÃ¡lidos (mÃ©todo legacy).
+        Genera crops automáticamente para los registros válidos (método legacy).
         
         Args:
-            valid_records: Lista de registros vÃ¡lidos
+            valid_records: Lista de registros válidos
             
         Returns:
             Lista de registros con crops generados
         """
-        logger.info("[INICIO] Generando crops automáticamente (método legacy)...")
+        logger.info("[INICIO] Generando crops automticamente (mtodo legacy)...")
         
         from pathlib import Path
         from PIL import Image
@@ -1165,7 +1165,7 @@ class CacaoTrainingPipeline:
                 crop_records.append(record)
                 successful += 1
                 
-                # Log de progreso cada 50 imÃ¡genes
+                # Log de progreso cada 50 imágenes
                 if (i + 1) % 50 == 0:
                     logger.info(f"Generados {i + 1}/{len(valid_records)} crops...")
                     
@@ -1173,12 +1173,12 @@ class CacaoTrainingPipeline:
                 logger.error(f"Error generando crop para ID {record['id']}: {e}")
                 failed += 1
         
-        logger.info(f"[OK] Generación de crops completada: {successful} exitosos, {failed} fallidos")
+        logger.info(f"[OK] Generacin de crops completada: {successful} exitosos, {failed} fallidos")
         return crop_records
 
 
 def main():
-    """FunciÃ³n principal del script."""
+    """Función principal del script."""
     parser = argparse.ArgumentParser(description='Pipeline de entrenamiento para modelos de cacao')
     
     # Argumentos del modelo
@@ -1189,23 +1189,23 @@ def main():
     
     # Argumentos de entrenamiento
     parser.add_argument('--epochs', type=int, default=50,
-                       help='NÃºmero de Ã©pocas (default: 50)')
+                       help='Número de épocas (default: 50)')
     parser.add_argument('--batch-size', type=int, default=32,
-                       help='TamaÃ±o de batch (default: 32)')
+                       help='Tamaño de batch (default: 32)')
     parser.add_argument('--img-size', type=int, default=224,
-                       help='TamaÃ±o de imagen (default: 224)')
+                       help='Tamaño de imagen (default: 224)')
     parser.add_argument('--learning-rate', type=float, default=1e-4,
                        help='Learning rate (default: 1e-4)')
     
     # Argumentos adicionales
     parser.add_argument('--num-workers', type=int, default=2,
-                       help='NÃºmero de workers para data loading (default: 2)')
+                       help='Número de workers para data loading (default: 2)')
     parser.add_argument('--early-stopping-patience', type=int, default=10,
                        help='Paciencia para early stopping (default: 10)')
     
     args = parser.parse_args()
     
-    # Crear configuraciÃ³n
+    # Crear configuración
     config = {
         'multi_head': args.multihead.lower() == 'true',
         'model_type': args.model_type,
@@ -1228,22 +1228,22 @@ def main():
     print("Pipeline completado exitosamente!")
     print(f"Tiempo total: {results['total_time']:.2f}s")
     
-    # Mostrar resultados de evaluaciÃ³n
+    # Mostrar resultados de evaluación
     if 'evaluation_results' in results:
         eval_results = results['evaluation_results']
-        print("\n=== RESULTADOS DE EVALUACIÃ“N ===")
+        print("\n=== RESULTADOS DE EVALUACI"N ===")
         
         if config['multi_head'] and 'multihead' in eval_results:
             multihead_results = eval_results['multihead']
             for target in TARGETS:
                 if target in multihead_results:
                     metrics = multihead_results[target]
-                    print(f"{target.upper()}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, RÂ²={metrics['r2']:.4f}")
+                    print(f"{target.upper()}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, R²={metrics['r2']:.4f}")
         else:
             for target in TARGETS:
                 if target in eval_results:
                     metrics = eval_results[target]
-                    print(f"{target.upper()}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, RÂ²={metrics['r2']:.4f}")
+                    print(f"{target.upper()}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, R²={metrics['r2']:.4f}")
 
 
 def run_training_pipeline(
@@ -1257,15 +1257,15 @@ def run_training_pipeline(
     save_best_only: bool = True
 ) -> bool:
     """
-    FunciÃ³n para ejecutar el pipeline de entrenamiento desde otros mÃ³dulos.
+    Función para ejecutar el pipeline de entrenamiento desde otros módulos.
     
     Args:
-        epochs: NÃºmero de Ã©pocas
-        batch_size: TamaÃ±o de batch
+        epochs: Número de épocas
+        batch_size: Tamaño de batch
         learning_rate: Learning rate
         multi_head: Si usar modelo multi-head
         model_type: Tipo de modelo
-        img_size: TamaÃ±o de imagen
+        img_size: Tamaño de imagen
         early_stopping_patience: Paciencia para early stopping
         save_best_only: Solo guardar el mejor modelo
         
@@ -1275,11 +1275,11 @@ def run_training_pipeline(
     try:
         logger.info("[INICIO] Iniciando pipeline de entrenamiento...")
         
-        # Detectar Windows y ajustar num_workers automáticamente (multiprocessing en Windows causa MemoryError)
+        # Detectar Windows y ajustar num_workers automticamente (multiprocessing en Windows causa MemoryError)
         is_windows = platform.system() == 'Windows'
         default_num_workers = 0 if is_windows else 2
         
-        # Crear configuración mejorada con todas las optimizaciones avanzadas
+        # Crear configuracin mejorada con todas las optimizaciones avanzadas
         config = {
             'multi_head': multi_head,
             'model_type': model_type,
@@ -1298,11 +1298,11 @@ def run_training_pipeline(
             # Mejoras avanzadas de entrenamiento
             'scheduler_type': 'cosine_warmup',  # 'onecycle', 'cosine_warmup', 'cosine'
             'warmup_epochs': 5,
-            'loss_type': 'huber',  # 'mse', 'huber', 'smooth_l1' - Huber es más robusto a outliers
+            'loss_type': 'huber',  # 'mse', 'huber', 'smooth_l1' - Huber es ms robusto a outliers
             'max_grad_norm': 1.0,  # Gradient clipping para estabilidad
             'use_amp': False,  # Mixed precision (requiere GPU NVIDIA)
             'use_advanced_augmentation': True,  # Usar augmentation avanzado
-            'improvement_threshold': 1e-4,  # Umbral mínimo de mejora para early stopping
+            'improvement_threshold': 1e-4,  # Umbral mnimo de mejora para early stopping
         }
         
         # Crear y ejecutar pipeline
@@ -1330,17 +1330,17 @@ def run_incremental_training_pipeline(
     replay_ratio: float = 0.3
 ) -> bool:
     """
-    FunciÃ³n para ejecutar entrenamiento incremental desde otros mÃ³dulos.
+    Función para ejecutar entrenamiento incremental desde otros módulos.
     
     Args:
         new_data: Nuevos datos para entrenamiento
-        target: Target especÃ­fico a entrenar
-        epochs: NÃºmero de Ã©pocas para entrenamiento incremental
-        batch_size: TamaÃ±o de batch
+        target: Target específico a entrenar
+        epochs: Número de épocas para entrenamiento incremental
+        batch_size: Tamaño de batch
         learning_rate: Learning rate
         strategy_type: Estrategia de aprendizaje incremental
-        ewc_lambda: Peso del tÃ©rmino EWC
-        replay_ratio: ProporciÃ³n de datos de replay
+        ewc_lambda: Peso del término EWC
+        replay_ratio: Proporción de datos de replay
         
     Returns:
         bool: True si el entrenamiento fue exitoso, False en caso contrario
@@ -1348,7 +1348,7 @@ def run_incremental_training_pipeline(
     try:
         logger.info("[INICIO] Iniciando entrenamiento incremental...")
         
-        # ConfiguraciÃ³n para entrenamiento incremental
+        # Configuración para entrenamiento incremental
         config = {
             'strategy_type': strategy_type,
             'learning_rate': learning_rate,
@@ -1366,8 +1366,8 @@ def run_incremental_training_pipeline(
         results = run_incremental_training(new_data, config, target)
         
         logger.info("[OK] Entrenamiento incremental completado exitosamente!")
-        logger.info(f"Modelo versión: {results['model_version']}")
-        logger.info(f"Métricas de rendimiento: {results['performance_metrics']}")
+        logger.info(f"Modelo versin: {results['model_version']}")
+        logger.info(f"Mtricas de rendimiento: {results['performance_metrics']}")
         
         return True
         

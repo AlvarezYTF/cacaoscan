@@ -1,5 +1,5 @@
-﻿"""
-Vistas para gestiÃ³n de emails en CacaoScan.
+"""
+Vistas para gestión de emails en CacaoScan.
 """
 import logging
 from rest_framework.views import APIView
@@ -94,7 +94,7 @@ class SendTestEmailView(APIView):
     permission_classes = [IsAdminUser]
     
     @swagger_auto_schema(
-        operation_description="EnvÃ­a un email de prueba para verificar la configuraciÃ³n",
+        operation_description="Envía un email de prueba para verificar la configuración",
         operation_summary="Enviar email de prueba",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -122,7 +122,7 @@ class SendTestEmailView(APIView):
         tags=['Emails']
     )
     def post(self, request):
-        """EnvÃ­a un email de prueba."""
+        """Envía un email de prueba."""
         to_email = request.data.get('to_email')
         use_sendgrid = request.data.get('use_sendgrid', False)
         
@@ -135,28 +135,28 @@ class SendTestEmailView(APIView):
         
         try:
             # Preparar contenido del email de prueba
-            subject = "ðŸ§ª Email de Prueba - CacaoScan"
+            subject = " Email de Prueba - CacaoScan"
             html_content = f"""
             <html>
             <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="background-color: #8B4513; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-                    <h1>ðŸŒ± CacaoScan</h1>
+                    <h1> CacaoScan</h1>
                     <h2>Email de Prueba</h2>
                 </div>
                 <div style="background-color: #f8f9fa; padding: 20px; border-radius: 0 0 10px 10px;">
-                    <p>Â¡Hola!</p>
+                    <p>¡Hola!</p>
                     <p>Este es un email de prueba enviado desde el sistema CacaoScan.</p>
-                    <p><strong>Detalles del envÃ­o:</strong></p>
+                    <p><strong>Detalles del envío:</strong></p>
                     <ul>
                         <li><strong>Fecha:</strong> {timezone.now().strftime('%d/%m/%Y %H:%M:%S')}</li>
                         <li><strong>Backend:</strong> {'SendGrid' if use_sendgrid else 'SMTP'}</li>
                         <li><strong>Enviado por:</strong> {request.user.username}</li>
                     </ul>
-                    <p>Si recibes este email, significa que la configuraciÃ³n de emails estÃ¡ funcionando correctamente.</p>
+                    <p>Si recibes este email, significa que la configuración de emails está funcionando correctamente.</p>
                     <hr style="margin: 20px 0;">
                     <p style="color: #666; font-size: 12px;">
-                        Este es un email automÃ¡tico del sistema CacaoScan.<br>
-                        Â© {datetime.now().year} CacaoScan. Todos los derechos reservados.
+                        Este es un email automático del sistema CacaoScan.<br>
+                        é {datetime.now().year} CacaoScan. Todos los derechos reservados.
                     </p>
                 </div>
             </body>
@@ -166,20 +166,20 @@ class SendTestEmailView(APIView):
             text_content = f"""
             CacaoScan - Email de Prueba
             
-            Â¡Hola!
+            ¡Hola!
             
             Este es un email de prueba enviado desde el sistema CacaoScan.
             
-            Detalles del envÃ­o:
+            Detalles del envío:
             - Fecha: {timezone.now().strftime('%d/%m/%Y %H:%M:%S')}
             - Backend: {'SendGrid' if use_sendgrid else 'SMTP'}
             - Enviado por: {request.user.username}
             
-            Si recibes este email, significa que la configuraciÃ³n de emails estÃ¡ funcionando correctamente.
+            Si recibes este email, significa que la configuración de emails está funcionando correctamente.
             
             ---
-            Este es un email automÃ¡tico del sistema CacaoScan.
-            Â© {datetime.now().year} CacaoScan. Todos los derechos reservados.
+            Este es un email automático del sistema CacaoScan.
+            é {datetime.now().year} CacaoScan. Todos los derechos reservados.
             """
             
             # Enviar email
@@ -210,7 +210,7 @@ class SendTestEmailView(APIView):
                 )
                 
         except Exception as e:
-            logger.error(f"Error en envÃ­o de email de prueba: {e}")
+            logger.error(f"Error en envío de email de prueba: {e}")
             return create_error_response(
                 message='Error interno enviando email de prueba',
                 error_type='server_error',
@@ -225,7 +225,7 @@ class SendBulkNotificationView(APIView):
     permission_classes = [IsAdminUser]
     
     @swagger_auto_schema(
-        operation_description="EnvÃ­a notificaciones masivas por email a mÃºltiples usuarios",
+        operation_description="Envía notificaciones masivas por email a múltiples usuarios",
         operation_summary="Enviar notificaciones masivas",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -264,7 +264,7 @@ class SendBulkNotificationView(APIView):
         tags=['Emails']
     )
     def post(self, request):
-        """EnvÃ­a notificaciones masivas por email."""
+        """Envía notificaciones masivas por email."""
         notification_type = request.data.get('notification_type')
         user_emails = request.data.get('user_emails', [])
         subject_override = request.data.get('subject_override')
@@ -273,7 +273,7 @@ class SendBulkNotificationView(APIView):
         
         if not notification_type:
             return create_error_response(
-                message='Tipo de notificaciÃ³n es requerido',
+                message='Tipo de notificación es requerido',
                 error_type='validation_error',
                 status_code=status.HTTP_400_BAD_REQUEST
             )
@@ -370,7 +370,7 @@ class EmailTemplatePreviewView(APIView):
         try:
             # Datos de ejemplo para el template
             sample_context = {
-                'user_name': 'Juan PÃ©rez',
+                'user_name': 'Juan Pérez',
                 'user_email': 'juan.perez@ejemplo.com',
                 'site_name': 'CacaoScan',
                 'site_url': 'https://cacaoscan.com',
@@ -396,7 +396,7 @@ class EmailTemplatePreviewView(APIView):
                 'analysis_date': '15/10/2024 14:30',
                 'crop_url': '/media/cacao_images/crops_runtime/sample.png',
                 'defects_detected': ['Mancha oscura', 'Grieta superficial'],
-                'report_type': 'AnÃ¡lisis Mensual',
+                'report_type': 'Análisis Mensual',
                 'period_start': '01/10/2024',
                 'period_end': '31/10/2024',
                 'generation_date': '15/10/2024 15:00',
@@ -406,20 +406,20 @@ class EmailTemplatePreviewView(APIView):
                 'download_expiry_days': 7,
                 'report_id': 'RPT-2024-001',
                 'summary_stats': [
-                    {'label': 'Total AnÃ¡lisis', 'value': '150'},
+                    {'label': 'Total Análisis', 'value': '150'},
                     {'label': 'Promedio Peso', 'value': '1.8g'},
                     {'label': 'Calidad Alta', 'value': '85%'}
                 ],
                 'report_sections': [
                     'Resumen Ejecutivo',
-                    'AnÃ¡lisis de Dimensiones',
-                    'DistribuciÃ³n de Peso',
-                    'DetecciÃ³n de Defectos',
+                    'Análisis de Dimensiones',
+                    'Distribución de Peso',
+                    'Detección de Defectos',
                     'Recomendaciones'
                 ],
                 'recommendations': [
                     'Mejorar condiciones de almacenamiento',
-                    'Implementar control de calidad mÃ¡s estricto'
+                    'Implementar control de calidad más estricto'
                 ]
             }
             
@@ -457,7 +457,7 @@ class EmailLogsView(APIView):
     permission_classes = [IsAdminUser]
     
     @swagger_auto_schema(
-        operation_description="Obtiene logs de emails enviados en un perÃ­odo especÃ­fico",
+        operation_description="Obtiene logs de emails enviados en un período específico",
         operation_summary="Logs de emails",
         manual_parameters=[
             openapi.Parameter(
@@ -479,7 +479,7 @@ class EmailLogsView(APIView):
             openapi.Parameter(
                 'notification_type',
                 openapi.IN_QUERY,
-                description="Filtrar por tipo de notificaciÃ³n",
+                description="Filtrar por tipo de notificación",
                 type=openapi.TYPE_STRING,
                 required=False
             ),

@@ -5,12 +5,12 @@
 Tu cuenta ha sido creada exitosamente y ya puedes comenzar a utilizar todas las funcionalidades de nuestra plataforma.
 
 ¿Qué puedes hacer en CacaoScan?
-✓ Analizar granos de cacao con inteligencia artificial
-✓ Gestionar tus fincas y lotes
-✓ Generar reportes detallados de calidad
-✓ Recibir alertas sobre defectos detectados
-✓ Acceder a estadísticas y métricas de tus cultivos
-✓ Compartir resultados con otros profesionales
+[OK] Analizar granos de cacao con inteligencia artificial
+[OK] Gestionar tus fincas y lotes
+[OK] Generar reportes detallados de calidad
+[OK] Recibir alertas sobre defectos detectados
+[OK] Acceder a estadísticas y métricas de tus cultivos
+[OK] Compartir resultados con otros profesionales
 
 Para comenzar, te recomendamos:
 1. Completar tu perfil de usuario

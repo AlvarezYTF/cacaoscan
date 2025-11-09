@@ -1,5 +1,5 @@
-﻿"""
-Vistas para verificaciÃ³n OTP por email en CacaoScan.
+"""
+Vistas para verificación OTP por email en CacaoScan.
 """
 import logging
 from rest_framework.views import APIView
@@ -21,97 +21,97 @@ logger = logging.getLogger("cacaoscan.auth")
 
 class SendOtpView(APIView):
     """
-    Endpoint para enviar cÃ³digo OTP de verificaciÃ³n de email.
+    Endpoint para enviar código OTP de verificación de email.
     """
     permission_classes = [AllowAny]
     serializer_class = SendOtpSerializer
     
     @swagger_auto_schema(
-        operation_description="EnvÃ­a un cÃ³digo OTP de 6 dÃ­gitos al correo especificado",
-        operation_summary="Enviar cÃ³digo OTP",
+        operation_description="Envía un código OTP de 6 dígitos al correo especificado",
+        operation_summary="Enviar código OTP",
         request_body=SendOtpSerializer,
         responses={
-            200: openapi.Response(description="CÃ³digo OTP enviado exitosamente"),
+            200: openapi.Response(description="Código OTP enviado exitosamente"),
             400: ErrorResponseSerializer,
             429: ErrorResponseSerializer,
         },
-        tags=['AutenticaciÃ³n OTP']
+        tags=['Autenticación OTP']
     )
     def post(self, request):
-        """EnvÃ­a un cÃ³digo OTP al correo especificado."""
+        """Envía un código OTP al correo especificado."""
         try:
             serializer = SendOtpSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             email = serializer.validated_data['email']
             temp_data = serializer.validated_data.get('temp_data') or request.data
             
-            # Importar aquÃ­ para evitar importaciones circulares
+            # Importar aquí para evitar importaciones circulares
             from auth_app.models import PendingEmailVerification
             
-            # Control de reenvÃ­o (60 segundos)
+            # Control de reenvío (60 segundos)
             existing = PendingEmailVerification.objects.filter(email=email).first()
             if existing:
                 time_since_last_sent = (timezone.now() - existing.last_sent).total_seconds()
                 if time_since_last_sent < 60:
                     remaining = int(60 - time_since_last_sent)
                     return Response({
-                        'error': f'Espera {remaining} segundos antes de reenviar el cÃ³digo.',
+                        'error': f'Espera {remaining} segundos antes de reenviar el código.',
                         'status': 'error'
                     }, status=status.HTTP_429_TOO_MANY_REQUESTS)
             
-            # Generar cÃ³digo OTP
+            # Generar código OTP
             code = PendingEmailVerification.generate_code()
             
-            # Crear o actualizar registro de verificaciÃ³n
+            # Crear o actualizar registro de verificación
             verification, created = PendingEmailVerification.objects.update_or_create(
                 email=email,
                 defaults={'otp_code': code, 'temp_data': temp_data}
             )
             
-            # Enviar email con cÃ³digo OTP usando el servicio de emails
+            # Enviar email con código OTP usando el servicio de emails
             from api.email_service import email_service
             
             # Enviar email con contenido HTML
             email_result = email_service.send_email(
                 to_emails=[email],
-                subject='VerificaciÃ³n de cuenta CacaoScan',
+                subject='Verificación de cuenta CacaoScan',
                 html_content=f"""
                 <html>
                 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                        <h2 style="color: #22c55e;">VerificaciÃ³n de cuenta CacaoScan</h2>
-                        <p>Hola ðŸ‘‹,</p>
-                        <p>Tu cÃ³digo de verificaciÃ³n es:</p>
+                        <h2 style="color: #22c55e;">Verificación de cuenta CacaoScan</h2>
+                        <p>Hola ',</p>
+                        <p>Tu código de verificación es:</p>
                         <div style="background-color: #f3f4f6; border: 2px solid #22c55e; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
                             <h1 style="color: #22c55e; font-size: 32px; margin: 0; letter-spacing: 5px;">{code}</h1>
                         </div>
-                        <p>Este cÃ³digo expirarÃ¡ en <strong>10 minutos</strong>.</p>
-                        <p style="color: #6b7280; font-size: 14px;">Si no solicitaste este cÃ³digo, puedes ignorar este email.</p>
+                        <p>Este código expirará en <strong>10 minutos</strong>.</p>
+                        <p style="color: #6b7280; font-size: 14px;">Si no solicitaste este código, puedes ignorar este email.</p>
                         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-                        <p style="color: #6b7280; font-size: 12px;">Â© {timezone.now().year} CacaoScan - Sistema de anÃ¡lisis de cacao</p>
+                        <p style="color: #6b7280; font-size: 12px;">é {timezone.now().year} CacaoScan - Sistema de análisis de cacao</p>
                     </div>
                 </body>
                 </html>
                 """,
-                text_content=f"Hola, tu cÃ³digo de verificaciÃ³n es: {code}. Este cÃ³digo expirarÃ¡ en 10 minutos."
+                text_content=f"Hola, tu código de verificación es: {code}. Este código expirará en 10 minutos."
             )
             
             if email_result['success']:
-                logger.info(f"CÃ³digo OTP {code} enviado a {email}")
+                logger.info(f"Código OTP {code} enviado a {email}")
                 return Response({
                     'success': True,
-                    'message': 'CÃ³digo enviado con Ã©xito al correo.',
+                    'message': 'Código enviado con éxito al correo.',
                     'email': email
                 }, status=status.HTTP_200_OK)
             else:
-                logger.error(f"Error enviando cÃ³digo OTP a {email}: {email_result.get('error')}")
+                logger.error(f"Error enviando código OTP a {email}: {email_result.get('error')}")
                 return Response({
-                    'error': 'Error al enviar el cÃ³digo. Por favor intenta de nuevo.',
+                    'error': 'Error al enviar el código. Por favor intenta de nuevo.',
                     'status': 'error'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
         except serializers.ValidationError as e:
-            logger.error(f"Error de validaciÃ³n en send-otp: {e}")
+            logger.error(f"Error de validación en send-otp: {e}")
             return Response({
                 'error': str(e),
                 'status': 'error'
@@ -126,54 +126,54 @@ class SendOtpView(APIView):
 
 class VerifyOtpView(APIView):
     """
-    Endpoint para verificar cÃ³digo OTP y activar cuenta de usuario.
+    Endpoint para verificar código OTP y activar cuenta de usuario.
     """
     permission_classes = [AllowAny]
     serializer_class = VerifyOtpSerializer
     
     @swagger_auto_schema(
-        operation_description="Verifica el cÃ³digo OTP y activa la cuenta del usuario",
-        operation_summary="Verificar cÃ³digo OTP",
+        operation_description="Verifica el código OTP y activa la cuenta del usuario",
+        operation_summary="Verificar código OTP",
         request_body=VerifyOtpSerializer,
         responses={
             201: openapi.Response(description="Cuenta verificada y activada exitosamente"),
             400: ErrorResponseSerializer,
             404: ErrorResponseSerializer,
         },
-        tags=['AutenticaciÃ³n OTP']
+        tags=['Autenticación OTP']
     )
     def post(self, request):
-        """Verifica el cÃ³digo OTP y activa la cuenta."""
+        """Verifica el código OTP y activa la cuenta."""
         try:
             serializer = VerifyOtpSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             email = serializer.validated_data['email']
             code = serializer.validated_data['code']
             
-            # Importar aquÃ­ para evitar importaciones circulares
+            # Importar aquí para evitar importaciones circulares
             from auth_app.models import PendingEmailVerification
             
-            # Buscar verificaciÃ³n pendiente
+            # Buscar verificación pendiente
             verification = PendingEmailVerification.objects.filter(email=email).first()
             
             if not verification:
                 return Response({
-                    'error': 'No se encontrÃ³ un cÃ³digo para este correo.',
+                    'error': 'No se encontró un código para este correo.',
                     'status': 'error'
                 }, status=status.HTTP_404_NOT_FOUND)
             
-            # Verificar expiraciÃ³n
+            # Verificar expiración
             if verification.is_expired():
                 verification.delete()
                 return Response({
-                    'error': 'El cÃ³digo ha expirado. Solicita uno nuevo.',
+                    'error': 'El código ha expirado. Solicita uno nuevo.',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Verificar cÃ³digo
+            # Verificar código
             if verification.otp_code != code:
                 return Response({
-                    'error': 'CÃ³digo incorrecto.',
+                    'error': 'Código incorrecto.',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -184,10 +184,10 @@ class VerifyOtpView(APIView):
                 verification.delete()
                 return Response({
                     'success': True,
-                    'message': 'El email ya estÃ¡ verificado y registrado.'
+                    'message': 'El email ya está verificado y registrado.'
                 }, status=status.HTTP_200_OK)
 
-            # Crear usuario/persona desde temp_data de forma atÃ³mica
+            # Crear usuario/persona desde temp_data de forma atómica
             data = verification.temp_data or {}
             password = data.get('password')
             first_name = data.get('primer_nombre') or data.get('first_name') or ''
@@ -239,7 +239,7 @@ class VerifyOtpView(APIView):
 
                 return Response({
                     'success': True,
-                    'message': 'Cuenta verificada y creada. Ahora puedes iniciar sesiÃ³n.',
+                    'message': 'Cuenta verificada y creada. Ahora puedes iniciar sesión.',
                     'user': {
                         'email': email,
                         'username': user.username,
@@ -254,7 +254,7 @@ class VerifyOtpView(APIView):
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
         except serializers.ValidationError as e:
-            logger.error(f"Error de validaciÃ³n en verify-otp: {e}")
+            logger.error(f"Error de validación en verify-otp: {e}")
             return Response({
                 'error': str(e),
                 'status': 'error'

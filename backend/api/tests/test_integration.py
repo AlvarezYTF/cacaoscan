@@ -1,5 +1,5 @@
-﻿"""
-Tests de integraciÃ³n para las APIs de CacaoScan.
+"""
+Tests de integración para las APIs de CacaoScan.
 """
 import json
 import tempfile
@@ -23,10 +23,10 @@ from api.cache_config import API_CACHE_TIMEOUTS
 
 
 class CacaoImageAPITestCase(APITestCase):
-    """Tests de integraciÃ³n para la API de imÃ¡genes de cacao."""
+    """Tests de integración para la API de imágenes de cacao."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial para cada test."""
+        """Configuración inicial para cada test."""
         self.client = APIClient()
         
         # Crear usuario de prueba
@@ -36,7 +36,7 @@ class CacaoImageAPITestCase(APITestCase):
             password='testpass123'
         )
         
-        # Crear token de autenticaciÃ³n
+        # Crear token de autenticación
         self.token = Token.objects.create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
         
@@ -90,15 +90,15 @@ class CacaoImageAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(CacaoImage.objects.filter(usuario=self.user).exists())
         
-        # Verificar que se creÃ³ el log de actividad
+        # Verificar que se creó el log de actividad
         self.assertTrue(ActivityLog.objects.filter(
             usuario=self.user,
             accion='upload_image'
         ).exists())
     
     def test_upload_image_without_authentication(self):
-        """Test de subida de imagen sin autenticaciÃ³n."""
-        self.client.credentials()  # Remover autenticaciÃ³n
+        """Test de subida de imagen sin autenticación."""
+        self.client.credentials()  # Remover autenticación
         
         url = reverse('cacao-image-list')
         data = {
@@ -110,8 +110,8 @@ class CacaoImageAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
     def test_get_image_list(self):
-        """Test de obtenciÃ³n de lista de imÃ¡genes."""
-        # Crear algunas imÃ¡genes de prueba
+        """Test de obtención de lista de imágenes."""
+        # Crear algunas imágenes de prueba
         for i in range(3):
             CacaoImage.objects.create(
                 usuario=self.user,
@@ -127,7 +127,7 @@ class CacaoImageAPITestCase(APITestCase):
         self.assertEqual(len(response.data['results']), 3)
     
     def test_get_image_detail(self):
-        """Test de obtenciÃ³n de detalle de imagen."""
+        """Test de obtención de detalle de imagen."""
         image = CacaoImage.objects.create(
             usuario=self.user,
             lote=self.lote,
@@ -142,7 +142,7 @@ class CacaoImageAPITestCase(APITestCase):
         self.assertEqual(response.data['descripcion'], 'Imagen de prueba')
     
     def test_delete_image(self):
-        """Test de eliminaciÃ³n de imagen."""
+        """Test de eliminación de imagen."""
         image = CacaoImage.objects.create(
             usuario=self.user,
             lote=self.lote,
@@ -156,7 +156,7 @@ class CacaoImageAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(CacaoImage.objects.filter(id=image.id).exists())
         
-        # Verificar que se creÃ³ el log de actividad
+        # Verificar que se creó el log de actividad
         self.assertTrue(ActivityLog.objects.filter(
             usuario=self.user,
             accion='delete_image'
@@ -164,10 +164,10 @@ class CacaoImageAPITestCase(APITestCase):
 
 
 class FincaAPITestCase(APITestCase):
-    """Tests de integraciÃ³n para la API de fincas."""
+    """Tests de integración para la API de fincas."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial para cada test."""
+        """Configuración inicial para cada test."""
         self.client = APIClient()
         
         self.user = User.objects.create_user(
@@ -180,11 +180,11 @@ class FincaAPITestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
     
     def test_create_finca_success(self):
-        """Test de creaciÃ³n exitosa de finca."""
+        """Test de creación exitosa de finca."""
         url = reverse('finca-list-create')
         data = {
             'nombre': 'Finca Nueva',
-            'ubicacion': 'Nueva UbicaciÃ³n',
+            'ubicacion': 'Nueva Ubicación',
             'area_total': 15.5,
             'descripcion': 'Finca de prueba'
         }
@@ -194,19 +194,19 @@ class FincaAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Finca.objects.filter(nombre='Finca Nueva').exists())
         
-        # Verificar que se creÃ³ el log de actividad
+        # Verificar que se creó el log de actividad
         self.assertTrue(ActivityLog.objects.filter(
             usuario=self.user,
             accion='create_finca'
         ).exists())
     
     def test_get_finca_list(self):
-        """Test de obtenciÃ³n de lista de fincas."""
+        """Test de obtención de lista de fincas."""
         # Crear algunas fincas de prueba
         for i in range(3):
             Finca.objects.create(
                 nombre=f'Finca {i+1}',
-                ubicacion=f'UbicaciÃ³n {i+1}',
+                ubicacion=f'Ubicación {i+1}',
                 area_total=10.0 + i,
                 propietario=self.user
             )
@@ -218,10 +218,10 @@ class FincaAPITestCase(APITestCase):
         self.assertEqual(len(response.data['results']), 3)
     
     def test_update_finca(self):
-        """Test de actualizaciÃ³n de finca."""
+        """Test de actualización de finca."""
         finca = Finca.objects.create(
             nombre='Finca Original',
-            ubicacion='UbicaciÃ³n Original',
+            ubicacion='Ubicación Original',
             area_total=10.0,
             propietario=self.user
         )
@@ -229,7 +229,7 @@ class FincaAPITestCase(APITestCase):
         url = reverse('finca-detail', kwargs={'pk': finca.id})
         data = {
             'nombre': 'Finca Actualizada',
-            'ubicacion': 'UbicaciÃ³n Actualizada',
+            'ubicacion': 'Ubicación Actualizada',
             'area_total': 12.0
         }
         
@@ -239,7 +239,7 @@ class FincaAPITestCase(APITestCase):
         finca.refresh_from_db()
         self.assertEqual(finca.nombre, 'Finca Actualizada')
         
-        # Verificar que se creÃ³ el log de actividad
+        # Verificar que se creó el log de actividad
         self.assertTrue(ActivityLog.objects.filter(
             usuario=self.user,
             accion='update_finca'
@@ -247,10 +247,10 @@ class FincaAPITestCase(APITestCase):
 
 
 class NotificationAPITestCase(APITestCase):
-    """Tests de integraciÃ³n para la API de notificaciones."""
+    """Tests de integración para la API de notificaciones."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial para cada test."""
+        """Configuración inicial para cada test."""
         self.client = APIClient()
         
         self.user = User.objects.create_user(
@@ -263,10 +263,10 @@ class NotificationAPITestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
     
     def test_create_notification(self):
-        """Test de creaciÃ³n de notificaciÃ³n."""
+        """Test de creación de notificación."""
         url = reverse('notification-list-create')
         data = {
-            'titulo': 'NotificaciÃ³n de prueba',
+            'titulo': 'Notificación de prueba',
             'mensaje': 'Este es un mensaje de prueba',
             'tipo': 'info',
             'datos_extra': {'test': 'value'}
@@ -277,14 +277,14 @@ class NotificationAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Notification.objects.filter(
             usuario=self.user,
-            titulo='NotificaciÃ³n de prueba'
+            titulo='Notificación de prueba'
         ).exists())
     
     def test_mark_notification_as_read(self):
-        """Test de marcar notificaciÃ³n como leÃ­da."""
+        """Test de marcar notificación como leída."""
         notification = Notification.objects.create(
             usuario=self.user,
-            titulo='NotificaciÃ³n de prueba',
+            titulo='Notificación de prueba',
             mensaje='Mensaje de prueba',
             tipo='info'
         )
@@ -298,11 +298,11 @@ class NotificationAPITestCase(APITestCase):
         self.assertIsNotNone(notification.fecha_lectura)
     
     def test_get_unread_notifications(self):
-        """Test de obtenciÃ³n de notificaciones no leÃ­das."""
-        # Crear notificaciones leÃ­das y no leÃ­das
+        """Test de obtención de notificaciones no leídas."""
+        # Crear notificaciones leídas y no leídas
         Notification.objects.create(
             usuario=self.user,
-            titulo='NotificaciÃ³n 1',
+            titulo='Notificación 1',
             mensaje='Mensaje 1',
             tipo='info',
             leida=True
@@ -310,7 +310,7 @@ class NotificationAPITestCase(APITestCase):
         
         Notification.objects.create(
             usuario=self.user,
-            titulo='NotificaciÃ³n 2',
+            titulo='Notificación 2',
             mensaje='Mensaje 2',
             tipo='warning',
             leida=False
@@ -321,14 +321,14 @@ class NotificationAPITestCase(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
-        self.assertEqual(response.data['results'][0]['titulo'], 'NotificaciÃ³n 2')
+        self.assertEqual(response.data['results'][0]['titulo'], 'Notificación 2')
 
 
 class ReportAPITestCase(APITestCase):
-    """Tests de integraciÃ³n para la API de reportes."""
+    """Tests de integración para la API de reportes."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial para cada test."""
+        """Configuración inicial para cada test."""
         self.client = APIClient()
         
         self.user = User.objects.create_user(
@@ -341,7 +341,7 @@ class ReportAPITestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
     
     def test_create_report(self):
-        """Test de creaciÃ³n de reporte."""
+        """Test de creación de reporte."""
         url = reverse('reportes-list-create')
         data = {
             'tipo_reporte': 'calidad',
@@ -361,7 +361,7 @@ class ReportAPITestCase(APITestCase):
         ).exists())
     
     def test_get_reports_list(self):
-        """Test de obtenciÃ³n de lista de reportes."""
+        """Test de obtención de lista de reportes."""
         # Crear algunos reportes de prueba
         for i in range(3):
             ReporteGenerado.objects.create(
@@ -402,10 +402,10 @@ class ReportAPITestCase(APITestCase):
 
 
 class CacheIntegrationTestCase(TestCase):
-    """Tests de integraciÃ³n para el sistema de cachÃ©."""
+    """Tests de integración para el sistema de caché."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial para cada test."""
+        """Configuración inicial para cada test."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -419,23 +419,23 @@ class CacheIntegrationTestCase(TestCase):
         def expensive_operation():
             return {'result': 'expensive_data'}
         
-        # Primera llamada - debe ejecutar la funciÃ³n
+        # Primera llamada - debe ejecutar la función
         result1 = CacheManager.get_or_set(cache_key, expensive_operation)
         self.assertEqual(result1['result'], 'expensive_data')
         
-        # Segunda llamada - debe obtener del cachÃ©
+        # Segunda llamada - debe obtener del caché
         result2 = CacheManager.get_or_set(cache_key, expensive_operation)
         self.assertEqual(result2['result'], 'expensive_data')
     
     def test_cache_invalidation(self):
-        """Test de invalidaciÃ³n de cachÃ©."""
+        """Test de invalidación de caché."""
         from django.core.cache import cache
         
-        # Establecer algunos valores en cachÃ©
+        # Establecer algunos valores en caché
         cache.set('user_stats_1_2024-01-01', {'total': 10})
         cache.set('user_stats_1_2024-01-02', {'total': 20})
         
-        # Invalidar cachÃ© del usuario
+        # Invalidar caché del usuario
         CacheManager.invalidate_user_cache(1)
         
         # Verificar que los valores fueron invalidados
@@ -447,7 +447,7 @@ class QueryOptimizationTestCase(TestCase):
     """Tests para optimizaciones de consultas."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial para cada test."""
+        """Configuración inicial para cada test."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -470,10 +470,10 @@ class QueryOptimizationTestCase(TestCase):
         )
     
     def test_optimize_cacao_images_query(self):
-        """Test de optimizaciÃ³n de consultas de imÃ¡genes."""
+        """Test de optimización de consultas de imágenes."""
         from api.models import CacaoImage
         
-        # Crear algunas imÃ¡genes
+        # Crear algunas imágenes
         for i in range(3):
             CacaoImage.objects.create(
                 usuario=self.user,
@@ -487,12 +487,12 @@ class QueryOptimizationTestCase(TestCase):
             CacaoImage.objects.all()
         )
         
-        # Verificar que las relaciones estÃ¡n incluidas
+        # Verificar que las relaciones están incluidas
         with self.assertNumQueries(1):  # Solo una consulta
             list(queryset)  # Evaluar el queryset
     
     def test_optimize_fincas_query(self):
-        """Test de optimizaciÃ³n de consultas de fincas."""
+        """Test de optimización de consultas de fincas."""
         # Crear algunos lotes adicionales
         for i in range(2):
             Lote.objects.create(
@@ -508,7 +508,7 @@ class QueryOptimizationTestCase(TestCase):
             Finca.objects.all()
         )
         
-        # Verificar que las relaciones estÃ¡n incluidas
+        # Verificar que las relaciones están incluidas
         with self.assertNumQueries(2):  # Finca + lotes
             finca = queryset.first()
             list(finca.lotes.all())  # Acceder a los lotes
@@ -520,10 +520,10 @@ class QueryOptimizationTestCase(TestCase):
 
 
 class PerformanceTestCase(TestCase):
-    """Tests de performance y optimizaciÃ³n."""
+    """Tests de performance y optimización."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial para cada test."""
+        """Configuración inicial para cada test."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -531,19 +531,19 @@ class PerformanceTestCase(TestCase):
         )
     
     def test_pagination_performance(self):
-        """Test de performance de paginaciÃ³n."""
+        """Test de performance de paginación."""
         from api.optimizations import PaginationOptimizer
         
         # Crear muchos registros
         for i in range(100):
             Finca.objects.create(
                 nombre=f'Finca {i}',
-                ubicacion=f'UbicaciÃ³n {i}',
+                ubicacion=f'Ubicación {i}',
                 area_total=10.0 + i,
                 propietario=self.user
             )
         
-        # Test de paginaciÃ³n optimizada
+        # Test de paginación optimizada
         page = 1
         page_size = 20
         
@@ -557,12 +557,12 @@ class PerformanceTestCase(TestCase):
         self.assertFalse(pagination_info['has_previous'])
     
     def test_database_indexes_suggestion(self):
-        """Test de sugerencia de Ã­ndices de base de datos."""
+        """Test de sugerencia de índices de base de datos."""
         from api.optimizations import DatabaseOptimizer
         
         indexes = DatabaseOptimizer.add_database_indexes()
         
-        # Verificar que se sugieren Ã­ndices importantes
+        # Verificar que se sugieren índices importantes
         index_fields = [index[1] for index in indexes]
         
         self.assertIn('usuario_id', index_fields)
@@ -576,7 +576,7 @@ class IntegrationWorkflowTestCase(TransactionTestCase):
     """Tests de flujos de trabajo completos."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial para cada test."""
+        """Configuración inicial para cada test."""
         self.client = APIClient()
         
         self.user = User.objects.create_user(
@@ -593,7 +593,7 @@ class IntegrationWorkflowTestCase(TransactionTestCase):
         # 1. Crear finca
         finca_data = {
             'nombre': 'Finca Completa',
-            'ubicacion': 'UbicaciÃ³n Completa',
+            'ubicacion': 'Ubicación Completa',
             'area_total': 20.0
         }
         
@@ -626,10 +626,10 @@ class IntegrationWorkflowTestCase(TransactionTestCase):
         self.assertEqual(image_response.status_code, status.HTTP_201_CREATED)
         image_id = image_response.data['id']
         
-        # 4. Crear notificaciÃ³n
+        # 4. Crear notificación
         notification_data = {
             'titulo': 'Flujo completado',
-            'mensaje': 'El flujo de trabajo se completÃ³ exitosamente',
+            'mensaje': 'El flujo de trabajo se completó exitosamente',
             'tipo': 'success'
         }
         

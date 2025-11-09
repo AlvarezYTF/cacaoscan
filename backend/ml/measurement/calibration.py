@@ -1,13 +1,13 @@
-﻿"""
-MÃ³dulo de calibraciÃ³n con OpenCV para mediciÃ³n precisa de granos de cacao.
-Permite convertir mediciones en pÃ­xeles a mediciones reales en milÃ­metros.
+"""
+Módulo de calibración con OpenCV para medición precisa de granos de cacao.
+Permite convertir mediciones en píxeles a mediciones reales en milímetros.
 
-CaracterÃ­sticas:
-- DetecciÃ³n automÃ¡tica de objetos de referencia (monedas, reglas, etc.)
-- CalibraciÃ³n manual con puntos de referencia
-- ValidaciÃ³n de precisiÃ³n de calibraciÃ³n
-- IntegraciÃ³n con el sistema de predicciÃ³n existente
-- Persistencia de parÃ¡metros de calibraciÃ³n
+Características:
+- Detección automática de objetos de referencia (monedas, reglas, etc.)
+- Calibración manual con puntos de referencia
+- Validación de precisión de calibración
+- Integración con el sistema de predicción existente
+- Persistencia de parámetros de calibración
 """
 
 import cv2
@@ -28,7 +28,7 @@ logger = get_ml_logger("cacaoscan.ml.measurement")
 
 
 class CalibrationMethod(Enum):
-    """MÃ©todos de calibraciÃ³n disponibles."""
+    """Métodos de calibración disponibles."""
     COIN_DETECTION = "coin_detection"
     RULER_DETECTION = "ruler_detection"
     MANUAL_POINTS = "manual_points"
@@ -48,7 +48,7 @@ class ReferenceObject(Enum):
 
 @dataclass
 class CalibrationResult:
-    """Resultado de una calibraciÃ³n."""
+    """Resultado de una calibración."""
     success: bool
     pixels_per_mm: float
     confidence: float
@@ -61,7 +61,7 @@ class CalibrationResult:
 
 @dataclass
 class CalibrationParams:
-    """ParÃ¡metros de calibraciÃ³n."""
+    """Parámetros de calibración."""
     pixels_per_mm: float
     method: CalibrationMethod
     reference_object: Optional[ReferenceObject]
@@ -77,14 +77,14 @@ class CoinDetector:
     def __init__(self):
         """Inicializa el detector de monedas."""
         self.coin_templates = self._load_coin_templates()
-        self.min_coin_area = 100  # Ãrea mÃ­nima en pÃ­xeles
-        self.max_coin_area = 10000  # Ãrea mÃ¡xima en pÃ­xeles
+        self.min_coin_area = 100  # Área mínima en píxeles
+        self.max_coin_area = 10000  # Área máxima en píxeles
         
     def _load_coin_templates(self) -> Dict[str, np.ndarray]:
-        """Carga plantillas de monedas (implementaciÃ³n simplificada)."""
-        # En una implementaciÃ³n real, se cargarÃ­an plantillas desde archivos
+        """Carga plantillas de monedas (implementación simplificada)."""
+        # En una implementación real, se cargarían plantillas desde archivos
         return {
-            "1000_cop": None,  # Se implementarÃ­a con plantillas reales
+            "1000_cop": None,  # Se implementaría con plantillas reales
             "500_cop": None,
             "200_cop": None,
             "100_cop": None
@@ -98,7 +98,7 @@ class CoinDetector:
             image: Imagen en formato BGR
             
         Returns:
-            Lista de diccionarios con informaciÃ³n de monedas detectadas
+            Lista de diccionarios con información de monedas detectadas
         """
         # Convertir a escala de grises
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -106,7 +106,7 @@ class CoinDetector:
         # Aplicar desenfoque gaussiano
         blurred = cv2.GaussianBlur(gray, (11, 11), 0)
         
-        # Detectar cÃ­rculos usando HoughCircles
+        # Detectar círculos usando HoughCircles
         circles = cv2.HoughCircles(
             blurred,
             cv2.HOUGH_GRADIENT,
@@ -124,10 +124,10 @@ class CoinDetector:
             circles = np.round(circles[0, :]).astype("int")
             
             for (x, y, r) in circles:
-                # Validar Ã¡rea del cÃ­rculo
+                # Validar área del círculo
                 area = math.pi * r * r
                 if self.min_coin_area <= area <= self.max_coin_area:
-                    # Clasificar moneda por tamaÃ±o
+                    # Clasificar moneda por tamaño
                     coin_type = self._classify_coin_by_size(r)
                     
                     detected_coins.append({
@@ -142,10 +142,10 @@ class CoinDetector:
         return detected_coins
     
     def _classify_coin_by_size(self, radius: int) -> Optional[ReferenceObject]:
-        """Clasifica la moneda por su tamaÃ±o en pÃ­xeles."""
+        """Clasifica la moneda por su tamaño en píxeles."""
         diameter_pixels = 2 * radius
         
-        # Rangos aproximados para diferentes monedas (se ajustarÃ­an con datos reales)
+        # Rangos aproximados para diferentes monedas (se ajustarían con datos reales)
         if 40 <= diameter_pixels <= 50:  # ~23mm
             return ReferenceObject.COIN_1000_COP
         elif 35 <= diameter_pixels <= 45:  # ~21mm
@@ -163,8 +163,8 @@ class RulerDetector:
     
     def __init__(self):
         """Inicializa el detector de reglas."""
-        self.min_line_length = 50  # Longitud mÃ­nima en pÃ­xeles
-        self.max_line_length = 500  # Longitud mÃ¡xima en pÃ­xeles
+        self.min_line_length = 50  # Longitud mínima en píxeles
+        self.max_line_length = 500  # Longitud máxima en píxeles
         
     def detect_rulers(self, image: np.ndarray) -> List[Dict[str, Any]]:
         """
@@ -174,7 +174,7 @@ class RulerDetector:
             image: Imagen en formato BGR
             
         Returns:
-            Lista de diccionarios con informaciÃ³n de reglas detectadas
+            Lista de diccionarios con información de reglas detectadas
         """
         # Convertir a escala de grises
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -182,7 +182,7 @@ class RulerDetector:
         # Aplicar filtro Canny para detectar bordes
         edges = cv2.Canny(gray, 50, 150, apertureSize=3)
         
-        # Detectar lÃ­neas usando HoughLinesP
+        # Detectar líneas usando HoughLinesP
         lines = cv2.HoughLinesP(
             edges,
             rho=1,
@@ -198,7 +198,7 @@ class RulerDetector:
             for line in lines:
                 x1, y1, x2, y2 = line[0]
                 
-                # Calcular longitud de la lÃ­nea
+                # Calcular longitud de la línea
                 length = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
                 
                 if self.min_line_length <= length <= self.max_line_length:
@@ -216,8 +216,8 @@ class RulerDetector:
         return detected_rulers
     
     def _classify_ruler_by_length(self, length_pixels: float) -> Optional[ReferenceObject]:
-        """Clasifica la regla por su longitud en pÃ­xeles."""
-        # Rangos aproximados para diferentes reglas (se ajustarÃ­an con datos reales)
+        """Clasifica la regla por su longitud en píxeles."""
+        # Rangos aproximados para diferentes reglas (se ajustarían con datos reales)
         if 200 <= length_pixels <= 300:  # ~50mm
             return ReferenceObject.RULER_5CM
         elif 80 <= length_pixels <= 120:  # ~20mm
@@ -229,14 +229,14 @@ class RulerDetector:
 
 
 class CalibrationManager:
-    """Gestor principal de calibraciÃ³n."""
+    """Gestor principal de calibración."""
     
     def __init__(self, calibration_dir: Optional[Path] = None):
         """
-        Inicializa el gestor de calibraciÃ³n.
+        Inicializa el gestor de calibración.
         
         Args:
-            calibration_dir: Directorio para guardar parÃ¡metros de calibraciÃ³n
+            calibration_dir: Directorio para guardar parámetros de calibración
         """
         self.calibration_dir = calibration_dir or get_regressors_artifacts_dir() / "calibration"
         ensure_dir_exists(self.calibration_dir)
@@ -255,18 +255,18 @@ class CalibrationManager:
         manual_points: Optional[List[Tuple[int, int]]] = None
     ) -> CalibrationResult:
         """
-        Calibra una imagen usando el mÃ©todo especificado.
+        Calibra una imagen usando el método especificado.
         
         Args:
             image: Imagen en formato BGR
-            method: MÃ©todo de calibraciÃ³n a usar
-            reference_object: Objeto de referencia especÃ­fico
-            manual_points: Puntos manuales para calibraciÃ³n
+            method: Método de calibración a usar
+            reference_object: Objeto de referencia específico
+            manual_points: Puntos manuales para calibración
             
         Returns:
-            Resultado de la calibraciÃ³n
+            Resultado de la calibración
         """
-        logger.info(f"Iniciando calibraciÃ³n con mÃ©todo: {method.value}")
+        logger.info(f"Iniciando calibración con método: {method.value}")
         
         try:
             if method == CalibrationMethod.COIN_DETECTION:
@@ -278,10 +278,10 @@ class CalibrationManager:
             elif method == CalibrationMethod.AUTO_REFERENCE:
                 return self._calibrate_auto_reference(image)
             else:
-                raise ValueError(f"MÃ©todo de calibraciÃ³n no soportado: {method}")
+                raise ValueError(f"Método de calibración no soportado: {method}")
                 
         except Exception as e:
-            logger.error(f"Error en calibraciÃ³n: {e}")
+            logger.error(f"Error en calibración: {e}")
             return CalibrationResult(
                 success=False,
                 pixels_per_mm=0.0,
@@ -297,7 +297,7 @@ class CalibrationManager:
         image: np.ndarray,
         reference_object: Optional[ReferenceObject] = None
     ) -> CalibrationResult:
-        """Calibra usando detecciÃ³n de monedas."""
+        """Calibra usando detección de monedas."""
         detected_coins = self.coin_detector.detect_coins(image)
         
         if not detected_coins:
@@ -329,7 +329,7 @@ class CalibrationManager:
         
         pixels_per_mm = diameter_pixels / diameter_mm
         
-        # Crear imagen de calibraciÃ³n
+        # Crear imagen de calibración
         calibration_image = self._create_calibration_image(image, detected_coins)
         
         return CalibrationResult(
@@ -347,7 +347,7 @@ class CalibrationManager:
         image: np.ndarray,
         reference_object: Optional[ReferenceObject] = None
     ) -> CalibrationResult:
-        """Calibra usando detecciÃ³n de reglas."""
+        """Calibra usando detección de reglas."""
         detected_rulers = self.ruler_detector.detect_rulers(image)
         
         if not detected_rulers:
@@ -379,7 +379,7 @@ class CalibrationManager:
         
         pixels_per_mm = length_pixels / length_mm
         
-        # Crear imagen de calibraciÃ³n
+        # Crear imagen de calibración
         calibration_image = self._create_calibration_image(image, detected_rulers, is_ruler=True)
         
         return CalibrationResult(
@@ -406,32 +406,32 @@ class CalibrationManager:
                 method=CalibrationMethod.MANUAL_POINTS,
                 reference_object=None,
                 detected_points=[],
-                error_message="Se requieren al menos 2 puntos para calibraciÃ³n manual"
+                error_message="Se requieren al menos 2 puntos para calibración manual"
             )
         
-        # Calcular distancia en pÃ­xeles
+        # Calcular distancia en píxeles
         point1, point2 = manual_points[0], manual_points[1]
         distance_pixels = math.sqrt(
             (point2[0] - point1[0])**2 + (point2[1] - point1[1])**2
         )
         
-        # Para calibraciÃ³n manual, se requiere que el usuario especifique la distancia real
+        # Para calibración manual, se requiere que el usuario especifique la distancia real
         # Por ahora, asumimos una distancia de referencia de 10mm
-        distance_mm = 10.0  # Esto deberÃ­a venir del usuario
+        distance_mm = 10.0  # Esto debería venir del usuario
         
         pixels_per_mm = distance_pixels / distance_mm
         
         return CalibrationResult(
             success=True,
             pixels_per_mm=pixels_per_mm,
-            confidence=0.9,  # Alta confianza para calibraciÃ³n manual
+            confidence=0.9,  # Alta confianza para calibración manual
             method=CalibrationMethod.MANUAL_POINTS,
             reference_object=None,
             detected_points=manual_points
         )
     
     def _calibrate_auto_reference(self, image: np.ndarray) -> CalibrationResult:
-        """Calibra automÃ¡ticamente detectando cualquier objeto de referencia."""
+        """Calibra automáticamente detectando cualquier objeto de referencia."""
         # Intentar primero con monedas
         coin_result = self._calibrate_with_coins(image)
         if coin_result.success and coin_result.confidence > 0.7:
@@ -459,7 +459,7 @@ class CalibrationManager:
         
         for obj in detected_objects:
             if is_ruler:
-                # Dibujar lÃ­nea para regla
+                # Dibujar línea para regla
                 cv2.line(
                     calibration_image,
                     obj['start_point'],
@@ -471,7 +471,7 @@ class CalibrationManager:
                 cv2.circle(calibration_image, obj['start_point'], 5, (0, 0, 255), -1)
                 cv2.circle(calibration_image, obj['end_point'], 5, (0, 0, 255), -1)
             else:
-                # Dibujar cÃ­rculo para moneda
+                # Dibujar círculo para moneda
                 cv2.circle(
                     calibration_image,
                     obj['center'],
@@ -484,7 +484,7 @@ class CalibrationManager:
         return calibration_image
     
     def _save_calibration_image(self, image: np.ndarray) -> Path:
-        """Guarda la imagen de calibraciÃ³n."""
+        """Guarda la imagen de calibración."""
         import time
         timestamp = int(time.time())
         filename = f"calibration_{timestamp}.jpg"
@@ -494,9 +494,9 @@ class CalibrationManager:
         return filepath
     
     def save_calibration(self, calibration_result: CalibrationResult) -> None:
-        """Guarda los parÃ¡metros de calibraciÃ³n."""
+        """Guarda los parámetros de calibración."""
         if not calibration_result.success:
-            raise ValueError("No se puede guardar una calibraciÃ³n fallida")
+            raise ValueError("No se puede guardar una calibración fallida")
         
         calibration_params = CalibrationParams(
             pixels_per_mm=calibration_result.pixels_per_mm,
@@ -504,7 +504,7 @@ class CalibrationManager:
             reference_object=calibration_result.reference_object,
             confidence=calibration_result.confidence,
             timestamp=str(int(time.time())),
-            image_dimensions=(0, 0),  # Se actualizarÃ­a con dimensiones reales
+            image_dimensions=(0, 0),  # Se actualizaría con dimensiones reales
             validation_score=None
         )
         
@@ -523,14 +523,14 @@ class CalibrationManager:
         }
         
         save_json(calibration_data, calibration_file)
-        logger.info(f"CalibraciÃ³n guardada: {calibration_params.pixels_per_mm:.3f} pixels/mm")
+        logger.info(f"Calibración guardada: {calibration_params.pixels_per_mm:.3f} pixels/mm")
     
     def load_calibration(self) -> Optional[CalibrationParams]:
-        """Carga los parÃ¡metros de calibraciÃ³n guardados."""
+        """Carga los parámetros de calibración guardados."""
         calibration_file = self.calibration_dir / "current_calibration.json"
         
         if not calibration_file.exists():
-            logger.warning("No se encontrÃ³ archivo de calibraciÃ³n")
+            logger.warning("No se encontró archivo de calibración")
             return None
         
         try:
@@ -539,7 +539,7 @@ class CalibrationManager:
             calibration_params = CalibrationParams(
                 pixels_per_mm=calibration_data['pixels_per_mm'],
                 method=CalibrationMethod(calibration_data['method']),
-                reference_object=None,  # Se reconstruirÃ­a desde el nombre
+                reference_object=None,  # Se reconstruiría desde el nombre
                 confidence=calibration_data['confidence'],
                 timestamp=calibration_data['timestamp'],
                 image_dimensions=tuple(calibration_data['image_dimensions']),
@@ -547,73 +547,73 @@ class CalibrationManager:
             )
             
             self.current_calibration = calibration_params
-            logger.info(f"CalibraciÃ³n cargada: {calibration_params.pixels_per_mm:.3f} pixels/mm")
+            logger.info(f"Calibración cargada: {calibration_params.pixels_per_mm:.3f} pixels/mm")
             
             return calibration_params
             
         except Exception as e:
-            logger.error(f"Error cargando calibraciÃ³n: {e}")
+            logger.error(f"Error cargando calibración: {e}")
             return None
     
     def convert_pixels_to_mm(self, pixels: float) -> float:
         """
-        Convierte pÃ­xeles a milÃ­metros usando la calibraciÃ³n actual.
+        Convierte píxeles a milímetros usando la calibración actual.
         
         Args:
-            pixels: Valor en pÃ­xeles
+            pixels: Valor en píxeles
             
         Returns:
-            Valor en milÃ­metros
+            Valor en milímetros
         """
         if not self.current_calibration:
-            raise ValueError("No hay calibraciÃ³n cargada")
+            raise ValueError("No hay calibración cargada")
         
         return pixels / self.current_calibration.pixels_per_mm
     
     def convert_mm_to_pixels(self, mm: float) -> float:
         """
-        Convierte milÃ­metros a pÃ­xeles usando la calibraciÃ³n actual.
+        Convierte milímetros a píxeles usando la calibración actual.
         
         Args:
-            mm: Valor en milÃ­metros
+            mm: Valor en milímetros
             
         Returns:
-            Valor en pÃ­xeles
+            Valor en píxeles
         """
         if not self.current_calibration:
-            raise ValueError("No hay calibraciÃ³n cargada")
+            raise ValueError("No hay calibración cargada")
         
         return mm * self.current_calibration.pixels_per_mm
     
     def validate_calibration(self, test_image: np.ndarray) -> Dict[str, Any]:
         """
-        Valida la precisiÃ³n de la calibraciÃ³n actual.
+        Valida la precisión de la calibración actual.
         
         Args:
             test_image: Imagen de prueba con objetos de referencia conocidos
             
         Returns:
-            Diccionario con mÃ©tricas de validaciÃ³n
+            Diccionario con métricas de validación
         """
         if not self.current_calibration:
-            raise ValueError("No hay calibraciÃ³n para validar")
+            raise ValueError("No hay calibración para validar")
         
-        # Realizar nueva calibraciÃ³n en la imagen de prueba
+        # Realizar nueva calibración en la imagen de prueba
         test_result = self.calibrate_image(test_image, self.current_calibration.method)
         
         if not test_result.success:
             return {
                 'valid': False,
-                'error': 'No se pudo realizar calibraciÃ³n de prueba',
+                'error': 'No se pudo realizar calibración de prueba',
                 'accuracy_score': 0.0
             }
         
-        # Comparar con calibraciÃ³n actual
+        # Comparar con calibración actual
         pixels_per_mm_diff = abs(test_result.pixels_per_mm - self.current_calibration.pixels_per_mm)
         accuracy_score = max(0.0, 1.0 - (pixels_per_mm_diff / self.current_calibration.pixels_per_mm))
         
         validation_result = {
-            'valid': accuracy_score > 0.8,  # Umbral de precisiÃ³n
+            'valid': accuracy_score > 0.8,  # Umbral de precisión
             'accuracy_score': accuracy_score,
             'pixels_per_mm_current': self.current_calibration.pixels_per_mm,
             'pixels_per_mm_test': test_result.pixels_per_mm,
@@ -621,18 +621,18 @@ class CalibrationManager:
             'test_confidence': test_result.confidence
         }
         
-        # Actualizar score de validaciÃ³n
+        # Actualizar score de validación
         self.current_calibration.validation_score = accuracy_score
         
         return validation_result
 
 
-# Instancia global del gestor de calibraciÃ³n
+# Instancia global del gestor de calibración
 _calibration_manager: Optional[CalibrationManager] = None
 
 
 def get_calibration_manager() -> CalibrationManager:
-    """Obtiene la instancia global del gestor de calibraciÃ³n."""
+    """Obtiene la instancia global del gestor de calibración."""
     global _calibration_manager
     if _calibration_manager is None:
         _calibration_manager = CalibrationManager()
@@ -645,15 +645,15 @@ def calibrate_image(
     reference_object: Optional[ReferenceObject] = None
 ) -> CalibrationResult:
     """
-    FunciÃ³n de conveniencia para calibrar una imagen.
+    Función de conveniencia para calibrar una imagen.
     
     Args:
         image: Imagen en formato BGR
-        method: MÃ©todo de calibraciÃ³n
-        reference_object: Objeto de referencia especÃ­fico
+        method: Método de calibración
+        reference_object: Objeto de referencia específico
         
     Returns:
-        Resultado de la calibraciÃ³n
+        Resultado de la calibración
     """
     manager = get_calibration_manager()
     return manager.calibrate_image(image, method, reference_object)
@@ -661,13 +661,13 @@ def calibrate_image(
 
 def convert_pixels_to_mm(pixels: float) -> float:
     """
-    FunciÃ³n de conveniencia para convertir pÃ­xeles a milÃ­metros.
+    Función de conveniencia para convertir píxeles a milímetros.
     
     Args:
-        pixels: Valor en pÃ­xeles
+        pixels: Valor en píxeles
         
     Returns:
-        Valor en milÃ­metros
+        Valor en milímetros
     """
     manager = get_calibration_manager()
     return manager.convert_pixels_to_mm(pixels)
@@ -675,13 +675,13 @@ def convert_pixels_to_mm(pixels: float) -> float:
 
 def convert_mm_to_pixels(mm: float) -> float:
     """
-    FunciÃ³n de conveniencia para convertir milÃ­metros a pÃ­xeles.
+    Función de conveniencia para convertir milímetros a píxeles.
     
     Args:
-        mm: Valor en milÃ­metros
+        mm: Valor en milímetros
         
     Returns:
-        Valor en pÃ­xeles
+        Valor en píxeles
     """
     manager = get_calibration_manager()
     return manager.convert_mm_to_pixels(mm)

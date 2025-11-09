@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests unitarios para vistas de CacaoScan.
 """
 from unittest.mock import Mock, patch, MagicMock
@@ -28,10 +28,10 @@ from api.models import (
 
 
 class AuthenticationViewsTest(APITestCase):
-    """Tests para vistas de autenticaciÃ³n."""
+    """Tests para vistas de autenticación."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.register_url = reverse('auth-register')
         self.login_url = reverse('auth-login')
         self.logout_url = reverse('auth-logout')
@@ -67,7 +67,7 @@ class AuthenticationViewsTest(APITestCase):
         self.assertIn('user', response.data)
     
     def test_register_view_validation_errors(self):
-        """Test de errores de validaciÃ³n en registro."""
+        """Test de errores de validación en registro."""
         invalid_data = self.user_data.copy()
         invalid_data['email'] = 'existing@example.com'  # Email duplicado
         
@@ -92,7 +92,7 @@ class AuthenticationViewsTest(APITestCase):
         self.assertIn('user', response.data)
     
     def test_login_view_invalid_credentials(self):
-        """Test de login con credenciales invÃ¡lidas."""
+        """Test de login con credenciales inválidas."""
         login_data = {
             'username': 'existing@example.com',
             'password': 'WrongPassword'
@@ -104,13 +104,13 @@ class AuthenticationViewsTest(APITestCase):
         self.assertFalse(response.data['success'])
     
     def test_profile_view_unauthorized(self):
-        """Test de acceso a perfil sin autenticaciÃ³n."""
+        """Test de acceso a perfil sin autenticación."""
         response = self.client.get(self.profile_url)
         
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
     def test_profile_view_authorized(self):
-        """Test de acceso a perfil con autenticaciÃ³n."""
+        """Test de acceso a perfil con autenticación."""
         refresh = RefreshToken.for_user(self.existing_user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         
@@ -130,7 +130,7 @@ class AuthenticationViewsTest(APITestCase):
         self.assertTrue(response.data['success'])
     
     def test_email_verification_success(self):
-        """Test de verificaciÃ³n de email exitosa."""
+        """Test de verificación de email exitosa."""
         token = EmailVerificationToken.create_for_user(self.existing_user)
         
         verify_data = {'token': str(token.token)}
@@ -140,7 +140,7 @@ class AuthenticationViewsTest(APITestCase):
         self.assertTrue(response.data['success'])
     
     def test_email_verification_invalid_token(self):
-        """Test de verificaciÃ³n con token invÃ¡lido."""
+        """Test de verificación con token inválido."""
         verify_data = {'token': 'invalid-token'}
         response = self.client.post(self.verify_email_url, verify_data)
         
@@ -148,7 +148,7 @@ class AuthenticationViewsTest(APITestCase):
         self.assertFalse(response.data['success'])
     
     def test_resend_verification_success(self):
-        """Test de reenvÃ­o de verificaciÃ³n exitoso."""
+        """Test de reenvío de verificación exitoso."""
         resend_data = {'email': 'existing@example.com'}
         response = self.client.post(self.resend_verification_url, resend_data)
         
@@ -157,10 +157,10 @@ class AuthenticationViewsTest(APITestCase):
 
 
 class ImageViewsTest(APITestCase):
-    """Tests para vistas de imÃ¡genes."""
+    """Tests para vistas de imágenes."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -192,8 +192,8 @@ class ImageViewsTest(APITestCase):
         self.assertIn('image', response.data)
     
     def test_get_images_list(self):
-        """Test de obtenciÃ³n de lista de imÃ¡genes."""
-        # Crear imÃ¡genes
+        """Test de obtención de lista de imágenes."""
+        # Crear imágenes
         image1 = CacaoImage.objects.create(
             user=self.user,
             filename='image1.jpg',
@@ -212,7 +212,7 @@ class ImageViewsTest(APITestCase):
         self.assertEqual(len(response.data['images']), 2)
     
     def test_get_image_detail(self):
-        """Test de obtenciÃ³n de detalle de imagen."""
+        """Test de obtención de detalle de imagen."""
         image = CacaoImage.objects.create(
             user=self.user,
             filename='test_image.jpg',
@@ -226,13 +226,13 @@ class ImageViewsTest(APITestCase):
         self.assertEqual(response.data['image']['filename'], 'test_image.jpg')
     
     def test_get_image_detail_not_found(self):
-        """Test de obtenciÃ³n de imagen no encontrada."""
+        """Test de obtención de imagen no encontrada."""
         response = self.client.get(self.image_detail_url(999))
         
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
     def test_delete_image_success(self):
-        """Test de eliminaciÃ³n de imagen exitosa."""
+        """Test de eliminación de imagen exitosa."""
         image = CacaoImage.objects.create(
             user=self.user,
             filename='test_image.jpg',
@@ -249,7 +249,7 @@ class ImageViewsTest(APITestCase):
         self.assertFalse(CacaoImage.objects.filter(id=image.id).exists())
     
     def test_delete_image_permission_denied(self):
-        """Test de eliminaciÃ³n sin permisos."""
+        """Test de eliminación sin permisos."""
         other_user = User.objects.create_user(
             username='otheruser',
             email='other@example.com',
@@ -271,7 +271,7 @@ class FincaViewsTest(APITestCase):
     """Tests para vistas de fincas."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -285,7 +285,7 @@ class FincaViewsTest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
     
     def test_create_finca_success(self):
-        """Test de creaciÃ³n de finca exitosa."""
+        """Test de creación de finca exitosa."""
         finca_data = {
             'nombre': 'Finca Test',
             'ubicacion': 'Test Location',
@@ -301,15 +301,15 @@ class FincaViewsTest(APITestCase):
         self.assertTrue(response.data['success'])
         self.assertIn('finca', response.data)
         
-        # Verificar que se creÃ³ la finca
+        # Verificar que se creó la finca
         finca = Finca.objects.get(nombre='Finca Test')
         self.assertEqual(finca.propietario, self.user)
     
     def test_create_finca_validation_error(self):
-        """Test de creaciÃ³n con error de validaciÃ³n."""
+        """Test de creación con error de validación."""
         finca_data = {
-            'nombre': '',  # Nombre vacÃ­o
-            'area_total': '-5.0'  # Ãrea negativa
+            'nombre': '',  # Nombre vacío
+            'area_total': '-5.0'  # Área negativa
         }
         
         response = self.client.post(self.fincas_url, finca_data)
@@ -318,7 +318,7 @@ class FincaViewsTest(APITestCase):
         self.assertFalse(response.data['success'])
     
     def test_get_fincas_list(self):
-        """Test de obtenciÃ³n de lista de fincas."""
+        """Test de obtención de lista de fincas."""
         # Crear fincas
         finca1 = Finca.objects.create(
             nombre='Finca 1',
@@ -338,7 +338,7 @@ class FincaViewsTest(APITestCase):
         self.assertEqual(len(response.data['fincas']), 2)
     
     def test_get_finca_detail(self):
-        """Test de obtenciÃ³n de detalle de finca."""
+        """Test de obtención de detalle de finca."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             propietario=self.user,
@@ -352,7 +352,7 @@ class FincaViewsTest(APITestCase):
         self.assertEqual(response.data['finca']['nombre'], 'Finca Test')
     
     def test_update_finca_success(self):
-        """Test de actualizaciÃ³n de finca exitosa."""
+        """Test de actualización de finca exitosa."""
         finca = Finca.objects.create(
             nombre='Finca Original',
             propietario=self.user,
@@ -369,13 +369,13 @@ class FincaViewsTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data['success'])
         
-        # Verificar que se actualizÃ³
+        # Verificar que se actualizó
         finca.refresh_from_db()
         self.assertEqual(finca.nombre, 'Finca Actualizada')
         self.assertEqual(finca.area_total, Decimal('15.0'))
     
     def test_delete_finca_success(self):
-        """Test de eliminaciÃ³n de finca exitosa."""
+        """Test de eliminación de finca exitosa."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             propietario=self.user,
@@ -391,7 +391,7 @@ class FincaViewsTest(APITestCase):
         self.assertFalse(Finca.objects.filter(id=finca.id).exists())
     
     def test_finca_stats(self):
-        """Test de estadÃ­sticas de fincas."""
+        """Test de estadísticas de fincas."""
         # Crear fincas
         Finca.objects.create(
             nombre='Finca 1',
@@ -417,7 +417,7 @@ class LoteViewsTest(APITestCase):
     """Tests para vistas de lotes."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -437,7 +437,7 @@ class LoteViewsTest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
     
     def test_create_lote_success(self):
-        """Test de creaciÃ³n de lote exitosa."""
+        """Test de creación de lote exitosa."""
         lote_data = {
             'finca': self.finca.id,
             'nombre': 'Lote Test',
@@ -453,16 +453,16 @@ class LoteViewsTest(APITestCase):
         self.assertTrue(response.data['success'])
         self.assertIn('lote', response.data)
         
-        # Verificar que se creÃ³ el lote
+        # Verificar que se creó el lote
         lote = Lote.objects.get(nombre='Lote Test')
         self.assertEqual(lote.finca, self.finca)
     
     def test_create_lote_area_exceeds_finca(self):
-        """Test de creaciÃ³n con Ã¡rea que excede la finca."""
+        """Test de creación con área que excede la finca."""
         lote_data = {
             'finca': self.finca.id,
             'nombre': 'Lote Test',
-            'area': '25.0',  # Mayor que el Ã¡rea de la finca (20.0)
+            'area': '25.0',  # Mayor que el área de la finca (20.0)
             'variedad': 'CCN-51'
         }
         
@@ -472,7 +472,7 @@ class LoteViewsTest(APITestCase):
         self.assertFalse(response.data['success'])
     
     def test_get_lotes_list(self):
-        """Test de obtenciÃ³n de lista de lotes."""
+        """Test de obtención de lista de lotes."""
         # Crear lotes
         lote1 = Lote.objects.create(
             finca=self.finca,
@@ -492,7 +492,7 @@ class LoteViewsTest(APITestCase):
         self.assertEqual(len(response.data['lotes']), 2)
     
     def test_get_lotes_by_finca(self):
-        """Test de obtenciÃ³n de lotes por finca."""
+        """Test de obtención de lotes por finca."""
         # Crear lotes
         Lote.objects.create(
             finca=self.finca,
@@ -513,7 +513,7 @@ class LoteViewsTest(APITestCase):
         self.assertEqual(len(response.data['lotes']), 2)
     
     def test_get_lote_detail(self):
-        """Test de obtenciÃ³n de detalle de lote."""
+        """Test de obtención de detalle de lote."""
         lote = Lote.objects.create(
             finca=self.finca,
             nombre='Lote Test',
@@ -527,7 +527,7 @@ class LoteViewsTest(APITestCase):
         self.assertEqual(response.data['lote']['nombre'], 'Lote Test')
     
     def test_update_lote_success(self):
-        """Test de actualizaciÃ³n de lote exitosa."""
+        """Test de actualización de lote exitosa."""
         lote = Lote.objects.create(
             finca=self.finca,
             nombre='Lote Original',
@@ -544,13 +544,13 @@ class LoteViewsTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data['success'])
         
-        # Verificar que se actualizÃ³
+        # Verificar que se actualizó
         lote.refresh_from_db()
         self.assertEqual(lote.nombre, 'Lote Actualizado')
         self.assertEqual(lote.area, Decimal('8.0'))
     
     def test_delete_lote_success(self):
-        """Test de eliminaciÃ³n de lote exitosa."""
+        """Test de eliminación de lote exitosa."""
         lote = Lote.objects.create(
             finca=self.finca,
             nombre='Lote Test',
@@ -570,7 +570,7 @@ class NotificationViewsTest(APITestCase):
     """Tests para vistas de notificaciones."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -584,7 +584,7 @@ class NotificationViewsTest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
     
     def test_create_notification_success(self):
-        """Test de creaciÃ³n de notificaciÃ³n exitosa."""
+        """Test de creación de notificación exitosa."""
         notification_data = {
             'title': 'Test Notification',
             'message': 'This is a test notification',
@@ -597,12 +597,12 @@ class NotificationViewsTest(APITestCase):
         self.assertTrue(response.data['success'])
         self.assertIn('notification', response.data)
         
-        # Verificar que se creÃ³ la notificaciÃ³n
+        # Verificar que se creó la notificación
         notification = Notification.objects.get(title='Test Notification')
         self.assertEqual(notification.user, self.user)
     
     def test_get_notifications_list(self):
-        """Test de obtenciÃ³n de lista de notificaciones."""
+        """Test de obtención de lista de notificaciones."""
         # Crear notificaciones
         notification1 = Notification.objects.create(
             user=self.user,
@@ -622,7 +622,7 @@ class NotificationViewsTest(APITestCase):
         self.assertEqual(len(response.data['notifications']), 2)
     
     def test_mark_notification_read(self):
-        """Test de marcar notificaciÃ³n como leÃ­da."""
+        """Test de marcar notificación como leída."""
         notification = Notification.objects.create(
             user=self.user,
             title='Test Notification',
@@ -636,13 +636,13 @@ class NotificationViewsTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data['success'])
         
-        # Verificar que se marcÃ³ como leÃ­da
+        # Verificar que se marcó como leída
         notification.refresh_from_db()
         self.assertTrue(notification.is_read)
     
     def test_mark_all_notifications_read(self):
-        """Test de marcar todas las notificaciones como leÃ­das."""
-        # Crear notificaciones no leÃ­das
+        """Test de marcar todas las notificaciones como leídas."""
+        # Crear notificaciones no leídas
         Notification.objects.create(
             user=self.user,
             title='Notification 1',
@@ -662,12 +662,12 @@ class NotificationViewsTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data['success'])
         
-        # Verificar que todas se marcaron como leÃ­das
+        # Verificar que todas se marcaron como leídas
         unread_count = Notification.objects.filter(user=self.user, is_read=False).count()
         self.assertEqual(unread_count, 0)
     
     def test_get_unread_count(self):
-        """Test de obtenciÃ³n de conteo de notificaciones no leÃ­das."""
+        """Test de obtención de conteo de notificaciones no leídas."""
         # Crear notificaciones
         Notification.objects.create(
             user=self.user,
@@ -694,7 +694,7 @@ class ReportViewsTest(APITestCase):
     """Tests para vistas de reportes."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -708,7 +708,7 @@ class ReportViewsTest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
     
     def test_generate_report_success(self):
-        """Test de generaciÃ³n de reporte exitosa."""
+        """Test de generación de reporte exitosa."""
         report_data = {
             'tipo_reporte': 'analisis_periodo',
             'fecha_inicio': '2024-01-01',
@@ -723,12 +723,12 @@ class ReportViewsTest(APITestCase):
         self.assertTrue(response.data['success'])
         self.assertIn('reporte', response.data)
         
-        # Verificar que se creÃ³ el reporte
+        # Verificar que se creó el reporte
         reporte = ReporteGenerado.objects.get(usuario=self.user)
         self.assertEqual(reporte.tipo_reporte, 'analisis_periodo')
     
     def test_get_reports_list(self):
-        """Test de obtenciÃ³n de lista de reportes."""
+        """Test de obtención de lista de reportes."""
         # Crear reportes
         reporte1 = ReporteGenerado.objects.create(
             usuario=self.user,
@@ -748,7 +748,7 @@ class ReportViewsTest(APITestCase):
         self.assertEqual(len(response.data['reportes']), 2)
     
     def test_get_report_detail(self):
-        """Test de obtenciÃ³n de detalle de reporte."""
+        """Test de obtención de detalle de reporte."""
         reporte = ReporteGenerado.objects.create(
             usuario=self.user,
             tipo_reporte='analisis_periodo',
@@ -777,7 +777,7 @@ class ReportViewsTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
     
     def test_delete_report_success(self):
-        """Test de eliminaciÃ³n de reporte exitosa."""
+        """Test de eliminación de reporte exitosa."""
         reporte = ReporteGenerado.objects.create(
             usuario=self.user,
             tipo_reporte='analisis_periodo',
@@ -793,7 +793,7 @@ class ReportViewsTest(APITestCase):
         self.assertFalse(ReporteGenerado.objects.filter(id=reporte.id).exists())
     
     def test_report_stats(self):
-        """Test de estadÃ­sticas de reportes."""
+        """Test de estadísticas de reportes."""
         # Crear reportes
         ReporteGenerado.objects.create(
             usuario=self.user,

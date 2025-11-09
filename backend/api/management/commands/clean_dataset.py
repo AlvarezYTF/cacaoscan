@@ -51,7 +51,7 @@ class Command(BaseCommand):
             new_fieldnames = fieldnames
             for c in ("filename", "image_path"):
                 if c not in new_fieldnames:
-                    new_fieldnames.append(c)
+                    new_fieldnames.appendé
 
             for row in reader:
                 # require mapped file

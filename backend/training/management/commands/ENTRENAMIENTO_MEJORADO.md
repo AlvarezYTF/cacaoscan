@@ -220,9 +220,9 @@ def validate_with_calibration(prediction, pixel_measurements, calibration_data):
 CSV → Cargar crops → Entrenar → Guardar modelos
 ```
 - ✅ Funciona bien
-- ❌ No usa información de píxeles
-- ❌ No valida con calibración
-- ❌ Puede entrenar con crops de mala calidad
+- [ERROR] No usa información de píxeles
+- [ERROR] No valida con calibración
+- [ERROR] Puede entrenar con crops de mala calidad
 
 ### Flujo Mejorado:
 ```

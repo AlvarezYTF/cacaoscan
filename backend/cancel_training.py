@@ -41,19 +41,19 @@ else:
         job = TrainingJob.objects.get(job_id=job_id)
         
         if job.status == 'running':
-            print(f"⚠️  Cancelando job {job_id}...")
+            print(f"[WARN]  Cancelando job {job_id}...")
             job.mark_cancelled()
             print(f"✅ Job {job_id} cancelado exitosamente")
             print("\n💡 NOTA: El worker de Celery seguirá procesando, pero el job")
             print("    quedará marcado como cancelado. Si necesitas detener")
             print("    el worker, presiona Ctrl+C en la terminal donde corre.")
         elif job.status == 'pending':
-            print(f"⚠️  Cancelando job pendiente {job_id}...")
+            print(f"[WARN]  Cancelando job pendiente {job_id}...")
             job.mark_cancelled()
             print(f"✅ Job {job_id} cancelado exitosamente")
         else:
             print(f"ℹ️  Job {job_id} tiene estado '{job.status}' y no puede cancelarse")
             
     except TrainingJob.DoesNotExist:
-        print(f"❌ Job {job_id} no encontrado")
+        print(f"[ERROR] Job {job_id} no encontrado")
         sys.exit(1)

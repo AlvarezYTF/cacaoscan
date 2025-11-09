@@ -1,5 +1,5 @@
-﻿"""
-Vistas de calibraciÃ³n para CacaoScan.
+"""
+Vistas de calibración para CacaoScan.
 """
 
 import logging
@@ -16,16 +16,16 @@ logger = logging.getLogger("cacaoscan.api")
 
 class CalibrationStatusView(APIView):
     """
-    Endpoint para consultar el estado de la calibraciÃ³n.
+    Endpoint para consultar el estado de la calibración.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene el estado actual de la calibraciÃ³n del sistema",
-        operation_summary="Estado de calibraciÃ³n",
+        operation_description="Obtiene el estado actual de la calibración del sistema",
+        operation_summary="Estado de calibración",
         responses={
             200: openapi.Response(
-                description="Estado de calibraciÃ³n obtenido",
+                description="Estado de calibración obtenido",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -41,11 +41,11 @@ class CalibrationStatusView(APIView):
             ),
             500: ErrorResponseSerializer,
         },
-        tags=['CalibraciÃ³n']
+        tags=['Calibración']
     )
     def get(self, request):
         """
-        Obtiene el estado actual de la calibraciÃ³n.
+        Obtiene el estado actual de la calibración.
         """
         try:
             from ..ml.prediction.calibrated_predict import get_calibrated_predictor
@@ -56,9 +56,9 @@ class CalibrationStatusView(APIView):
             return Response(calibration_status)
             
         except Exception as e:
-            logger.error(f"Error obteniendo estado de calibraciÃ³n: {e}")
+            logger.error(f"Error obteniendo estado de calibración: {e}")
             return Response({
-                'error': f'Error obteniendo estado de calibraciÃ³n: {str(e)}',
+                'error': f'Error obteniendo estado de calibración: {str(e)}',
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -83,7 +83,7 @@ class CalibrationView(APIView):
             openapi.Parameter(
                 'method',
                 openapi.IN_FORM,
-                description="MÃ©todo de calibraciÃ³n",
+                description="Método de calibración",
                 type=openapi.TYPE_STRING,
                 enum=['coin_detection', 'ruler_detection', 'manual_points', 'auto_reference'],
                 required=False
@@ -91,7 +91,7 @@ class CalibrationView(APIView):
             openapi.Parameter(
                 'reference_object',
                 openapi.IN_FORM,
-                description="Objeto de referencia especÃ­fico",
+                description="Objeto de referencia específico",
                 type=openapi.TYPE_STRING,
                 enum=['COIN_1000_COP', 'COIN_500_COP', 'COIN_200_COP', 'COIN_100_COP', 'RULER_1CM', 'RULER_2CM', 'RULER_5CM'],
                 required=False
@@ -99,7 +99,7 @@ class CalibrationView(APIView):
         ],
         responses={
             200: openapi.Response(
-                description="CalibraciÃ³n exitosa",
+                description="Calibración exitosa",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -115,7 +115,7 @@ class CalibrationView(APIView):
             400: ErrorResponseSerializer,
             500: ErrorResponseSerializer,
         },
-        tags=['CalibraciÃ³n']
+        tags=['Calibración']
     )
     def post(self, request):
         """
@@ -125,7 +125,7 @@ class CalibrationView(APIView):
             # Validar archivo de imagen
             if 'image' not in request.FILES:
                 return Response({
-                    'error': 'No se proporcionÃ³ archivo de imagen',
+                    'error': 'No se proporcionó archivo de imagen',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -135,30 +135,30 @@ class CalibrationView(APIView):
             allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp']
             if image_file.content_type not in allowed_types:
                 return Response({
-                    'error': 'Tipo de archivo no vÃ¡lido. Use JPEG, PNG o BMP',
+                    'error': 'Tipo de archivo no válido. Use JPEG, PNG o BMP',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Validar tamaÃ±o del archivo (20MB mÃ¡ximo)
+            # Validar tamaño del archivo (20MB máximo)
             max_size = 20 * 1024 * 1024
             if image_file.size > max_size:
                 return Response({
-                    'error': 'Archivo demasiado grande. MÃ¡ximo 20MB permitido',
+                    'error': 'Archivo demasiado grande. Máximo 20MB permitido',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Obtener parÃ¡metros de calibraciÃ³n
+            # Obtener parámetros de calibración
             method_str = request.data.get('method', 'coin_detection')
             reference_object_str = request.data.get('reference_object')
             
-            # Convertir parÃ¡metros
+            # Convertir parámetros
             from ..ml.measurement.calibration import CalibrationMethod, ReferenceObject
             
             try:
                 method = CalibrationMethod(method_str)
             except ValueError:
                 return Response({
-                    'error': f'MÃ©todo de calibraciÃ³n no vÃ¡lido: {method_str}',
+                    'error': f'Método de calibración no válido: {method_str}',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -168,7 +168,7 @@ class CalibrationView(APIView):
                     reference_object = ReferenceObject(reference_object_str)
                 except ValueError:
                     return Response({
-                        'error': f'Objeto de referencia no vÃ¡lido: {reference_object_str}',
+                        'error': f'Objeto de referencia no válido: {reference_object_str}',
                         'status': 'error'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -179,37 +179,37 @@ class CalibrationView(APIView):
             image_data = image_file.read()
             image = Image.open(io.BytesIO(image_data))
             
-            # Realizar calibraciÃ³n
+            # Realizar calibración
             from ..ml.prediction.calibrated_predict import get_calibrated_predictor
             
             predictor = get_calibrated_predictor(use_calibration=True)
             calibration_result = predictor.calibrate_image(image, method, reference_object)
             
             if calibration_result['success']:
-                logger.info(f"CalibraciÃ³n exitosa: {calibration_result['pixels_per_mm']:.3f} pixels/mm")
+                logger.info(f"Calibración exitosa: {calibration_result['pixels_per_mm']:.3f} pixels/mm")
                 return Response(calibration_result)
             else:
                 return Response({
-                    'error': calibration_result.get('error', 'Error desconocido en calibraciÃ³n'),
+                    'error': calibration_result.get('error', 'Error desconocido en calibración'),
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
         except Exception as e:
-            logger.error(f"Error en calibraciÃ³n: {e}")
+            logger.error(f"Error en calibración: {e}")
             return Response({
-                'error': f'Error en calibraciÃ³n: {str(e)}',
+                'error': f'Error en calibración: {str(e)}',
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class CalibratedScanMeasureView(APIView):
     """
-    Endpoint para mediciÃ³n de granos de cacao con calibraciÃ³n.
+    Endpoint para medición de granos de cacao con calibración.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Procesa una imagen de grano de cacao y devuelve predicciones calibradas en milÃ­metros",
+        operation_description="Procesa una imagen de grano de cacao y devuelve predicciones calibradas en milímetros",
         operation_summary="Medir grano de cacao (calibrado)",
         manual_parameters=[
             openapi.Parameter(
@@ -222,7 +222,7 @@ class CalibratedScanMeasureView(APIView):
         ],
         responses={
             200: openapi.Response(
-                description="PredicciÃ³n calibrada exitosa",
+                description="Predicción calibrada exitosa",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -249,7 +249,7 @@ class CalibratedScanMeasureView(APIView):
             503: ErrorResponseSerializer,
             500: ErrorResponseSerializer,
         },
-        tags=['MediciÃ³n']
+        tags=['Medición']
     )
     def post(self, request):
         """
@@ -259,7 +259,7 @@ class CalibratedScanMeasureView(APIView):
             # Validar archivo de imagen
             if 'image' not in request.FILES:
                 return Response({
-                    'error': 'No se proporcionÃ³ archivo de imagen',
+                    'error': 'No se proporcionó archivo de imagen',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -269,15 +269,15 @@ class CalibratedScanMeasureView(APIView):
             allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp']
             if image_file.content_type not in allowed_types:
                 return Response({
-                    'error': 'Tipo de archivo no vÃ¡lido. Use JPEG, PNG o BMP',
+                    'error': 'Tipo de archivo no válido. Use JPEG, PNG o BMP',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Validar tamaÃ±o del archivo (20MB mÃ¡ximo)
+            # Validar tamaño del archivo (20MB máximo)
             max_size = 20 * 1024 * 1024
             if image_file.size > max_size:
                 return Response({
-                    'error': 'Archivo demasiado grande. MÃ¡ximo 20MB permitido',
+                    'error': 'Archivo demasiado grande. Máximo 20MB permitido',
                     'status': 'error'
                 }, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
             
@@ -293,34 +293,34 @@ class CalibratedScanMeasureView(APIView):
             
             predictor = get_calibrated_predictor(use_calibration=True)
             
-            # Cargar artefactos si no estÃ¡n cargados
+            # Cargar artefactos si no están cargados
             if not predictor.models_loaded:
                 logger.info("Modelos no cargados. Cargando artefactos...")
                 success = predictor.load_artifacts()
                 
                 if not success:
                     return Response({
-                        'error': 'Error cargando modelos. Ejecutar inicializaciÃ³n automÃ¡tica primero.',
+                        'error': 'Error cargando modelos. Ejecutar inicialización automática primero.',
                         'status': 'error',
                         'suggestion': 'POST /api/v1/auto-initialize/ para inicializar el sistema'
                     }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
             
-            # Realizar predicciÃ³n calibrada
+            # Realizar predicción calibrada
             result = predictor.predict(image)
             
             if result['success']:
-                logger.info(f"PredicciÃ³n calibrada exitosa: {result['predictions']}")
+                logger.info(f"Predicción calibrada exitosa: {result['predictions']}")
                 return Response(result)
             else:
                 return Response({
-                    'error': result.get('error', 'Error desconocido en predicciÃ³n'),
+                    'error': result.get('error', 'Error desconocido en predicción'),
                     'status': 'error'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
         except Exception as e:
-            logger.error(f"Error en predicciÃ³n calibrada: {e}")
+            logger.error(f"Error en predicción calibrada: {e}")
             return Response({
-                'error': f'Error en predicciÃ³n calibrada: {str(e)}',
+                'error': f'Error en predicción calibrada: {str(e)}',
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

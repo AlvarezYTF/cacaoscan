@@ -1,5 +1,5 @@
-﻿"""
-ConfiguraciÃ³n del admin de Django para la API de CacaoScan.
+"""
+Configuración del admin de Django para la API de CacaoScan.
 """
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
@@ -24,7 +24,7 @@ except ImportError:
     SystemSettings = None
 
 
-# ConfiguraciÃ³n personalizada para User
+# Configuración personalizada para User
 class UserProfileInline(admin.StackedInline):
     """Inline para mostrar perfil extendido en el admin de User."""
     model = UserProfile
@@ -55,7 +55,7 @@ admin.site.register(User, CustomUserAdmin)
 
 @admin.register(EmailVerificationToken)
 class EmailVerificationTokenAdmin(admin.ModelAdmin):
-    """Admin para tokens de verificaciÃ³n de email."""
+    """Admin para tokens de verificación de email."""
     list_display = ('user', 'email', 'is_verified', 'created_at', 'expires_at')
     list_filter = ('is_verified', 'created_at')
     search_fields = ('user__username', 'user__email')
@@ -79,13 +79,13 @@ class UserProfileAdmin(admin.ModelAdmin):
         ('Usuario', {
             'fields': ('user', 'full_name', 'role', 'is_verified')
         }),
-        ('InformaciÃ³n de Contacto', {
+        ('Información de Contacto', {
             'fields': ('phone_number',)
         }),
-        ('InformaciÃ³n GeogrÃ¡fica', {
+        ('Información Geográfica', {
             'fields': ('region', 'municipality')
         }),
-        ('InformaciÃ³n de la Finca', {
+        ('Información de la Finca', {
             'fields': ('farm_name', 'years_experience', 'farm_size_hectares')
         }),
         ('Preferencias', {
@@ -100,20 +100,20 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(CacaoImage)
 class CacaoImageAdmin(admin.ModelAdmin):
-    """Admin para imÃ¡genes de cacao."""
+    """Admin para imágenes de cacao."""
     list_display = ('id', 'user', 'file_name', 'region', 'finca', 'processed', 'has_prediction', 'uploaded_at')
     list_filter = ('processed', 'region', 'finca', 'uploaded_at', 'created_at')
     search_fields = ('user__username', 'user__email', 'file_name', 'finca', 'region', 'lote_id', 'variedad')
     readonly_fields = ('id', 'uploaded_at', 'file_name', 'file_size', 'file_type', 'created_at', 'updated_at', 'file_size_mb', 'has_prediction')
     
     fieldsets = (
-        ('InformaciÃ³n BÃ¡sica', {
+        ('Información Básica', {
             'fields': ('id', 'user', 'image', 'uploaded_at', 'processed')
         }),
         ('Metadatos del Grano/Finca', {
             'fields': ('finca', 'region', 'lote_id', 'variedad', 'fecha_cosecha', 'notas')
         }),
-        ('InformaciÃ³n TÃ©cnica', {
+        ('Información Técnica', {
             'fields': ('file_name', 'file_size', 'file_size_mb', 'file_type', 'has_prediction')
         }),
         ('Timestamps', {
@@ -136,7 +136,7 @@ class CacaoPredictionAdmin(admin.ModelAdmin):
     readonly_fields = ('id', 'image', 'processing_time_ms', 'model_version', 'device_used', 'average_confidence', 'volume_cm3', 'density_g_cm3', 'created_at')
     
     fieldsets = (
-        ('InformaciÃ³n BÃ¡sica', {
+        ('Información Básica', {
             'fields': ('id', 'image', 'created_at')
         }),
         ('Predicciones de Dimensiones', {
@@ -148,7 +148,7 @@ class CacaoPredictionAdmin(admin.ModelAdmin):
         ('Metadatos de Procesamiento', {
             'fields': ('processing_time_ms', 'crop_url', 'model_version', 'device_used')
         }),
-        ('CÃ¡lculos Derivados', {
+        ('Cálculos Derivados', {
             'fields': ('volume_cm3', 'density_g_cm3'),
             'classes': ('collapse',)
         }),
@@ -166,23 +166,23 @@ class CacaoPredictionAdmin(admin.ModelAdmin):
 
 @admin.register(SystemSettings)
 class SystemSettingsAdmin(admin.ModelAdmin):
-    """Admin para configuraciÃ³n del sistema."""
+    """Admin para configuración del sistema."""
     list_display = ('nombre_sistema', 'email_contacto', 'updated_at')
     
     def has_add_permission(self, request):
-        """No permitir agregar mÃ¡s de una instancia."""
+        """No permitir agregar más de una instancia."""
         if self.model.objects.count() >= 1:
             return False
         return super().has_add_permission(request)
     
     def has_delete_permission(self, request, obj=None):
-        """No permitir eliminar la configuraciÃ³n."""
+        """No permitir eliminar la configuración."""
         return False
 
 
-# ConfiguraciÃ³n del sitio admin
-admin.site.site_header = "CacaoScan - AdministraciÃ³n"
+# Configuración del sitio admin
+admin.site.site_header = "CacaoScan - Administración"
 admin.site.site_title = "CacaoScan Admin"
-admin.site.index_title = "Panel de AdministraciÃ³n"
+admin.site.index_title = "Panel de Administración"
 
 

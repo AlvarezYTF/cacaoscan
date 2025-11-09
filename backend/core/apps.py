@@ -1,4 +1,4 @@
-﻿from django.apps import AppConfig
+from django.apps import AppConfig
 
 
 class CoreConfig(AppConfig):
@@ -7,7 +7,7 @@ class CoreConfig(AppConfig):
     verbose_name = 'Core'
     
     def ready(self):
-        """Ejecutado cuando la app estÃ¡ lista."""
+        """Ejecutado cuando la app está lista."""
         pass
 
 

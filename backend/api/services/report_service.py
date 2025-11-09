@@ -1,4 +1,4 @@
-﻿"""
+"""
 Servicio de reportes para CacaoScan.
 """
 import logging
@@ -30,7 +30,7 @@ logger = logging.getLogger("cacaoscan.services.reports")
 
 class ReportService(BaseService):
     """
-    Servicio para manejar generaciÃ³n y gestiÃ³n de reportes.
+    Servicio para manejar generación y gestión de reportes.
     """
     
     def __init__(self):
@@ -38,7 +38,7 @@ class ReportService(BaseService):
     
     def generate_analysis_report(self, user: User, report_data: Dict[str, Any]) -> ServiceResult:
         """
-        Genera un reporte de anÃ¡lisis de granos de cacao.
+        Genera un reporte de análisis de granos de cacao.
         
         Args:
             user: Usuario que solicita el reporte
@@ -62,7 +62,7 @@ class ReportService(BaseService):
                     details={"field": "fecha_inicio"}
                 )
             
-            # Generar datos del reporte segÃºn el tipo
+            # Generar datos del reporte según el tipo
             report_type = report_data['tipo_reporte']
             
             if report_type == 'analisis_general':
@@ -87,7 +87,7 @@ class ReportService(BaseService):
                 report_content = self._generate_user_statistics_report(user, fecha_inicio, fecha_fin)
             else:
                 return ServiceResult.validation_error(
-                    f"Tipo de reporte no vÃ¡lido: {report_type}",
+                    f"Tipo de reporte no válido: {report_type}",
                     details={"field": "tipo_reporte", "allowed_types": [
                         'analisis_general', 'analisis_por_finca', 'analisis_por_lote', 'estadisticas_usuario'
                     ]}
@@ -107,7 +107,7 @@ class ReportService(BaseService):
             
             reporte.save()
             
-            # Crear log de auditorÃ­a
+            # Crear log de auditoría
             self.create_audit_log(
                 user=user,
                 action="report_generated",
@@ -150,8 +150,8 @@ class ReportService(BaseService):
         
         Args:
             user: Usuario
-            page: NÃºmero de pÃ¡gina
-            page_size: TamaÃ±o de pÃ¡gina
+            page: Número de página
+            page_size: Tamaño de página
             filters: Filtros adicionales
             
         Returns:
@@ -206,7 +206,7 @@ class ReportService(BaseService):
     
     def get_report_details(self, report_id: int, user: User) -> ServiceResult:
         """
-        Obtiene detalles de un reporte especÃ­fico.
+        Obtiene detalles de un reporte específico.
         
         Args:
             report_id: ID del reporte
@@ -255,7 +255,7 @@ class ReportService(BaseService):
             user: Usuario
             
         Returns:
-            ServiceResult con resultado de la eliminaciÃ³n
+            ServiceResult con resultado de la eliminación
         """
         try:
             try:
@@ -263,7 +263,7 @@ class ReportService(BaseService):
             except ReporteGenerado.DoesNotExist:
                 return ServiceResult.not_found_error("Reporte no encontrado")
             
-            # Crear log de auditorÃ­a antes de eliminar
+            # Crear log de auditoría antes de eliminar
             self.create_audit_log(
                 user=user,
                 action="report_deleted",
@@ -293,14 +293,14 @@ class ReportService(BaseService):
     
     def get_report_statistics(self, user: User, filters: Dict[str, Any] = None) -> ServiceResult:
         """
-        Obtiene estadÃ­sticas de reportes de un usuario.
+        Obtiene estadísticas de reportes de un usuario.
         
         Args:
             user: Usuario
             filters: Filtros adicionales
             
         Returns:
-            ServiceResult con estadÃ­sticas
+            ServiceResult con estadísticas
         """
         try:
             # Construir queryset base
@@ -313,7 +313,7 @@ class ReportService(BaseService):
                 if 'date_to' in filters:
                     queryset = queryset.filter(created_at__lte=filters['date_to'])
             
-            # Calcular estadÃ­sticas
+            # Calcular estadísticas
             stats = {
                 'total_reports': queryset.count(),
                 'reports_by_type': dict(queryset.values('tipo_reporte').annotate(count=Count('id')).values_list('tipo_reporte', 'count')),
@@ -325,18 +325,18 @@ class ReportService(BaseService):
             
             return ServiceResult.success(
                 data=stats,
-                message="EstadÃ­sticas obtenidas exitosamente"
+                message="Estadísticas obtenidas exitosamente"
             )
             
         except Exception as e:
-            self.log_error(f"Error obteniendo estadÃ­sticas: {str(e)}")
+            self.log_error(f"Error obteniendo estadísticas: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Error interno obteniendo estadÃ­sticas", details={"original_error": str(e)})
+                ValidationServiceError("Error interno obteniendo estadísticas", details={"original_error": str(e)})
             )
     
     def _generate_general_analysis_report(self, user: User, fecha_inicio: datetime, fecha_fin: datetime) -> Dict[str, Any]:
         """
-        Genera reporte de anÃ¡lisis general.
+        Genera reporte de análisis general.
         
         Args:
             user: Usuario
@@ -353,18 +353,18 @@ class ReportService(BaseService):
             created_at__lte=fecha_fin
         )
         
-        # Calcular estadÃ­sticas
+        # Calcular estadísticas
         total_analyses = predictions.count()
         
         if total_analyses == 0:
             return {
                 'resumen': {
                     'total_analisis': 0,
-                    'mensaje': 'No hay anÃ¡lisis en el perÃ­odo seleccionado'
+                    'mensaje': 'No hay análisis en el período seleccionado'
                 }
             }
         
-        # EstadÃ­sticas de dimensiones
+        # Estadísticas de dimensiones
         dimension_stats = {
             'alto_mm': {
                 'promedio': float(predictions.aggregate(avg=Avg('alto_mm'))['avg'] or 0),
@@ -392,7 +392,7 @@ class ReportService(BaseService):
             }
         }
         
-        # EstadÃ­sticas de confianza
+        # Estadísticas de confianza
         confidence_stats = {
             'promedio': float(predictions.aggregate(avg=Avg('average_confidence'))['avg'] or 0),
             'minimo': float(predictions.aggregate(min=Min('average_confidence'))['min'] or 0),
@@ -404,14 +404,14 @@ class ReportService(BaseService):
             }
         }
         
-        # EstadÃ­sticas de tiempo de procesamiento
+        # Estadísticas de tiempo de procesamiento
         processing_stats = {
             'promedio_ms': float(predictions.aggregate(avg=Avg('processing_time_ms'))['avg'] or 0),
             'minimo_ms': float(predictions.aggregate(min=Min('processing_time_ms'))['min'] or 0),
             'maximo_ms': float(predictions.aggregate(max=Max('processing_time_ms'))['max'] or 0)
         }
         
-        # AnÃ¡lisis por dÃ­a
+        # Análisis por día
         daily_analysis = self._get_daily_analysis(predictions)
         
         return {
@@ -430,7 +430,7 @@ class ReportService(BaseService):
     
     def _generate_finca_analysis_report(self, user: User, finca_id: int, fecha_inicio: datetime, fecha_fin: datetime) -> Dict[str, Any]:
         """
-        Genera reporte de anÃ¡lisis por finca.
+        Genera reporte de análisis por finca.
         
         Args:
             user: Usuario
@@ -446,7 +446,7 @@ class ReportService(BaseService):
         except Finca.DoesNotExist:
             return {'error': 'Finca no encontrada'}
         
-        # Obtener predicciones de imÃ¡genes asociadas a lotes de la finca
+        # Obtener predicciones de imágenes asociadas a lotes de la finca
         predictions = CacaoPrediction.objects.filter(
             image__user=user,
             created_at__gte=fecha_inicio,
@@ -459,7 +459,7 @@ class ReportService(BaseService):
         # Generar reporte base
         base_report = self._generate_general_analysis_report(user, fecha_inicio, fecha_fin)
         
-        # Agregar informaciÃ³n especÃ­fica de la finca
+        # Agregar información específica de la finca
         base_report['finca'] = {
             'id': finca.id,
             'nombre': finca.nombre,
@@ -468,7 +468,7 @@ class ReportService(BaseService):
             'hectareas': finca.hectareas
         }
         
-        # EstadÃ­sticas por lote
+        # Estadísticas por lote
         lotes_stats = []
         for lote in finca.lotes.all():
             lote_predictions = predictions.filter(
@@ -492,7 +492,7 @@ class ReportService(BaseService):
     
     def _generate_lote_analysis_report(self, user: User, lote_id: int, fecha_inicio: datetime, fecha_fin: datetime) -> Dict[str, Any]:
         """
-        Genera reporte de anÃ¡lisis por lote.
+        Genera reporte de análisis por lote.
         
         Args:
             user: Usuario
@@ -508,7 +508,7 @@ class ReportService(BaseService):
         except Lote.DoesNotExist:
             return {'error': 'Lote no encontrado'}
         
-        # Obtener predicciones de imÃ¡genes asociadas al lote
+        # Obtener predicciones de imágenes asociadas al lote
         predictions = CacaoPrediction.objects.filter(
             image__user=user,
             created_at__gte=fecha_inicio,
@@ -521,7 +521,7 @@ class ReportService(BaseService):
         # Generar reporte base
         base_report = self._generate_general_analysis_report(user, fecha_inicio, fecha_fin)
         
-        # Agregar informaciÃ³n especÃ­fica del lote
+        # Agregar información específica del lote
         base_report['lote'] = {
             'id': lote.id,
             'identificador': lote.identificador,
@@ -541,7 +541,7 @@ class ReportService(BaseService):
     
     def _generate_user_statistics_report(self, user: User, fecha_inicio: datetime, fecha_fin: datetime) -> Dict[str, Any]:
         """
-        Genera reporte de estadÃ­sticas del usuario.
+        Genera reporte de estadísticas del usuario.
         
         Args:
             user: Usuario
@@ -551,13 +551,13 @@ class ReportService(BaseService):
         Returns:
             Diccionario con datos del reporte
         """
-        # EstadÃ­sticas generales del usuario
+        # Estadísticas generales del usuario
         total_images = CacaoImage.objects.filter(user=user).count()
         total_predictions = CacaoPrediction.objects.filter(image__user=user).count()
         total_fincas = Finca.objects.filter(agricultor=user).count()
         total_lotes = Lote.objects.filter(finca__agricultor=user).count()
         
-        # EstadÃ­sticas en el perÃ­odo
+        # Estadísticas en el período
         period_images = CacaoImage.objects.filter(
             user=user,
             created_at__gte=fecha_inicio,
@@ -570,7 +570,7 @@ class ReportService(BaseService):
             created_at__lte=fecha_fin
         ).count()
         
-        # AnÃ¡lisis de actividad
+        # Análisis de actividad
         activity_analysis = self._get_user_activity_analysis(user, fecha_inicio, fecha_fin)
         
         return {
@@ -606,14 +606,14 @@ class ReportService(BaseService):
     
     def _calculate_std_dev(self, queryset, field: str) -> float:
         """
-        Calcula la desviaciÃ³n estÃ¡ndar de un campo.
+        Calcula la desviación estándar de un campo.
         
         Args:
             queryset: QuerySet
             field: Campo a calcular
             
         Returns:
-            DesviaciÃ³n estÃ¡ndar
+            Desviación estándar
         """
         values = list(queryset.values_list(field, flat=True))
         if not values:
@@ -625,17 +625,17 @@ class ReportService(BaseService):
     
     def _get_daily_analysis(self, predictions) -> List[Dict[str, Any]]:
         """
-        Obtiene anÃ¡lisis por dÃ­a.
+        Obtiene análisis por día.
         
         Args:
             predictions: QuerySet de predicciones
             
         Returns:
-            Lista con anÃ¡lisis diario
+            Lista con análisis diario
         """
         daily_data = []
         
-        # Agrupar por dÃ­a
+        # Agrupar por día
         from django.db.models import Count, Avg
         daily_stats = predictions.extra(
             select={'day': 'date(created_at)'}
@@ -657,11 +657,11 @@ class ReportService(BaseService):
     
     def _generate_recommendations(self, dimension_stats: Dict, confidence_stats: Dict) -> List[str]:
         """
-        Genera recomendaciones basadas en las estadÃ­sticas.
+        Genera recomendaciones basadas en las estadísticas.
         
         Args:
-            dimension_stats: EstadÃ­sticas de dimensiones
-            confidence_stats: EstadÃ­sticas de confianza
+            dimension_stats: Estadísticas de dimensiones
+            confidence_stats: Estadísticas de confianza
             
         Returns:
             Lista de recomendaciones
@@ -670,23 +670,23 @@ class ReportService(BaseService):
         
         # Recomendaciones basadas en confianza
         if confidence_stats['promedio'] < 0.7:
-            recommendations.append("La confianza promedio es baja. Considera mejorar la calidad de las imÃ¡genes.")
+            recommendations.append("La confianza promedio es baja. Considera mejorar la calidad de las imágenes.")
         
         if confidence_stats['distribucion']['baja'] > confidence_stats['distribucion']['alta']:
-            recommendations.append("Hay mÃ¡s anÃ¡lisis con baja confianza que alta. Revisa las condiciones de captura.")
+            recommendations.append("Hay más análisis con baja confianza que alta. Revisa las condiciones de captura.")
         
         # Recomendaciones basadas en dimensiones
         peso_promedio = dimension_stats['peso_g']['promedio']
         if peso_promedio < 1.0:
-            recommendations.append("El peso promedio es bajo. Verifica la calibraciÃ³n del sistema.")
+            recommendations.append("El peso promedio es bajo. Verifica la calibración del sistema.")
         elif peso_promedio > 3.0:
-            recommendations.append("El peso promedio es alto. Verifica la calibraciÃ³n del sistema.")
+            recommendations.append("El peso promedio es alto. Verifica la calibración del sistema.")
         
         return recommendations
     
     def _get_user_activity_analysis(self, user: User, fecha_inicio: datetime, fecha_fin: datetime) -> Dict[str, Any]:
         """
-        Obtiene anÃ¡lisis de actividad del usuario.
+        Obtiene análisis de actividad del usuario.
         
         Args:
             user: Usuario
@@ -694,9 +694,9 @@ class ReportService(BaseService):
             fecha_fin: Fecha de fin
             
         Returns:
-            Diccionario con anÃ¡lisis de actividad
+            Diccionario con análisis de actividad
         """
-        # Actividad por dÃ­a de la semana
+        # Actividad por día de la semana
         from django.db.models import Count
         from django.db.models.functions import Extract
         
@@ -710,7 +710,7 @@ class ReportService(BaseService):
             count=Count('id')
         ).order_by('day_of_week')
         
-        # Actividad por hora del dÃ­a
+        # Actividad por hora del día
         hourly_activity = CacaoPrediction.objects.filter(
             image__user=user,
             created_at__gte=fecha_inicio,
@@ -756,13 +756,13 @@ class ReportService(BaseService):
     
     def _get_most_used_report_type(self, queryset) -> str:
         """
-        Obtiene el tipo de reporte mÃ¡s usado.
+        Obtiene el tipo de reporte más usado.
         
         Args:
             queryset: QuerySet de reportes
             
         Returns:
-            Tipo de reporte mÃ¡s usado
+            Tipo de reporte más usado
         """
         from django.db.models import Count
         

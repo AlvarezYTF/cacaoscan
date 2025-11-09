@@ -25,7 +25,7 @@ class Command(BaseCommand):
         self.stdout.write('=' * 60)
         
         if dry_run:
-            self.stdout.write(self.style.WARNING('⚠️  MODO DRY-RUN: No se realizarán cambios'))
+            self.stdout.write(self.style.WARNING('[WARN]  MODO DRY-RUN: No se realizarán cambios'))
         
         # Buscar lotes huérfanos
         with connection.cursor() as cursor:
@@ -42,7 +42,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS('\n✅ No se encontraron lotes huérfanos'))
                 return
             
-            self.stdout.write(f'\n⚠️  Encontrados {len(orphaned_lotes)} lotes huérfanos:')
+            self.stdout.write(f'\n[WARN]  Encontrados {len(orphaned_lotes)} lotes huérfanos:')
             for lote_id, finca_id, identificador, variedad in orphaned_lotes:
                 self.stdout.write(f'  - Lote ID: {lote_id}, finca_id: {finca_id}, identificador: {identificador}, variedad: {variedad}')
             
@@ -58,7 +58,7 @@ class Command(BaseCommand):
                 if image_count > 0:
                     self.stdout.write(
                         self.style.WARNING(
-                            f'  ⚠️  Lote {lote_id} ({identificador}) tiene {image_count} imagen(es) asociada(s) - NO se eliminará'
+                            f'  [WARN]  Lote {lote_id} ({identificador}) tiene {image_count} imagen(es) asociada(s) - NO se eliminará'
                         )
                     )
                 else:
@@ -89,7 +89,7 @@ class Command(BaseCommand):
                         )
                     except Exception as e:
                         self.stdout.write(
-                            self.style.ERROR(f'  ❌ Error eliminando lote {lote_id}: {e}')
+                            self.style.ERROR(f'  [ERROR] Error eliminando lote {lote_id}: {e}')
                         )
             
             if deleted_count > 0:
@@ -101,7 +101,7 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(
                     self.style.WARNING(
-                        '\n⚠️  No se eliminó ningún lote (todos tienen imágenes asociadas)'
+                        '\n[WARN]  No se eliminó ningún lote (todos tienen imágenes asociadas)'
                     )
                 )
             

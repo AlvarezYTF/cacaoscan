@@ -1,4 +1,4 @@
-﻿from rest_framework import viewsets, status
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
@@ -24,8 +24,8 @@ class TemaViewSet(viewsets.ModelViewSet):
     ViewSet para gestionar los Temas del sistema.
     
     list: Obtiene todos los temas activos
-    retrieve: Obtiene un tema especÃ­fico
-    parametros: Obtiene los parÃ¡metros de un tema especÃ­fico (custom action)
+    retrieve: Obtiene un tema específico
+    parametros: Obtiene los parámetros de un tema específico (custom action)
     """
     queryset = Tema.objects.all()
     serializer_class = TemaSerializer
@@ -33,7 +33,7 @@ class TemaViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
 
     def get_serializer_class(self):
-        """Devuelve diferentes serializers segÃºn la acciÃ³n"""
+        """Devuelve diferentes serializers según la acción"""
         if self.action == 'retrieve' or self.action == 'parametros':
             return TemaConParametrosSerializer
         return TemaSerializer
@@ -41,7 +41,7 @@ class TemaViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='parametros')
     def parametros(self, request, id=None):
         """
-        Obtiene todos los parÃ¡metros de un tema especÃ­fico.
+        Obtiene todos los parámetros de un tema específico.
         Endpoint: GET /api/temas/{id}/parametros/
         """
         tema = self.get_object()
@@ -58,18 +58,18 @@ class TemaViewSet(viewsets.ModelViewSet):
 
 class ParametroViewSet(viewsets.ModelViewSet):
     """
-    ViewSet para gestionar los ParÃ¡metros del sistema.
+    ViewSet para gestionar los Parámetros del sistema.
     
-    list: Obtiene todos los parÃ¡metros
-    retrieve: Obtiene un parÃ¡metro especÃ­fico
-    by_tema: Obtiene parÃ¡metros filtrados por tema (custom action)
+    list: Obtiene todos los parámetros
+    retrieve: Obtiene un parámetro específico
+    by_tema: Obtiene parámetros filtrados por tema (custom action)
     """
     queryset = Parametro.objects.all().select_related('tema')
     serializer_class = ParametroSerializer
     permission_classes = [AllowAny]
 
     def get_serializer_class(self):
-        """Devuelve diferentes serializers segÃºn la acciÃ³n"""
+        """Devuelve diferentes serializers según la acción"""
         if self.action == 'create':
             return ParametroCreateSerializer
         elif self.action == 'retrieve':
@@ -77,12 +77,12 @@ class ParametroViewSet(viewsets.ModelViewSet):
         return ParametroSerializer
 
     def get_queryset(self):
-        """Permite filtrar por tema (id o cÃ³digo) y por activos."""
+        """Permite filtrar por tema (id o código) y por activos."""
         queryset = super().get_queryset()
 
         tema_param = (self.request.query_params.get('tema') or '').strip()
         if tema_param:
-            # Si es numÃ©rico -> asumir ID; si no, filtrar por cÃ³digo
+            # Si es numérico -> asumir ID; si no, filtrar por código
             if tema_param.isdigit():
                 queryset = queryset.filter(tema_id=int(tema_param))
             else:
@@ -97,7 +97,7 @@ class ParametroViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='tema/(?P<codigo_tema>[^/.]+)')
     def by_tema(self, request, codigo_tema=None):
         """
-        Obtiene los parÃ¡metros de un tema por su cÃ³digo.
+        Obtiene los parámetros de un tema por su código.
         Endpoint: GET /api/parametros/tema/{codigo_tema}/
         """
         try:
@@ -119,7 +119,7 @@ class ParametroViewSet(viewsets.ModelViewSet):
             })
         except Tema.DoesNotExist:
             return Response(
-                    {'error': f'Tema con cÃ³digo "{codigo_tema}" no encontrado'},
+                    {'error': f'Tema con código "{codigo_tema}" no encontrado'},
                 status=status.HTTP_404_NOT_FOUND
             )
 
@@ -131,15 +131,15 @@ class DepartamentoViewSet(viewsets.ModelViewSet):
     ViewSet para gestionar los Departamentos de Colombia.
     
     list: Obtiene todos los departamentos
-    retrieve: Obtiene un departamento especÃ­fico con sus municipios
-    municipios: Obtiene los municipios de un departamento especÃ­fico (custom action)
+    retrieve: Obtiene un departamento específico con sus municipios
+    municipios: Obtiene los municipios de un departamento específico (custom action)
     """
     queryset = Departamento.objects.all()
     serializer_class = DepartamentoSerializer
     permission_classes = [AllowAny]
 
     def get_serializer_class(self):
-        """Devuelve diferentes serializers segÃºn la acciÃ³n"""
+        """Devuelve diferentes serializers según la acción"""
         if self.action == 'retrieve' or self.action == 'municipios':
             return DepartamentoConMunicipiosSerializer
         return DepartamentoSerializer
@@ -147,7 +147,7 @@ class DepartamentoViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='municipios')
     def municipios(self, request, pk=None):
         """
-        Obtiene todos los municipios de un departamento especÃ­fico.
+        Obtiene todos los municipios de un departamento específico.
         Endpoint: GET /api/departamentos/{id}/municipios/
         """
         departamento = self.get_object()
@@ -162,7 +162,7 @@ class MunicipioViewSet(viewsets.ModelViewSet):
     ViewSet para gestionar los Municipios de Colombia.
     
     list: Obtiene todos los municipios (filtrable por departamento)
-    retrieve: Obtiene un municipio especÃ­fico
+    retrieve: Obtiene un municipio específico
     by_departamento: Obtiene municipios filtrados por departamento (custom action)
     """
     queryset = Municipio.objects.all().select_related('departamento')
@@ -170,7 +170,7 @@ class MunicipioViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
 
     def get_serializer_class(self):
-        """Devuelve diferentes serializers segÃºn la acciÃ³n"""
+        """Devuelve diferentes serializers según la acción"""
         if self.action == 'create':
             return MunicipioCreateSerializer
         elif self.action == 'retrieve':
@@ -196,7 +196,7 @@ class MunicipioViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='departamento/(?P<codigo_departamento>[^/.]+)')
     def by_departamento(self, request, codigo_departamento=None):
         """
-        Obtiene los municipios de un departamento por su cÃ³digo.
+        Obtiene los municipios de un departamento por su código.
         Endpoint: GET /api/municipios/departamento/{codigo_departamento}/
         """
         try:
@@ -213,7 +213,7 @@ class MunicipioViewSet(viewsets.ModelViewSet):
             })
         except Departamento.DoesNotExist:
             return Response(
-                {'error': f'Departamento con cÃ³digo "{codigo_departamento}" no encontrado'},
+                {'error': f'Departamento con código "{codigo_departamento}" no encontrado'},
                 status=status.HTTP_404_NOT_FOUND
             )
 

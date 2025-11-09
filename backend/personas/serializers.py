@@ -1,9 +1,9 @@
-﻿"""
+"""
 Serializers para la app personas.
 
-INTEGRACIÃ“N CON MÃ“DULOS:
-- Usa Parametro (catÃ¡logos) para tipo_documento y genero
-- Usa Departamento y Municipio (ubicaciones) para ubicaciÃ³n
+INTEGRACI"N CON M"DULOS:
+- Usa Parametro (catálogos) para tipo_documento y genero
+- Usa Departamento y Municipio (ubicaciones) para ubicación
 """
 from rest_framework import serializers
 from django.contrib.auth.models import User
@@ -16,8 +16,8 @@ from .models import Persona
 
 
 class PersonaSerializer(serializers.ModelSerializer):
-    """Serializer estÃ¡ndar para Persona con informaciÃ³n completa de catÃ¡logos."""
-    # Campos anidados de catÃ¡logos
+    """Serializer estándar para Persona con información completa de catálogos."""
+    # Campos anidados de catálogos
     tipo_documento_info = serializers.SerializerMethodField()
     genero_info = serializers.SerializerMethodField()
     departamento_info = serializers.SerializerMethodField()
@@ -37,7 +37,7 @@ class PersonaSerializer(serializers.ModelSerializer):
         read_only_fields = ['user', 'fecha_creacion', 'email']
     
     def get_tipo_documento_info(self, obj):
-        """Devuelve informaciÃ³n del tipo de documento."""
+        """Devuelve información del tipo de documento."""
         if obj.tipo_documento:
             return {
                 'id': obj.tipo_documento.id,
@@ -47,7 +47,7 @@ class PersonaSerializer(serializers.ModelSerializer):
         return None
     
     def get_genero_info(self, obj):
-        """Devuelve informaciÃ³n del gÃ©nero."""
+        """Devuelve información del género."""
         if obj.genero:
             return {
                 'id': obj.genero.id,
@@ -57,7 +57,7 @@ class PersonaSerializer(serializers.ModelSerializer):
         return None
     
     def get_departamento_info(self, obj):
-        """Devuelve informaciÃ³n del departamento."""
+        """Devuelve información del departamento."""
         if obj.departamento:
             return {
                 'id': obj.departamento.id,
@@ -67,7 +67,7 @@ class PersonaSerializer(serializers.ModelSerializer):
         return None
     
     def get_municipio_info(self, obj):
-        """Devuelve informaciÃ³n del municipio."""
+        """Devuelve información del municipio."""
         if obj.municipio:
             return {
                 'id': obj.municipio.id,
@@ -79,11 +79,11 @@ class PersonaSerializer(serializers.ModelSerializer):
 
 class PersonaRegistroSerializer(serializers.Serializer):
     """
-    Serializer para registro de usuario y persona en una sola peticiÃ³n.
+    Serializer para registro de usuario y persona en una sola petición.
     
-    INTEGRACIÃ“N CON CATÃLOGOS:
-    - tipo_documento: CÃ³digo del parÃ¡metro del tema TIPO_DOC (ej: 'CC', 'CE')
-    - genero: CÃ³digo del parÃ¡metro del tema SEXO (ej: 'M', 'F')
+    INTEGRACI"N CON CATLOGOS:
+    - tipo_documento: Código del parámetro del tema TIPO_DOC (ej: 'CC', 'CE')
+    - genero: Código del parámetro del tema SEXO (ej: 'M', 'F')
     - departamento: ID del departamento
     - municipio: ID del municipio
     """
@@ -92,7 +92,7 @@ class PersonaRegistroSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=8, required=True)
     
     # Campos para crear la persona
-    tipo_documento = serializers.CharField(required=True, help_text="CÃ³digo del parÃ¡metro TIPO_DOC (ej: CC, CE)")
+    tipo_documento = serializers.CharField(required=True, help_text="Código del parámetro TIPO_DOC (ej: CC, CE)")
     numero_documento = serializers.CharField(required=True, max_length=20)
     primer_nombre = serializers.CharField(required=True, max_length=50)
     segundo_nombre = serializers.CharField(required=False, allow_blank=True, max_length=50)
@@ -100,102 +100,102 @@ class PersonaRegistroSerializer(serializers.Serializer):
     segundo_apellido = serializers.CharField(required=False, allow_blank=True, max_length=50)
     telefono = serializers.CharField(required=True, max_length=15)
     direccion = serializers.CharField(required=False, allow_blank=True, max_length=255)
-    genero = serializers.CharField(required=True, help_text="CÃ³digo del parÃ¡metro SEXO (ej: M, F, O)")
+    genero = serializers.CharField(required=True, help_text="Código del parámetro SEXO (ej: M, F, O)")
     fecha_nacimiento = serializers.DateField(required=False, allow_null=True)
     
-    # UbicaciÃ³n (IDs de departamento y municipio)
+    # Ubicación (IDs de departamento y municipio)
     departamento = serializers.IntegerField(required=False, allow_null=True)
     municipio = serializers.IntegerField(required=False, allow_null=True)
     
     def validate_email(self, value):
-        """Validar que el email no exista y tenga formato vÃ¡lido."""
+        """Validar que el email no exista y tenga formato válido."""
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Este correo ya estÃ¡ registrado.")
+            raise serializers.ValidationError("Este correo ya está registrado.")
         
-        # ValidaciÃ³n adicional de formato de email
+        # Validación adicional de formato de email
         email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_regex, value):
-            raise serializers.ValidationError("El formato del correo electrÃ³nico no es vÃ¡lido.")
+            raise serializers.ValidationError("El formato del correo electrónico no es válido.")
         
         return value
     
     def validate_numero_documento(self, value):
         """
-        Validar que el nÃºmero de documento sea Ãºnico y vÃ¡lido.
-        - Solo nÃºmeros
-        - Longitud entre 6 y 11 dÃ­gitos
+        Validar que el número de documento sea único y válido.
+        - Solo números
+        - Longitud entre 6 y 11 dígitos
         """
         # Eliminar espacios
         value = value.strip()
         
-        # Validar que solo contenga nÃºmeros
+        # Validar que solo contenga números
         if not value.isdigit():
-            raise serializers.ValidationError("El nÃºmero de documento solo puede contener nÃºmeros.")
+            raise serializers.ValidationError("El número de documento solo puede contener números.")
         
         # Validar longitud
         if len(value) < 6 or len(value) > 11:
-            raise serializers.ValidationError("El nÃºmero de documento debe tener entre 6 y 11 dÃ­gitos.")
+            raise serializers.ValidationError("El número de documento debe tener entre 6 y 11 dígitos.")
         
         # Validar unicidad
         if Persona.objects.filter(numero_documento=value).exists():
-            raise serializers.ValidationError("Este nÃºmero de documento ya estÃ¡ registrado.")
+            raise serializers.ValidationError("Este número de documento ya está registrado.")
         
         return value
     
     def validate_password(self, value):
         """
-        Validar que la contraseÃ±a cumpla con los requisitos de seguridad:
-        - MÃ­nimo 8 caracteres
-        - Al menos una letra mayÃºscula
-        - Al menos una letra minÃºscula
-        - Al menos un nÃºmero
+        Validar que la contraseña cumpla con los requisitos de seguridad:
+        - Mínimo 8 caracteres
+        - Al menos una letra mayúscula
+        - Al menos una letra minúscula
+        - Al menos un número
         """
         if len(value) < 8:
-            raise serializers.ValidationError("La contraseÃ±a debe tener al menos 8 caracteres.")
+            raise serializers.ValidationError("La contraseña debe tener al menos 8 caracteres.")
         
         if not re.search(r"[A-Z]", value):
-            raise serializers.ValidationError("La contraseÃ±a debe contener al menos una letra mayÃºscula.")
+            raise serializers.ValidationError("La contraseña debe contener al menos una letra mayúscula.")
         
         if not re.search(r"[a-z]", value):
-            raise serializers.ValidationError("La contraseÃ±a debe contener al menos una letra minÃºscula.")
+            raise serializers.ValidationError("La contraseña debe contener al menos una letra minúscula.")
         
         if not re.search(r"[0-9]", value):
-            raise serializers.ValidationError("La contraseÃ±a debe contener al menos un nÃºmero.")
+            raise serializers.ValidationError("La contraseña debe contener al menos un número.")
         
         return value
     
     def validate_telefono(self, value):
         """
-        Validar que el telÃ©fono sea vÃ¡lido:
-        - Solo nÃºmeros (se permiten espacios y guiones que serÃ¡n eliminados)
-        - Longitud entre 7 y 15 dÃ­gitos
-        - Ãšnico (no registrado previamente)
+        Validar que el teléfono sea válido:
+        - Solo números (se permiten espacios y guiones que serán eliminados)
+        - Longitud entre 7 y 15 dígitos
+        - Único (no registrado previamente)
         """
-        # Eliminar espacios, guiones y parÃ©ntesis
+        # Eliminar espacios, guiones y paréntesis
         cleaned_value = re.sub(r'[\s\-\(\)]', '', value)
         
-        # Validar que solo contenga nÃºmeros (puede tener + al inicio)
+        # Validar que solo contenga números (puede tener + al inicio)
         if cleaned_value.startswith('+'):
             cleaned_value = cleaned_value[1:]
         
         if not cleaned_value.isdigit():
-            raise serializers.ValidationError("El telÃ©fono solo puede contener nÃºmeros.")
+            raise serializers.ValidationError("El teléfono solo puede contener números.")
         
         # Validar longitud
         if len(cleaned_value) < 7 or len(cleaned_value) > 15:
-            raise serializers.ValidationError("El telÃ©fono debe tener entre 7 y 15 dÃ­gitos.")
+            raise serializers.ValidationError("El teléfono debe tener entre 7 y 15 dígitos.")
         
-        # Validar unicidad - buscar si ya existe este telÃ©fono
+        # Validar unicidad - buscar si ya existe este teléfono
         if Persona.objects.filter(telefono=value).exists():
-            raise serializers.ValidationError("Este nÃºmero de telÃ©fono ya estÃ¡ registrado.")
+            raise serializers.ValidationError("Este número de teléfono ya está registrado.")
         
         return value
     
     def validate_fecha_nacimiento(self, value):
         """
-        Validar que la fecha de nacimiento sea vÃ¡lida:
+        Validar que la fecha de nacimiento sea válida:
         - No puede ser futura
-        - El usuario debe tener al menos 14 aÃ±os
+        - El usuario debe tener al menos 14 años
         """
         if not value:
             return value
@@ -209,13 +209,13 @@ class PersonaRegistroSerializer(serializers.Serializer):
         # Calcular edad
         edad = hoy.year - value.year - ((hoy.month, hoy.day) < (value.month, value.day))
         
-        # Validar edad mÃ­nima de 14 aÃ±os
+        # Validar edad mínima de 14 años
         if edad < 14:
-            raise serializers.ValidationError("El usuario debe tener al menos 14 aÃ±os.")
+            raise serializers.ValidationError("El usuario debe tener al menos 14 años.")
         
-        # Validar edad mÃ¡xima razonable (opcional, ej: 120 aÃ±os)
+        # Validar edad máxima razonable (opcional, ej: 120 años)
         if edad > 120:
-            raise serializers.ValidationError("La fecha de nacimiento no es vÃ¡lida.")
+            raise serializers.ValidationError("La fecha de nacimiento no es válida.")
         
         return value
     
@@ -225,7 +225,7 @@ class PersonaRegistroSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError("El primer nombre es obligatorio.")
         
-        if not re.match(r'^[a-zA-ZÃ¡Ã©Ã­Ã³ÃºÃÃ‰ÃÃ“ÃšÃ±Ã‘Ã¼Ãœ\s]+$', value):
+        if not re.match(r'^[a-zA-ZáéíóúÉ"Úñ'üÜ\s]+$', value):
             raise serializers.ValidationError("El primer nombre solo puede contener letras.")
         
         return value
@@ -236,13 +236,13 @@ class PersonaRegistroSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError("El primer apellido es obligatorio.")
         
-        if not re.match(r'^[a-zA-ZÃ¡Ã©Ã­Ã³ÃºÃÃ‰ÃÃ“ÃšÃ±Ã‘Ã¼Ãœ\s]+$', value):
+        if not re.match(r'^[a-zA-ZáéíóúÉ"Úñ'üÜ\s]+$', value):
             raise serializers.ValidationError("El primer apellido solo puede contener letras.")
         
         return value
     
     def validate(self, data):
-        """Validar referencias a catÃ¡logos y ubicaciones."""
+        """Validar referencias a catálogos y ubicaciones."""
         # Validar tipo_documento (debe ser un Parametro con tema TIPO_DOC)
         tipo_doc_codigo = data.get('tipo_documento')
         tipo_doc = Parametro.objects.filter(
@@ -253,7 +253,7 @@ class PersonaRegistroSerializer(serializers.Serializer):
         
         if not tipo_doc:
             raise serializers.ValidationError({
-                'tipo_documento': f"Tipo de documento '{tipo_doc_codigo}' no existe o no estÃ¡ activo."
+                'tipo_documento': f"Tipo de documento '{tipo_doc_codigo}' no existe o no está activo."
             })
         data['tipo_documento_obj'] = tipo_doc
         
@@ -267,7 +267,7 @@ class PersonaRegistroSerializer(serializers.Serializer):
         
         if not genero:
             raise serializers.ValidationError({
-                'genero': f"GÃ©nero '{genero_codigo}' no existe o no estÃ¡ activo."
+                'genero': f"Género '{genero_codigo}' no existe o no está activo."
             })
         data['genero_obj'] = genero
         
@@ -305,21 +305,21 @@ class PersonaRegistroSerializer(serializers.Serializer):
     
     @transaction.atomic
     def create(self, validated_data):
-        """Crear el usuario y la persona en una sola transacciÃ³n."""
+        """Crear el usuario y la persona en una sola transacción."""
         # Extraer datos del usuario
         email = validated_data.pop('email')
         password = validated_data.pop('password')
         
-        # Extraer objetos de catÃ¡logos ya validados
+        # Extraer objetos de catálogos ya validados
         tipo_documento = validated_data.pop('tipo_documento_obj')
         genero = validated_data.pop('genero_obj')
         departamento = validated_data.pop('departamento_obj', None)
         municipio = validated_data.pop('municipio_obj', None)
         
-        # Verificar si se debe omitir la verificaciÃ³n de email (para admins)
+        # Verificar si se debe omitir la verificación de email (para admins)
         skip_email_verification = self.context.get('skip_email_verification', False)
         
-        # Crear el usuario (username serÃ¡ el email)
+        # Crear el usuario (username será el email)
         user = User.objects.create_user(
             username=email,
             email=email,
@@ -329,17 +329,17 @@ class PersonaRegistroSerializer(serializers.Serializer):
             is_active=True if skip_email_verification else False  # Activo si es admin
         )
         
-        # Crear token de verificaciÃ³n de email
+        # Crear token de verificación de email
         from api.models import EmailVerificationToken
         verification_token = EmailVerificationToken.create_for_user(user)
         
-        # Si es creaciÃ³n por admin, marcar como verificado
+        # Si es creación por admin, marcar como verificado
         if skip_email_verification:
             verification_token.is_verified = True
             verification_token.verified_at = timezone.now()
             verification_token.save()
         
-        # Enviar email de verificaciÃ³n solo si no se omite
+        # Enviar email de verificación solo si no se omite
         if not skip_email_verification:
             try:
                 from django.conf import settings
@@ -351,14 +351,14 @@ class PersonaRegistroSerializer(serializers.Serializer):
                 <html>
                 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                        <h2 style="color: #4CAF50;">Â¡Bienvenido a CacaoScan, {user.get_full_name() or user.username}!</h2>
-                        <p>Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu direcciÃ³n de correo electrÃ³nico haciendo clic en el siguiente enlace:</p>
+                        <h2 style="color: #4CAF50;">¡Bienvenido a CacaoScan, {user.get_full_name() or user.username}!</h2>
+                        <p>Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu dirección de correo electrónico haciendo clic en el siguiente enlace:</p>
                         <div style="text-align: center; margin: 30px 0;">
                             <a href="{verification_url}" style="background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Verificar mi correo</a>
                         </div>
                         <p>O copia y pega este enlace en tu navegador:</p>
                         <p style="word-break: break-all; color: #666;">{verification_url}</p>
-                        <p style="margin-top: 30px; font-size: 12px; color: #999;">Este enlace expirarÃ¡ en 24 horas.</p>
+                        <p style="margin-top: 30px; font-size: 12px; color: #999;">Este enlace expirará en 24 horas.</p>
                         <p style="font-size: 12px; color: #999;">Si no creaste esta cuenta, puedes ignorar este correo.</p>
                     </div>
                 </body>
@@ -368,27 +368,27 @@ class PersonaRegistroSerializer(serializers.Serializer):
                 text_content = f"""
 Bienvenido a CacaoScan, {user.get_full_name() or user.username}!
 
-Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu direcciÃ³n de correo electrÃ³nico visitando el siguiente enlace:
+Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu dirección de correo electrónico visitando el siguiente enlace:
 
 {verification_url}
 
-Este enlace expirarÃ¡ en 24 horas.
+Este enlace expirará en 24 horas.
 
 Si no creaste esta cuenta, puedes ignorar este correo.
                 """
                 
                 send_custom_email(
                     to_emails=[user.email],
-                    subject="Verifica tu correo electrÃ³nico - CacaoScan",
+                    subject="Verifica tu correo electrónico - CacaoScan",
                     html_content=html_content,
                     text_content=text_content
                 )
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
-                logger.error(f"Error enviando email de verificaciÃ³n: {e}")
+                logger.error(f"Error enviando email de verificación: {e}")
         
-        # Crear la persona asociada al usuario con catÃ¡logos y ubicaciones normalizadas
+        # Crear la persona asociada al usuario con catálogos y ubicaciones normalizadas
         persona = Persona.objects.create(
             user=user,
             tipo_documento=tipo_documento,
@@ -408,11 +408,11 @@ Si no creaste esta cuenta, puedes ignorar este correo.
         return persona
     
     def to_representation(self, instance):
-        """Personalizar la representaciÃ³n de la respuesta."""
+        """Personalizar la representación de la respuesta."""
         return {
             'id': instance.id,
             'email': instance.user.email,
-            'verification_required': True,  # Siempre se requiere verificaciÃ³n ahora
+            'verification_required': True,  # Siempre se requiere verificación ahora
             'user': {
                 'id': instance.user.id,
                 'email': instance.user.email
@@ -435,8 +435,8 @@ class PersonaActualizacionSerializer(serializers.Serializer):
     Serializer para actualizar los datos de una persona.
     No permite modificar el email del usuario.
     """
-    # Campos bÃ¡sicos
-    tipo_documento = serializers.CharField(required=False, help_text="CÃ³digo del parÃ¡metro TIPO_DOC")
+    # Campos básicos
+    tipo_documento = serializers.CharField(required=False, help_text="Código del parámetro TIPO_DOC")
     numero_documento = serializers.CharField(required=False, max_length=20)
     primer_nombre = serializers.CharField(required=False, max_length=50)
     segundo_nombre = serializers.CharField(required=False, allow_blank=True, max_length=50)
@@ -444,10 +444,10 @@ class PersonaActualizacionSerializer(serializers.Serializer):
     segundo_apellido = serializers.CharField(required=False, allow_blank=True, max_length=50)
     telefono = serializers.CharField(required=False, max_length=15)
     direccion = serializers.CharField(required=False, allow_blank=True, max_length=255)
-    genero = serializers.CharField(required=False, help_text="CÃ³digo del parÃ¡metro SEXO")
+    genero = serializers.CharField(required=False, help_text="Código del parámetro SEXO")
     fecha_nacimiento = serializers.DateField(required=False, allow_null=True)
     
-    # UbicaciÃ³n
+    # Ubicación
     departamento = serializers.IntegerField(required=False, allow_null=True)
     municipio = serializers.IntegerField(required=False, allow_null=True)
     
@@ -456,37 +456,37 @@ class PersonaActualizacionSerializer(serializers.Serializer):
         value = value.strip()
         
         if not value.isdigit():
-            raise serializers.ValidationError("El nÃºmero de documento solo puede contener nÃºmeros.")
+            raise serializers.ValidationError("El número de documento solo puede contener números.")
         
         if len(value) < 6 or len(value) > 11:
-            raise serializers.ValidationError("El nÃºmero de documento debe tener entre 6 y 11 dÃ­gitos.")
+            raise serializers.ValidationError("El número de documento debe tener entre 6 y 11 dígitos.")
         
         # Validar unicidad excluyendo el usuario actual
         persona_actual = self.context.get('persona')
         if persona_actual:
             if Persona.objects.filter(numero_documento=value).exclude(id=persona_actual.id).exists():
-                raise serializers.ValidationError("Este nÃºmero de documento ya estÃ¡ registrado.")
+                raise serializers.ValidationError("Este número de documento ya está registrado.")
         
         return value
     
     def validate_telefono(self, value):
-        """Validar telÃ©fono sin duplicar (excepto el propio usuario)."""
+        """Validar teléfono sin duplicar (excepto el propio usuario)."""
         cleaned_value = re.sub(r'[\s\-\(\)]', '', value)
         
         if cleaned_value.startswith('+'):
             cleaned_value = cleaned_value[1:]
         
         if not cleaned_value.isdigit():
-            raise serializers.ValidationError("El telÃ©fono solo puede contener nÃºmeros.")
+            raise serializers.ValidationError("El teléfono solo puede contener números.")
         
         if len(cleaned_value) < 7 or len(cleaned_value) > 15:
-            raise serializers.ValidationError("El telÃ©fono debe tener entre 7 y 15 dÃ­gitos.")
+            raise serializers.ValidationError("El teléfono debe tener entre 7 y 15 dígitos.")
         
         # Validar unicidad excluyendo el usuario actual
         persona_actual = self.context.get('persona')
         if persona_actual:
             if Persona.objects.filter(telefono=value).exclude(id=persona_actual.id).exists():
-                raise serializers.ValidationError("Este nÃºmero de telÃ©fono ya estÃ¡ registrado.")
+                raise serializers.ValidationError("Este número de teléfono ya está registrado.")
         
         return value
     
@@ -503,10 +503,10 @@ class PersonaActualizacionSerializer(serializers.Serializer):
         edad = hoy.year - value.year - ((hoy.month, hoy.day) < (value.month, value.day))
         
         if edad < 14:
-            raise serializers.ValidationError("El usuario debe tener al menos 14 aÃ±os.")
+            raise serializers.ValidationError("El usuario debe tener al menos 14 años.")
         
         if edad > 120:
-            raise serializers.ValidationError("La fecha de nacimiento no es vÃ¡lida.")
+            raise serializers.ValidationError("La fecha de nacimiento no es válida.")
         
         return value
     
@@ -516,7 +516,7 @@ class PersonaActualizacionSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError("El primer nombre es obligatorio.")
         
-        if not re.match(r'^[a-zA-ZÃ¡Ã©Ã­Ã³ÃºÃÃ‰ÃÃ“ÃšÃ±Ã‘Ã¼Ãœ\s]+$', value):
+        if not re.match(r'^[a-zA-ZáéíóúÉ"Úñ'üÜ\s]+$', value):
             raise serializers.ValidationError("El primer nombre solo puede contener letras.")
         
         return value
@@ -527,13 +527,13 @@ class PersonaActualizacionSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError("El primer apellido es obligatorio.")
         
-        if not re.match(r'^[a-zA-ZÃ¡Ã©Ã­Ã³ÃºÃÃ‰ÃÃ“ÃšÃ±Ã‘Ã¼Ãœ\s]+$', value):
+        if not re.match(r'^[a-zA-ZáéíóúÉ"Úñ'üÜ\s]+$', value):
             raise serializers.ValidationError("El primer apellido solo puede contener letras.")
         
         return value
     
     def validate(self, data):
-        """Validar catÃ¡logos y ubicaciones."""
+        """Validar catálogos y ubicaciones."""
         # Validar tipo_documento si se proporciona
         if 'tipo_documento' in data:
             tipo_doc_codigo = data['tipo_documento']
@@ -545,7 +545,7 @@ class PersonaActualizacionSerializer(serializers.Serializer):
             
             if not tipo_doc:
                 raise serializers.ValidationError({
-                    'tipo_documento': f"Tipo de documento '{tipo_doc_codigo}' no existe o no estÃ¡ activo."
+                    'tipo_documento': f"Tipo de documento '{tipo_doc_codigo}' no existe o no está activo."
                 })
             data['tipo_documento_obj'] = tipo_doc
         
@@ -560,7 +560,7 @@ class PersonaActualizacionSerializer(serializers.Serializer):
             
             if not genero:
                 raise serializers.ValidationError({
-                    'genero': f"GÃ©nero '{genero_codigo}' no existe o no estÃ¡ activo."
+                    'genero': f"Género '{genero_codigo}' no existe o no está activo."
                 })
             data['genero_obj'] = genero
         
@@ -589,7 +589,7 @@ class PersonaActualizacionSerializer(serializers.Serializer):
     
     def update(self, instance, validated_data):
         """Actualizar la persona con los datos validados."""
-        # Actualizar campos de catÃ¡logos si se proporcionan
+        # Actualizar campos de catálogos si se proporcionan
         if 'tipo_documento_obj' in validated_data:
             instance.tipo_documento = validated_data['tipo_documento_obj']
         

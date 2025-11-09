@@ -24,25 +24,25 @@ def test_models_load():
     success = predictor.load_artifacts()
     
     if success:
-        print("✓ Modelos cargados exitosamente")
-        print(f"✓ Estado: {'OK' if predictor.models_loaded else 'NO OK'}")
+        print("[OK] Modelos cargados exitosamente")
+        print(f"[OK] Estado: {'OK' if predictor.models_loaded else 'NO OK'}")
         
         # Verificar que todos los modelos estén cargados
         targets = ['alto', 'ancho', 'grosor', 'peso']
         for target in targets:
             if target in predictor.regression_models:
-                print(f"✓ Modelo {target} cargado")
+                print(f"[OK] Modelo {target} cargado")
             else:
-                print(f"✗ Modelo {target} NO cargado")
+                print(f"[FAIL] Modelo {target} NO cargado")
         
         if predictor.scalers:
-            print("✓ Escaladores cargados")
+            print("[OK] Escaladores cargados")
         else:
-            print("✗ Escaladores NO cargados")
+            print("[FAIL] Escaladores NO cargados")
             
         return True
     else:
-        print("✗ Error cargando modelos")
+        print("[FAIL] Error cargando modelos")
         print(f"Estado: {'OK' if predictor.models_loaded else 'NO OK'}")
         return False
 

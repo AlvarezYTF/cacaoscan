@@ -1,5 +1,5 @@
-﻿"""
-Tests para los modelos de regresiÃ³n.
+"""
+Tests para los modelos de regresión.
 """
 import pytest
 import torch
@@ -21,7 +21,7 @@ class TestResNet18Regression:
     """Tests para ResNet18Regression."""
     
     def test_init_single_output(self):
-        """Test de inicializaciÃ³n con una salida."""
+        """Test de inicialización con una salida."""
         model = ResNet18Regression(num_outputs=1)
         assert model.num_outputs == 1
         
@@ -31,7 +31,7 @@ class TestResNet18Regression:
         assert output.shape == (2, 1)
     
     def test_init_multiple_outputs(self):
-        """Test de inicializaciÃ³n con mÃºltiples salidas."""
+        """Test de inicialización con múltiples salidas."""
         model = ResNet18Regression(num_outputs=4)
         assert model.num_outputs == 4
         
@@ -41,7 +41,7 @@ class TestResNet18Regression:
         assert output.shape == (2, 4)
     
     def test_get_features(self):
-        """Test de extracciÃ³n de caracterÃ­sticas."""
+        """Test de extracción de características."""
         model = ResNet18Regression(num_outputs=1)
         x = torch.randn(2, 3, 224, 224)
         
@@ -62,9 +62,9 @@ class TestResNet18Regression:
 class TestConvNeXtTinyRegression:
     """Tests para ConvNeXtTinyRegression."""
     
-    @pytest.mark.skipif(True, reason="timm no estÃ¡ disponible en tests")
+    @pytest.mark.skipif(True, reason="timm no está disponible en tests")
     def test_init_single_output(self):
-        """Test de inicializaciÃ³n con una salida."""
+        """Test de inicialización con una salida."""
         model = ConvNeXtTinyRegression(num_outputs=1)
         assert model.num_outputs == 1
         
@@ -73,9 +73,9 @@ class TestConvNeXtTinyRegression:
         output = model(x)
         assert output.shape == (2, 1)
     
-    @pytest.mark.skipif(True, reason="timm no estÃ¡ disponible en tests")
+    @pytest.mark.skipif(True, reason="timm no está disponible en tests")
     def test_get_features(self):
-        """Test de extracciÃ³n de caracterÃ­sticas."""
+        """Test de extracción de características."""
         model = ConvNeXtTinyRegression(num_outputs=1)
         x = torch.randn(2, 3, 224, 224)
         
@@ -83,7 +83,7 @@ class TestConvNeXtTinyRegression:
         assert features.shape[0] == 2  # Batch size
     
     def test_timm_not_available(self):
-        """Test cuando timm no estÃ¡ disponible."""
+        """Test cuando timm no está disponible."""
         with patch('ml.regression.models.TIMM_AVAILABLE', False):
             with pytest.raises(ImportError, match="timm es requerido"):
                 ConvNeXtTinyRegression(num_outputs=1)
@@ -93,7 +93,7 @@ class TestMultiHeadRegression:
     """Tests para MultiHeadRegression."""
     
     def test_init_resnet18(self):
-        """Test de inicializaciÃ³n con ResNet18."""
+        """Test de inicialización con ResNet18."""
         model = MultiHeadRegression(backbone_type="resnet18")
         
         # Test forward pass
@@ -105,9 +105,9 @@ class TestMultiHeadRegression:
             assert target in outputs
             assert outputs[target].shape == (2, 1)
     
-    @pytest.mark.skipif(True, reason="timm no estÃ¡ disponible en tests")
+    @pytest.mark.skipif(True, reason="timm no está disponible en tests")
     def test_init_convnext_tiny(self):
-        """Test de inicializaciÃ³n con ConvNeXt Tiny."""
+        """Test de inicialización con ConvNeXt Tiny."""
         model = MultiHeadRegression(backbone_type="convnext_tiny")
         
         # Test forward pass
@@ -120,7 +120,7 @@ class TestMultiHeadRegression:
             assert outputs[target].shape == (2, 1)
     
     def test_forward_single(self):
-        """Test de forward pass para un target especÃ­fico."""
+        """Test de forward pass para un target específico."""
         model = MultiHeadRegression(backbone_type="resnet18")
         x = torch.randn(2, 3, 224, 224)
         
@@ -129,16 +129,16 @@ class TestMultiHeadRegression:
             assert output.shape == (2, 1)
     
     def test_invalid_backbone(self):
-        """Test con backbone invÃ¡lido."""
+        """Test con backbone inválido."""
         with pytest.raises(ValueError, match="Backbone tipo"):
             MultiHeadRegression(backbone_type="invalid_backbone")
 
 
 class TestCreateModel:
-    """Tests para la funciÃ³n create_model."""
+    """Tests para la función create_model."""
     
     def test_create_resnet18_single(self):
-        """Test de creaciÃ³n de ResNet18 individual."""
+        """Test de creación de ResNet18 individual."""
         model = create_model(
             model_type="resnet18",
             num_outputs=1,
@@ -154,7 +154,7 @@ class TestCreateModel:
         assert output.shape == (2, 1)
     
     def test_create_multi_head(self):
-        """Test de creaciÃ³n de modelo multi-head."""
+        """Test de creación de modelo multi-head."""
         model = create_model(
             model_type="resnet18",
             multi_head=True
@@ -172,7 +172,7 @@ class TestCreateModel:
             assert outputs[target].shape == (2, 1)
     
     def test_create_invalid_model_type(self):
-        """Test con tipo de modelo invÃ¡lido."""
+        """Test con tipo de modelo inválido."""
         with pytest.raises(ValueError, match="Tipo de modelo"):
             create_model(model_type="invalid_model")
 
@@ -181,7 +181,7 @@ class TestModelUtilities:
     """Tests para utilidades de modelos."""
     
     def test_get_model_info(self):
-        """Test de obtenciÃ³n de informaciÃ³n del modelo."""
+        """Test de obtención de información del modelo."""
         model = ResNet18Regression(num_outputs=1)
         info = get_model_info(model)
         
@@ -195,7 +195,7 @@ class TestModelUtilities:
         assert info['trainable_parameters'] > 0
     
     def test_count_parameters(self):
-        """Test de conteo de parÃ¡metros."""
+        """Test de conteo de parámetros."""
         model = ResNet18Regression(num_outputs=1)
         param_count = count_parameters(model)
         
@@ -210,7 +210,7 @@ class TestModelUtilities:
         device = next(model.parameters()).device
         assert device.type == 'cpu'
         
-        # Mover a GPU si estÃ¡ disponible
+        # Mover a GPU si está disponible
         if torch.cuda.is_available():
             model = model.cuda()
             device = next(model.parameters()).device
@@ -225,7 +225,7 @@ class TestModelSmokeTests:
         model = ResNet18Regression(num_outputs=1)
         model.eval()
         
-        # Test con batch de diferentes tamaÃ±os
+        # Test con batch de diferentes tamaños
         for batch_size in [1, 2, 4]:
             x = torch.randn(batch_size, 3, 224, 224)
             
@@ -240,7 +240,7 @@ class TestModelSmokeTests:
         model = MultiHeadRegression(backbone_type="resnet18")
         model.eval()
         
-        # Test con batch de diferentes tamaÃ±os
+        # Test con batch de diferentes tamaños
         for batch_size in [1, 2, 4]:
             x = torch.randn(batch_size, 3, 224, 224)
             
@@ -269,7 +269,7 @@ class TestModelSmokeTests:
         assert x.grad is not None
         assert x.grad.shape == x.shape
         
-        # Verificar que los parÃ¡metros del modelo tienen gradientes
+        # Verificar que los parámetros del modelo tienen gradientes
         for param in model.parameters():
             if param.requires_grad:
                 assert param.grad is not None

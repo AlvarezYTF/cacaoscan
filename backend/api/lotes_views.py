@@ -1,5 +1,5 @@
-﻿"""
-Vistas para gestiÃ³n de lotes en CacaoScan.
+"""
+Vistas para gestión de lotes en CacaoScan.
 """
 import logging
 from rest_framework.permissions import IsAuthenticated
@@ -77,9 +77,9 @@ class LoteListCreateView(LotePermissionMixin, APIView):
             openapi.Parameter('variedad', openapi.IN_QUERY, description="Filtrar por variedad", type=openapi.TYPE_STRING),
             openapi.Parameter('estado', openapi.IN_QUERY, description="Filtrar por estado", type=openapi.TYPE_STRING),
             openapi.Parameter('activo', openapi.IN_QUERY, description="Filtrar por estado activo", type=openapi.TYPE_BOOLEAN),
-            openapi.Parameter('search', openapi.IN_QUERY, description="BÃºsqueda por identificador o variedad", type=openapi.TYPE_STRING),
-            openapi.Parameter('page', openapi.IN_QUERY, description="NÃºmero de pÃ¡gina", type=openapi.TYPE_INTEGER),
-            openapi.Parameter('page_size', openapi.IN_QUERY, description="TamaÃ±o de pÃ¡gina", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('search', openapi.IN_QUERY, description="Búsqueda por identificador o variedad", type=openapi.TYPE_STRING),
+            openapi.Parameter('page', openapi.IN_QUERY, description="Número de página", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page_size', openapi.IN_QUERY, description="Tamaño de página", type=openapi.TYPE_INTEGER),
         ],
         responses={
             200: openapi.Response(description="Lista de lotes obtenida exitosamente"),
@@ -118,7 +118,7 @@ class LoteListCreateView(LotePermissionMixin, APIView):
                     Q(finca__nombre__icontains=search)
                 )
             
-            # PaginaciÃ³n
+            # Paginación
             page = int(request.GET.get('page', 1))
             page_size = int(request.GET.get('page_size', 20))
             
@@ -154,11 +154,11 @@ class LoteListCreateView(LotePermissionMixin, APIView):
                 'finca': openapi.Schema(type=openapi.TYPE_INTEGER, description="ID de la finca"),
                 'identificador': openapi.Schema(type=openapi.TYPE_STRING, description="Identificador del lote"),
                 'variedad': openapi.Schema(type=openapi.TYPE_STRING, description="Variedad de cacao"),
-                'fecha_plantacion': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de plantaciÃ³n"),
+                'fecha_plantacion': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de plantación"),
                 'fecha_cosecha': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de cosecha"),
-                'area_hectareas': openapi.Schema(type=openapi.TYPE_NUMBER, description="Ãrea en hectÃ¡reas"),
+                'area_hectareas': openapi.Schema(type=openapi.TYPE_NUMBER, description="Área en hectáreas"),
                 'estado': openapi.Schema(type=openapi.TYPE_STRING, description="Estado del lote"),
-                'descripcion': openapi.Schema(type=openapi.TYPE_STRING, description="DescripciÃ³n adicional"),
+                'descripcion': openapi.Schema(type=openapi.TYPE_STRING, description="Descripción adicional"),
                 'coordenadas_lat': openapi.Schema(type=openapi.TYPE_NUMBER, description="Latitud GPS"),
                 'coordenadas_lng': openapi.Schema(type=openapi.TYPE_NUMBER, description="Longitud GPS"),
             },
@@ -211,7 +211,7 @@ class LoteListCreateView(LotePermissionMixin, APIView):
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response({
-                    'error': 'Datos de entrada invÃ¡lidos',
+                    'error': 'Datos de entrada inválidos',
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -226,12 +226,12 @@ class LoteListCreateView(LotePermissionMixin, APIView):
 
 class LoteDetailView(LotePermissionMixin, APIView):
     """
-    Vista para obtener detalles de un lote especÃ­fico.
+    Vista para obtener detalles de un lote específico.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene los detalles de un lote especÃ­fico",
+        operation_description="Obtiene los detalles de un lote específico",
         operation_summary="Detalles de lote",
         responses={
             200: openapi.Response(description="Detalles de lote obtenidos exitosamente"),
@@ -264,23 +264,23 @@ class LoteDetailView(LotePermissionMixin, APIView):
 
 class LoteUpdateView(LotePermissionMixin, APIView):
     """
-    Vista para actualizar un lote especÃ­fico.
+    Vista para actualizar un lote específico.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Actualiza un lote especÃ­fico",
+        operation_description="Actualiza un lote específico",
         operation_summary="Actualizar lote",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
                 'identificador': openapi.Schema(type=openapi.TYPE_STRING, description="Identificador del lote"),
                 'variedad': openapi.Schema(type=openapi.TYPE_STRING, description="Variedad de cacao"),
-                'fecha_plantacion': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de plantaciÃ³n"),
+                'fecha_plantacion': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de plantación"),
                 'fecha_cosecha': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de cosecha"),
-                'area_hectareas': openapi.Schema(type=openapi.TYPE_NUMBER, description="Ãrea en hectÃ¡reas"),
+                'area_hectareas': openapi.Schema(type=openapi.TYPE_NUMBER, description="Área en hectáreas"),
                 'estado': openapi.Schema(type=openapi.TYPE_STRING, description="Estado del lote"),
-                'descripcion': openapi.Schema(type=openapi.TYPE_STRING, description="DescripciÃ³n adicional"),
+                'descripcion': openapi.Schema(type=openapi.TYPE_STRING, description="Descripción adicional"),
                 'coordenadas_lat': openapi.Schema(type=openapi.TYPE_NUMBER, description="Latitud GPS"),
                 'coordenadas_lng': openapi.Schema(type=openapi.TYPE_NUMBER, description="Longitud GPS"),
                 'activo': openapi.Schema(type=openapi.TYPE_BOOLEAN, description="Estado activo"),
@@ -315,7 +315,7 @@ class LoteUpdateView(LotePermissionMixin, APIView):
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response({
-                    'error': 'Datos de entrada invÃ¡lidos',
+                    'error': 'Datos de entrada inválidos',
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -354,7 +354,7 @@ class LoteUpdateView(LotePermissionMixin, APIView):
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response({
-                    'error': 'Datos de entrada invÃ¡lidos',
+                    'error': 'Datos de entrada inválidos',
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -374,12 +374,12 @@ class LoteUpdateView(LotePermissionMixin, APIView):
 
 class LoteDeleteView(LotePermissionMixin, APIView):
     """
-    Vista para eliminar un lote especÃ­fico.
+    Vista para eliminar un lote específico.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Elimina un lote especÃ­fico",
+        operation_description="Elimina un lote específico",
         operation_summary="Eliminar lote",
         responses={
             204: openapi.Response(description="Lote eliminado exitosamente"),
@@ -395,10 +395,10 @@ class LoteDeleteView(LotePermissionMixin, APIView):
             queryset = self.get_queryset()
             lote = queryset.get(id=lote_id)
             
-            # Verificar si tiene anÃ¡lisis asociados
+            # Verificar si tiene análisis asociados
             if lote.cacao_images.exists():
                 return Response({
-                    'error': 'No se puede eliminar el lote porque tiene anÃ¡lisis asociados',
+                    'error': 'No se puede eliminar el lote porque tiene análisis asociados',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -424,29 +424,29 @@ class LoteDeleteView(LotePermissionMixin, APIView):
 
 class LoteStatsView(LotePermissionMixin, APIView):
     """
-    Vista para obtener estadÃ­sticas de un lote especÃ­fico.
+    Vista para obtener estadísticas de un lote específico.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene estadÃ­sticas detalladas de un lote",
-        operation_summary="EstadÃ­sticas de lote",
+        operation_description="Obtiene estadísticas detalladas de un lote",
+        operation_summary="Estadísticas de lote",
         responses={
-            200: openapi.Response(description="EstadÃ­sticas obtenidas exitosamente"),
+            200: openapi.Response(description="Estadísticas obtenidas exitosamente"),
             404: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
         },
         tags=['Lotes']
     )
     def get(self, request, lote_id):
-        """Obtener estadÃ­sticas de lote."""
+        """Obtener estadísticas de lote."""
         try:
             queryset = self.get_queryset()
             lote = queryset.get(id=lote_id)
             
             stats = lote.get_estadisticas()
             
-            # Agregar estadÃ­sticas adicionales
+            # Agregar estadísticas adicionales
             stats.update({
                 'lote_identificador': lote.identificador,
                 'finca_nombre': lote.finca.nombre,
@@ -462,7 +462,7 @@ class LoteStatsView(LotePermissionMixin, APIView):
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error obteniendo estadÃ­sticas de lote {lote_id}: {e}")
+            logger.error(f"Error obteniendo estadísticas de lote {lote_id}: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
@@ -471,12 +471,12 @@ class LoteStatsView(LotePermissionMixin, APIView):
 
 class LotesPorFincaView(LotePermissionMixin, APIView):
     """
-    Vista para obtener lotes de una finca especÃ­fica.
+    Vista para obtener lotes de una finca específica.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene todos los lotes de una finca especÃ­fica",
+        operation_description="Obtiene todos los lotes de una finca específica",
         operation_summary="Lotes por finca",
         responses={
             200: openapi.Response(description="Lotes obtenidos exitosamente"),

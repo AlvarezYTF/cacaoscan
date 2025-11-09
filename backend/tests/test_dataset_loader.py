@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests para el cargador de dataset.
 """
 import pytest
@@ -13,19 +13,19 @@ class TestCacaoDatasetLoader:
     """Tests para CacaoDatasetLoader."""
     
     def setup_method(self):
-        """ConfiguraciÃ³n antes de cada test."""
+        """Configuración antes de cada test."""
         self.loader = CacaoDatasetLoader()
     
     def test_init(self):
-        """Test de inicializaciÃ³n."""
+        """Test de inicialización."""
         assert self.loader.csv_path is not None
         assert self.loader.raw_images_dir is not None
         assert self.loader.missing_log_path is not None
     
     @patch('ml.data.dataset_loader.pd.read_csv')
     def test_load_dataset_valid_csv(self, mock_read_csv):
-        """Test de carga de dataset vÃ¡lido."""
-        # Mock de datos vÃ¡lidos
+        """Test de carga de dataset válido."""
+        # Mock de datos válidos
         mock_data = pd.DataFrame({
             'ID': [1, 2, 3],
             'ALTO': [10.5, 11.2, 9.8],
@@ -84,7 +84,7 @@ class TestCacaoDatasetLoader:
     
     @patch('ml.data.dataset_loader.write_log')
     def test_validate_images_exist(self, mock_write_log):
-        """Test de validaciÃ³n de imÃ¡genes."""
+        """Test de validación de imágenes."""
         # Mock de DataFrame
         df = pd.DataFrame({
             'ID': [1, 2, 3],
@@ -112,7 +112,7 @@ class TestCacaoDatasetLoader:
         mock_write_log.assert_called_once()
     
     def test_get_valid_records(self):
-        """Test de obtenciÃ³n de registros vÃ¡lidos."""
+        """Test de obtención de registros válidos."""
         with patch.object(self.loader, 'load_dataset') as mock_load, \
              patch.object(self.loader, 'validate_images_exist') as mock_validate, \
              patch('ml.data.dataset_loader.get_file_timestamp') as mock_timestamp:

@@ -174,13 +174,13 @@ class Command(BaseCommand):
                 if models_exist:
                     self.stdout.write(
                         self.style.WARNING(
-                            "⚠️  Modelos entrenados encontrados, pero se fuerza el reentrenamiento (--force activado)"
+                            "[WARN]  Modelos entrenados encontrados, pero se fuerza el reentrenamiento (--force activado)"
                         )
                     )
             
             self.stdout.write(
                 self.style.WARNING(
-                    "⚠️  Modelos entrenados no encontrados. Iniciando entrenamiento..."
+                    "[WARN]  Modelos entrenados no encontrados. Iniciando entrenamiento..."
                 )
             )
             
@@ -440,7 +440,7 @@ class Command(BaseCommand):
                     if not redis_started:
                         self.stdout.write(
                             self.style.WARNING(
-                                "\n❌ No se pudo iniciar Redis automáticamente."
+                                "\n[ERROR] No se pudo iniciar Redis automáticamente."
                             )
                         )
                         self.stdout.write(
@@ -470,7 +470,7 @@ class Command(BaseCommand):
                     else:
                         self.stdout.write(
                             self.style.WARNING(
-                                "\n❌ Redis no está disponible después de intentar iniciarlo."
+                                "\n[ERROR] Redis no está disponible después de intentar iniciarlo."
                             )
                         )
                         self.stdout.write(
@@ -534,7 +534,7 @@ class Command(BaseCommand):
                 if not self._check_redis_available():
                     self.stdout.write(
                         self.style.WARNING(
-                            "\n❌ Redis no está disponible. Cambiando a entrenamiento directo..."
+                            "\n[ERROR] Redis no está disponible. Cambiando a entrenamiento directo..."
                         )
                     )
                     # Cambiar a modo directo

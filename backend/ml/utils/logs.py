@@ -1,4 +1,4 @@
-﻿"""
+"""
 Utilidades para logging del proyecto ML.
 """
 import logging
@@ -69,7 +69,7 @@ def log_processing_stats(
     failed_items: int,
     processing_time: float
 ) -> None:
-    """Log de estadÃ­sticas de procesamiento."""
+    """Log de estadísticas de procesamiento."""
     success_rate = (successful_items / processed_items * 100) if processed_items > 0 else 0
     avg_time = processing_time / processed_items if processed_items > 0 else 0
     
@@ -78,7 +78,7 @@ def log_processing_stats(
     logger.info(f"  Procesados: {processed_items}")
     logger.info(f"  Exitosos: {successful_items}")
     logger.info(f"  Fallidos: {failed_items}")
-    logger.info(f"  Tasa de Ã©xito: {success_rate:.2f}%")
+    logger.info(f"  Tasa de éxito: {success_rate:.2f}%")
     logger.info(f"  Tiempo promedio por item: {avg_time:.3f}s")
     logger.info(f"  Tiempo total: {processing_time:.2f}s")
 

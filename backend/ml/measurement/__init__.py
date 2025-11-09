@@ -1,5 +1,5 @@
-﻿"""
-MÃ³dulo de mediciÃ³n y calibraciÃ³n para CacaoScan.
+"""
+Módulo de medición y calibración para CacaoScan.
 """
 
 from .calibration import (

@@ -1,5 +1,5 @@
-﻿"""
-Vistas para gestiÃ³n de reportes avanzados en CacaoScan.
+"""
+Vistas para gestión de reportes avanzados en CacaoScan.
 """
 import logging
 import io
@@ -80,8 +80,8 @@ class ReporteListCreateView(APIView):
             openapi.Parameter('tipo_reporte', openapi.IN_QUERY, description="Filtrar por tipo de reporte", type=openapi.TYPE_STRING),
             openapi.Parameter('formato', openapi.IN_QUERY, description="Filtrar por formato", type=openapi.TYPE_STRING),
             openapi.Parameter('estado', openapi.IN_QUERY, description="Filtrar por estado", type=openapi.TYPE_STRING),
-            openapi.Parameter('page', openapi.IN_QUERY, description="NÃºmero de pÃ¡gina", type=openapi.TYPE_INTEGER),
-            openapi.Parameter('page_size', openapi.IN_QUERY, description="TamaÃ±o de pÃ¡gina", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page', openapi.IN_QUERY, description="Número de página", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page_size', openapi.IN_QUERY, description="Tamaño de página", type=openapi.TYPE_INTEGER),
         ],
         responses={
             200: openapi.Response(description="Lista de reportes obtenida exitosamente"),
@@ -107,7 +107,7 @@ class ReporteListCreateView(APIView):
             if estado:
                 queryset = queryset.filter(estado=estado)
             
-            # PaginaciÃ³n
+            # Paginación
             page = int(request.GET.get('page', 1))
             page_size = int(request.GET.get('page_size', 20))
             
@@ -162,9 +162,9 @@ class ReporteListCreateView(APIView):
             properties={
                 'tipo_reporte': openapi.Schema(type=openapi.TYPE_STRING, description="Tipo de reporte"),
                 'formato': openapi.Schema(type=openapi.TYPE_STRING, description="Formato del reporte"),
-                'titulo': openapi.Schema(type=openapi.TYPE_STRING, description="TÃ­tulo del reporte"),
-                'descripcion': openapi.Schema(type=openapi.TYPE_STRING, description="DescripciÃ³n del reporte"),
-                'parametros': openapi.Schema(type=openapi.TYPE_OBJECT, description="ParÃ¡metros del reporte"),
+                'titulo': openapi.Schema(type=openapi.TYPE_STRING, description="Título del reporte"),
+                'descripcion': openapi.Schema(type=openapi.TYPE_STRING, description="Descripción del reporte"),
+                'parametros': openapi.Schema(type=openapi.TYPE_OBJECT, description="Parámetros del reporte"),
                 'filtros': openapi.Schema(type=openapi.TYPE_OBJECT, description="Filtros a aplicar"),
             },
             required=['tipo_reporte', 'formato', 'titulo']
@@ -194,7 +194,7 @@ class ReporteListCreateView(APIView):
             valid_types = [choice[0] for choice in ReporteGenerado.TIPO_REPORTE_CHOICES]
             if tipo_reporte not in valid_types:
                 return Response({
-                    'error': f'Tipo de reporte invÃ¡lido. Opciones vÃ¡lidas: {", ".join(valid_types)}',
+                    'error': f'Tipo de reporte inválido. Opciones válidas: {", ".join(valid_types)}',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -202,7 +202,7 @@ class ReporteListCreateView(APIView):
             valid_formats = [choice[0] for choice in ReporteGenerado.FORMATO_CHOICES]
             if formato not in valid_formats:
                 return Response({
-                    'error': f'Formato invÃ¡lido. Opciones vÃ¡lidas: {", ".join(valid_formats)}',
+                    'error': f'Formato inválido. Opciones válidas: {", ".join(valid_formats)}',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -229,7 +229,7 @@ class ReporteListCreateView(APIView):
                 'titulo': reporte.titulo,
                 'estado': reporte.estado,
                 'fecha_solicitud': reporte.fecha_solicitud.isoformat(),
-                'message': 'Reporte creado exitosamente. Se generarÃ¡ en segundo plano.',
+                'message': 'Reporte creado exitosamente. Se generará en segundo plano.',
                 'status': 'success'
             }, status=status.HTTP_201_CREATED)
             
@@ -241,11 +241,11 @@ class ReporteListCreateView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def _generate_report_async(self, reporte):
-        """Generar reporte de forma asÃ­ncrona (simulado)."""
+        """Generar reporte de forma asíncrona (simulado)."""
         try:
             start_time = timezone.now()
             
-            # Generar segÃºn tipo y formato
+            # Generar según tipo y formato
             if reporte.formato == 'pdf':
                 generator = CacaoReportPDFGenerator()
             elif reporte.formato == 'excel':
@@ -253,7 +253,7 @@ class ReporteListCreateView(APIView):
             else:
                 raise ValueError(f"Formato no soportado: {reporte.formato}")
             
-            # Generar contenido segÃºn tipo
+            # Generar contenido según tipo
             if reporte.tipo_reporte == 'calidad':
                 content = generator.generate_quality_report(request.user, reporte.filtros_aplicados)
             elif reporte.tipo_reporte == 'finca':
@@ -277,7 +277,7 @@ class ReporteListCreateView(APIView):
             filename = f"{reporte.titulo}_{reporte.id}.{reporte.formato}"
             file_content = ContentFile(content)
             
-            # Calcular tiempo de generaciÃ³n
+            # Calcular tiempo de generación
             end_time = timezone.now()
             tiempo_generacion = end_time - start_time
             
@@ -293,12 +293,12 @@ class ReporteListCreateView(APIView):
 
 class ReporteDetailView(APIView):
     """
-    Vista para obtener detalles de un reporte especÃ­fico.
+    Vista para obtener detalles de un reporte específico.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene los detalles de un reporte especÃ­fico",
+        operation_description="Obtiene los detalles de un reporte específico",
         operation_summary="Detalles de reporte",
         responses={
             200: openapi.Response(description="Detalles de reporte obtenidos exitosamente"),
@@ -372,21 +372,21 @@ class ReporteDownloadView(APIView):
             # Verificar estado
             if reporte.estado != 'completado':
                 return Response({
-                    'error': 'El reporte aÃºn no estÃ¡ listo para descarga',
+                    'error': 'El reporte aún no está listo para descarga',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Verificar si estÃ¡ expirado
+            # Verificar si está expirado
             if reporte.esta_expirado:
                 return Response({
-                    'error': 'El reporte ha expirado y ya no estÃ¡ disponible',
+                    'error': 'El reporte ha expirado y ya no está disponible',
                     'status': 'error'
                 }, status=status.HTTP_410_GONE)
             
             # Verificar que existe el archivo
             if not reporte.archivo:
                 return Response({
-                    'error': 'El archivo del reporte no estÃ¡ disponible',
+                    'error': 'El archivo del reporte no está disponible',
                     'status': 'error'
                 }, status=status.HTTP_404_NOT_FOUND)
             
@@ -397,7 +397,7 @@ class ReporteDownloadView(APIView):
                 filename=reporte.nombre_archivo or f"{reporte.titulo}.{reporte.formato}"
             )
             
-            # Configurar headers segÃºn formato
+            # Configurar headers según formato
             if reporte.formato == 'pdf':
                 response['Content-Type'] = 'application/pdf'
             elif reporte.formato == 'excel':
@@ -431,7 +431,7 @@ class ReporteDeleteView(APIView):
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Elimina un reporte especÃ­fico",
+        operation_description="Elimina un reporte específico",
         operation_summary="Eliminar reporte",
         responses={
             204: "Reporte eliminado exitosamente",
@@ -445,12 +445,12 @@ class ReporteDeleteView(APIView):
         try:
             reporte = ReporteGenerado.objects.get(id=reporte_id, usuario=request.user)
             
-            # Eliminar archivo fÃ­sico si existe
+            # Eliminar archivo físico si existe
             if reporte.archivo:
                 try:
                     reporte.archivo.delete(save=False)
                 except Exception as e:
-                    logger.warning(f"No se pudo eliminar archivo fÃ­sico del reporte {reporte_id}: {e}")
+                    logger.warning(f"No se pudo eliminar archivo físico del reporte {reporte_id}: {e}")
             
             # Eliminar registro
             reporte.delete()
@@ -474,23 +474,23 @@ class ReporteDeleteView(APIView):
 
 class ReporteStatsView(APIView):
     """
-    Vista para obtener estadÃ­sticas de reportes del usuario.
+    Vista para obtener estadísticas de reportes del usuario.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene estadÃ­sticas de reportes del usuario",
-        operation_summary="EstadÃ­sticas de reportes",
+        operation_description="Obtiene estadísticas de reportes del usuario",
+        operation_summary="Estadísticas de reportes",
         responses={
-            200: openapi.Response(description="EstadÃ­sticas obtenidas exitosamente"),
+            200: openapi.Response(description="Estadísticas obtenidas exitosamente"),
             401: ErrorResponseSerializer,
         },
         tags=['Reportes']
     )
     def get(self, request):
-        """Obtener estadÃ­sticas de reportes."""
+        """Obtener estadísticas de reportes."""
         try:
-            # EstadÃ­sticas bÃ¡sicas
+            # Estadísticas básicas
             total_reportes = ReporteGenerado.objects.filter(usuario=request.user).count()
             reportes_completados = ReporteGenerado.objects.filter(usuario=request.user, estado='completado').count()
             reportes_generando = ReporteGenerado.objects.filter(usuario=request.user, estado='generando').count()
@@ -512,7 +512,7 @@ class ReporteStatsView(APIView):
                 .values_list('formato', 'count')
             )
             
-            # Reportes recientes (Ãºltimos 5)
+            # Reportes recientes (últimos 5)
             reportes_recientes = ReporteGenerado.objects.filter(usuario=request.user).order_by('-fecha_solicitud')[:5]
             reportes_recientes_data = []
             for reporte in reportes_recientes:
@@ -538,8 +538,8 @@ class ReporteStatsView(APIView):
             return Response(stats, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.warning(f"[WARNING] Error obteniendo estadísticas de reportes: {e}")
-            # Retornar datos vacíos en lugar de 500
+            logger.warning(f"[WARNING] Error obteniendo estadsticas de reportes: {e}")
+            # Retornar datos vacos en lugar de 500
             return Response({
                 'total_reportes': 0,
                 'reportes_completados': 0,
@@ -576,7 +576,7 @@ class ReporteCleanupView(APIView):
         try:
             if not self._is_admin_user(request.user):
                 return Response({
-                    'error': 'No tienes permisos para realizar esta acciÃ³n',
+                    'error': 'No tienes permisos para realizar esta acción',
                     'status': 'error'
                 }, status=status.HTTP_403_FORBIDDEN)
             
@@ -601,15 +601,15 @@ class ReporteCleanupView(APIView):
 
 class ReporteAgricultoresView(APIView):
     """
-    Genera un archivo Excel con la información de agricultores y sus fincas.
-    Requiere autenticación JWT y permisos de administrador.
+    Genera un archivo Excel con la informacin de agricultores y sus fincas.
+    Requiere autenticacin JWT y permisos de administrador.
     """
     permission_classes = [IsAuthenticated, IsAdminUser]
     renderer_classes = [ExcelRenderer]
     
     def get(self, request, *args, **kwargs):
         """
-        Genera y descarga un archivo Excel con información de todos los agricultores y sus fincas.
+        Genera y descarga un archivo Excel con informacin de todos los agricultores y sus fincas.
         """
         from io import BytesIO
         from openpyxl import Workbook
@@ -620,9 +620,9 @@ class ReporteAgricultoresView(APIView):
         try:
             logger.info("[INFO] Generando reporte de agricultores para %s", request.user.username)
             
-            # Validar que el modelo Finca esté disponible
+            # Validar que el modelo Finca est disponible
             if Finca is None:
-                raise ImportError("El modelo Finca no está disponible")
+                raise ImportError("El modelo Finca no est disponible")
             
             # Importar estilos de openpyxl
             from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
@@ -645,7 +645,7 @@ class ReporteAgricultoresView(APIView):
                 bottom=Side(style='thin')
             )
             
-            # Título principal (Fila 1)
+            # Ttulo principal (Fila 1)
             ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=9)
             title_cell = ws.cell(row=1, column=1, value="Reporte de Agricultores y Fincas - CacaoScan")
             title_cell.font = Font(name="Calibri", size=16, bold=True, color="FFFFFF")
@@ -653,7 +653,7 @@ class ReporteAgricultoresView(APIView):
             title_cell.alignment = Alignment(horizontal="center", vertical="center")
             ws.row_dimensions[1].height = 30
             
-            # Fila de separación vacía (Fila 2)
+            # Fila de separacin vaca (Fila 2)
             ws.row_dimensions[2].height = 10
             
             # Encabezados del Excel (Fila 3)
@@ -698,18 +698,18 @@ class ReporteAgricultoresView(APIView):
                 raise
             
             # Procesar agricultores y agregar datos al Excel
-            # Los datos empiezan en la fila 4 (después del título, separación y encabezados)
+            # Los datos empiezan en la fila 4 (despus del ttulo, separacin y encabezados)
             data_start_row = 4
             current_row = data_start_row
             rows_added = 0
             
             for agricultor in agricultores_list:
                 try:
-                    # Información básica del agricultor
+                    # Informacin bsica del agricultor
                     nombre = agricultor.get_full_name() or agricultor.username or f"Usuario {agricultor.id}"
                     email = agricultor.email or ""
                     
-                    # Obtener teléfono de forma segura
+                    # Obtener telfono de forma segura
                     telefono = ""
                     try:
                         persona = getattr(agricultor, 'persona', None)
@@ -718,7 +718,7 @@ class ReporteAgricultoresView(APIView):
                         elif hasattr(agricultor, 'auth_profile') and agricultor.auth_profile:
                             telefono = str(agricultor.auth_profile.phone_number) if agricultor.auth_profile.phone_number else ""
                     except Exception:
-                        pass  # Ignorar errores de teléfono (no crítico)
+                        pass  # Ignorar errores de telfono (no crtico)
                     
                     # Obtener fincas del agricultor
                     fincas_list = []
@@ -739,7 +739,7 @@ class ReporteAgricultoresView(APIView):
                                 municipio = str(finca.municipio) if finca.municipio else ""
                                 finca_nombre = str(finca.nombre) if finca.nombre else "Sin nombre"
                                 
-                                # Convertir hectáreas
+                                # Convertir hectreas
                                 hectareas_val = 0.0
                                 try:
                                     if finca.hectareas is not None:
@@ -770,7 +770,7 @@ class ReporteAgricultoresView(APIView):
                                     cell.alignment = Alignment(horizontal="left", vertical="center")
                                     cell.border = thin_border
                                     
-                                    # Números (hectáreas) alineados a la derecha
+                                    # Nmeros (hectreas) alineados a la derecha
                                     if col_idx == 7 and isinstance(value, (int, float)):
                                         cell.alignment = Alignment(horizontal="right", vertical="center")
                                 
@@ -792,7 +792,7 @@ class ReporteAgricultoresView(APIView):
                         
                         row_data = [
                             nombre, email, telefono,
-                            "", "", "", "", "",  # Departamento, Municipio, Finca, Hectáreas, Estado
+                            "", "", "", "", "",  # Departamento, Municipio, Finca, Hectreas, Estado
                             fecha_registro_str
                         ]
                         
@@ -812,10 +812,10 @@ class ReporteAgricultoresView(APIView):
             
             logger.info("[INFO] Procesados %d filas de datos", rows_added)
             
-            # Agregar pie de página
-            footer_start_row = current_row + 2  # 2 filas vacías después de los datos
+            # Agregar pie de pgina
+            footer_start_row = current_row + 2  # 2 filas vacas despus de los datos
             
-            # Fila vacía 1
+            # Fila vaca 1
             ws.row_dimensions[footer_start_row - 1].height = 10
             
             # Generado por (fila siguiente)
@@ -824,7 +824,7 @@ class ReporteAgricultoresView(APIView):
             generated_cell.font = Font(name="Calibri", size=10, color=COLOR_GRIS_SUAVE)
             generated_cell.alignment = Alignment(horizontal="center", vertical="center")
             
-            # Fecha de generación (fila siguiente) - formato dd/mm/yyyy hh:mm:ss AM/PM (hora local)
+            # Fecha de generacin (fila siguiente) - formato dd/mm/yyyy hh:mm:ss AM/PM (hora local)
             from datetime import datetime
             now = datetime.now()  # Usar hora local en lugar de UTC
             fecha_generacion = now.strftime('%d/%m/%Y %I:%M:%S %p')  # Formato 12 horas con AM/PM incluyendo segundos
@@ -833,7 +833,7 @@ class ReporteAgricultoresView(APIView):
             fecha_cell.font = Font(name="Calibri", size=10, color=COLOR_GRIS_SUAVE)
             fecha_cell.alignment = Alignment(horizontal="center", vertical="center")
             
-            # Ajustar ancho de columnas automáticamente
+            # Ajustar ancho de columnas automticamente
             column_widths = {
                 'A': 25,  # Agricultor
                 'B': 30,  # Email
@@ -860,10 +860,10 @@ class ReporteAgricultoresView(APIView):
             # Validar contenido generado
             if not excel_content or len(excel_content) < 50:
                 output.close()
-                logger.error("[ERROR] El archivo Excel generado está vacío o demasiado pequeño: %d bytes", 
+                logger.error("[ERROR] El archivo Excel generado est vaco o demasiado pequeo: %d bytes", 
                            len(excel_content) if excel_content else 0)
                 return HttpResponse(
-                    "Error interno al generar el reporte Excel: contenido inválido",
+                    "Error interno al generar el reporte Excel: contenido invlido",
                     status=500,
                     content_type='text/plain'
                 )
@@ -886,7 +886,7 @@ class ReporteAgricultoresView(APIView):
             # Cerrar el buffer correctamente
             output.close()
             
-            # Retornar HttpResponse directamente - DRF lo detectará y no intentará serializarlo
+            # Retornar HttpResponse directamente - DRF lo detectar y no intentar serializarlo
             return response
             
         except Exception as e:
@@ -910,7 +910,7 @@ class ReporteUsuariosView(APIView):
     renderer_classes = []
     
     @swagger_auto_schema(
-        operation_description="Genera y descarga un archivo Excel con informaciÃ³n de todos los usuarios del sistema",
+        operation_description="Genera y descarga un archivo Excel con información de todos los usuarios del sistema",
         operation_summary="Reporte de usuarios (Excel)",
         responses={
             200: openapi.Response(description="Archivo Excel generado exitosamente"),
@@ -925,11 +925,11 @@ class ReporteUsuariosView(APIView):
             generator = CacaoReportExcelGenerator()
             excel_content = generator.generate_users_report()
             
-            # Validar que el contenido no estÃ© vacÃ­o
+            # Validar que el contenido no esté vacío
             if not excel_content or len(excel_content) < 100:
-                logger.error("El contenido del reporte Excel estÃ¡ vacÃ­o o corrupto")
+                logger.error("El contenido del reporte Excel está vacío o corrupto")
                 return HttpResponse(
-                    json.dumps({'error': 'Error al generar el reporte Excel: contenido vacÃ­o'}),
+                    json.dumps({'error': 'Error al generar el reporte Excel: contenido vacío'}),
                     content_type='application/json',
                     status=500
                 )
@@ -948,7 +948,7 @@ class ReporteUsuariosView(APIView):
             response['Content-Disposition'] = f'attachment; filename="{escape_uri_path(filename)}"'
             response['Content-Length'] = len(excel_content)
             
-            logger.info(f"Reporte de usuarios generado por {request.user.username} - TamaÃ±o: {len(excel_content)} bytes")
+            logger.info(f"Reporte de usuarios generado por {request.user.username} - Tamaño: {len(excel_content)} bytes")
             
             return response
             

@@ -1,9 +1,9 @@
-﻿"""
+"""
 Vistas para la app personas.
 
-INTEGRACIÃ“N:
-- Los catÃ¡logos estÃ¡n disponibles en /api/temas/ y /api/parametros/
-- Las ubicaciones estÃ¡n disponibles en /api/departamentos/ y /api/municipios/
+INTEGRACI"N:
+- Los catálogos están disponibles en /api/temas/ y /api/parametros/
+- Las ubicaciones están disponibles en /api/departamentos/ y /api/municipios/
 """
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -23,8 +23,8 @@ from .models import Persona
 class PersonaRegistroView(APIView):
     """
     Endpoint para registro de usuario y persona.
-    - Si el usuario estÃ¡ autenticado y es admin/staff: crea el usuario directamente sin verificaciÃ³n
-    - Si no estÃ¡ autenticado o no es admin: inicia flujo de verificaciÃ³n por OTP
+    - Si el usuario está autenticado y es admin/staff: crea el usuario directamente sin verificación
+    - Si no está autenticado o no es admin: inicia flujo de verificación por OTP
     """
     permission_classes = [AllowAny]
 
@@ -35,7 +35,7 @@ class PersonaRegistroView(APIView):
         return user.is_superuser or user.is_staff
 
     def post(self, request):
-        """Dispara envÃ­o de OTP guardando el formulario en temp_data sin reenviar la request."""
+        """Dispara envío de OTP guardando el formulario en temp_data sin reenviar la request."""
         try:
             email = request.data.get('email')
             if not email:
@@ -45,9 +45,9 @@ class PersonaRegistroView(APIView):
             from django.contrib.auth import get_user_model
             User = get_user_model()
             if User.objects.filter(email=email).exists():
-                return Response({'detail': 'El email ya estÃ¡ registrado.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'detail': 'El email ya está registrado.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Si el usuario es admin, crear directamente sin verificaciÃ³n
+            # Si el usuario es admin, crear directamente sin verificación
             if self._is_admin(request.user):
                 import logging
                 logger = logging.getLogger(__name__)
@@ -61,8 +61,8 @@ class PersonaRegistroView(APIView):
                 if not serializer.is_valid():
                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-                # Crear usuario y persona directamente (sin verificaciÃ³n de email)
-                # El serializer ya maneja la activaciÃ³n y verificaciÃ³n cuando skip_email_verification=True
+                # Crear usuario y persona directamente (sin verificación de email)
+                # El serializer ya maneja la activación y verificación cuando skip_email_verification=True
                 persona = serializer.save()
 
                 logger.info(f"Usuario {email} creado exitosamente por admin {request.user.username}")
@@ -75,14 +75,14 @@ class PersonaRegistroView(APIView):
                 }, status=status.HTTP_201_CREATED)
 
             # Si no es admin, seguir flujo OTP normal
-            # Rate limit y creaciÃ³n/actualizaciÃ³n del pending
+            # Rate limit y creación/actualización del pending
             from auth_app.models import PendingEmailVerification
             existing = PendingEmailVerification.objects.filter(email=email).first()
             if existing:
                 elapsed = (timezone.now() - existing.last_sent).total_seconds()
                 if elapsed < 60:
                     return Response({
-                        'detail': f'Espera {int(60 - elapsed)} segundos antes de reenviar el cÃ³digo.'
+                        'detail': f'Espera {int(60 - elapsed)} segundos antes de reenviar el código.'
                     }, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
             code = PendingEmailVerification.generate_code()
@@ -95,29 +95,29 @@ class PersonaRegistroView(APIView):
             from api.email_service import email_service
             email_service.send_email(
                 to_emails=[email],
-                subject='VerificaciÃ³n de cuenta CacaoScan',
+                subject='Verificación de cuenta CacaoScan',
                 html_content=f"""
                 <html>
                 <body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333;\">
                     <div style=\"max-width: 600px; margin: 0 auto; padding: 20px;\">
-                        <h2 style=\"color: #22c55e;\">VerificaciÃ³n de cuenta CacaoScan</h2>
-                        <p>Hola ðŸ‘‹,</p>
-                        <p>Tu cÃ³digo de verificaciÃ³n es:</p>
+                        <h2 style=\"color: #22c55e;\">Verificación de cuenta CacaoScan</h2>
+                        <p>Hola ',</p>
+                        <p>Tu código de verificación es:</p>
                         <div style=\"background-color: #f3f4f6; border: 2px solid #22c55e; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;\">
                             <h1 style=\"color: #22c55e; font-size: 32px; margin: 0; letter-spacing: 5px;\">{code}</h1>
                         </div>
-                        <p>Este cÃ³digo expirarÃ¡ en <strong>10 minutos</strong>.</p>
-                        <p style=\"color: #6b7280; font-size: 14px;\">Si no solicitaste este cÃ³digo, puedes ignorar este email.</p>
+                        <p>Este código expirará en <strong>10 minutos</strong>.</p>
+                        <p style=\"color: #6b7280; font-size: 14px;\">Si no solicitaste este código, puedes ignorar este email.</p>
                         <hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;\">
-                        <p style=\"color: #6b7280; font-size: 12px;\">Â© {timezone.now().year} CacaoScan - Sistema de anÃ¡lisis de cacao</p>
+                        <p style=\"color: #6b7280; font-size: 12px;\">é {timezone.now().year} CacaoScan - Sistema de análisis de cacao</p>
                     </div>
                 </body>
                 </html>
                 """,
-                text_content=f"Hola, tu cÃ³digo de verificaciÃ³n es: {code}. Este cÃ³digo expirarÃ¡ en 10 minutos."
+                text_content=f"Hola, tu código de verificación es: {code}. Este código expirará en 10 minutos."
             )
 
-            return Response({'message': 'CÃ³digo enviado con Ã©xito al correo.', 'email': email}, status=status.HTTP_202_ACCEPTED)
+            return Response({'message': 'Código enviado con éxito al correo.', 'email': email}, status=status.HTTP_202_ACCEPTED)
 
         except Exception as e:
             import logging
@@ -142,10 +142,10 @@ class PersonaListaView(APIView):
 
 
 class PersonaDetalleView(APIView):
-    """Vista para obtener, actualizar o eliminar una persona especÃ­fica."""
+    """Vista para obtener, actualizar o eliminar una persona específica."""
     
     def get(self, request, persona_id):
-        """Obtener una persona especÃ­fica."""
+        """Obtener una persona específica."""
         try:
             persona = Persona.objects.select_related(
                 'tipo_documento__tema',
@@ -165,7 +165,7 @@ class PersonaDetalleView(APIView):
 class PersonaPerfilView(APIView):
     """
     Vista para obtener y actualizar los datos del perfil del usuario autenticado.
-    El email no se puede modificar desde aquÃ­.
+    El email no se puede modificar desde aquí.
     """
     permission_classes = [IsAuthenticated]
     
@@ -183,13 +183,13 @@ class PersonaPerfilView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Persona.DoesNotExist:
             return Response(
-                {'error': 'No se encontrÃ³ informaciÃ³n de perfil para este usuario'},
+                {'error': 'No se encontró información de perfil para este usuario'},
                 status=status.HTTP_404_NOT_FOUND
             )
     
 
 class AdminPersonaByUserView(APIView):
-    """Permite a un administrador obtener/crear/actualizar la persona de un usuario especÃ­fico."""
+    """Permite a un administrador obtener/crear/actualizar la persona de un usuario específico."""
     permission_classes = [IsAuthenticated]
 
     def _is_admin(self, user):
@@ -238,7 +238,7 @@ class AdminPersonaByUserView(APIView):
     def post(self, request):
         """
         Crear perfil de persona para un usuario existente.
-        Ãštil para usuarios creados antes de la implementaciÃ³n del mÃ³dulo de personas.
+        Útil para usuarios creados antes de la implementación del módulo de personas.
         """
         import logging
         logger = logging.getLogger(__name__)
@@ -250,9 +250,9 @@ class AdminPersonaByUserView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        logger.info(f"ðŸ“ Creando perfil de persona para usuario: {request.user.email}")
+        logger.info(f"[INFO] Creando perfil de persona para usuario: {request.user.email}")
         
-        # Crear persona usando el serializer de actualizaciÃ³n
+        # Crear persona usando el serializer de actualización
         serializer = PersonaActualizacionSerializer(
             data=request.data,
             context={'persona': None}
@@ -265,7 +265,7 @@ class AdminPersonaByUserView(APIView):
                 # Crear la persona
                 persona = Persona(user=request.user)
                 
-                # Asignar catÃ¡logos
+                # Asignar catálogos
                 if 'tipo_documento_obj' in validated_data:
                     persona.tipo_documento = validated_data['tipo_documento_obj']
                 if 'genero_obj' in validated_data:
@@ -287,7 +287,7 @@ class AdminPersonaByUserView(APIView):
                         setattr(persona, field, validated_data[field])
                 
                 persona.save()
-                logger.info(f"âœ… Perfil de persona creado exitosamente: {persona.id}")
+                logger.info(f"[OK] Perfil de persona creado exitosamente: {persona.id}")
                 
                 # Devolver los datos creados
                 response_serializer = PersonaSerializer(persona)
@@ -299,13 +299,13 @@ class AdminPersonaByUserView(APIView):
                     status=status.HTTP_201_CREATED
                 )
             except Exception as e:
-                logger.error(f"âŒ Error al crear perfil: {str(e)}")
+                logger.error(f"[ERROR] Error al crear perfil: {str(e)}")
                 return Response(
                     {'error': f'Error al crear el perfil: {str(e)}'},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
         
-        logger.warning(f"âš ï¸ Errores de validaciÃ³n: {serializer.errors}")
+        logger.warning(f"[WARN] Errores de validacin: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def patch(self, request):
@@ -325,7 +325,7 @@ class AdminPersonaByUserView(APIView):
                 'user'
             ).get(user=request.user)
             
-            logger.info(f"ðŸ“ Datos recibidos para actualizaciÃ³n: {request.data}")
+            logger.info(f"[INFO] Datos recibidos para actualizacin: {request.data}")
             
             serializer = PersonaActualizacionSerializer(
                 instance=persona,
@@ -337,7 +337,7 @@ class AdminPersonaByUserView(APIView):
             if serializer.is_valid():
                 try:
                     serializer.save()
-                    logger.info(f"âœ… Perfil actualizado exitosamente: {persona.id}")
+                    logger.info(f"[OK] Perfil actualizado exitosamente: {persona.id}")
                     
                     # Devolver los datos actualizados
                     response_serializer = PersonaSerializer(persona)
@@ -349,18 +349,18 @@ class AdminPersonaByUserView(APIView):
                         status=status.HTTP_200_OK
                     )
                 except Exception as e:
-                    logger.error(f"âŒ Error al actualizar perfil: {str(e)}")
+                    logger.error(f"[ERROR] Error al actualizar perfil: {str(e)}")
                     return Response(
                         {'error': f'Error al actualizar el perfil: {str(e)}'},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR
                     )
             
-            logger.warning(f"âš ï¸ Errores de validaciÃ³n: {serializer.errors}")
+            logger.warning(f"[WARN] Errores de validacin: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
         except Persona.DoesNotExist:
             return Response(
-                {'error': 'No se encontrÃ³ informaciÃ³n de perfil para este usuario. Usa POST para crear uno.'},
+                {'error': 'No se encontró información de perfil para este usuario. Usa POST para crear uno.'},
                 status=status.HTTP_404_NOT_FOUND
             )
 

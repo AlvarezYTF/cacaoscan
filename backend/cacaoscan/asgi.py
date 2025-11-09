@@ -1,4 +1,4 @@
-﻿"""
+"""
 ASGI config for cacaoscan project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
@@ -17,7 +17,7 @@ from channels.security.websocket import AllowedHostsOriginValidator
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cacaoscan.settings')
 django_asgi_app = get_asgi_application()
 
-# Importar routing despuÃ©s de configurar Django
+# Importar routing después de configurar Django
 from api.routing import websocket_urlpatterns
 
 application = ProtocolTypeRouter({

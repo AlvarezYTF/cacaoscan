@@ -85,7 +85,7 @@ def _clean_components(mask: np.ndarray, min_area_ratio: float = 0.002) -> np.nda
     out = np.zeros_like(mask)
     if not cnts:
         return mask
-    cnts = [c for c in cnts if cv2.contourArea(c) >= min_area]
+    cnts = [c for c in cnts if cv2.contourAreaé >= min_area]
     if not cnts:
         return mask
     largest = max(cnts, key=cv2.contourArea)

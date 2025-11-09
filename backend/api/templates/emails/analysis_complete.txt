@@ -7,9 +7,9 @@ El análisis de tus granos de cacao ha sido completado exitosamente. Aquí tiene
 {% if confidence_level == 'high' %}
 ✅ Alta Calidad - Confianza: {{ confidence }}%
 {% elif confidence_level == 'medium' %}
-⚠️ Calidad Estándar - Confianza: {{ confidence }}%
+[WARN] Calidad Estándar - Confianza: {{ confidence }}%
 {% else %}
-⚠️ Calidad Baja - Confianza: {{ confidence }}%
+[WARN] Calidad Baja - Confianza: {{ confidence }}%
 {% endif %}
 
 📊 RESULTADOS DEL ANÁLISIS
@@ -21,7 +21,7 @@ Grosor: {{ grosor_mm }} mm (Confianza: {{ confidence_grosor }}%)
 Peso: {{ peso_g }} g (Confianza: {{ confidence_peso }}%)
 
 {% if defects_detected %}
-⚠️ DEFECTOS DETECTADOS
+[WARN] DEFECTOS DETECTADOS
 ======================
 {% for defect in defects_detected %}
 - {{ defect }}
@@ -49,4 +49,4 @@ La confianza del análisis es baja. Te recomendamos repetir el análisis con una
 
 ---
 Este email fue enviado a {{ user_email }} porque solicitaste un análisis de granos de cacao.
-© {{ current_year }} CacaoScan. Todos los derechos reservados.
+é {{ current_year }} CacaoScan. Todos los derechos reservados.

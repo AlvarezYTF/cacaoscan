@@ -1,5 +1,5 @@
-﻿"""
-Tests para gestiÃ³n de fincas en CacaoScan.
+"""
+Tests para gestión de fincas en CacaoScan.
 """
 import json
 from django.test import TestCase
@@ -26,7 +26,7 @@ class FincaModelTest(TestCase):
         )
     
     def test_finca_creation(self):
-        """Test de creaciÃ³n de finca."""
+        """Test de creación de finca."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             ubicacion='Vereda Test',
@@ -42,7 +42,7 @@ class FincaModelTest(TestCase):
         self.assertIsNotNone(finca.fecha_registro)
     
     def test_finca_str_representation(self):
-        """Test de representaciÃ³n string de finca."""
+        """Test de representación string de finca."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             ubicacion='Vereda Test',
@@ -66,18 +66,18 @@ class FincaModelTest(TestCase):
             agricultor=self.user
         )
         
-        # Test propiedades bÃ¡sicas
+        # Test propiedades básicas
         self.assertEqual(finca.total_lotes, 0)
         self.assertEqual(finca.lotes_activos, 0)
         self.assertEqual(finca.total_analisis, 0)
         self.assertEqual(finca.calidad_promedio, 0)
         
-        # Test ubicaciÃ³n completa
+        # Test ubicación completa
         expected_ubicacion = 'Vereda Test, Test Municipio, Test Departamento'
         self.assertEqual(finca.ubicacion_completa, expected_ubicacion)
     
     def test_finca_estadisticas(self):
-        """Test de mÃ©todo get_estadisticas."""
+        """Test de método get_estadisticas."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             ubicacion='Vereda Test',
@@ -137,7 +137,7 @@ class FincaAPITest(APITestCase):
         }
     
     def test_create_finca_success(self):
-        """Test de creaciÃ³n exitosa de finca."""
+        """Test de creación exitosa de finca."""
         self.client.force_authenticate(user=self.user, token=self.token)
         
         response = self.client.post('/api/fincas/', self.finca_data, format='json')
@@ -150,21 +150,21 @@ class FincaAPITest(APITestCase):
         self.assertEqual(finca.agricultor, self.user)
     
     def test_create_finca_unauthorized(self):
-        """Test de creaciÃ³n de finca sin autenticaciÃ³n."""
+        """Test de creación de finca sin autenticación."""
         response = self.client.post('/api/fincas/', self.finca_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
     def test_create_finca_invalid_data(self):
-        """Test de creaciÃ³n de finca con datos invÃ¡lidos."""
+        """Test de creación de finca con datos inválidos."""
         self.client.force_authenticate(user=self.user, token=self.token)
         
         invalid_data = {
-            'nombre': '',  # Nombre vacÃ­o
+            'nombre': '',  # Nombre vacío
             'ubicacion': 'Vereda Test',
             'municipio': 'Test Municipio',
             'departamento': 'Test Departamento',
-            'hectareas': -1  # HectÃ¡reas negativas
+            'hectareas': -1  # Hectáreas negativas
         }
         
         response = self.client.post('/api/fincas/', invalid_data, format='json')
@@ -239,7 +239,7 @@ class FincaAPITest(APITestCase):
         self.assertEqual(len(response.data['results']), 2)
     
     def test_finca_detail_success(self):
-        """Test de obtenciÃ³n de detalles de finca."""
+        """Test de obtención de detalles de finca."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             ubicacion='Vereda Test',
@@ -257,14 +257,14 @@ class FincaAPITest(APITestCase):
         self.assertIn('estadisticas', response.data)
     
     def test_finca_detail_not_found(self):
-        """Test de obtenciÃ³n de detalles de finca inexistente."""
+        """Test de obtención de detalles de finca inexistente."""
         self.client.force_authenticate(user=self.user, token=self.token)
         response = self.client.get('/api/fincas/999/')
         
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
     def test_finca_update_success(self):
-        """Test de actualizaciÃ³n exitosa de finca."""
+        """Test de actualización exitosa de finca."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             ubicacion='Vereda Test',
@@ -292,7 +292,7 @@ class FincaAPITest(APITestCase):
         self.assertEqual(finca.hectareas, 7.0)
     
     def test_finca_delete_success(self):
-        """Test de eliminaciÃ³n exitosa de finca."""
+        """Test de eliminación exitosa de finca."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             ubicacion='Vereda Test',
@@ -309,7 +309,7 @@ class FincaAPITest(APITestCase):
         self.assertEqual(Finca.objects.count(), 0)
     
     def test_finca_stats_success(self):
-        """Test de obtenciÃ³n de estadÃ­sticas de finca."""
+        """Test de obtención de estadísticas de finca."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             ubicacion='Vereda Test',
@@ -328,7 +328,7 @@ class FincaAPITest(APITestCase):
         self.assertIn('finca_nombre', response.data)
     
     def test_finca_search_filter(self):
-        """Test de bÃºsqueda y filtros en listado de fincas."""
+        """Test de búsqueda y filtros en listado de fincas."""
         Finca.objects.create(
             nombre='Finca Test',
             ubicacion='Vereda Test',
@@ -349,7 +349,7 @@ class FincaAPITest(APITestCase):
         
         self.client.force_authenticate(user=self.user, token=self.token)
         
-        # Test bÃºsqueda por nombre
+        # Test búsqueda por nombre
         response = self.client.get('/api/fincas/?search=Test')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
@@ -365,8 +365,8 @@ class FincaAPITest(APITestCase):
         self.assertEqual(len(response.data['results']), 1)
     
     def test_finca_pagination(self):
-        """Test de paginaciÃ³n en listado de fincas."""
-        # Crear mÃºltiples fincas
+        """Test de paginación en listado de fincas."""
+        # Crear múltiples fincas
         for i in range(25):
             Finca.objects.create(
                 nombre=f'Finca {i}',
@@ -379,7 +379,7 @@ class FincaAPITest(APITestCase):
         
         self.client.force_authenticate(user=self.user, token=self.token)
         
-        # Test primera pÃ¡gina
+        # Test primera página
         response = self.client.get('/api/fincas/?page=1&page_size=10')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 10)
@@ -388,7 +388,7 @@ class FincaAPITest(APITestCase):
         self.assertIsNotNone(response.data['next'])
         self.assertIsNone(response.data['previous'])
         
-        # Test segunda pÃ¡gina
+        # Test segunda página
         response = self.client.get('/api/fincas/?page=2&page_size=10')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 10)

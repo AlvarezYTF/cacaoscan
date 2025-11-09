@@ -1,5 +1,5 @@
-﻿"""
-Servicio de anÃ¡lisis para CacaoScan.
+"""
+Servicio de análisis para CacaoScan.
 """
 import logging
 import time
@@ -26,7 +26,7 @@ logger = logging.getLogger("cacaoscan.services.analysis")
 
 class AnalysisService(BaseService):
     """
-    Servicio para manejar anÃ¡lisis de granos de cacao.
+    Servicio para manejar análisis de granos de cacao.
     """
     
     def __init__(self):
@@ -40,10 +40,10 @@ class AnalysisService(BaseService):
         
         Args:
             image_file: Archivo de imagen subido
-            user: Usuario que realiza el anÃ¡lisis
+            user: Usuario que realiza el análisis
             
         Returns:
-            ServiceResult con resultados del anÃ¡lisis
+            ServiceResult con resultados del análisis
         """
         try:
             # Validar archivo
@@ -71,15 +71,15 @@ class AnalysisService(BaseService):
             
             predictor = predictor_result.data
             
-            # Realizar predicciÃ³n
+            # Realizar predicción
             prediction_start = time.time()
             result = predictor.predict(image)
             prediction_time_ms = int((time.time() - prediction_start) * 1000)
             
-            # Guardar predicciÃ³n
+            # Guardar predicción
             prediction_result = self._save_prediction(cacao_image, result, prediction_time_ms)
             if not prediction_result.success:
-                self.log_warning(f"Error guardando predicciÃ³n: {prediction_result.error.message}")
+                self.log_warning(f"Error guardando predicción: {prediction_result.error.message}")
             
             cacao_prediction = prediction_result.data if prediction_result.success else None
             
@@ -97,7 +97,7 @@ class AnalysisService(BaseService):
                 'saved_to_database': prediction_result.success
             }
             
-            # Crear log de auditorÃ­a
+            # Crear log de auditoría
             self.create_audit_log(
                 user=user,
                 action="analysis_performed",
@@ -111,29 +111,29 @@ class AnalysisService(BaseService):
             )
             
             total_time = time.time() - start_time
-            self.log_info(f"AnÃ¡lisis completado en {total_time:.2f}s para usuario {user.username}")
+            self.log_info(f"Análisis completado en {total_time:.2f}s para usuario {user.username}")
             
             return ServiceResult.success(
                 data=response_data,
-                message="AnÃ¡lisis completado exitosamente"
+                message="Análisis completado exitosamente"
             )
             
         except ValidationServiceError as e:
             return ServiceResult.error(e)
         except Exception as e:
-            self.log_error(f"Error en anÃ¡lisis: {str(e)}")
+            self.log_error(f"Error en análisis: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Error interno durante el anÃ¡lisis", details={"original_error": str(e)})
+                ValidationServiceError("Error interno durante el análisis", details={"original_error": str(e)})
             )
     
     def get_analysis_history(self, user: User, page: int = 1, page_size: int = 20, filters: Dict[str, Any] = None) -> ServiceResult:
         """
-        Obtiene el historial de anÃ¡lisis de un usuario.
+        Obtiene el historial de análisis de un usuario.
         
         Args:
             user: Usuario
-            page: NÃºmero de pÃ¡gina
-            page_size: TamaÃ±o de pÃ¡gina
+            page: Número de página
+            page_size: Tamaño de página
             filters: Filtros adicionales
             
         Returns:
@@ -181,7 +181,7 @@ class AnalysisService(BaseService):
                     'analyses': analyses,
                     'pagination': paginated_data['pagination']
                 },
-                message="Historial de anÃ¡lisis obtenido exitosamente"
+                message="Historial de análisis obtenido exitosamente"
             )
             
         except Exception as e:
@@ -192,14 +192,14 @@ class AnalysisService(BaseService):
     
     def get_analysis_details(self, analysis_id: int, user: User) -> ServiceResult:
         """
-        Obtiene detalles de un anÃ¡lisis especÃ­fico.
+        Obtiene detalles de un análisis específico.
         
         Args:
-            analysis_id: ID del anÃ¡lisis
+            analysis_id: ID del análisis
             user: Usuario
             
         Returns:
-            ServiceResult con detalles del anÃ¡lisis
+            ServiceResult con detalles del análisis
         """
         try:
             try:
@@ -208,7 +208,7 @@ class AnalysisService(BaseService):
                     image__user=user
                 )
             except CacaoPrediction.DoesNotExist:
-                return ServiceResult.not_found_error("AnÃ¡lisis no encontrado")
+                return ServiceResult.not_found_error("Análisis no encontrado")
             
             analysis_data = {
                 'id': prediction.id,
@@ -235,7 +235,7 @@ class AnalysisService(BaseService):
             
             return ServiceResult.success(
                 data=analysis_data,
-                message="Detalles del anÃ¡lisis obtenidos exitosamente"
+                message="Detalles del análisis obtenidos exitosamente"
             )
             
         except Exception as e:
@@ -246,14 +246,14 @@ class AnalysisService(BaseService):
     
     def delete_analysis(self, analysis_id: int, user: User) -> ServiceResult:
         """
-        Elimina un anÃ¡lisis.
+        Elimina un análisis.
         
         Args:
-            analysis_id: ID del anÃ¡lisis
+            analysis_id: ID del análisis
             user: Usuario
             
         Returns:
-            ServiceResult con resultado de la eliminaciÃ³n
+            ServiceResult con resultado de la eliminación
         """
         try:
             try:
@@ -262,9 +262,9 @@ class AnalysisService(BaseService):
                     image__user=user
                 )
             except CacaoPrediction.DoesNotExist:
-                return ServiceResult.not_found_error("AnÃ¡lisis no encontrado")
+                return ServiceResult.not_found_error("Análisis no encontrado")
             
-            # Crear log de auditorÃ­a antes de eliminar
+            # Crear log de auditoría antes de eliminar
             self.create_audit_log(
                 user=user,
                 action="analysis_deleted",
@@ -281,31 +281,31 @@ class AnalysisService(BaseService):
                 }
             )
             
-            # Eliminar anÃ¡lisis
+            # Eliminar análisis
             prediction.delete()
             
-            self.log_info(f"AnÃ¡lisis {analysis_id} eliminado por usuario {user.username}")
+            self.log_info(f"Análisis {analysis_id} eliminado por usuario {user.username}")
             
             return ServiceResult.success(
-                message="AnÃ¡lisis eliminado exitosamente"
+                message="Análisis eliminado exitosamente"
             )
             
         except Exception as e:
-            self.log_error(f"Error eliminando anÃ¡lisis: {str(e)}")
+            self.log_error(f"Error eliminando análisis: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Error interno eliminando anÃ¡lisis", details={"original_error": str(e)})
+                ValidationServiceError("Error interno eliminando análisis", details={"original_error": str(e)})
             )
     
     def get_analysis_statistics(self, user: User, filters: Dict[str, Any] = None) -> ServiceResult:
         """
-        Obtiene estadÃ­sticas de anÃ¡lisis de un usuario.
+        Obtiene estadísticas de análisis de un usuario.
         
         Args:
             user: Usuario
             filters: Filtros adicionales
             
         Returns:
-            ServiceResult con estadÃ­sticas
+            ServiceResult con estadísticas
         """
         try:
             # Construir queryset base
@@ -318,7 +318,7 @@ class AnalysisService(BaseService):
                 if 'date_to' in filters:
                     queryset = queryset.filter(created_at__lte=filters['date_to'])
             
-            # Calcular estadÃ­sticas
+            # Calcular estadísticas
             stats = {
                 'total_analyses': queryset.count(),
                 'average_dimensions': {
@@ -356,13 +356,13 @@ class AnalysisService(BaseService):
             
             return ServiceResult.success(
                 data=stats,
-                message="EstadÃ­sticas obtenidas exitosamente"
+                message="Estadísticas obtenidas exitosamente"
             )
             
         except Exception as e:
-            self.log_error(f"Error obteniendo estadÃ­sticas: {str(e)}")
+            self.log_error(f"Error obteniendo estadísticas: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Error interno obteniendo estadÃ­sticas", details={"original_error": str(e)})
+                ValidationServiceError("Error interno obteniendo estadísticas", details={"original_error": str(e)})
             )
     
     def _validate_image_file(self, image_file: UploadedFile) -> ServiceResult:
@@ -373,35 +373,35 @@ class AnalysisService(BaseService):
             image_file: Archivo de imagen
             
         Returns:
-            ServiceResult con resultado de validaciÃ³n
+            ServiceResult con resultado de validación
         """
         try:
             # Validar tipo de archivo
             if image_file.content_type not in self.allowed_image_types:
                 return ServiceResult.validation_error(
-                    f"Tipo de archivo no vÃ¡lido. Tipos permitidos: {', '.join(self.allowed_image_types)}",
+                    f"Tipo de archivo no válido. Tipos permitidos: {', '.join(self.allowed_image_types)}",
                     details={"field": "content_type", "allowed_types": self.allowed_image_types}
                 )
             
-            # Validar tamaÃ±o del archivo
+            # Validar tamaño del archivo
             if image_file.size > self.max_file_size:
                 return ServiceResult.validation_error(
-                    f"Archivo demasiado grande. MÃ¡ximo {self.max_file_size // (1024*1024)}MB permitido",
+                    f"Archivo demasiado grande. Máximo {self.max_file_size // (1024*1024)}MB permitido",
                     details={"field": "file_size", "max_size": self.max_file_size, "actual_size": image_file.size}
                 )
             
-            # Validar que sea una imagen vÃ¡lida
+            # Validar que sea una imagen válida
             try:
                 image_data = image_file.read()
-                image_file.seek(0)  # Resetear posiciÃ³n del archivo
+                image_file.seek(0)  # Resetear posición del archivo
                 Image.open(io.BytesIO(image_data))
             except Exception as e:
                 return ServiceResult.validation_error(
-                    "Archivo de imagen invÃ¡lido o corrupto",
+                    "Archivo de imagen inválido o corrupto",
                     details={"field": "image_validity", "error": str(e)}
                 )
             
-            return ServiceResult.success(message="Archivo de imagen vÃ¡lido")
+            return ServiceResult.success(message="Archivo de imagen válido")
             
         except Exception as e:
             self.log_error(f"Error validando imagen: {str(e)}")
@@ -447,15 +447,15 @@ class AnalysisService(BaseService):
     
     def _save_prediction(self, cacao_image: CacaoImage, result: Dict[str, Any], processing_time_ms: int) -> ServiceResult:
         """
-        Guarda una predicciÃ³n en la base de datos.
+        Guarda una predicción en la base de datos.
         
         Args:
             cacao_image: Imagen de cacao
-            result: Resultado de la predicciÃ³n
+            result: Resultado de la predicción
             processing_time_ms: Tiempo de procesamiento en milisegundos
             
         Returns:
-            ServiceResult con datos de la predicciÃ³n guardada
+            ServiceResult con datos de la predicción guardada
         """
         try:
             # Calcular confianza promedio
@@ -480,17 +480,17 @@ class AnalysisService(BaseService):
             cacao_image.processed = True
             cacao_image.save()
             
-            self.log_info(f"PredicciÃ³n guardada con ID {prediction.id}")
+            self.log_info(f"Predicción guardada con ID {prediction.id}")
             
             return ServiceResult.success(
                 data=prediction,
-                message="PredicciÃ³n guardada exitosamente"
+                message="Predicción guardada exitosamente"
             )
             
         except Exception as e:
-            self.log_error(f"Error guardando predicciÃ³n: {str(e)}")
+            self.log_error(f"Error guardando predicción: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Error interno guardando predicciÃ³n", details={"original_error": str(e)})
+                ValidationServiceError("Error interno guardando predicción", details={"original_error": str(e)})
             )
     
     def _get_predictor(self) -> ServiceResult:
@@ -504,14 +504,14 @@ class AnalysisService(BaseService):
             predictor = get_predictor()
             
             if not predictor.models_loaded:
-                # Intentar cargar modelos automÃ¡ticamente
-                self.log_info("Modelos no cargados. Intentando carga automÃ¡tica...")
+                # Intentar cargar modelos automáticamente
+                self.log_info("Modelos no cargados. Intentando carga automática...")
                 success = load_artifacts()
                 
                 if not success:
                     return ServiceResult.error(
                         ValidationServiceError(
-                            "Modelos no disponibles. Ejecutar inicializaciÃ³n automÃ¡tica primero.",
+                            "Modelos no disponibles. Ejecutar inicialización automática primero.",
                             details={"suggestion": "POST /api/v1/auto-initialize/ para inicializar el sistema"}
                         )
                     )
@@ -521,7 +521,7 @@ class AnalysisService(BaseService):
                 
                 if not predictor.models_loaded:
                     return ServiceResult.error(
-                        ValidationServiceError("Error cargando modelos despuÃ©s de intento automÃ¡tico.")
+                        ValidationServiceError("Error cargando modelos después de intento automático.")
                     )
             
             return ServiceResult.success(

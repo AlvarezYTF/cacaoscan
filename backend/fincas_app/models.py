@@ -1,5 +1,5 @@
-﻿"""
-Modelos para gestiÃ³n de fincas y lotes en CacaoScan.
+"""
+Modelos para gestión de fincas y lotes en CacaoScan.
 """
 from django.db import models
 from django.contrib.auth.models import User
@@ -11,13 +11,13 @@ class Finca(TimeStampedModel):
     Modelo para gestionar fincas de cacao.
     """
     nombre = models.CharField(max_length=200, help_text="Nombre de la finca")
-    ubicacion = models.CharField(max_length=300, help_text="DirecciÃ³n o ubicaciÃ³n de la finca")
+    ubicacion = models.CharField(max_length=300, help_text="Dirección o ubicación de la finca")
     municipio = models.CharField(max_length=100, help_text="Municipio donde se encuentra la finca")
     departamento = models.CharField(max_length=100, help_text="Departamento donde se encuentra la finca")
     hectareas = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
-        help_text="Ãrea total de la finca en hectÃ¡reas"
+        help_text="Área total de la finca en hectáreas"
     )
     agricultor = models.ForeignKey(
         User, 
@@ -26,8 +26,8 @@ class Finca(TimeStampedModel):
         help_text="Agricultor propietario de la finca"
     )
     
-    # InformaciÃ³n adicional
-    descripcion = models.TextField(blank=True, null=True, help_text="DescripciÃ³n adicional de la finca")
+    # Información adicional
+    descripcion = models.TextField(blank=True, null=True, help_text="Descripción adicional de la finca")
     coordenadas_lat = models.DecimalField(
         max_digits=10, 
         decimal_places=7, 
@@ -43,7 +43,7 @@ class Finca(TimeStampedModel):
         help_text="Longitud GPS de la finca"
     )
     fecha_registro = models.DateTimeField(auto_now_add=True, help_text="Fecha de registro de la finca")
-    activa = models.BooleanField(default=True, help_text="Indica si la finca estÃ¡ activa")
+    activa = models.BooleanField(default=True, help_text="Indica si la finca está activa")
     
     class Meta:
         db_table = 'api_finca'
@@ -68,17 +68,17 @@ class Finca(TimeStampedModel):
     
     @property
     def total_lotes(self):
-        """Obtener nÃºmero total de lotes en la finca."""
+        """Obtener número total de lotes en la finca."""
         return self.lotes.count()
     
     @property
     def lotes_activos(self):
-        """Obtener nÃºmero de lotes activos en la finca."""
+        """Obtener número de lotes activos en la finca."""
         return self.lotes.filter(activo=True).count()
     
     @property
     def total_analisis(self):
-        """Obtener nÃºmero total de anÃ¡lisis realizados en la finca."""
+        """Obtener número total de análisis realizados en la finca."""
         from django.db.models import Count
         try:
             return self.lotes.aggregate(
@@ -89,7 +89,7 @@ class Finca(TimeStampedModel):
     
     @property
     def calidad_promedio(self):
-        """Calcular calidad promedio de la finca basada en anÃ¡lisis."""
+        """Calcular calidad promedio de la finca basada en análisis."""
         from django.db.models import Avg
         try:
             avg_confidence = self.lotes.aggregate(
@@ -101,11 +101,11 @@ class Finca(TimeStampedModel):
     
     @property
     def ubicacion_completa(self):
-        """Obtener ubicaciÃ³n completa formateada."""
+        """Obtener ubicación completa formateada."""
         return f"{self.ubicacion}, {self.municipio}, {self.departamento}"
     
     def get_estadisticas(self):
-        """Obtener estadÃ­sticas completas de la finca."""
+        """Obtener estadísticas completas de la finca."""
         return {
             'total_lotes': self.total_lotes,
             'lotes_activos': self.lotes_activos,
@@ -129,14 +129,14 @@ class Lote(TimeStampedModel):
     )
     identificador = models.CharField(
         max_length=50, 
-        help_text="Identificador Ãºnico del lote dentro de la finca"
+        help_text="Identificador único del lote dentro de la finca"
     )
     variedad = models.CharField(
         max_length=100, 
         help_text="Variedad de cacao del lote"
     )
     fecha_plantacion = models.DateField(
-        help_text="Fecha de plantaciÃ³n del lote"
+        help_text="Fecha de plantación del lote"
     )
     fecha_cosecha = models.DateField(
         null=True, 
@@ -146,7 +146,7 @@ class Lote(TimeStampedModel):
     area_hectareas = models.DecimalField(
         max_digits=8, 
         decimal_places=2,
-        help_text="Ãrea del lote en hectÃ¡reas"
+        help_text="Área del lote en hectáreas"
     )
     estado = models.CharField(
         max_length=20,
@@ -160,8 +160,8 @@ class Lote(TimeStampedModel):
         help_text="Estado actual del lote"
     )
     
-    # InformaciÃ³n adicional
-    descripcion = models.TextField(blank=True, null=True, help_text="DescripciÃ³n adicional del lote")
+    # Información adicional
+    descripcion = models.TextField(blank=True, null=True, help_text="Descripción adicional del lote")
     coordenadas_lat = models.DecimalField(
         max_digits=10, 
         decimal_places=7, 
@@ -177,7 +177,7 @@ class Lote(TimeStampedModel):
         help_text="Longitud GPS del lote"
     )
     fecha_registro = models.DateTimeField(auto_now_add=True, help_text="Fecha de registro del lote")
-    activo = models.BooleanField(default=True, help_text="Indica si el lote estÃ¡ activo")
+    activo = models.BooleanField(default=True, help_text="Indica si el lote está activo")
     
     class Meta:
         verbose_name = 'Lote'
@@ -209,7 +209,7 @@ class Lote(TimeStampedModel):
     
     @property
     def total_analisis(self):
-        """Obtener nÃºmero total de anÃ¡lisis realizados en el lote."""
+        """Obtener número total de análisis realizados en el lote."""
         try:
             return self.cacao_images.count()
         except:
@@ -217,7 +217,7 @@ class Lote(TimeStampedModel):
     
     @property
     def analisis_procesados(self):
-        """Obtener nÃºmero de anÃ¡lisis procesados en el lote."""
+        """Obtener número de análisis procesados en el lote."""
         try:
             return self.cacao_images.filter(processed=True).count()
         except:
@@ -225,7 +225,7 @@ class Lote(TimeStampedModel):
     
     @property
     def calidad_promedio(self):
-        """Calcular calidad promedio del lote basada en anÃ¡lisis."""
+        """Calcular calidad promedio del lote basada en análisis."""
         from django.db.models import Avg
         try:
             avg_confidence = self.cacao_images.aggregate(
@@ -245,11 +245,11 @@ class Lote(TimeStampedModel):
     
     @property
     def ubicacion_completa(self):
-        """Obtener ubicaciÃ³n completa formateada."""
+        """Obtener ubicación completa formateada."""
         return f"{self.finca.ubicacion}, {self.finca.municipio}, {self.finca.departamento}"
     
     def get_estadisticas(self):
-        """Obtener estadÃ­sticas completas del lote."""
+        """Obtener estadísticas completas del lote."""
         return {
             'total_analisis': self.total_analisis,
             'analisis_procesados': self.analisis_procesados,

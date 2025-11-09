@@ -1,12 +1,12 @@
-﻿"""
-Sistema de entrenamiento incremental real para modelos de regresiÃ³n de cacao.
+"""
+Sistema de entrenamiento incremental real para modelos de regresión de cacao.
 
-Este mÃ³dulo implementa estrategias avanzadas de aprendizaje incremental que permiten:
+Este módulo implementa estrategias avanzadas de aprendizaje incremental que permiten:
 - Entrenar modelos con nuevos datos sin perder conocimiento previo
-- GestiÃ³n de versiones de modelos
+- Gestión de versiones de modelos
 - Estrategias anti-catastrophic forgetting
-- EvaluaciÃ³n continua del rendimiento
-- IntegraciÃ³n con el sistema existente
+- Evaluación continua del rendimiento
+- Integración con el sistema existente
 """
 import torch
 import torch.nn as nn
@@ -41,7 +41,7 @@ class IncrementalDataManager:
     """
     Gestor de datos para entrenamiento incremental.
     
-    Maneja la adiciÃ³n de nuevos datos, versionado de datasets,
+    Maneja la adición de nuevos datos, versionado de datasets,
     y estrategias de muestreo para evitar catastrophic forgetting.
     """
     
@@ -63,10 +63,10 @@ class IncrementalDataManager:
         self.current_version = self._get_latest_version()
         self.dataset_metadata = self._load_dataset_metadata()
         
-        logger.info(f"Gestor de datos incrementales inicializado. VersiÃ³n actual: {self.current_version}")
+        logger.info(f"Gestor de datos incrementales inicializado. Versión actual: {self.current_version}")
     
     def _get_latest_version(self) -> int:
-        """Obtiene la Ãºltima versiÃ³n de dataset."""
+        """Obtiene la última versión de dataset."""
         if not self.datasets_dir.exists():
             return 0
         
@@ -101,19 +101,19 @@ class IncrementalDataManager:
     
     def add_new_data(self, new_records: List[Dict], version_name: Optional[str] = None) -> int:
         """
-        AÃ±ade nuevos datos al sistema incremental.
+        Añade nuevos datos al sistema incremental.
         
         Args:
-            new_records: Lista de nuevos registros con formato estÃ¡ndar
-            version_name: Nombre opcional para la versiÃ³n
+            new_records: Lista de nuevos registros con formato estándar
+            version_name: Nombre opcional para la versión
             
         Returns:
-            NÃºmero de versiÃ³n creada
+            Número de versión creada
         """
         if not new_records:
             raise ValueError("No se proporcionaron nuevos registros")
         
-        # Crear nueva versiÃ³n
+        # Crear nueva versión
         self.current_version += 1
         version_dir = self.datasets_dir / f"v{self.current_version}"
         ensure_dir_exists(version_dir)
@@ -122,7 +122,7 @@ class IncrementalDataManager:
         new_data_file = version_dir / "new_data.json"
         save_json(new_records, new_data_file)
         
-        # Crear metadatos de la versiÃ³n
+        # Crear metadatos de la versión
         version_metadata = {
             "version": self.current_version,
             "name": version_name or f"incremental_v{self.current_version}",
@@ -140,11 +140,11 @@ class IncrementalDataManager:
         # Guardar metadatos
         self._save_dataset_metadata()
         
-        logger.info(f"Nueva versiÃ³n {self.current_version} creada con {len(new_records)} muestras")
+        logger.info(f"Nueva versión {self.current_version} creada con {len(new_records)} muestras")
         return self.current_version
     
     def _analyze_targets_distribution(self, records: List[Dict]) -> Dict[str, Dict]:
-        """Analiza la distribuciÃ³n de targets en los nuevos datos."""
+        """Analiza la distribución de targets en los nuevos datos."""
         distribution = {}
         
         for target in TARGETS:
@@ -164,11 +164,11 @@ class IncrementalDataManager:
                            include_versions: Optional[List[int]] = None,
                            max_samples_per_version: Optional[int] = None) -> Tuple[List[Dict], Dict]:
         """
-        Obtiene un dataset combinado de mÃºltiples versiones.
+        Obtiene un dataset combinado de múltiples versiones.
         
         Args:
             include_versions: Versiones a incluir (None = todas)
-            max_samples_per_version: MÃ¡ximo de muestras por versiÃ³n
+            max_samples_per_version: Máximo de muestras por versión
             
         Returns:
             Tuple con (registros combinados, metadatos)
@@ -184,10 +184,10 @@ class IncrementalDataManager:
             version_dir = self.datasets_dir / f"v{version_num}"
             
             if not version_dir.exists():
-                logger.warning(f"Directorio de versiÃ³n {version_num} no encontrado")
+                logger.warning(f"Directorio de versión {version_num} no encontrado")
                 continue
             
-            # Cargar datos de la versiÃ³n
+            # Cargar datos de la versión
             new_data_file = version_dir / "new_data.json"
             if new_data_file.exists():
                 version_records = load_json(new_data_file)
@@ -208,7 +208,7 @@ class IncrementalDataManager:
         return combined_records, version_info
     
     def _stratified_sampling(self, records: List[Dict], max_samples: int) -> List[Dict]:
-        """Muestreo estratificado para mantener distribuciÃ³n de targets."""
+        """Muestreo estratificado para mantener distribución de targets."""
         if len(records) <= max_samples:
             return records
         
@@ -226,13 +226,13 @@ class IncrementalDataManager:
             # Ordenar por valor del target
             target_values.sort(key=lambda x: x[1])
             
-            # Muestreo sistemÃ¡tico
+            # Muestreo sistemático
             step = len(target_values) // samples_per_group
             selected_indices = [target_values[i * step][0] for i in range(samples_per_group)]
             
             sampled_records.extend([records[i] for i in selected_indices])
         
-        # Si no tenemos suficientes muestras, aÃ±adir aleatoriamente
+        # Si no tenemos suficientes muestras, añadir aleatoriamente
         if len(sampled_records) < max_samples:
             remaining_indices = set(range(len(records))) - set(i for record in sampled_records for i in range(len(records)) if records[i] == record)
             additional_needed = max_samples - len(sampled_records)
@@ -244,7 +244,7 @@ class IncrementalDataManager:
         return sampled_records[:max_samples]
     
     def get_version_info(self, version: int) -> Optional[Dict]:
-        """Obtiene informaciÃ³n de una versiÃ³n especÃ­fica."""
+        """Obtiene información de una versión específica."""
         return self.dataset_metadata["versions"].get(str(version))
     
     def list_versions(self) -> List[Dict]:
@@ -281,12 +281,12 @@ class IncrementalLearningStrategy:
     
     def compute_fisher_information(self, model: nn.Module, dataloader: DataLoader, device: torch.device):
         """
-        Computa la informaciÃ³n de Fisher para Elastic Weight Consolidation (EWC).
+        Computa la información de Fisher para Elastic Weight Consolidation (EWC).
         
         Args:
             model: Modelo a analizar
             dataloader: DataLoader con datos de la tarea anterior
-            device: Dispositivo para computaciÃ³n
+            device: Dispositivo para computación
         """
         model.eval()
         fisher_info = {}
@@ -309,31 +309,31 @@ class IncrementalLearningStrategy:
             model.zero_grad()
             loss.backward()
             
-            # Acumular informaciÃ³n de Fisher
+            # Acumular información de Fisher
             for name, param in model.named_parameters():
                 if param.grad is not None:
                     fisher_info[name] += param.grad.data ** 2
         
-        # Normalizar por nÃºmero de muestras
+        # Normalizar por número de muestras
         num_samples = len(dataloader.dataset)
         for name in fisher_info:
             fisher_info[name] /= num_samples
         
         self.fisher_information = fisher_info
-        logger.info("InformaciÃ³n de Fisher computada")
+        logger.info("Información de Fisher computada")
     
     def elastic_weight_consolidation_loss(self, model: nn.Module, current_loss: torch.Tensor, 
                                         lambda_ewc: float = 1000.0) -> torch.Tensor:
         """
-        Computa la pÃ©rdida EWC para evitar catastrophic forgetting.
+        Computa la pérdida EWC para evitar catastrophic forgetting.
         
         Args:
             model: Modelo actual
-            current_loss: PÃ©rdida de la tarea actual
-            lambda_ewc: Peso del tÃ©rmino EWC
+            current_loss: Pérdida de la tarea actual
+            lambda_ewc: Peso del término EWC
             
         Returns:
-            PÃ©rdida total con tÃ©rmino EWC
+            Pérdida total con término EWC
         """
         if not self.fisher_information:
             return current_loss
@@ -343,7 +343,7 @@ class IncrementalLearningStrategy:
         for name, param in model.named_parameters():
             if name in self.fisher_information:
                 fisher_info = self.fisher_information[name]
-                # Asumir que los parÃ¡metros anteriores estÃ¡n en self.importance_weights
+                # Asumir que los parámetros anteriores están en self.importance_weights
                 if name in self.importance_weights:
                     prev_params = self.importance_weights[name]
                     ewc_loss += lambda_ewc * torch.sum(fisher_info * (param - prev_params) ** 2)
@@ -353,15 +353,15 @@ class IncrementalLearningStrategy:
     def l2_regularization_loss(self, model: nn.Module, current_loss: torch.Tensor,
                               lambda_l2: float = 0.01) -> torch.Tensor:
         """
-        PÃ©rdida de regularizaciÃ³n L2 para mantener parÃ¡metros cerca de los anteriores.
+        Pérdida de regularización L2 para mantener parámetros cerca de los anteriores.
         
         Args:
             model: Modelo actual
-            current_loss: PÃ©rdida de la tarea actual
-            lambda_l2: Peso de la regularizaciÃ³n L2
+            current_loss: Pérdida de la tarea actual
+            lambda_l2: Peso de la regularización L2
             
         Returns:
-            PÃ©rdida total con regularizaciÃ³n L2
+            Pérdida total con regularización L2
         """
         l2_loss = current_loss
         
@@ -373,24 +373,24 @@ class IncrementalLearningStrategy:
         return l2_loss
     
     def update_importance_weights(self, model: nn.Module):
-        """Actualiza los pesos importantes con los parÃ¡metros actuales del modelo."""
+        """Actualiza los pesos importantes con los parámetros actuales del modelo."""
         self.importance_weights = {}
         for name, param in model.named_parameters():
             self.importance_weights[name] = param.data.clone()
     
     def add_to_replay_buffer(self, samples: List[Dict], max_buffer_size: int = 1000):
         """
-        AÃ±ade muestras al buffer de replay.
+        Añade muestras al buffer de replay.
         
         Args:
-            samples: Muestras a aÃ±adir
-            max_buffer_size: TamaÃ±o mÃ¡ximo del buffer
+            samples: Muestras a añadir
+            max_buffer_size: Tamaño máximo del buffer
         """
         self.replay_buffer.extend(samples)
         
-        # Mantener tamaÃ±o del buffer
+        # Mantener tamaño del buffer
         if len(self.replay_buffer) > max_buffer_size:
-            # Eliminar muestras mÃ¡s antiguas
+            # Eliminar muestras más antiguas
             self.replay_buffer = self.replay_buffer[-max_buffer_size:]
         
         logger.info(f"Buffer de replay actualizado: {len(self.replay_buffer)} muestras")
@@ -427,7 +427,7 @@ class IncrementalModelManager:
         self.model_metadata = self._load_model_metadata()
         self.current_version = self._get_latest_model_version()
         
-        logger.info(f"Gestor de modelos incrementales inicializado. VersiÃ³n actual: {self.current_version}")
+        logger.info(f"Gestor de modelos incrementales inicializado. Versión actual: {self.current_version}")
     
     def _load_model_metadata(self) -> Dict:
         """Carga metadatos de modelos."""
@@ -448,7 +448,7 @@ class IncrementalModelManager:
         save_json(self.model_metadata, metadata_file)
     
     def _get_latest_model_version(self) -> int:
-        """Obtiene la Ãºltima versiÃ³n de modelo."""
+        """Obtiene la última versión de modelo."""
         if not self.versions_dir.exists():
             return 0
         
@@ -466,15 +466,15 @@ class IncrementalModelManager:
     def save_model_version(self, model: nn.Module, version_info: Dict, 
                           performance_metrics: Dict) -> int:
         """
-        Guarda una nueva versiÃ³n del modelo.
+        Guarda una nueva versión del modelo.
         
         Args:
             model: Modelo a guardar
-            version_info: InformaciÃ³n de la versiÃ³n
-            performance_metrics: MÃ©tricas de rendimiento
+            version_info: Información de la versión
+            performance_metrics: Métricas de rendimiento
             
         Returns:
-            NÃºmero de versiÃ³n guardada
+            Número de versión guardada
         """
         self.current_version += 1
         version_dir = self.versions_dir / f"v{self.current_version}"
@@ -489,7 +489,7 @@ class IncrementalModelManager:
             'timestamp': datetime.now().isoformat()
         }, model_path)
         
-        # Guardar metadatos de la versiÃ³n
+        # Guardar metadatos de la versión
         version_metadata = {
             "version": self.current_version,
             "model_path": str(model_path),
@@ -507,22 +507,22 @@ class IncrementalModelManager:
             if target not in self.model_metadata["best_performance"]:
                 self.model_metadata["best_performance"][target] = metrics
             else:
-                # Comparar por RÂ² score
+                # Comparar por R² score
                 if metrics.get("r2", 0) > self.model_metadata["best_performance"][target].get("r2", 0):
                     self.model_metadata["best_performance"][target] = metrics
         
         self._save_model_metadata()
         
-        logger.info(f"Modelo versiÃ³n {self.current_version} guardado exitosamente")
+        logger.info(f"Modelo versión {self.current_version} guardado exitosamente")
         return self.current_version
     
     def load_model_version(self, version: int, model_class: nn.Module, 
                           device: torch.device) -> Tuple[nn.Module, Dict]:
         """
-        Carga una versiÃ³n especÃ­fica del modelo.
+        Carga una versión específica del modelo.
         
         Args:
-            version: NÃºmero de versiÃ³n
+            version: Número de versión
             model_class: Clase del modelo
             device: Dispositivo para cargar
             
@@ -531,7 +531,7 @@ class IncrementalModelManager:
         """
         version_dir = self.versions_dir / f"v{version}"
         if not version_dir.exists():
-            raise FileNotFoundError(f"VersiÃ³n {version} no encontrada")
+            raise FileNotFoundError(f"Versión {version} no encontrada")
         
         model_path = version_dir / "model.pt"
         checkpoint = torch.load(model_path, map_location=device)
@@ -544,7 +544,7 @@ class IncrementalModelManager:
         metadata = checkpoint['model_info']
         performance_metrics = checkpoint['performance_metrics']
         
-        logger.info(f"Modelo versiÃ³n {version} cargado exitosamente")
+        logger.info(f"Modelo versión {version} cargado exitosamente")
         return model, {
             "metadata": metadata,
             "performance_metrics": performance_metrics,
@@ -554,10 +554,10 @@ class IncrementalModelManager:
     def get_best_model(self, target: str, model_class: nn.Module, 
                       device: torch.device) -> Tuple[nn.Module, Dict]:
         """
-        Obtiene el mejor modelo para un target especÃ­fico.
+        Obtiene el mejor modelo para un target específico.
         
         Args:
-            target: Target especÃ­fico
+            target: Target específico
             model_class: Clase del modelo
             device: Dispositivo para cargar
             
@@ -576,7 +576,7 @@ class IncrementalModelManager:
                 best_version = int(version_str)
         
         if best_version is None:
-            raise ValueError(f"No se encontrÃ³ modelo para target {target}")
+            raise ValueError(f"No se encontró modelo para target {target}")
         
         return self.load_model_version(best_version, model_class, device)
     
@@ -605,7 +605,7 @@ class IncrementalTrainer:
         Inicializa el entrenador incremental.
         
         Args:
-            config: ConfiguraciÃ³n del entrenamiento incremental
+            config: Configuración del entrenamiento incremental
         """
         self.config = config
         self.device = get_device()
@@ -617,7 +617,7 @@ class IncrementalTrainer:
             strategy_type=config.get('strategy_type', 'elastic_weight_consolidation')
         )
         
-        # ConfiguraciÃ³n de entrenamiento
+        # Configuración de entrenamiento
         self.learning_rate = config.get('learning_rate', 1e-4)
         self.epochs = config.get('epochs', 20)
         self.batch_size = config.get('batch_size', 16)
@@ -634,17 +634,17 @@ class IncrementalTrainer:
         
         Args:
             new_data: Nuevos datos para entrenamiento
-            base_model_version: VersiÃ³n del modelo base (None = Ãºltima versiÃ³n)
-            target: Target especÃ­fico a entrenar
+            base_model_version: Versión del modelo base (None = última versión)
+            target: Target específico a entrenar
             
         Returns:
             Diccionario con resultados del entrenamiento
         """
         logger.info(f"Iniciando entrenamiento incremental para {target}")
         
-        # 1. AÃ±adir nuevos datos al sistema
+        # 1. Añadir nuevos datos al sistema
         new_version = self.data_manager.add_new_data(new_data, f"incremental_{target}")
-        logger.info(f"Nuevos datos aÃ±adidos como versiÃ³n {new_version}")
+        logger.info(f"Nuevos datos añadidos como versión {new_version}")
         
         # 2. Cargar modelo base
         if base_model_version is None:
@@ -657,7 +657,7 @@ class IncrementalTrainer:
                     create_model(target=target),
                     self.device
                 )
-                logger.info(f"Modelo base versiÃ³n {base_model_version} cargado")
+                logger.info(f"Modelo base versión {base_model_version} cargado")
             except FileNotFoundError:
                 logger.warning("Modelo base no encontrado, entrenando desde cero")
                 base_model = create_model(target=target).to(self.device)
@@ -671,7 +671,7 @@ class IncrementalTrainer:
         
         # 4. Configurar estrategia de aprendizaje
         if base_metadata and self.learning_strategy.strategy_type == "elastic_weight_consolidation":
-            # Computar informaciÃ³n de Fisher si tenemos datos anteriores
+            # Computar información de Fisher si tenemos datos anteriores
             self._compute_fisher_information(base_model, target)
         
         # 5. Entrenar modelo incremental
@@ -682,7 +682,7 @@ class IncrementalTrainer:
         # 6. Evaluar rendimiento
         performance_metrics = self._evaluate_incremental_model(trained_model, val_data, target)
         
-        # 7. Guardar nueva versiÃ³n
+        # 7. Guardar nueva versión
         version_info = {
             "target": target,
             "base_version": base_model_version,
@@ -698,11 +698,11 @@ class IncrementalTrainer:
         # 8. Actualizar estrategia de aprendizaje
         self.learning_strategy.update_importance_weights(trained_model)
         
-        # AÃ±adir muestras al buffer de replay
+        # Añadir muestras al buffer de replay
         if self.learning_strategy.strategy_type in ["replay", "mixed"]:
             self.learning_strategy.add_to_replay_buffer(new_data)
         
-        logger.info(f"Entrenamiento incremental completado. Nueva versiÃ³n: {model_version}")
+        logger.info(f"Entrenamiento incremental completado. Nueva versión: {model_version}")
         
         return {
             "model_version": model_version,
@@ -762,7 +762,7 @@ class IncrementalTrainer:
         return train_loader, val_loader
     
     def _compute_fisher_information(self, model: nn.Module, target: str):
-        """Computa informaciÃ³n de Fisher para EWC."""
+        """Computa información de Fisher para EWC."""
         # Obtener datos de versiones anteriores para computar Fisher
         try:
             previous_data, _ = self.data_manager.get_combined_dataset(
@@ -774,7 +774,7 @@ class IncrementalTrainer:
                 train_loader, _ = self._prepare_incremental_data(previous_data, target)
                 self.learning_strategy.compute_fisher_information(model, train_loader, self.device)
         except Exception as e:
-            logger.warning(f"No se pudo computar informaciÃ³n de Fisher: {e}")
+            logger.warning(f"No se pudo computar información de Fisher: {e}")
     
     def _train_incremental_model(self, model: nn.Module, train_loader: DataLoader, 
                                 val_loader: DataLoader, target: str) -> Tuple[nn.Module, Dict]:
@@ -841,7 +841,7 @@ class IncrementalTrainer:
                 
                 train_loss += loss.item()
             
-            # ValidaciÃ³n
+            # Validación
             val_loss, val_mae, val_rmse, val_r2 = self._validate_epoch(model, val_loader, criterion)
             
             # Actualizar scheduler
@@ -866,7 +866,7 @@ class IncrementalTrainer:
                 f"Train Loss: {train_loss/len(train_loader):.4f}, "
                 f"Val Loss: {val_loss:.4f}, "
                 f"Val MAE: {val_mae:.4f}, "
-                f"Val RÂ²: {val_r2:.4f}"
+                f"Val R²: {val_r2:.4f}"
             )
         
         # Cargar mejor modelo
@@ -877,7 +877,7 @@ class IncrementalTrainer:
     
     def _validate_epoch(self, model: nn.Module, val_loader: DataLoader, 
                        criterion: nn.Module) -> Tuple[float, float, float, float]:
-        """Valida el modelo en una Ã©poca."""
+        """Valida el modelo en una época."""
         model.eval()
         val_loss = 0.0
         predictions = []
@@ -895,7 +895,7 @@ class IncrementalTrainer:
                 predictions.extend(outputs.cpu().numpy())
                 targets.extend(target_values.cpu().numpy())
         
-        # Calcular mÃ©tricas
+        # Calcular métricas
         predictions = np.array(predictions).flatten()
         targets = np.array(targets).flatten()
         
@@ -907,7 +907,7 @@ class IncrementalTrainer:
     
     def _evaluate_incremental_model(self, model: nn.Module, val_loader: DataLoader, 
                                    target: str) -> Dict:
-        """EvalÃºa el modelo incremental."""
+        """Evalúa el modelo incremental."""
         model.eval()
         predictions = []
         targets = []
@@ -938,12 +938,12 @@ def run_incremental_training(new_data: List[Dict],
                            config: Optional[Dict] = None,
                            target: str = "alto") -> Dict:
     """
-    FunciÃ³n principal para ejecutar entrenamiento incremental.
+    Función principal para ejecutar entrenamiento incremental.
     
     Args:
         new_data: Nuevos datos para entrenamiento
-        config: ConfiguraciÃ³n del entrenamiento
-        target: Target especÃ­fico a entrenar
+        config: Configuración del entrenamiento
+        target: Target específico a entrenar
         
     Returns:
         Resultados del entrenamiento incremental

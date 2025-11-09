@@ -49,7 +49,7 @@ class Command(BaseCommand):
             """)
             
             if not cursor.fetchone():
-                self.stdout.write(self.style.ERROR('❌ La tabla api_finca no existe'))
+                self.stdout.write(self.style.ERROR('[ERROR] La tabla api_finca no existe'))
                 return
             
             # 3. Buscar y corregir foreign keys incorrectas
@@ -65,14 +65,14 @@ class Command(BaseCommand):
                     continue
                 
                 if foreign_table == 'fincas_app_finca':
-                    self.stdout.write(self.style.WARNING(f'  ⚠️  FK incorrecta: apunta a {foreign_table}, corrigiendo...'))
+                    self.stdout.write(self.style.WARNING(f'  [WARN]  FK incorrecta: apunta a {foreign_table}, corrigiendo...'))
                     
                     # Eliminar FK incorrecta
                     try:
                         cursor.execute(f'ALTER TABLE fincas_app_lote DROP CONSTRAINT IF EXISTS "{constraint_name}"')
                         self.stdout.write(self.style.SUCCESS(f'  ✅ Eliminada FK incorrecta: {constraint_name}'))
                     except Exception as e:
-                        self.stdout.write(self.style.ERROR(f'  ❌ Error eliminando FK: {e}'))
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] Error eliminando FK: {e}'))
                         continue
                     
                     # Crear nueva FK correcta
@@ -88,7 +88,7 @@ class Command(BaseCommand):
                         """, [new_constraint_name])
                         
                         if cursor.fetchone():
-                            self.stdout.write(self.style.WARNING(f'  ⚠️  FK correcta ya existe: {new_constraint_name}'))
+                            self.stdout.write(self.style.WARNING(f'  [WARN]  FK correcta ya existe: {new_constraint_name}'))
                         else:
                             cursor.execute(f"""
                                 ALTER TABLE fincas_app_lote
@@ -100,9 +100,9 @@ class Command(BaseCommand):
                             self.stdout.write(self.style.SUCCESS(f'  ✅ Creada FK correcta: {new_constraint_name}'))
                             fixed = True
                     except Exception as e:
-                        self.stdout.write(self.style.ERROR(f'  ❌ Error creando FK: {e}'))
+                        self.stdout.write(self.style.ERROR(f'  [ERROR] Error creando FK: {e}'))
                 else:
-                    self.stdout.write(self.style.WARNING(f'  ⚠️  FK apunta a tabla desconocida: {foreign_table}'))
+                    self.stdout.write(self.style.WARNING(f'  [WARN]  FK apunta a tabla desconocida: {foreign_table}'))
             
             # 4. Verificar y limpiar lotes huérfanos
             cursor.execute("""
@@ -115,7 +115,7 @@ class Command(BaseCommand):
             orphaned_lotes = cursor.fetchall()
             
             if orphaned_lotes:
-                self.stdout.write(self.style.WARNING(f'\n⚠️  Advertencia: {len(orphaned_lotes)} lotes huérfanos (sin finca válida)'))
+                self.stdout.write(self.style.WARNING(f'\n[WARN]  Advertencia: {len(orphaned_lotes)} lotes huérfanos (sin finca válida)'))
                 for lote_id, finca_id, identificador in orphaned_lotes:
                     self.stdout.write(f'  - Lote ID: {lote_id}, finca_id: {finca_id}, identificador: {identificador}')
                 
@@ -163,7 +163,7 @@ class Command(BaseCommand):
             all_correct = True
             for fk in final_fks:
                 constraint_name, foreign_table = fk
-                status = '✅' if foreign_table == 'api_finca' else '❌'
+                status = '✅' if foreign_table == 'api_finca' else '[ERROR]'
                 self.stdout.write(f'{status} {constraint_name} -> {foreign_table}')
                 if foreign_table != 'api_finca':
                     all_correct = False
@@ -171,7 +171,7 @@ class Command(BaseCommand):
             if all_correct:
                 self.stdout.write(self.style.SUCCESS('\n✅ Todas las foreign keys están correctamente configuradas'))
             else:
-                self.stdout.write(self.style.ERROR('\n❌ Aún hay foreign keys incorrectas'))
+                self.stdout.write(self.style.ERROR('\n[ERROR] Aún hay foreign keys incorrectas'))
             
             if fixed:
                 self.stdout.write(self.style.SUCCESS('\n✅ Foreign key corregida exitosamente'))

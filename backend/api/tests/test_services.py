@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests unitarios para servicios de CacaoScan.
 """
 from unittest.mock import Mock, patch, MagicMock
@@ -43,7 +43,7 @@ class AuthenticationServiceTest(TestCase):
     """Tests para AuthenticationService."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.service = AuthenticationService()
         self.user = User.objects.create_user(
             username='testuser',
@@ -63,12 +63,12 @@ class AuthenticationServiceTest(TestCase):
         self.assertIn('user', result.data)
     
     def test_login_user_invalid_credentials(self):
-        """Test de login con credenciales invÃ¡lidas."""
+        """Test de login con credenciales inválidas."""
         result = self.service.login_user('test@example.com', 'wrongpassword')
         
         self.assertFalse(result.success)
         self.assertIsInstance(result.error, ValidationServiceError)
-        self.assertEqual(result.error.message, 'Credenciales invÃ¡lidas')
+        self.assertEqual(result.error.message, 'Credenciales inválidas')
     
     def test_login_user_missing_fields(self):
         """Test de login con campos faltantes."""
@@ -79,7 +79,7 @@ class AuthenticationServiceTest(TestCase):
     
     @patch('api.services.auth_service.RefreshToken')
     def test_login_user_token_generation(self, mock_refresh_token):
-        """Test de generaciÃ³n de tokens."""
+        """Test de generación de tokens."""
         mock_token = Mock()
         mock_token.access_token = 'access_token'
         mock_refresh_token.for_user.return_value = mock_token
@@ -126,7 +126,7 @@ class AuthenticationServiceTest(TestCase):
         self.assertIsInstance(result.error, ValidationServiceError)
     
     def test_register_user_validation_errors(self):
-        """Test de errores de validaciÃ³n en registro."""
+        """Test de errores de validación en registro."""
         user_data = {
             'username': '',
             'email': 'invalid-email',
@@ -141,7 +141,7 @@ class AuthenticationServiceTest(TestCase):
         self.assertIsInstance(result.error, ValidationServiceError)
     
     def test_verify_email_success(self):
-        """Test de verificaciÃ³n de email exitosa."""
+        """Test de verificación de email exitosa."""
         token = EmailVerificationToken.create_for_user(self.user)
         
         result = self.service.verify_email(str(token.token))
@@ -153,21 +153,21 @@ class AuthenticationServiceTest(TestCase):
         self.assertTrue(token.is_verified)
     
     def test_verify_email_invalid_token(self):
-        """Test de verificaciÃ³n con token invÃ¡lido."""
+        """Test de verificación con token inválido."""
         result = self.service.verify_email('invalid-token')
         
         self.assertFalse(result.success)
         self.assertIsInstance(result.error, ValidationServiceError)
     
     def test_resend_verification_success(self):
-        """Test de reenvÃ­o de verificaciÃ³n exitoso."""
+        """Test de reenvío de verificación exitoso."""
         result = self.service.resend_verification('test@example.com')
         
         self.assertTrue(result.success)
         self.assertIn('token', result.data)
     
     def test_resend_verification_user_not_found(self):
-        """Test de reenvÃ­o con usuario no encontrado."""
+        """Test de reenvío con usuario no encontrado."""
         result = self.service.resend_verification('nonexistent@example.com')
         
         self.assertFalse(result.success)
@@ -178,7 +178,7 @@ class AnalysisServiceTest(TestCase):
     """Tests para AnalysisService."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.service = AnalysisService()
         self.user = User.objects.create_user(
             username='testuser',
@@ -193,7 +193,7 @@ class AnalysisServiceTest(TestCase):
     
     @patch('api.services.analysis_service.get_predictor')
     def test_analyze_image_success(self, mock_get_predictor):
-        """Test de anÃ¡lisis de imagen exitoso."""
+        """Test de análisis de imagen exitoso."""
         # Mock del predictor
         mock_predictor = Mock()
         mock_predictor.predict.return_value = {
@@ -209,21 +209,21 @@ class AnalysisServiceTest(TestCase):
         self.assertTrue(result.success)
         self.assertIn('prediction', result.data)
         
-        # Verificar que se creÃ³ la predicciÃ³n
+        # Verificar que se creó la predicción
         prediction = CacaoPrediction.objects.get(image=self.image)
         self.assertEqual(prediction.quality_score, Decimal('85.5'))
         self.assertEqual(prediction.maturity_percentage, Decimal('75.0'))
         self.assertEqual(prediction.defects_count, 2)
     
     def test_analyze_image_not_found(self):
-        """Test de anÃ¡lisis con imagen no encontrada."""
+        """Test de análisis con imagen no encontrada."""
         result = self.service.analyze_image(999, self.user)
         
         self.assertFalse(result.success)
         self.assertIsInstance(result.error, NotFoundServiceError)
     
     def test_analyze_image_permission_denied(self):
-        """Test de anÃ¡lisis sin permisos."""
+        """Test de análisis sin permisos."""
         other_user = User.objects.create_user(
             username='otheruser',
             email='other@example.com',
@@ -237,7 +237,7 @@ class AnalysisServiceTest(TestCase):
     
     @patch('api.services.analysis_service.get_predictor')
     def test_analyze_image_prediction_error(self, mock_get_predictor):
-        """Test de anÃ¡lisis con error en predicciÃ³n."""
+        """Test de análisis con error en predicción."""
         mock_get_predictor.side_effect = Exception('Prediction error')
         
         result = self.service.analyze_image(self.image.id, self.user)
@@ -246,7 +246,7 @@ class AnalysisServiceTest(TestCase):
         self.assertIsInstance(result.error, ServiceError)
     
     def test_get_analysis_history(self):
-        """Test de obtenciÃ³n de historial de anÃ¡lisis."""
+        """Test de obtención de historial de análisis."""
         # Crear predicciones
         prediction1 = CacaoPrediction.objects.create(
             image=self.image,
@@ -262,7 +262,7 @@ class AnalysisServiceTest(TestCase):
         self.assertEqual(len(result.data['predictions']), 1)
     
     def test_get_analysis_statistics(self):
-        """Test de obtenciÃ³n de estadÃ­sticas de anÃ¡lisis."""
+        """Test de obtención de estadísticas de análisis."""
         # Crear predicciones
         CacaoPrediction.objects.create(
             image=self.image,
@@ -284,7 +284,7 @@ class ImageManagementServiceTest(TestCase):
     """Tests para ImageManagementService."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.service = ImageManagementService()
         self.user = User.objects.create_user(
             username='testuser',
@@ -312,14 +312,14 @@ class ImageManagementServiceTest(TestCase):
         self.assertTrue(result.success)
         self.assertIn('image', result.data)
         
-        # Verificar que se creÃ³ la imagen
+        # Verificar que se creó la imagen
         image = CacaoImage.objects.get(user=self.user, filename='test_image.jpg')
         self.assertEqual(image.file_size, 1024)
         self.assertEqual(image.image_width, 800)
         self.assertEqual(image.image_height, 600)
     
     def test_upload_image_validation_error(self):
-        """Test de carga con error de validaciÃ³n."""
+        """Test de carga con error de validación."""
         image_data = {
             'filename': '',
             'file': None
@@ -331,8 +331,8 @@ class ImageManagementServiceTest(TestCase):
         self.assertIsInstance(result.error, ValidationServiceError)
     
     def test_get_user_images(self):
-        """Test de obtenciÃ³n de imÃ¡genes del usuario."""
-        # Crear imÃ¡genes
+        """Test de obtención de imágenes del usuario."""
+        # Crear imágenes
         image1 = CacaoImage.objects.create(
             user=self.user,
             filename='image1.jpg',
@@ -351,7 +351,7 @@ class ImageManagementServiceTest(TestCase):
         self.assertEqual(len(result.data['images']), 2)
     
     def test_delete_image_success(self):
-        """Test de eliminaciÃ³n de imagen exitosa."""
+        """Test de eliminación de imagen exitosa."""
         image = CacaoImage.objects.create(
             user=self.user,
             filename='test_image.jpg',
@@ -366,14 +366,14 @@ class ImageManagementServiceTest(TestCase):
         self.assertFalse(CacaoImage.objects.filter(id=image.id).exists())
     
     def test_delete_image_not_found(self):
-        """Test de eliminaciÃ³n con imagen no encontrada."""
+        """Test de eliminación con imagen no encontrada."""
         result = self.service.delete_image(999, self.user)
         
         self.assertFalse(result.success)
         self.assertIsInstance(result.error, NotFoundServiceError)
     
     def test_delete_image_permission_denied(self):
-        """Test de eliminaciÃ³n sin permisos."""
+        """Test de eliminación sin permisos."""
         other_user = User.objects.create_user(
             username='otheruser',
             email='other@example.com',
@@ -395,7 +395,7 @@ class FincaServiceTest(TestCase):
     """Tests para FincaService."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.service = FincaService()
         self.user = User.objects.create_user(
             username='testuser',
@@ -404,7 +404,7 @@ class FincaServiceTest(TestCase):
         )
     
     def test_create_finca_success(self):
-        """Test de creaciÃ³n de finca exitosa."""
+        """Test de creación de finca exitosa."""
         finca_data = {
             'nombre': 'Finca Test',
             'ubicacion': 'Test Location',
@@ -419,16 +419,16 @@ class FincaServiceTest(TestCase):
         self.assertTrue(result.success)
         self.assertIn('finca', result.data)
         
-        # Verificar que se creÃ³ la finca
+        # Verificar que se creó la finca
         finca = Finca.objects.get(nombre='Finca Test')
         self.assertEqual(finca.propietario, self.user)
         self.assertEqual(finca.area_total, Decimal('15.5'))
     
     def test_create_finca_validation_error(self):
-        """Test de creaciÃ³n con error de validaciÃ³n."""
+        """Test de creación con error de validación."""
         finca_data = {
-            'nombre': '',  # Nombre vacÃ­o
-            'area_total': Decimal('-5.0')  # Ãrea negativa
+            'nombre': '',  # Nombre vacío
+            'area_total': Decimal('-5.0')  # Área negativa
         }
         
         result = self.service.create_finca(finca_data, self.user)
@@ -437,7 +437,7 @@ class FincaServiceTest(TestCase):
         self.assertIsInstance(result.error, ValidationServiceError)
     
     def test_get_user_fincas(self):
-        """Test de obtenciÃ³n de fincas del usuario."""
+        """Test de obtención de fincas del usuario."""
         # Crear fincas
         finca1 = Finca.objects.create(
             nombre='Finca 1',
@@ -457,7 +457,7 @@ class FincaServiceTest(TestCase):
         self.assertEqual(len(result.data['fincas']), 2)
     
     def test_update_finca_success(self):
-        """Test de actualizaciÃ³n de finca exitosa."""
+        """Test de actualización de finca exitosa."""
         finca = Finca.objects.create(
             nombre='Finca Original',
             propietario=self.user,
@@ -473,13 +473,13 @@ class FincaServiceTest(TestCase):
         
         self.assertTrue(result.success)
         
-        # Verificar que se actualizÃ³
+        # Verificar que se actualizó
         finca.refresh_from_db()
         self.assertEqual(finca.nombre, 'Finca Actualizada')
         self.assertEqual(finca.area_total, Decimal('15.0'))
     
     def test_update_finca_not_found(self):
-        """Test de actualizaciÃ³n con finca no encontrada."""
+        """Test de actualización con finca no encontrada."""
         update_data = {'nombre': 'Finca Actualizada'}
         
         result = self.service.update_finca(999, update_data, self.user)
@@ -488,7 +488,7 @@ class FincaServiceTest(TestCase):
         self.assertIsInstance(result.error, NotFoundServiceError)
     
     def test_delete_finca_success(self):
-        """Test de eliminaciÃ³n de finca exitosa."""
+        """Test de eliminación de finca exitosa."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             propietario=self.user,
@@ -503,7 +503,7 @@ class FincaServiceTest(TestCase):
         self.assertFalse(Finca.objects.filter(id=finca.id).exists())
     
     def test_get_finca_statistics(self):
-        """Test de obtenciÃ³n de estadÃ­sticas de fincas."""
+        """Test de obtención de estadísticas de fincas."""
         # Crear fincas
         Finca.objects.create(
             nombre='Finca 1',
@@ -529,7 +529,7 @@ class LoteServiceTest(TestCase):
     """Tests para LoteService."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.service = LoteService()
         self.user = User.objects.create_user(
             username='testuser',
@@ -543,7 +543,7 @@ class LoteServiceTest(TestCase):
         )
     
     def test_create_lote_success(self):
-        """Test de creaciÃ³n de lote exitosa."""
+        """Test de creación de lote exitosa."""
         lote_data = {
             'finca_id': self.finca.id,
             'nombre': 'Lote Test',
@@ -558,17 +558,17 @@ class LoteServiceTest(TestCase):
         self.assertTrue(result.success)
         self.assertIn('lote', result.data)
         
-        # Verificar que se creÃ³ el lote
+        # Verificar que se creó el lote
         lote = Lote.objects.get(nombre='Lote Test')
         self.assertEqual(lote.finca, self.finca)
         self.assertEqual(lote.area, Decimal('5.0'))
     
     def test_create_lote_area_exceeds_finca(self):
-        """Test de creaciÃ³n con Ã¡rea que excede la finca."""
+        """Test de creación con área que excede la finca."""
         lote_data = {
             'finca_id': self.finca.id,
             'nombre': 'Lote Test',
-            'area': Decimal('25.0'),  # Mayor que el Ã¡rea de la finca (20.0)
+            'area': Decimal('25.0'),  # Mayor que el área de la finca (20.0)
             'variedad': 'CCN-51'
         }
         
@@ -578,7 +578,7 @@ class LoteServiceTest(TestCase):
         self.assertIsInstance(result.error, ValidationServiceError)
     
     def test_get_finca_lotes(self):
-        """Test de obtenciÃ³n de lotes de una finca."""
+        """Test de obtención de lotes de una finca."""
         # Crear lotes
         lote1 = Lote.objects.create(
             finca=self.finca,
@@ -598,7 +598,7 @@ class LoteServiceTest(TestCase):
         self.assertEqual(len(result.data['lotes']), 2)
     
     def test_update_lote_success(self):
-        """Test de actualizaciÃ³n de lote exitosa."""
+        """Test de actualización de lote exitosa."""
         lote = Lote.objects.create(
             finca=self.finca,
             nombre='Lote Original',
@@ -614,13 +614,13 @@ class LoteServiceTest(TestCase):
         
         self.assertTrue(result.success)
         
-        # Verificar que se actualizÃ³
+        # Verificar que se actualizó
         lote.refresh_from_db()
         self.assertEqual(lote.nombre, 'Lote Actualizado')
         self.assertEqual(lote.area, Decimal('8.0'))
     
     def test_delete_lote_success(self):
-        """Test de eliminaciÃ³n de lote exitosa."""
+        """Test de eliminación de lote exitosa."""
         lote = Lote.objects.create(
             finca=self.finca,
             nombre='Lote Test',
@@ -639,7 +639,7 @@ class ReportServiceTest(TestCase):
     """Tests para ReportService."""
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.service = ReportService()
         self.user = User.objects.create_user(
             username='testuser',
@@ -648,7 +648,7 @@ class ReportServiceTest(TestCase):
         )
     
     def test_generate_analysis_report_success(self):
-        """Test de generaciÃ³n de reporte de anÃ¡lisis exitosa."""
+        """Test de generación de reporte de análisis exitosa."""
         report_data = {
             'tipo_reporte': 'analisis_periodo',
             'fecha_inicio': '2024-01-01',
@@ -662,14 +662,14 @@ class ReportServiceTest(TestCase):
         self.assertTrue(result.success)
         self.assertIn('reporte', result.data)
         
-        # Verificar que se creÃ³ el reporte
+        # Verificar que se creó el reporte
         reporte = ReporteGenerado.objects.get(usuario=self.user)
         self.assertEqual(reporte.tipo_reporte, 'analisis_periodo')
     
     def test_generate_analysis_report_validation_error(self):
-        """Test de generaciÃ³n con error de validaciÃ³n."""
+        """Test de generación con error de validación."""
         report_data = {
-            'tipo_reporte': '',  # Tipo vacÃ­o
+            'tipo_reporte': '',  # Tipo vacío
             'fecha_inicio': 'invalid-date',
             'fecha_fin': 'invalid-date'
         }
@@ -680,7 +680,7 @@ class ReportServiceTest(TestCase):
         self.assertIsInstance(result.error, ValidationServiceError)
     
     def test_get_user_reports(self):
-        """Test de obtenciÃ³n de reportes del usuario."""
+        """Test de obtención de reportes del usuario."""
         # Crear reportes
         reporte1 = ReporteGenerado.objects.create(
             usuario=self.user,
@@ -700,7 +700,7 @@ class ReportServiceTest(TestCase):
         self.assertEqual(len(result.data['reportes']), 2)
     
     def test_delete_report_success(self):
-        """Test de eliminaciÃ³n de reporte exitosa."""
+        """Test de eliminación de reporte exitosa."""
         reporte = ReporteGenerado.objects.create(
             usuario=self.user,
             tipo_reporte='analisis_periodo',
@@ -715,7 +715,7 @@ class ReportServiceTest(TestCase):
         self.assertFalse(ReporteGenerado.objects.filter(id=reporte.id).exists())
     
     def test_get_report_statistics(self):
-        """Test de obtenciÃ³n de estadÃ­sticas de reportes."""
+        """Test de obtención de estadísticas de reportes."""
         # Crear reportes
         ReporteGenerado.objects.create(
             usuario=self.user,

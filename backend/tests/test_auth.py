@@ -1,5 +1,5 @@
-﻿"""
-Tests para el sistema de autenticaciÃ³n de CacaoScan.
+"""
+Tests para el sistema de autenticación de CacaoScan.
 """
 from django.test import TestCase
 from django.contrib.auth.models import User
@@ -15,11 +15,11 @@ from api.models import EmailVerificationToken, UserProfile
 
 class AuthenticationTestCase(APITestCase):
     """
-    Tests para el sistema de autenticaciÃ³n.
+    Tests para el sistema de autenticación.
     """
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial para cada test."""
+        """Configuración inicial para cada test."""
         self.register_url = reverse('auth-register')
         self.login_url = reverse('auth-login')
         self.logout_url = reverse('auth-logout')
@@ -62,14 +62,14 @@ class AuthenticationTestCase(APITestCase):
         self.assertEqual(user.first_name, self.user_data['first_name'])
         self.assertEqual(user.last_name, self.user_data['last_name'])
         
-        # Verificar que se creÃ³ el token de verificaciÃ³n
+        # Verificar que se creó el token de verificación
         self.assertTrue(hasattr(user, 'email_verification_token'))
         
-        # Verificar que se asignÃ³ el rol farmer
+        # Verificar que se asignó el rol farmer
         self.assertTrue(user.groups.filter(name='farmer').exists())
     
     def test_registration_validation_errors(self):
-        """Test de errores de validaciÃ³n en registro."""
+        """Test de errores de validación en registro."""
         # Email duplicado
         invalid_data = self.user_data.copy()
         invalid_data['email'] = 'existing@example.com'
@@ -78,7 +78,7 @@ class AuthenticationTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(response.data['success'])
         
-        # ContraseÃ±as que no coinciden
+        # Contraseñas que no coinciden
         invalid_data = self.user_data.copy()
         invalid_data['password_confirm'] = 'DifferentPass123'
         
@@ -86,7 +86,7 @@ class AuthenticationTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(response.data['success'])
         
-        # ContraseÃ±a dÃ©bil
+        # Contraseña débil
         invalid_data = self.user_data.copy()
         invalid_data['password'] = 'weak'
         invalid_data['password_confirm'] = 'weak'
@@ -111,7 +111,7 @@ class AuthenticationTestCase(APITestCase):
         self.assertIn('expires_at', response.data)
     
     def test_login_invalid_credentials(self):
-        """Test de login con credenciales invÃ¡lidas."""
+        """Test de login con credenciales inválidas."""
         login_data = {
             'username': 'existing@example.com',
             'password': 'WrongPassword'
@@ -121,15 +121,15 @@ class AuthenticationTestCase(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertFalse(response.data['success'])
-        self.assertEqual(response.data['message'], 'Credenciales invÃ¡lidas')
+        self.assertEqual(response.data['message'], 'Credenciales inválidas')
     
     def test_protected_endpoint_access(self):
         """Test de acceso a endpoints protegidos."""
-        # Sin autenticaciÃ³n
+        # Sin autenticación
         response = self.client.get(self.profile_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         
-        # Con autenticaciÃ³n
+        # Con autenticación
         token = ExpiringToken.create_for_user(self.existing_user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.key}')
         
@@ -137,7 +137,7 @@ class AuthenticationTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
     
     def test_token_expiration(self):
-        """Test de expiraciÃ³n de tokens."""
+        """Test de expiración de tokens."""
         # Crear token
         token = ExpiringToken.create_for_user(self.existing_user)
         
@@ -152,8 +152,8 @@ class AuthenticationTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
     def test_email_verification(self):
-        """Test de verificaciÃ³n de email."""
-        # Crear usuario y token de verificaciÃ³n
+        """Test de verificación de email."""
+        # Crear usuario y token de verificación
         user = User.objects.create_user(
             username='verifyuser',
             email='verify@example.com',
@@ -173,8 +173,8 @@ class AuthenticationTestCase(APITestCase):
         self.assertTrue(verification_token.is_verified)
     
     def test_email_verification_expired_token(self):
-        """Test de verificaciÃ³n con token expirado."""
-        # Crear usuario y token de verificaciÃ³n
+        """Test de verificación con token expirado."""
+        # Crear usuario y token de verificación
         user = User.objects.create_user(
             username='expireduser',
             email='expired@example.com',
@@ -194,7 +194,7 @@ class AuthenticationTestCase(APITestCase):
         self.assertFalse(response.data['success'])
     
     def test_resend_verification(self):
-        """Test de reenvÃ­o de verificaciÃ³n."""
+        """Test de reenvío de verificación."""
         # Crear usuario
         user = User.objects.create_user(
             username='resenduser',
@@ -202,7 +202,7 @@ class AuthenticationTestCase(APITestCase):
             password='ResendPass123'
         )
         
-        # Solicitar reenvÃ­o
+        # Solicitar reenvío
         resend_data = {'email': 'resend@example.com'}
         response = self.client.post(self.resend_verification_url, resend_data)
         
@@ -228,11 +228,11 @@ class AuthenticationTestCase(APITestCase):
 
 class TokenCleanupTestCase(TestCase):
     """
-    Tests para la limpieza automÃ¡tica de tokens.
+    Tests para la limpieza automática de tokens.
     """
     
     def setUp(self):
-        """ConfiguraciÃ³n inicial."""
+        """Configuración inicial."""
         self.user = User.objects.create_user(
             username='cleanupuser',
             email='cleanup@example.com',
@@ -252,31 +252,31 @@ class TokenCleanupTestCase(TestCase):
         # Verificar que hay tokens en la base de datos
         self.assertEqual(ExpiringToken.objects.count(), 2)
         
-        # Simular limpieza (en producciÃ³n esto se hace automÃ¡ticamente)
+        # Simular limpieza (en producción esto se hace automáticamente)
         expired_tokens = ExpiringToken.objects.filter(
             created__lt=timezone.now() - timedelta(hours=24)
         )
         expired_tokens.delete()
         
-        # Verificar que solo queda el token vÃ¡lido
+        # Verificar que solo queda el token válido
         self.assertEqual(ExpiringToken.objects.count(), 1)
         self.assertEqual(ExpiringToken.objects.first(), token2)
 
 
 class UserRoleTestCase(TestCase):
     """
-    Tests para la asignaciÃ³n automÃ¡tica de roles.
+    Tests para la asignación automática de roles.
     """
     
     def test_farmer_role_assignment(self):
-        """Test de asignaciÃ³n automÃ¡tica del rol farmer."""
+        """Test de asignación automática del rol farmer."""
         user = User.objects.create_user(
             username='farmeruser',
             email='farmer@example.com',
             password='FarmerPass123'
         )
         
-        # Verificar que se asignÃ³ el rol farmer
+        # Verificar que se asignó el rol farmer
         self.assertTrue(user.groups.filter(name='farmer').exists())
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
@@ -290,7 +290,7 @@ class UserRoleTestCase(TestCase):
             is_staff=True
         )
         
-        # Verificar que NO se asignÃ³ el rol farmer
+        # Verificar que NO se asignó el rol farmer
         self.assertFalse(user.groups.filter(name='farmer').exists())
         self.assertTrue(user.is_staff)
 

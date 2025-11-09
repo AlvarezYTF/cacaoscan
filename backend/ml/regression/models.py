@@ -1,5 +1,5 @@
-﻿"""
-Modelos CNN para regresiÃ³n de dimensiones y peso de granos de cacao.
+"""
+Modelos CNN para regresión de dimensiones y peso de granos de cacao.
 """
 import torch
 import torch.nn as nn
@@ -12,7 +12,7 @@ try:
     TIMM_AVAILABLE = True
 except ImportError:
     TIMM_AVAILABLE = False
-    logging.warning("timm no estÃ¡ disponible. ConvNeXt no estarÃ¡ disponible.")
+    logging.warning("timm no está disponible. ConvNeXt no estará disponible.")
 
 from ..utils.logs import get_ml_logger
 
@@ -21,7 +21,7 @@ logger = get_ml_logger("cacaoscan.ml.regression")
 
 
 class ResNet18Regression(nn.Module):
-    """ResNet18 adaptado para regresiÃ³n de dimensiones de cacao."""
+    """ResNet18 adaptado para regresión de dimensiones de cacao."""
     
     def __init__(
         self,
@@ -30,10 +30,10 @@ class ResNet18Regression(nn.Module):
         dropout_rate: float = 0.2
     ):
         """
-        Inicializa el modelo ResNet18 para regresiÃ³n.
+        Inicializa el modelo ResNet18 para regresión.
         
         Args:
-            num_outputs: NÃºmero de salidas de regresiÃ³n
+            num_outputs: Número de salidas de regresión
             pretrained: Si usar pesos pre-entrenados
             dropout_rate: Tasa de dropout
         """
@@ -42,10 +42,10 @@ class ResNet18Regression(nn.Module):
         # Cargar ResNet18 pre-entrenado
         self.backbone = models.resnet18(pretrained=pretrained)
         
-        # Obtener nÃºmero de caracterÃ­sticas del Ãºltimo layer
+        # Obtener número de características del último layer
         num_features = self.backbone.fc.in_features
         
-        # Reemplazar la capa de clasificaciÃ³n con regresiÃ³n
+        # Reemplazar la capa de clasificación con regresión
         self.backbone.fc = nn.Sequential(
             nn.Dropout(dropout_rate),
             nn.Linear(num_features, 512),
@@ -64,7 +64,7 @@ class ResNet18Regression(nn.Module):
         return self.backbone(x)
     
     def get_features(self, x: torch.Tensor) -> torch.Tensor:
-        """Extrae caracterÃ­sticas antes de la capa final."""
+        """Extrae características antes de la capa final."""
         x = self.backbone.conv1(x)
         x = self.backbone.bn1(x)
         x = self.backbone.relu(x)
@@ -82,7 +82,7 @@ class ResNet18Regression(nn.Module):
 
 
 class ConvNeXtTinyRegression(nn.Module):
-    """ConvNeXt Tiny adaptado para regresiÃ³n de dimensiones de cacao."""
+    """ConvNeXt Tiny adaptado para regresión de dimensiones de cacao."""
     
     def __init__(
         self,
@@ -91,10 +91,10 @@ class ConvNeXtTinyRegression(nn.Module):
         dropout_rate: float = 0.2
     ):
         """
-        Inicializa el modelo ConvNeXt Tiny para regresiÃ³n.
+        Inicializa el modelo ConvNeXt Tiny para regresión.
         
         Args:
-            num_outputs: NÃºmero de salidas de regresiÃ³n
+            num_outputs: Número de salidas de regresión
             pretrained: Si usar pesos pre-entrenados
             dropout_rate: Tasa de dropout
         """
@@ -110,10 +110,10 @@ class ConvNeXtTinyRegression(nn.Module):
             num_classes=0  # Remover clasificador
         )
         
-        # Obtener nÃºmero de caracterÃ­sticas
+        # Obtener número de características
         num_features = self.backbone.num_features
         
-        # Agregar cabeza de regresiÃ³n
+        # Agregar cabeza de regresión
         self.regression_head = nn.Sequential(
             nn.Dropout(dropout_rate),
             nn.Linear(num_features, 512),
@@ -133,12 +133,12 @@ class ConvNeXtTinyRegression(nn.Module):
         return self.regression_head(features)
     
     def get_features(self, x: torch.Tensor) -> torch.Tensor:
-        """Extrae caracterÃ­sticas antes de la cabeza de regresiÃ³n."""
+        """Extrae características antes de la cabeza de regresión."""
         return self.backbone(x)
 
 
 class MultiHeadRegression(nn.Module):
-    """Modelo multi-head para predecir las 4 dimensiones simultÃ¡neamente."""
+    """Modelo multi-head para predecir las 4 dimensiones simultáneamente."""
     
     def __init__(
         self,
@@ -154,7 +154,7 @@ class MultiHeadRegression(nn.Module):
             backbone_type: Tipo de backbone ("resnet18" o "convnext_tiny")
             pretrained: Si usar pesos pre-entrenados
             dropout_rate: Tasa de dropout
-            shared_features: Si compartir caracterÃ­sticas entre heads
+            shared_features: Si compartir características entre heads
         """
         super(MultiHeadRegression, self).__init__()
         
@@ -164,13 +164,13 @@ class MultiHeadRegression(nn.Module):
         # Crear backbone
         if backbone_type == "resnet18":
             self.backbone = ResNet18Regression(
-                num_outputs=1,  # Solo para obtener caracterÃ­sticas
+                num_outputs=1,  # Solo para obtener características
                 pretrained=pretrained,
                 dropout_rate=0.0  # No dropout en backbone
             )
-            # Remover la cabeza de regresiÃ³n del backbone
+            # Remover la cabeza de regresión del backbone
             self.backbone.backbone.fc = nn.Identity()
-            num_features = 512  # TamaÃ±o de caracterÃ­sticas de ResNet18
+            num_features = 512  # Tamaño de características de ResNet18
             
         elif backbone_type == "convnext_tiny":
             if not TIMM_AVAILABLE:
@@ -181,7 +181,7 @@ class MultiHeadRegression(nn.Module):
                 pretrained=pretrained,
                 dropout_rate=0.0
             )
-            # Remover la cabeza de regresiÃ³n del backbone
+            # Remover la cabeza de regresión del backbone
             self.backbone.regression_head = nn.Identity()
             num_features = self.backbone.backbone.num_features
             
@@ -203,9 +203,9 @@ class MultiHeadRegression(nn.Module):
             self.shared_head = None
     
     def _create_head(self, num_features: int, dropout_rate: float, shared: bool = False) -> nn.Module:
-        """Crea una cabeza de regresiÃ³n."""
+        """Crea una cabeza de regresión."""
         if shared:
-            # Head compartido con mÃ¡s capacidad
+            # Head compartido con más capacidad
             return nn.Sequential(
                 nn.Dropout(dropout_rate),
                 nn.Linear(num_features, 512),
@@ -231,7 +231,7 @@ class MultiHeadRegression(nn.Module):
     
     def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
         """Forward pass del modelo."""
-        # Extraer caracterÃ­sticas
+        # Extraer características
         features = self.backbone.get_features(x) if hasattr(self.backbone, 'get_features') else self.backbone(x)
         
         if self.shared_features and self.shared_head is not None:
@@ -251,20 +251,20 @@ class MultiHeadRegression(nn.Module):
             return outputs
     
     def forward_single(self, x: torch.Tensor, target: str) -> torch.Tensor:
-        """Forward pass para un target especÃ­fico."""
+        """Forward pass para un target específico."""
         features = self.backbone.get_features(x) if hasattr(self.backbone, 'get_features') else self.backbone(x)
         return self.heads[target](features)
 
 
 class HybridCacaoRegression(nn.Module):
     """
-    Modelo híbrido que fusiona ResNet18 y ConvNeXt con features de píxeles.
+    Modelo hbrido que fusiona ResNet18 y ConvNeXt con features de pxeles.
     
     Arquitectura:
     - ResNet18: Extrae features visuales (512)
     - ConvNeXt: Extrae features visuales (768)
-    - Pixel Features: Features de píxeles (5)
-    - Fusion: Concatena todas las features → Regression Head
+    - Pixel Features: Features de pxeles (5)
+    - Fusion: Concatena todas las features  Regression Head
     """
     
     def __init__(
@@ -276,14 +276,14 @@ class HybridCacaoRegression(nn.Module):
         use_pixel_features: bool = True
     ):
         """
-        Inicializa el modelo híbrido.
+        Inicializa el modelo hbrido.
         
         Args:
-            num_outputs: Número de salidas (4: alto, ancho, grosor, peso)
+            num_outputs: Nmero de salidas (4: alto, ancho, grosor, peso)
             pretrained: Si usar pesos pre-entrenados
             dropout_rate: Tasa de dropout
-            num_pixel_features: Número de features de píxeles (5 por defecto)
-            use_pixel_features: Si usar features de píxeles
+            num_pixel_features: Nmero de features de pxeles (5 por defecto)
+            use_pixel_features: Si usar features de pxeles
         """
         super(HybridCacaoRegression, self).__init__()
         
@@ -306,7 +306,7 @@ class HybridCacaoRegression(nn.Module):
         )
         convnext_features = self.convnext.num_features  # 768
         
-        # Branch para features de píxeles (si está habilitado)
+        # Branch para features de pxeles (si est habilitado)
         if use_pixel_features:
             self.pixel_branch = nn.Sequential(
                 nn.Linear(num_pixel_features, 64),
@@ -319,10 +319,10 @@ class HybridCacaoRegression(nn.Module):
         else:
             pixel_features = 0
         
-        # Calcular tamaño total de features fusionadas
+        # Calcular tamao total de features fusionadas
         total_features = resnet_features + convnext_features + pixel_features
         
-        # Proyección de features para normalizar dimensiones
+        # Proyeccin de features para normalizar dimensiones
         self.resnet_projection = nn.Sequential(
             nn.Linear(resnet_features, 256),
             nn.ReLU(inplace=True),
@@ -335,10 +335,10 @@ class HybridCacaoRegression(nn.Module):
             nn.Dropout(dropout_rate)
         )
         
-        # Tamaño después de proyección
-        fused_features = 256 + 256 + pixel_features  # 512 + 128 si usa píxeles, 512 si no
+        # Tamao despus de proyeccin
+        fused_features = 256 + 256 + pixel_features  # 512 + 128 si usa pxeles, 512 si no
         
-        # Capa de fusión
+        # Capa de fusin
         self.fusion = nn.Sequential(
             nn.Linear(fused_features, 512),
             nn.ReLU(inplace=True),
@@ -348,7 +348,7 @@ class HybridCacaoRegression(nn.Module):
             nn.Dropout(dropout_rate)
         )
         
-        # Cabeza de regresión
+        # Cabeza de regresin
         self.regression_head = nn.Sequential(
             nn.Linear(256, 128),
             nn.ReLU(inplace=True),
@@ -360,11 +360,11 @@ class HybridCacaoRegression(nn.Module):
     
     def forward(self, image: torch.Tensor, pixel_features: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
-        Forward pass del modelo híbrido.
+        Forward pass del modelo hbrido.
         
         Args:
             image: Tensor de imagen [batch, 3, 224, 224]
-            pixel_features: Tensor de features de píxeles [batch, num_pixel_features] (opcional)
+            pixel_features: Tensor de features de pxeles [batch, num_pixel_features] (opcional)
             
         Returns:
             Predicciones [batch, num_outputs]
@@ -377,26 +377,26 @@ class HybridCacaoRegression(nn.Module):
         convnext_feat = self.convnext(image)  # [batch, 768]
         convnext_feat = self.convnext_projection(convnext_feat)  # [batch, 256]
         
-        # Procesar features de píxeles si están disponibles
+        # Procesar features de pxeles si estn disponibles
         if self.use_pixel_features and pixel_features is not None:
             pixel_feat = self.pixel_branch(pixel_features)  # [batch, 128]
             # Concatenar todas las features
             fused = torch.cat([resnet_feat, convnext_feat, pixel_feat], dim=1)  # [batch, 640]
         else:
-            # Sin features de píxeles
+            # Sin features de pxeles
             fused = torch.cat([resnet_feat, convnext_feat], dim=1)  # [batch, 512]
         
         # Fusionar
         fused = self.fusion(fused)  # [batch, 256]
         
-        # Regresión
+        # Regresin
         output = self.regression_head(fused)  # [batch, num_outputs]
         
         return output
     
     def get_features(self, image: torch.Tensor, pixel_features: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
-        Extrae features antes de la regresión (útil para análisis).
+        Extrae features antes de la regresin (til para anlisis).
         
         Returns:
             Features fusionadas [batch, 256]
@@ -408,7 +408,7 @@ class HybridCacaoRegression(nn.Module):
         convnext_feat = self.convnext(image)
         convnext_feat = self.convnext_projection(convnext_feat)
         
-        # Procesar features de píxeles si están disponibles
+        # Procesar features de pxeles si estn disponibles
         if self.use_pixel_features and pixel_features is not None:
             pixel_feat = self.pixel_branch(pixel_features)
             fused = torch.cat([resnet_feat, convnext_feat, pixel_feat], dim=1)
@@ -428,22 +428,22 @@ def create_model(
     use_pixel_features: bool = True
 ) -> nn.Module:
     """
-    FunciÃ³n de conveniencia para crear modelos.
+    Función de conveniencia para crear modelos.
     
     Args:
         model_type: Tipo de modelo ("resnet18", "convnext_tiny", o "hybrid")
-        num_outputs: NÃºmero de salidas (ignorado si multi_head=True o hybrid=True)
+        num_outputs: Número de salidas (ignorado si multi_head=True o hybrid=True)
         pretrained: Si usar pesos pre-entrenados
         dropout_rate: Tasa de dropout
         multi_head: Si crear modelo multi-head
-        hybrid: Si crear modelo híbrido (fusiona ResNet18 + ConvNeXt + Píxeles)
-        use_pixel_features: Si usar features de píxeles (solo si hybrid=True)
+        hybrid: Si crear modelo hbrido (fusiona ResNet18 + ConvNeXt + Pxeles)
+        use_pixel_features: Si usar features de pxeles (solo si hybrid=True)
         
     Returns:
         Modelo creado
     """
     if hybrid:
-        # Modelo híbrido que fusiona ResNet18 + ConvNeXt + Píxeles
+        # Modelo hbrido que fusiona ResNet18 + ConvNeXt + Pxeles
         return HybridCacaoRegression(
             num_outputs=4 if num_outputs == 1 else num_outputs,
             pretrained=pretrained,
@@ -471,7 +471,7 @@ def create_model(
                 dropout_rate=dropout_rate
             )
         elif model_type == "hybrid":
-            # Si se especifica "hybrid" sin flag, crear modelo híbrido
+            # Si se especifica "hybrid" sin flag, crear modelo hbrido
             return HybridCacaoRegression(
                 num_outputs=4 if num_outputs == 1 else num_outputs,
                 pretrained=pretrained,
@@ -484,13 +484,13 @@ def create_model(
 
 def get_model_info(model: nn.Module) -> Dict[str, any]:
     """
-    Obtiene informaciÃ³n del modelo.
+    Obtiene información del modelo.
     
     Args:
         model: Modelo a analizar
         
     Returns:
-        Diccionario con informaciÃ³n del modelo
+        Diccionario con información del modelo
     """
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -504,7 +504,7 @@ def get_model_info(model: nn.Module) -> Dict[str, any]:
 
 
 def count_parameters(model: nn.Module) -> int:
-    """Cuenta el nÃºmero total de parÃ¡metros del modelo."""
+    """Cuenta el número total de parámetros del modelo."""
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 

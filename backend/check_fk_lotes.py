@@ -46,7 +46,7 @@ def check_and_fix_foreign_key():
         fks = cursor.fetchall()
         
         if not fks:
-            print("\n⚠️  No se encontró foreign key en fincas_app_lote.finca_id")
+            print("\n[WARN]  No se encontró foreign key en fincas_app_lote.finca_id")
             print("Creando foreign key...")
             
             # Verificar si la tabla api_finca existe
@@ -67,7 +67,7 @@ def check_and_fix_foreign_key():
                 """)
                 print(f"✅ Foreign key creada: {constraint_name}")
             else:
-                print("❌ La tabla api_finca no existe")
+                print("[ERROR] La tabla api_finca no existe")
                 return
         else:
             print(f"\n📋 Foreign keys encontradas: {len(fks)}")
@@ -77,7 +77,7 @@ def check_and_fix_foreign_key():
                 
                 # Verificar si apunta a la tabla correcta
                 if foreign_table != 'api_finca':
-                    print(f"\n⚠️  PROBLEMA: FK apunta a '{foreign_table}' pero debería apuntar a 'api_finca'")
+                    print(f"\n[WARN]  PROBLEMA: FK apunta a '{foreign_table}' pero debería apuntar a 'api_finca'")
                     print(f"Corrigiendo foreign key...")
                     
                     # Eliminar FK incorrecta
@@ -124,7 +124,7 @@ def check_and_fix_foreign_key():
     orphaned_lotes = cursor.fetchall()
     
     if orphaned_lotes:
-        print(f"\n⚠️  Lotes huérfanos encontrados: {len(orphaned_lotes)}")
+        print(f"\n[WARN]  Lotes huérfanos encontrados: {len(orphaned_lotes)}")
         print("Lotes sin finca válida:")
         for lote in orphaned_lotes:
             print(f"  - Lote ID: {lote[0]}, finca_id: {lote[1]}")

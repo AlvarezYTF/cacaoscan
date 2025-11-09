@@ -1,5 +1,5 @@
-﻿"""
-Tests para endpoints de imÃ¡genes de CacaoScan.
+"""
+Tests para endpoints de imágenes de CacaoScan.
 """
 from django.test import TestCase
 from django.contrib.auth.models import User
@@ -14,7 +14,7 @@ from api.models import CacaoImage, CacaoPrediction
 
 
 class ImagesEndpointsTestCase(APITestCase):
-    """Tests para endpoints de imÃ¡genes."""
+    """Tests para endpoints de imágenes."""
     
     def setUp(self):
         """Configurar datos de prueba."""
@@ -43,10 +43,10 @@ class ImagesEndpointsTestCase(APITestCase):
             file_type='image/jpeg',
             processed=True,
             finca='Finca Test',
-            region='RegiÃ³n Test'
+            region='Región Test'
         )
         
-        # Crear predicciÃ³n de prueba
+        # Crear predicción de prueba
         self.cacao_prediction = CacaoPrediction.objects.create(
             image=self.cacao_image,
             alto_mm=15.5,
@@ -76,7 +76,7 @@ class ImagesEndpointsTestCase(APITestCase):
         )
     
     def test_images_list_authenticated(self):
-        """Test lista de imÃ¡genes para usuario autenticado."""
+        """Test lista de imágenes para usuario autenticado."""
         self.client.force_authenticate(user=self.user)
         url = reverse('images-list')
         response = self.client.get(url)
@@ -87,19 +87,19 @@ class ImagesEndpointsTestCase(APITestCase):
         self.assertEqual(response.data['count'], 1)
     
     def test_images_list_unauthenticated(self):
-        """Test lista de imÃ¡genes para usuario no autenticado."""
+        """Test lista de imágenes para usuario no autenticado."""
         url = reverse('images-list')
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
     def test_images_list_with_filters(self):
-        """Test lista de imÃ¡genes con filtros."""
+        """Test lista de imágenes con filtros."""
         self.client.force_authenticate(user=self.user)
         url = reverse('images-list')
         
-        # Filtrar por regiÃ³n
-        response = self.client.get(url, {'region': 'RegiÃ³n Test'})
+        # Filtrar por región
+        response = self.client.get(url, {'region': 'Región Test'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
         
@@ -114,7 +114,7 @@ class ImagesEndpointsTestCase(APITestCase):
         self.assertEqual(response.data['count'], 1)
     
     def test_images_list_pagination(self):
-        """Test paginaciÃ³n en lista de imÃ¡genes."""
+        """Test paginación en lista de imágenes."""
         self.client.force_authenticate(user=self.user)
         url = reverse('images-list')
         
@@ -168,7 +168,7 @@ class ImagesEndpointsTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
     def test_images_stats_authenticated(self):
-        """Test estadÃ­sticas de imÃ¡genes para usuario autenticado."""
+        """Test estadísticas de imágenes para usuario autenticado."""
         self.client.force_authenticate(user=self.user)
         url = reverse('images-stats')
         response = self.client.get(url)
@@ -182,14 +182,14 @@ class ImagesEndpointsTestCase(APITestCase):
         self.assertIn('average_dimensions', response.data)
     
     def test_images_stats_unauthenticated(self):
-        """Test estadÃ­sticas de imÃ¡genes para usuario no autenticado."""
+        """Test estadísticas de imágenes para usuario no autenticado."""
         url = reverse('images-stats')
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
     def test_images_stats_data_accuracy(self):
-        """Test precisiÃ³n de datos en estadÃ­sticas."""
+        """Test precisión de datos en estadísticas."""
         self.client.force_authenticate(user=self.user)
         url = reverse('images-stats')
         response = self.client.get(url)

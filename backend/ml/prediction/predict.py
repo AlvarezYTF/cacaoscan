@@ -1,6 +1,6 @@
-﻿"""
-MÃ³dulo de predicciÃ³n unificada para CacaoScan.
-Integra segmentaciÃ³n YOLOv8-seg con modelos de regresiÃ³n.
+"""
+Módulo de predicción unificada para CacaoScan.
+Integra segmentación YOLOv8-seg con modelos de regresión.
 """
 import time
 import uuid
@@ -30,41 +30,41 @@ logger = get_ml_logger("cacaoscan.ml.prediction")
 
 
 # ============================================================================
-# CONSTANTES DE CONFIGURACIÓN
+# CONSTANTES DE CONFIGURACIN
 # ============================================================================
 
 @dataclass
 class PredictionConfig:
-    """Configuración para predicción."""
-    # Umbrales de validación
+    """Configuracin para prediccin."""
+    # Umbrales de validacin
     MIN_IMAGE_STD: float = 5.0
     MIN_TENSOR_STD: float = 0.01
     MIN_CROP_STD: float = 10.0
     
-    # Límites físicos de targets (mm o g)
+    # Lmites fsicos de targets (mm o g)
     TARGET_LIMITS: Dict[str, Tuple[float, float]] = None
     
     # Escalado visual
     SCALE_FACTORS: Dict[str, float] = None
     
-    # Pesos de combinación modelo/visual
+    # Pesos de combinacin modelo/visual
     # PRIORIZAR SIEMPRE EL MODELO ENTRENADO (fue entrenado con el dataset completo)
     MODEL_WEIGHT_NORMAL: float = 0.95  # 95% modelo entrenado (confianza alta)
     VISUAL_WEIGHT_NORMAL: float = 0.05  # 5% visual (ajuste fino solamente)
     MODEL_WEIGHT_MEAN: float = 0.85  # Si modelo devuelve media, usar 85% modelo + 15% visual
-    VISUAL_WEIGHT_MEAN: float = 0.15  # Mayor peso visual solo cuando modelo está cerca de media
+    VISUAL_WEIGHT_MEAN: float = 0.15  # Mayor peso visual solo cuando modelo est cerca de media
     
-    # Validación de crop
+    # Validacin de crop
     MIN_CROP_SIZE: int = 50
     MIN_VISIBLE_RATIO: float = 0.2
     MAX_BORDER_WHITE_RATIO: float = 0.3
     MIN_OBJECT_RATIO: float = 0.1
     
-    # Validación de detección YOLO
-    MIN_YOLO_CONFIDENCE: float = 0.25  # Confianza mínima de YOLO (reducido para aceptar más casos)
-    MIN_YOLO_AREA: int = 500  # Área mínima del objeto detectado (píxeles, reducido)
+    # Validacin de deteccin YOLO
+    MIN_YOLO_CONFIDENCE: float = 0.25  # Confianza mnima de YOLO (reducido para aceptar ms casos)
+    MIN_YOLO_AREA: int = 500  # rea mnima del objeto detectado (pxeles, reducido)
     
-    # Configuración de YOLO
+    # Configuracin de YOLO
     CROP_SIZE: int = 512
     PADDING: int = 10
     
@@ -104,7 +104,7 @@ class PredictionConfig:
             self.IMAGENET_STD = [0.229, 0.224, 0.225]
 
 
-# Configuración global
+# Configuracin global
 CONFIG = PredictionConfig()
 
 
@@ -113,22 +113,22 @@ CONFIG = PredictionConfig()
 # ============================================================================
 
 class PredictionError(Exception):
-    """Excepción base para errores de predicción."""
+    """Excepcin base para errores de prediccin."""
     pass
 
 
 class ModelNotLoadedError(PredictionError):
-    """Error cuando los modelos no están cargados."""
+    """Error cuando los modelos no estn cargados."""
     pass
 
 
 class InvalidImageError(PredictionError):
-    """Error cuando la imagen es inválida."""
+    """Error cuando la imagen es invlida."""
     pass
 
 
 class SegmentationError(PredictionError):
-    """Error en segmentación."""
+    """Error en segmentacin."""
     pass
 
 
@@ -145,7 +145,7 @@ class CacaoPredictor:
         
         Args:
             confidence_threshold: Umbral de confianza para YOLO
-            config: Configuración personalizada (opcional)
+            config: Configuracin personalizada (opcional)
         """
         self.confidence_threshold = confidence_threshold
         self.config = config or CONFIG
@@ -159,20 +159,20 @@ class CacaoPredictor:
         self.device = self._get_device()
         self.models_loaded = False
         
-        # Límites del dataset (se cargarán desde escaladores)
+        # Lmites del dataset (se cargarn desde escaladores)
         self.dataset_limits: Dict[str, Tuple[float, float]] = {}
         
-        # Estadísticas del dataset (para optimización basada en datos reales)
+        # Estadsticas del dataset (para optimizacin basada en datos reales)
         self.dataset_stats: Dict[str, Dict[str, float]] = {}
         
-        # Calibración de píxeles (relaciones directas del dataset)
+        # Calibracin de pxeles (relaciones directas del dataset)
         self.pixel_calibration: Optional[Dict[str, Any]] = None
         self._load_pixel_calibration()
         
         # Directorios
         self._setup_directories()
         
-        # Transformación precomputada (caché)
+        # Transformacin precomputada (cach)
         self._image_transform = transforms.Compose([
             transforms.Resize(self.config.IMAGE_SIZE),
             transforms.ToTensor(),
@@ -182,16 +182,16 @@ class CacaoPredictor:
         logger.info(f"Predictor inicializado (threshold={confidence_threshold}, device={self.device})")
     
     def _load_pixel_calibration(self) -> None:
-        """Carga el archivo de calibración de píxeles del dataset si existe."""
+        """Carga el archivo de calibracin de pxeles del dataset si existe."""
         calibration_file = Path("media/datasets/pixel_calibration.json")
         if calibration_file.exists():
             try:
                 import json
                 with open(calibration_file, 'r', encoding='utf-8') as f:
                     self.pixel_calibration = json.load(f)
-                logger.info(f"✅ Calibración de píxeles cargada: {len(self.pixel_calibration.get('calibration_records', []))} registros")
+                logger.info(f" Calibracin de pxeles cargada: {len(self.pixel_calibration.get('calibration_records', []))} registros")
             except Exception as e:
-                logger.warning(f"⚠️ Error cargando calibración de píxeles: {e}")
+                logger.warning(f"[WARN] Error cargando calibracin de pxeles: {e}")
                 self.pixel_calibration = None
     
     def _setup_directories(self) -> None:
@@ -216,9 +216,9 @@ class CacaoPredictor:
     
     def load_artifacts(self) -> bool:
         """
+        Carga todos los artefactos necesarios para la prediccin.
         Carga todos los artefactos necesarios para la predicción.
-        Carga todos los artefactos necesarios para la predicciÃ³n.
-        Si no existen, entrena automÃ¡ticamente los modelos.
+        Si no existen, entrena automáticamente los modelos.
         
         Returns:
             True si se cargaron exitosamente, False en caso contrario
@@ -239,7 +239,7 @@ class CacaoPredictor:
             if not self._load_scalers():
                 return False
             
-            # 4. Cargar modelos de regresiÃ³n
+            # 4. Cargar modelos de regresión
             self.regression_models = {}
             
             for target in TARGETS:
@@ -312,26 +312,26 @@ class CacaoPredictor:
             logger.warning("Modelos no encontrados y AUTO_TRAIN_ENABLED=0")
             return False
         
-        logger.warning("Modelos no encontrados. Iniciando entrenamiento automático...")
+        logger.warning("Modelos no encontrados. Iniciando entrenamiento automtico...")
         return self._auto_train_models()
     
     def _auto_train_models(self) -> bool:
         """
-        Entrena automÃ¡ticamente los modelos si no existen.
+        Entrena automáticamente los modelos si no existen.
         
         Returns:
             True si el entrenamiento fue exitoso, False en caso contrario
         """
         try:
-            logger.info("ðŸš€ Iniciando entrenamiento automÃ¡tico de modelos...")
+            logger.info(" Iniciando entrenamiento automático de modelos...")
             
             # Importar funciones de entrenamiento
             from ..pipeline.train_all import run_training_pipeline
             
-            # ConfiguraciÃ³n de entrenamiento automÃ¡tico
+            # Configuración de entrenamiento automático
             config = {
-                'epochs': 30,  # Menos epochs para entrenamiento rÃ¡pido
-                'batch_size': 16,  # Batch size mÃ¡s pequeÃ±o para memoria
+                'epochs': 30,  # Menos epochs para entrenamiento rápido
+                'batch_size': 16,  # Batch size más pequeño para memoria
                 'learning_rate': 0.001,
                 'multi_head': False,
                 'model_type': 'resnet18',
@@ -340,30 +340,30 @@ class CacaoPredictor:
                 'save_best_only': True
             }
             
-            logger.info(f"Iniciando entrenamiento automático con config: {config}")
+            logger.info(f"Iniciando entrenamiento automtico con config: {config}")
             success = run_training_pipeline(**config)
             
             if success:
-                logger.info("Entrenamiento automático completado exitosamente")
+                logger.info("Entrenamiento automtico completado exitosamente")
             else:
-                logger.error("Error en entrenamiento automático")
+                logger.error("Error en entrenamiento automtico")
             
             return success
             
         except Exception as e:
-            logger.error(f"Error en entrenamiento automático: {e}", exc_info=True)
+            logger.error(f"Error en entrenamiento automtico: {e}", exc_info=True)
             return False
     
     def _load_scalers(self) -> bool:
-        """Carga los escaladores y extrae límites del dataset."""
+        """Carga los escaladores y extrae lmites del dataset."""
         try:
             self.scalers = load_scalers()
             logger.info("Escaladores cargados exitosamente")
             
-            # Extraer límites del dataset desde los escaladores
+            # Extraer lmites del dataset desde los escaladores
             self._extract_dataset_limits()
             
-            # Cargar estadísticas del dataset CSV para optimización
+            # Cargar estadsticas del dataset CSV para optimizacin
             self._load_dataset_statistics()
             
             return True
@@ -372,7 +372,7 @@ class CacaoPredictor:
             return False
     
     def _load_dataset_statistics(self) -> None:
-        """Carga estadísticas del dataset CSV para optimizar predicciones."""
+        """Carga estadsticas del dataset CSV para optimizar predicciones."""
         try:
             from ..data.dataset_loader import CacaoDatasetLoader
             
@@ -382,7 +382,7 @@ class CacaoPredictor:
             if stats and 'dimensions_stats' in stats:
                 self.dataset_stats = stats['dimensions_stats']
                 
-                logger.info("📊 Estadísticas del dataset cargadas para optimización:")
+                logger.info(" Estadsticas del dataset cargadas para optimizacin:")
                 for target in TARGETS:
                     if target in self.dataset_stats:
                         s = self.dataset_stats[target]
@@ -392,13 +392,13 @@ class CacaoPredictor:
                             f"min={s.get('min', 0):.2f}, max={s.get('max', 0):.2f}"
                         )
         except Exception as e:
-            logger.warning(f"No se pudieron cargar estadísticas del dataset: {e}")
+            logger.warning(f"No se pudieron cargar estadsticas del dataset: {e}")
             self.dataset_stats = {}
     
     def _extract_dataset_limits(self) -> None:
-        """Extrae límites min/max del dataset desde los escaladores."""
+        """Extrae lmites min/max del dataset desde los escaladores."""
         if not self.scalers or not self.scalers.is_fitted:
-            logger.warning("Escaladores no ajustados, usando límites por defecto")
+            logger.warning("Escaladores no ajustados, usando lmites por defecto")
             self.dataset_limits = self.config.TARGET_LIMITS.copy()
             return
         
@@ -406,7 +406,7 @@ class CacaoPredictor:
         
         for target in TARGETS:
             if target not in self.scalers.scalers:
-                logger.warning(f"Escalador no encontrado para {target}, usando límites por defecto")
+                logger.warning(f"Escalador no encontrado para {target}, usando lmites por defecto")
                 self.dataset_limits[target] = self.config.TARGET_LIMITS.get(target, (0.0, 100.0))
                 continue
             
@@ -425,12 +425,12 @@ class CacaoPredictor:
                 self.dataset_limits[target] = (min_val, max_val)
                 
                 logger.info(
-                    f"Límites del dataset para {target}: "
+                    f"Lmites del dataset para {target}: "
                     f"min={min_val:.2f}, max={max_val:.2f} "
                     f"(del dataset de entrenamiento)"
                 )
             else:
-                # Fallback: usar mean ± 3*std si no hay data_min_/data_max_
+                # Fallback: usar mean  3*std si no hay data_min_/data_max_
                 if hasattr(scaler, 'mean_') and hasattr(scaler, 'scale_'):
                     mean_val = float(scaler.mean_[0])
                     std_val = float(scaler.scale_[0])
@@ -438,16 +438,16 @@ class CacaoPredictor:
                     max_val = mean_val + 3 * std_val
                     self.dataset_limits[target] = (min_val, max_val)
                     logger.info(
-                        f"Límites estimados para {target} (mean±3std): "
+                        f"Lmites estimados para {target} (mean3std): "
                         f"min={min_val:.2f}, max={max_val:.2f}"
                     )
                 else:
-                    # Último fallback: usar límites por defecto
+                    # ltimo fallback: usar lmites por defecto
                     self.dataset_limits[target] = self.config.TARGET_LIMITS.get(target, (0.0, 100.0))
-                    logger.warning(f"Usando límites por defecto para {target}")
+                    logger.warning(f"Usando lmites por defecto para {target}")
     
     def _load_regression_models(self) -> bool:
-        """Carga los modelos de regresión."""
+        """Carga los modelos de regresin."""
         self.regression_models = {}
         
         for target in TARGETS:
@@ -473,7 +473,7 @@ class CacaoPredictor:
                 
                 self.regression_models[target] = model
                 logger.info(
-                    f"✅ Modelo entrenado cargado para {target} desde {model_path.name} "
+                    f" Modelo entrenado cargado para {target} desde {model_path.name} "
                     f"(usando pesos del entrenamiento con tu dataset)"
                 )
                 
@@ -485,7 +485,7 @@ class CacaoPredictor:
     
     def _preprocess_image(self, image: Image.Image) -> torch.Tensor:
         """
-        Preprocesa una imagen para los modelos de regresiÃ³n.
+        Preprocesa una imagen para los modelos de regresión.
         
         Args:
             image: Imagen PIL del grano
@@ -504,7 +504,7 @@ class CacaoPredictor:
         if image_std < self.config.MIN_IMAGE_STD:
             logger.warning(f"Imagen con std baja ({image_std:.2f}), puede causar predicciones pobres")
         
-        # Aplicar transformaciones (usar caché configurado)
+        # Aplicar transformaciones (usar cach configurado)
         # self._image_transform ya incluye Resize, ToTensor y Normalize
         tensor = self._image_transform(image)
         
@@ -523,13 +523,13 @@ class CacaoPredictor:
                 f"Imagen puede estar corrupta o ser uniforme."
             )
         
-        # Agregar dimensión de batch UNA SOLA VEZ: [3, 224, 224] -> [1, 3, 224, 224]
+        # Agregar dimensin de batch UNA SOLA VEZ: [3, 224, 224] -> [1, 3, 224, 224]
         tensor = tensor.unsqueeze(0)
         
         # Validar forma final
         if tensor.dim() != 4 or tensor.shape != (1, 3, 224, 224):
             raise InvalidImageError(
-                f"Tensor tiene forma incorrecta después de unsqueeze: {tensor.shape}. "
+                f"Tensor tiene forma incorrecta despus de unsqueeze: {tensor.shape}. "
                 f"Se esperaba [1, 3, 224, 224]"
             )
         
@@ -572,18 +572,18 @@ class CacaoPredictor:
         alpha: np.ndarray
     ) -> Dict[str, float]:
         """
-        Calcula dimensiones físicas reales basadas en análisis preciso de píxeles.
-        Usa la máscara del grano (sin fondo) para medir dimensiones físicas reales.
+        Calcula dimensiones fsicas reales basadas en anlisis preciso de pxeles.
+        Usa la mscara del grano (sin fondo) para medir dimensiones fsicas reales.
         
         Args:
-            object_area_pixels: Área real del grano en píxeles
-            width_pixels: Ancho del bounding box en píxeles
-            height_pixels: Alto del bounding box en píxeles
-            mask: Máscara binaria del grano
+            object_area_pixels: rea real del grano en pxeles
+            width_pixels: Ancho del bounding box en pxeles
+            height_pixels: Alto del bounding box en pxeles
+            mask: Mscara binaria del grano
             alpha: Canal alpha de la imagen
             
         Returns:
-            Diccionario con dimensiones físicas calculadas (alto_mm, ancho_mm, grosor_mm, peso_g)
+            Diccionario con dimensiones fsicas calculadas (alto_mm, ancho_mm, grosor_mm, peso_g)
         """
         if object_area_pixels == 0:
             return {
@@ -591,40 +591,40 @@ class CacaoPredictor:
                 'scale_factor': 0
             }
         
-        # Calcular factor de escala píxeles -> mm basado en estadísticas del dataset
-        # Usar dimensiones lineales para calibración más precisa
+        # Calcular factor de escala pxeles -> mm basado en estadsticas del dataset
+        # Usar dimensiones lineales para calibracin ms precisa
         scale_factor = self._calculate_pixel_to_mm_scale_factor(
             object_area_pixels, 
             width_pixels=width_pixels, 
             height_pixels=height_pixels
         )
         
-        # Calcular dimensiones físicas basadas en píxeles reales
-        # MÉTODO MEJORADO: Usar relaciones más precisas basadas en forma real del grano
+        # Calcular dimensiones fsicas basadas en pxeles reales
+        # MTODO MEJORADO: Usar relaciones ms precisas basadas en forma real del grano
         
-        # 1. ANCHO: usar el ancho del bounding box (máxima extensión horizontal)
-        # Ajuste fino: considerar que el bounding box puede ser ligeramente más grande
-        # Usar factor de corrección basado en relación área real / área bbox
+        # 1. ANCHO: usar el ancho del bounding box (mxima extensin horizontal)
+        # Ajuste fino: considerar que el bounding box puede ser ligeramente ms grande
+        # Usar factor de correccin basado en relacin rea real / rea bbox
         bbox_area_pixels = width_pixels * height_pixels
         area_fill_ratio = object_area_pixels / bbox_area_pixels if bbox_area_pixels > 0 else 0.75
         
-        # Aplicar corrección más precisa al ancho
-        # Si el área del grano ocupa menos del 80% del bbox, el bbox es más grande de lo necesario
+        # Aplicar correccin ms precisa al ancho
+        # Si el rea del grano ocupa menos del 80% del bbox, el bbox es ms grande de lo necesario
         width_correction = np.sqrt(max(0.70, min(0.95, area_fill_ratio)))  # Factor entre 0.84 y 0.97
         ancho_mm = width_pixels * scale_factor * width_correction
         
-        # 2. ALTO: usar el alto del bounding box (máxima extensión vertical)
-        # Mismo factor de corrección aplicado
+        # 2. ALTO: usar el alto del bounding box (mxima extensin vertical)
+        # Mismo factor de correccin aplicado
         alto_mm = height_pixels * scale_factor * width_correction
         
-        # 3. GROSOR: estimar usando relaciones más precisas del dataset
-        # MEJORADO: Usar relaciones directas del dataset para mejor precisión
+        # 3. GROSOR: estimar usando relaciones ms precisas del dataset
+        # MEJORADO: Usar relaciones directas del dataset para mejor precisin
         if ancho_mm > 0 and alto_mm > 0:
-            # Calcular área real del grano en mm²
+            # Calcular rea real del grano en mm
             area_mm2 = object_area_pixels * (scale_factor ** 2)
             
-            # Relación entre área real del grano y área del bounding box
-            # Esto nos dice qué tan "lleno" está el bbox (factor de forma)
+            # Relacin entre rea real del grano y rea del bounding box
+            # Esto nos dice qu tan "lleno" est el bbox (factor de forma)
             aspect_ratio_area = area_mm2 / (ancho_mm * alto_mm) if (ancho_mm * alto_mm) > 0 else 0.75
             
             # Grosor estimado usando relaciones PRECISAS del dataset
@@ -634,19 +634,19 @@ class CacaoPredictor:
                 ancho_mean = self.dataset_stats.get('ancho', {}).get('mean', 12.5)
                 
                 # Calcular relaciones grosor/alto y grosor/ancho del dataset
-                grosor_alto_ratio = grosor_mean / alto_mean  # Típicamente ~0.4-0.45
-                grosor_ancho_ratio = grosor_mean / ancho_mean  # Típicamente ~0.75-0.85
+                grosor_alto_ratio = grosor_mean / alto_mean  # Tpicamente ~0.4-0.45
+                grosor_ancho_ratio = grosor_mean / ancho_mean  # Tpicamente ~0.75-0.85
                 
-                # Grosor usando PROMEDIO PONDERADO más preciso
-                # Para granos de cacao: el grosor está más relacionado con el ancho que con el alto
-                # Usar peso 60% ancho + 40% alto (los granos típicamente tienen grosor similar al ancho)
+                # Grosor usando PROMEDIO PONDERADO ms preciso
+                # Para granos de cacao: el grosor est ms relacionado con el ancho que con el alto
+                # Usar peso 60% ancho + 40% alto (los granos tpicamente tienen grosor similar al ancho)
                 grosor_from_ancho = ancho_mm * grosor_ancho_ratio
                 grosor_from_alto = alto_mm * grosor_alto_ratio
                 
-                # Promedio ponderado: más peso al ancho (grosor más relacionado con ancho)
+                # Promedio ponderado: ms peso al ancho (grosor ms relacionado con ancho)
                 grosor_mm = (grosor_from_ancho * 0.65 + grosor_from_alto * 0.35)
                 
-                # Ajuste fino según factor de forma (si el área del grano es mayor, grosor puede ser mayor)
+                # Ajuste fino segn factor de forma (si el rea del grano es mayor, grosor puede ser mayor)
                 # Pero ajuste conservador para evitar sobre-estimar
                 if aspect_ratio_area > 0.8:
                     # Grano ocupa mucho del bbox -> grosor puede ser ligeramente mayor
@@ -655,18 +655,18 @@ class CacaoPredictor:
                     # Grano ocupa poco del bbox -> grosor puede ser ligeramente menor
                     grosor_mm *= 0.95
             else:
-                # Fallback: usar relación empírica mejorada
-                # Grosor típico: ~0.8 del ancho (granos de cacao tienen grosor similar al ancho)
+                # Fallback: usar relacin emprica mejorada
+                # Grosor tpico: ~0.8 del ancho (granos de cacao tienen grosor similar al ancho)
                 grosor_mm = ancho_mm * 0.80
         
         # 4. PESO: calcular usando volumen estimado y densidad MEJORADA
         # Usar relaciones del dataset para calibrar mejor el peso
         if alto_mm > 0 and ancho_mm > 0 and grosor_mm > 0:
-            # Volumen de elipsoide: (4/3) * π * a * b * c
+            # Volumen de elipsoide: (4/3) *  * a * b * c
             volume_mm3 = (4.0 / 3.0) * np.pi * (alto_mm/2) * (ancho_mm/2) * (grosor_mm/2)
             
-            # Densidad promedio de granos de cacao: ~1.05-1.15 g/cm³
-            # Usar densidad promedio calibrada con el dataset si está disponible
+            # Densidad promedio de granos de cacao: ~1.05-1.15 g/cm
+            # Usar densidad promedio calibrada con el dataset si est disponible
             if self.dataset_stats and 'peso' in self.dataset_stats:
                 peso_mean = self.dataset_stats['peso'].get('mean', 1.7)
                 alto_mean = self.dataset_stats['alto'].get('mean', 23.5)
@@ -677,16 +677,16 @@ class CacaoPredictor:
                 volume_mean_mm3 = (4.0 / 3.0) * np.pi * (alto_mean/2) * (ancho_mean/2) * (grosor_mean/2)
                 
                 # Calcular densidad calibrada del dataset
-                density_calibrated = peso_mean / volume_mean_mm3  # g/mm³
+                density_calibrated = peso_mean / volume_mean_mm3  # g/mm
                 
-                # Usar densidad calibrada si es razonable (0.0008 - 0.0015 g/mm³)
+                # Usar densidad calibrada si es razonable (0.0008 - 0.0015 g/mm)
                 if 0.0008 <= density_calibrated <= 0.0015:
                     density_g_per_mm3 = density_calibrated
                 else:
-                    # Fallback a densidad típica
-                    density_g_per_mm3 = 1.10e-3  # 1.10 g/cm³
+                    # Fallback a densidad tpica
+                    density_g_per_mm3 = 1.10e-3  # 1.10 g/cm
             else:
-                # Densidad típica de granos de cacao: ~1.10 g/cm³ = 1.10e-3 g/mm³
+                # Densidad tpica de granos de cacao: ~1.10 g/cm = 1.10e-3 g/mm
                 density_g_per_mm3 = 1.10e-3
             
             peso_g = volume_mm3 * density_g_per_mm3
@@ -694,16 +694,16 @@ class CacaoPredictor:
             # Ajuste fino basado en relaciones del dataset
             if self.dataset_stats and 'peso' in self.dataset_stats:
                 peso_mean = self.dataset_stats['peso'].get('mean', 1.7)
-                # Si el peso calculado está muy desviado del promedio, ajustar ligeramente
+                # Si el peso calculado est muy desviado del promedio, ajustar ligeramente
                 peso_ratio = peso_g / peso_mean
                 if peso_ratio < 0.5:
-                    # Peso muy bajo -> aumentar ligeramente (puede ser subestimación)
+                    # Peso muy bajo -> aumentar ligeramente (puede ser subestimacin)
                     peso_g *= 1.15
                 elif peso_ratio > 1.5:
                     # Peso muy alto -> reducir ligeramente
                     peso_g *= 0.90
         else:
-            # Fallback: usar área y relaciones del dataset
+            # Fallback: usar rea y relaciones del dataset
             if self.dataset_stats and 'peso' in self.dataset_stats and 'alto' in self.dataset_stats:
                 peso_mean = self.dataset_stats['peso'].get('mean', 1.7)
                 alto_mean = self.dataset_stats['alto'].get('mean', 23.5)
@@ -714,16 +714,16 @@ class CacaoPredictor:
                     volume_ratio = (alto_mm * ancho_mm * (ancho_mm * 0.8)) / (alto_mean * ancho_mean * (ancho_mean * 0.8))
                     peso_g = peso_mean * volume_ratio
                 else:
-                    # Último fallback: usar área
+                    # ltimo fallback: usar rea
                     peso_g = peso_mean * (object_area_pixels * (scale_factor ** 2)) / (alto_mean ** 2)
             else:
-                peso_g = object_area_pixels * (scale_factor ** 2) * 0.00012  # Factor empírico ajustado
+                peso_g = object_area_pixels * (scale_factor ** 2) * 0.00012  # Factor emprico ajustado
         
         logger.info(
-            f"📏 ANÁLISIS DIRECTO DE PÍXELES: "
-            f"Área={object_area_pixels}px, BBox={width_pixels}x{height_pixels}px → "
+            f" ANLISIS DIRECTO DE PXELES: "
+            f"rea={object_area_pixels}px, BBox={width_pixels}x{height_pixels}px  "
             f"Alto={alto_mm:.2f}mm, Ancho={ancho_mm:.2f}mm, Grosor={grosor_mm:.2f}mm, Peso={peso_g:.3f}g "
-            f"(Factor escala: {scale_factor:.6f} mm/píxel)"
+            f"(Factor escala: {scale_factor:.6f} mm/pxel)"
         )
         
         return {
@@ -736,26 +736,26 @@ class CacaoPredictor:
     
     def _calculate_pixel_to_mm_scale_factor(self, object_area_pixels: int, width_pixels: int = None, height_pixels: int = None) -> float:
         """
-        Calcula el factor de escala píxeles -> mm basado en calibración del dataset o estadísticas.
+        Calcula el factor de escala pxeles -> mm basado en calibracin del dataset o estadsticas.
         
-        PRIORIDAD: 1) Calibración directa del dataset (pixel_calibration.json)
-                   2) Estadísticas del dataset
+        PRIORIDAD: 1) Calibracin directa del dataset (pixel_calibration.json)
+                   2) Estadsticas del dataset
                    3) Factor por defecto
         
         Args:
-            object_area_pixels: Área del grano en píxeles
-            width_pixels: Ancho del bounding box en píxeles (opcional)
-            height_pixels: Alto del bounding box en píxeles (opcional)
+            object_area_pixels: rea del grano en pxeles
+            width_pixels: Ancho del bounding box en pxeles (opcional)
+            height_pixels: Alto del bounding box en pxeles (opcional)
             
         Returns:
-            Factor de escala en mm/píxel
+            Factor de escala en mm/pxel
         """
-        # PRIORIDAD 1: Usar calibración directa del dataset si está disponible
+        # PRIORIDAD 1: Usar calibracin directa del dataset si est disponible
         if self.pixel_calibration and width_pixels and height_pixels:
             calibration_records = self.pixel_calibration.get('calibration_records', [])
             if calibration_records:
-                # Buscar registro más similar basado en dimensiones en píxeles
-                # Usar el registro con dimensiones más cercanas
+                # Buscar registro ms similar basado en dimensiones en pxeles
+                # Usar el registro con dimensiones ms cercanas
                 best_match = None
                 min_distance = float('inf')
                 
@@ -773,31 +773,31 @@ class CacaoPredictor:
                         best_match = record
                 
                 if best_match and min_distance < 0.5:  # Umbral de similitud (50%)
-                    # Usar factor de escala del registro más similar
+                    # Usar factor de escala del registro ms similar
                     scale_factors = best_match.get('scale_factors', {})
                     avg_scale = scale_factors.get('average_mm_per_pixel', 0)
                     
                     if avg_scale > 0:
                         logger.debug(
-                            f"📐 Calibración directa del dataset: "
-                            f"factor={avg_scale:.6f} mm/píxel "
+                            f" Calibracin directa del dataset: "
+                            f"factor={avg_scale:.6f} mm/pxel "
                             f"(registro ID={best_match.get('id')}, distancia={min_distance:.3f})"
                         )
                         return float(avg_scale)
                 
-                # Si no hay coincidencia cercana, usar estadísticas agregadas de la calibración
+                # Si no hay coincidencia cercana, usar estadsticas agregadas de la calibracin
                 stats = self.pixel_calibration.get('statistics', {})
                 scale_stats = stats.get('scale_factors', {})
                 if scale_stats.get('mean', 0) > 0:
-                    logger.debug(f"📐 Usando factor promedio de calibración: {scale_stats['mean']:.6f} mm/píxel")
+                    logger.debug(f" Usando factor promedio de calibracin: {scale_stats['mean']:.6f} mm/pxel")
                     return float(scale_stats['mean'])
         
-        # PRIORIDAD 2: Usar estadísticas del dataset si no hay calibración directa
-        # Si no tenemos estadísticas del dataset, usar factor por defecto calibrado
+        # PRIORIDAD 2: Usar estadsticas del dataset si no hay calibracin directa
+        # Si no tenemos estadsticas del dataset, usar factor por defecto calibrado
         if not self.dataset_stats or 'alto' not in self.dataset_stats:
-            # Factor por defecto basado en calibración empírica
-            # Para grano típico: dimensiones promedio ~23mm x 12mm
-            # Si tenemos dimensiones en píxeles, usar directamente
+            # Factor por defecto basado en calibracin emprica
+            # Para grano tpico: dimensiones promedio ~23mm x 12mm
+            # Si tenemos dimensiones en pxeles, usar directamente
             if width_pixels and height_pixels:
                 # Calcular factor usando ambas dimensiones
                 typical_alto_mm = 23.5
@@ -809,7 +809,7 @@ class CacaoPredictor:
                     default_scale = (scale_alto + scale_ancho) / 2
                     return np.clip(default_scale, 0.015, 0.050)
             
-            # Fallback: usar área
+            # Fallback: usar rea
             typical_area_pixels = 20000
             typical_alto_mm = 23.5
             typical_ancho_mm = 12.5
@@ -817,75 +817,75 @@ class CacaoPredictor:
             default_scale = np.sqrt(typical_area_mm2 / typical_area_pixels)
             return np.clip(default_scale, 0.015, 0.050)
         
-        # Obtener estadísticas del dataset
+        # Obtener estadsticas del dataset
         alto_stats = self.dataset_stats.get('alto', {})
         ancho_stats = self.dataset_stats.get('ancho', {})
         
         alto_mean = alto_stats.get('mean', 23.5)
         ancho_mean = ancho_stats.get('mean', 12.5)
         
-        # CALIBRACIÓN PRECISA: Usar relación DIRECTA entre dimensiones lineales y píxeles
-        # Si tenemos dimensiones en píxeles, usar directamente para calibración más precisa
+        # CALIBRACIN PRECISA: Usar relacin DIRECTA entre dimensiones lineales y pxeles
+        # Si tenemos dimensiones en pxeles, usar directamente para calibracin ms precisa
         if width_pixels and height_pixels and width_pixels > 0 and height_pixels > 0:
             # Calcular factor de escala usando dimensiones lineales directamente
-            # Esto es más preciso que usar área
+            # Esto es ms preciso que usar rea
             scale_factor_alto = alto_mean / height_pixels
             scale_factor_ancho = ancho_mean / width_pixels
             
-            # Usar promedio ponderado (peso según aspecto del grano)
+            # Usar promedio ponderado (peso segn aspecto del grano)
             aspect_ratio = width_pixels / height_pixels if height_pixels > 0 else 1.0
-            if aspect_ratio > 0.5:  # Granos más anchos
+            if aspect_ratio > 0.5:  # Granos ms anchos
                 scale_factor = (scale_factor_alto * 0.6 + scale_factor_ancho * 0.4)
-            else:  # Granos más largos
+            else:  # Granos ms largos
                 scale_factor = (scale_factor_alto * 0.7 + scale_factor_ancho * 0.3)
             
-            # Ajuste fino según área relativa al promedio
+            # Ajuste fino segn rea relativa al promedio
             if self.dataset_stats:
-                # Calcular área promedio esperada del dataset
+                # Calcular rea promedio esperada del dataset
                 typical_area_mm2 = np.pi * (alto_mean / 2) * (ancho_mean / 2)
-                # Área típica en píxeles (calibrada para dataset)
-                typical_area_pixels_dataset = 20000  # Valor más conservador
+                # rea tpica en pxeles (calibrada para dataset)
+                typical_area_pixels_dataset = 20000  # Valor ms conservador
                 area_ratio = object_area_pixels / typical_area_pixels_dataset
                 
-                # Ajuste conservador según área
+                # Ajuste conservador segn rea
                 if area_ratio > 1.2:
-                    # Objeto más grande: reducir ligeramente el factor (área no escala linealmente)
+                    # Objeto ms grande: reducir ligeramente el factor (rea no escala linealmente)
                     scale_factor *= 0.95
                 elif area_ratio < 0.8:
-                    # Objeto más pequeño: aumentar ligeramente el factor
+                    # Objeto ms pequeo: aumentar ligeramente el factor
                     scale_factor *= 1.05
             
             # Validar rango
             scale_factor = np.clip(scale_factor, 0.015, 0.050)
             
             logger.debug(
-                f"Factor de escala (lineal): {scale_factor:.6f} mm/píxel "
-                f"(dimensiones: {width_pixels}x{height_pixels}px → {alto_mean:.1f}x{ancho_mean:.1f}mm)"
+                f"Factor de escala (lineal): {scale_factor:.6f} mm/pxel "
+                f"(dimensiones: {width_pixels}x{height_pixels}px  {alto_mean:.1f}x{ancho_mean:.1f}mm)"
             )
             
             return float(scale_factor)
         
-        # MÉTODO ALTERNATIVO: Usar relación de áreas (menos preciso)
+        # MTODO ALTERNATIVO: Usar relacin de reas (menos preciso)
         typical_area_mm2 = np.pi * (alto_mean / 2) * (ancho_mean / 2)
-        typical_area_pixels_dataset = 20000  # Valor más conservador y preciso
+        typical_area_pixels_dataset = 20000  # Valor ms conservador y preciso
         
-        # Calcular escala usando relación área física / área píxeles
+        # Calcular escala usando relacin rea fsica / rea pxeles
         area_ratio = typical_area_mm2 / typical_area_pixels_dataset
         scale_factor = np.sqrt(area_ratio)
         
-        # Ajuste según área real del objeto (más conservador)
+        # Ajuste segn rea real del objeto (ms conservador)
         area_ratio_current = object_area_pixels / typical_area_pixels_dataset
         if area_ratio_current > 1.2:
-            scale_factor *= 0.92  # Reducir para objetos más grandes
+            scale_factor *= 0.92  # Reducir para objetos ms grandes
         elif area_ratio_current < 0.8:
-            scale_factor *= 1.08  # Aumentar para objetos más pequeños
+            scale_factor *= 1.08  # Aumentar para objetos ms pequeos
         
         # Validar rango
         scale_factor = np.clip(scale_factor, 0.015, 0.050)
         
         logger.debug(
-            f"Factor de escala (área): {scale_factor:.6f} mm/píxel "
-            f"(área objeto: {object_area_pixels}px, ratio: {area_ratio_current:.3f})"
+            f"Factor de escala (rea): {scale_factor:.6f} mm/pxel "
+            f"(rea objeto: {object_area_pixels}px, ratio: {area_ratio_current:.3f})"
         )
         
         return float(scale_factor)
@@ -898,19 +898,19 @@ class CacaoPredictor:
         crop_std: float
     ) -> float:
         """
-        Calcula predicción basada en características visuales del crop.
-        OPTIMIZADO usando estadísticas reales del dataset.
+        Calcula prediccin basada en caractersticas visuales del crop.
+        OPTIMIZADO usando estadsticas reales del dataset.
         
         Args:
             target: Target a predecir
-            crop_area: Área del crop en píxeles (solo grano visible)
+            crop_area: rea del crop en pxeles (solo grano visible)
             crop_brightness: Brillo medio del crop
-            crop_std: Desviación estándar del crop
+            crop_std: Desviacin estndar del crop
             
         Returns:
-            Predicción basada en características visuales (ajuste fino)
+            Prediccin basada en caractersticas visuales (ajuste fino)
         """
-        # Usar estadísticas del dataset si están disponibles (más preciso)
+        # Usar estadsticas del dataset si estn disponibles (ms preciso)
         if self.dataset_stats and target in self.dataset_stats:
             stats = self.dataset_stats[target]
             dataset_mean = stats.get('mean', 0)
@@ -918,35 +918,35 @@ class CacaoPredictor:
             dataset_min = stats.get('min', 0)
             dataset_max = stats.get('max', 100)
             
-            # Normalizar área del crop (asumiendo que granos típicos tienen área ~10000-50000 px)
-            # Basado en observación del dataset: granos típicos están en rango 20-30mm
-            # Ajustar según estadísticas reales
-            typical_area_range = (8000, 60000)  # Rango típico de áreas en píxeles
+            # Normalizar rea del crop (asumiendo que granos tpicos tienen rea ~10000-50000 px)
+            # Basado en observacin del dataset: granos tpicos estn en rango 20-30mm
+            # Ajustar segn estadsticas reales
+            typical_area_range = (8000, 60000)  # Rango tpico de reas en pxeles
             normalized_area = np.clip(
                 (crop_area - typical_area_range[0]) / (typical_area_range[1] - typical_area_range[0]),
                 0.0, 1.0
             )
             
-            # Calcular predicción base usando media del dataset como referencia
-            # Ajustar según área normalizada (granos más grandes = valores más altos)
+            # Calcular prediccin base usando media del dataset como referencia
+            # Ajustar segn rea normalizada (granos ms grandes = valores ms altos)
             area_factor = 0.8 + normalized_area * 0.4  # Factor 0.8-1.2
             
-            # Ajuste por brillo (granos más oscuros pueden ser más densos)
+            # Ajuste por brillo (granos ms oscuros pueden ser ms densos)
             brightness_norm = crop_brightness / 255.0
             brightness_factor = 0.98 + (brightness_norm - 0.5) * 0.04
             
-            # Ajuste por variación (textura del grano)
+            # Ajuste por variacin (textura del grano)
             std_factor = 0.99 + min(crop_std / 150.0, 1.0) * 0.02
             
-            # Predicción visual basada en estadísticas del dataset
+            # Prediccin visual basada en estadsticas del dataset
             visual_pred = dataset_mean * area_factor * brightness_factor * std_factor
             
-            # Asegurar que esté dentro de los límites del dataset
+            # Asegurar que est dentro de los lmites del dataset
             visual_pred = np.clip(visual_pred, dataset_min * 0.8, dataset_max * 1.2)
             
             return float(visual_pred)
         
-        # Fallback: usar método anterior si no hay estadísticas
+        # Fallback: usar mtodo anterior si no hay estadsticas
         features_hash = hashlib.md5(
             f"{crop_area}_{crop_brightness:.2f}_{crop_std:.2f}_{target}".encode()
         ).hexdigest()
@@ -970,14 +970,14 @@ class CacaoPredictor:
         crop_characteristics: Dict[str, float]
     ) -> float:
         """
-        Obtiene la predicción basada en análisis preciso de píxeles.
+        Obtiene la prediccin basada en anlisis preciso de pxeles.
         
         Args:
             target: Target a predecir
-            crop_characteristics: Características del crop incluyendo dimensiones basadas en píxeles
+            crop_characteristics: Caractersticas del crop incluyendo dimensiones basadas en pxeles
             
         Returns:
-            Predicción basada en análisis de píxeles
+            Prediccin basada en anlisis de pxeles
         """
         pixel_key_map = {
             'alto': 'pixel_alto_mm',
@@ -990,23 +990,23 @@ class CacaoPredictor:
         if pixel_key and pixel_key in crop_characteristics:
             pixel_pred = crop_characteristics[pixel_key]
             
-            # Obtener información de píxeles para logging detallado
+            # Obtener informacin de pxeles para logging detallado
             area_pixels = crop_characteristics.get('area', 0)
             width_px = crop_characteristics.get('width', 0)
             height_px = crop_characteristics.get('height', 0)
             scale_factor = crop_characteristics.get('pixel_scale_factor', 0)
             
             logger.info(
-                f"📐 Medición directa de píxeles para {target}: "
+                f" Medicin directa de pxeles para {target}: "
                 f"{pixel_pred:.4f} "
-                f"(Área: {area_pixels}px, Dimensiones: {width_px}x{height_px}px, "
-                f"Escala: {scale_factor:.6f} mm/píxel)"
+                f"(rea: {area_pixels}px, Dimensiones: {width_px}x{height_px}px, "
+                f"Escala: {scale_factor:.6f} mm/pxel)"
             )
             return float(pixel_pred)
         
-        # Fallback: usar características visuales si no hay datos de píxeles
-        logger.warning(f"⚠️ No hay predicción basada en píxeles para {target}, usando fallback")
-        return crop_characteristics.get('brightness', 128) * 0.1  # Fallback básico
+        # Fallback: usar caractersticas visuales si no hay datos de pxeles
+        logger.warning(f"[WARN] No hay prediccin basada en pxeles para {target}, usando fallback")
+        return crop_characteristics.get('brightness', 128) * 0.1  # Fallback bsico
     
     def _calculate_prediction_weights(
         self,
@@ -1018,14 +1018,14 @@ class CacaoPredictor:
         target: str = ''
     ) -> Tuple[float, float, float]:
         """
-        Calcula los pesos para combinar predicción del modelo entrenado, análisis de píxeles y visual.
+        Calcula los pesos para combinar prediccin del modelo entrenado, anlisis de pxeles y visual.
         
-        PRIORIZA: Modelo Entrenado (principal) > Análisis de Píxeles (preciso) > Visual (ajuste fino)
+        PRIORIZA: Modelo Entrenado (principal) > Anlisis de Pxeles (preciso) > Visual (ajuste fino)
         
         Returns:
             Tuple (model_weight, pixel_weight, visual_weight)
         """
-        # Verificar si modelo está devolviendo SOLO la media del dataset
+        # Verificar si modelo est devolviendo SOLO la media del dataset
         is_returning_only_mean = False
         
         if scaler_mean is not None and scaler_std is not None:
@@ -1033,36 +1033,36 @@ class CacaoPredictor:
             distance_from_mean = abs(model_prediction - scaler_mean)
             
             if distance_from_mean < threshold and abs(prediction_normalized) < 0.05:
-                # Modelo claramente devolviendo solo la media -> usar casi todo análisis de píxeles
+                # Modelo claramente devolviendo solo la media -> usar casi todo anlisis de pxeles
                 is_returning_only_mean = True
                 logger.warning(
                     f"Modelo devolviendo solo media del dataset. "
-                    f"Usando análisis directo de píxeles: 5% modelo + 92% píxeles + 3% visual"
+                    f"Usando anlisis directo de pxeles: 5% modelo + 92% pxeles + 3% visual"
                 )
                 return 0.05, 0.92, 0.03
         
-        # Verificar si la predicción basada en píxeles es válida
+        # Verificar si la prediccin basada en pxeles es vlida
         pixel_is_valid = pixel_based_prediction > 0 and not np.isnan(pixel_based_prediction)
         
         if pixel_is_valid:
-            # PREDICCIÓN PRINCIPAL: Usar análisis directo de píxeles como fuente principal de verdad
-            # El usuario quiere: "si esta imagen tiene tantos píxeles, entonces mide tanto y pesa tanto"
-            # 85% análisis de píxeles (medición directa y precisa) + 12% modelo entrenado + 3% visual
-            # El análisis de píxeles mide DIRECTAMENTE el grano en píxeles y calcula dimensiones físicas
+            # PREDICCIN PRINCIPAL: Usar anlisis directo de pxeles como fuente principal de verdad
+            # El usuario quiere: "si esta imagen tiene tantos pxeles, entonces mide tanto y pesa tanto"
+            # 85% anlisis de pxeles (medicin directa y precisa) + 12% modelo entrenado + 3% visual
+            # El anlisis de pxeles mide DIRECTAMENTE el grano en pxeles y calcula dimensiones fsicas
             model_weight = 0.12
-            pixel_weight = 0.85  # PRINCIPAL: Análisis directo de píxeles
+            pixel_weight = 0.85  # PRINCIPAL: Anlisis directo de pxeles
             visual_weight = 0.03
             
             dataset_count = self.dataset_stats.get('alto', {}).get('count', 0) if self.dataset_stats and 'alto' in self.dataset_stats else 0
             logger.info(
-                f"📐 ANÁLISIS DIRECTO DE PÍXELES: {pixel_weight:.0%} (medición directa: píxeles → mm) + "
+                f" ANLISIS DIRECTO DE PXELES: {pixel_weight:.0%} (medicin directa: pxeles  mm) + "
                 f"{model_weight:.0%} modelo (ajuste fino) + {visual_weight:.0%} visual (refinamiento)"
             )
             return model_weight, pixel_weight, visual_weight
         else:
-            # Sin predicción de píxeles válida: usar modelo + visual (como antes)
+            # Sin prediccin de pxeles vlida: usar modelo + visual (como antes)
             logger.debug(
-                f"⚠️ Predicción de píxeles no válida, usando solo modelo + visual: "
+                f"[WARN] Prediccin de pxeles no vlida, usando solo modelo + visual: "
                 f"{self.config.MODEL_WEIGHT_NORMAL:.0%} modelo + {self.config.VISUAL_WEIGHT_NORMAL:.0%} visual"
             )
             return self.config.MODEL_WEIGHT_NORMAL, 0.0, self.config.VISUAL_WEIGHT_NORMAL
@@ -1074,12 +1074,12 @@ class CacaoPredictor:
         crop_characteristics: Dict[str, float]
     ) -> Tuple[float, float]:
         """
-        Predice un target especÃ­fico.
+        Predice un target específico.
         
         Args:
             image_tensor: Imagen preprocesada
             target: Target a predecir
-            crop_characteristics: Características visuales del crop
+            crop_characteristics: Caractersticas visuales del crop
             
         Returns:
             Tuple con (valor_predicho, confianza)
@@ -1089,7 +1089,7 @@ class CacaoPredictor:
         
         # Validar y corregir forma del tensor si es necesario
         if image_tensor.dim() == 5:
-            # Si tiene 5 dimensiones [1, 1, 3, 224, 224], eliminar la dimensión extra
+            # Si tiene 5 dimensiones [1, 1, 3, 224, 224], eliminar la dimensin extra
             logger.warning(f"Tensor con 5 dimensiones detectado: {image_tensor.shape}. Corrigiendo...")
             image_tensor = image_tensor.squeeze(0)  # [1, 1, 3, 224, 224] -> [1, 3, 224, 224]
         
@@ -1097,7 +1097,7 @@ class CacaoPredictor:
         if image_tensor.dim() != 4 or image_tensor.shape[0] != 1 or image_tensor.shape[1] != 3:
             raise ValueError(
                 f"Tensor tiene forma incorrecta: {image_tensor.shape}. "
-                f"Se esperaba [1, 3, 224, 224]. Dimensión actual: {image_tensor.dim()}"
+                f"Se esperaba [1, 3, 224, 224]. Dimensin actual: {image_tensor.dim()}"
             )
         
         # Validar tensor de entrada
@@ -1107,14 +1107,14 @@ class CacaoPredictor:
         
         logger.debug(f"Prediciendo {target} con tensor de forma: {image_tensor.shape}")
         
-        # PREDICCIÓN DEL MODELO ENTRENADO (usando pesos del entrenamiento)
+        # PREDICCIN DEL MODELO ENTRENADO (usando pesos del entrenamiento)
         with torch.no_grad():
-            # PredicciÃ³n
+            # Predicción
             prediction = model(image_tensor)
             prediction_normalized = float(prediction.cpu().numpy().flatten()[0])
         
         logger.info(
-            f"🤖 Modelo entrenado devolvió para {target}: "
+            f" Modelo entrenado devolvi para {target}: "
             f"normalizado={prediction_normalized:.8f} "
             f"(esto viene del modelo entrenado con tu dataset)"
         )
@@ -1122,52 +1122,52 @@ class CacaoPredictor:
         # Desnormalizar usando escaladores del dataset
         model_prediction = self._denormalize_prediction(prediction_normalized, target)
         
-        # Obtener estadísticas del escalador (del dataset de entrenamiento)
+        # Obtener estadsticas del escalador (del dataset de entrenamiento)
         scaler = self.scalers.scalers[target]
         scaler_mean = scaler.mean_[0] if hasattr(scaler, 'mean_') else None
         scaler_std = scaler.scale_[0] if hasattr(scaler, 'scale_') else None
         
         logger.info(
-            f"📊 Predicción del modelo entrenado para {target}: "
+            f" Prediccin del modelo entrenado para {target}: "
             f"{model_prediction:.4f} "
             f"(desnormalizado de {prediction_normalized:.8f}, "
             f"mean_dataset={scaler_mean:.4f}, std_dataset={scaler_std:.4f})"
         )
         
-        # Verificar si modelo está devolviendo la media del dataset (problema común)
-        # NOTA: Un valor normalizado cercano a 0 NO significa que está devolviendo la media
-        # puede ser una predicción válida cerca de la media del dataset
-        # Solo marcar como "devuelve media" si la predicción desnormalizada está MUY cerca de la media
+        # Verificar si modelo est devolviendo la media del dataset (problema comn)
+        # NOTA: Un valor normalizado cercano a 0 NO significa que est devolviendo la media
+        # puede ser una prediccin vlida cerca de la media del dataset
+        # Solo marcar como "devuelve media" si la prediccin desnormalizada est MUY cerca de la media
         is_returning_dataset_mean = False
         
         if scaler_mean is not None and scaler_std is not None:
-            # Usar umbral más estricto: la predicción debe estar dentro de 0.05 * std del dataset
+            # Usar umbral ms estricto: la prediccin debe estar dentro de 0.05 * std del dataset
             # de la media para considerarse "solo devuelve media"
             threshold = 0.05 * scaler_std
             distance_from_mean = abs(model_prediction - scaler_mean)
             
             if distance_from_mean < threshold and abs(prediction_normalized) < 0.05:
-                # Solo si está MUY cerca de la media Y el valor normalizado es muy pequeño
+                # Solo si est MUY cerca de la media Y el valor normalizado es muy pequeo
                 logger.warning(
-                    f"⚠️ ATENCIÓN: Modelo devuelve valor muy cercano a media del dataset "
+                    f"[WARN] ATENCIN: Modelo devuelve valor muy cercano a media del dataset "
                     f"({model_prediction:.4f} vs media {scaler_mean:.4f}, diferencia: {distance_from_mean:.4f}) "
                     f"para {target}. Usando 85% modelo + 15% visual como ajuste."
                 )
                 is_returning_dataset_mean = True
             else:
-                # Predicción válida del modelo (puede estar cerca de la media si el grano es promedio)
+                # Prediccin vlida del modelo (puede estar cerca de la media si el grano es promedio)
                 logger.debug(
-                    f"✅ Modelo devolvió predicción para {target}: "
+                    f" Modelo devolvi prediccin para {target}: "
                     f"{model_prediction:.4f} (normalizado: {prediction_normalized:.8f}, "
                     f"distancia de media: {distance_from_mean:.4f})"
                 )
         else:
             logger.debug(
-                f"✅ Modelo devolvió predicción única para {target}: "
+                f" Modelo devolvi prediccin nica para {target}: "
                 f"{model_prediction:.4f} (normalizado: {prediction_normalized:.8f})"
             )
         
-        # Calcular predicción visual (ajuste fino basado en características visuales)
+        # Calcular prediccin visual (ajuste fino basado en caractersticas visuales)
         crop_area = crop_characteristics.get('area', 50000)
         crop_brightness = crop_characteristics.get('brightness', 128)
         crop_std = crop_characteristics.get('std', 50)
@@ -1176,59 +1176,59 @@ class CacaoPredictor:
             target, crop_area, crop_brightness, crop_std
         )
         
-        # PREDICCIÓN BASADA EN PÍXELES (análisis preciso de dimensiones físicas)
-        # Usar dimensiones calculadas directamente de píxeles del crop sin fondo
+        # PREDICCIN BASADA EN PXELES (anlisis preciso de dimensiones fsicas)
+        # Usar dimensiones calculadas directamente de pxeles del crop sin fondo
         pixel_based_prediction = self._get_pixel_based_prediction(target, crop_characteristics)
         
-        # Calcular pesos (priorizar modelo entrenado, luego píxeles, luego visual)
+        # Calcular pesos (priorizar modelo entrenado, luego pxeles, luego visual)
         model_weight, pixel_weight, visual_weight = self._calculate_prediction_weights(
             model_prediction, prediction_normalized, pixel_based_prediction, 
             scaler_mean, scaler_std, target
         )
         
-        # COMBINAR PREDICCIONES: Análisis directo de píxeles (principal) + Modelo entrenado + Visual (ajuste fino)
-        # PRINCIPAL: Análisis directo de píxeles ("si esta imagen tiene tantos píxeles, entonces mide tanto y pesa tanto")
+        # COMBINAR PREDICCIONES: Anlisis directo de pxeles (principal) + Modelo entrenado + Visual (ajuste fino)
+        # PRINCIPAL: Anlisis directo de pxeles ("si esta imagen tiene tantos pxeles, entonces mide tanto y pesa tanto")
         prediction_value = (
-            pixel_weight * pixel_based_prediction +  # 85% - Medición directa de píxeles
+            pixel_weight * pixel_based_prediction +  # 85% - Medicin directa de pxeles
             model_weight * model_prediction +        # 12% - Ajuste fino del modelo
             visual_weight * visual_prediction        # 3% - Refinamiento visual
         )
         
         logger.info(
-            f"✅ PREDICCIÓN FINAL para {target}: {prediction_value:.4f} "
-            f"= PÍXELES({pixel_based_prediction:.4f})×{pixel_weight:.0%} "
-            f"+ modelo({model_prediction:.4f})×{model_weight:.0%} "
-            f"+ visual({visual_prediction:.4f})×{visual_weight:.0%} "
-            f"→ Principalmente basado en análisis directo de píxeles"
+            f" PREDICCIN FINAL para {target}: {prediction_value:.4f} "
+            f"= PXELES({pixel_based_prediction:.4f}){pixel_weight:.0%} "
+            f"+ modelo({model_prediction:.4f}){model_weight:.0%} "
+            f"+ visual({visual_prediction:.4f}){visual_weight:.0%} "
+            f" Principalmente basado en anlisis directo de pxeles"
         )
         
-        # Aplicar límites del dataset (más estrictos que límites físicos)
+        # Aplicar lmites del dataset (ms estrictos que lmites fsicos)
         if target in self.dataset_limits:
             min_val, max_val = self.dataset_limits[target]
             original_value = prediction_value
             
             if prediction_value < min_val or prediction_value > max_val:
                 logger.warning(
-                    f"Predicción fuera de límites del dataset para {target}: "
-                    f"{prediction_value:.2f} (límites: [{min_val:.2f}, {max_val:.2f}]). "
+                    f"Prediccin fuera de lmites del dataset para {target}: "
+                    f"{prediction_value:.2f} (lmites: [{min_val:.2f}, {max_val:.2f}]). "
                     f"Aplicando recorte."
                 )
             
             prediction_value = np.clip(prediction_value, min_val, max_val)
             # Calcular confianza (proxy basado en varianza del modelo)
-            # Usar dropout para estimar incertidumbre si estÃ¡ disponible
+            # Usar dropout para estimar incertidumbre si está disponible
             confidence = self._estimate_confidence(model, image_tensor, target)
             
             if original_value != prediction_value:
-                logger.debug(f"Predicción limitada para {target}: {original_value:.2f} -> {prediction_value:.2f}")
+                logger.debug(f"Prediccin limitada para {target}: {original_value:.2f} -> {prediction_value:.2f}")
         elif target in self.config.TARGET_LIMITS:
-            # Fallback a límites físicos si no hay límites del dataset
+            # Fallback a lmites fsicos si no hay lmites del dataset
             min_val, max_val = self.config.TARGET_LIMITS[target]
             original_value = prediction_value
             prediction_value = np.clip(prediction_value, min_val, max_val)
             
             if original_value != prediction_value:
-                logger.debug(f"Predicción limitada (físicos) para {target}: {original_value:.2f} -> {prediction_value:.2f}")
+                logger.debug(f"Prediccin limitada (fsicos) para {target}: {original_value:.2f} -> {prediction_value:.2f}")
         
         # Calcular confianza
         confidence = self._estimate_confidence(model, image_tensor, target)
@@ -1242,10 +1242,10 @@ class CacaoPredictor:
         target: str
     ) -> float:
         """
-        Estima la confianza de la predicción usando Monte Carlo Dropout.
+        Estima la confianza de la prediccin usando Monte Carlo Dropout.
         
         Args:
-            model: Modelo de regresiÃ³n
+            model: Modelo de regresión
             image_tensor: Imagen preprocesada
             target: Target predicho
             
@@ -1256,7 +1256,7 @@ class CacaoPredictor:
             # Monte Carlo Dropout
             model.train()
             predictions = []
-            n_samples = 5  # NÃºmero de muestras para estimar varianza
+            n_samples = 5  # Número de muestras para estimar varianza
             
             for _ in range(self.config.CONFIDENCE_MC_SAMPLES):
                 with torch.no_grad():
@@ -1265,7 +1265,7 @@ class CacaoPredictor:
             
             model.eval()
             
-            # Calcular estadísticas
+            # Calcular estadsticas
             predictions = np.array(predictions)
             mean_pred = np.mean(predictions)
             std_pred = np.std(predictions)
@@ -1288,7 +1288,7 @@ class CacaoPredictor:
             w1, w2 = self.config.CONFIDENCE_WEIGHTS
             confidence = w1 * consistency_conf + w2 * variance_conf
             
-            # Ajustar según varianza
+            # Ajustar segn varianza
             if variance < 0.01:
                 confidence = max(confidence, 0.8)
             elif variance < 0.05:
@@ -1305,7 +1305,7 @@ class CacaoPredictor:
     
     def _get_proxy_confidence(self, target: str) -> float:
         """
-        Obtiene una confianza proxy basada en estadÃ­sticas del target.
+        Obtiene una confianza proxy basada en estadísticas del target.
         
         Args:
             target: Target predicho
@@ -1313,7 +1313,7 @@ class CacaoPredictor:
         Returns:
             Confianza proxy (0-1)
         """
-        # Confianzas proxy basadas en la dificultad tÃ­pica de cada target
+        # Confianzas proxy basadas en la dificultad típica de cada target
         proxy_confidences = {
             'alto': 0.85,
             'ancho': 0.85,
@@ -1331,7 +1331,7 @@ class CacaoPredictor:
             crop_image: Imagen RGBA del crop
             
         Returns:
-            True si el crop es válido y contiene cacao visible, False si es defectuoso
+            True si el crop es vlido y contiene cacao visible, False si es defectuoso
         """
         try:
             img_array = np.array(crop_image)
@@ -1350,7 +1350,7 @@ class CacaoPredictor:
             if visible_ratio < self.config.MIN_VISIBLE_RATIO:
                 logger.warning(
                     f"Crop con muy poco contenido visible ({visible_ratio:.2%}). "
-                    f"Puede ser fondo blanco o área vacía."
+                    f"Puede ser fondo blanco o rea vaca."
                 )
                 return False
             
@@ -1375,32 +1375,32 @@ class CacaoPredictor:
                 )
                 return False
             
-            # 3. Verificar tamaño mínimo
+            # 3. Verificar tamao mnimo
             if h < self.config.MIN_CROP_SIZE or w < self.config.MIN_CROP_SIZE:
-                logger.warning(f"Crop muy pequeño ({h}x{w}px)")
+                logger.warning(f"Crop muy pequeo ({h}x{w}px)")
                 return False
             
-            # 4. Verificar área del objeto (que el grano sea suficientemente grande)
+            # 4. Verificar rea del objeto (que el grano sea suficientemente grande)
             object_area = np.sum(alpha > 128)
             object_ratio = object_area / (h * w)
             if object_ratio < self.config.MIN_OBJECT_RATIO:
                 logger.warning(
-                    f"Crop con objeto muy pequeño ({object_ratio:.2%}). "
+                    f"Crop con objeto muy pequeo ({object_ratio:.2%}). "
                     f"Puede ser ruido o falso positivo."
                 )
                 return False
             
-            # 5. Validar que no sea completamente uniforme (verificar variación en RGB)
+            # 5. Validar que no sea completamente uniforme (verificar variacin en RGB)
             rgb_std = rgb.std()
             if rgb_std < 10:
                 logger.warning(
-                    f"Crop con variación RGB muy baja ({rgb_std:.2f}). "
-                    f"Puede ser un área uniforme sin grano de cacao visible."
+                    f"Crop con variacin RGB muy baja ({rgb_std:.2f}). "
+                    f"Puede ser un rea uniforme sin grano de cacao visible."
                 )
                 return False
             
             logger.debug(
-                f"Crop validado: tamaño={h}x{w}, visible={visible_ratio:.2%}, "
+                f"Crop validado: tamao={h}x{w}, visible={visible_ratio:.2%}, "
                 f"objeto={object_ratio:.2%}, std_rgb={rgb_std:.2f}"
             )
             
@@ -1412,8 +1412,8 @@ class CacaoPredictor:
     
     def _segment_and_crop(self, image: Image.Image) -> Tuple[Image.Image, str, float]:
         """
-        Segmenta y recorta la imagen usando U-Net (método principal) o YOLO (fallback).
-        Valida que realmente se detectó un grano de cacao.
+        Segmenta y recorta la imagen usando U-Net (mtodo principal) o YOLO (fallback).
+        Valida que realmente se detect un grano de cacao.
         
         Args:
             image: Imagen PIL original
@@ -1430,22 +1430,22 @@ class CacaoPredictor:
         segmentation_method = None
         
         try:
-            # MÉTODO 1: Intentar U-Net (eliminación de fondo más precisa)
+            # MTODO 1: Intentar U-Net (eliminacin de fondo ms precisa)
             try:
-                logger.debug("Intentando segmentación con U-Net...")
+                logger.debug("Intentando segmentacin con U-Net...")
                 crop_image = remove_background_ai(str(temp_image_path))
                 segmentation_method = "unet"
                 confidence = 0.95  # U-Net tiene alta confianza si funciona
                 
-                logger.info("Segmentación U-Net exitosa")
+                logger.info("Segmentacin U-Net exitosa")
                 
             except (FileNotFoundError, Exception) as e:
                 logger.debug(f"U-Net no disponible ({e}), usando YOLO como fallback...")
                 
-                # MÉTODO 2: Fallback a YOLO
+                # MTODO 2: Fallback a YOLO
                 if self.yolo_cropper is None:
                     raise SegmentationError(
-                        "Ningún método de segmentación disponible. "
+                        "Ningn mtodo de segmentacin disponible. "
                         "U-Net no encontrado y YOLO no cargado."
                     )
                 
@@ -1457,56 +1457,56 @@ class CacaoPredictor:
                 
                 if not crop_result.get('success'):
                     error_msg = crop_result.get('error', 'Error desconocido')
-                    raise SegmentationError(f"Error en segmentación YOLO: {error_msg}")
+                    raise SegmentationError(f"Error en segmentacin YOLO: {error_msg}")
                 
-                # VALIDACIÓN: Verificar que realmente se detectó un grano de cacao
+                # VALIDACIN: Verificar que realmente se detect un grano de cacao
                 confidence = crop_result.get('confidence', 0.0)
                 yolo_area = crop_result.get('area', 0)
                 
-                # Verificar área mínima primero (más crítico)
+                # Verificar rea mnima primero (ms crtico)
                 if yolo_area < self.config.MIN_YOLO_AREA:
                     raise SegmentationError(
-                        f"Área del objeto detectado muy pequeña ({yolo_area} píxeles). "
-                        f"Mínimo requerido: {self.config.MIN_YOLO_AREA} píxeles. "
-                        f"Puede ser un falso positivo o detección de ruido."
+                        f"rea del objeto detectado muy pequea ({yolo_area} pxeles). "
+                        f"Mnimo requerido: {self.config.MIN_YOLO_AREA} pxeles. "
+                        f"Puede ser un falso positivo o deteccin de ruido."
                     )
                 
-                # Verificar confianza (con advertencia pero permitir si el área es válida)
+                # Verificar confianza (con advertencia pero permitir si el rea es vlida)
                 if confidence < self.config.MIN_YOLO_CONFIDENCE:
                     logger.warning(
                         f"Confianza de YOLO baja ({confidence:.2%}), "
-                        f"mínimo recomendado: {self.config.MIN_YOLO_CONFIDENCE:.2%}. "
-                        f"Procesando de todos modos ya que el área es válida ({yolo_area} px)."
+                        f"mnimo recomendado: {self.config.MIN_YOLO_CONFIDENCE:.2%}. "
+                        f"Procesando de todos modos ya que el rea es vlida ({yolo_area} px)."
                     )
-                    # No lanzar error, solo advertencia - permitir procesar con validación de crop
+                    # No lanzar error, solo advertencia - permitir procesar con validacin de crop
                 else:
                     logger.info(
-                        f"Detección YOLO válida: confianza={confidence:.2%}, "
-                        f"área={yolo_area} px"
+                        f"Deteccin YOLO vlida: confianza={confidence:.2%}, "
+                        f"rea={yolo_area} px"
                     )
                 
-                # Cargar imagen original y máscara de YOLO para refinar con OpenCV
+                # Cargar imagen original y mscara de YOLO para refinar con OpenCV
                 crop_path = crop_result['crop_path']
                 crop_image_original = Image.open(crop_path)
                 
-                # Obtener máscara de YOLO directamente para refinamiento preciso
+                # Obtener mscara de YOLO directamente para refinamiento preciso
                 yolo_mask = crop_result.get('mask')
                 
-                # Obtener ruta de imagen original si está disponible (mejor para GrabCut)
+                # Obtener ruta de imagen original si est disponible (mejor para GrabCut)
                 original_image_path = crop_result.get('original_image_path')
                 if not original_image_path or not Path(original_image_path).exists():
                     original_image_path = temp_image_path
                 
-                # Si no tenemos máscara, intentar obtenerla directamente desde YOLO
+                # Si no tenemos mscara, intentar obtenerla directamente desde YOLO
                 if yolo_mask is None:
                     try:
                         prediction_data = self.yolo_cropper.yolo_inference.get_best_prediction(temp_image_path)
                         if prediction_data and 'mask' in prediction_data:
                             yolo_mask = prediction_data['mask']
                     except Exception as e:
-                        logger.debug(f"No se pudo obtener máscara de YOLO: {e}")
+                        logger.debug(f"No se pudo obtener mscara de YOLO: {e}")
                 
-                # Refinar máscara y crear crop preciso usando OpenCV
+                # Refinar mscara y crear crop preciso usando OpenCV
                 # Usar imagen original para mejor refinamiento
                 original_image_for_refine = Image.open(original_image_path) if Path(original_image_path).exists() else crop_image_original
                 crop_image = self._refine_mask_with_opencv(
@@ -1519,7 +1519,7 @@ class CacaoPredictor:
             # Asegurar RGBA y mejorar el crop
             if crop_image.mode != 'RGBA':
                 if crop_image.mode == 'RGB':
-                    # Convertir RGB a RGBA usando OpenCV para mejor detección
+                    # Convertir RGB a RGBA usando OpenCV para mejor deteccin
                     rgb_array = np.array(crop_image)
                     crop_image = self._refine_mask_with_opencv(
                         crop_image, 
@@ -1529,17 +1529,17 @@ class CacaoPredictor:
                 else:
                     crop_image = crop_image.convert('RGBA')
             
-            # MEJORAR CROP: Refinar con OpenCV para detección precisa de píxeles
+            # MEJORAR CROP: Refinar con OpenCV para deteccin precisa de pxeles
             crop_array = np.array(crop_image)
             
             if crop_array.shape[2] == 4:
                 rgb = crop_array[:, :, :3]
                 alpha = crop_array[:, :, 3]
                 
-                # Refinar máscara con OpenCV para detección precisa
+                # Refinar mscara con OpenCV para deteccin precisa
                 alpha_refined = self._refine_mask_opencv_precise(rgb, alpha)
                 
-                # Aplicar máscara refinada
+                # Aplicar mscara refinada
                 crop_array[:, :, :3] = np.where(
                     alpha_refined[..., np.newaxis] > 0,
                     rgb,
@@ -1553,25 +1553,25 @@ class CacaoPredictor:
             crop_is_valid = self._validate_crop_quality(crop_image)
             crop_uuid = str(uuid.uuid4())
             
-            # Si el crop no es válido Y la confianza es muy baja, rechazar
+            # Si el crop no es vlido Y la confianza es muy baja, rechazar
             if not crop_is_valid and confidence < 0.15:
                 raise SegmentationError(
-                    f"Crop inválido y confianza muy baja ({confidence:.2%}). "
+                    f"Crop invlido y confianza muy baja ({confidence:.2%}). "
                     f"No se puede procesar esta imagen de forma confiable."
                 )
             
-            # Guardar según calidad (permitir procesar con advertencia si confianza es baja)
+            # Guardar segn calidad (permitir procesar con advertencia si confianza es baja)
             if crop_is_valid:
                 crop_path_final = self.processed_crops_dir / f"{crop_uuid}.png"
                 crop_url = f"/media/cacao_images/processed/{datetime.now().year}/{datetime.now().month:02d}/{datetime.now().day:02d}/{crop_uuid}.png"
-                logger.debug(f"Crop válido guardado usando {segmentation_method}")
+                logger.debug(f"Crop vlido guardado usando {segmentation_method}")
             else:
-                # Aún así procesar si la confianza es aceptable (puede ser válido)
+                # An as procesar si la confianza es aceptable (puede ser vlido)
                 if confidence >= 0.20:
                     crop_path_final = self.processed_crops_dir / f"{crop_uuid}.png"
                     crop_url = f"/media/cacao_images/processed/{datetime.now().year}/{datetime.now().month:02d}/{datetime.now().day:02d}/{crop_uuid}.png"
                     logger.warning(
-                        f"Crop con validación dudosa pero procesado por confianza aceptable "
+                        f"Crop con validacin dudosa pero procesado por confianza aceptable "
                         f"({confidence:.2%}): {crop_uuid}.png"
                     )
                 else:
@@ -1584,8 +1584,8 @@ class CacaoPredictor:
             crop_image.save(crop_path_final, 'PNG')
             
             logger.info(
-                f"Segmentación completada usando {segmentation_method} "
-                f"(confianza: {confidence:.2%}, válido: {crop_is_valid})"
+                f"Segmentacin completada usando {segmentation_method} "
+                f"(confianza: {confidence:.2%}, vlido: {crop_is_valid})"
             )
             
             return crop_image, crop_url, confidence
@@ -1602,15 +1602,15 @@ class CacaoPredictor:
         original_path: Optional[Path]
     ) -> Image.Image:
         """
-        Refina la máscara usando OpenCV para detección precisa de píxeles del cacao.
-        Elimina bordes blancos y ajusta la máscara pixel por pixel.
+        Refina la mscara usando OpenCV para deteccin precisa de pxeles del cacao.
+        Elimina bordes blancos y ajusta la mscara pixel por pixel.
         """
         rgb_array = np.array(image.convert('RGB'))
         h, w = rgb_array.shape[:2]
         
-        # Si tenemos máscara de YOLO, usarla como base
+        # Si tenemos mscara de YOLO, usarla como base
         if yolo_mask is not None:
-            # Normalizar máscara de YOLO
+            # Normalizar mscara de YOLO
             if yolo_mask.max() <= 1.0:
                 mask = (yolo_mask * 255).astype(np.uint8)
             else:
@@ -1620,10 +1620,10 @@ class CacaoPredictor:
             if mask.shape[:2] != (h, w):
                 mask = cv2.resize(mask, (w, h), interpolation=cv2.INTER_LINEAR)
         else:
-            # Crear máscara inicial usando color y luminosidad
+            # Crear mscara inicial usando color y luminosidad
             gray = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2GRAY)
             
-            # Detectar grano de cacao (marrón/oscuro) vs fondo blanco
+            # Detectar grano de cacao (marrn/oscuro) vs fondo blanco
             _, mask_binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
             
             # Eliminar ruido
@@ -1633,50 +1633,50 @@ class CacaoPredictor:
         
         # REFINAMIENTO PRECISO CON OPENCV
         
-        # 1. Eliminar bordes blancos detectando píxeles blancos/claros cerca de bordes
+        # 1. Eliminar bordes blancos detectando pxeles blancos/claros cerca de bordes
         gray = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2GRAY)
         
-        # Detectar píxeles blancos/claros (posible fondo residual)
+        # Detectar pxeles blancos/claros (posible fondo residual)
         white_threshold = 220
         is_white = gray > white_threshold
         
-        # Erosionar máscara para eliminar bordes blancos
+        # Erosionar mscara para eliminar bordes blancos
         kernel_erode = np.ones((5, 5), np.uint8)
         mask_eroded = cv2.erode(mask, kernel_erode, iterations=2)
         
-        # Enmascarar áreas blancas dentro del objeto
+        # Enmascarar reas blancas dentro del objeto
         mask_clean = np.where(is_white & (mask_eroded > 128), 0, mask_eroded).astype(np.uint8)
         
-        # 2. Operaciones morfológicas para cerrar huecos y suavizar
+        # 2. Operaciones morfolgicas para cerrar huecos y suavizar
         kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
         mask_clean = cv2.morphologyEx(mask_clean, cv2.MORPH_CLOSE, kernel_close, iterations=2)
         mask_clean = cv2.morphologyEx(mask_clean, cv2.MORPH_OPEN, kernel_close, iterations=1)
         
-        # 3. Detectar el contorno más grande y crear máscara ajustada
+        # 3. Detectar el contorno ms grande y crear mscara ajustada
         contours, _ = cv2.findContours(mask_clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         if contours:
-            # Encontrar el contorno más grande (el grano)
+            # Encontrar el contorno ms grande (el grano)
             largest_contour = max(contours, key=cv2.contourArea)
             
-            # Crear máscara binaria del contorno
+            # Crear mscara binaria del contorno
             mask_contour = np.zeros((h, w), dtype=np.uint8)
             cv2.drawContours(mask_contour, [largest_contour], -1, 255, thickness=-1)
             
-            # 4. Usar GrabCut para refinar aún más (opcional pero mejora precisión)
+            # 4. Usar GrabCut para refinar an ms (opcional pero mejora precisin)
             if original_path and original_path.exists():
                 try:
                     bgr = cv2.imread(str(original_path))
                     if bgr is not None and bgr.shape[:2] == (h, w):
-                        # Preparar máscara para GrabCut
+                        # Preparar mscara para GrabCut
                         gc_mask = np.where(mask_contour > 128, cv2.GC_PR_FGD, cv2.GC_PR_BGD).astype(np.uint8)
                         
-                        # Aplicar GrabCut con máscara inicial
+                        # Aplicar GrabCut con mscara inicial
                         bgd_model = np.zeros((1, 65), np.float64)
                         fgd_model = np.zeros((1, 65), np.float64)
                         cv2.grabCut(bgr, gc_mask, None, bgd_model, fgd_model, 3, cv2.GC_INIT_WITH_MASK)
                         
-                        # Crear máscara final
+                        # Crear mscara final
                         mask_final = np.where((gc_mask == cv2.GC_FGD) | (gc_mask == cv2.GC_PR_FGD), 255, 0).astype(np.uint8)
                         mask_contour = mask_final
                 except Exception as e:
@@ -1685,23 +1685,23 @@ class CacaoPredictor:
             # 5. NO suavizar - mantener bordes precisos sin halos
             mask_final = mask_contour
             
-            # 6. Eliminar pequeños artefactos
+            # 6. Eliminar pequeos artefactos
             num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask_final, connectivity=8)
             if num_labels > 1:
-                # Mantener solo el componente más grande (el grano)
+                # Mantener solo el componente ms grande (el grano)
                 largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
                 mask_final = (labels == largest_label).astype(np.uint8) * 255
         else:
             mask_final = mask_clean
         
-        # Crear imagen RGBA con máscara refinada
+        # Crear imagen RGBA con mscara refinada
         rgba = np.dstack([rgb_array, mask_final])
         
         return Image.fromarray(rgba, 'RGBA')
     
     def _refine_mask_opencv_precise(self, rgb: np.ndarray, alpha: np.ndarray) -> np.ndarray:
         """
-        Refina la máscara alpha usando OpenCV para detección precisa de píxeles.
+        Refina la mscara alpha usando OpenCV para deteccin precisa de pxeles.
         Elimina bordes blancos residuales y ajusta pixel por pixel.
         """
         h, w = alpha.shape
@@ -1712,27 +1712,27 @@ class CacaoPredictor:
         # 2. Detectar y eliminar bordes blancos
         gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
         
-        # Identificar píxeles blancos/claros que están en el borde de la máscara
+        # Identificar pxeles blancos/claros que estn en el borde de la mscara
         white_mask = gray > 220  # Umbral para blanco
         
-        # Dilatar máscara para encontrar área cercana al borde
+        # Dilatar mscara para encontrar rea cercana al borde
         kernel_dilate = np.ones((3, 3), np.uint8)
         mask_dilated = cv2.dilate(mask_binary, kernel_dilate, iterations=1)
         border_region = mask_dilated.astype(bool) & ~(mask_binary.astype(bool))
         
-        # Eliminar píxeles blancos en la región del borde
+        # Eliminar pxeles blancos en la regin del borde
         mask_clean = np.where(border_region & white_mask, 0, mask_binary).astype(np.uint8)
         
         # 3. Erosionar ligeramente para eliminar bordes residuales
         kernel_erode = np.ones((3, 3), np.uint8)
         mask_clean = cv2.erode(mask_clean, kernel_erode, iterations=1)
         
-        # 4. Operaciones morfológicas para limpiar
+        # 4. Operaciones morfolgicas para limpiar
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
         mask_clean = cv2.morphologyEx(mask_clean, cv2.MORPH_CLOSE, kernel, iterations=2)
         mask_clean = cv2.morphologyEx(mask_clean, cv2.MORPH_OPEN, kernel, iterations=1)
         
-        # 5. Detectar contorno más grande
+        # 5. Detectar contorno ms grande
         contours, _ = cv2.findContours(mask_clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         if contours:
@@ -1747,9 +1747,9 @@ class CacaoPredictor:
     
     def _extract_crop_characteristics(self, crop_image: Image.Image) -> Dict[str, float]:
         """
-        Extrae características visuales del GRANO REAL (solo áreas con alpha>0).
-        Calcula dimensiones físicas basadas en análisis preciso de píxeles.
-        Esto es crucial para predicciones precisas basadas en el tamaño real del grano.
+        Extrae caractersticas visuales del GRANO REAL (solo reas con alpha>0).
+        Calcula dimensiones fsicas basadas en anlisis preciso de pxeles.
+        Esto es crucial para predicciones precisas basadas en el tamao real del grano.
         """
         # Convertir a numpy array manteniendo alpha
         crop_array = np.array(crop_image)
@@ -1758,23 +1758,23 @@ class CacaoPredictor:
         rgb = crop_array[:, :, :3] if crop_array.shape[2] >= 3 else crop_array
         alpha = crop_array[:, :, 3] if crop_array.shape[2] == 4 else np.ones(crop_array.shape[:2]) * 255
         
-        # Máscara binaria: 1 donde hay grano visible, 0 donde es transparente
+        # Mscara binaria: 1 donde hay grano visible, 0 donde es transparente
         mask = (alpha > 128).astype(np.float32)
         
-        # Extraer características SOLO del área visible del grano (donde mask=1)
+        # Extraer caractersticas SOLO del rea visible del grano (donde mask=1)
         visible_pixels = rgb[mask > 0]
         
         if len(visible_pixels) == 0:
-            # Si no hay píxeles visibles, usar toda la imagen
-            logger.warning("No hay píxeles visibles en el crop, usando toda la imagen")
+            # Si no hay pxeles visibles, usar toda la imagen
+            logger.warning("No hay pxeles visibles en el crop, usando toda la imagen")
             visible_pixels = rgb.reshape(-1, 3)
             mask = np.ones(crop_array.shape[:2])
         
-        # Calcular características del GRANO visible
+        # Calcular caractersticas del GRANO visible
         brightness = visible_pixels.mean() if len(visible_pixels) > 0 else rgb.reshape(-1, 3).mean()
         std_val = visible_pixels.std() if len(visible_pixels) > 0 else rgb.reshape(-1, 3).std()
         
-        # Área REAL del grano (número de píxeles visibles)
+        # rea REAL del grano (nmero de pxeles visibles)
         object_area = int(np.sum(mask > 0))
         
         # Bounding box del objeto visible
@@ -1790,30 +1790,30 @@ class CacaoPredictor:
             x_min, x_max = 0, width_visible - 1
             y_min, y_max = 0, height_visible - 1
         
-        # ANÁLISIS PRECISO DE DIMENSIONES FÍSICAS BASADO EN PÍXELES
-        # Calcular dimensiones físicas usando análisis de píxeles y factor de escala
+        # ANLISIS PRECISO DE DIMENSIONES FSICAS BASADO EN PXELES
+        # Calcular dimensiones fsicas usando anlisis de pxeles y factor de escala
         pixel_based_dimensions = self._calculate_pixel_based_dimensions(
             object_area, width_visible, height_visible, mask, alpha
         )
         
         logger.debug(
-            f"Características del grano: área_visible={object_area}px, "
-            f"tamaño_bbox={width_visible}x{height_visible}, "
+            f"Caractersticas del grano: rea_visible={object_area}px, "
+            f"tamao_bbox={width_visible}x{height_visible}, "
             f"brillo={brightness:.1f}, std={std_val:.2f}, "
-            f"dimensiones_píxeles={pixel_based_dimensions}"
+            f"dimensiones_pxeles={pixel_based_dimensions}"
         )
         
         return {
-            'area': object_area,  # ÁREA REAL del grano visible
-            'area_bbox': width_visible * height_visible,  # Área del bounding box
-            'width': width_visible,  # Ancho en píxeles
-            'height': height_visible,  # Alto en píxeles
+            'area': object_area,  # REA REAL del grano visible
+            'area_bbox': width_visible * height_visible,  # rea del bounding box
+            'width': width_visible,  # Ancho en pxeles
+            'height': height_visible,  # Alto en pxeles
             'brightness': brightness,
             'std': std_val,
             'min': visible_pixels.min() if len(visible_pixels) > 0 else rgb.min(),
             'max': visible_pixels.max() if len(visible_pixels) > 0 else rgb.max(),
             'aspect_ratio': width_visible / height_visible if height_visible > 0 else 1.0,
-            # Dimensiones físicas calculadas basadas en píxeles
+            # Dimensiones fsicas calculadas basadas en pxeles
             'pixel_alto_mm': pixel_based_dimensions.get('alto_mm', 0),
             'pixel_ancho_mm': pixel_based_dimensions.get('ancho_mm', 0),
             'pixel_grosor_mm': pixel_based_dimensions.get('grosor_mm', 0),
@@ -1827,13 +1827,13 @@ class CacaoPredictor:
         }
     
     def _validate_predictions_diversity(self, predictions: Dict[str, float]) -> bool:
-        """Valida que las predicciones tengan variación adecuada."""
+        """Valida que las predicciones tengan variacin adecuada."""
         pred_values = list(predictions.values())
         unique_values = set(round(v, 4) for v in pred_values)
         
         if len(unique_values) <= 1:
             logger.warning(
-                f"Predicciones idénticas detectadas. "
+                f"Predicciones idnticas detectadas. "
                 f"Esto puede indicar que el modelo devuelve siempre la media."
             )
             return False
@@ -1858,14 +1858,14 @@ class CacaoPredictor:
         start_time = time.time()
         
         try:
-            # 1. Segmentación y recorte
-            logger.debug("Iniciando segmentación...")
+            # 1. Segmentacin y recorte
+            logger.debug("Iniciando segmentacin...")
             crop_image, crop_url, yolo_confidence = self._segment_and_crop(image)
             
             if crop_image is None:
                 raise SegmentationError("No se pudo segmentar la imagen correctamente")
             
-            # 2. Extraer características del crop
+            # 2. Extraer caractersticas del crop
             crop_characteristics = self._extract_crop_characteristics(crop_image)
             
             # Validar calidad del crop
@@ -1877,10 +1877,10 @@ class CacaoPredictor:
             crop_image_rgb = crop_image.convert('RGB')
             image_tensor = self._preprocess_image(crop_image_rgb)
             
-            # Validar forma del tensor antes de pasar a predicción
+            # Validar forma del tensor antes de pasar a prediccin
             if image_tensor.dim() != 4 or image_tensor.shape != (1, 3, 224, 224):
                 raise ValueError(
-                    f"Tensor tiene forma incorrecta después de preprocesar: {image_tensor.shape}. "
+                    f"Tensor tiene forma incorrecta despus de preprocesar: {image_tensor.shape}. "
                     f"Se esperaba [1, 3, 224, 224]"
                 )
             
@@ -1922,12 +1922,12 @@ class CacaoPredictor:
                 }
             }
             
-            logger.info(f"PredicciÃ³n completada en {total_time:.2f}s")
+            logger.info(f"Predicción completada en {total_time:.2f}s")
             
             return result
             
         except Exception as e:
-            logger.error(f"Error en predicción: {e}", exc_info=True)
+            logger.error(f"Error en prediccin: {e}", exc_info=True)
             if isinstance(e, (ModelNotLoadedError, InvalidImageError, SegmentationError)):
                 raise
             raise PredictionError(f"Error procesando imagen: {e}") from e
@@ -1953,10 +1953,10 @@ class CacaoPredictor:
     
     def get_model_info(self) -> Dict[str, Any]:
         """
-        Obtiene informaciÃ³n sobre los modelos cargados.
+        Obtiene información sobre los modelos cargados.
         
         Returns:
-            Diccionario con informaciÃ³n de los modelos
+            Diccionario con información de los modelos
         """
         if not self.models_loaded:
             return {'status': 'not_loaded'}
@@ -1997,16 +1997,16 @@ def get_predictor() -> CacaoPredictor:
     if _predictor_instance is None:
         _predictor_instance = CacaoPredictor()
         
-        # Intentar cargar artefactos automÃ¡ticamente
+        # Intentar cargar artefactos automáticamente
         if not _predictor_instance.load_artifacts():
-            logger.warning("No se pudieron cargar todos los artefactos automÃ¡ticamente")
+            logger.warning("No se pudieron cargar todos los artefactos automáticamente")
     
     return _predictor_instance
 
 
 def load_artifacts() -> bool:
     """
-    FunciÃ³n de conveniencia para cargar artefactos.
+    Función de conveniencia para cargar artefactos.
     
     Returns:
         True si se cargaron exitosamente
@@ -2017,7 +2017,7 @@ def load_artifacts() -> bool:
 
 def predict_image(image: Image.Image) -> Dict[str, Any]:
     """
-    FunciÃ³n de conveniencia para predecir una imagen.
+    Función de conveniencia para predecir una imagen.
     
     Args:
         image: Imagen PIL
@@ -2031,7 +2031,7 @@ def predict_image(image: Image.Image) -> Dict[str, Any]:
 
 def predict_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
     """
-    FunciÃ³n de conveniencia para predecir desde bytes.
+    Función de conveniencia para predecir desde bytes.
     
     Args:
         image_bytes: Bytes de la imagen

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Vistas refactorizadas usando servicios para CacaoScan.
 """
 import logging
@@ -49,22 +49,22 @@ class LoginView(APIView):
             400: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
         },
-        tags=['AutenticaciÃ³n']
+        tags=['Autenticación']
     )
     def post(self, request):
         """
-        Autentica un usuario usando el servicio de autenticaciÃ³n.
+        Autentica un usuario usando el servicio de autenticación.
         """
         serializer = LoginSerializer(data=request.data)
         
         if not serializer.is_valid():
             return create_error_response(
-                message="Datos de login invÃ¡lidos",
+                message="Datos de login inválidos",
                 errors=serializer.errors,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
         
-        # Usar servicio de autenticaciÃ³n
+        # Usar servicio de autenticación
         result = auth_service.login_user(
             username=serializer.validated_data['username'],
             password=serializer.validated_data['password'],
@@ -109,22 +109,22 @@ class RegisterView(APIView):
             ),
             400: ErrorResponseSerializer,
         },
-        tags=['AutenticaciÃ³n']
+        tags=['Autenticación']
     )
     def post(self, request):
         """
-        Registra un nuevo usuario usando el servicio de autenticaciÃ³n.
+        Registra un nuevo usuario usando el servicio de autenticación.
         """
         serializer = RegisterSerializer(data=request.data)
         
         if not serializer.is_valid():
             return create_error_response(
-                message="Datos de registro invÃ¡lidos",
+                message="Datos de registro inválidos",
                 errors=serializer.errors,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
         
-        # Usar servicio de autenticaciÃ³n
+        # Usar servicio de autenticación
         result = auth_service.register_user(
             user_data=serializer.validated_data,
             request=request
@@ -151,7 +151,7 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Cierra sesiÃ³n del usuario actual",
+        operation_description="Cierra sesión del usuario actual",
         operation_summary="Logout de usuario",
         responses={
             200: openapi.Response(
@@ -166,11 +166,11 @@ class LogoutView(APIView):
             ),
             401: ErrorResponseSerializer,
         },
-        tags=['AutenticaciÃ³n']
+        tags=['Autenticación']
     )
     def post(self, request):
         """
-        Cierra sesiÃ³n del usuario usando el servicio de autenticaciÃ³n.
+        Cierra sesión del usuario usando el servicio de autenticación.
         """
         refresh_token = request.data.get('refresh_token')
         
@@ -222,11 +222,11 @@ class RefreshTokenView(APIView):
             ),
             400: ErrorResponseSerializer,
         },
-        tags=['AutenticaciÃ³n']
+        tags=['Autenticación']
     )
     def post(self, request):
         """
-        Refresca un token usando el servicio de autenticaciÃ³n.
+        Refresca un token usando el servicio de autenticación.
         """
         refresh_token = request.data.get('refresh')
         
@@ -259,7 +259,7 @@ class VerifyEmailView(APIView):
     permission_classes = [AllowAny]
     
     @swagger_auto_schema(
-        operation_description="Verifica un email usando token de verificaciÃ³n",
+        operation_description="Verifica un email usando token de verificación",
         operation_summary="Verificar email",
         request_body=EmailVerificationSerializer,
         responses={
@@ -276,17 +276,17 @@ class VerifyEmailView(APIView):
             ),
             400: ErrorResponseSerializer,
         },
-        tags=['AutenticaciÃ³n']
+        tags=['Autenticación']
     )
     def post(self, request):
         """
-        Verifica un email usando el servicio de autenticaciÃ³n.
+        Verifica un email usando el servicio de autenticación.
         """
         serializer = EmailVerificationSerializer(data=request.data)
         
         if not serializer.is_valid():
             return create_error_response(
-                message="Datos de verificaciÃ³n invÃ¡lidos",
+                message="Datos de verificación inválidos",
                 errors=serializer.errors,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
@@ -311,17 +311,17 @@ class VerifyEmailView(APIView):
 
 class ResendVerificationView(APIView):
     """
-    Endpoint para reenviar verificaciÃ³n usando servicios.
+    Endpoint para reenviar verificación usando servicios.
     """
     permission_classes = [AllowAny]
     
     @swagger_auto_schema(
-        operation_description="ReenvÃ­a token de verificaciÃ³n de email",
-        operation_summary="Reenviar verificaciÃ³n",
+        operation_description="Reenvía token de verificación de email",
+        operation_summary="Reenviar verificación",
         request_body=ResendVerificationSerializer,
         responses={
             200: openapi.Response(
-                description="Token de verificaciÃ³n reenviado",
+                description="Token de verificación reenviado",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -333,17 +333,17 @@ class ResendVerificationView(APIView):
             ),
             400: ErrorResponseSerializer,
         },
-        tags=['AutenticaciÃ³n']
+        tags=['Autenticación']
     )
     def post(self, request):
         """
-        ReenvÃ­a verificaciÃ³n usando el servicio de autenticaciÃ³n.
+        Reenvía verificación usando el servicio de autenticación.
         """
         serializer = ResendVerificationSerializer(data=request.data)
         
         if not serializer.is_valid():
             return create_error_response(
-                message="Datos de reenvÃ­o invÃ¡lidos",
+                message="Datos de reenvío inválidos",
                 errors=serializer.errors,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
@@ -368,13 +368,13 @@ class ResendVerificationView(APIView):
 
 class ForgotPasswordView(APIView):
     """
-    Endpoint para solicitar restablecimiento de contraseÃ±a usando servicios.
+    Endpoint para solicitar restablecimiento de contraseña usando servicios.
     """
     permission_classes = [AllowAny]
     
     @swagger_auto_schema(
-        operation_description="Solicita restablecimiento de contraseÃ±a",
-        operation_summary="OlvidÃ© mi contraseÃ±a",
+        operation_description="Solicita restablecimiento de contraseña",
+        operation_summary="Olvidé mi contraseña",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
@@ -395,11 +395,11 @@ class ForgotPasswordView(APIView):
             ),
             400: ErrorResponseSerializer,
         },
-        tags=['AutenticaciÃ³n']
+        tags=['Autenticación']
     )
     def post(self, request):
         """
-        Solicita restablecimiento usando el servicio de autenticaciÃ³n.
+        Solicita restablecimiento usando el servicio de autenticación.
         """
         email = request.data.get('email')
         
@@ -430,13 +430,13 @@ class ForgotPasswordView(APIView):
 
 class ResetPasswordView(APIView):
     """
-    Endpoint para restablecer contraseÃ±a usando servicios.
+    Endpoint para restablecer contraseña usando servicios.
     """
     permission_classes = [AllowAny]
     
     @swagger_auto_schema(
-        operation_description="Restablece contraseÃ±a usando token",
-        operation_summary="Restablecer contraseÃ±a",
+        operation_description="Restablece contraseña usando token",
+        operation_summary="Restablecer contraseña",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
@@ -448,7 +448,7 @@ class ResetPasswordView(APIView):
         ),
         responses={
             200: openapi.Response(
-                description="ContraseÃ±a restablecida",
+                description="Contraseña restablecida",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -459,11 +459,11 @@ class ResetPasswordView(APIView):
             ),
             400: ErrorResponseSerializer,
         },
-        tags=['AutenticaciÃ³n']
+        tags=['Autenticación']
     )
     def post(self, request):
         """
-        Restablece contraseÃ±a usando el servicio de autenticaciÃ³n.
+        Restablece contraseña usando el servicio de autenticación.
         """
         token = request.data.get('token')
         new_password = request.data.get('new_password')
@@ -471,7 +471,7 @@ class ResetPasswordView(APIView):
         
         if not all([token, new_password, confirm_password]):
             return create_error_response(
-                message="Token, nueva contraseÃ±a y confirmaciÃ³n son requeridos",
+                message="Token, nueva contraseña y confirmación son requeridos",
                 status_code=status.HTTP_400_BAD_REQUEST
             )
         
@@ -521,7 +521,7 @@ class UserProfileView(APIView):
     )
     def get(self, request):
         """
-        Obtiene el perfil del usuario usando el servicio de autenticaciÃ³n.
+        Obtiene el perfil del usuario usando el servicio de autenticación.
         """
         result = auth_service.get_user_profile(user=request.user)
         
@@ -568,7 +568,7 @@ class UserProfileView(APIView):
     )
     def put(self, request):
         """
-        Actualiza el perfil del usuario usando el servicio de autenticaciÃ³n.
+        Actualiza el perfil del usuario usando el servicio de autenticación.
         """
         result = auth_service.update_user_profile(
             user=request.user,
@@ -590,12 +590,12 @@ class UserProfileView(APIView):
 
 
 # ============================================================================
-# VISTAS DE ANÃLISIS REFACTORIZADAS
+# VISTAS DE ANÁLISIS REFACTORIZADAS
 # ============================================================================
 
 class ScanMeasureView(APIView):
     """
-    Endpoint para anÃ¡lisis de granos de cacao usando servicios.
+    Endpoint para análisis de granos de cacao usando servicios.
     """
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
@@ -614,7 +614,7 @@ class ScanMeasureView(APIView):
         ],
         responses={
             200: openapi.Response(
-                description="AnÃ¡lisis completado exitosamente",
+                description="Análisis completado exitosamente",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -627,11 +627,11 @@ class ScanMeasureView(APIView):
             400: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
         },
-        tags=['AnÃ¡lisis']
+        tags=['Análisis']
     )
     def post(self, request):
         """
-        Analiza un grano de cacao usando el servicio de anÃ¡lisis.
+        Analiza un grano de cacao usando el servicio de análisis.
         """
         image_file = request.FILES.get('image')
         
@@ -662,25 +662,25 @@ class ScanMeasureView(APIView):
 
 class AnalysisHistoryView(APIView):
     """
-    Endpoint para obtener historial de anÃ¡lisis usando servicios.
+    Endpoint para obtener historial de análisis usando servicios.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene el historial de anÃ¡lisis del usuario",
-        operation_summary="Historial de anÃ¡lisis",
+        operation_description="Obtiene el historial de análisis del usuario",
+        operation_summary="Historial de análisis",
         manual_parameters=[
             openapi.Parameter(
                 'page',
                 openapi.IN_QUERY,
-                description="NÃºmero de pÃ¡gina",
+                description="Número de página",
                 type=openapi.TYPE_INTEGER,
                 default=1
             ),
             openapi.Parameter(
                 'page_size',
                 openapi.IN_QUERY,
-                description="TamaÃ±o de pÃ¡gina",
+                description="Tamaño de página",
                 type=openapi.TYPE_INTEGER,
                 default=20
             ),
@@ -701,7 +701,7 @@ class AnalysisHistoryView(APIView):
             openapi.Parameter(
                 'min_confidence',
                 openapi.IN_QUERY,
-                description="Confianza mÃ­nima",
+                description="Confianza mínima",
                 type=openapi.TYPE_NUMBER,
                 format=openapi.FORMAT_FLOAT
             )
@@ -720,11 +720,11 @@ class AnalysisHistoryView(APIView):
             ),
             401: ErrorResponseSerializer,
         },
-        tags=['AnÃ¡lisis']
+        tags=['Análisis']
     )
     def get(self, request):
         """
-        Obtiene el historial de anÃ¡lisis usando el servicio de anÃ¡lisis.
+        Obtiene el historial de análisis usando el servicio de análisis.
         """
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 20))
@@ -762,13 +762,13 @@ class AnalysisHistoryView(APIView):
 
 class AnalysisDetailView(APIView):
     """
-    Endpoint para obtener detalles de un anÃ¡lisis especÃ­fico usando servicios.
+    Endpoint para obtener detalles de un análisis específico usando servicios.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene detalles de un anÃ¡lisis especÃ­fico",
-        operation_summary="Detalles de anÃ¡lisis",
+        operation_description="Obtiene detalles de un análisis específico",
+        operation_summary="Detalles de análisis",
         responses={
             200: openapi.Response(
                 description="Detalles obtenidos exitosamente",
@@ -784,11 +784,11 @@ class AnalysisDetailView(APIView):
             404: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
         },
-        tags=['AnÃ¡lisis']
+        tags=['Análisis']
     )
     def get(self, request, analysis_id):
         """
-        Obtiene detalles de un anÃ¡lisis usando el servicio de anÃ¡lisis.
+        Obtiene detalles de un análisis usando el servicio de análisis.
         """
         result = analysis_service.get_analysis_details(
             analysis_id=int(analysis_id),
@@ -812,16 +812,16 @@ class AnalysisDetailView(APIView):
 
 class AnalysisDeleteView(APIView):
     """
-    Endpoint para eliminar un anÃ¡lisis usando servicios.
+    Endpoint para eliminar un análisis usando servicios.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Elimina un anÃ¡lisis especÃ­fico",
-        operation_summary="Eliminar anÃ¡lisis",
+        operation_description="Elimina un análisis específico",
+        operation_summary="Eliminar análisis",
         responses={
             200: openapi.Response(
-                description="AnÃ¡lisis eliminado exitosamente",
+                description="Análisis eliminado exitosamente",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -833,11 +833,11 @@ class AnalysisDeleteView(APIView):
             404: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
         },
-        tags=['AnÃ¡lisis']
+        tags=['Análisis']
     )
     def delete(self, request, analysis_id):
         """
-        Elimina un anÃ¡lisis usando el servicio de anÃ¡lisis.
+        Elimina un análisis usando el servicio de análisis.
         """
         result = analysis_service.delete_analysis(
             analysis_id=int(analysis_id),
@@ -860,13 +860,13 @@ class AnalysisDeleteView(APIView):
 
 class AnalysisStatsView(APIView):
     """
-    Endpoint para obtener estadÃ­sticas de anÃ¡lisis usando servicios.
+    Endpoint para obtener estadísticas de análisis usando servicios.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene estadÃ­sticas de anÃ¡lisis del usuario",
-        operation_summary="EstadÃ­sticas de anÃ¡lisis",
+        operation_description="Obtiene estadísticas de análisis del usuario",
+        operation_summary="Estadísticas de análisis",
         manual_parameters=[
             openapi.Parameter(
                 'date_from',
@@ -885,7 +885,7 @@ class AnalysisStatsView(APIView):
         ],
         responses={
             200: openapi.Response(
-                description="EstadÃ­sticas obtenidas exitosamente",
+                description="Estadísticas obtenidas exitosamente",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -897,11 +897,11 @@ class AnalysisStatsView(APIView):
             ),
             401: ErrorResponseSerializer,
         },
-        tags=['AnÃ¡lisis']
+        tags=['Análisis']
     )
     def get(self, request):
         """
-        Obtiene estadÃ­sticas de anÃ¡lisis usando el servicio de anÃ¡lisis.
+        Obtiene estadísticas de análisis usando el servicio de análisis.
         """
         filters = {}
         if request.GET.get('date_from'):

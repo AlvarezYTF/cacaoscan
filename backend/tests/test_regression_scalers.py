@@ -1,5 +1,5 @@
-﻿"""
-Tests para los escaladores de regresiÃ³n.
+"""
+Tests para los escaladores de regresión.
 """
 import pytest
 import numpy as np
@@ -22,7 +22,7 @@ class TestCacaoScalers:
     """Tests para CacaoScalers."""
     
     def setup_method(self):
-        """ConfiguraciÃ³n antes de cada test."""
+        """Configuración antes de cada test."""
         self.scalers = CacaoScalers()
         
         # Datos de prueba
@@ -35,14 +35,14 @@ class TestCacaoScalers:
         }
     
     def test_init(self):
-        """Test de inicializaciÃ³n."""
+        """Test de inicialización."""
         scalers = CacaoScalers()
         assert scalers.scaler_type == "standard"
         assert not scalers.is_fitted
         assert len(scalers.scalers) == 0
     
     def test_init_custom_type(self):
-        """Test de inicializaciÃ³n con tipo personalizado."""
+        """Test de inicialización con tipo personalizado."""
         scalers = CacaoScalers(scaler_type="minmax")
         assert scalers.scaler_type == "minmax"
     
@@ -77,7 +77,7 @@ class TestCacaoScalers:
             self.scalers.fit(df)
     
     def test_transform(self):
-        """Test de transformaciÃ³n."""
+        """Test de transformación."""
         self.scalers.fit(self.test_data)
         
         # Transformar con DataFrame
@@ -93,7 +93,7 @@ class TestCacaoScalers:
             assert len(transformed[target]) == len(self.test_data[target])
     
     def test_inverse_transform(self):
-        """Test de transformaciÃ³n inversa."""
+        """Test de transformación inversa."""
         self.scalers.fit(self.test_data)
         
         # Transformar y luego transformar de vuelta
@@ -103,7 +103,7 @@ class TestCacaoScalers:
         assert isinstance(original, dict)
         assert len(original) == len(TARGETS)
         
-        # Verificar que la transformaciÃ³n inversa es aproximadamente correcta
+        # Verificar que la transformación inversa es aproximadamente correcta
         for target in TARGETS:
             np.testing.assert_allclose(
                 original[target], 
@@ -120,17 +120,17 @@ class TestCacaoScalers:
         assert len(result) == len(TARGETS)
     
     def test_transform_not_fitted(self):
-        """Test de transformaciÃ³n sin ajuste previo."""
+        """Test de transformación sin ajuste previo."""
         with pytest.raises(ValueError, match="Los escaladores deben ser ajustados"):
             self.scalers.transform(self.test_data)
     
     def test_inverse_transform_not_fitted(self):
-        """Test de transformaciÃ³n inversa sin ajuste previo."""
+        """Test de transformación inversa sin ajuste previo."""
         with pytest.raises(ValueError, match="Los escaladores deben ser ajustados"):
             self.scalers.inverse_transform(self.test_data)
     
     def test_get_scaler_stats(self):
-        """Test de obtenciÃ³n de estadÃ­sticas."""
+        """Test de obtención de estadísticas."""
         self.scalers.fit(self.test_data)
         stats = self.scalers.get_scaler_stats()
         
@@ -144,7 +144,7 @@ class TestCacaoScalers:
             assert 'std' in target_stats
     
     def test_get_scaler_stats_not_fitted(self):
-        """Test de estadÃ­sticas sin ajuste previo."""
+        """Test de estadísticas sin ajuste previo."""
         with pytest.raises(ValueError, match="Los escaladores deben ser ajustados"):
             self.scalers.get_scaler_stats()
     
@@ -174,7 +174,7 @@ class TestCacaoScalers:
                 assert new_scalers.is_fitted
                 assert len(new_scalers.scalers) == len(self.scalers.scalers)
                 
-                # Verificar estadÃ­sticas
+                # Verificar estadísticas
                 original_stats = self.scalers.get_scaler_stats()
                 new_stats = new_scalers.get_scaler_stats()
                 
@@ -203,7 +203,7 @@ class TestScalerUtilities:
     """Tests para funciones de utilidad de escaladores."""
     
     def setup_method(self):
-        """ConfiguraciÃ³n antes de cada test."""
+        """Configuración antes de cada test."""
         np.random.seed(42)
         self.test_data = {
             'alto': np.random.normal(10, 2, 100),
@@ -213,14 +213,14 @@ class TestScalerUtilities:
         }
     
     def test_create_scalers_from_data(self):
-        """Test de creaciÃ³n de escaladores desde datos."""
+        """Test de creación de escaladores desde datos."""
         scalers = create_scalers_from_data(self.test_data)
         
         assert scalers.is_fitted
         assert len(scalers.scalers) == len(TARGETS)
     
     def test_create_scalers_from_dataframe(self):
-        """Test de creaciÃ³n de escaladores desde DataFrame."""
+        """Test de creación de escaladores desde DataFrame."""
         df = pd.DataFrame(self.test_data)
         scalers = create_scalers_from_data(df)
         
@@ -228,26 +228,26 @@ class TestScalerUtilities:
         assert len(scalers.scalers) == len(TARGETS)
     
     def test_create_scalers_custom_type(self):
-        """Test de creaciÃ³n con tipo personalizado."""
+        """Test de creación con tipo personalizado."""
         scalers = create_scalers_from_data(self.test_data, scaler_type="minmax")
         
         assert scalers.scaler_type == "minmax"
         assert scalers.is_fitted
     
     def test_validate_scalers_valid(self):
-        """Test de validaciÃ³n de escaladores vÃ¡lidos."""
+        """Test de validación de escaladores válidos."""
         scalers = create_scalers_from_data(self.test_data)
         
         assert validate_scalers(scalers) == True
     
     def test_validate_scalers_not_fitted(self):
-        """Test de validaciÃ³n de escaladores no ajustados."""
+        """Test de validación de escaladores no ajustados."""
         scalers = CacaoScalers()
         
         assert validate_scalers(scalers) == False
     
     def test_validate_scalers_missing_target(self):
-        """Test de validaciÃ³n con target faltante."""
+        """Test de validación con target faltante."""
         scalers = CacaoScalers()
         scalers.is_fitted = True
         scalers.scalers = {'alto': Mock()}  # Solo un target
@@ -256,7 +256,7 @@ class TestScalerUtilities:
 
 
 class TestScalerIntegration:
-    """Tests de integraciÃ³n para escaladores."""
+    """Tests de integración para escaladores."""
     
     def test_full_workflow(self):
         """Test de flujo completo de escaladores."""
@@ -285,20 +285,20 @@ class TestScalerIntegration:
         # Transformar datos de test
         test_transformed = scalers.transform(test_data)
         
-        # Verificar que los datos transformados estÃ¡n normalizados
+        # Verificar que los datos transformados están normalizados
         for target in TARGETS:
             # Media debe estar cerca de 0
             assert abs(np.mean(train_transformed[target])) < 0.1
             assert abs(np.mean(test_transformed[target])) < 0.1
             
-            # DesviaciÃ³n estÃ¡ndar debe estar cerca de 1
+            # Desviación estándar debe estar cerca de 1
             assert abs(np.std(train_transformed[target]) - 1.0) < 0.1
         
         # Transformar de vuelta
         train_original = scalers.inverse_transform(train_transformed)
         test_original = scalers.inverse_transform(test_transformed)
         
-        # Verificar que la transformaciÃ³n inversa es correcta
+        # Verificar que la transformación inversa es correcta
         for target in TARGETS:
             np.testing.assert_allclose(train_original[target], train_data[target], rtol=1e-10)
             np.testing.assert_allclose(test_original[target], test_data[target], rtol=1e-10)
@@ -324,7 +324,7 @@ class TestScalerIntegration:
             transformed = scalers.transform(data)
             original = scalers.inverse_transform(transformed)
             
-            # Verificar que la transformaciÃ³n inversa es correcta
+            # Verificar que la transformación inversa es correcta
             for target in TARGETS:
                 np.testing.assert_allclose(original[target], data[target], rtol=1e-10)
 

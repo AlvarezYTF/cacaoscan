@@ -1,4 +1,4 @@
-﻿"""
+"""
 Serializers para la API de CacaoScan.
 """
 from rest_framework import serializers
@@ -32,7 +32,7 @@ try:
 except ImportError:
     Notification = None
 
-# Modelos Ãºnicos de API
+# Modelos únicos de API
 from .models import ModelMetrics, SystemSettings
 
 
@@ -45,7 +45,7 @@ class ConfidenceSerializer(serializers.Serializer):
 
 
 class DebugInfoSerializer(serializers.Serializer):
-    """Serializer para informaciÃ³n de debug."""
+    """Serializer para información de debug."""
     segmented = serializers.BooleanField()
     yolo_conf = serializers.FloatField()
     latency_ms = serializers.IntegerField()
@@ -55,16 +55,16 @@ class DebugInfoSerializer(serializers.Serializer):
 
 
 class ScanMeasureResponseSerializer(serializers.Serializer):
-    """Serializer para respuesta de mediciÃ³n."""
-    alto_mm = serializers.FloatField(help_text="Altura del grano en milÃ­metros")
-    ancho_mm = serializers.FloatField(help_text="Ancho del grano en milÃ­metros")
-    grosor_mm = serializers.FloatField(help_text="Grosor del grano en milÃ­metros")
+    """Serializer para respuesta de medición."""
+    alto_mm = serializers.FloatField(help_text="Altura del grano en milímetros")
+    ancho_mm = serializers.FloatField(help_text="Ancho del grano en milímetros")
+    grosor_mm = serializers.FloatField(help_text="Grosor del grano en milímetros")
     peso_g = serializers.FloatField(help_text="Peso del grano en gramos")
     confidences = ConfidenceSerializer(help_text="Niveles de confianza por target")
     crop_url = serializers.URLField(help_text="URL del recorte procesado")
-    debug = DebugInfoSerializer(help_text="InformaciÃ³n de debug del procesamiento")
+    debug = DebugInfoSerializer(help_text="Información de debug del procesamiento")
     image_id = serializers.IntegerField(help_text="ID de la imagen guardada en BD", required=False, allow_null=True)
-    prediction_id = serializers.IntegerField(help_text="ID de la predicciÃ³n guardada en BD", required=False, allow_null=True)
+    prediction_id = serializers.IntegerField(help_text="ID de la predicción guardada en BD", required=False, allow_null=True)
     saved_to_database = serializers.BooleanField(help_text="Indica si los datos se guardaron correctamente en BD")
 
 
@@ -75,7 +75,7 @@ class ErrorResponseSerializer(serializers.Serializer):
 
 
 class DatasetStatsSerializer(serializers.Serializer):
-    """Serializer para estadÃ­sticas del dataset."""
+    """Serializer para estadísticas del dataset."""
     total_records = serializers.IntegerField()
     valid_records = serializers.IntegerField()
     missing_images = serializers.IntegerField()
@@ -99,7 +99,7 @@ class LoadModelsResponseSerializer(serializers.Serializer):
     status = serializers.CharField()
 
 
-# Serializers de autenticaciÃ³n
+# Serializers de autenticación
 class LoginSerializer(serializers.Serializer):
     """Serializer para login de usuario."""
     username = serializers.CharField(required=False)
@@ -116,7 +116,7 @@ class LoginSerializer(serializers.Serializer):
             username = email
             attrs['username'] = email
         
-        # Validar que al menos uno estÃ© presente
+        # Validar que al menos uno esté presente
         if not username and not email:
             raise serializers.ValidationError('Debe incluir username o email.')
         
@@ -127,7 +127,7 @@ class LoginSerializer(serializers.Serializer):
             # Si no funciona, intentar con email
             if not user and email:
                 try:
-                    # Usar .first() en lugar de .get() para evitar error si hay mÃºltiples usuarios
+                    # Usar .first() en lugar de .get() para evitar error si hay múltiples usuarios
                     user_obj = User.objects.filter(email=email).first()
                     if user_obj:
                         user = authenticate(username=user_obj.username, password=password)
@@ -138,18 +138,18 @@ class LoginSerializer(serializers.Serializer):
             
             if user:
                 if not user.is_active:
-                    # Verificar si tiene token de verificaciÃ³n pendiente
+                    # Verificar si tiene token de verificación pendiente
                     if hasattr(user, 'auth_email_token') and not user.auth_email_token.is_verified:
                         raise serializers.ValidationError(
-                            'Tu cuenta no estÃ¡ verificada. Por favor verifica tu correo electrÃ³nico antes de iniciar sesiÃ³n. '
-                            'Si no recibiste el correo, puedes solicitar uno nuevo desde la pÃ¡gina de registro.'
+                            'Tu cuenta no está verificada. Por favor verifica tu correo electrónico antes de iniciar sesión. '
+                            'Si no recibiste el correo, puedes solicitar uno nuevo desde la página de registro.'
                         )
                     else:
                         raise serializers.ValidationError('Usuario inactivo.')
                 attrs['user'] = user
                 return attrs
             else:
-                raise serializers.ValidationError('Credenciales invÃ¡lidas.')
+                raise serializers.ValidationError('Credenciales inválidas.')
         else:
             raise serializers.ValidationError('Debe incluir username/email y password.')
 
@@ -164,61 +164,61 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'first_name', 'last_name', 'password', 'password_confirm')
     
     def validate_username(self, value):
-        """Validar username Ãºnico y formato."""
+        """Validar username único y formato."""
         # Si el username es un email, usar el email como username
         if '@' in value:
             return value
         
         if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("Este nombre de usuario ya estÃ¡ en uso.")
+            raise serializers.ValidationError("Este nombre de usuario ya está en uso.")
         
         # Validar formato de username
         if len(value) < 3:
             raise serializers.ValidationError("El nombre de usuario debe tener al menos 3 caracteres.")
         
         if not value.replace('_', '').replace('-', '').isalnum():
-            raise serializers.ValidationError("El nombre de usuario solo puede contener letras, nÃºmeros, guiones y guiones bajos.")
+            raise serializers.ValidationError("El nombre de usuario solo puede contener letras, números, guiones y guiones bajos.")
         
         return value
     
     def validate_email(self, value):
-        """Validar email Ãºnico y formato."""
+        """Validar email único y formato."""
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Este email ya estÃ¡ registrado.")
+            raise serializers.ValidationError("Este email ya está registrado.")
         
-        # ValidaciÃ³n bÃ¡sica de formato de email
+        # Validación básica de formato de email
         import re
         email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_regex, value):
-            raise serializers.ValidationError("Ingresa un email vÃ¡lido.")
+            raise serializers.ValidationError("Ingresa un email válido.")
         
         return value
     
     def validate_password(self, value):
-        """Validar fortaleza de contraseÃ±a."""
+        """Validar fortaleza de contraseña."""
         if len(value) < 8:
-            raise serializers.ValidationError("La contraseÃ±a debe tener al menos 8 caracteres.")
+            raise serializers.ValidationError("La contraseña debe tener al menos 8 caracteres.")
         
-        # Verificar que tenga al menos una letra mayÃºscula
+        # Verificar que tenga al menos una letra mayúscula
         if not any(c.isupper() for c in value):
-            raise serializers.ValidationError("La contraseÃ±a debe contener al menos una letra mayÃºscula.")
+            raise serializers.ValidationError("La contraseña debe contener al menos una letra mayúscula.")
         
-        # Verificar que tenga al menos una letra minÃºscula
+        # Verificar que tenga al menos una letra minúscula
         if not any(c.islower() for c in value):
-            raise serializers.ValidationError("La contraseÃ±a debe contener al menos una letra minÃºscula.")
+            raise serializers.ValidationError("La contraseña debe contener al menos una letra minúscula.")
         
-        # Verificar que tenga al menos un nÃºmero
+        # Verificar que tenga al menos un número
         if not any(c.isdigit() for c in value):
-            raise serializers.ValidationError("La contraseÃ±a debe contener al menos un nÃºmero.")
+            raise serializers.ValidationError("La contraseña debe contener al menos un número.")
         
         return value
     
     def validate(self, attrs):
         """Validaciones generales."""
         if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError("Las contraseÃ±as no coinciden.")
+            raise serializers.ValidationError("Las contraseñas no coinciden.")
         
-        # Validar que first_name y last_name no estÃ©n vacÃ­os
+        # Validar que first_name y last_name no estén vacíos
         if not attrs.get('first_name', '').strip():
             raise serializers.ValidationError("El nombre es requerido.")
         
@@ -238,7 +238,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Asegurar que el username sea igual al email
         validated_data['username'] = validated_data['email']
         
-        # Crear usuario usando create_user para hash automÃ¡tico de contraseÃ±a
+        # Crear usuario usando create_user para hash automático de contraseña
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
@@ -253,52 +253,52 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class ChangePasswordSerializer(serializers.Serializer):
     """
-    Serializer para cambio de contraseÃ±a de usuario autenticado.
+    Serializer para cambio de contraseña de usuario autenticado.
     """
     old_password = serializers.CharField(
         write_only=True,
         required=True,
-        label="ContraseÃ±a actual"
+        label="Contraseña actual"
     )
     new_password = serializers.CharField(
         write_only=True,
         required=True,
         min_length=8,
-        label="Nueva contraseÃ±a"
+        label="Nueva contraseña"
     )
     confirm_password = serializers.CharField(
         write_only=True,
         required=True,
-        label="Confirmar nueva contraseÃ±a"
+        label="Confirmar nueva contraseña"
     )
     
     def validate_old_password(self, value):
-        """Validar que se proporcione la contraseÃ±a actual."""
+        """Validar que se proporcione la contraseña actual."""
         if not value:
-            raise serializers.ValidationError("La contraseÃ±a actual es requerida.")
+            raise serializers.ValidationError("La contraseña actual es requerida.")
         return value
     
     def validate_new_password(self, value):
         """
-        Validar que la nueva contraseÃ±a cumpla con los requisitos de seguridad:
-        - MÃ­nimo 8 caracteres
-        - Al menos una letra mayÃºscula
-        - Al menos una letra minÃºscula
-        - Al menos un nÃºmero
+        Validar que la nueva contraseña cumpla con los requisitos de seguridad:
+        - Mínimo 8 caracteres
+        - Al menos una letra mayúscula
+        - Al menos una letra minúscula
+        - Al menos un número
         """
         import re
         
         if len(value) < 8:
-            raise serializers.ValidationError("La contraseÃ±a debe tener al menos 8 caracteres.")
+            raise serializers.ValidationError("La contraseña debe tener al menos 8 caracteres.")
         
         if not re.search(r"[A-Z]", value):
-            raise serializers.ValidationError("La contraseÃ±a debe contener al menos una letra mayÃºscula.")
+            raise serializers.ValidationError("La contraseña debe contener al menos una letra mayúscula.")
         
         if not re.search(r"[a-z]", value):
-            raise serializers.ValidationError("La contraseÃ±a debe contener al menos una letra minÃºscula.")
+            raise serializers.ValidationError("La contraseña debe contener al menos una letra minúscula.")
         
         if not re.search(r"[0-9]", value):
-            raise serializers.ValidationError("La contraseÃ±a debe contener al menos un nÃºmero.")
+            raise serializers.ValidationError("La contraseña debe contener al menos un número.")
         
         return value
     
@@ -308,23 +308,23 @@ class ChangePasswordSerializer(serializers.Serializer):
         new_password = attrs.get('new_password')
         confirm_password = attrs.get('confirm_password')
         
-        # Validar que las contraseÃ±as nuevas coincidan
+        # Validar que las contraseñas nuevas coincidan
         if new_password != confirm_password:
             raise serializers.ValidationError({
-                'confirm_password': 'Las contraseÃ±as nuevas no coinciden.'
+                'confirm_password': 'Las contraseñas nuevas no coinciden.'
             })
         
-        # Validar que la nueva contraseÃ±a sea diferente a la actual
+        # Validar que la nueva contraseña sea diferente a la actual
         if old_password == new_password:
             raise serializers.ValidationError({
-                'new_password': 'La nueva contraseÃ±a debe ser diferente a la contraseÃ±a actual.'
+                'new_password': 'La nueva contraseña debe ser diferente a la contraseña actual.'
             })
         
         return attrs
 
 
 class EmailVerificationSerializer(serializers.Serializer):
-    """Serializer para verificaciÃ³n de email."""
+    """Serializer para verificación de email."""
     token = serializers.UUIDField()
     
     def validate_token(self, value):
@@ -333,7 +333,7 @@ class EmailVerificationSerializer(serializers.Serializer):
         
         token_obj = EmailVerificationToken.get_valid_token(value)
         if not token_obj:
-            raise serializers.ValidationError("Token invÃ¡lido o expirado.")
+            raise serializers.ValidationError("Token inválido o expirado.")
         
         if token_obj.is_verified:
             raise serializers.ValidationError("Este email ya ha sido verificado.")
@@ -342,11 +342,11 @@ class EmailVerificationSerializer(serializers.Serializer):
 
 
 class ResendVerificationSerializer(serializers.Serializer):
-    """Serializer para reenvÃ­o de verificaciÃ³n de email."""
+    """Serializer para reenvío de verificación de email."""
     email = serializers.EmailField()
     
     def validate_email(self, value):
-        """Validar que el email existe y no estÃ¡ verificado."""
+        """Validar que el email existe y no está verificado."""
         try:
             user = User.objects.get(email=value)
             if user.is_active and hasattr(user, 'auth_email_token'):
@@ -358,7 +358,7 @@ class ResendVerificationSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer para informaciÃ³n de usuario."""
+    """Serializer para información de usuario."""
     role = serializers.SerializerMethodField()
     is_verified = serializers.SerializerMethodField()
     
@@ -377,13 +377,13 @@ class UserSerializer(serializers.ModelSerializer):
             return 'farmer'
     
     def get_is_verified(self, obj):
-        """Obtener estado de verificaciÃ³n del email."""
+        """Obtener estado de verificación del email."""
         try:
             if hasattr(obj, 'email_verification_token'):
                 return obj.email_verification_token.is_verified
         except Exception:
             pass
-        return obj.is_active  # Fallback para usuarios sin token de verificaciÃ³n
+        return obj.is_active  # Fallback para usuarios sin token de verificación
 
 
 # Serializers para los nuevos modelos
@@ -404,20 +404,20 @@ class UserProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at', 'updated_at', 'full_name', 'role', 'is_verified')
     
     def validate_years_experience(self, value):
-        """Validar aÃ±os de experiencia."""
+        """Validar años de experiencia."""
         if value is not None and (value < 0 or value > 100):
-            raise serializers.ValidationError("Los aÃ±os de experiencia deben estar entre 0 y 100.")
+            raise serializers.ValidationError("Los años de experiencia deben estar entre 0 y 100.")
         return value
     
     def validate_farm_size_hectares(self, value):
-        """Validar tamaÃ±o de finca."""
+        """Validar tamaño de finca."""
         if value is not None and (value < 0 or value > 10000):
-            raise serializers.ValidationError("El tamaÃ±o de la finca debe estar entre 0 y 10,000 hectÃ¡reas.")
+            raise serializers.ValidationError("El tamaño de la finca debe estar entre 0 y 10,000 hectáreas.")
         return value
 
 
 class CacaoImageSerializer(serializers.ModelSerializer):
-    """Serializer para imÃ¡genes de cacao."""
+    """Serializer para imágenes de cacao."""
     file_size_mb = serializers.ReadOnlyField()
     has_prediction = serializers.ReadOnlyField()
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)
@@ -498,7 +498,7 @@ class CacaoPredictionSerializer(serializers.ModelSerializer):
 
 
 class CacaoImageDetailSerializer(CacaoImageSerializer):
-    """Serializer detallado para imÃ¡genes con predicciÃ³n."""
+    """Serializer detallado para imágenes con predicción."""
     prediction = CacaoPredictionSerializer(read_only=True)
     
     class Meta(CacaoImageSerializer.Meta):
@@ -506,7 +506,7 @@ class CacaoImageDetailSerializer(CacaoImageSerializer):
 
 
 class ImagesListResponseSerializer(serializers.Serializer):
-    """Serializer para respuesta de lista de imÃ¡genes."""
+    """Serializer para respuesta de lista de imágenes."""
     results = CacaoImageSerializer(many=True)
     count = serializers.IntegerField()
     page = serializers.IntegerField()
@@ -517,7 +517,7 @@ class ImagesListResponseSerializer(serializers.Serializer):
 
 
 class ImagesStatsResponseSerializer(serializers.Serializer):
-    """Serializer para respuesta de estadÃ­sticas de imÃ¡genes."""
+    """Serializer para respuesta de estadísticas de imágenes."""
     total_images = serializers.IntegerField()
     processed_images = serializers.IntegerField()
     unprocessed_images = serializers.IntegerField()
@@ -568,7 +568,7 @@ class TrainingJobSerializer(serializers.ModelSerializer):
     
     def validate_dataset_size(self, value):
         if value <= 0:
-            raise serializers.ValidationError("El tamaÃ±o del dataset debe ser mayor a 0.")
+            raise serializers.ValidationError("El tamaño del dataset debe ser mayor a 0.")
         return value
 
 
@@ -585,12 +585,12 @@ class TrainingJobCreateSerializer(serializers.ModelSerializer):
     def validate_job_type(self, value):
         valid_types = ['regression', 'vision', 'incremental']
         if value not in valid_types:
-            raise serializers.ValidationError(f"Tipo de trabajo invÃ¡lido. Use: {', '.join(valid_types)}")
+            raise serializers.ValidationError(f"Tipo de trabajo inválido. Use: {', '.join(valid_types)}")
         return value
     
     def validate_model_name(self, value):
         if not value or len(value.strip()) == 0:
-            raise serializers.ValidationError("El nombre del modelo no puede estar vacÃ­o.")
+            raise serializers.ValidationError("El nombre del modelo no puede estar vacío.")
         return value.strip()
 
 
@@ -609,7 +609,7 @@ class TrainingJobStatusSerializer(serializers.ModelSerializer):
         )
 
 
-# Serializers para gestiÃ³n de fincas
+# Serializers para gestión de fincas
 class FincaSerializer(serializers.ModelSerializer):
     """Serializer para fincas con validaciones completas."""
     agricultor_name = serializers.CharField(source='agricultor.get_full_name', read_only=True)
@@ -632,11 +632,11 @@ class FincaSerializer(serializers.ModelSerializer):
         )
     
     def get_estadisticas(self, obj):
-        """Obtener estadÃ­sticas de la finca."""
+        """Obtener estadísticas de la finca."""
         try:
             return obj.get_estadisticas()
         except Exception:
-            # Retornar estadÃ­sticas vacÃ­as si hay error
+            # Retornar estadísticas vacías si hay error
             return {
                 'total_lotes': 0,
                 'lotes_activos': 0,
@@ -655,14 +655,14 @@ class FincaSerializer(serializers.ModelSerializer):
         # Verificar unicidad por agricultor
         agricultor = self.context.get('request').user if self.context.get('request') else None
         if agricultor and self.instance:
-            # ActualizaciÃ³n: excluir la instancia actual
+            # Actualización: excluir la instancia actual
             if Finca.objects.filter(
                 agricultor=agricultor, 
                 nombre__iexact=value.strip()
             ).exclude(id=self.instance.id).exists():
                 raise serializers.ValidationError("Ya tienes una finca con este nombre.")
         elif agricultor:
-            # CreaciÃ³n: verificar unicidad
+            # Creación: verificar unicidad
             if Finca.objects.filter(
                 agricultor=agricultor, 
                 nombre__iexact=value.strip()
@@ -672,11 +672,11 @@ class FincaSerializer(serializers.ModelSerializer):
         return value.strip()
     
     def validate_hectareas(self, value):
-        """Validar hectÃ¡reas."""
+        """Validar hectáreas."""
         if value <= 0:
-            raise serializers.ValidationError("Las hectÃ¡reas deben ser mayores a 0.")
+            raise serializers.ValidationError("Las hectáreas deben ser mayores a 0.")
         if value > 10000:
-            raise serializers.ValidationError("Las hectÃ¡reas no pueden ser mayores a 10,000.")
+            raise serializers.ValidationError("Las hectáreas no pueden ser mayores a 10,000.")
         return value
     
     def validate_coordenadas_lat(self, value):
@@ -695,14 +695,14 @@ class FincaSerializer(serializers.ModelSerializer):
     
     def validate(self, attrs):
         """Validaciones generales."""
-        # Validar que municipio y departamento no estÃ©n vacÃ­os
+        # Validar que municipio y departamento no estén vacíos
         if not attrs.get('municipio', '').strip():
             raise serializers.ValidationError("El municipio es requerido.")
         
         if not attrs.get('departamento', '').strip():
             raise serializers.ValidationError("El departamento es requerido.")
         
-        # Validar que si se proporcionan coordenadas, ambas estÃ©n presentes
+        # Validar que si se proporcionan coordenadas, ambas estén presentes
         lat = attrs.get('coordenadas_lat')
         lng = attrs.get('coordenadas_lng')
         
@@ -713,7 +713,7 @@ class FincaSerializer(serializers.ModelSerializer):
 
 
 class FincaListSerializer(serializers.ModelSerializer):
-    """Serializer optimizado para listados de fincas (sin estadÃ­sticas pesadas)."""
+    """Serializer optimizado para listados de fincas (sin estadísticas pesadas)."""
     ubicacion_completa = serializers.SerializerMethodField()
     
     class Meta:
@@ -725,7 +725,7 @@ class FincaListSerializer(serializers.ModelSerializer):
         )
     
     def get_ubicacion_completa(self, obj):
-        """Obtener ubicaciÃ³n completa."""
+        """Obtener ubicación completa."""
         return f"{obj.municipio}, {obj.departamento}"
 
 
@@ -738,9 +738,9 @@ class FincaDetailSerializer(FincaSerializer):
     
     def get_lotes(self, obj):
         """Obtener lotes de la finca."""
-        # ImportaciÃ³n diferida para evitar circular imports
+        # Importación diferida para evitar circular imports
         try:
-            # LoteSerializer se define después en el mismo archivo
+            # LoteSerializer se define despus en el mismo archivo
             # Importamos directamente el nombre de la clase usando forward reference
             from fincas_app.models import Lote
             lotes = obj.lotes.all()[:10]  # Limitar a 10 lotes para evitar sobrecarga
@@ -759,7 +759,7 @@ class FincaDetailSerializer(FincaSerializer):
                 })
             return lotes_data
         except Exception as e:
-            # Si hay algún error, retornar lista vacía en lugar de fallar
+            # Si hay algn error, retornar lista vaca en lugar de fallar
             import logging
             logger = logging.getLogger("cacaoscan.api")
             logger.warning(f"Error serializando lotes de finca {obj.id}: {e}")
@@ -767,7 +767,7 @@ class FincaDetailSerializer(FincaSerializer):
 
 
 class FincaStatsSerializer(serializers.Serializer):
-    """Serializer para estadÃ­sticas de fincas."""
+    """Serializer para estadísticas de fincas."""
     total_fincas = serializers.IntegerField()
     fincas_activas = serializers.IntegerField()
     total_hectareas = serializers.DecimalField(max_digits=12, decimal_places=2)
@@ -777,7 +777,7 @@ class FincaStatsSerializer(serializers.Serializer):
     calidad_promedio_general = serializers.FloatField()
 
 
-# Serializers para gestiÃ³n de lotes
+# Serializers para gestión de lotes
 class LoteSerializer(serializers.ModelSerializer):
     """Serializer para lotes con validaciones completas."""
     finca_nombre = serializers.CharField(source='finca.nombre', read_only=True)
@@ -802,7 +802,7 @@ class LoteSerializer(serializers.ModelSerializer):
         )
     
     def get_estadisticas(self, obj):
-        """Obtener estadÃ­sticas del lote."""
+        """Obtener estadísticas del lote."""
         return obj.get_estadisticas()
     
     def validate_identificador(self, value):
@@ -813,14 +813,14 @@ class LoteSerializer(serializers.ModelSerializer):
         # Verificar unicidad por finca
         finca = self.context.get('finca')
         if finca and self.instance:
-            # ActualizaciÃ³n: excluir la instancia actual
+            # Actualización: excluir la instancia actual
             if Lote.objects.filter(
                 finca=finca, 
                 identificador__iexact=value.strip()
             ).exclude(id=self.instance.id).exists():
                 raise serializers.ValidationError("Ya existe un lote con este identificador en la finca.")
         elif finca:
-            # CreaciÃ³n: verificar unicidad
+            # Creación: verificar unicidad
             if Lote.objects.filter(
                 finca=finca, 
                 identificador__iexact=value.strip()
@@ -830,18 +830,18 @@ class LoteSerializer(serializers.ModelSerializer):
         return value.strip()
     
     def validate_area_hectareas(self, value):
-        """Validar Ã¡rea en hectÃ¡reas."""
+        """Validar área en hectáreas."""
         if value <= 0:
-            raise serializers.ValidationError("El Ã¡rea debe ser mayor a 0.")
+            raise serializers.ValidationError("El área debe ser mayor a 0.")
         if value > 1000:
-            raise serializers.ValidationError("El Ã¡rea no puede ser mayor a 1,000 hectÃ¡reas.")
+            raise serializers.ValidationError("El área no puede ser mayor a 1,000 hectáreas.")
         return value
     
     def validate_fecha_cosecha(self, value):
         """Validar fecha de cosecha."""
         fecha_plantacion = self.initial_data.get('fecha_plantacion')
         if value and fecha_plantacion and value < fecha_plantacion:
-            raise serializers.ValidationError("La fecha de cosecha no puede ser anterior a la fecha de plantaciÃ³n.")
+            raise serializers.ValidationError("La fecha de cosecha no puede ser anterior a la fecha de plantación.")
         return value
     
     def validate_coordenadas_lat(self, value):
@@ -860,11 +860,11 @@ class LoteSerializer(serializers.ModelSerializer):
     
     def validate(self, attrs):
         """Validaciones generales."""
-        # Validar que variedad no estÃ© vacÃ­a
+        # Validar que variedad no esté vacía
         if not attrs.get('variedad', '').strip():
             raise serializers.ValidationError("La variedad es requerida.")
         
-        # Validar que si se proporcionan coordenadas, ambas estÃ©n presentes
+        # Validar que si se proporcionan coordenadas, ambas estén presentes
         lat = attrs.get('coordenadas_lat')
         lng = attrs.get('coordenadas_lng')
         
@@ -900,13 +900,13 @@ class LoteDetailSerializer(LoteSerializer):
         fields = LoteSerializer.Meta.fields + ('cacao_images',)
     
     def get_cacao_images(self, obj):
-        """Obtener imÃ¡genes de cacao del lote."""
+        """Obtener imágenes de cacao del lote."""
         from .serializers import CacaoImageSerializer
         return CacaoImageSerializer(obj.cacao_images.all()[:10], many=True).data
 
 
 class LoteStatsSerializer(serializers.Serializer):
-    """Serializer para estadÃ­sticas de lotes."""
+    """Serializer para estadísticas de lotes."""
     total_lotes = serializers.IntegerField()
     lotes_activos = serializers.IntegerField()
     lotes_por_estado = serializers.DictField()
@@ -916,7 +916,7 @@ class LoteStatsSerializer(serializers.Serializer):
     calidad_promedio_general = serializers.FloatField()
 
 
-# Serializers para gestiÃ³n de notificaciones
+# Serializers para gestión de notificaciones
 class NotificationSerializer(serializers.ModelSerializer):
     """Serializer para notificaciones con formateo de fechas."""
     tiempo_transcurrido = serializers.ReadOnlyField()
@@ -935,13 +935,13 @@ class NotificationSerializer(serializers.ModelSerializer):
         )
     
     def validate_titulo(self, value):
-        """Validar tÃ­tulo de notificaciÃ³n."""
+        """Validar título de notificación."""
         if not value or len(value.strip()) < 3:
-            raise serializers.ValidationError("El tÃ­tulo debe tener al menos 3 caracteres.")
+            raise serializers.ValidationError("El título debe tener al menos 3 caracteres.")
         return value.strip()
     
     def validate_mensaje(self, value):
-        """Validar mensaje de notificaciÃ³n."""
+        """Validar mensaje de notificación."""
         if not value or len(value.strip()) < 10:
             raise serializers.ValidationError("El mensaje debe tener al menos 10 caracteres.")
         return value.strip()
@@ -968,15 +968,15 @@ class NotificationCreateSerializer(serializers.ModelSerializer):
         fields = ('user', 'tipo', 'titulo', 'mensaje', 'datos_extra')
     
     def validate_tipo(self, value):
-        """Validar tipo de notificaciÃ³n."""
+        """Validar tipo de notificación."""
         valid_types = [choice[0] for choice in Notification.TIPO_CHOICES]
         if value not in valid_types:
-            raise serializers.ValidationError(f"Tipo invÃ¡lido. Opciones vÃ¡lidas: {', '.join(valid_types)}")
+            raise serializers.ValidationError(f"Tipo inválido. Opciones válidas: {', '.join(valid_types)}")
         return value
 
 
 class NotificationStatsSerializer(serializers.Serializer):
-    """Serializer para estadÃ­sticas de notificaciones."""
+    """Serializer para estadísticas de notificaciones."""
     total_notifications = serializers.IntegerField()
     unread_count = serializers.IntegerField()
     notifications_by_type = serializers.DictField()
@@ -984,7 +984,7 @@ class NotificationStatsSerializer(serializers.Serializer):
 
 
 class ModelMetricsSerializer(serializers.ModelSerializer):
-    """Serializer para mÃ©tricas de modelos."""
+    """Serializer para métricas de modelos."""
     accuracy_percentage = serializers.ReadOnlyField()
     training_time_formatted = serializers.ReadOnlyField()
     performance_summary = serializers.ReadOnlyField()
@@ -1013,12 +1013,12 @@ class ModelMetricsSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
     
     def get_comparison_with_previous(self, obj):
-        """Obtener comparaciÃ³n con versiÃ³n anterior."""
+        """Obtener comparación con versión anterior."""
         return obj.get_comparison_with_previous()
 
 
 class ModelMetricsListSerializer(serializers.ModelSerializer):
-    """Serializer simplificado para listado de mÃ©tricas de modelos."""
+    """Serializer simplificado para listado de métricas de modelos."""
     accuracy_percentage = serializers.ReadOnlyField()
     training_time_formatted = serializers.ReadOnlyField()
     created_by_username = serializers.CharField(source='created_by.username', read_only=True)
@@ -1034,7 +1034,7 @@ class ModelMetricsListSerializer(serializers.ModelSerializer):
 
 
 class ModelMetricsCreateSerializer(serializers.ModelSerializer):
-    """Serializer para crear mÃ©tricas de modelos."""
+    """Serializer para crear métricas de modelos."""
     
     class Meta:
         model = ModelMetrics
@@ -1059,12 +1059,12 @@ class ModelMetricsCreateSerializer(serializers.ModelSerializer):
         
         if dataset_size != (train_size + validation_size + test_size):
             raise serializers.ValidationError(
-                "El tamaÃ±o del dataset debe ser igual a la suma de train_size + validation_size + test_size"
+                "El tamaño del dataset debe ser igual a la suma de train_size + validation_size + test_size"
             )
         
-        # Validar mÃ©tricas principales
+        # Validar métricas principales
         if data.get('r2_score', 0) < 0 or data.get('r2_score', 0) > 1:
-            raise serializers.ValidationError("RÂ² score debe estar entre 0 y 1")
+            raise serializers.ValidationError("R² score debe estar entre 0 y 1")
         
         if data.get('mae', 0) < 0:
             raise serializers.ValidationError("MAE debe ser mayor o igual a 0")
@@ -1076,7 +1076,7 @@ class ModelMetricsCreateSerializer(serializers.ModelSerializer):
 
 
 class ModelMetricsUpdateSerializer(serializers.ModelSerializer):
-    """Serializer para actualizar mÃ©tricas de modelos."""
+    """Serializer para actualizar métricas de modelos."""
     
     class Meta:
         model = ModelMetrics
@@ -1088,9 +1088,9 @@ class ModelMetricsUpdateSerializer(serializers.ModelSerializer):
     
     def validate(self, data):
         """Validar datos del serializer."""
-        # Validar mÃ©tricas principales
+        # Validar métricas principales
         if 'r2_score' in data and (data['r2_score'] < 0 or data['r2_score'] > 1):
-            raise serializers.ValidationError("RÂ² score debe estar entre 0 y 1")
+            raise serializers.ValidationError("R² score debe estar entre 0 y 1")
         
         if 'mae' in data and data['mae'] < 0:
             raise serializers.ValidationError("MAE debe ser mayor o igual a 0")
@@ -1102,7 +1102,7 @@ class ModelMetricsUpdateSerializer(serializers.ModelSerializer):
 
 
 class ModelMetricsStatsSerializer(serializers.Serializer):
-    """Serializer para estadÃ­sticas de mÃ©tricas de modelos."""
+    """Serializer para estadísticas de métricas de modelos."""
     total_models = serializers.IntegerField()
     models_by_type = serializers.DictField()
     models_by_target = serializers.DictField()
@@ -1125,7 +1125,7 @@ class ModelPerformanceTrendSerializer(serializers.Serializer):
 
 
 class ModelComparisonSerializer(serializers.Serializer):
-    """Serializer para comparaciÃ³n entre modelos."""
+    """Serializer para comparación entre modelos."""
     model_a = ModelMetricsSerializer()
     model_b = ModelMetricsSerializer()
     comparison_metrics = serializers.DictField()
@@ -1134,17 +1134,17 @@ class ModelComparisonSerializer(serializers.Serializer):
 
 
 class SystemSettingsSerializer(serializers.ModelSerializer):
-    """Serializer para configuraciÃ³n del sistema."""
+    """Serializer para configuración del sistema."""
     logo_url = serializers.SerializerMethodField()
 
 
 class SendOtpSerializer(serializers.Serializer):
-    """Serializer para envÃ­o de cÃ³digo OTP."""
+    """Serializer para envío de código OTP."""
     email = serializers.EmailField()
 
 
 class VerifyOtpSerializer(serializers.Serializer):
-    """Serializer para verificaciÃ³n de cÃ³digo OTP."""
+    """Serializer para verificación de código OTP."""
     email = serializers.EmailField()
     code = serializers.CharField(max_length=6, min_length=6)
 

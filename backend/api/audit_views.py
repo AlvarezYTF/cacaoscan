@@ -1,5 +1,5 @@
-﻿"""
-Vistas para auditorÃ­a y logs de actividad en CacaoScan.
+"""
+Vistas para auditoría y logs de actividad en CacaoScan.
 """
 import logging
 from rest_framework.permissions import IsAuthenticated
@@ -38,20 +38,20 @@ class ActivityLogListView(APIView):
         operation_summary="Listar logs de actividad",
         manual_parameters=[
             openapi.Parameter('usuario', openapi.IN_QUERY, description="Filtrar por usuario", type=openapi.TYPE_STRING),
-            openapi.Parameter('accion', openapi.IN_QUERY, description="Filtrar por acciÃ³n", type=openapi.TYPE_STRING),
+            openapi.Parameter('accion', openapi.IN_QUERY, description="Filtrar por acción", type=openapi.TYPE_STRING),
             openapi.Parameter('modelo', openapi.IN_QUERY, description="Filtrar por modelo", type=openapi.TYPE_STRING),
             openapi.Parameter('ip_address', openapi.IN_QUERY, description="Filtrar por IP", type=openapi.TYPE_STRING),
             openapi.Parameter('fecha_desde', openapi.IN_QUERY, description="Fecha desde (YYYY-MM-DD)", type=openapi.TYPE_STRING),
             openapi.Parameter('fecha_hasta', openapi.IN_QUERY, description="Fecha hasta (YYYY-MM-DD)", type=openapi.TYPE_STRING),
-            openapi.Parameter('page', openapi.IN_QUERY, description="NÃºmero de pÃ¡gina", type=openapi.TYPE_INTEGER),
-            openapi.Parameter('page_size', openapi.IN_QUERY, description="TamaÃ±o de pÃ¡gina", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page', openapi.IN_QUERY, description="Número de página", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page_size', openapi.IN_QUERY, description="Tamaño de página", type=openapi.TYPE_INTEGER),
         ],
         responses={
             200: openapi.Response(description="Logs de actividad obtenidos exitosamente"),
             403: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
         },
-        tags=['AuditorÃ­a']
+        tags=['Auditoría']
     )
     def get(self, request):
         """Listar logs de actividad con filtros."""
@@ -63,7 +63,7 @@ class ActivityLogListView(APIView):
                 }, status=status.HTTP_403_FORBIDDEN)
             
             if ActivityLog is None:
-                # Si el modelo no estÃ¡ disponible, retornar vacÃ­o
+                # Si el modelo no está disponible, retornar vacío
                 return Response({
                     'results': [],
                     'count': 0,
@@ -101,7 +101,7 @@ class ActivityLogListView(APIView):
                     queryset = queryset.filter(timestamp__date__gte=fecha_desde)
                 except ValueError:
                     return Response({
-                        'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD',
+                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
                         'status': 'error'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -112,11 +112,11 @@ class ActivityLogListView(APIView):
                     queryset = queryset.filter(timestamp__date__lte=fecha_hasta)
                 except ValueError:
                     return Response({
-                        'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD',
+                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
                         'status': 'error'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
-            # PaginaciÃ³n
+            # Paginación
             page = int(request.GET.get('page', 1))
             page_size = int(request.GET.get('page_size', 50))
             
@@ -128,7 +128,7 @@ class ActivityLogListView(APIView):
             for log in page_obj.object_list:
                 logs_data.append({
                     'id': log.id,
-                    'usuario': log.usuario.username if log.usuario else 'Usuario AnÃ³nimo',
+                    'usuario': log.usuario.username if log.usuario else 'Usuario Anónimo',
                     'accion': log.accion,
                     'accion_display': log.get_accion_display(),
                     'modelo': log.modelo,
@@ -174,18 +174,18 @@ class LoginHistoryListView(APIView):
         manual_parameters=[
             openapi.Parameter('usuario', openapi.IN_QUERY, description="Filtrar por usuario", type=openapi.TYPE_STRING),
             openapi.Parameter('ip_address', openapi.IN_QUERY, description="Filtrar por IP", type=openapi.TYPE_STRING),
-            openapi.Parameter('success', openapi.IN_QUERY, description="Filtrar por Ã©xito", type=openapi.TYPE_BOOLEAN),
+            openapi.Parameter('success', openapi.IN_QUERY, description="Filtrar por éxito", type=openapi.TYPE_BOOLEAN),
             openapi.Parameter('fecha_desde', openapi.IN_QUERY, description="Fecha desde (YYYY-MM-DD)", type=openapi.TYPE_STRING),
             openapi.Parameter('fecha_hasta', openapi.IN_QUERY, description="Fecha hasta (YYYY-MM-DD)", type=openapi.TYPE_STRING),
-            openapi.Parameter('page', openapi.IN_QUERY, description="NÃºmero de pÃ¡gina", type=openapi.TYPE_INTEGER),
-            openapi.Parameter('page_size', openapi.IN_QUERY, description="TamaÃ±o de pÃ¡gina", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page', openapi.IN_QUERY, description="Número de página", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page_size', openapi.IN_QUERY, description="Tamaño de página", type=openapi.TYPE_INTEGER),
         ],
         responses={
             200: openapi.Response(description="Historial de logins obtenido exitosamente"),
             403: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
         },
-        tags=['AuditorÃ­a']
+        tags=['Auditoría']
     )
     def get(self, request):
         """Listar historial de logins con filtros."""
@@ -220,7 +220,7 @@ class LoginHistoryListView(APIView):
                     queryset = queryset.filter(login_time__date__gte=fecha_desde)
                 except ValueError:
                     return Response({
-                        'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD',
+                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
                         'status': 'error'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -231,11 +231,11 @@ class LoginHistoryListView(APIView):
                     queryset = queryset.filter(login_time__date__lte=fecha_hasta)
                 except ValueError:
                     return Response({
-                        'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD',
+                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
                         'status': 'error'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
-            # PaginaciÃ³n
+            # Paginación
             page = int(request.GET.get('page', 1))
             page_size = int(request.GET.get('page_size', 50))
             
@@ -277,7 +277,7 @@ class LoginHistoryListView(APIView):
 
 class AuditStatsView(APIView):
     """
-    Vista para obtener estadÃ­sticas de auditorÃ­a (solo administradores).
+    Vista para obtener estadísticas de auditoría (solo administradores).
     """
     permission_classes = [IsAuthenticated]
     
@@ -286,25 +286,25 @@ class AuditStatsView(APIView):
         return user.is_superuser or user.is_staff
     
     @swagger_auto_schema(
-        operation_description="Obtiene estadÃ­sticas de auditorÃ­a del sistema (solo administradores)",
-        operation_summary="EstadÃ­sticas de auditorÃ­a",
+        operation_description="Obtiene estadísticas de auditoría del sistema (solo administradores)",
+        operation_summary="Estadísticas de auditoría",
         responses={
-            200: openapi.Response(description="EstadÃ­sticas obtenidas exitosamente"),
+            200: openapi.Response(description="Estadísticas obtenidas exitosamente"),
             403: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
         },
-        tags=['AuditorÃ­a']
+        tags=['Auditoría']
     )
     def get(self, request):
-        """Obtener estadÃ­sticas de auditorÃ­a."""
+        """Obtener estadísticas de auditoría."""
         try:
             if not self._is_admin_user(request.user):
                 return Response({
-                    'error': 'No tienes permisos para acceder a las estadÃ­sticas de auditorÃ­a',
+                    'error': 'No tienes permisos para acceder a las estadísticas de auditoría',
                     'status': 'error'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            # EstadÃ­sticas de ActivityLog
+            # Estadísticas de ActivityLog
             total_activities = ActivityLog.objects.count()
             activities_today = ActivityLog.objects.filter(
                 timestamp__date=timezone.now().date()
@@ -322,19 +322,19 @@ class AuditStatsView(APIView):
                 .values_list('modelo', 'count')
             )
             
-            # Top usuarios mÃ¡s activos
+            # Top usuarios más activos
             top_active_users = list(
                 ActivityLog.objects.values('usuario__username')
                 .annotate(count=Count('id'))
                 .order_by('-count')[:10]
             )
             
-            # EstadÃ­sticas de LoginHistory
+            # Estadísticas de LoginHistory
             total_logins = LoginHistory.objects.count()
             successful_logins = LoginHistory.objects.filter(success=True).count()
             failed_logins = LoginHistory.objects.filter(success=False).count()
             
-            # Logins por dÃ­a (Ãºltimos 7 dÃ­as)
+            # Logins por día (últimos 7 días)
             login_stats_by_day = []
             for i in range(7):
                 date = timezone.now().date() - timedelta(days=i)
@@ -344,14 +344,14 @@ class AuditStatsView(APIView):
                     'count': day_logins
                 })
             
-            # IPs mÃ¡s frecuentes
+            # IPs más frecuentes
             top_ips = list(
                 LoginHistory.objects.values('ip_address')
                 .annotate(count=Count('id'))
                 .order_by('-count')[:10]
             )
             
-            # DuraciÃ³n promedio de sesiÃ³n
+            # Duración promedio de sesión
             avg_session_duration = LoginHistory.objects.filter(
                 session_duration__isnull=False
             ).aggregate(avg_duration=Avg('session_duration'))['avg_duration']
@@ -379,7 +379,7 @@ class AuditStatsView(APIView):
             return Response(stats, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Error obteniendo estadÃ­sticas de auditorÃ­a: {e}")
+            logger.error(f"Error obteniendo estadísticas de auditoría: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'

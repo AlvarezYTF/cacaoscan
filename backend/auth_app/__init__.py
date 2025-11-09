@@ -1,6 +1,6 @@
-﻿"""
-App de AutenticaciÃ³n - CacaoScan.
-Maneja usuarios, perfiles y autenticaciÃ³n.
+"""
+App de Autenticación - CacaoScan.
+Maneja usuarios, perfiles y autenticación.
 """
 
 __version__ = '1.0.0'

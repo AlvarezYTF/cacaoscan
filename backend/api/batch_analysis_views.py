@@ -1,5 +1,5 @@
-﻿"""
-Vistas para anÃ¡lisis batch de lotes con ML.
+"""
+Vistas para análisis batch de lotes con ML.
 """
 import logging
 import time
@@ -30,31 +30,31 @@ logger = logging.getLogger("cacaoscan.api")
 
 class BatchAnalysisView(APIView):
     """
-    Endpoint para anÃ¡lisis batch de lotes con mÃºltiples imÃ¡genes.
+    Endpoint para análisis batch de lotes con múltiples imágenes.
     """
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
     
     @swagger_auto_schema(
-        operation_description="Procesa un lote con mÃºltiples imÃ¡genes usando ML",
-        operation_summary="AnÃ¡lisis batch de lote",
+        operation_description="Procesa un lote con múltiples imágenes usando ML",
+        operation_summary="Análisis batch de lote",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
                 'name': openapi.Schema(type=openapi.TYPE_STRING, description="Nombre del lote"),
                 'farm': openapi.Schema(type=openapi.TYPE_STRING, description="Nombre de la finca"),
                 'originPlace': openapi.Schema(type=openapi.TYPE_STRING, description="Lugar de origen"),
-                'genetics': openapi.Schema(type=openapi.TYPE_STRING, description="GenÃ©tica/variedad"),
-                'collectionDate': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de recolecciÃ³n"),
-                'origin': openapi.Schema(type=openapi.TYPE_STRING, description="Origen geogrÃ¡fico"),
+                'genetics': openapi.Schema(type=openapi.TYPE_STRING, description="Genética/variedad"),
+                'collectionDate': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de recolección"),
+                'origin': openapi.Schema(type=openapi.TYPE_STRING, description="Origen geográfico"),
                 'notes': openapi.Schema(type=openapi.TYPE_STRING, description="Notas adicionales"),
-                'images': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_FILE), description="ImÃ¡genes del lote"),
+                'images': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_FILE), description="Imágenes del lote"),
             },
             required=['name', 'farm', 'collectionDate', 'genetics', 'images']
         ),
         responses={
             201: openapi.Response(
-                description="AnÃ¡lisis batch completado",
+                description="Análisis batch completado",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -71,11 +71,11 @@ class BatchAnalysisView(APIView):
             401: ErrorResponseSerializer,
             500: ErrorResponseSerializer,
         },
-        tags=['AnÃ¡lisis']
+        tags=['Análisis']
     )
     def post(self, request):
         """
-        Procesa un lote con mÃºltiples imÃ¡genes usando ML.
+        Procesa un lote con múltiples imágenes usando ML.
         """
         start_time = time.time()
         
@@ -104,13 +104,13 @@ class BatchAnalysisView(APIView):
             
             if not genetics:
                 return Response({
-                    'error': 'La genÃ©tica es requerida',
+                    'error': 'La genética es requerida',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             if not collection_date:
                 return Response({
-                    'error': 'La fecha de recolecciÃ³n es requerida',
+                    'error': 'La fecha de recolección es requerida',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -136,25 +136,25 @@ class BatchAnalysisView(APIView):
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # 4. Procesar imÃ¡genes
+            # 4. Procesar imágenes
             images = request.FILES.getlist('images')
             if not images:
                 return Response({
-                    'error': 'No se enviaron imÃ¡genes',
+                    'error': 'No se enviaron imágenes',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # 5. Procesar cada imagen con ML
             results = self._process_images_batch(request, images, lote)
             
-            # 6. Calcular estadÃ­sticas
+            # 6. Calcular estadísticas
             stats = self._calculate_stats(results)
             
             # 7. Preparar respuesta
             total_time = time.time() - start_time
             logger.info(
-                f"AnÃ¡lisis batch completado en {total_time:.2f}s - "
-                f"Lote ID: {lote.id}, ImÃ¡genes procesadas: {stats['processed_images']}/{stats['total_images']}"
+                f"Análisis batch completado en {total_time:.2f}s - "
+                f"Lote ID: {lote.id}, Imágenes procesadas: {stats['processed_images']}/{stats['total_images']}"
             )
             
             # Preparar resultados individuales para el frontend
@@ -195,9 +195,9 @@ class BatchAnalysisView(APIView):
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
-            logger.error(f"Error en anÃ¡lisis batch: {e}", exc_info=True)
+            logger.error(f"Error en análisis batch: {e}", exc_info=True)
             return Response({
-                'error': f'Error procesando anÃ¡lisis batch: {str(e)}',
+                'error': f'Error procesando análisis batch: {str(e)}',
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -237,7 +237,7 @@ class BatchAnalysisView(APIView):
                     activa=True
                 )
                 
-                # Verificar que se guardó correctamente refrescando desde la BD
+                # Verificar que se guard correctamente refrescando desde la BD
                 finca.refresh_from_db()
                 
                 # Verificar nuevamente que existe en la BD
@@ -247,7 +247,7 @@ class BatchAnalysisView(APIView):
                     logger.debug(f"Finca guardada: tabla={Finca._meta.db_table}, agricultor_id={finca_verificada.agricultor_id}")
                     return finca_verificada
                 except Finca.DoesNotExist:
-                    logger.error(f"Finca creada pero no encontrada en BD después de refresh - ID: {finca.id}")
+                    logger.error(f"Finca creada pero no encontrada en BD despus de refresh - ID: {finca.id}")
                     return None
             
         except Exception as e:
@@ -277,12 +277,12 @@ class BatchAnalysisView(APIView):
             except:
                 fecha_recoleccion = date.today()
             
-            # Usar fecha de recolecciÃ³n como fecha de plantaciÃ³n (ya que es lo que tenemos)
+            # Usar fecha de recolección como fecha de plantación (ya que es lo que tenemos)
             fecha_plantacion = fecha_recoleccion
             
             # Verificar que la finca existe antes de crear el lote
             if not finca or not finca.id:
-                logger.error(f"Error: Finca no válida al crear lote. Finca={finca}")
+                logger.error(f"Error: Finca no vlida al crear lote. Finca={finca}")
                 return None
             
             # Verificar que la finca existe en la base de datos y recargarla para asegurar consistencia
@@ -301,7 +301,7 @@ class BatchAnalysisView(APIView):
             if lote_finca_table != finca_table:
                 logger.error(
                     f"Error: Desajuste de tablas - Lote referencia '{lote_finca_table}' "
-                    f"pero Finca está en '{finca_table}'"
+                    f"pero Finca est en '{finca_table}'"
                 )
                 return None
             
@@ -310,18 +310,18 @@ class BatchAnalysisView(APIView):
             
             from django.db import transaction
             
-            # Verificar una vez más que la finca existe directamente en la BD usando SQL raw
+            # Verificar una vez ms que la finca existe directamente en la BD usando SQL raw
             from django.db import connection as db_conn
             with db_conn.cursor() as cursor:
                 cursor.execute("SELECT id, nombre FROM api_finca WHERE id = %s", [finca_verificada.id])
                 finca_row = cursor.fetchone()
                 
                 if not finca_row:
-                    logger.error(f"Error crítico: Finca ID={finca_verificada.id} no existe en tabla api_finca")
+                    logger.error(f"Error crtico: Finca ID={finca_verificada.id} no existe en tabla api_finca")
                     return None
                 
                 finca_id_bd, finca_nombre_bd = finca_row
-                logger.debug(f"Verificación SQL: Finca ID={finca_id_bd} existe en api_finca: {finca_nombre_bd}")
+                logger.debug(f"Verificacin SQL: Finca ID={finca_id_bd} existe en api_finca: {finca_nombre_bd}")
             
             try:
                 with transaction.atomic():
@@ -344,7 +344,7 @@ class BatchAnalysisView(APIView):
                     except Exception as orm_error:
                         # Si falla con ORM, verificar si es problema de foreign key
                         error_msg = str(orm_error)
-                        if 'foreign key' in error_msg.lower() or 'viola la llave foránea' in error_msg.lower():
+                        if 'foreign key' in error_msg.lower() or 'viola la llave fornea' in error_msg.lower():
                             logger.warning(f"Error con ORM: {error_msg}. Intentando con SQL directo...")
                             
                             # Insertar directamente con SQL
@@ -369,9 +369,9 @@ class BatchAnalysisView(APIView):
                         else:
                             raise
             except Exception as db_error:
-                # Capturar específicamente errores de foreign key
+                # Capturar especficamente errores de foreign key
                 error_msg = str(db_error)
-                if 'foreign key' in error_msg.lower() or 'viola la llave foránea' in error_msg.lower():
+                if 'foreign key' in error_msg.lower() or 'viola la llave fornea' in error_msg.lower():
                     logger.error(
                         f"Error de foreign key al crear lote: {error_msg}. "
                         f"Finca ID={finca_id_bd} existe en tabla api_finca. "
@@ -403,7 +403,7 @@ class BatchAnalysisView(APIView):
             return None
     
     def _process_images_batch(self, request, images, lote):
-        """Procesar mÃºltiples imÃ¡genes con ML."""
+        """Procesar múltiples imágenes con ML."""
         results = []
         predictor = None
         
@@ -414,7 +414,7 @@ class BatchAnalysisView(APIView):
             predictor = get_predictor()
             
             if not predictor.models_loaded:
-                logger.info("Modelos no cargados. Intentando carga automÃ¡tica...")
+                logger.info("Modelos no cargados. Intentando carga automática...")
                 success = load_artifacts()
                 
                 if success:
@@ -449,14 +449,14 @@ class BatchAnalysisView(APIView):
                     try:
                         # Leer imagen desde el archivo guardado en disco
                         from PIL import Image
-                        # Opción 1: Intentar leer desde el archivo en memoria primero
+                        # Opcin 1: Intentar leer desde el archivo en memoria primero
                         try:
                             image_file.seek(0)  # Reset file pointer si es posible
                             image_bytes = image_file.read()
                             if image_bytes:
                                 pil_image = Image.open(io.BytesIO(image_bytes))
                             else:
-                                # Si está vacío, leer desde disco
+                                # Si est vaco, leer desde disco
                                 pil_image = Image.open(cacao_image.image.path)
                         except (AttributeError, ValueError, IOError):
                             # Si falla, leer desde el archivo guardado en disco
@@ -466,7 +466,7 @@ class BatchAnalysisView(APIView):
                         result = predictor.predict(pil_image)
                         prediction_time_ms = int((time.time() - prediction_start) * 1000)
                         
-                        # Guardar predicciÃ³n
+                        # Guardar predicción
                         cacao_prediction = CacaoPrediction(
                             image=cacao_image,
                             alto_mm=result['alto_mm'],
@@ -494,7 +494,7 @@ class BatchAnalysisView(APIView):
                         }
                         
                     except Exception as pred_error:
-                        logger.error(f"Error en predicciÃ³n de imagen {idx + 1}: {pred_error}", exc_info=True)
+                        logger.error(f"Error en predicción de imagen {idx + 1}: {pred_error}", exc_info=True)
                         prediction_result = {
                             'success': False,
                             'image_id': cacao_image.id,
@@ -519,7 +519,7 @@ class BatchAnalysisView(APIView):
         return results
     
     def _calculate_stats(self, results):
-        """Calcular estadÃ­sticas del batch."""
+        """Calcular estadísticas del batch."""
         total_images = len(results)
         processed_images = sum(1 for r in results if r.get('success', False))
         failed_images = total_images - processed_images

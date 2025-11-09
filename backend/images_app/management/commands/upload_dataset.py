@@ -42,13 +42,13 @@ class Command(BaseCommand):
         
         if not folder_path.exists():
             self.stdout.write(
-                self.style.ERROR(f'❌ La carpeta {folder_path} no existe')
+                self.style.ERROR(f'[ERROR] La carpeta {folder_path} no existe')
             )
             return
         
         if not folder_path.is_dir():
             self.stdout.write(
-                self.style.ERROR(f'❌ {folder_path} no es una carpeta')
+                self.style.ERROR(f'[ERROR] {folder_path} no es una carpeta')
             )
             return
 
@@ -60,7 +60,7 @@ class Command(BaseCommand):
             except User.DoesNotExist:
                 username = options['user']
                 self.stdout.write(
-                    self.style.ERROR(f'❌ Usuario {username} no encontrado')
+                    self.style.ERROR(f'[ERROR] Usuario {username} no encontrado')
                 )
                 return
         else:
@@ -68,7 +68,7 @@ class Command(BaseCommand):
             user = User.objects.filter(is_superuser=True).first()
             if not user:
                 self.stdout.write(
-                    self.style.ERROR('❌ No se encontró ningún superusuario. Use --user para especificar un usuario.')
+                    self.style.ERROR('[ERROR] No se encontró ningún superusuario. Use --user para especificar un usuario.')
                 )
                 return
 
@@ -84,7 +84,7 @@ class Command(BaseCommand):
             except Finca.DoesNotExist:
                 finca_id = options['finca_id']
                 self.stdout.write(
-                    self.style.WARNING(f'⚠️  Finca con ID {finca_id} no encontrada. Continuando sin finca...')
+                    self.style.WARNING(f'[WARN]  Finca con ID {finca_id} no encontrada. Continuando sin finca...')
                 )
 
         # Buscar imágenes
@@ -96,7 +96,7 @@ class Command(BaseCommand):
 
         if not image_files:
             self.stdout.write(
-                self.style.WARNING(f'⚠️  No se encontraron imágenes con extensiones {extensions} en {folder_path}')
+                self.style.WARNING(f'[WARN]  No se encontraron imágenes con extensiones {extensions} en {folder_path}')
             )
             return
 
@@ -137,7 +137,7 @@ class Command(BaseCommand):
             except Exception as e:
                 error_count += 1
                 self.stdout.write(
-                    self.style.ERROR(f'  ❌ Error procesando {img_path.name}: {str(e)}')
+                    self.style.ERROR(f'  [ERROR] Error procesando {img_path.name}: {str(e)}')
                 )
 
         self.stdout.write('')
@@ -145,7 +145,7 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 f'✅ Proceso completado!\n'
                 f'   📸 Imágenes subidas: {uploaded_count}\n'
-                f'   ❌ Errores: {error_count}'
+                f'   [ERROR] Errores: {error_count}'
             )
         )
 

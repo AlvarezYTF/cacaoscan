@@ -111,9 +111,9 @@
             {% if confidence_level == 'high' %}
             <div class="status-badge status-high">✅ Alta Calidad - Confianza: {{ confidence }}%</div>
             {% elif confidence_level == 'medium' %}
-            <div class="status-badge status-medium">⚠️ Calidad Estándar - Confianza: {{ confidence }}%</div>
+            <div class="status-badge status-medium">[WARN] Calidad Estándar - Confianza: {{ confidence }}%</div>
             {% else %}
-            <div class="status-badge status-low">⚠️ Calidad Baja - Confianza: {{ confidence }}%</div>
+            <div class="status-badge status-low">[WARN] Calidad Baja - Confianza: {{ confidence }}%</div>
             {% endif %}
             
             <h3>📊 Resultados del Análisis</h3>
@@ -151,7 +151,7 @@
             
             {% if defects_detected %}
             <div style="background-color: #f8d7da; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <h4>⚠️ Defectos Detectados</h4>
+                <h4>[WARN] Defectos Detectados</h4>
                 <ul>
                     {% for defect in defects_detected %}
                     <li>{{ defect }}</li>

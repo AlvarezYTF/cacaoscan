@@ -1,4 +1,4 @@
-﻿"""
+"""
 Cargador y validador del dataset de cacao para CacaoScan.
 
 Formato esperado del CSV:
@@ -8,10 +8,10 @@ ID,ALTO,ANCHO,GROSOR,PESO
 ...
 
 - Separador: coma (,)
-- Encabezados en mayÃºscula: ID, ALTO, ANCHO, GROSOR, PESO
+- Encabezados en mayúscula: ID, ALTO, ANCHO, GROSOR, PESO
 - Cada fila representa un grano de cacao identificado por su ID
 - Imagen correspondiente: backend/media/cacao_images/raw/{ID}.bmp
-- Algunas imÃ¡genes pueden faltar; se detectan y excluyen con log en missing_ids.log
+- Algunas imágenes pueden faltar; se detectan y excluyen con log en missing_ids.log
 """
 import pandas as pd
 import numpy as np
@@ -38,14 +38,14 @@ class CacaoDatasetLoader:
     """
     Cargador y validador del dataset de cacao para CacaoScan.
     
-    CaracterÃ­sticas:
+    Características:
     - Lee CSV con separador coma (,)
     - Convierte valores a float32
-    - Normaliza nombres de columnas a minÃºscula
-    - Genera columna image_path automÃ¡ticamente
-    - Verifica existencia de imÃ¡genes
+    - Normaliza nombres de columnas a minúscula
+    - Genera columna image_path automáticamente
+    - Verifica existencia de imágenes
     - Registra IDs faltantes en log
-    - Detecta automÃ¡ticamente archivos CSV en media/datasets/
+    - Detecta automáticamente archivos CSV en media/datasets/
     """
     
     def __init__(self, csv_path: Optional[str] = None):
@@ -53,13 +53,13 @@ class CacaoDatasetLoader:
         Inicializa el cargador de dataset.
         
         Args:
-            csv_path: Ruta especÃ­fica al CSV (opcional). Si no se proporciona,
-                     se detecta automÃ¡ticamente en media/datasets/
+            csv_path: Ruta específica al CSV (opcional). Si no se proporciona,
+                     se detecta automáticamente en media/datasets/
         """
         self.raw_images_dir = get_raw_images_dir()
         self.missing_log_path = get_missing_ids_log_path()
         
-        # Detectar archivo CSV automÃ¡ticamente si no se proporciona
+        # Detectar archivo CSV automáticamente si no se proporciona
         if csv_path is None:
             self.csv_path = self._detect_csv_file()
         else:
@@ -76,7 +76,7 @@ class CacaoDatasetLoader:
     
     def _detect_csv_file(self) -> Optional[Path]:
         """
-        Detecta automÃ¡ticamente archivos CSV en media/datasets/.
+        Detecta automáticamente archivos CSV en media/datasets/.
         
         Returns:
             Path al archivo CSV encontrado o None si no hay ninguno
@@ -97,10 +97,10 @@ class CacaoDatasetLoader:
         
         if len(csv_files) == 1:
             csv_file = csv_files[0]
-            logger.info(f"Archivo CSV detectado automÃ¡ticamente: {csv_file}")
+            logger.info(f"Archivo CSV detectado automáticamente: {csv_file}")
             return csv_file
         
-        # Múltiples archivos CSV - priorizar dataset_cacao.clean.csv
+        # Mltiples archivos CSV - priorizar dataset_cacao.clean.csv
         preferred_names = ["dataset_cacao.clean.csv", "dataset_sin_comillas.csv", "dataset.csv"]
         
         for preferred_name in preferred_names:
@@ -111,7 +111,7 @@ class CacaoDatasetLoader:
         
         # Si no hay preferido, usar el primero
         csv_file = csv_files[0]
-        logger.warning(f"MÃºltiples archivos CSV encontrados. Usando: {csv_file}")
+        logger.warning(f"Múltiples archivos CSV encontrados. Usando: {csv_file}")
         return csv_file
     
     def load_dataset(self) -> pd.DataFrame:
@@ -161,7 +161,7 @@ class CacaoDatasetLoader:
         if initial_count != final_count:
             logger.warning(f"Eliminadas {initial_count - final_count} filas con valores nulos")
         
-        # Normalizar nombres de columnas a minÃºscula para uso interno
+        # Normalizar nombres de columnas a minúscula para uso interno
         df = df.rename(columns={
             'ID': 'id',
             'ALTO': 'alto',
@@ -190,16 +190,16 @@ class CacaoDatasetLoader:
         if duplicates > 0:
             logger.warning(f"Encontrados {duplicates} IDs duplicados. Eliminando duplicados...")
             df = df.drop_duplicates(subset=['id'], keep='first')
-            logger.info(f"Dataset despuÃ©s de eliminar duplicados: {len(df)} registros")
+            logger.info(f"Dataset después de eliminar duplicados: {len(df)} registros")
         
-        logger.info(f"[OK] Dataset cargado exitosamente: {len(df)} registros válidos")
+        logger.info(f"[OK] Dataset cargado exitosamente: {len(df)} registros vlidos")
         logger.info(f"Columnas finales: {list(df.columns)}")
         
         return df
     
     def validate_images_exist(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, List[int]]:
         """
-        Valida que las imÃ¡genes correspondientes a los IDs existan.
+        Valida que las imágenes correspondientes a los IDs existan.
         
         Args:
             df: DataFrame con los datos del dataset (columnas normalizadas)
@@ -207,14 +207,14 @@ class CacaoDatasetLoader:
         Returns:
             Tuple con (DataFrame filtrado, Lista de IDs faltantes)
         """
-        logger.info("Validando existencia de imÃ¡genes...")
+        logger.info("Validando existencia de imágenes...")
         
         missing_ids = []
         valid_records = []
         
         for _, row in df.iterrows():
             image_id = row['id']  # Usar columna normalizada
-            image_path = Path(row['image_path'])  # Usar path generado automÃ¡ticamente
+            image_path = Path(row['image_path'])  # Usar path generado automáticamente
             
             if image_path.exists():
                 valid_records.append(row)
@@ -224,28 +224,28 @@ class CacaoDatasetLoader:
         
         # Guardar log de IDs faltantes
         if missing_ids:
-            log_message = f"IDs con imÃ¡genes faltantes: {sorted(missing_ids)}"
+            log_message = f"IDs con imágenes faltantes: {sorted(missing_ids)}"
             write_log(self.missing_log_path, log_message)
             logger.warning(f"[INFO] Guardado log de {len(missing_ids)} IDs faltantes en {self.missing_log_path}")
         
         valid_df = pd.DataFrame(valid_records) if valid_records else pd.DataFrame()
         
-        logger.info(f"[OK] Validación completada: {len(valid_df)} imágenes válidas / [ERROR] {len(missing_ids)} faltantes")
+        logger.info(f"[OK] Validacin completada: {len(valid_df)} imgenes vlidas / [ERROR] {len(missing_ids)} faltantes")
         
         return valid_df, missing_ids
     
     def get_valid_records(self) -> List[Dict]:
         """
-        Obtiene la lista de registros vÃ¡lidos con rutas de imÃ¡genes.
+        Obtiene la lista de registros válidos con rutas de imágenes.
         
         Returns:
-            Lista de diccionarios con informaciÃ³n de cada registro vÃ¡lido
+            Lista de diccionarios con información de cada registro válido
         """
         # Cargar y validar dataset
         df = self.load_dataset()
         valid_df, missing_ids = self.validate_images_exist(df)
         
-        # Crear lista de registros vÃ¡lidos
+        # Crear lista de registros válidos
         valid_records = []
         
         for _, row in valid_df.iterrows():
@@ -264,20 +264,20 @@ class CacaoDatasetLoader:
                 'image_path': str(raw_path),
                 'raw_image_path': str(raw_path),  # Alias para compatibilidad
                 'crop_image_path': crop_path,  # Ruta del crop
-                'mask_image_path': None,  # Se establecerÃ¡ despuÃ©s del procesamiento
+                'mask_image_path': None,  # Se establecerá después del procesamiento
                 'timestamp': get_file_timestamp(raw_path) if raw_path.exists() else None
             }
             valid_records.append(record)
         
-        logger.info(f"[OK] Generados {len(valid_records)} registros válidos")
+        logger.info(f"[OK] Generados {len(valid_records)} registros vlidos")
         return valid_records
     
     def get_dataset_stats(self) -> Dict:
         """
-        Obtiene estadÃ­sticas del dataset.
+        Obtiene estadísticas del dataset.
         
         Returns:
-            Diccionario con estadÃ­sticas del dataset
+            Diccionario con estadísticas del dataset
         """
         try:
             df = self.load_dataset()
@@ -291,7 +291,7 @@ class CacaoDatasetLoader:
                 'dimensions_stats': {}
             }
             
-            # Calcular estadÃ­sticas solo si hay datos vÃ¡lidos
+            # Calcular estadísticas solo si hay datos válidos
             if len(valid_df) > 0:
                 for target in ['alto', 'ancho', 'grosor', 'peso']:
                     stats['dimensions_stats'][target] = {
@@ -303,18 +303,18 @@ class CacaoDatasetLoader:
                         'count': int(valid_df[target].count())
                     }
             else:
-                logger.warning("No hay datos vÃ¡lidos para calcular estadÃ­sticas")
+                logger.warning("No hay datos válidos para calcular estadísticas")
             
             return stats
             
         except Exception as e:
-            logger.error(f"Error al obtener estadÃ­sticas del dataset: {e}")
+            logger.error(f"Error al obtener estadísticas del dataset: {e}")
             return {}
 
 
     def filter_by_target(self, df: pd.DataFrame, target: str) -> pd.DataFrame:
         """
-        Filtra el dataset por un target especÃ­fico.
+        Filtra el dataset por un target específico.
         
         Args:
             df: DataFrame con datos del dataset
@@ -324,7 +324,7 @@ class CacaoDatasetLoader:
             DataFrame filtrado
         """
         if target not in ['alto', 'ancho', 'grosor', 'peso']:
-            raise ValueError(f"Target invÃ¡lido: {target}. Debe ser uno de: alto, ancho, grosor, peso")
+            raise ValueError(f"Target inválido: {target}. Debe ser uno de: alto, ancho, grosor, peso")
         
         # Filtrar filas donde el target no sea nulo
         filtered_df = df[df[target].notna()]
@@ -334,19 +334,19 @@ class CacaoDatasetLoader:
     
     def get_target_data(self, target: str) -> Tuple[np.ndarray, List[Dict]]:
         """
-        Obtiene datos para un target especÃ­fico con registros vÃ¡lidos.
+        Obtiene datos para un target específico con registros válidos.
         
         Args:
             target: Target a obtener ('alto', 'ancho', 'grosor', 'peso')
             
         Returns:
-            Tuple con (valores del target como array, registros vÃ¡lidos)
+            Tuple con (valores del target como array, registros válidos)
         """
         df = self.load_dataset()
         valid_df, missing_ids = self.validate_images_exist(df)
         filtered_df = self.filter_by_target(valid_df, target)
         
-        # Obtener registros vÃ¡lidos
+        # Obtener registros válidos
         records = []
         target_values = []
         
@@ -363,13 +363,13 @@ class CacaoDatasetLoader:
 
 def load_cacao_dataset(csv_path: Optional[str] = None) -> Tuple[pd.DataFrame, List[int]]:
     """
-    FunciÃ³n de conveniencia para cargar el dataset y validar imÃ¡genes.
+    Función de conveniencia para cargar el dataset y validar imágenes.
     
     Args:
-        csv_path: Ruta especÃ­fica al CSV (opcional)
+        csv_path: Ruta específica al CSV (opcional)
     
     Returns:
-        Tuple con (DataFrame vÃ¡lido, Lista de IDs faltantes)
+        Tuple con (DataFrame válido, Lista de IDs faltantes)
     """
     loader = CacaoDatasetLoader(csv_path)
     df = loader.load_dataset()
@@ -378,13 +378,13 @@ def load_cacao_dataset(csv_path: Optional[str] = None) -> Tuple[pd.DataFrame, Li
 
 def get_valid_cacao_records(csv_path: Optional[str] = None) -> List[Dict]:
     """
-    FunciÃ³n de conveniencia para obtener registros vÃ¡lidos.
+    Función de conveniencia para obtener registros válidos.
     
     Args:
-        csv_path: Ruta especÃ­fica al CSV (opcional)
+        csv_path: Ruta específica al CSV (opcional)
     
     Returns:
-        Lista de registros vÃ¡lidos con informaciÃ³n completa
+        Lista de registros válidos con información completa
     """
     loader = CacaoDatasetLoader(csv_path)
     return loader.get_valid_records()
@@ -392,14 +392,14 @@ def get_valid_cacao_records(csv_path: Optional[str] = None) -> List[Dict]:
 
 def get_target_data(target: str, csv_path: Optional[str] = None) -> Tuple[np.ndarray, List[Dict]]:
     """
-    FunciÃ³n de conveniencia para obtener datos de un target especÃ­fico.
+    Función de conveniencia para obtener datos de un target específico.
     
     Args:
         target: Target a obtener ('alto', 'ancho', 'grosor', 'peso')
-        csv_path: Ruta especÃ­fica al CSV (opcional)
+        csv_path: Ruta específica al CSV (opcional)
     
     Returns:
-        Tuple con (valores del target como array, registros vÃ¡lidos)
+        Tuple con (valores del target como array, registros válidos)
     """
     loader = CacaoDatasetLoader(csv_path)
     return loader.get_target_data(target)

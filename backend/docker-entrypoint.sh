@@ -48,9 +48,14 @@ if [[ "${ROLE}" == "web" ]]; then
     wait_for_database
     run_management_command migrate --noinput
     run_management_command collectstatic --noinput
-    if [[ "${SEED_INITIAL_DATA:-false}" == "true" ]]; then
-        run_management_command seed_colombia
+    if [[ "${CREATE_DEFAULT_SUPERUSER:-true}" == "true" ]]; then
+        log "👤 Asegurando superusuario predeterminado"
+        python create_admin_user.py || log "⚠️ No se pudo crear el superusuario predeterminado"
+    fi
+    if [[ "${SEED_INITIAL_DATA:-true}" == "true" ]]; then
+        log "🌱 Inicializando catálogos y datos base"
         run_management_command init_catalogos
+        run_management_command seed_colombia
     fi
 fi
 

@@ -1,5 +1,5 @@
-﻿"""
-Middleware para auditorÃ­a automÃ¡tica en CacaoScan.
+"""
+Middleware para auditoría automática en CacaoScan.
 """
 import logging
 import json
@@ -19,12 +19,12 @@ logger = logging.getLogger("cacaoscan.api")
 
 class AuditMiddleware(MiddlewareMixin):
     """
-    Middleware para registrar automÃ¡ticamente las actividades de los usuarios.
+    Middleware para registrar automáticamente las actividades de los usuarios.
     """
     
     def process_request(self, request):
-        """Procesar request y extraer informaciÃ³n de auditorÃ­a."""
-        # Extraer informaciÃ³n del request
+        """Procesar request y extraer información de auditoría."""
+        # Extraer información del request
         request.audit_info = {
             'ip_address': self.get_client_ip(request),
             'user_agent': request.META.get('HTTP_USER_AGENT', ''),
@@ -33,7 +33,7 @@ class AuditMiddleware(MiddlewareMixin):
             'timestamp': timezone.now(),
         }
         
-        # Determinar acciÃ³n basada en el mÃ©todo HTTP y path
+        # Determinar acción basada en el método HTTP y path
         request.audit_action = self.determine_action(request)
         
         return None
@@ -51,7 +51,7 @@ class AuditMiddleware(MiddlewareMixin):
                 self.log_activity(request, response)
                 
         except Exception as e:
-            logger.error(f"Error en middleware de auditorÃ­a: {e}")
+            logger.error(f"Error en middleware de auditoría: {e}")
         
         return response
     
@@ -65,7 +65,7 @@ class AuditMiddleware(MiddlewareMixin):
         return ip
     
     def determine_action(self, request):
-        """Determinar la acciÃ³n basada en el mÃ©todo HTTP y path."""
+        """Determinar la acción basada en el método HTTP y path."""
         method = request.method
         path = request.path
         
@@ -129,10 +129,10 @@ class AuditMiddleware(MiddlewareMixin):
             action = request.audit_action
             model = self.determine_model(request)
             
-            # Crear descripciÃ³n de la actividad
+            # Crear descripción de la actividad
             description = self.create_description(request, action, model)
             
-            # Extraer ID del objeto si estÃ¡ disponible
+            # Extraer ID del objeto si está disponible
             object_id = self.extract_object_id(request)
             
             # Registrar en ActivityLog
@@ -150,26 +150,26 @@ class AuditMiddleware(MiddlewareMixin):
             logger.error(f"Error registrando actividad: {e}")
     
     def create_description(self, request, action, model):
-        """Crear descripciÃ³n detallada de la actividad."""
+        """Crear descripción detallada de la actividad."""
         method = request.method
         path = request.path
         user = request.user.username
         
         descriptions = {
-            'login': f"Usuario {user} iniciÃ³ sesiÃ³n",
-            'logout': f"Usuario {user} cerrÃ³ sesiÃ³n",
-            'create': f"Usuario {user} creÃ³ un nuevo {model}",
-            'update': f"Usuario {user} actualizÃ³ {model}",
-            'delete': f"Usuario {user} eliminÃ³ {model}",
-            'view': f"Usuario {user} visualizÃ³ {model}",
-            'download': f"Usuario {user} descargÃ³ {model}",
-            'upload': f"Usuario {user} subiÃ³ {model}",
-            'analysis': f"Usuario {user} realizÃ³ anÃ¡lisis de {model}",
-            'training': f"Usuario {user} ejecutÃ³ entrenamiento de {model}",
-            'report': f"Usuario {user} generÃ³ reporte de {model}",
+            'login': f"Usuario {user} inició sesión",
+            'logout': f"Usuario {user} cerró sesión",
+            'create': f"Usuario {user} creó un nuevo {model}",
+            'update': f"Usuario {user} actualizó {model}",
+            'delete': f"Usuario {user} eliminó {model}",
+            'view': f"Usuario {user} visualizó {model}",
+            'download': f"Usuario {user} descargó {model}",
+            'upload': f"Usuario {user} subió {model}",
+            'analysis': f"Usuario {user} realizó análisis de {model}",
+            'training': f"Usuario {user} ejecutó entrenamiento de {model}",
+            'report': f"Usuario {user} generó reporte de {model}",
         }
         
-        return descriptions.get(action, f"Usuario {user} realizÃ³ {action} en {model}")
+        return descriptions.get(action, f"Usuario {user} realizó {action} en {model}")
     
     def extract_object_id(self, request):
         """Extraer ID del objeto de la URL."""
@@ -186,7 +186,7 @@ class AuditMiddleware(MiddlewareMixin):
 
 class LoginAuditMiddleware(MiddlewareMixin):
     """
-    Middleware especÃ­fico para auditar inicios y cierres de sesiÃ³n.
+    Middleware específico para auditar inicios y cierres de sesión.
     """
     
     def process_request(self, request):
@@ -202,7 +202,7 @@ class LoginAuditMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         """Procesar response para detectar logout."""
         try:
-            # Detectar logout basado en respuesta especÃ­fica
+            # Detectar logout basado en respuesta específica
             if (hasattr(request, 'user') and 
                 request.user.is_authenticated and
                 response.status_code == 200 and
@@ -225,7 +225,7 @@ class LoginAuditMiddleware(MiddlewareMixin):
         return ip
     
     def log_login(self, request):
-        """Registrar inicio de sesiÃ³n."""
+        """Registrar inicio de sesión."""
         try:
             LoginHistory.log_login(
                 usuario=request.user,
@@ -240,7 +240,7 @@ class LoginAuditMiddleware(MiddlewareMixin):
             logger.error(f"Error registrando login: {e}")
     
     def log_logout(self, request):
-        """Registrar cierre de sesiÃ³n."""
+        """Registrar cierre de sesión."""
         try:
             LoginHistory.log_logout(
                 usuario=request.user,
@@ -256,18 +256,18 @@ class LoginAuditMiddleware(MiddlewareMixin):
 def log_custom_activity(user, action, model, description, object_id=None, 
                        ip_address=None, user_agent=None, data_before=None, data_after=None):
     """
-    FunciÃ³n helper para registrar actividades personalizadas.
+    Función helper para registrar actividades personalizadas.
     
     Args:
-        user: Usuario que realizÃ³ la acciÃ³n
-        action: Tipo de acciÃ³n
+        user: Usuario que realizó la acción
+        action: Tipo de acción
         model: Modelo afectado
-        description: DescripciÃ³n de la acciÃ³n
+        description: Descripción de la acción
         object_id: ID del objeto afectado
-        ip_address: DirecciÃ³n IP
+        ip_address: Dirección IP
         user_agent: User Agent del navegador
-        data_before: Estado antes de la acciÃ³n
-        data_after: Estado despuÃ©s de la acciÃ³n
+        data_before: Estado antes de la acción
+        data_after: Estado después de la acción
     """
     try:
         ActivityLog.log_activity(
@@ -290,13 +290,13 @@ def log_custom_activity(user, action, model, description, object_id=None,
 
 def log_failed_login(username, ip_address, user_agent, failure_reason):
     """
-    FunciÃ³n helper para registrar intentos de login fallidos.
+    Función helper para registrar intentos de login fallidos.
     
     Args:
         username: Nombre de usuario intentado
-        ip_address: DirecciÃ³n IP
+        ip_address: Dirección IP
         user_agent: User Agent del navegador
-        failure_reason: RazÃ³n del fallo
+        failure_reason: Razón del fallo
     """
     try:
         # Crear usuario temporal para el log (no se guarda en BD)
@@ -318,7 +318,7 @@ def log_failed_login(username, ip_address, user_agent, failure_reason):
 
 class TokenCleanupMiddleware(MiddlewareMixin):
     """
-    Middleware para limpiar tokens JWT expirados automÃ¡ticamente.
+    Middleware para limpiar tokens JWT expirados automáticamente.
     """
     
     def __init__(self, get_response):
@@ -330,7 +330,7 @@ class TokenCleanupMiddleware(MiddlewareMixin):
         Procesar request para limpiar tokens expirados.
         """
         try:
-            # Importar aquÃ­ para evitar imports circulares
+            # Importar aquí para evitar imports circulares
             from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
             from django.utils import timezone
             

@@ -99,7 +99,7 @@ class Command(BaseCommand):
             image_path = raw_images_dir / image_filename
             
             if not image_path.exists():
-                self.stdout.write(self.style.WARNING(f'  ⚠️ Imagen no encontrada: {image_filename}'))
+                self.stdout.write(self.style.WARNING(f'  [WARN] Imagen no encontrada: {image_filename}'))
                 error_count += 1
                 continue
             
@@ -134,7 +134,7 @@ class Command(BaseCommand):
                     
                 except Exception as seg_error:
                     # Fallback: usar cropper directamente si segment_and_crop_cacao_bean falla
-                    self.stdout.write(self.style.WARNING(f'  ⚠️ Fallback a cropper para {image_id}: {seg_error}'))
+                    self.stdout.write(self.style.WARNING(f'  [WARN] Fallback a cropper para {image_id}: {seg_error}'))
                     
                     from ml.segmentation.cropper import create_cacao_cropper
                     cropper = create_cacao_cropper()
@@ -255,7 +255,7 @@ class Command(BaseCommand):
                     self.stdout.write(f'  ✅ Procesadas: {processed_count} imágenes...')
                     
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f'  ❌ Error procesando {image_filename}: {e}'))
+                self.stdout.write(self.style.ERROR(f'  [ERROR] Error procesando {image_filename}: {e}'))
                 error_count += 1
                 continue
         
@@ -277,7 +277,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'\n✅ Calibración completada!'))
         self.stdout.write(f'   📊 Total procesadas: {processed_count}')
         self.stdout.write(f'   ⏭️  Saltadas: {skipped_count}')
-        self.stdout.write(f'   ❌ Errores: {error_count}')
+        self.stdout.write(f'   [ERROR] Errores: {error_count}')
         self.stdout.write(f'   💾 Archivo de calibración: {calibration_file}')
         self.stdout.write(f'   📁 Imágenes procesadas: {processed_images_dir}')
         

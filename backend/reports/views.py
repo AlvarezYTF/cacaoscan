@@ -1,5 +1,5 @@
-﻿"""
-Vistas para generaciÃ³n de reportes PDF.
+"""
+Vistas para generación de reportes PDF.
 """
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -33,10 +33,10 @@ class GenerateQualityReportView(APIView):
             properties={
                 'date_from': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha desde (YYYY-MM-DD)"),
                 'date_to': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha hasta (YYYY-MM-DD)"),
-                'region': openapi.Schema(type=openapi.TYPE_STRING, description="Filtrar por regiÃ³n"),
+                'region': openapi.Schema(type=openapi.TYPE_STRING, description="Filtrar por región"),
                 'finca': openapi.Schema(type=openapi.TYPE_STRING, description="Filtrar por finca"),
-                'min_confidence': openapi.Schema(type=openapi.TYPE_NUMBER, description="Confianza mÃ­nima"),
-                'max_confidence': openapi.Schema(type=openapi.TYPE_NUMBER, description="Confianza mÃ¡xima"),
+                'min_confidence': openapi.Schema(type=openapi.TYPE_NUMBER, description="Confianza mínima"),
+                'max_confidence': openapi.Schema(type=openapi.TYPE_NUMBER, description="Confianza máxima"),
             }
         ),
         responses={
@@ -54,7 +54,7 @@ class GenerateQualityReportView(APIView):
         Genera un reporte de calidad de cacao en PDF.
         """
         try:
-            # Obtener imÃ¡genes del usuario con predicciones
+            # Obtener imágenes del usuario con predicciones
             images_queryset = CacaoImage.objects.filter(
                 user=request.user,
                 prediction__isnull=False
@@ -72,7 +72,7 @@ class GenerateQualityReportView(APIView):
             
             if 'region' in request.data and request.data['region']:
                 images_queryset = images_queryset.filter(region__icontains=request.data['region'])
-                filters['RegiÃ³n'] = request.data['region']
+                filters['Región'] = request.data['region']
             
             if 'finca' in request.data and request.data['finca']:
                 images_queryset = images_queryset.filter(finca__icontains=request.data['finca'])
@@ -80,11 +80,11 @@ class GenerateQualityReportView(APIView):
             
             if 'min_confidence' in request.data and request.data['min_confidence']:
                 images_queryset = images_queryset.filter(prediction__average_confidence__gte=request.data['min_confidence'])
-                filters['Confianza mÃ­nima'] = f"{request.data['min_confidence']:.2%}"
+                filters['Confianza mínima'] = f"{request.data['min_confidence']:.2%}"
             
             if 'max_confidence' in request.data and request.data['max_confidence']:
                 images_queryset = images_queryset.filter(prediction__average_confidence__lte=request.data['max_confidence'])
-                filters['Confianza mÃ¡xima'] = f"{request.data['max_confidence']:.2%}"
+                filters['Confianza máxima'] = f"{request.data['max_confidence']:.2%}"
             
             # Generar PDF
             generator = CacaoReportPDFGenerator()
@@ -95,7 +95,7 @@ class GenerateQualityReportView(APIView):
             filename = f"reporte_calidad_{request.user.username}_{timestamp}.pdf"
             
             logger.info(f"Reporte de calidad generado para usuario {request.user.username}. "
-                       f"ImÃ¡genes incluidas: {images_queryset.count()}")
+                       f"Imágenes incluidas: {images_queryset.count()}")
             
             return FileResponse(
                 pdf_buffer,
@@ -126,7 +126,7 @@ class GenerateDefectsReportView(APIView):
             properties={
                 'date_from': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha desde (YYYY-MM-DD)"),
                 'date_to': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha hasta (YYYY-MM-DD)"),
-                'region': openapi.Schema(type=openapi.TYPE_STRING, description="Filtrar por regiÃ³n"),
+                'region': openapi.Schema(type=openapi.TYPE_STRING, description="Filtrar por región"),
                 'finca': openapi.Schema(type=openapi.TYPE_STRING, description="Filtrar por finca"),
                 'confidence_threshold': openapi.Schema(type=openapi.TYPE_NUMBER, description="Umbral de confianza para defectos", default=0.7),
             }
@@ -146,7 +146,7 @@ class GenerateDefectsReportView(APIView):
         Genera un reporte de defectos de cacao en PDF.
         """
         try:
-            # Obtener imÃ¡genes del usuario con predicciones
+            # Obtener imágenes del usuario con predicciones
             images_queryset = CacaoImage.objects.filter(
                 user=request.user,
                 prediction__isnull=False
@@ -164,7 +164,7 @@ class GenerateDefectsReportView(APIView):
             
             if 'region' in request.data and request.data['region']:
                 images_queryset = images_queryset.filter(region__icontains=request.data['region'])
-                filters['RegiÃ³n'] = request.data['region']
+                filters['Región'] = request.data['region']
             
             if 'finca' in request.data and request.data['finca']:
                 images_queryset = images_queryset.filter(finca__icontains=request.data['finca'])
@@ -179,7 +179,7 @@ class GenerateDefectsReportView(APIView):
             filename = f"reporte_defectos_{request.user.username}_{timestamp}.pdf"
             
             logger.info(f"Reporte de defectos generado para usuario {request.user.username}. "
-                       f"ImÃ¡genes analizadas: {images_queryset.count()}")
+                       f"Imágenes analizadas: {images_queryset.count()}")
             
             return FileResponse(
                 pdf_buffer,
@@ -203,14 +203,14 @@ class GeneratePerformanceReportView(APIView):
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Genera un reporte de rendimiento de anÃ¡lisis en PDF",
+        operation_description="Genera un reporte de rendimiento de análisis en PDF",
         operation_summary="Generar reporte de rendimiento PDF",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
                 'date_from': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha desde (YYYY-MM-DD)"),
                 'date_to': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha hasta (YYYY-MM-DD)"),
-                'region': openapi.Schema(type=openapi.TYPE_STRING, description="Filtrar por regiÃ³n"),
+                'region': openapi.Schema(type=openapi.TYPE_STRING, description="Filtrar por región"),
                 'finca': openapi.Schema(type=openapi.TYPE_STRING, description="Filtrar por finca"),
             }
         ),
@@ -226,10 +226,10 @@ class GeneratePerformanceReportView(APIView):
     )
     def post(self, request):
         """
-        Genera un reporte de rendimiento de anÃ¡lisis en PDF.
+        Genera un reporte de rendimiento de análisis en PDF.
         """
         try:
-            # Obtener imÃ¡genes del usuario
+            # Obtener imágenes del usuario
             images_queryset = CacaoImage.objects.filter(user=request.user)
             
             # Aplicar filtros
@@ -244,7 +244,7 @@ class GeneratePerformanceReportView(APIView):
             
             if 'region' in request.data and request.data['region']:
                 images_queryset = images_queryset.filter(region__icontains=request.data['region'])
-                filters['RegiÃ³n'] = request.data['region']
+                filters['Región'] = request.data['region']
             
             if 'finca' in request.data and request.data['finca']:
                 images_queryset = images_queryset.filter(finca__icontains=request.data['finca'])
@@ -259,7 +259,7 @@ class GeneratePerformanceReportView(APIView):
             filename = f"reporte_rendimiento_{request.user.username}_{timestamp}.pdf"
             
             logger.info(f"Reporte de rendimiento generado para usuario {request.user.username}. "
-                       f"PerÃ­odo analizado: {images_queryset.count()} imÃ¡genes")
+                       f"Período analizado: {images_queryset.count()} imágenes")
             
             return FileResponse(
                 pdf_buffer,
@@ -278,22 +278,22 @@ class GeneratePerformanceReportView(APIView):
 
 class ReportStatsView(APIView):
     """
-    Endpoint para obtener estadÃ­sticas previas a la generaciÃ³n de reportes.
+    Endpoint para obtener estadísticas previas a la generación de reportes.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene estadÃ­sticas para preview de reportes",
-        operation_summary="EstadÃ­sticas de reportes",
+        operation_description="Obtiene estadísticas para preview de reportes",
+        operation_summary="Estadísticas de reportes",
         manual_parameters=[
             openapi.Parameter('date_from', openapi.IN_QUERY, description="Fecha desde", type=openapi.TYPE_STRING),
             openapi.Parameter('date_to', openapi.IN_QUERY, description="Fecha hasta", type=openapi.TYPE_STRING),
-            openapi.Parameter('region', openapi.IN_QUERY, description="RegiÃ³n", type=openapi.TYPE_STRING),
+            openapi.Parameter('region', openapi.IN_QUERY, description="Región", type=openapi.TYPE_STRING),
             openapi.Parameter('finca', openapi.IN_QUERY, description="Finca", type=openapi.TYPE_STRING),
         ],
         responses={
             200: openapi.Response(
-                description="EstadÃ­sticas obtenidas exitosamente",
+                description="Estadísticas obtenidas exitosamente",
                 schema=openapi.Schema(type=openapi.TYPE_OBJECT)
             ),
             403: ErrorResponseSerializer,
@@ -302,10 +302,10 @@ class ReportStatsView(APIView):
     )
     def get(self, request):
         """
-        Obtiene estadÃ­sticas para preview de reportes.
+        Obtiene estadísticas para preview de reportes.
         """
         try:
-            # Obtener imÃ¡genes del usuario
+            # Obtener imágenes del usuario
             images_queryset = CacaoImage.objects.filter(user=request.user)
             
             # Aplicar filtros de query parameters
@@ -321,11 +321,11 @@ class ReportStatsView(APIView):
             if 'finca' in request.GET:
                 images_queryset = images_queryset.filter(finca__icontains=request.GET['finca'])
             
-            # Calcular estadÃ­sticas
+            # Calcular estadísticas
             total_images = images_queryset.count()
             processed_images = images_queryset.filter(prediction__isnull=False).count()
             
-            # EstadÃ­sticas de confianza
+            # Estadísticas de confianza
             confidence_stats = images_queryset.filter(
                 prediction__isnull=False
             ).aggregate(
@@ -334,12 +334,12 @@ class ReportStatsView(APIView):
                 max_confidence=Avg('prediction__average_confidence')
             )
             
-            # EstadÃ­sticas por regiÃ³n
+            # Estadísticas por región
             region_stats = images_queryset.values('region').annotate(
                 count=Count('id')
             ).exclude(region__isnull=True).exclude(region='').order_by('-count')[:5]
             
-            # EstadÃ­sticas por finca
+            # Estadísticas por finca
             finca_stats = images_queryset.values('finca').annotate(
                 count=Count('id')
             ).exclude(finca__isnull=True).exclude(finca='').order_by('-count')[:5]
@@ -366,7 +366,7 @@ class ReportStatsView(APIView):
             return Response(stats, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Error obteniendo estadÃ­sticas de reportes para usuario {request.user.username}: {e}")
+            logger.error(f"Error obteniendo estadísticas de reportes para usuario {request.user.username}: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'

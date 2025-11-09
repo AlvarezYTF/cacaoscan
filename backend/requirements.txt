@@ -94,6 +94,7 @@ urllib3==2.5.0
 vine==5.1.0
 wcwidth==0.2.14
 XlsxWriter==3.1.9
+whitenoise==6.7.0
 
 # Background removal (U2Net via rembg)
 rembg==2.0.57

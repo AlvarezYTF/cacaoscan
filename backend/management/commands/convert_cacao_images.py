@@ -81,7 +81,7 @@ class Command(BaseCommand):
                     continue
                 out_path = png_dir / f"{p.stem}.png"
                 save_image(pil_png, out_path, format="PNG")
-                self.stdout.write(f"  ✓ Guardado: {out_path.name}")
+                self.stdout.write(f"  [OK] Guardado: {out_path.name}")
                 processed += 1
 
         self.stdout.write(self.style.SUCCESS(f"Procesamiento completado. Archivos procesados: {processed}"))

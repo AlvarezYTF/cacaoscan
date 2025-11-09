@@ -1,4 +1,4 @@
-﻿"""
+"""
 URLs para la API de CacaoScan.
 """
 from django.urls import path
@@ -11,10 +11,10 @@ urlpatterns = [
     path('models/load/', views.LoadModelsView.as_view(), name='load-models'),
     path('dataset/validation/', views.DatasetValidationView.as_view(), name='dataset-validation'),
     
-    # InicializaciÃ³n automÃ¡tica
+    # Inicialización automática
     path('auto-initialize/', views.AutoInitializeView.as_view(), name='auto-initialize'),
     
-    # Endpoints de autenticaciÃ³n
+    # Endpoints de autenticación
     path('auth/login/', views.LoginView.as_view(), name='auth-login'),
     path('auth/register/', views.RegisterView.as_view(), name='auth-register'),
     path('auth/logout/', views.LogoutView.as_view(), name='auth-logout'),
@@ -22,24 +22,24 @@ urlpatterns = [
     path('auth/refresh/', views.RefreshTokenView.as_view(), name='auth-refresh'),
     path('auth/change-password/', views.ChangePasswordView.as_view(), name='auth-change-password'),
     
-    # Endpoints de verificaciÃ³n de email
+    # Endpoints de verificación de email
     path('auth/verify-email/', views.EmailVerificationView.as_view(), name='auth-verify-email'),
     path('auth/verify-email/<uuid:token>/', views.EmailVerificationView.as_view(), name='auth-verify-email-token'),
     path('auth/resend-verification/', views.ResendVerificationView.as_view(), name='auth-resend-verification'),
     
-    # Endpoints OTP de verificaciÃ³n
+    # Endpoints OTP de verificación
     path('auth/send-otp/', views.SendOtpView.as_view(), name='auth-send-otp'),
     path('auth/verify-otp/', views.VerifyOtpView.as_view(), name='auth-verify-otp'),
     
-    # Endpoints de pre-registro (verificaciÃ³n previa)
+    # Endpoints de pre-registro (verificación previa)
     path('auth/preregistro/', views.PreRegisterView.as_view(), name='auth-preregister'),
     path('auth/verificar/<uuid:token>/', views.VerifyEmailPreRegistrationView.as_view(), name='auth-verify-email-pre-registration'),
     
-    # Endpoints de recuperaciÃ³n de contraseÃ±a
+    # Endpoints de recuperación de contraseña
     path('auth/forgot-password/', views.ForgotPasswordView.as_view(), name='auth-forgot-password'),
     path('auth/reset-password/', views.ResetPasswordView.as_view(), name='auth-reset-password'),
     
-    # Endpoints de imÃ¡genes
+    # Endpoints de imágenes
     path('images/', views.ImagesListView.as_view(), name='images-list'),
     path('images/<int:image_id>/', views.ImageDetailView.as_view(), name='image-detail'),
     path('images/<int:image_id>/update/', views.ImageUpdateView.as_view(), name='image-update'),
@@ -48,7 +48,7 @@ urlpatterns = [
     path('images/stats/', views.ImagesStatsView.as_view(), name='images-stats'),
     path('images/export/', views.ImagesExportView.as_view(), name='images-export'),
     
-    # Endpoints de gestiÃ³n de usuarios (Admin)
+    # Endpoints de gestión de usuarios (Admin)
     path('auth/users/', views.UserListView.as_view(), name='user-list'),
     path('auth/users/stats/', views.UserStatsView.as_view(), name='users-stats'),
     path('auth/users/<int:user_id>/', views.UserDetailView.as_view(), name='user-detail'),
@@ -69,12 +69,12 @@ urlpatterns = [
     path('train/jobs/create/', views.TrainingJobCreateView.as_view(), name='training-job-create'),
     path('train/jobs/<str:job_id>/status/', views.TrainingJobStatusView.as_view(), name='training-job-status'),
     
-    # Endpoints ML (alias más simples)
+    # Endpoints ML (alias ms simples)
     path('ml/train/', views.TrainingJobCreateView.as_view(), name='ml-train'),
     path('ml/metrics/latest/', views.LatestMetricsView.as_view(), name='ml-metrics-latest'),
     path('ml/promote/<str:version>/', views.PromoteModelView.as_view(), name='ml-promote'),
     
-    # Endpoints de gestión de fincas
+    # Endpoints de gestin de fincas
     path('fincas/', views.FincaListCreateView.as_view(), name='fincas-list-create'),
     path('fincas/<int:finca_id>/', views.FincaDetailView.as_view(), name='finca-detail'),
     path('fincas/<int:finca_id>/update/', views.FincaUpdateView.as_view(), name='finca-update'),
@@ -82,7 +82,7 @@ urlpatterns = [
     path('fincas/<int:finca_id>/activate/', views.FincaActivateView.as_view(), name='finca-activate'),
     path('fincas/<int:finca_id>/stats/', views.FincaStatsView.as_view(), name='finca-stats'),
     
-    # Endpoints de gestiÃ³n de lotes
+    # Endpoints de gestión de lotes
     path('lotes/', views.LoteListCreateView.as_view(), name='lotes-list-create'),
     path('lotes/<int:lote_id>/', views.LoteDetailView.as_view(), name='lote-detail'),
     path('lotes/<int:lote_id>/update/', views.LoteUpdateView.as_view(), name='lote-update'),
@@ -90,7 +90,7 @@ urlpatterns = [
     path('lotes/<int:lote_id>/stats/', views.LoteStatsView.as_view(), name='lote-stats'),
     path('fincas/<int:finca_id>/lotes/', views.LotesPorFincaView.as_view(), name='lotes-por-finca'),
     
-    # Endpoints de gestiÃ³n de notificaciones
+    # Endpoints de gestión de notificaciones
     path('notifications/', views.NotificationListCreateView.as_view(), name='notifications-list'),
     path('notifications/<int:notification_id>/', views.NotificationDetailView.as_view(), name='notification-detail'),
     path('notifications/<int:notification_id>/read/', views.NotificationMarkReadView.as_view(), name='notification-mark-read'),
@@ -99,12 +99,12 @@ urlpatterns = [
     path('notifications/stats/', views.NotificationStatsView.as_view(), name='notifications-stats'),
     path('notifications/create/', views.NotificationCreateView.as_view(), name='notification-create'),
     
-    # Endpoints de auditorÃ­a (solo administradores)
+    # Endpoints de auditoría (solo administradores)
     path('audit/activity-logs/', views.ActivityLogListView.as_view(), name='activity-logs-list'),
     path('audit/login-history/', views.LoginHistoryListView.as_view(), name='login-history-list'),
     path('audit/stats/', views.AuditStatsView.as_view(), name='audit-stats'),
     
-    # Endpoints de gestiÃ³n de reportes
+    # Endpoints de gestión de reportes
     path('reportes/', views.ReporteListCreateView.as_view(), name='reportes-list-create'),
     path('reportes/<int:reporte_id>/', views.ReporteDetailView.as_view(), name='reporte-detail'),
     path('reportes/<int:reporte_id>/download/', views.ReporteDownloadView.as_view(), name='reporte-download'),
@@ -116,12 +116,12 @@ urlpatterns = [
     path('reports/agricultores/', views.ReporteAgricultoresView.as_view(), name='reporte-agricultores'),
     path('reports/usuarios/', views.ReporteUsuariosView.as_view(), name='reporte-usuarios'),
     
-    # Endpoints de calibraciÃ³n
+    # Endpoints de calibración
     path('calibration/status/', views.CalibrationStatusView.as_view(), name='calibration-status'),
     path('calibration/', views.CalibrationView.as_view(), name='calibration'),
     path('scan/measure/calibrated/', views.CalibratedScanMeasureView.as_view(), name='scan-measure-calibrated'),
     
-    # Endpoints de gestiÃ³n de emails
+    # Endpoints de gestión de emails
     # path('emails/status/', views.EmailStatusView.as_view(), name='email-status'),
     # path('emails/test/', views.SendTestEmailView.as_view(), name='email-test'),
     # path('emails/bulk/', views.SendBulkNotificationView.as_view(), name='email-bulk'),
@@ -135,7 +135,7 @@ urlpatterns = [
     path('incremental/models/', views.IncrementalModelVersionsView.as_view(), name='incremental-models'),
     path('incremental/data/', views.IncrementalDataVersionsView.as_view(), name='incremental-data'),
     
-    # Endpoints de mÃ©tricas de modelos
+    # Endpoints de métricas de modelos
     path('model-metrics/', views.ModelMetricsListView.as_view(), name='model-metrics-list'),
     path('model-metrics/create/', views.ModelMetricsCreateView.as_view(), name='model-metrics-create'),
     path('model-metrics/<int:metrics_id>/', views.ModelMetricsDetailView.as_view(), name='model-metrics-detail'),
@@ -147,10 +147,10 @@ urlpatterns = [
     path('model-metrics/best/', views.BestModelsView.as_view(), name='model-metrics-best'),
     path('model-metrics/production/', views.ProductionModelsView.as_view(), name='model-metrics-production'),
     
-    # Endpoints de anÃ¡lisis batch
+    # Endpoints de análisis batch
     path('analysis/batch/', views.BatchAnalysisView.as_view(), name='batch-analysis'),
     
-    # Endpoints de configuraciÃ³n del sistema
+    # Endpoints de configuración del sistema
     path('config/', views.SystemSettingsView.as_view(), name='system-settings'),
     path('config/general/', views.SystemGeneralConfigView.as_view(), name='system-general-config'),
     path('config/security/', views.SystemSecurityConfigView.as_view(), name='system-security-config'),

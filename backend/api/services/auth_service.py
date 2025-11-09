@@ -1,5 +1,5 @@
-﻿"""
-Servicio de autenticaciÃ³n para CacaoScan.
+"""
+Servicio de autenticación para CacaoScan.
 """
 import logging
 from typing import Dict, Any, Optional, Tuple
@@ -29,7 +29,7 @@ logger = logging.getLogger("cacaoscan.services.auth")
 
 class AuthenticationService(BaseService):
     """
-    Servicio para manejar autenticaciÃ³n de usuarios.
+    Servicio para manejar autenticación de usuarios.
     """
     
     def __init__(self):
@@ -41,7 +41,7 @@ class AuthenticationService(BaseService):
         
         Args:
             username: Nombre de usuario o email
-            password: ContraseÃ±a
+            password: Contraseña
             request: Request object para obtener IP y user agent
             
         Returns:
@@ -59,7 +59,7 @@ class AuthenticationService(BaseService):
             
             if not user:
                 return ServiceResult.validation_error(
-                    "Credenciales invÃ¡lidas",
+                    "Credenciales inválidas",
                     details={"field": "credentials"}
                 )
             
@@ -76,7 +76,7 @@ class AuthenticationService(BaseService):
             # Registrar login en historial
             self._log_user_login(user, request)
             
-            # Crear log de auditorÃ­a
+            # Crear log de auditoría
             self.create_audit_log(
                 user=user,
                 action="login",
@@ -133,32 +133,32 @@ class AuthenticationService(BaseService):
             required_fields = ['username', 'email', 'password', 'password_confirm']
             self.validate_required_fields(user_data, required_fields)
             
-            # Validar contraseÃ±as
+            # Validar contraseñas
             if user_data['password'] != user_data['password_confirm']:
                 return ServiceResult.validation_error(
-                    "Las contraseÃ±as no coinciden",
+                    "Las contraseñas no coinciden",
                     details={"field": "password_confirm"}
                 )
             
-            # Validar fortaleza de contraseÃ±a
+            # Validar fortaleza de contraseña
             password = user_data['password']
             if len(password) < 8:
                 return ServiceResult.validation_error(
-                    "La contraseÃ±a debe tener al menos 8 caracteres",
+                    "La contraseña debe tener al menos 8 caracteres",
                     details={"field": "password", "min_length": 8}
                 )
             
-            # Validar email Ãºnico
+            # Validar email único
             if User.objects.filter(email=user_data['email']).exists():
                 return ServiceResult.validation_error(
-                    "Este email ya estÃ¡ registrado",
+                    "Este email ya está registrado",
                     details={"field": "email"}
                 )
             
-            # Validar username Ãºnico
+            # Validar username único
             if User.objects.filter(username=user_data['username']).exists():
                 return ServiceResult.validation_error(
-                    "Este nombre de usuario ya estÃ¡ en uso",
+                    "Este nombre de usuario ya está en uso",
                     details={"field": "username"}
                 )
             
@@ -172,17 +172,17 @@ class AuthenticationService(BaseService):
                 is_active=True
             )
             
-            # Crear token de verificaciÃ³n de email
+            # Crear token de verificación de email
             verification_token = EmailVerificationToken.create_for_user(user)
             
-            # Generar tokens JWT automÃ¡ticamente
+            # Generar tokens JWT automáticamente
             refresh = RefreshToken.for_user(user)
             access_token = refresh.access_token
             
             # Registrar registro en historial
             self._log_user_registration(user, request)
             
-            # Crear log de auditorÃ­a
+            # Crear log de auditoría
             self.create_audit_log(
                 user=user,
                 action="register",
@@ -226,10 +226,10 @@ class AuthenticationService(BaseService):
     
     def logout_user(self, user: User, refresh_token: str = None) -> ServiceResult:
         """
-        Cierra sesiÃ³n de un usuario.
+        Cierra sesión de un usuario.
         
         Args:
-            user: Usuario a cerrar sesiÃ³n
+            user: Usuario a cerrar sesión
             refresh_token: Token de refresh a invalidar
             
         Returns:
@@ -244,7 +244,7 @@ class AuthenticationService(BaseService):
                 except Exception as e:
                     self.log_warning(f"Error invalidando token: {str(e)}")
             
-            # Crear log de auditorÃ­a
+            # Crear log de auditoría
             self.create_audit_log(
                 user=user,
                 action="logout",
@@ -252,7 +252,7 @@ class AuthenticationService(BaseService):
                 resource_id=user.id
             )
             
-            self.log_info(f"Usuario {user.username} cerrÃ³ sesiÃ³n")
+            self.log_info(f"Usuario {user.username} cerró sesión")
             
             return ServiceResult.success(
                 message="Logout exitoso"
@@ -289,7 +289,7 @@ class AuthenticationService(BaseService):
         except Exception as e:
             self.log_error(f"Error refrescando token: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Token de refresh invÃ¡lido", details={"original_error": str(e)})
+                ValidationServiceError("Token de refresh inválido", details={"original_error": str(e)})
             )
     
     def verify_email(self, token: str) -> ServiceResult:
@@ -297,17 +297,17 @@ class AuthenticationService(BaseService):
         Verifica un email usando token.
         
         Args:
-            token: Token de verificaciÃ³n
+            token: Token de verificación
             
         Returns:
-            ServiceResult con resultado de verificaciÃ³n
+            ServiceResult con resultado de verificación
         """
         try:
             token_obj = EmailVerificationToken.objects.filter(token=token).first()
             
             if not token_obj:
                 return ServiceResult.validation_error(
-                    "Token invÃ¡lido o expirado",
+                    "Token inválido o expirado",
                     details={"field": "token"}
                 )
             
@@ -320,7 +320,7 @@ class AuthenticationService(BaseService):
             # Verificar email
             token_obj.verify()
             
-            # Crear log de auditorÃ­a
+            # Crear log de auditoría
             self.create_audit_log(
                 user=token_obj.user,
                 action="email_verified",
@@ -347,18 +347,18 @@ class AuthenticationService(BaseService):
         except Exception as e:
             self.log_error(f"Error verificando email: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Error interno durante la verificaciÃ³n", details={"original_error": str(e)})
+                ValidationServiceError("Error interno durante la verificación", details={"original_error": str(e)})
             )
     
     def resend_verification(self, email: str) -> ServiceResult:
         """
-        ReenvÃ­a token de verificaciÃ³n de email.
+        Reenvía token de verificación de email.
         
         Args:
             email: Email del usuario
             
         Returns:
-            ServiceResult con resultado del reenvÃ­o
+            ServiceResult con resultado del reenvío
         """
         try:
             if not email:
@@ -372,13 +372,13 @@ class AuthenticationService(BaseService):
             except User.DoesNotExist:
                 # Por seguridad, no revelar si el email existe
                 return ServiceResult.success(
-                    message=f"Si el email existe, se enviarÃ¡ un nuevo token de verificaciÃ³n"
+                    message=f"Si el email existe, se enviará un nuevo token de verificación"
                 )
             
-            # Crear nuevo token de verificaciÃ³n
+            # Crear nuevo token de verificación
             token_obj = EmailVerificationToken.create_for_user(user)
             
-            # Crear log de auditorÃ­a
+            # Crear log de auditoría
             self.create_audit_log(
                 user=user,
                 action="verification_resent",
@@ -386,27 +386,27 @@ class AuthenticationService(BaseService):
                 resource_id=user.id
             )
             
-            self.log_info(f"Token de verificaciÃ³n reenviado para usuario {user.username}")
+            self.log_info(f"Token de verificación reenviado para usuario {user.username}")
             
             return ServiceResult.success(
                 data={
                     'token': str(token_obj.token),
                     'expires_at': token_obj.expires_at.isoformat()
                 },
-                message=f"Token de verificaciÃ³n enviado a {email}"
+                message=f"Token de verificación enviado a {email}"
             )
             
         except ValidationServiceError as e:
             return ServiceResult.error(e)
         except Exception as e:
-            self.log_error(f"Error reenviando verificaciÃ³n: {str(e)}")
+            self.log_error(f"Error reenviando verificación: {str(e)}")
             return ServiceResult.error(
-                ValidationServiceError("Error interno durante el reenvÃ­o", details={"original_error": str(e)})
+                ValidationServiceError("Error interno durante el reenvío", details={"original_error": str(e)})
             )
     
     def forgot_password(self, email: str, request=None) -> ServiceResult:
         """
-        Solicita restablecimiento de contraseÃ±a.
+        Solicita restablecimiento de contraseña.
         
         Args:
             email: Email del usuario
@@ -425,10 +425,10 @@ class AuthenticationService(BaseService):
             try:
                 user = User.objects.get(email=email)
                 
-                # Crear token de recuperaciÃ³n
+                # Crear token de recuperación
                 reset_token = EmailVerificationToken.create_for_user(user)
                 
-                # Enviar email de restablecimiento de contraseÃ±a
+                # Enviar email de restablecimiento de contraseña
                 try:
                     from django.conf import settings
                     from django.utils import timezone
@@ -459,7 +459,7 @@ class AuthenticationService(BaseService):
                 # Registrar solicitud en historial
                 self._log_password_reset_request(user, request)
                 
-                # Crear log de auditorÃ­a
+                # Crear log de auditoría
                 self.create_audit_log(
                     user=user,
                     action="password_reset_requested",
@@ -467,20 +467,20 @@ class AuthenticationService(BaseService):
                     resource_id=user.id
                 )
                 
-                self.log_info(f"Solicitud de restablecimiento de contraseÃ±a para usuario {user.username}")
+                self.log_info(f"Solicitud de restablecimiento de contraseña para usuario {user.username}")
                 
                 return ServiceResult.success(
                     data={
                         'token': str(reset_token.token),
                         'expires_at': reset_token.expires_at.isoformat()
                     },
-                    message=f"Instrucciones de recuperaciÃ³n enviadas a {email}"
+                    message=f"Instrucciones de recuperación enviadas a {email}"
                 )
                 
             except User.DoesNotExist:
                 # Por seguridad, no revelar si el email existe
                 return ServiceResult.success(
-                    message="Si el email existe, recibirÃ¡s instrucciones de recuperaciÃ³n"
+                    message="Si el email existe, recibirás instrucciones de recuperación"
                 )
             
         except ValidationServiceError as e:
@@ -493,12 +493,12 @@ class AuthenticationService(BaseService):
     
     def reset_password(self, token: str, new_password: str, confirm_password: str) -> ServiceResult:
         """
-        Restablece contraseÃ±a usando token.
+        Restablece contraseña usando token.
         
         Args:
-            token: Token de recuperaciÃ³n
-            new_password: Nueva contraseÃ±a
-            confirm_password: ConfirmaciÃ³n de contraseÃ±a
+            token: Token de recuperación
+            new_password: Nueva contraseña
+            confirm_password: Confirmación de contraseña
             
         Returns:
             ServiceResult con resultado del restablecimiento
@@ -510,17 +510,17 @@ class AuthenticationService(BaseService):
                 ['token', 'new_password', 'confirm_password']
             )
             
-            # Validar contraseÃ±as
+            # Validar contraseñas
             if new_password != confirm_password:
                 return ServiceResult.validation_error(
-                    "Las contraseÃ±as no coinciden",
+                    "Las contraseñas no coinciden",
                     details={"field": "confirm_password"}
                 )
             
-            # Validar fortaleza de contraseÃ±a
+            # Validar fortaleza de contraseña
             if len(new_password) < 8:
                 return ServiceResult.validation_error(
-                    "La contraseÃ±a debe tener al menos 8 caracteres",
+                    "La contraseña debe tener al menos 8 caracteres",
                     details={"field": "new_password", "min_length": 8}
                 )
             
@@ -529,7 +529,7 @@ class AuthenticationService(BaseService):
             
             if not token_obj:
                 return ServiceResult.validation_error(
-                    "Token invÃ¡lido o expirado",
+                    "Token inválido o expirado",
                     details={"field": "token"}
                 )
             
@@ -539,7 +539,7 @@ class AuthenticationService(BaseService):
                     details={"field": "token", "expired": True}
                 )
             
-            # Restablecer contraseÃ±a
+            # Restablecer contraseña
             user = token_obj.user
             user.set_password(new_password)
             user.save()
@@ -547,7 +547,7 @@ class AuthenticationService(BaseService):
             # Marcar token como usado
             token_obj.delete()
             
-            # Crear log de auditorÃ­a
+            # Crear log de auditoría
             self.create_audit_log(
                 user=user,
                 action="password_reset",
@@ -555,16 +555,16 @@ class AuthenticationService(BaseService):
                 resource_id=user.id
             )
             
-            self.log_info(f"ContraseÃ±a restablecida para usuario {user.username}")
+            self.log_info(f"Contraseña restablecida para usuario {user.username}")
             
             return ServiceResult.success(
-                message="ContraseÃ±a restablecida exitosamente"
+                message="Contraseña restablecida exitosamente"
             )
             
         except ValidationServiceError as e:
             return ServiceResult.error(e)
         except Exception as e:
-            self.log_error(f"Error restableciendo contraseÃ±a: {str(e)}")
+            self.log_error(f"Error restableciendo contraseña: {str(e)}")
             return ServiceResult.error(
                 ValidationServiceError("Error interno durante el restablecimiento", details={"original_error": str(e)})
             )
@@ -585,7 +585,7 @@ class AuthenticationService(BaseService):
             try:
                 user_profile = user.profile
             except UserProfile.DoesNotExist:
-                # Si no existe perfil, crear uno vacÃ­o
+                # Si no existe perfil, crear uno vacío
                 user_profile = UserProfile.objects.create(user=user)
             
             profile_data = {
@@ -625,7 +625,7 @@ class AuthenticationService(BaseService):
             )
     
     def _check_email_verified(self, user: User) -> bool:
-        """Verifica si el email del usuario estÃ¡ verificado."""
+        """Verifica si el email del usuario está verificado."""
         try:
             if hasattr(user, 'auth_email_token'):
                 return user.auth_email_token.is_verified
@@ -647,7 +647,7 @@ class AuthenticationService(BaseService):
             ServiceResult con datos actualizados
         """
         try:
-            # Campos permitidos para actualizaciÃ³n del modelo User
+            # Campos permitidos para actualización del modelo User
             user_allowed_fields = ['first_name', 'last_name', 'email']
             
             # Campos del perfil extendido (UserProfile)
@@ -664,18 +664,18 @@ class AuthenticationService(BaseService):
                     profile_data_dict[field] = value
                 else:
                     return ServiceResult.validation_error(
-                        f"Campo '{field}' no permitido para actualizaciÃ³n",
+                        f"Campo '{field}' no permitido para actualización",
                         details={
                             "field": field, 
                             "allowed_fields": user_allowed_fields + profile_allowed_fields
                         }
                     )
             
-            # Validar email Ãºnico si se estÃ¡ cambiando
+            # Validar email único si se está cambiando
             if 'email' in user_data and user_data['email'] != user.email:
                 if User.objects.filter(email=user_data['email']).exclude(id=user.id).exists():
                     return ServiceResult.validation_error(
-                        "Este email ya estÃ¡ registrado",
+                        "Este email ya está registrado",
                         details={"field": "email"}
                     )
             
@@ -695,7 +695,7 @@ class AuthenticationService(BaseService):
             # Obtener datos actualizados del usuario
             updated_data = self.get_user_profile(user).data
             
-            # Crear log de auditorÃ­a
+            # Crear log de auditoría
             self.create_audit_log(
                 user=user,
                 action="profile_updated",

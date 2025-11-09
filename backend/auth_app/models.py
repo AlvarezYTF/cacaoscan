@@ -1,5 +1,5 @@
-﻿"""
-Modelos de autenticaciÃ³n para CacaoScan.
+"""
+Modelos de autenticación para CacaoScan.
 """
 from django.db import models
 from django.contrib.auth.models import User
@@ -13,7 +13,7 @@ logger = logging.getLogger("cacaoscan.auth")
 
 class EmailVerificationToken(models.Model):
     """
-    Modelo para tokens de verificaciÃ³n de email.
+    Modelo para tokens de verificación de email.
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='auth_email_token')
     token = models.UUIDField(default=uuid.uuid4, unique=True)
@@ -21,12 +21,12 @@ class EmailVerificationToken(models.Model):
     verified_at = models.DateTimeField(null=True, blank=True)
     is_verified = models.BooleanField(default=False)
     
-    # ConfiguraciÃ³n de expiraciÃ³n (24 horas por defecto)
+    # Configuración de expiración (24 horas por defecto)
     EXPIRATION_HOURS = 24
     
     class Meta:
-        verbose_name = 'Token de VerificaciÃ³n de Email'
-        verbose_name_plural = 'Tokens de VerificaciÃ³n de Email'
+        verbose_name = 'Token de Verificación de Email'
+        verbose_name_plural = 'Tokens de Verificación de Email'
         ordering = ['-created_at']
     
     def __str__(self):
@@ -43,7 +43,7 @@ class EmailVerificationToken(models.Model):
     
     @property
     def expires_at(self):
-        """Obtener fecha de expiraciÃ³n del token."""
+        """Obtener fecha de expiración del token."""
         return self.created_at + timezone.timedelta(hours=self.EXPIRATION_HOURS)
     
     def verify(self):
@@ -59,7 +59,7 @@ class EmailVerificationToken(models.Model):
     
     @classmethod
     def create_for_user(cls, user):
-        """Crear un nuevo token de verificaciÃ³n para un usuario."""
+        """Crear un nuevo token de verificación para un usuario."""
         # Eliminar token existente si existe
         cls.objects.filter(user=user).delete()
         
@@ -68,7 +68,7 @@ class EmailVerificationToken(models.Model):
     
     @classmethod
     def get_valid_token(cls, token_uuid):
-        """Obtener un token vÃ¡lido por UUID."""
+        """Obtener un token válido por UUID."""
         try:
             token_obj = cls.objects.get(token=token_uuid)
             if token_obj.is_expired:
@@ -80,25 +80,25 @@ class EmailVerificationToken(models.Model):
 
 class UserProfile(models.Model):
     """
-    Perfil extendido del usuario con informaciÃ³n especÃ­fica de agricultores.
+    Perfil extendido del usuario con información específica de agricultores.
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='auth_profile')
     
-    # InformaciÃ³n de contacto
+    # Información de contacto
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     
-    # InformaciÃ³n geogrÃ¡fica
+    # Información geográfica
     region = models.CharField(max_length=100, blank=True, null=True)
     municipality = models.CharField(max_length=100, blank=True, null=True)
     
-    # InformaciÃ³n de la finca
+    # Información de la finca
     farm_name = models.CharField(max_length=200, blank=True, null=True)
     years_experience = models.PositiveIntegerField(blank=True, null=True)
     farm_size_hectares = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     
     # Preferencias del usuario
     preferred_language = models.CharField(max_length=10, default='es', choices=[
-        ('es', 'EspaÃ±ol'),
+        ('es', 'Español'),
         ('en', 'English'),
     ])
     email_notifications = models.BooleanField(default=True)
@@ -132,9 +132,9 @@ class UserProfile(models.Model):
     
     @property
     def is_verified(self):
-        """Verificar si el usuario estÃ¡ verificado."""
+        """Verificar si el usuario está verificado."""
         try:
-            # Usar auth_email_token como relaciÃ³n estÃ¡ndar
+            # Usar auth_email_token como relación estándar
             if hasattr(self.user, 'auth_email_token'):
                 return self.user.auth_email_token.is_verified
             elif hasattr(self.user, 'auth_email_token'):
@@ -146,8 +146,8 @@ class UserProfile(models.Model):
 
 class PendingEmailVerification(models.Model):
     """
-    Modelo para verificaciÃ³n pendiente de email con cÃ³digo OTP.
-    Guarda temporalmente los datos del usuario hasta que verifique el cÃ³digo OTP.
+    Modelo para verificación pendiente de email con código OTP.
+    Guarda temporalmente los datos del usuario hasta que verifique el código OTP.
     """
     email = models.EmailField(unique=True)
     otp_code = models.CharField(max_length=6)
@@ -156,7 +156,7 @@ class PendingEmailVerification(models.Model):
     temp_data = models.JSONField(default=dict, blank=True)
 
     class Meta:
-        verbose_name = 'VerificaciÃ³n Pendiente de Email'
+        verbose_name = 'Verificación Pendiente de Email'
         verbose_name_plural = 'Verificaciones Pendientes de Email'
         ordering = ['-created_at']
         indexes = [
@@ -168,12 +168,12 @@ class PendingEmailVerification(models.Model):
         return f"OTP para {self.email} - {self.otp_code}"
 
     def is_expired(self):
-        """Verificar si el cÃ³digo OTP ha expirado (10 minutos)."""
+        """Verificar si el código OTP ha expirado (10 minutos)."""
         return (timezone.now() - self.created_at).total_seconds() > 600
 
     @staticmethod
     def generate_code():
-        """Generar un cÃ³digo OTP aleatorio de 6 dÃ­gitos."""
+        """Generar un código OTP aleatorio de 6 dígitos."""
         return str(random.randint(100000, 999999))
 
 

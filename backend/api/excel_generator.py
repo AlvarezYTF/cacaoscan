@@ -1,4 +1,4 @@
-﻿"""
+"""
 Generador de reportes Excel para CacaoScan.
 """
 import logging
@@ -60,8 +60,8 @@ class CacaoReportExcelGenerator:
         try:
             from django.contrib.auth.models import User
             
-            logger.info("[INFO] Iniciando generaciÃ³n de reporte Excel de agricultores")
-            print("[DEBUG] Iniciando generaciÃ³n de reporte Excel de agricultores")
+            logger.info("[INFO] Iniciando generación de reporte Excel de agricultores")
+            print("[DEBUG] Iniciando generación de reporte Excel de agricultores")
             
             # Crear workbook
             self.workbook = Workbook()
@@ -71,12 +71,12 @@ class CacaoReportExcelGenerator:
             
             # Configurar columnas
             columns = [
-                'Agricultor', 'Email', 'TelÃ©fono', 'Departamento', 'Municipio',
-                'Finca', 'HectÃ¡reas', 'Estado Finca', 'Fecha Registro Finca'
+                'Agricultor', 'Email', 'Teléfono', 'Departamento', 'Municipio',
+                'Finca', 'Hectáreas', 'Estado Finca', 'Fecha Registro Finca'
             ]
             self.ws.append(columns)
             
-            # Estilo de encabezado (opcional, no crÃ­tico)
+            # Estilo de encabezado (opcional, no crítico)
             try:
                 header_fill = PatternFill(start_color="4CAF50", end_color="4CAF50", fill_type="solid")
                 header_font = Font(bold=True, color="FFFFFF")
@@ -86,7 +86,7 @@ class CacaoReportExcelGenerator:
                     cell.font = header_font
                     cell.alignment = Alignment(horizontal='center', vertical='center')
             except Exception as style_error:
-                logger.warning(f"Error aplicando estilos al encabezado (no crÃ­tico): {style_error}")
+                logger.warning(f"Error aplicando estilos al encabezado (no crítico): {style_error}")
             
             # Obtener agricultores (usuarios que no son superusuarios ni staff)
             # Intentar con prefetch, si falla, hacer sin prefetch
@@ -101,7 +101,7 @@ class CacaoReportExcelGenerator:
             except Exception as prefetch_error:
                 logger.warning(f"Error con prefetch_related, intentando sin prefetch: {prefetch_error}")
                 try:
-                    # Sin prefetch, mÃ¡s lento pero seguro
+                    # Sin prefetch, más lento pero seguro
                     farmers = farmers_query
                     farmers_list = list(farmers)
                     logger.info(f"Obtenidos {len(farmers_list)} agricultores sin prefetch")
@@ -113,7 +113,7 @@ class CacaoReportExcelGenerator:
             rows_added = 0
             for farmer in farmers_list:
                 try:
-                    # InformaciÃ³n bÃ¡sica del agricultor
+                    # Información básica del agricultor
                     name = ''
                     try:
                         if farmer.first_name or farmer.last_name:
@@ -125,7 +125,7 @@ class CacaoReportExcelGenerator:
                     
                     email = str(farmer.email) if farmer.email else ''
                     
-                    # Obtener telÃ©fono de forma segura
+                    # Obtener teléfono de forma segura
                     phone = ''
                     try:
                         if hasattr(farmer, 'auth_profile'):
@@ -171,7 +171,7 @@ class CacaoReportExcelGenerator:
                                 except Exception:
                                     pass
                                 
-                                # Convertir hectÃ¡reas
+                                # Convertir hectáreas
                                 hectareas_val = 0.0
                                 try:
                                     if hasattr(finca, 'hectareas') and finca.hectareas is not None:
@@ -228,7 +228,7 @@ class CacaoReportExcelGenerator:
                             '',  # Departamento
                             '',  # Municipio
                             '',  # Finca
-                            '',  # HectÃ¡reas
+                            '',  # Hectáreas
                             '',  # Estado
                             fecha_registro_str
                         ])
@@ -241,16 +241,16 @@ class CacaoReportExcelGenerator:
             logger.info(f"[INFO] Procesados {rows_added} filas de datos")
             print(f"[DEBUG] Procesados {rows_added} filas de datos")
             
-            # Ajustar ancho de columnas (opcional, no crÃ­tico)
+            # Ajustar ancho de columnas (opcional, no crítico)
             try:
                 column_widths = {
                     'A': 25,  # Agricultor
                     'B': 30,  # Email
-                    'C': 15,  # TelÃ©fono
+                    'C': 15,  # Teléfono
                     'D': 20,  # Departamento
                     'E': 20,  # Municipio
                     'F': 20,  # Finca
-                    'G': 12,  # HectÃ¡reas
+                    'G': 12,  # Hectáreas
                     'H': 15,  # Estado
                     'I': 18,  # Fecha Registro
                 }
@@ -258,15 +258,15 @@ class CacaoReportExcelGenerator:
                 for col, width in column_widths.items():
                     self.ws.column_dimensions[col].width = width
             except Exception as col_error:
-                logger.warning(f"Error ajustando ancho de columnas (no crÃ­tico): {col_error}")
+                logger.warning(f"Error ajustando ancho de columnas (no crítico): {col_error}")
             
-            # Centrar encabezados (opcional, no crÃ­tico)
+            # Centrar encabezados (opcional, no crítico)
             try:
                 for row in self.ws.iter_rows(min_row=1, max_row=1):
                     for cell in row:
                         cell.alignment = Alignment(horizontal='center', vertical='center')
             except Exception as align_error:
-                logger.warning(f"Error centrando encabezados (no crÃ­tico): {align_error}")
+                logger.warning(f"Error centrando encabezados (no crítico): {align_error}")
             
             # Guardar en buffer
             buffer = io.BytesIO()
@@ -278,19 +278,19 @@ class CacaoReportExcelGenerator:
             
             buffer.seek(0)
             content = buffer.getvalue()
-            print(f"[DEBUG] Excel guardado en buffer - TamaÃ±o: {len(content)} bytes")
+            print(f"[DEBUG] Excel guardado en buffer - Tamaño: {len(content)} bytes")
             
             # Validar contenido generado
             if not content:
-                logger.error("[ERROR] El archivo Excel generado estÃ¡ vacÃ­o")
-                print("[ERROR] El archivo Excel generado estÃ¡ vacÃ­o")
-                raise ValueError("El archivo Excel generado estÃ¡ vacÃ­o")
+                logger.error("[ERROR] El archivo Excel generado está vacío")
+                print("[ERROR] El archivo Excel generado está vacío")
+                raise ValueError("El archivo Excel generado está vacío")
             
-            # Un Excel vÃ¡lido debe tener al menos algunos bytes (encabezado mÃ­nimo)
+            # Un Excel válido debe tener al menos algunos bytes (encabezado mínimo)
             if len(content) < 50:
-                logger.warning(f"[WARNING] El archivo Excel generado es muy pequeÃ±o: {len(content)} bytes. Puede estar incompleto.")
-                print(f"[WARNING] El archivo Excel generado es muy pequeÃ±o: {len(content)} bytes")
-                # No lanzar error, permitir que continÃºe si solo tiene encabezado
+                logger.warning(f"[WARNING] El archivo Excel generado es muy pequeño: {len(content)} bytes. Puede estar incompleto.")
+                print(f"[WARNING] El archivo Excel generado es muy pequeño: {len(content)} bytes")
+                # No lanzar error, permitir que continúe si solo tiene encabezado
             
             logger.info(f"[INFO] Reporte Excel de agricultores generado exitosamente - {len(content)} bytes, {rows_added} filas")
             print(f"[DEBUG] Reporte Excel de agricultores generado exitosamente - {len(content)} bytes, {rows_added} filas")
@@ -303,7 +303,7 @@ class CacaoReportExcelGenerator:
     def generate_users_report(self):
         """
         Generar reporte Excel profesional de usuarios con sus fincas asociadas.
-        Incluye formato visual profesional (colores, bordes, alineaciÃ³n).
+        Incluye formato visual profesional (colores, bordes, alineación).
         Si no hay usuarios, muestra mensaje "Sin registros disponibles".
         
         Returns:
@@ -317,7 +317,7 @@ class CacaoReportExcelGenerator:
             self.ws = self.workbook.active
             self.ws.title = "Usuarios y Fincas"
             
-            # === Estilos bÃ¡sicos ===
+            # === Estilos básicos ===
             bold_font = Font(bold=True, color="FFFFFF")
             header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
             thin_border = Border(
@@ -332,7 +332,7 @@ class CacaoReportExcelGenerator:
             # === Encabezados ===
             headers = [
                 'ID Usuario', 'Nombre', 'Correo', 'Rol', 'Activo', 'Fecha Registro',
-                'Finca', 'Departamento', 'Municipio', 'Ãrea (ha)', 'Latitud', 'Longitud'
+                'Finca', 'Departamento', 'Municipio', 'Área (ha)', 'Latitud', 'Longitud'
             ]
             self.ws.append(headers)
             
@@ -347,7 +347,7 @@ class CacaoReportExcelGenerator:
             users = User.objects.all().order_by('-date_joined').select_related('auth_profile', 'auth_email_token').prefetch_related('fincas_app_fincas', 'groups')
             
             if users.exists():
-                # Iterar usuarios y agregar informaciÃ³n de fincas
+                # Iterar usuarios y agregar información de fincas
                 for user in users:
                     fincas = user.fincas_app_fincas.all()
                     
@@ -367,14 +367,14 @@ class CacaoReportExcelGenerator:
                                 f"{user.first_name} {user.last_name}".strip() or user.username,
                                 user.email,
                                 rol,
-                                'SÃ­' if user.is_active else 'No',
+                                'Sí' if user.is_active else 'No',
                                 user.date_joined.strftime('%Y-%m-%d'),
                                 finca.nombre,
-                                finca.departamento or 'â€”',
-                                finca.municipio or 'â€”',
+                                finca.departamento or '"',
+                                finca.municipio or '"',
                                 float(finca.hectareas),
-                                float(finca.coordenadas_lat) if finca.coordenadas_lat is not None else 'â€”',
-                                float(finca.coordenadas_lng) if finca.coordenadas_lng is not None else 'â€”',
+                                float(finca.coordenadas_lat) if finca.coordenadas_lat is not None else '"',
+                                float(finca.coordenadas_lng) if finca.coordenadas_lng is not None else '"',
                             ])
                     else:
                         # Si no tiene fincas, agregar fila con "Sin fincas"
@@ -383,10 +383,10 @@ class CacaoReportExcelGenerator:
                             f"{user.first_name} {user.last_name}".strip() or user.username,
                             user.email,
                             rol,
-                            'SÃ­' if user.is_active else 'No',
+                            'Sí' if user.is_active else 'No',
                             user.date_joined.strftime('%Y-%m-%d'),
                             'Sin fincas',
-                            'â€”', 'â€”', 'â€”', 'â€”', 'â€”'
+                            '"', '"', '"', '"', '"'
                         ])
                 
                 # Aplicar bordes a todas las celdas con datos
@@ -395,7 +395,7 @@ class CacaoReportExcelGenerator:
                         cell.border = thin_border
                         cell.alignment = align_vertical
                 
-                # Ajustar ancho de columnas automÃ¡ticamente
+                # Ajustar ancho de columnas automáticamente
                 for col in self.ws.columns:
                     max_length = 0
                     for cell in col:
@@ -404,7 +404,7 @@ class CacaoReportExcelGenerator:
                                 max_length = max(max_length, len(str(cell.value)))
                         except:
                             pass
-                    adjusted_width = min(max_length + 2, 50)  # MÃ¡ximo 50 caracteres
+                    adjusted_width = min(max_length + 2, 50)  # Máximo 50 caracteres
                     self.ws.column_dimensions[col[0].column_letter].width = adjusted_width
                 
             else:
@@ -422,10 +422,10 @@ class CacaoReportExcelGenerator:
             self.workbook.save(buffer)
             buffer.seek(0)
             
-            # Validar que el buffer no estÃ© vacÃ­o
+            # Validar que el buffer no esté vacío
             content = buffer.getvalue()
             if not content or len(content) < 100:
-                raise ValueError("El archivo Excel generado estÃ¡ vacÃ­o o corrupto")
+                raise ValueError("El archivo Excel generado está vacío o corrupto")
             
             logger.info(f"Reporte Excel de usuarios y fincas generado correctamente ({len(content)} bytes)")
             return content
@@ -453,14 +453,14 @@ class CacaoReportExcelGenerator:
             # Crear encabezado
             self._create_header("Reporte de Calidad de Granos de Cacao", user)
             
-            # EstadÃ­sticas generales
+            # Estadísticas generales
             stats = self._get_quality_stats(queryset)
             self._create_stats_section(stats)
             
-            # Tabla de anÃ¡lisis detallados
+            # Tabla de análisis detallados
             self._create_detailed_analyses_table(queryset)
             
-            # GrÃ¡fico de distribuciÃ³n de calidad
+            # Gráfico de distribución de calidad
             self._create_quality_chart(stats)
             
             # Hoja de resumen
@@ -494,17 +494,17 @@ class CacaoReportExcelGenerator:
             # Crear encabezado
             self._create_header(f"Reporte de Finca: {finca.nombre}", user)
             
-            # InformaciÃ³n de la finca
+            # Información de la finca
             self._create_finca_info_section(finca)
             
-            # EstadÃ­sticas de lotes
+            # Estadísticas de lotes
             lotes_stats = self._get_lotes_stats(finca)
             self._create_lotes_stats_section(lotes_stats)
             
-            # AnÃ¡lisis por lote
+            # Análisis por lote
             self._create_lotes_analysis_section(finca)
             
-            # Hoja de anÃ¡lisis detallados
+            # Hoja de análisis detallados
             self._create_detailed_lotes_sheet(finca)
             
             # Guardar en buffer
@@ -519,7 +519,7 @@ class CacaoReportExcelGenerator:
     
     def generate_audit_report(self, user, filtros=None):
         """
-        Generar reporte de auditorÃ­a en Excel.
+        Generar reporte de auditoría en Excel.
         
         Args:
             user: Usuario que solicita el reporte
@@ -528,16 +528,16 @@ class CacaoReportExcelGenerator:
         try:
             self.workbook = Workbook()
             self.ws = self.workbook.active
-            self.ws.title = "AuditorÃ­a"
+            self.ws.title = "Auditoría"
             
             # Crear encabezado
-            self._create_header("Reporte de AuditorÃ­a del Sistema", user)
+            self._create_header("Reporte de Auditoría del Sistema", user)
             
-            # EstadÃ­sticas de actividad
+            # Estadísticas de actividad
             activity_stats = self._get_activity_stats(filtros)
             self._create_activity_stats_section(activity_stats)
             
-            # EstadÃ­sticas de logins
+            # Estadísticas de logins
             login_stats = self._get_login_stats(filtros)
             self._create_login_stats_section(login_stats)
             
@@ -554,7 +554,7 @@ class CacaoReportExcelGenerator:
             return buffer.getvalue()
             
         except Exception as e:
-            logger.error(f"Error generando reporte Excel de auditorÃ­a: {e}")
+            logger.error(f"Error generando reporte Excel de auditoría: {e}")
             raise
     
     def generate_custom_report(self, user, tipo_reporte, parametros, filtros=None):
@@ -564,7 +564,7 @@ class CacaoReportExcelGenerator:
         Args:
             user: Usuario que solicita el reporte
             tipo_reporte: Tipo de reporte
-            parametros: ParÃ¡metros del reporte
+            parametros: Parámetros del reporte
             filtros: Filtros a aplicar
         """
         try:
@@ -575,7 +575,7 @@ class CacaoReportExcelGenerator:
             # Crear encabezado
             self._create_header(f"Reporte Personalizado: {tipo_reporte}", user)
             
-            # Generar segÃºn tipo
+            # Generar según tipo
             if tipo_reporte == 'calidad':
                 queryset = self._apply_filters(CacaoPrediction.objects.all(), filtros)
                 stats = self._get_quality_stats(queryset)
@@ -625,13 +625,13 @@ class CacaoReportExcelGenerator:
     
     def _create_header(self, title, user):
         """Crear encabezado del reporte."""
-        # TÃ­tulo principal
+        # Título principal
         self.ws['A1'] = title
         self.ws['A1'].font = Font(size=16, bold=True, color="2F4F4F")
         self.ws['A1'].alignment = Alignment(horizontal='center')
         self.ws.merge_cells('A1:F1')
         
-        # InformaciÃ³n del reporte
+        # Información del reporte
         self.ws['A3'] = f"Generado el: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
         self.ws['A3'].font = Font(size=10, italic=True)
         
@@ -642,7 +642,7 @@ class CacaoReportExcelGenerator:
         self.ws['A6'] = ""
     
     def _get_quality_stats(self, queryset):
-        """Obtener estadÃ­sticas de calidad."""
+        """Obtener estadísticas de calidad."""
         total_analyses = queryset.count()
         
         if total_analyses == 0:
@@ -654,12 +654,12 @@ class CacaoReportExcelGenerator:
                 'avg_weight': 0
             }
         
-        # EstadÃ­sticas de confianza
+        # Estadísticas de confianza
         avg_confidence = queryset.aggregate(avg=Avg('average_confidence'))['avg'] or 0
         
-        # DistribuciÃ³n de calidad
+        # Distribución de calidad
         quality_distribution = {
-            'Excelente (â‰¥90%)': queryset.filter(average_confidence__gte=0.9).count(),
+            'Excelente (90%)': queryset.filter(average_confidence__gte=0.9).count(),
             'Buena (80-89%)': queryset.filter(average_confidence__gte=0.8, average_confidence__lt=0.9).count(),
             'Regular (70-79%)': queryset.filter(average_confidence__gte=0.7, average_confidence__lt=0.8).count(),
             'Baja (<70%)': queryset.filter(average_confidence__lt=0.7).count(),
@@ -688,15 +688,15 @@ class CacaoReportExcelGenerator:
         }
     
     def _create_stats_section(self, stats):
-        """Crear secciÃ³n de estadÃ­sticas."""
-        # TÃ­tulo de secciÃ³n
-        self.ws['A8'] = "EstadÃ­sticas Generales"
+        """Crear sección de estadísticas."""
+        # Título de sección
+        self.ws['A8'] = "Estadísticas Generales"
         self.ws['A8'].font = Font(size=14, bold=True, color="2F4F4F")
         
-        # Datos de estadÃ­sticas
+        # Datos de estadísticas
         data = [
-            ['MÃ©trica', 'Valor'],
-            ['Total de AnÃ¡lisis', stats['total_analyses']],
+            ['Métrica', 'Valor'],
+            ['Total de Análisis', stats['total_analyses']],
             ['Confianza Promedio', f"{stats['avg_confidence']}%"],
             ['Alto Promedio', f"{stats['avg_dimensions']['alto']} mm"],
             ['Ancho Promedio', f"{stats['avg_dimensions']['ancho']} mm"],
@@ -730,13 +730,13 @@ class CacaoReportExcelGenerator:
         self.ws.column_dimensions['B'].width = 15
     
     def _create_detailed_analyses_table(self, queryset):
-        """Crear tabla de anÃ¡lisis detallados."""
-        # TÃ­tulo de secciÃ³n
-        self.ws['A18'] = "AnÃ¡lisis Detallados"
+        """Crear tabla de análisis detallados."""
+        # Título de sección
+        self.ws['A18'] = "Análisis Detallados"
         self.ws['A18'].font = Font(size=14, bold=True, color="2F4F4F")
         
         # Encabezados
-        headers = ['ID', 'Usuario', 'Finca', 'RegiÃ³n', 'Fecha', 'Alto (mm)', 'Ancho (mm)', 'Grosor (mm)', 'Peso (g)', 'Confianza']
+        headers = ['ID', 'Usuario', 'Finca', 'Región', 'Fecha', 'Alto (mm)', 'Ancho (mm)', 'Grosor (mm)', 'Peso (g)', 'Confianza']
         for col_num, header in enumerate(headers, 1):
             cell = self.ws.cell(row=20, column=col_num, value=header)
             cell.font = Font(bold=True, color="FFFFFF")
@@ -782,15 +782,15 @@ class CacaoReportExcelGenerator:
             self.ws.column_dimensions[chr(64 + i)].width = width
     
     def _create_quality_chart(self, stats):
-        """Crear grÃ¡fico de distribuciÃ³n de calidad."""
+        """Crear gráfico de distribución de calidad."""
         if not stats['quality_distribution']:
             return
         
-        # Crear nueva hoja para el grÃ¡fico
-        chart_ws = self.workbook.create_sheet("DistribuciÃ³n de Calidad")
+        # Crear nueva hoja para el gráfico
+        chart_ws = self.workbook.create_sheet("Distribución de Calidad")
         
-        # Datos para el grÃ¡fico
-        chart_ws['A1'] = "CategorÃ­a"
+        # Datos para el gráfico
+        chart_ws['A1'] = "Categoría"
         chart_ws['B1'] = "Cantidad"
         chart_ws['C1'] = "Porcentaje"
         
@@ -810,13 +810,13 @@ class CacaoReportExcelGenerator:
             chart_ws[f'C{row}'] = f"{percentage:.1f}%"
             row += 1
         
-        # Crear grÃ¡fico de barras
+        # Crear gráfico de barras
         chart = BarChart()
         chart.type = "col"
         chart.style = 10
-        chart.title = "DistribuciÃ³n de Calidad"
+        chart.title = "Distribución de Calidad"
         chart.y_axis.title = 'Cantidad'
-        chart.x_axis.title = 'CategorÃ­a'
+        chart.x_axis.title = 'Categoría'
         
         data = Reference(chart_ws, min_col=2, min_row=1, max_row=row-1, max_col=2)
         cats = Reference(chart_ws, min_col=1, min_row=2, max_row=row-1)
@@ -834,25 +834,25 @@ class CacaoReportExcelGenerator:
         """Crear hoja de resumen."""
         summary_ws = self.workbook.create_sheet("Resumen")
         
-        # TÃ­tulo
+        # Título
         summary_ws['A1'] = "Resumen Ejecutivo"
         summary_ws['A1'].font = Font(size=16, bold=True, color="2F4F4F")
         summary_ws['A1'].alignment = Alignment(horizontal='center')
         summary_ws.merge_cells('A1:D1')
         
-        # InformaciÃ³n del reporte
+        # Información del reporte
         summary_ws['A3'] = f"Generado el: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
         summary_ws['A3'].font = Font(size=10, italic=True)
         
         summary_ws['A4'] = f"Usuario: {user.get_full_name() or user.username}"
         summary_ws['A4'].font = Font(size=10, italic=True)
         
-        # Resumen de mÃ©tricas clave
-        summary_ws['A6'] = "MÃ©tricas Clave"
+        # Resumen de métricas clave
+        summary_ws['A6'] = "Métricas Clave"
         summary_ws['A6'].font = Font(size=14, bold=True, color="2F4F4F")
         
         key_metrics = [
-            ['Total de AnÃ¡lisis', stats['total_analyses']],
+            ['Total de Análisis', stats['total_analyses']],
             ['Confianza Promedio', f"{stats['avg_confidence']}%"],
             ['Alto Promedio', f"{stats['avg_dimensions']['alto']} mm"],
             ['Ancho Promedio', f"{stats['avg_dimensions']['ancho']} mm"],
@@ -872,14 +872,14 @@ class CacaoReportExcelGenerator:
         
         recommendations = []
         if stats['avg_confidence'] < 70:
-            recommendations.append("â€¢ La confianza promedio es baja. Considere mejorar la calidad de las imÃ¡genes.")
+            recommendations.append("- La confianza promedio es baja. Considere mejorar la calidad de las imágenes.")
         if stats['avg_dimensions']['alto'] < 15 or stats['avg_dimensions']['alto'] > 25:
-            recommendations.append("â€¢ Las dimensiones estÃ¡n fuera del rango Ã³ptimo. Revise el proceso de cosecha.")
+            recommendations.append("- Las dimensiones están fuera del rango óptimo. Revise el proceso de cosecha.")
         if stats['avg_weight'] < 1.0 or stats['avg_weight'] > 2.5:
-            recommendations.append("â€¢ El peso promedio no estÃ¡ en el rango esperado. Verifique la madurez.")
+            recommendations.append("- El peso promedio no está en el rango esperado. Verifique la madurez.")
         
         if not recommendations:
-            recommendations.append("â€¢ Los indicadores estÃ¡n dentro de rangos aceptables. Mantenga las buenas prÃ¡cticas.")
+            recommendations.append("- Los indicadores están dentro de rangos aceptables. Mantenga las buenas prácticas.")
         
         for row_num, rec in enumerate(recommendations, 17):
             summary_ws[f'A{row_num}'] = rec
@@ -890,21 +890,21 @@ class CacaoReportExcelGenerator:
         summary_ws.column_dimensions['B'].width = 15
     
     def _create_finca_info_section(self, finca):
-        """Crear secciÃ³n de informaciÃ³n de finca."""
-        # TÃ­tulo de secciÃ³n
-        self.ws['A8'] = "InformaciÃ³n de la Finca"
+        """Crear sección de información de finca."""
+        # Título de sección
+        self.ws['A8'] = "Información de la Finca"
         self.ws['A8'].font = Font(size=14, bold=True, color="2F4F4F")
         
         # Datos de la finca
         finca_data = [
             ['Campo', 'Valor'],
             ['Nombre', finca.nombre],
-            ['UbicaciÃ³n', finca.ubicacion_completa],
-            ['HectÃ¡reas', f"{finca.hectareas} ha"],
+            ['Ubicación', finca.ubicacion_completa],
+            ['Hectáreas', f"{finca.hectareas} ha"],
             ['Agricultor', finca.agricultor.get_full_name() or finca.agricultor.username],
             ['Total de Lotes', str(finca.total_lotes)],
             ['Lotes Activos', str(finca.lotes_activos)],
-            ['Total de AnÃ¡lisis', str(finca.total_analisis)],
+            ['Total de Análisis', str(finca.total_analisis)],
             ['Calidad Promedio', f"{finca.calidad_promedio}%"],
         ]
         
@@ -934,7 +934,7 @@ class CacaoReportExcelGenerator:
         self.ws.column_dimensions['B'].width = 30
     
     def _get_lotes_stats(self, finca):
-        """Obtener estadÃ­sticas de lotes de la finca."""
+        """Obtener estadísticas de lotes de la finca."""
         lotes = finca.lotes.all()
         
         return {
@@ -946,17 +946,17 @@ class CacaoReportExcelGenerator:
         }
     
     def _create_lotes_stats_section(self, stats):
-        """Crear secciÃ³n de estadÃ­sticas de lotes."""
-        # TÃ­tulo de secciÃ³n
-        self.ws['A20'] = "EstadÃ­sticas de Lotes"
+        """Crear sección de estadísticas de lotes."""
+        # Título de sección
+        self.ws['A20'] = "Estadísticas de Lotes"
         self.ws['A20'].font = Font(size=14, bold=True, color="2F4F4F")
         
-        # Datos de estadÃ­sticas
+        # Datos de estadísticas
         data = [
-            ['MÃ©trica', 'Valor'],
+            ['Métrica', 'Valor'],
             ['Total de Lotes', str(stats['total_lotes'])],
             ['Lotes Activos', str(stats['lotes_activos'])],
-            ['Ãrea Total', f"{stats['total_area']:.2f} ha"],
+            ['Área Total', f"{stats['total_area']:.2f} ha"],
             ['Variedades', str(len(stats['variedades']))],
         ]
         
@@ -986,16 +986,16 @@ class CacaoReportExcelGenerator:
         self.ws.column_dimensions['B'].width = 15
     
     def _create_lotes_analysis_section(self, finca):
-        """Crear secciÃ³n de anÃ¡lisis por lote."""
-        # TÃ­tulo de secciÃ³n
-        self.ws['A28'] = "AnÃ¡lisis por Lote"
+        """Crear sección de análisis por lote."""
+        # Título de sección
+        self.ws['A28'] = "Análisis por Lote"
         self.ws['A28'].font = Font(size=14, bold=True, color="2F4F4F")
         
         lotes = finca.lotes.all()
         
         if lotes.exists():
             # Encabezados
-            headers = ['Lote', 'Variedad', 'Estado', 'Ãrea (ha)', 'AnÃ¡lisis', 'Calidad (%)']
+            headers = ['Lote', 'Variedad', 'Estado', 'Área (ha)', 'Análisis', 'Calidad (%)']
             for col_num, header in enumerate(headers, 1):
                 cell = self.ws.cell(row=30, column=col_num, value=header)
                 cell.font = Font(bold=True, color="FFFFFF")
@@ -1038,14 +1038,14 @@ class CacaoReportExcelGenerator:
         """Crear hoja detallada de lotes."""
         lotes_ws = self.workbook.create_sheet("Lotes Detallados")
         
-        # TÃ­tulo
-        lotes_ws['A1'] = f"AnÃ¡lisis Detallados - Finca {finca.nombre}"
+        # Título
+        lotes_ws['A1'] = f"Análisis Detallados - Finca {finca.nombre}"
         lotes_ws['A1'].font = Font(size=16, bold=True, color="2F4F4F")
         lotes_ws['A1'].alignment = Alignment(horizontal='center')
         lotes_ws.merge_cells('A1:H1')
         
         # Encabezados
-        headers = ['Lote', 'Variedad', 'Estado', 'Ãrea (ha)', 'Fecha PlantaciÃ³n', 'AnÃ¡lisis', 'Calidad (%)', 'Observaciones']
+        headers = ['Lote', 'Variedad', 'Estado', 'Área (ha)', 'Fecha Plantación', 'Análisis', 'Calidad (%)', 'Observaciones']
         for col_num, header in enumerate(headers, 1):
             cell = lotes_ws.cell(row=3, column=col_num, value=header)
             cell.font = Font(bold=True, color="FFFFFF")
@@ -1088,7 +1088,7 @@ class CacaoReportExcelGenerator:
             lotes_ws.column_dimensions[chr(64 + i)].width = width
     
     def _get_activity_stats(self, filtros):
-        """Obtener estadÃ­sticas de actividad."""
+        """Obtener estadísticas de actividad."""
         queryset = ActivityLog.objects.all()
         
         if filtros:
@@ -1105,14 +1105,14 @@ class CacaoReportExcelGenerator:
         }
     
     def _create_activity_stats_section(self, stats):
-        """Crear secciÃ³n de estadÃ­sticas de actividad."""
-        # TÃ­tulo de secciÃ³n
-        self.ws['A8'] = "EstadÃ­sticas de Actividad"
+        """Crear sección de estadísticas de actividad."""
+        # Título de sección
+        self.ws['A8'] = "Estadísticas de Actividad"
         self.ws['A8'].font = Font(size=14, bold=True, color="2F4F4F")
         
-        # Datos de estadÃ­sticas
+        # Datos de estadísticas
         data = [
-            ['MÃ©trica', 'Valor'],
+            ['Métrica', 'Valor'],
             ['Total de Actividades', str(stats['total_activities'])],
             ['Actividades Hoy', str(stats['activities_today'])],
         ]
@@ -1143,7 +1143,7 @@ class CacaoReportExcelGenerator:
         self.ws.column_dimensions['B'].width = 15
     
     def _get_login_stats(self, filtros):
-        """Obtener estadÃ­sticas de logins."""
+        """Obtener estadísticas de logins."""
         queryset = LoginHistory.objects.all()
         
         if filtros:
@@ -1160,18 +1160,18 @@ class CacaoReportExcelGenerator:
         }
     
     def _create_login_stats_section(self, stats):
-        """Crear secciÃ³n de estadÃ­sticas de logins."""
-        # TÃ­tulo de secciÃ³n
-        self.ws['A14'] = "EstadÃ­sticas de Logins"
+        """Crear sección de estadísticas de logins."""
+        # Título de sección
+        self.ws['A14'] = "Estadísticas de Logins"
         self.ws['A14'].font = Font(size=14, bold=True, color="2F4F4F")
         
-        # Datos de estadÃ­sticas
+        # Datos de estadísticas
         data = [
-            ['MÃ©trica', 'Valor'],
+            ['Métrica', 'Valor'],
             ['Total de Logins', str(stats['total_logins'])],
             ['Logins Exitosos', str(stats['successful_logins'])],
             ['Logins Fallidos', str(stats['failed_logins'])],
-            ['Tasa de Ã‰xito', f"{stats['success_rate']:.1f}%"],
+            ['Tasa de xito', f"{stats['success_rate']:.1f}%"],
         ]
         
         # Crear tabla
@@ -1203,14 +1203,14 @@ class CacaoReportExcelGenerator:
         """Crear hoja detallada de actividades."""
         activities_ws = self.workbook.create_sheet("Actividades Detalladas")
         
-        # TÃ­tulo
+        # Título
         activities_ws['A1'] = "Actividades del Sistema"
         activities_ws['A1'].font = Font(size=16, bold=True, color="2F4F4F")
         activities_ws['A1'].alignment = Alignment(horizontal='center')
         activities_ws.merge_cells('A1:F1')
         
         # Encabezados
-        headers = ['Fecha', 'Usuario', 'AcciÃ³n', 'Modelo', 'DescripciÃ³n', 'IP']
+        headers = ['Fecha', 'Usuario', 'Acción', 'Modelo', 'Descripción', 'IP']
         for col_num, header in enumerate(headers, 1):
             cell = activities_ws.cell(row=3, column=col_num, value=header)
             cell.font = Font(bold=True, color="FFFFFF")
@@ -1235,7 +1235,7 @@ class CacaoReportExcelGenerator:
         for row_num, activity in enumerate(queryset, 4):
             data = [
                 activity.timestamp.strftime('%d/%m/%Y %H:%M'),
-                activity.usuario.username if activity.usuario else 'AnÃ³nimo',
+                activity.usuario.username if activity.usuario else 'Anónimo',
                 activity.get_accion_display(),
                 activity.modelo,
                 activity.descripcion[:50] + '...' if len(activity.descripcion) > 50 else activity.descripcion,
@@ -1261,14 +1261,14 @@ class CacaoReportExcelGenerator:
         """Crear hoja detallada de logins."""
         logins_ws = self.workbook.create_sheet("Logins Detallados")
         
-        # TÃ­tulo
+        # Título
         logins_ws['A1'] = "Historial de Logins"
         logins_ws['A1'].font = Font(size=16, bold=True, color="2F4F4F")
         logins_ws['A1'].alignment = Alignment(horizontal='center')
         logins_ws.merge_cells('A1:F1')
         
         # Encabezados
-        headers = ['Fecha', 'Usuario', 'IP', 'Ã‰xito', 'DuraciÃ³n', 'RazÃ³n Fallo']
+        headers = ['Fecha', 'Usuario', 'IP', 'xito', 'Duración', 'Razón Fallo']
         for col_num, header in enumerate(headers, 1):
             cell = logins_ws.cell(row=3, column=col_num, value=header)
             cell.font = Font(bold=True, color="FFFFFF")
@@ -1296,7 +1296,7 @@ class CacaoReportExcelGenerator:
                 login.login_time.strftime('%d/%m/%Y %H:%M'),
                 login.usuario.username,
                 login.ip_address,
-                'SÃ­' if login.success else 'No',
+                'Sí' if login.success else 'No',
                 duration,
                 login.failure_reason or 'N/A',
             ]
@@ -1317,12 +1317,12 @@ class CacaoReportExcelGenerator:
             logins_ws.column_dimensions[chr(64 + i)].width = width
     
     def _create_custom_quality_section(self, stats, parametros):
-        """Crear secciÃ³n personalizada de calidad."""
-        # TÃ­tulo de secciÃ³n
-        self.ws['A8'] = "AnÃ¡lisis Personalizado de Calidad"
+        """Crear sección personalizada de calidad."""
+        # Título de sección
+        self.ws['A8'] = "Análisis Personalizado de Calidad"
         self.ws['A8'].font = Font(size=14, bold=True, color="2F4F4F")
         
-        # MÃ©tricas especÃ­ficas segÃºn parÃ¡metros
+        # Métricas específicas según parámetros
         custom_metrics = []
         
         if parametros.get('include_dimensions', True):
@@ -1339,7 +1339,7 @@ class CacaoReportExcelGenerator:
             custom_metrics.append(['Confianza Promedio', f"{stats['avg_confidence']}%"])
         
         # Crear tabla personalizada
-        data = [['MÃ©trica', 'Valor']] + custom_metrics
+        data = [['Métrica', 'Valor']] + custom_metrics
         
         for row_num, row_data in enumerate(data, 10):
             for col_num, cell_value in enumerate(row_data, 1):
@@ -1366,19 +1366,19 @@ class CacaoReportExcelGenerator:
         self.ws.column_dimensions['B'].width = 15
     
     def _create_custom_finca_section(self, finca, parametros):
-        """Crear secciÃ³n personalizada de finca."""
-        # TÃ­tulo de secciÃ³n
-        self.ws['A8'] = f"AnÃ¡lisis Personalizado - {finca.nombre}"
+        """Crear sección personalizada de finca."""
+        # Título de sección
+        self.ws['A8'] = f"Análisis Personalizado - {finca.nombre}"
         self.ws['A8'].font = Font(size=14, bold=True, color="2F4F4F")
         
-        # MÃ©tricas especÃ­ficas segÃºn parÃ¡metros
+        # Métricas específicas según parámetros
         custom_metrics = []
         
         if parametros.get('include_basic_info', True):
             custom_metrics.extend([
                 ['Nombre', finca.nombre],
-                ['UbicaciÃ³n', finca.ubicacion_completa],
-                ['HectÃ¡reas', f"{finca.hectareas} ha"],
+                ['Ubicación', finca.ubicacion_completa],
+                ['Hectáreas', f"{finca.hectareas} ha"],
             ])
         
         if parametros.get('include_lotes', True):
@@ -1389,7 +1389,7 @@ class CacaoReportExcelGenerator:
         
         if parametros.get('include_quality', True):
             custom_metrics.extend([
-                ['Total de AnÃ¡lisis', str(finca.total_analisis)],
+                ['Total de Análisis', str(finca.total_analisis)],
                 ['Calidad Promedio', f"{finca.calidad_promedio}%"],
             ])
         
@@ -1421,12 +1421,12 @@ class CacaoReportExcelGenerator:
         self.ws.column_dimensions['B'].width = 30
     
     def _create_custom_audit_section(self, stats, parametros):
-        """Crear secciÃ³n personalizada de auditorÃ­a."""
-        # TÃ­tulo de secciÃ³n
-        self.ws['A8'] = "AnÃ¡lisis Personalizado de AuditorÃ­a"
+        """Crear sección personalizada de auditoría."""
+        # Título de sección
+        self.ws['A8'] = "Análisis Personalizado de Auditoría"
         self.ws['A8'].font = Font(size=14, bold=True, color="2F4F4F")
         
-        # MÃ©tricas especÃ­ficas segÃºn parÃ¡metros
+        # Métricas específicas según parámetros
         custom_metrics = []
         
         if parametros.get('include_activity', True):
@@ -1436,13 +1436,13 @@ class CacaoReportExcelGenerator:
             ])
         
         if parametros.get('include_top_users', True):
-            custom_metrics.append(['Usuarios MÃ¡s Activos', str(len(stats['top_users']))])
+            custom_metrics.append(['Usuarios Más Activos', str(len(stats['top_users']))])
         
         if parametros.get('include_action_types', True):
-            custom_metrics.append(['Tipos de AcciÃ³n', str(len(stats['activities_by_action']))])
+            custom_metrics.append(['Tipos de Acción', str(len(stats['activities_by_action']))])
         
         # Crear tabla personalizada
-        data = [['MÃ©trica', 'Valor']] + custom_metrics
+        data = [['Métrica', 'Valor']] + custom_metrics
         
         for row_num, row_data in enumerate(data, 10):
             for col_num, cell_value in enumerate(row_data, 1):

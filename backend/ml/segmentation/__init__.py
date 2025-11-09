@@ -1,5 +1,5 @@
-﻿"""
-MÃ³dulo de segmentaciÃ³n para CacaoScan.
+"""
+Módulo de segmentación para CacaoScan.
 
 Incluye:
 - Inferencia con YOLOv8-seg

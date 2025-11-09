@@ -1,5 +1,5 @@
-﻿"""
-Middleware para integrar auditorÃ­a con WebSockets en tiempo real.
+"""
+Middleware para integrar auditoría con WebSockets en tiempo real.
 """
 import logging
 from django.utils.deprecation import MiddlewareMixin
@@ -19,12 +19,12 @@ logger = logging.getLogger("cacaoscan.websockets")
 
 class RealtimeAuditMiddleware(MiddlewareMixin):
     """
-    Middleware para enviar eventos de auditorÃ­a en tiempo real.
+    Middleware para enviar eventos de auditoría en tiempo real.
     """
     
     def process_request(self, request):
-        """Procesar request y preparar datos de auditorÃ­a."""
-        # Almacenar informaciÃ³n del request para usar en process_response
+        """Procesar request y preparar datos de auditoría."""
+        # Almacenar información del request para usar en process_response
         request._audit_start_time = timezone.now()
         request._audit_user = getattr(request, 'user', None)
         request._audit_ip = self.get_client_ip(request)
@@ -33,19 +33,19 @@ class RealtimeAuditMiddleware(MiddlewareMixin):
         return None
     
     def process_response(self, request, response):
-        """Procesar response y enviar evento de auditorÃ­a."""
+        """Procesar response y enviar evento de auditoría."""
         try:
             # Solo procesar si hay usuario autenticado
             if not hasattr(request, 'user') or not request.user.is_authenticated:
                 return response
             
-            # Determinar el tipo de acciÃ³n basado en el mÃ©todo HTTP
+            # Determinar el tipo de acción basado en el método HTTP
             action_type = self.get_action_type(request.method)
             
             # Determinar el modelo afectado basado en la URL
             model_name = self.get_model_name(request.path)
             
-            # Crear descripciÃ³n de la acciÃ³n
+            # Crear descripción de la acción
             description = self.create_action_description(request, response)
             
             # Crear log de actividad
@@ -66,7 +66,7 @@ class RealtimeAuditMiddleware(MiddlewareMixin):
             realtime_service.send_activity_log(activity_data)
             
         except Exception as e:
-            logger.error(f"Error en middleware de auditorÃ­a en tiempo real: {e}")
+            logger.error(f"Error en middleware de auditoría en tiempo real: {e}")
         
         return response
     
@@ -80,7 +80,7 @@ class RealtimeAuditMiddleware(MiddlewareMixin):
         return ip
     
     def get_action_type(self, method):
-        """Determinar tipo de acciÃ³n basado en mÃ©todo HTTP."""
+        """Determinar tipo de acción basado en método HTTP."""
         action_map = {
             'GET': 'view',
             'POST': 'create',
@@ -114,34 +114,34 @@ class RealtimeAuditMiddleware(MiddlewareMixin):
         return 'System'
     
     def create_action_description(self, request, response):
-        """Crear descripciÃ³n de la acciÃ³n."""
+        """Crear descripción de la acción."""
         method = request.method
         path = request.path
         status_code = response.status_code
         
         if method == 'GET':
-            return f"VisualizaciÃ³n de {path}"
+            return f"Visualización de {path}"
         elif method == 'POST':
-            return f"CreaciÃ³n en {path}"
+            return f"Creación en {path}"
         elif method in ['PUT', 'PATCH']:
-            return f"ActualizaciÃ³n en {path}"
+            return f"Actualización en {path}"
         elif method == 'DELETE':
-            return f"EliminaciÃ³n en {path}"
+            return f"Eliminación en {path}"
         else:
-            return f"AcciÃ³n {method} en {path}"
+            return f"Acción {method} en {path}"
     
     def get_action_display(self, action_type):
-        """Obtener display name de la acciÃ³n."""
+        """Obtener display name de la acción."""
         action_displays = {
-            'view': 'VisualizaciÃ³n',
-            'create': 'CreaciÃ³n',
-            'update': 'ActualizaciÃ³n',
-            'delete': 'EliminaciÃ³n',
-            'login': 'Inicio de SesiÃ³n',
-            'logout': 'Cierre de SesiÃ³n',
+            'view': 'Visualización',
+            'create': 'Creación',
+            'update': 'Actualización',
+            'delete': 'Eliminación',
+            'login': 'Inicio de Sesión',
+            'logout': 'Cierre de Sesión',
             'download': 'Descarga',
             'upload': 'Subida',
-            'analysis': 'AnÃ¡lisis',
+            'analysis': 'Análisis',
             'training': 'Entrenamiento',
             'report': 'Reporte',
             'error': 'Error',
@@ -178,7 +178,7 @@ class RealtimeLoginMiddleware(MiddlewareMixin):
                 # Determinar si el login fue exitoso
                 success = response.status_code == 200
                 
-                # Obtener informaciÃ³n del usuario si el login fue exitoso
+                # Obtener información del usuario si el login fue exitoso
                 user = None
                 if success and hasattr(request, 'user') and request.user.is_authenticated:
                     user = request.user

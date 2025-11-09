@@ -1,10 +1,11 @@
-﻿"""
+"""
 URL configuration for cacaoscan project.
 """
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.http import JsonResponse
 
 # Swagger schema view - cargado de forma lazy para evitar problemas de memoria con pkg_resources
@@ -19,7 +20,7 @@ def get_schema_view_lazy():
             openapi.Info(
                 title="CacaoScan API",
                 default_version='v1',
-                description="API para mediciÃ³n de dimensiones y peso de granos de cacao usando ML",
+                description="API para medición de dimensiones y peso de granos de cacao usando ML",
                 terms_of_service="https://www.google.com/policies/terms/",
                 contact=openapi.Contact(email="contact@cacaoscan.local"),
                 license=openapi.License(name="BSD License"),
@@ -44,15 +45,15 @@ def health_check(request):
 urlpatterns = [
     path('health', health_check, name='health-check'),
     path('admin/', admin.site.urls),
-    # API de documentos legales - COMENTADA: el contenido ahora está en el frontend
+    # API de documentos legales - COMENTADA: el contenido ahora est en el frontend
     # path('api/v1/legal/', include('legal.urls')),
     # API de personas (incluida en v1 con prefijo personas/)
     path('api/v1/personas/', include('personas.urls')),
-    # API de catÃ¡logos (incluida en v1 para consistencia)
+    # API de catálogos (incluida en v1 para consistencia)
     path('api/v1/', include('catalogos.urls')),
-    # API de imágenes (debe ir antes de api.urls para evitar conflictos)
+    # API de imgenes (debe ir antes de api.urls para evitar conflictos)
     path('api/v1/', include('images_app.urls')),
-    # API principal de CacaoScan (debe ir después de rutas específicas)
+    # API principal de CacaoScan (debe ir despus de rutas especficas)
     path('api/v1/', include('api.urls')),
     
     # Swagger URLs
@@ -63,5 +64,6 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += staticfiles_urlpatterns()
 
 

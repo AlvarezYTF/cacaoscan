@@ -1,9 +1,9 @@
-﻿"""
-Modelos para gestiÃ³n de personas - App personas.
-Modelos normalizados segÃºn Tercera Forma Normal (3FN).
+"""
+Modelos para gestión de personas - App personas.
+Modelos normalizados según Tercera Forma Normal (3FN).
 
-INTEGRACIÃ“N CON MÃ“DULOS:
-- CatÃ¡logos (Tema-ParÃ¡metro): Para tipo_documento y genero
+INTEGRACI"N CON M"DULOS:
+- Catálogos (Tema-Parámetro): Para tipo_documento y genero
 - Ubicaciones: Para departamento y municipio
 """
 import uuid
@@ -18,17 +18,17 @@ from catalogos.models import Parametro, Departamento, Municipio
 
 class Persona(models.Model):
     """
-    Modelo para informaciÃ³n personal complementaria del usuario.
+    Modelo para información personal complementaria del usuario.
     
-    INTEGRACIÃ“N CON CATÃLOGOS:
+    INTEGRACI"N CON CATLOGOS:
     - tipo_documento: Se relaciona con Parametro donde tema__codigo='TIPO_DOC'
     - genero: Se relaciona con Parametro donde tema__codigo='SEXO'
     
-    INTEGRACIÃ“N CON UBICACIONES:
-    - departamento: Se relaciona con Departamento (relaciÃ³n 1:N)
-    - municipio: Se relaciona con Municipio (relaciÃ³n 1:N)
+    INTEGRACI"N CON UBICACIONES:
+    - departamento: Se relaciona con Departamento (relación 1:N)
+    - municipio: Se relaciona con Municipio (relación 1:N)
     
-    NORMALIZACIÃ“N 3FN: Mantiene integridad referencial con catÃ¡logos y ubicaciones normalizadas.
+    NORMALIZACI"N 3FN: Mantiene integridad referencial con catálogos y ubicaciones normalizadas.
     """
     user = models.OneToOneField(
         User, 
@@ -37,22 +37,22 @@ class Persona(models.Model):
         help_text="Usuario asociado a la persona"
     )
     
-    # CATÃLOGO: Tipo de documento (Parametro del tema TIPO_DOC)
+    # CATLOGO: Tipo de documento (Parametro del tema TIPO_DOC)
     tipo_documento = models.ForeignKey(
         Parametro, 
         on_delete=models.PROTECT,
         limit_choices_to={'tema__codigo': 'TIPO_DOC'},
         related_name="personas_tipo_doc",
-        help_text="ParÃ¡metro del catÃ¡logo TIPO_DOC (ej: CC, CE, PA, TI, RC)"
+        help_text="Parámetro del catálogo TIPO_DOC (ej: CC, CE, PA, TI, RC)"
     )
     
     numero_documento = models.CharField(
         max_length=20, 
         unique=True,
-        help_text="NÃºmero de documento de identidad"
+        help_text="Número de documento de identidad"
     )
     
-    # InformaciÃ³n personal
+    # Información personal
     primer_nombre = models.CharField(max_length=50, help_text="Primer nombre")
     segundo_nombre = models.CharField(
         max_length=50, 
@@ -72,32 +72,32 @@ class Persona(models.Model):
     telefono = models.CharField(
         max_length=15, 
         unique=True,
-        help_text="NÃºmero de telÃ©fono (Ãºnico)"
+        help_text="Número de teléfono (único)"
     )
     direccion = models.CharField(
         max_length=255, 
         null=True, 
         blank=True,
-        help_text="DirecciÃ³n de residencia"
+        help_text="Dirección de residencia"
     )
     
-    # CATÃLOGO: GÃ©nero (Parametro del tema SEXO)
+    # CATLOGO: Género (Parametro del tema SEXO)
     genero = models.ForeignKey(
         Parametro, 
         on_delete=models.PROTECT,
         limit_choices_to={'tema__codigo': 'SEXO'},
         related_name="personas_genero",
-        help_text="ParÃ¡metro del catÃ¡logo SEXO (ej: M, F, O)"
+        help_text="Parámetro del catálogo SEXO (ej: M, F, O)"
     )
     
-    # UbicaciÃ³n geogrÃ¡fica (normalizada)
+    # Ubicación geográfica (normalizada)
     fecha_nacimiento = models.DateField(
         null=True, 
         blank=True,
         help_text="Fecha de nacimiento"
     )
     
-    # UBICACIÃ“N: Departamento y Municipio normalizados
+    # UBICACI"N: Departamento y Municipio normalizados
     departamento = models.ForeignKey(
         Departamento, 
         on_delete=models.SET_NULL,
@@ -115,7 +115,7 @@ class Persona(models.Model):
         help_text="Municipio de residencia"
     )
     
-    fecha_creacion = models.DateTimeField(auto_now_add=True, help_text="Fecha de creaciÃ³n del registro")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, help_text="Fecha de creación del registro")
     
     class Meta:
         verbose_name = 'Persona'
@@ -131,24 +131,24 @@ class Persona(models.Model):
         """Validaciones personalizadas a nivel de modelo."""
         errors = {}
         
-        # Validar nÃºmero de documento
+        # Validar número de documento
         if self.numero_documento:
-            # Solo nÃºmeros
+            # Solo números
             if not self.numero_documento.isdigit():
-                errors['numero_documento'] = 'El nÃºmero de documento solo puede contener nÃºmeros.'
-            # Longitud entre 6 y 11 dÃ­gitos
+                errors['numero_documento'] = 'El número de documento solo puede contener números.'
+            # Longitud entre 6 y 11 dígitos
             elif len(self.numero_documento) < 6 or len(self.numero_documento) > 11:
-                errors['numero_documento'] = 'El nÃºmero de documento debe tener entre 6 y 11 dÃ­gitos.'
+                errors['numero_documento'] = 'El número de documento debe tener entre 6 y 11 dígitos.'
         
-        # Validar telÃ©fono
+        # Validar teléfono
         if self.telefono:
             cleaned_phone = re.sub(r'[\s\-\(\)]', '', self.telefono)
             if cleaned_phone.startswith('+'):
                 cleaned_phone = cleaned_phone[1:]
             if not cleaned_phone.isdigit():
-                errors['telefono'] = 'El telÃ©fono solo puede contener nÃºmeros.'
+                errors['telefono'] = 'El teléfono solo puede contener números.'
             elif len(cleaned_phone) < 7 or len(cleaned_phone) > 15:
-                errors['telefono'] = 'El telÃ©fono debe tener entre 7 y 15 dÃ­gitos.'
+                errors['telefono'] = 'El teléfono debe tener entre 7 y 15 dígitos.'
         
         # Validar fecha de nacimiento
         if self.fecha_nacimiento:
@@ -159,17 +159,17 @@ class Persona(models.Model):
                 edad = hoy.year - self.fecha_nacimiento.year - \
                        ((hoy.month, hoy.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day))
                 if edad < 14:
-                    errors['fecha_nacimiento'] = 'La persona debe tener al menos 14 aÃ±os.'
+                    errors['fecha_nacimiento'] = 'La persona debe tener al menos 14 años.'
                 if edad > 120:
-                    errors['fecha_nacimiento'] = 'La fecha de nacimiento no es vÃ¡lida.'
+                    errors['fecha_nacimiento'] = 'La fecha de nacimiento no es válida.'
         
         # Validar nombres (solo letras y espacios)
         if self.primer_nombre:
-            if not re.match(r'^[a-zA-ZÃ¡Ã©Ã­Ã³ÃºÃÃ‰ÃÃ“ÃšÃ±Ã‘Ã¼Ãœ\s]+$', self.primer_nombre):
+            if not re.match(r'^[a-zA-ZáéíóúÉ"Úñ'üÜ\s]+$', self.primer_nombre):
                 errors['primer_nombre'] = 'El primer nombre solo puede contener letras.'
         
         if self.primer_apellido:
-            if not re.match(r'^[a-zA-ZÃ¡Ã©Ã­Ã³ÃºÃÃ‰ÃÃ“ÃšÃ±Ã‘Ã¼Ãœ\s]+$', self.primer_apellido):
+            if not re.match(r'^[a-zA-ZáéíóúÉ"Úñ'üÜ\s]+$', self.primer_apellido):
                 errors['primer_apellido'] = 'El primer apellido solo puede contener letras.'
         
         # Validar que el municipio pertenezca al departamento
@@ -211,15 +211,15 @@ class Persona(models.Model):
 
 class PendingRegistration(models.Model):
     """
-    Modelo para almacenar registros pendientes de verificaciÃ³n de correo.
-    Los datos del usuario no se crean hasta que el correo estÃ© verificado.
+    Modelo para almacenar registros pendientes de verificación de correo.
+    Los datos del usuario no se crean hasta que el correo esté verificado.
     """
     email = models.EmailField(unique=True, help_text="Email del usuario pendiente de registro")
     data = models.JSONField(help_text="Datos del formulario de registro en formato JSON")
-    verification_token = models.UUIDField(default=uuid.uuid4, unique=True, help_text="Token Ãºnico de verificaciÃ³n")
-    created_at = models.DateTimeField(auto_now_add=True, help_text="Fecha y hora de creaciÃ³n del registro pendiente")
+    verification_token = models.UUIDField(default=uuid.uuid4, unique=True, help_text="Token único de verificación")
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Fecha y hora de creación del registro pendiente")
     is_verified = models.BooleanField(default=False, help_text="Indica si el correo ya fue verificado")
-    verified_at = models.DateTimeField(null=True, blank=True, help_text="Fecha y hora de verificaciÃ³n")
+    verified_at = models.DateTimeField(null=True, blank=True, help_text="Fecha y hora de verificación")
     
     class Meta:
         verbose_name = 'Registro Pendiente'
@@ -235,7 +235,7 @@ class PendingRegistration(models.Model):
         return f"Registro pendiente: {self.email}"
     
     def is_expired(self):
-        """Verifica si el token de verificaciÃ³n ha expirado (mÃ¡s de 24 horas)."""
+        """Verifica si el token de verificación ha expirado (más de 24 horas)."""
         expiration_time = self.created_at + timedelta(hours=24)
         return timezone.now() > expiration_time
     

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests para el procesador de recortes.
 """
 import pytest
@@ -14,7 +14,7 @@ class TestCacaoCropper:
     """Tests para CacaoCropper."""
     
     def setup_method(self):
-        """ConfiguraciÃ³n antes de cada test."""
+        """Configuración antes de cada test."""
         self.mock_yolo = Mock()
         self.cropper = CacaoCropper(
             yolo_inference=self.mock_yolo,
@@ -25,7 +25,7 @@ class TestCacaoCropper:
         )
     
     def test_init(self):
-        """Test de inicializaciÃ³n."""
+        """Test de inicialización."""
         assert self.cropper.yolo_inference == self.mock_yolo
         assert self.cropper.crop_size == 512
         assert self.cropper.padding == 10
@@ -33,7 +33,7 @@ class TestCacaoCropper:
         assert self.cropper.overwrite == False
     
     def test_should_reprocess_newer_source(self):
-        """Test de reprocesamiento con fuente mÃ¡s nueva."""
+        """Test de reprocesamiento con fuente más nueva."""
         with patch('ml.segmentation.cropper.get_file_timestamp') as mock_timestamp:
             mock_timestamp.side_effect = [2000.0, 1000.0]  # source newer than target
             
@@ -45,7 +45,7 @@ class TestCacaoCropper:
             assert result == True
     
     def test_should_reprocess_older_source(self):
-        """Test de reprocesamiento con fuente mÃ¡s antigua."""
+        """Test de reprocesamiento con fuente más antigua."""
         with patch('ml.segmentation.cropper.get_file_timestamp') as mock_timestamp:
             mock_timestamp.side_effect = [1000.0, 2000.0]  # source older than target
             
@@ -74,7 +74,7 @@ class TestCacaoCropper:
     @patch('ml.segmentation.cropper.save_image')
     def test_process_image_success(self, mock_save, mock_resize, mock_crop, mock_imread):
         """Test de procesamiento exitoso de imagen."""
-        # Mock de predicciÃ³n exitosa
+        # Mock de predicción exitosa
         prediction = {
             'confidence': 0.8,
             'class_id': 0,
@@ -119,11 +119,11 @@ class TestCacaoCropper:
         assert 'No se encontraron detecciones' in result['error']
     
     def test_process_image_low_quality(self):
-        """Test de procesamiento con predicciÃ³n de baja calidad."""
+        """Test de procesamiento con predicción de baja calidad."""
         prediction = {
             'confidence': 0.3,  # Baja confianza
             'mask': np.ones((100, 100), dtype=np.float32),
-            'area': 50,  # Ãrea muy pequeÃ±a
+            'area': 50,  # rea muy pequeña
             'bbox': [100, 100, 200, 200]
         }
         
@@ -134,7 +134,7 @@ class TestCacaoCropper:
             result = self.cropper.process_image(Path("test.bmp"), 1)
         
         assert result['success'] == False
-        assert 'PredicciÃ³n de baja calidad' in result['error']
+        assert 'Predicción de baja calidad' in result['error']
     
     @patch('ml.segmentation.cropper.cv2.imread')
     def test_process_image_load_error(self, mock_imread):
@@ -185,7 +185,7 @@ class TestCacaoCropper:
         assert stats['errors'][0]['id'] == 2
     
     def test_process_batch_with_limit(self):
-        """Test de procesamiento por lotes con lÃ­mite."""
+        """Test de procesamiento por lotes con límite."""
         records = [
             {'id': 1, 'raw_image_path': Path("1.bmp")},
             {'id': 2, 'raw_image_path': Path("2.bmp")},
@@ -204,11 +204,11 @@ class TestCacaoCropper:
 
 
 class TestCreateCacaoCropper:
-    """Tests para la funciÃ³n de conveniencia."""
+    """Tests para la función de conveniencia."""
     
     @patch('ml.segmentation.cropper.create_yolo_inference')
     def test_create_cacao_cropper(self, mock_create_yolo):
-        """Test de creaciÃ³n de procesador de crops."""
+        """Test de creación de procesador de crops."""
         mock_yolo = Mock()
         mock_create_yolo.return_value = mock_yolo
         

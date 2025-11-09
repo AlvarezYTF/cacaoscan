@@ -1,5 +1,5 @@
-﻿"""
-Vistas para gestiÃ³n de fincas en CacaoScan.
+"""
+Vistas para gestión de fincas en CacaoScan.
 """
 import logging
 from rest_framework.permissions import IsAuthenticated
@@ -45,7 +45,7 @@ class FincaPermissionMixin:
             return Finca.objects.filter(agricultor=user, activa=True)
     
     def perform_create(self, serializer):
-        """Asignar automÃ¡ticamente el agricultor al crear finca."""
+        """Asignar automáticamente el agricultor al crear finca."""
         serializer.save(agricultor=self.request.user)
 
 
@@ -61,12 +61,12 @@ class FincaListCreateView(FincaPermissionMixin, APIView):
         operation_description="Lista todas las fincas del usuario autenticado",
         operation_summary="Listar fincas",
         manual_parameters=[
-            openapi.Parameter('search', openapi.IN_QUERY, description="BÃºsqueda por nombre", type=openapi.TYPE_STRING),
+            openapi.Parameter('search', openapi.IN_QUERY, description="Búsqueda por nombre", type=openapi.TYPE_STRING),
             openapi.Parameter('municipio', openapi.IN_QUERY, description="Filtrar por municipio", type=openapi.TYPE_STRING),
             openapi.Parameter('departamento', openapi.IN_QUERY, description="Filtrar por departamento", type=openapi.TYPE_STRING),
             openapi.Parameter('activa', openapi.IN_QUERY, description="Filtrar por estado activo", type=openapi.TYPE_BOOLEAN),
-            openapi.Parameter('page', openapi.IN_QUERY, description="NÃºmero de pÃ¡gina", type=openapi.TYPE_INTEGER),
-            openapi.Parameter('page_size', openapi.IN_QUERY, description="TamaÃ±o de pÃ¡gina", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page', openapi.IN_QUERY, description="Número de página", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page_size', openapi.IN_QUERY, description="Tamaño de página", type=openapi.TYPE_INTEGER),
         ],
         responses={
             200: openapi.Response(description="Lista de fincas obtenida exitosamente"),
@@ -77,7 +77,7 @@ class FincaListCreateView(FincaPermissionMixin, APIView):
     def get(self, request):
         """Listar fincas con filtros optimizados."""
         try:
-            # OptimizaciÃ³n: obtener solo los campos necesarios
+            # Optimización: obtener solo los campos necesarios
             queryset = self.get_queryset().only(
                 'id', 'nombre', 'municipio', 'departamento', 'hectareas', 
                 'ubicacion', 'activa', 'fecha_registro'
@@ -106,18 +106,18 @@ class FincaListCreateView(FincaPermissionMixin, APIView):
                 activa_bool = activa.lower() in ['true', '1', 'yes']
                 queryset = queryset.filter(activa=activa_bool)
             
-            # Filtrar por agricultor si se proporciona el parÃ¡metro (optimizado para el frontend)
+            # Filtrar por agricultor si se proporciona el parámetro (optimizado para el frontend)
             agricultor_id = request.GET.get('agricultor')
             if agricultor_id:
                 try:
                     queryset = queryset.filter(agricultor_id=int(agricultor_id))
                 except (ValueError, TypeError):
-                    logger.warning(f"ID de agricultor invÃ¡lido: {agricultor_id}")
+                    logger.warning(f"ID de agricultor inválido: {agricultor_id}")
             
             # Para consultas con agricultor, no paginar (solo para el frontend)
             if agricultor_id:
-                # Retornar todas las fincas del agricultor sin paginaciÃ³n (mÃ¡s rÃ¡pido)
-                serializer = FincaListSerializer(queryset[:100], many=True)  # MÃ¡ximo 100 para evitar sobrecarga
+                # Retornar todas las fincas del agricultor sin paginación (más rápido)
+                serializer = FincaListSerializer(queryset[:100], many=True)  # Máximo 100 para evitar sobrecarga
                 return Response({
                     'results': serializer.data,
                     'count': queryset.count(),
@@ -128,7 +128,7 @@ class FincaListCreateView(FincaPermissionMixin, APIView):
                     'previous': None,
                 }, status=status.HTTP_200_OK)
             
-            # PaginaciÃ³n solo para listados generales
+            # Paginación solo para listados generales
             page = int(request.GET.get('page', 1))
             page_size = int(request.GET.get('page_size', 20))
             
@@ -162,11 +162,11 @@ class FincaListCreateView(FincaPermissionMixin, APIView):
             type=openapi.TYPE_OBJECT,
             properties={
                 'nombre': openapi.Schema(type=openapi.TYPE_STRING, description="Nombre de la finca"),
-                'ubicacion': openapi.Schema(type=openapi.TYPE_STRING, description="UbicaciÃ³n de la finca"),
+                'ubicacion': openapi.Schema(type=openapi.TYPE_STRING, description="Ubicación de la finca"),
                 'municipio': openapi.Schema(type=openapi.TYPE_STRING, description="Municipio"),
                 'departamento': openapi.Schema(type=openapi.TYPE_STRING, description="Departamento"),
-                'hectareas': openapi.Schema(type=openapi.TYPE_NUMBER, description="HectÃ¡reas de la finca"),
-                'descripcion': openapi.Schema(type=openapi.TYPE_STRING, description="DescripciÃ³n adicional"),
+                'hectareas': openapi.Schema(type=openapi.TYPE_NUMBER, description="Hectáreas de la finca"),
+                'descripcion': openapi.Schema(type=openapi.TYPE_STRING, description="Descripción adicional"),
                 'coordenadas_lat': openapi.Schema(type=openapi.TYPE_NUMBER, description="Latitud GPS"),
                 'coordenadas_lng': openapi.Schema(type=openapi.TYPE_NUMBER, description="Longitud GPS"),
             },
@@ -185,7 +185,7 @@ class FincaListCreateView(FincaPermissionMixin, APIView):
             import traceback
             import sys
             
-            # Obtener el agricultor desde request.data si estÃ¡ presente, sino usar request.user
+            # Obtener el agricultor desde request.data si está presente, sino usar request.user
             agricultor = request.user
             if 'agricultor' in request.data:
                 from django.contrib.auth.models import User
@@ -203,8 +203,8 @@ class FincaListCreateView(FincaPermissionMixin, APIView):
             serializer = FincaSerializer(data=request.data, context={'request': request})
             
             if serializer.is_valid():
-                # Si ya estÃ¡ el agricultor en request.data, usar el que vino en el serializer validado
-                # sino, usar el agricultor extraÃ­do
+                # Si ya está el agricultor en request.data, usar el que vino en el serializer validado
+                # sino, usar el agricultor extraído
                 finca = serializer.save(agricultor=agricultor)
                 
                 logger.info(f"Finca '{finca.nombre}' creada por usuario {request.user.username} para agricultor {agricultor.id}")
@@ -213,9 +213,9 @@ class FincaListCreateView(FincaPermissionMixin, APIView):
                 response_serializer = FincaSerializer(finca, context={'request': request})
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
             else:
-                logger.error(f"Errores de validaciÃ³n: {serializer.errors}")
+                logger.error(f"Errores de validación: {serializer.errors}")
                 return Response({
-                    'error': 'Datos de entrada invÃ¡lidos',
+                    'error': 'Datos de entrada inválidos',
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -233,12 +233,12 @@ class FincaListCreateView(FincaPermissionMixin, APIView):
 
 class FincaDetailView(FincaPermissionMixin, APIView):
     """
-    Vista para obtener detalles de una finca especÃ­fica.
+    Vista para obtener detalles de una finca específica.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene los detalles de una finca especÃ­fica",
+        operation_description="Obtiene los detalles de una finca específica",
         operation_summary="Detalles de finca",
         responses={
             200: openapi.Response(description="Detalles de finca obtenidos exitosamente"),
@@ -271,22 +271,22 @@ class FincaDetailView(FincaPermissionMixin, APIView):
 
 class FincaUpdateView(FincaPermissionMixin, APIView):
     """
-    Vista para actualizar una finca especÃ­fica.
+    Vista para actualizar una finca específica.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Actualiza una finca especÃ­fica",
+        operation_description="Actualiza una finca específica",
         operation_summary="Actualizar finca",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
                 'nombre': openapi.Schema(type=openapi.TYPE_STRING, description="Nombre de la finca"),
-                'ubicacion': openapi.Schema(type=openapi.TYPE_STRING, description="UbicaciÃ³n de la finca"),
+                'ubicacion': openapi.Schema(type=openapi.TYPE_STRING, description="Ubicación de la finca"),
                 'municipio': openapi.Schema(type=openapi.TYPE_STRING, description="Municipio"),
                 'departamento': openapi.Schema(type=openapi.TYPE_STRING, description="Departamento"),
-                'hectareas': openapi.Schema(type=openapi.TYPE_NUMBER, description="HectÃ¡reas de la finca"),
-                'descripcion': openapi.Schema(type=openapi.TYPE_STRING, description="DescripciÃ³n adicional"),
+                'hectareas': openapi.Schema(type=openapi.TYPE_NUMBER, description="Hectáreas de la finca"),
+                'descripcion': openapi.Schema(type=openapi.TYPE_STRING, description="Descripción adicional"),
                 'coordenadas_lat': openapi.Schema(type=openapi.TYPE_NUMBER, description="Latitud GPS"),
                 'coordenadas_lng': openapi.Schema(type=openapi.TYPE_NUMBER, description="Longitud GPS"),
                 'activa': openapi.Schema(type=openapi.TYPE_BOOLEAN, description="Estado activo"),
@@ -317,7 +317,7 @@ class FincaUpdateView(FincaPermissionMixin, APIView):
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response({
-                    'error': 'Datos de entrada invÃ¡lidos',
+                    'error': 'Datos de entrada inválidos',
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -351,7 +351,7 @@ class FincaUpdateView(FincaPermissionMixin, APIView):
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response({
-                    'error': 'Datos de entrada invÃ¡lidos',
+                    'error': 'Datos de entrada inválidos',
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -371,12 +371,12 @@ class FincaUpdateView(FincaPermissionMixin, APIView):
 
 class FincaDeleteView(FincaPermissionMixin, APIView):
     """
-    Vista para eliminar una finca especÃ­fica.
+    Vista para eliminar una finca específica.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Elimina una finca especÃ­fica",
+        operation_description="Elimina una finca específica",
         operation_summary="Eliminar finca",
         responses={
             204: openapi.Response(description="Finca eliminada exitosamente"),
@@ -399,7 +399,7 @@ class FincaDeleteView(FincaPermissionMixin, APIView):
             
             if not finca.activa:
                 return Response({
-                    'error': 'La finca ya estÃ¡ desactivada',
+                    'error': 'La finca ya está desactivada',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -440,7 +440,7 @@ class FincaActivateView(FincaPermissionMixin, APIView):
         operation_summary="Reactivar finca",
         responses={
             200: openapi.Response(description="Finca reactivada exitosamente"),
-            400: openapi.Response(description="La finca ya estÃ¡ activa"),
+            400: openapi.Response(description="La finca ya está activa"),
             403: openapi.Response(description="Permiso denegado"),
             404: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
@@ -468,7 +468,7 @@ class FincaActivateView(FincaPermissionMixin, APIView):
             
             if finca.activa:
                 return Response({
-                    'error': 'La finca ya estÃ¡ activa',
+                    'error': 'La finca ya está activa',
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -493,29 +493,29 @@ class FincaActivateView(FincaPermissionMixin, APIView):
 
 class FincaStatsView(FincaPermissionMixin, APIView):
     """
-    Vista para obtener estadÃ­sticas de una finca especÃ­fica.
+    Vista para obtener estadísticas de una finca específica.
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Obtiene estadÃ­sticas detalladas de una finca",
-        operation_summary="EstadÃ­sticas de finca",
+        operation_description="Obtiene estadísticas detalladas de una finca",
+        operation_summary="Estadísticas de finca",
         responses={
-            200: openapi.Response(description="EstadÃ­sticas obtenidas exitosamente"),
+            200: openapi.Response(description="Estadísticas obtenidas exitosamente"),
             404: ErrorResponseSerializer,
             401: ErrorResponseSerializer,
         },
         tags=['Fincas']
     )
     def get(self, request, finca_id):
-        """Obtener estadÃ­sticas de finca."""
+        """Obtener estadísticas de finca."""
         try:
             queryset = self.get_queryset()
             finca = queryset.get(id=finca_id)
             
             stats = finca.get_estadisticas()
             
-            # Agregar estadÃ­sticas adicionales
+            # Agregar estadísticas adicionales
             stats.update({
                 'finca_nombre': finca.nombre,
                 'agricultor_nombre': finca.agricultor.get_full_name(),
@@ -530,7 +530,7 @@ class FincaStatsView(FincaPermissionMixin, APIView):
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error obteniendo estadÃ­sticas de finca {finca_id}: {e}")
+            logger.error(f"Error obteniendo estadísticas de finca {finca_id}: {e}")
             return Response({
                 'error': 'Error interno del servidor',
                 'status': 'error'
