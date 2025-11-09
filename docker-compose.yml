@@ -1,201 +1,185 @@
+x-common-env: &common-env
+  - .env
+
+x-backend-health: &backend-health
+  test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
 services:
-  # Base de datos PostgreSQL
-  # NOTA: Si el puerto 5432 ya está en uso, cámbialo aquí (ej: "5433:5432")
   db:
     image: postgres:16-alpine
-    container_name: cacaoscan_db
-    # env_file:
-    #   - db/.env  # Opcional: crear db/.env si necesitas variables personalizadas
+    container_name: cacaoscan-db
+    restart: unless-stopped
+    env_file: *common-env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-cacaoscan_db}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cacaoscan_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - cacaoscan_network
+      - private
 
-  # Redis para Celery y Channels
-  # NOTA: Si el puerto 6379 ya está en uso, cámbialo aquí (ej: "6380:6379")
   redis:
     image: redis:7-alpine
-    container_name: cacaoscan_redis
-    command: redis-server --appendonly yes
+    container_name: cacaoscan-redis
+    restart: unless-stopped
+    env_file: *common-env
+    command:
+      - redis-server
+      - "--requirepass"
+      - "${REDIS_PASSWORD}"
+      - "--appendonly"
+      - "yes"
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping"]
       interval: 10s
       timeout: 3s
       retries: 5
     networks:
-      - cacaoscan_network
+      - private
 
-  # Backend Django
-  # NOTA: Si el puerto 8000 ya está en uso, cámbialo aquí (ej: "8001:8000")
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: cacaoscan_backend
-    # env_file:
-    #   - backend/.env  # Opcional: crear backend/.env si necesitas variables personalizadas
+      target: backend
+      args:
+        APP_VERSION: ${APP_VERSION:-v1.3.0}
+    image: cacaoscan-backend:${APP_VERSION:-v1.3.0}
+    container_name: cacaoscan-backend
+    restart: unless-stopped
+    env_file: *common-env
     environment:
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-cacaoscan_db}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres123}
-      USE_REDIS: ${USE_REDIS:-True}
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
-      # Optimizaciones para evitar problemas de memoria con pkg_resources
-      PYTHONDONTWRITEBYTECODE: 1
-      PYTHONUNBUFFERED: 1
-      PYTHONHASHSEED: random
-      PKG_RESOURCES_CACHE_DIR: /tmp/pkg_resources_cache
+      SERVICE_ROLE: web
+      DJANGO_STATIC_ROOT: /var/www/staticfiles
+      DJANGO_MEDIA_ROOT: /var/www/media
+    tmpfs:
+      - /tmp:size=128m
     volumes:
-      # Montar código para desarrollo
-      # NOTA: Comentado para evitar problemas de memoria con pkg_resources
-      # Si necesitas cambios en tiempo real, descomenta pero ten en cuenta que puede causar errores de memoria
-      # - ./backend:/app
-      # Excluir directorios problemáticos del volumen
-      - backend_static:/app/staticfiles
-      - backend_media:/app/media
+      - backend_static:/var/www/staticfiles
+      - backend_media:/var/www/media
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck: *backend-health
+    networks:
+      - private
+      - public
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: celery
+      args:
+        APP_VERSION: ${APP_VERSION:-v1.3.0}
+    image: cacaoscan-celery:${APP_VERSION:-v1.3.0}
+    container_name: cacaoscan-celery-worker
+    restart: unless-stopped
+    env_file: *common-env
+    environment:
+      SERVICE_ROLE: worker
+      CELERY_QUEUES: default
+      DJANGO_STATIC_ROOT: /var/www/staticfiles
+      DJANGO_MEDIA_ROOT: /var/www/media
+    volumes:
+      - backend_media:/var/www/media:rw
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "celery -A cacaoscan inspect ping -d celery@$(hostname)"
+      interval: 45s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - private
+
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: celery
+      args:
+        APP_VERSION: ${APP_VERSION:-v1.3.0}
+    image: cacaoscan-celery:${APP_VERSION:-v1.3.0}
+    container_name: cacaoscan-celery-beat
+    restart: unless-stopped
+    env_file: *common-env
+    environment:
+      SERVICE_ROLE: beat
+      DJANGO_STATIC_ROOT: /var/www/staticfiles
+      DJANGO_MEDIA_ROOT: /var/www/media
+    volumes:
+      - backend_media:/var/www/media:rw
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
+      test:
+        - "CMD-SHELL"
+        - "celery -A cacaoscan beat --help > /dev/null"
+      interval: 60s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
     networks:
-      - cacaoscan_network
-    command: python -m gunicorn cacaoscan.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120
+      - private
 
-  # Celery Worker
-  celery_worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: cacaoscan_celery_worker
-    # env_file:
-    #   - celery/.env  # Opcional: crear celery/.env si necesitas variables personalizadas
-    environment:
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-cacaoscan_db}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres123}
-      USE_REDIS: ${USE_REDIS:-True}
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
-      # Optimizaciones para evitar problemas de memoria con pkg_resources
-      PYTHONDONTWRITEBYTECODE: 1
-      PYTHONUNBUFFERED: 1
-      PYTHONHASHSEED: random
-      PKG_RESOURCES_CACHE_DIR: /tmp/pkg_resources_cache
-    volumes:
-      # Montar código para desarrollo
-      # NOTA: Comentado para evitar problemas de memoria con pkg_resources
-      # Si necesitas cambios en tiempo real, descomenta pero ten en cuenta que puede causar errores de memoria
-      # - ./backend:/app
-      # Excluir directorios problemáticos del volumen
-      - backend_static:/app/staticfiles
-      - backend_media:/app/media
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      backend:
-        condition: service_healthy
-    networks:
-      - cacaoscan_network
-    command: celery -A cacaoscan worker --loglevel=info --concurrency=4
-
-  # Celery Beat (scheduler)
-  celery_beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: cacaoscan_celery_beat
-    # env_file:
-    #   - celery/.env  # Opcional: crear celery/.env si necesitas variables personalizadas
-    environment:
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-cacaoscan_db}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres123}
-      USE_REDIS: ${USE_REDIS:-True}
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
-      # Optimizaciones para evitar problemas de memoria con pkg_resources
-      PYTHONDONTWRITEBYTECODE: 1
-      PYTHONUNBUFFERED: 1
-      PYTHONHASHSEED: random
-      PKG_RESOURCES_CACHE_DIR: /tmp/pkg_resources_cache
-    volumes:
-      # Montar código para desarrollo
-      # NOTA: Comentado para evitar problemas de memoria con pkg_resources
-      # Si necesitas cambios en tiempo real, descomenta pero ten en cuenta que puede causar errores de memoria
-      # - ./backend:/app
-      # Excluir directorios problemáticos del volumen
-      - backend_static:/app/staticfiles
-      - backend_media:/app/media
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      backend:
-        condition: service_healthy
-    networks:
-      - cacaoscan_network
-    command: celery -A cacaoscan beat --loglevel=info
-
-  # Frontend Vue/Vite
-  # NOTA: Si el puerto 5173 ya está en uso, cámbialo aquí (ej: "5174:80")
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: http://backend:8000/api/v1
-    container_name: cacaoscan_frontend
-    # env_file:
-    #   - frontend/.env  # Opcional: crear frontend/.env si necesitas variables personalizadas
-    environment:
-      VITE_API_BASE_URL: http://backend:8000/api/v1
+        APP_VERSION: ${APP_VERSION:-v1.3.0}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    image: cacaoscan-frontend:${APP_VERSION:-v1.3.0}
+    container_name: cacaoscan-frontend
+    restart: unless-stopped
+    env_file: *common-env
     ports:
-      - "5173:80"
+      - "127.0.0.1:5173:8080"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 10s
     networks:
-      - cacaoscan_network
+      - public
+      - private
 
 volumes:
   postgres_data:
@@ -208,5 +192,8 @@ volumes:
     driver: local
 
 networks:
-  cacaoscan_network:
+  private:
+    driver: bridge
+    internal: true
+  public:
     driver: bridge

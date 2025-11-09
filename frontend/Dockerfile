@@ -2,47 +2,47 @@
 # Dockerfile Multistage para Frontend Vue 3 + Vite de CacaoScan
 # ========================================
 
-# ========================================
-# Etapa 1: Builder - Build de la aplicación
-# ========================================
 FROM node:20-alpine AS builder
 
+ARG VITE_API_BASE_URL=http://backend:8000/api/v1
+
+ENV PNPM_HOME=/home/node/.local/share/pnpm \
+    VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN apk add --no-cache libc6-compat \
+    && npm install -g pnpm@9
+
+USER node
 WORKDIR /app
 
-# Copiar archivos de dependencias
-COPY package*.json ./
-COPY pnpm-lock.yaml* ./
+COPY --chown=node:node package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
-# Instalar pnpm y dependencias
-RUN npm install -g pnpm && \
-    pnpm install --frozen-lockfile || pnpm install
-
-# Copiar código fuente
-COPY . .
-
-# Construir aplicación para producción
-# Usar variable de entorno para la URL de la API
-ARG VITE_API_BASE_URL=http://backend:8000/api/v1
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-
-RUN pnpm build
+COPY --chown=node:node . .
+RUN pnpm build \
+    && pnpm store prune \
+    && rm -rf node_modules
 
 # ========================================
-# Etapa 2: Runtime - Nginx para servir la aplicación
+# Etapa Runtime - Nginx sin root
 # ========================================
-FROM nginx:alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.25-alpine AS runtime
 
-# Copiar archivos construidos desde la etapa de build
+ARG APP_VERSION=v1.3.0
+
+ENV APP_VERSION=${APP_VERSION}
+
+USER root
+RUN apk add --no-cache curl
+USER 101
+
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copiar configuración personalizada de nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Exponer puerto
-EXPOSE 80
+EXPOSE 8080
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost/health || exit 1
+    CMD curl -fsS http://127.0.0.1:8080/health || exit 1
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/usr/sbin/nginx", "-g", "daemon off;"]

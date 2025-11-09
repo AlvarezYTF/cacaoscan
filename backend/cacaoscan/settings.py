@@ -12,7 +12,6 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = os.path.join(BASE_DIR, ".env")
 load_dotenv(dotenv_path)
-print(f"ðŸ“‚ .env cargado desde: {dotenv_path}")
 
 
 # Suprimir warnings molestos
@@ -41,12 +40,16 @@ if 'PYTHONPATH' not in os.environ:
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-secret-key-here')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me')
 
-# SECURITY WARNING: don't run with someone turned on in production!
-DEBUG = True
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '192.168.1.9', '*', '10.7.53.137']
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    if host.strip()
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -126,8 +129,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', 'cacaoscan_db'),
-        'USER': os.environ.get('DB_USER', 'jeferson'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'J3Fers0n272003@'),
+        'USER': os.environ.get('DB_USER', 'cacaoscan'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
@@ -157,11 +160,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = Path(os.environ.get('DJANGO_STATIC_ROOT', BASE_DIR / 'staticfiles'))
 
 # Media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path(os.environ.get('DJANGO_MEDIA_ROOT', BASE_DIR / 'media'))
 
 # AWS S3 Configuration
 USE_S3 = os.environ.get('USE_S3', 'False').lower() == 'true'
@@ -212,15 +215,11 @@ REST_FRAMEWORK = {
 
 # CORS settings
 # Para desarrollo: permitir todas las conexiones desde cualquier IP
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
+cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+if cors_origins:
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
 else:
-    CORS_ALLOWED_ORIGINS = [
-        "http://localhost:5173",  # Vite dev server
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",  # Alternativo para otros dev servers
-        "http://127.0.0.1:3000",
-    ]
+    CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 # ConfiguraciÃ³n adicional de CORS para desarrollo
 CORS_ALLOW_CREDENTIALS = True
@@ -349,8 +348,8 @@ EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() == 'true'
 # Credenciales Gmail con App Password
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'ch4130949@gmail.com')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'scdtfcpicnqjmiyo')  # Nueva App Password sin espacios
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '30'))
 # ConfiguraciÃ³n de fallback para SSL
 EMAIL_USE_SSL_FALLBACK = os.environ.get('EMAIL_USE_SSL_FALLBACK', 'True').lower() == 'true'

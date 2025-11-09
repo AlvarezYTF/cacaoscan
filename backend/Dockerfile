@@ -2,10 +2,9 @@
 # Dockerfile Multistage para Backend Django de CacaoScan
 # ========================================
 
-# ========================================
-# Etapa 1: Builder - Instalación de dependencias
-# ========================================
 FROM python:3.11-slim AS builder
+
+ARG APP_VERSION=v1.3.0
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -14,7 +13,6 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DEFAULT_TIMEOUT=100 \
     PIP_CONNECT_TIMEOUT=60
 
-# Instalar dependencias del sistema necesarias para compilar paquetes
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
@@ -28,21 +26,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copiar y instalar dependencias de Python
-COPY requirements.txt .
-RUN pip install --upgrade pip --default-timeout=100 --retries=5 && \
-    pip install --user -r requirements.txt --default-timeout=100 --retries=5
+COPY requirements.txt ./
+
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
+    && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # ========================================
-# Etapa 2: Runtime - Imagen final
+# Etapa 2: Runtime base
 # ========================================
-FROM python:3.11-slim AS runtime
+FROM python:3.11-slim AS runtime-base
+
+ARG APP_VERSION=v1.3.0
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PATH=/root/.local/bin:$PATH
+    PATH=/opt/venv/bin:$PATH \
+    APP_VERSION=${APP_VERSION}
 
-# Instalar solo dependencias runtime necesarias
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     libjpeg62-turbo \
@@ -57,32 +58,48 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
-    libxrender-dev \
     libgomp1 \
     netcat-openbsd \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system appgroup \
+    && useradd --system --gid appgroup --create-home --shell /bin/bash appuser \
+    && mkdir -p /app /var/www/staticfiles /var/www/media /var/log/cacaoscan /tmp/cacaoscan \
+    && chown -R appuser:appgroup /app /var/www /var/log/cacaoscan /tmp/cacaoscan
 
 WORKDIR /app
 
-# Copiar dependencias instaladas desde builder
-COPY --from=builder /root/.local /root/.local
+COPY --from=builder /opt/venv /opt/venv
 
-# Copiar código de la aplicación
 COPY . .
 
-# Crear directorios necesarios
-RUN mkdir -p staticfiles logs media/logs media/cacao_images media/datasets media/reportes
+COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh \
+    && chmod 0755 /usr/local/bin/entrypoint.sh
 
-# Script de inicio - convertir finales de línea Windows (CRLF) a Unix (LF)
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN sed -i 's/\r$//' /docker-entrypoint.sh && \
-    chmod +x /docker-entrypoint.sh
+ENV DJANGO_SETTINGS_MODULE=cacaoscan.settings
+
+USER appuser
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+# ========================================
+# Etapa 3: Backend Web
+# ========================================
+FROM runtime-base AS backend
+
+ENV SERVICE_ROLE=web
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+CMD ["gunicorn", "cacaoscan.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120"]
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["python", "-m", "gunicorn", "cacaoscan.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120"]
+# ========================================
+# Etapa 4: Celery (worker/beat)
+# ========================================
+FROM runtime-base AS celery
+
+ENV SERVICE_ROLE=worker \
+    C_FORCE_ROOT=0
+
+CMD ["celery", "-A", "cacaoscan", "worker", "--loglevel=info", "--concurrency=4"]

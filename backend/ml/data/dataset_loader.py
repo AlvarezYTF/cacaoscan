@@ -25,7 +25,8 @@ from ..utils.paths import (
     get_dataset_csv_path,
     get_raw_images_dir,
     get_missing_ids_log_path,
-    ensure_dir_exists
+    ensure_dir_exists,
+    get_crops_dir
 )
 from ..utils.io import write_log, get_file_timestamp
 
@@ -169,15 +170,20 @@ class CacaoDatasetLoader:
             'PESO': 'peso'
         })
         
-        # Generar columna image_path automÃ¡ticamente
+        # Generar columna image_path autome1ticamente
+        raw_images_dir = get_raw_images_dir()
+        crops_dir = get_crops_dir()
         df['image_path'] = df['id'].apply(
-            lambda x: f"media/cacao_images/raw/{x}.bmp"
+            lambda image_id: str(raw_images_dir / f"{image_id}.bmp")
         )
         
-        # Generar columna crop_image_path automÃ¡ticamente
+        # Generar columna crop_image_path autome1ticamente
         df['crop_image_path'] = df['id'].apply(
-            lambda x: f"media/cacao_images/crops/{x}.png"
+            lambda image_id: crops_dir / f"{image_id}.png"
         )
+        
+        # Normalizar a string para evitar problemas con serializaci3n
+        df['crop_image_path'] = df['crop_image_path'].astype(str)
         
         # Verificar duplicados
         duplicates = df['id'].duplicated().sum()

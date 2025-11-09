@@ -31,19 +31,14 @@ staticfiles/
 .gitignore
 .gitattributes
 
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
-
-# Documentation
-*.md
-docs/
-
-# Environment
+# Contenedores
 .env
 .env.*
 !.env.example
+docker-compose.override.yml
+
+# Documentación
+docs/
 
 # IDEs
 .vscode/

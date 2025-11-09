@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: postgres-pvc
+  name: media-pvc
   namespace: app-namespace
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   storageClassName: standard
   resources:
     requests:
-      storage: 10Gi
+      storage: 20Gi
 

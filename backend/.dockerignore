@@ -48,11 +48,6 @@ Thumbs.db
 *.md
 docs/
 
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
-
 # Environment
 .env
 .env.*

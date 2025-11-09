@@ -1,64 +1,75 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "🚀 Iniciando CacaoScan Backend..."
+log() {
+    printf '%s %s\n' "[$(date -Iseconds)]" "$*"
+}
 
-# Asegurar que el PATH incluya los binarios de usuario
-export PATH="/root/.local/bin:$PATH"
+STATIC_ROOT=${DJANGO_STATIC_ROOT:-/var/www/staticfiles}
+MEDIA_ROOT=${DJANGO_MEDIA_ROOT:-/var/www/media}
+ROLE=${SERVICE_ROLE:-web}
+DB_WAIT_TIMEOUT=${DB_WAIT_TIMEOUT:-60}
 
-# Optimizar pkg_resources para evitar escaneo excesivo de archivos
-export PYTHONDONTWRITEBYTECODE=1
+export PATH="/opt/venv/bin:$PATH"
 export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
 
-# Configurar pkg_resources para que no escanee directorios problemáticos
-# Esto reduce significativamente el uso de memoria
-export PKG_RESOURCES_CACHE_DIR=/tmp/pkg_resources_cache
-mkdir -p "$PKG_RESOURCES_CACHE_DIR" 2>/dev/null || true
+log "🚀 Iniciando CacaoScan (${ROLE})..."
 
-# Crear directorios necesarios para la aplicación
-mkdir -p /app/logs /app/media/logs /app/staticfiles 2>/dev/null || true
+install -d -m 2750 -o appuser -g appgroup "$STATIC_ROOT" "$MEDIA_ROOT" /tmp/cacaoscan
 
-# Verificar que gunicorn está disponible
-if ! python -m gunicorn --version > /dev/null 2>&1; then
-    echo "⚠️  Gunicorn no encontrado, instalando..."
-    pip install --user gunicorn
-fi
-
-# Esperar a que la base de datos esté lista
-if [ -n "$DB_HOST" ]; then
-    echo "⏳ Esperando a que la base de datos esté lista..."
-    until nc -z "$DB_HOST" "${DB_PORT:-5432}"; do
-        echo "   Base de datos no disponible, esperando..."
-        sleep 1
+wait_for_database() {
+    local elapsed=0
+    if [[ -z "${DB_HOST:-}" ]]; then
+        log "⚠️  Variable DB_HOST no definida; se omite espera activa"
+        return
+    fi
+    log "⏳ Esperando a la base de datos ${DB_HOST}:${DB_PORT:-5432}..."
+    until nc -z "${DB_HOST}" "${DB_PORT:-5432}"; do
+        sleep 2
+        elapsed=$((elapsed + 2))
+        if (( elapsed >= DB_WAIT_TIMEOUT )); then
+            log "❌ Tiempo de espera alcanzado al conectar con la base de datos"
+            exit 1
+        fi
     done
-    echo "✅ Base de datos disponible"
-fi
-
-# Ejecutar migraciones (con manejo de errores mejorado)
-echo "📦 Ejecutando migraciones..."
-python manage.py migrate --noinput 2>&1 || {
-    echo "⚠️  Error en migraciones (continuando...)"
-    # No detener si hay error en migraciones
+    log "✅ Base de datos disponible"
 }
 
-# Recopilar archivos estáticos (con manejo de errores mejorado)
-echo "📦 Recopilando archivos estáticos..."
-python manage.py collectstatic --noinput 2>&1 || {
-    echo "⚠️  Error al recopilar estáticos (continuando...)"
-    # No detener si hay error en collectstatic
+run_management_command() {
+    local command=$1
+    shift
+    log "📦 Ejecutando ${command}..."
+    python manage.py "${command}" "$@"
 }
 
-# Ejecutar comando
-echo "✅ Iniciando servidor..."
-# Detectar el tipo de comando a ejecutar
-if [ "$1" = "celery" ]; then
-    # Comando de Celery (worker o beat)
-    echo "Iniciando Celery..."
-    exec "$@"
-elif [ "$1" = "python" ] && [ "$2" = "-m" ] && [ "$3" = "gunicorn" ]; then
-    # Comando de Gunicorn explícito
-    exec "$@"
-else
-    # Usar python -m gunicorn por defecto para el backend
-    exec python -m gunicorn cacaoscan.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120
+if [[ "${ROLE}" == "web" ]]; then
+    wait_for_database
+    run_management_command migrate --noinput
+    run_management_command collectstatic --noinput
+    if [[ "${SEED_INITIAL_DATA:-false}" == "true" ]]; then
+        run_management_command seed_colombia
+        run_management_command init_catalogos
+    fi
 fi
+
+case "${ROLE}" in
+    web)
+        log "✅ Iniciando servidor Gunicorn"
+        exec "$@"
+        ;;
+    worker)
+        wait_for_database
+        log "✅ Iniciando Celery Worker"
+        exec celery -A cacaoscan worker --loglevel=${CELERY_LOG_LEVEL:-info} --concurrency=${CELERY_CONCURRENCY:-4} --queues=${CELERY_QUEUES:-default}
+        ;;
+    beat)
+        wait_for_database
+        log "✅ Iniciando Celery Beat"
+        exec celery -A cacaoscan beat --loglevel=${CELERY_LOG_LEVEL:-info} --scheduler=${CELERY_SCHEDULER:-celery.beat.PersistentScheduler}
+        ;;
+    *)
+        log "✅ Ejecutando comando personalizado: $*"
+        exec "$@"
+        ;;
+ esac

@@ -50,11 +50,6 @@ cypress/screenshots/
 *.md
 docs/
 
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
-
 # Logs
 *.log
 

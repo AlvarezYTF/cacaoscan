@@ -8,15 +8,15 @@ resources:
   - configmap.yaml
   - secrets.yaml
   - ingress.yaml
+  - backend-deployment.yaml
+  - media-pvc.yaml
+  - redis.yaml
+  - redis-pvc.yaml
+  - networkpolicy.yaml
   - ../db/k8s/deployment.yaml
   - ../db/k8s/service.yaml
-  - ../db/k8s/pv.yaml
   - ../db/k8s/pvc.yaml
-  - ../backend/k8s/deployment.yaml
-  - ../backend/k8s/service.yaml
   - ../frontend/k8s/deployment.yaml
   - ../frontend/k8s/service.yaml
-  - ../redis/k8s/deployment.yaml
-  - ../redis/k8s/service.yaml
   - ../celery/k8s/deployment.yaml
 

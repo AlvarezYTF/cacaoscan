@@ -1,346 +1,152 @@
-# 🚀 Guía de Infraestructura Docker + Kubernetes - CacaoScan
+# 🚀 Guía de Infraestructura Segura - CacaoScan
 
-Esta guía explica cómo ejecutar y desplegar la infraestructura modular de CacaoScan usando Docker Compose y Kubernetes.
+Esta guía describe el nuevo flujo de trabajo para construir, probar y desplegar CacaoScan con Docker Compose y Kubernetes bajo las prácticas reforzadas de seguridad, observabilidad y DevOps.
 
 ---
 
-## 📁 Estructura del Proyecto
+## 📁 Estructura relevante
 
 ```
 project-root/
+├── docker-compose.yml          # Stack completo (backend, frontend, db, redis, celery)
 ├── backend/
-│   ├── Dockerfile              # Multistage (builder + runtime)
-│   ├── docker-compose.yml      # Backend + DB + Redis (desarrollo)
-│   ├── .env.example            # Variables de entorno
-│   ├── k8s/
-│   │   ├── deployment.yaml     # Deployment K8s
-│   │   └── service.yaml        # Service K8s
-│   └── docker-entrypoint.sh   # Script de inicio
-│
+│   ├── Dockerfile              # Builder + runtime + targets backend/celery
+│   └── docker-entrypoint.sh    # Control de roles (web/worker/beat)
 ├── frontend/
-│   ├── Dockerfile              # Multistage (node + nginx)
-│   ├── docker-compose.yml      # Frontend (desarrollo)
-│   ├── .env.example            # Variables de entorno
-│   ├── k8s/
-│   │   ├── deployment.yaml     # Deployment K8s
-│   │   └── service.yaml        # Service K8s
-│   └── nginx.conf              # Configuración Nginx
-│
-├── db/
-│   ├── docker-compose.yml      # PostgreSQL standalone
-│   ├── .env.example            # Variables de entorno
-│   └── k8s/
-│       ├── deployment.yaml     # Deployment K8s
-│       ├── service.yaml        # Service K8s
-│       ├── pv.yaml             # PersistentVolume
-│       └── pvc.yaml             # PersistentVolumeClaim
-│
-├── redis/
-│   ├── docker-compose.yml      # Redis standalone
-│   ├── .env.example            # Variables de entorno
-│   └── k8s/
-│       ├── deployment.yaml     # Deployment K8s
-│       └── service.yaml        # Service K8s
-│
-├── celery/
-│   ├── docker-compose.yml      # Celery Worker + Beat
-│   ├── .env.example            # Variables de entorno
-│   └── k8s/
-│       └── deployment.yaml      # Deployments K8s
-│
+│   ├── Dockerfile              # Builder pnpm + nginx unprivileged
+│   └── nginx.conf              # Escucha en 8080 con healthcheck
 ├── k8s/
-│   ├── namespace.yaml           # Namespace común
-│   ├── configmap.yaml           # ConfigMaps
-│   ├── secrets.yaml             # Secrets
-│   ├── ingress.yaml             # Ingress (routing)
-│   └── kustomization.yaml      # Kustomize
-│
-├── docker-compose.yml           # Compose global (todos los servicios)
-└── Makefile                     # Comandos útiles
+│   ├── backend-deployment.yaml # Deployment + Service backend (replicas, PVC, securityContext)
+│   ├── redis.yaml              # Deployment + Service redis con requirepass
+│   ├── media-pvc.yaml          # PersistentVolumeClaim RWX para media
+│   ├── redis-pvc.yaml          # PVC de Redis
+│   ├── networkpolicy.yaml      # Limita acceso a DB/Redis desde backend y celery
+│   ├── configmap.yaml          # Configuración pública
+│   ├── secrets.yaml            # Passwords y URLs sensibles (editar antes de usar)
+│   ├── ingress.yaml            # HTTPS forzado y CORS restringido
+│   ├── kustomization.yaml      # Orquestación Kustomize
+│   └── namespace.yaml          # Namespace `app-namespace`
+├── db/k8s/                     # Manifiestos actualizados de PostgreSQL (StorageClass estándar)
+├── frontend/k8s/               # Despliegues de frontend con puerto 8080
+├── celery/k8s/                 # Workers/beat con imagen dedicada
+└── .github/workflows/docker-build.yml  # Pipeline CI/CD
+```
 
+> 📌 **.env**: crea un fichero en la raíz (`cp backend/env.example .env`) y ajusta contraseñas/hosts antes de levantar servicios o construir imágenes.
+
+---
+
+## 🐳 Docker Compose
+
+1. Copia tu `.env` seguro en la raíz.
+2. Ejecuta en caliente:
+
+```bash
+docker compose --env-file .env up --build
+```
+
+Servicios expuestos sólo en loopback:
+- Backend: `http://127.0.0.1:8000`
+- Frontend: `http://127.0.0.1:5173`
+- PostgreSQL: `127.0.0.1:5432`
+
+Redis permanece dentro de la red privada (`requirepass` obligatorio).
+
+### Makefile
+
+Los comandos clave están pensados para CI/CD y operaciones locales:
+
+```bash
+make build        # Construye imágenes locales versionadas
+make test         # Ejecuta test unitarios backend + frontend
+make up           # docker compose up con --env-file .env
+make down         # Detiene y limpia el stack local
+make deploy       # kubectl apply -k k8s/
 ```
 
 ---
 
-## 🐳 Docker Compose - Ejecución Local
+## ☸️ Kubernetes
 
-### Opción 1: Ejecutar Servicios por Separado
-
-#### Backend (con DB y Redis)
-```bash
-cd backend
-cp .env.example .env  # Editar valores si es necesario
-docker-compose up -d --build
-```
-
-#### Frontend
-```bash
-cd frontend
-cp .env.example .env  # Editar valores si es necesario
-docker-compose up -d --build
-```
-
-#### Base de Datos
-```bash
-cd db
-cp .env.example .env  # Editar valores si es necesario
-docker-compose up -d
-```
-
-#### Redis
-```bash
-cd redis
-docker-compose up -d
-```
-
-#### Celery (Worker + Beat)
-```bash
-cd celery
-cp .env.example .env  # Editar valores si es necesario
-docker-compose up -d --build
-```
-
-### Opción 2: Ejecutar Todos los Servicios
+1. **Configura secrets** editando `k8s/secrets.yaml` y aplica todo con Kustomize:
 
 ```bash
-# Desde la raíz del proyecto
-docker-compose up -d --build
-```
-
-**Servicios disponibles:**
-- Backend: `http://localhost:8000`
-- Frontend: `http://localhost:5173`
-- PostgreSQL: `localhost:5432`
-- Redis: `localhost:6379`
-
----
-
-## ☸️ Kubernetes - Despliegue
-
-### Prerrequisitos
-
-1. **Cluster Kubernetes configurado** (minikube, kind, o cloud provider)
-2. **kubectl** instalado y configurado
-3. **Ingress Controller** (nginx-ingress recomendado)
-
-### Paso 1: Crear Namespace y Configuración Base
-
-```bash
-# Aplicar namespace
-kubectl apply -f k8s/namespace.yaml
-
-# Editar secrets antes de aplicar (IMPORTANTE)
-# Cambiar contraseñas por defecto en k8s/secrets.yaml
-kubectl apply -f k8s/secrets.yaml
-
-# Aplicar configmaps
-kubectl apply -f k8s/configmap.yaml
-```
-
-### Paso 2: Desplegar Servicios Base
-
-```bash
-# Base de datos (con PV/PVC)
-kubectl apply -f db/k8s/pv.yaml
-kubectl apply -f db/k8s/pvc.yaml
-kubectl apply -f db/k8s/deployment.yaml
-kubectl apply -f db/k8s/service.yaml
-
-# Redis
-kubectl apply -f redis/k8s/deployment.yaml
-kubectl apply -f redis/k8s/service.yaml
-```
-
-### Paso 3: Desplegar Aplicación
-
-```bash
-# Backend
-kubectl apply -f backend/k8s/deployment.yaml
-kubectl apply -f backend/k8s/service.yaml
-
-# Frontend
-kubectl apply -f frontend/k8s/deployment.yaml
-kubectl apply -f frontend/k8s/service.yaml
-
-# Celery (opcional)
-kubectl apply -f celery/k8s/deployment.yaml
-```
-
-### Paso 4: Configurar Ingress
-
-```bash
-# Instalar Ingress Controller (si no está instalado)
-# Para minikube:
-minikube addons enable ingress
-
-# Para kind u otros, seguir documentación del Ingress Controller
-
-# Aplicar Ingress
-kubectl apply -f k8s/ingress.yaml
-```
-
-### Opción Alternativa: Usar Kustomize
-
-```bash
-# Desde la raíz del proyecto
 kubectl apply -k k8s/
 ```
 
----
+2. Requisitos:
+   - StorageClass `standard` (puede mapearse al proveedor cloud o CSI NFS).
+   - Ingress controller nginx con certificado TLS (`app-tls`).
 
-## 🔧 Configuración
+3. Características claves:
+   - Backend replicas=3 con health/readiness probes.
+   - PVC `media-pvc` RWX para ficheros compartidos.
+   - Redis con password desde secreto y NetworkPolicy restrictiva.
+   - Celery worker/beat con imagen dedicada, `runAsUser 1000` y liveness `celery inspect ping`.
 
-### Variables de Entorno por Servicio
+Verifica estado:
 
-#### Backend (`.env`)
-```env
-DB_NAME=cacaoscan_db
-DB_USER=postgres
-DB_PASSWORD=postgres123
-DB_HOST=db
-DB_PORT=5432
-SECRET_KEY=tu-secret-key-muy-seguro
-DEBUG=True
-USE_REDIS=True
-CELERY_BROKER_URL=redis://redis:6379/0
-FRONTEND_URL=http://localhost:5173
+```bash
+kubectl get pods,svc,ingress,pvc -n app-namespace
 ```
 
-#### Frontend (`.env`)
+---
+
+## 🔐 Variables recomendadas (`.env` raíz)
+
 ```env
+APP_VERSION=v1.3.0
+
+# PostgreSQL
+POSTGRES_DB=cacaoscan_db
+POSTGRES_USER=cacaoscan
+POSTGRES_PASSWORD=define_una_password_fuerte
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+
+# Django
+SECRET_KEY=define_un_secret_key_aleatorio
+DEBUG=False
+ALLOWED_HOSTS=localhost,127.0.0.1,backend,backend-service,app.cacaoscan.com
+FRONTEND_URL=https://app.cacaoscan.com
+CORS_ALLOWED_ORIGINS=https://app.cacaoscan.com
+
+# Redis
+REDIS_PASSWORD=protege_redis
+CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
+
+# Frontend
 VITE_API_BASE_URL=http://backend:8000/api/v1
 ```
 
-#### Base de Datos (`.env`)
-```env
-POSTGRES_DB=cacaoscan_db
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres123
-```
-
-### Kubernetes Secrets
-
-**⚠️ IMPORTANTE:** Cambiar valores por defecto en `k8s/secrets.yaml` antes de desplegar:
-
-```yaml
-stringData:
-  DB_PASSWORD: "CHANGE_THIS_PASSWORD"
-  SECRET_KEY: "CHANGE_THIS_SECRET_KEY"
-  POSTGRES_PASSWORD: "CHANGE_THIS_PASSWORD"
-```
-
-Generar secrets en base64:
-```bash
-echo -n 'tu-password-seguro' | base64
-```
+Replica los valores sensibles dentro de `k8s/secrets.yaml` (recuerda aplicar Base64 si usas `kubectl create secret`).
 
 ---
 
-## 📊 Health Checks
+## 🧪 CI/CD (GitHub Actions)
 
-### Endpoints de Health
+El workflow `.github/workflows/docker-build.yml` realiza:
 
-- **Backend:** `http://localhost:8000/health`
-- **Frontend:** `http://localhost:5173/health`
+1. **Tests backend** (`pytest`) con Python 3.11.
+2. **Tests frontend** (`pnpm test`).
+3. **Build & push** de imágenes versionadas (`backend`, `celery`, `frontend`) hacia GHCR con etiquetas `v1.3.0` y `sha`.
+4. **Escaneo Trivy** (HIGH/CRITICAL) sobre cada imagen antes de aprobar el job.
 
-### Verificar Estado en Kubernetes
-
-```bash
-# Ver estado de pods
-kubectl get pods -n app-namespace
-
-# Ver logs de backend
-kubectl logs -f deployment/backend-deployment -n app-namespace
-
-# Ver logs de frontend
-kubectl logs -f deployment/frontend-deployment -n app-namespace
-
-# Verificar servicios
-kubectl get services -n app-namespace
-```
+Variables `REGISTRY` y `APP_VERSION` son parametrizables. Para publicar en producción añade `GHCR_PAT` si requieres scope ampliado.
 
 ---
 
-## 🛠️ Makefile - Comandos Útiles
+## ✅ Checklist operativo
 
-El Makefile incluye comandos para facilitar el despliegue:
+- [x] Imágenes sin root (`appuser` / `nginx` unprivileged / UID 999 para Redis/Postgres).
+- [x] Redis protegida con contraseña y sin puerto público.
+- [x] Secrets fuera de repositorio (`.env`, `k8s/secrets.yaml`).
+- [x] Healthchecks en Compose y Probes en K8s.
+- [x] Volúmenes persistentes (`postgres-pvc`, `media-pvc`, `redis-pvc`).
+- [x] NetworkPolicy para DB y Redis.
+- [x] TLS + CORS limitado en Ingress.
+- [x] Pipeline automatizado (tests + build + push + Trivy).
 
-```bash
-# Docker Compose
-make build-backend        # Construir solo backend
-make build-frontend       # Construir solo frontend
-make up                   # Levantar todos los servicios
-make down                 # Detener todos los servicios
-make logs                 # Ver logs de todos los servicios
-
-# Kubernetes
-make k8s-namespace        # Crear namespace
-make k8s-config           # Aplicar configmaps y secrets
-make k8s-deploy-all       # Desplegar todos los servicios
-make k8s-deploy-db        # Desplegar solo base de datos
-make k8s-deploy-backend   # Desplegar solo backend
-make k8s-deploy-frontend  # Desplegar solo frontend
-make k8s-logs             # Ver logs de todos los pods
-```
-
----
-
-## 🔍 Troubleshooting
-
-### Problemas Comunes
-
-#### 1. Backend no se conecta a la base de datos
-
-**Verificar:**
-- Variables de entorno `DB_HOST`, `DB_USER`, `DB_PASSWORD`
-- Servicio de DB está corriendo: `docker ps` o `kubectl get pods`
-- En K8s, usar nombre del servicio: `db-service` (no `db`)
-
-#### 2. Frontend no encuentra el backend
-
-**Verificar:**
-- Variable `VITE_API_BASE_URL` en `.env` del frontend
-- En desarrollo local: `http://localhost:8000/api/v1`
-- En Docker Compose: `http://backend:8000/api/v1`
-- En K8s: `http://backend-service:8000/api/v1`
-
-#### 3. Volúmenes persistentes en Kubernetes
-
-**Verificar:**
-- PV y PVC creados: `kubectl get pv,pvc -n app-namespace`
-- Path del host disponible en el nodo: `/data/postgres`
-- StorageClass configurado: `local-storage`
-
----
-
-## 📝 Notas Importantes
-
-1. **Desarrollo vs Producción:**
-   - Desarrollo: Usar `.env` locales con valores de desarrollo
-   - Producción: Usar Secrets de Kubernetes con valores seguros
-
-2. **Imágenes Docker:**
-   - Construir imágenes antes de desplegar en K8s:
-   ```bash
-   docker build -t cacaoscan-backend:latest ./backend
-   docker build -t cacaoscan-frontend:latest ./frontend
-   ```
-
-3. **Redes:**
-   - Todos los servicios usan la red `cacaoscan_network` en Docker Compose
-   - En K8s, los servicios se comunican mediante el namespace `app-namespace`
-
-4. **Health Checks:**
-   - Backend: `/health` (retorna `{"status": "ok"}`)
-   - Frontend: `/health` (retorna `"healthy"`)
-
----
-
-## 🚀 Próximos Pasos
-
-- [ ] Configurar CI/CD (GitHub Actions o Jenkins)
-- [ ] Agregar monitoreo (Prometheus/Grafana)
-- [ ] Configurar autoscaling en K8s
-- [ ] Agregar backup automático de PostgreSQL
-- [ ] Configurar SSL/TLS en Ingress
+Con esta base puedes extender observabilidad (Prometheus/Grafana), autoscaling (HPA) o backups automatizados sin romper la arquitectura segura establecida.
 
