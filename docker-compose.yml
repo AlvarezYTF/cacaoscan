@@ -123,12 +123,6 @@ services:
       - private
 
   celery_beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: celery
-      args:
-        APP_VERSION: ${APP_VERSION:-v1.3.0}
     image: cacaoscan-celery:${APP_VERSION:-v1.3.0}
     container_name: cacaoscan-celery-beat
     restart: unless-stopped
