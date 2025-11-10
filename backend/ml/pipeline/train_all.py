@@ -14,11 +14,13 @@ from datetime import datetime
 
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import QuantileTransformer
+from PIL import Image
+import torchvision.transforms as transforms
 
 # Añadir el directorio del proyecto al path
 project_root = Path(__file__).parent.parent.parent
@@ -26,26 +28,44 @@ sys.path.insert(0, str(project_root))
 
 # Configurar Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cacaoscan.settings')
-
 import django
-django.setup()
+try:
+    django.setup()
+    from django.conf import settings
+    DJANGO_LOADED = True
+except Exception as e:
+    print(f"Warning: Django setup failed (normal if not in Django context). Error: {e}")
+    # Definir settings dummy si Django no está cargado
+    class DummySettings:
+        MEDIA_ROOT = str(project_root / "media")
+        BASE_DIR = project_root
+    settings = DummySettings()
 
 from ml.data.dataset_loader import CacaoDatasetLoader
 from ml.regression.models import create_model, TARGETS, TARGET_NAMES
 from ml.regression.scalers import create_scalers_from_data, save_scalers
 from ml.regression.train import train_single_model, train_multi_head_model, get_device
 from ml.regression.evaluate import RegressionEvaluator
-from ml.regression.incremental_train import IncrementalTrainer, run_incremental_training
-from ml.utils.paths import get_regressors_artifacts_dir, get_artifacts_dir
-from ml.utils.io import save_json
+from ml.utils.paths import get_regressors_artifacts_dir, get_artifacts_dir, get_datasets_dir
+from ml.utils.io import save_json, load_json
 from ml.utils.logs import get_ml_logger
+from ml.regression.augmentation import create_advanced_train_transform, create_advanced_val_transform
+# --- CORRECCIÓN ---
+# Importar el cropper correcto
+from ml.segmentation.cropper import create_cacao_cropper
 
 
 logger = get_ml_logger("cacaoscan.ml.pipeline")
 
+# Constantes de Features de Píxeles
+PIXEL_FEATURE_KEYS = [
+    'pixel_width', 'pixel_height', 'pixel_area', 'scale_factor', 'aspect_ratio'
+]
 
-class CacaoDataset:
-    """Dataset personalizado para entrenamiento de modelos de cacao."""
+class CacaoDataset(Dataset):
+    """
+    Dataset personalizado para entrenamiento de modelos de cacao.
+    """
     
     def __init__(
         self,
@@ -67,26 +87,25 @@ class CacaoDataset:
         self.targets = targets
         self.transform = transform
         self.pixel_features = pixel_features
+        self.is_multi_head = is_multi_head
+        self.is_hybrid = is_hybrid
         
-        # Verificar que todas las listas tienen la misma longitud
         lengths = [len(image_paths)] + [len(targets[target]) for target in targets.keys()]
-        if pixel_features:
-            lengths.extend([len(pixel_features[feat]) for feat in pixel_features.keys()])
+        if pixel_features and is_hybrid:
+            missing_keys = [k for k in PIXEL_FEATURE_KEYS if k not in pixel_features]
+            if missing_keys:
+                raise ValueError(f"Faltan las siguientes features de píxeles: {missing_keys}")
+            lengths.extend([len(pixel_features[feat]) for feat in PIXEL_FEATURE_KEYS])
+        
         if len(set(lengths)) > 1:
-            raise ValueError(f"Longitudes inconsistentes: {lengths}")
-    
-    def __len__(self):
-        return len(self.image_paths)
-    
-    def __getitem__(self, idx):
-        # Cargar imagen
-        from PIL import Image
-        import torchvision.transforms as transforms
+            mismatched = {
+                "images": len(image_paths),
+                **{f"target_{k}": len(v) for k, v in targets.items()},
+                **({f"pixel_{k}": len(v) for k, v in pixel_features.items()} if pixel_features and is_hybrid else {})
+            }
+            logger.error(f"Error: Longitudes de datos inconsistentes: {mismatched}")
+            raise ValueError(f"Longitudes inconsistentes en los datos del dataset: {mismatched}")
         
-        image_path = self.image_paths[idx]
-        image = Image.open(image_path).convert('RGB')
-        
-        # Aplicar transformaciones por defecto si no se especifican
         if self.transform is None:
             self.transform = transforms.Compose([
                 transforms.Resize((224, 224)),
@@ -118,7 +137,7 @@ class CacaoDataset:
         else:
             # Modelo multi-head o hbrido
             targets_dict = {}
-            for target_name in available_targets:
+            for target_name in TARGETS:
                 targets_dict[target_name] = torch.tensor(
                     self.targets[target_name][idx], dtype=torch.float32
                 )
@@ -146,6 +165,10 @@ class CacaoDataset:
                 return image, target_tensor, pixel_feat
             else:
                 return image, targets_dict
+        else:
+            target_name = list(self.targets.keys())[0]
+            target = self.targets[target_name][idx]
+            return image, torch.tensor(target, dtype=torch.float32)
 
 
 class CacaoTrainingPipeline:
@@ -340,6 +363,7 @@ class CacaoTrainingPipeline:
         self,
         image_paths: List[Path],
         targets: Dict[str, np.ndarray],
+        pixel_features: Optional[Dict[str, np.ndarray]],
         test_size: float = 0.2,
         val_size: float = 0.1
     ) -> Tuple[List[Path], List[Path], List[Path], Dict, Dict, Dict]:
@@ -358,8 +382,8 @@ class CacaoTrainingPipeline:
         logger.info("Creando split estratificado...")
         
         n_samples = len(image_paths)
+        indices = np.arange(n_samples)
         
-        # Crear estratos basados en cuantiles de peso
         peso_values = targets['peso']
         n_quantiles = min(5, n_samples // 10)  # Ajustar número de cuantiles
         
@@ -424,26 +448,33 @@ class CacaoTrainingPipeline:
         val_images = [image_paths[i] for i in val_idx]
         test_images = [image_paths[i] for i in test_idx]
         
-        # Crear splits de targets
         train_targets = {target: targets[target][train_idx] for target in TARGETS}
         val_targets = {target: targets[target][val_idx] for target in TARGETS}
         test_targets = {target: targets[target][test_idx] for target in TARGETS}
         
+        train_pixel_features = None
+        val_pixel_features = None
+        test_pixel_features = None
+        
+        if self.use_pixel_features and pixel_features is not None:
+            train_pixel_features = {key: pixel_features[key][train_idx] for key in PIXEL_FEATURE_KEYS}
+            val_pixel_features = {key: pixel_features[key][val_idx] for key in PIXEL_FEATURE_KEYS}
+            test_pixel_features = {key: pixel_features[key][test_idx] for key in PIXEL_FEATURE_KEYS}
+            logger.info("✅ Features de píxeles divididas por splits")
+        
         logger.info(f"Split creado: Train={len(train_images)}, Val={len(val_images)}, Test={len(test_images)}")
         
-        return train_images, val_images, test_images, train_targets, val_targets, test_targets
-    
+        return (
+            train_images, val_images, test_images,
+            train_targets, val_targets, test_targets,
+            train_pixel_features, val_pixel_features, test_pixel_features
+        )
+
     def create_data_loaders(
         self,
-        train_images: List[Path],
-        val_images: List[Path],
-        test_images: List[Path],
-        train_targets: Dict[str, np.ndarray],
-        val_targets: Dict[str, np.ndarray],
-        test_targets: Dict[str, np.ndarray],
-        train_pixel_features: Optional[Dict[str, np.ndarray]] = None,
-        val_pixel_features: Optional[Dict[str, np.ndarray]] = None,
-        test_pixel_features: Optional[Dict[str, np.ndarray]] = None
+        train_images: List[Path], val_images: List[Path], test_images: List[Path],
+        train_targets: Dict, val_targets: Dict, test_targets: Dict,
+        train_pixel_features: Optional[Dict], val_pixel_features: Optional[Dict], test_pixel_features: Optional[Dict]
     ) -> None:
         """
         Crea los data loaders, incluyendo features de pxeles si estn disponibles.
@@ -489,34 +520,35 @@ class CacaoTrainingPipeline:
         
         # Detectar Windows y ajustar num_workers (multiprocessing en Windows causa MemoryError)
         is_windows = platform.system() == 'Windows'
-        if is_windows:
-            num_workers = 0  # Windows no soporta bien multiprocessing con workers > 0
-            pin_memory = False  # pin_memory no tiene sentido sin workers
-            logger.info("Windows detectado: usando num_workers=0 para evitar MemoryError")
-        else:
-            num_workers = self.config.get('num_workers', 2)
-            pin_memory = True
+        num_workers = self.config.get('num_workers', 2)
+        if is_windows and num_workers > 0:
+            logger.warning("Windows detectado: forzando num_workers=0 para evitar MemoryError.")
+            num_workers = 0
         
-        # Crear data loaders
+        pin_memory = (not is_windows) and (self.device.type == 'cuda')
+        
         self.train_loader = DataLoader(
             train_dataset,
             batch_size=self.config['batch_size'],
             shuffle=True,
             num_workers=num_workers,
-            pin_memory=pin_memory
+            pin_memory=pin_memory,
+            persistent_workers=num_workers > 0 if num_workers > 0 else False,
+            drop_last=True 
         )
         
         self.val_loader = DataLoader(
             val_dataset,
-            batch_size=self.config['batch_size'],
+            batch_size=self.config['batch_size'] * 2, 
             shuffle=False,
             num_workers=num_workers,
-            pin_memory=pin_memory
+            pin_memory=pin_memory,
+            persistent_workers=num_workers > 0 if num_workers > 0 else False
         )
         
         self.test_loader = DataLoader(
             test_dataset,
-            batch_size=self.config['batch_size'],
+            batch_size=self.config['batch_size'] * 2,
             shuffle=False,
             num_workers=num_workers,
             pin_memory=pin_memory
@@ -540,66 +572,39 @@ class CacaoTrainingPipeline:
         else:
             logger.debug("Escaladores ya preparados, omitiendo")
     
-    def train_models(self, multi_head: bool = False) -> Dict[str, Union[Dict, List]]:
+    def train_models(self) -> Dict[str, Union[Dict, List]]:
         """
-        Entrena los modelos.
-        
-        Args:
-            multi_head: Si entrenar modelo multi-head o individuales
-            
-        Returns:
-            Historiales de entrenamiento
+        Entrena los modelos (individuales o multi-head/híbrido).
         """
-        logger.info(f"Iniciando entrenamiento (multi_head={multi_head})...")
+        logger.info(f"Iniciando entrenamiento (multi_head={self.is_multi_head}, hybrid={self.is_hybrid})...")
         
-        if multi_head:
+        if self.is_multi_head or self.is_hybrid:
             return self._train_multi_head_model()
         else:
             return self._train_individual_models()
-    
+
     def _train_individual_models(self) -> Dict[str, Dict]:
         """Entrena modelos individuales para cada target."""
         histories = {}
         
         for target in TARGETS:
-            logger.info(f"Entrenando modelo para {target}...")
+            logger.info(f"Entrenando modelo individual para {target}...")
             
-            # Crear modelo individual
             model = create_model(
                 model_type=self.config['model_type'],
                 num_outputs=1,
                 pretrained=self.config.get('pretrained', True),
                 dropout_rate=self.config.get('dropout_rate', 0.2),
-                multi_head=False
+                multi_head=False,
+                hybrid=False
             )
             
-            # Crear targets individuales para este modelo
-            train_targets_single = {target: self.train_loader.dataset.targets[target]}
-            val_targets_single = {target: self.val_loader.dataset.targets[target]}
-            
-            # Crear data loaders individuales
-            train_dataset_single = CacaoDataset(
-                [self.train_loader.dataset.image_paths[i] for i in range(len(self.train_loader.dataset))],
-                train_targets_single,
-                self.train_loader.dataset.transform
-            )
-            val_dataset_single = CacaoDataset(
-                [self.val_loader.dataset.image_paths[i] for i in range(len(self.val_loader.dataset))],
-                val_targets_single,
-                self.val_loader.dataset.transform
-            )
-            
-            # Detectar Windows y ajustar num_workers (multiprocessing en Windows causa MemoryError)
-            is_windows = platform.system() == 'Windows'
-            num_workers_single = 0 if is_windows else self.config.get('num_workers', 2)
-            pin_memory_single = False if is_windows else True
+            train_targets_single = {target: self.train_targets[target]}
+            val_targets_single = {target: self.val_targets[target]}
             
             train_loader_single = DataLoader(
-                train_dataset_single,
-                batch_size=self.config['batch_size'],
-                shuffle=True,
-                num_workers=num_workers_single,
-                pin_memory=pin_memory_single
+                CacaoDataset(self.train_images, train_targets_single, self.train_loader.dataset.transform, is_multi_head=False, is_hybrid=False),
+                batch_size=self.config['batch_size'], shuffle=True, num_workers=self.config['num_workers']
             )
             val_loader_single = DataLoader(
                 val_dataset_single,
@@ -624,16 +629,12 @@ class CacaoTrainingPipeline:
                 scalers=self.scalers,
                 target=target,
                 config=self.config,
-                device=self.device,
-                training_job=None,  # Se puede pasar un TrainingJob si existe
-                dataset_info=dataset_info,
-                save_metrics=True
+                device=self.device
             )
-            
             histories[target] = history
         
         return histories
-    
+
     def _train_multi_head_model(self) -> Dict[str, Union[Dict, List]]:
         """Entrena modelo multi-head o hbrido."""
         # Verificar si es modelo hbrido
@@ -648,7 +649,7 @@ class CacaoTrainingPipeline:
         # Crear modelo multi-head o hbrido
         model = create_model(
             model_type=self.config['model_type'],
-            num_outputs=4,
+            num_outputs=4, 
             pretrained=self.config.get('pretrained', True),
             dropout_rate=self.config.get('dropout_rate', 0.2),
             multi_head=not is_hybrid,  # Si es hbrido, no usar multi_head (usa hybrid=True)
@@ -670,10 +671,7 @@ class CacaoTrainingPipeline:
             val_loader=self.val_loader,
             scalers=self.scalers,
             config=self.config,
-            device=self.device,
-            training_job=None,  # Se puede pasar un TrainingJob si existe
-            dataset_info=dataset_info,
-            save_metrics=True
+            device=self.device
         )
         
         return {'multihead': history}
@@ -690,33 +688,26 @@ class CacaoTrainingPipeline:
         """
         logger.info(f"Evaluando modelos (multi_head={multi_head})...")
         
-        if multi_head:
+        if self.is_multi_head or self.is_hybrid:
             return self._evaluate_multi_head_model()
         else:
             return self._evaluate_individual_models()
-    
+
     def _evaluate_individual_models(self) -> Dict[str, Dict]:
         """Evalúa modelos individuales."""
         results = {}
         
         for target in TARGETS:
             logger.info(f"Evaluando modelo para {target}...")
-            
-            # Cargar modelo
             model_path = get_regressors_artifacts_dir() / f"{target}.pt"
             if not model_path.exists():
                 logger.warning(f"Modelo no encontrado para {target}: {model_path}")
                 continue
             
-            # Crear modelo y cargar pesos
             model = create_model(
-                model_type=self.config['model_type'],
-                num_outputs=1,
-                pretrained=False,
-                dropout_rate=self.config.get('dropout_rate', 0.2),
-                multi_head=False
+                model_type=self.config['model_type'], num_outputs=1, pretrained=False,
+                multi_head=False, hybrid=False
             )
-            
             checkpoint = torch.load(model_path, map_location=self.device)
             model.load_state_dict(checkpoint['model_state_dict'])
             
@@ -754,53 +745,46 @@ class CacaoTrainingPipeline:
             
             # Crear evaluador con el loader especfico
             evaluator = RegressionEvaluator(
-                model=model,
-                test_loader=target_loader,
-                scalers=self.scalers,
-                device=self.device
+                model=model, test_loader=test_loader_single,
+                scalers=self.scalers, device=self.device
             )
-            
-            # Evaluar
-            target_results = evaluator.evaluate_single_model(target)
+            target_results = evaluator.evaluate_single_model(target, denormalize=True)
             results[target] = target_results
         
         return results
-    
+
     def _evaluate_multi_head_model(self) -> Dict[str, Dict]:
         """Evalúa modelo multi-head."""
         logger.info("Evaluando modelo multi-head...")
         
-        # Cargar modelo
-        model_path = get_regressors_artifacts_dir() / "multihead.pt"
-        if not model_path.exists():
-            logger.warning(f"Modelo multi-head no encontrado: {model_path}")
-            return {}
+        model_name = "hybrid.pt" if self.is_hybrid else "multihead.pt"
+        model_path = get_regressors_artifacts_dir() / model_name
         
-        # Crear modelo y cargar pesos
+        if not model_path.exists():
+            if self.is_hybrid and (get_regressors_artifacts_dir() / "multihead.pt").exists():
+                model_path = get_regressors_artifacts_dir() / "multihead.pt"
+                logger.warning(f"Usando 'multihead.pt' para el modelo híbrido.")
+            else:
+                 logger.warning(f"Modelo {model_name} no encontrado: {model_path}")
+                 return {}
+
         model = create_model(
-            model_type=self.config['model_type'],
-            num_outputs=4,
-            pretrained=False,
-            dropout_rate=self.config.get('dropout_rate', 0.2),
-            multi_head=True
+            model_type=self.config['model_type'], num_outputs=4, pretrained=False,
+            multi_head=self.is_multi_head, hybrid=self.is_hybrid,
+            use_pixel_features=self.use_pixel_features
         )
         
         checkpoint = torch.load(model_path, map_location=self.device)
         model.load_state_dict(checkpoint['model_state_dict'])
         
-        # Crear evaluador
         evaluator = RegressionEvaluator(
-            model=model,
-            test_loader=self.test_loader,
-            scalers=self.scalers,
-            device=self.device
+            model=model, test_loader=self.test_loader,
+            scalers=self.scalers, device=self.device
         )
         
-        # Evaluar
-        results = evaluator.evaluate_multi_head_model()
-        
+        results = evaluator.evaluate_multi_head_model(denormalize=True)
         return {'multihead': results}
-    
+
     def save_scalers(self) -> None:
         """Guarda los escaladores."""
         if self.scalers is None:
@@ -813,19 +797,17 @@ class CacaoTrainingPipeline:
     def _verify_artifacts_saved(self) -> None:
         """Verifica que todos los artefactos se guardaron correctamente."""
         logger.info("Verificando que todos los artefactos se guardaron correctamente...")
-        
         artifacts_dir = get_regressors_artifacts_dir()
         missing_files = []
-        
-        # Verificar modelos
-        for target in TARGETS:
-            model_path = artifacts_dir / f"{target}.pt"
+
+        if self.is_multi_head or self.is_hybrid:
+            model_name = "hybrid.pt" if self.is_hybrid else "multihead.pt"
+            model_path = artifacts_dir / model_name
             if not model_path.exists():
                 missing_files.append(f"Modelo {target}: {model_path}")
             elif model_path.stat().st_size == 0:
                 missing_files.append(f"Modelo {target} está vacío: {model_path}")
         
-        # Verificar escaladores
         for target in TARGETS:
             scaler_path = artifacts_dir / f"{target}_scaler.pkl"
             if not scaler_path.exists():
@@ -861,10 +843,11 @@ class CacaoTrainingPipeline:
         
         save_dir.mkdir(parents=True, exist_ok=True)
         
-        # Guardar reporte JSON
         report_path = save_dir / f"evaluation_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        save_json(evaluation_results, report_path)
         
+        native_results = json.loads(pd.Series(evaluation_results).to_json(default_handler=str))
+        
+        save_json(native_results, report_path)
         logger.info(f"Reporte guardado en {report_path}")
     
     def run_incremental_training(self, new_data: List[Dict], target: str = "alto") -> Dict:
@@ -931,28 +914,18 @@ class CacaoTrainingPipeline:
     def run_pipeline(self, multi_head: bool = False) -> Dict[str, Union[Dict, List]]:
         """
         Ejecuta el pipeline completo.
-        
-        Args:
-            multi_head: Si usar modelo multi-head o individuales
-            
-        Returns:
-            Resultados completos del pipeline
         """
-        logger.info("=== INICIANDO PIPELINE DE ENTRENAMIENTO ===")
+        logger.info("=== INICIANDO PIPELINE DE ENTRENAMIENTO MEJORADO ===")
         start_time = time.time()
         
         try:
-            # 1. Cargar datos
-            logger.info("Paso 1: Cargando datos...")
-            image_paths, targets, pixel_features = self.load_data()
+            logger.info("="*60)
+            logger.info("PASO 1: Cargando y validando dataset...")
+            image_paths, targets_original, pixel_features = self.load_data()
             
-            if not image_paths or len(image_paths) < 10:
-                raise ValueError(f"Dataset insuficiente: solo {len(image_paths)} muestras. Se necesitan al menos 10.")
-            
-            # 2. Preparar escaladores PRIMERO (necesarios para normalizar targets)
-            logger.info("Paso 2: Preparando escaladores...")
-            # Crear DataFrame temporal para ajustar escaladores
-            targets_df = pd.DataFrame(targets)
+            logger.info("="*60)
+            logger.info("PASO 2: Preparando escaladores...")
+            targets_df = pd.DataFrame(targets_original)
             self.scalers = create_scalers_from_data(targets_df, scaler_type="standard")
             logger.info("Escaladores preparados")
             
@@ -1010,24 +983,29 @@ class CacaoTrainingPipeline:
             
             # 5. Crear data loaders
             self.create_data_loaders(
-                train_images, val_images, test_images,
-                train_targets, val_targets, test_targets,
-                train_pixel_features, val_pixel_features, test_pixel_features
+                self.train_images, self.val_images, self.test_images,
+                self.train_targets, self.val_targets, self.test_targets,
+                self.train_pixel_features, self.val_pixel_features, self.test_pixel_features
             )
             
-            # 6. Entrenar modelos
-            training_histories = self.train_models(multi_head)
+            logger.info("="*60)
+            logger.info("PASO 6: Entrenando modelos...")
+            training_histories = self.train_models()
             
-            # 7. Guardar escaladores
+            logger.info("="*60)
+            logger.info("PASO 7: Guardando escaladores...")
             self.save_scalers()
             
-            # 8. Verificar que todos los artefactos se guardaron correctamente
+            logger.info("="*60)
+            logger.info("PASO 8: Verificando artefactos guardados...")
             self._verify_artifacts_saved()
             
-            # 9. Evaluar modelos
-            evaluation_results = self.evaluate_models(multi_head)
+            logger.info("="*60)
+            logger.info("PASO 9: Evaluando modelos con conjunto de prueba...")
+            evaluation_results = self.evaluate_models()
             
-            # 9. Generar reportes
+            logger.info("="*60)
+            logger.info("PASO 10: Generando reportes...")
             self.generate_reports(evaluation_results)
             
             total_time = time.time() - start_time
@@ -1044,10 +1022,7 @@ class CacaoTrainingPipeline:
             logger.error(f"Error de validación en pipeline: {e}")
             raise
         except Exception as e:
-            logger.error(f"Error inesperado en pipeline: {e}")
-            logger.error(f"Tipo de error: {type(e).__name__}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
+            logger.error(f"Error fatal en pipeline: {e}", exc_info=True)
             raise
 
     def _generate_crops_for_missing(self, missing_records: List[Dict]) -> List[Dict]:
@@ -1254,7 +1229,8 @@ def run_training_pipeline(
     model_type: str = 'resnet18',
     img_size: int = 224,
     early_stopping_patience: int = 10,
-    save_best_only: bool = True
+    save_best_only: bool = True,
+    **kwargs
 ) -> bool:
     """
     Función para ejecutar el pipeline de entrenamiento desde otros módulos.
@@ -1281,8 +1257,12 @@ def run_training_pipeline(
         
         # Crear configuracin mejorada con todas las optimizaciones avanzadas
         config = {
-            'multi_head': multi_head,
+            'multi_head': multi_head or is_hybrid,
             'model_type': model_type,
+            'hybrid': is_hybrid,
+            'use_pixel_features': kwargs.get('use_pixel_features', False) and is_hybrid,
+            'use_raw_images': kwargs.get('use_raw_images', False),
+            'segmentation_backend': kwargs.get('segmentation_backend', 'auto'),
             'epochs': epochs,
             'batch_size': batch_size,
             'img_size': img_size,
@@ -1294,9 +1274,7 @@ def run_training_pipeline(
             'weight_decay': 1e-4,
             'min_lr': 1e-7,
             'save_best_only': save_best_only,
-            
-            # Mejoras avanzadas de entrenamiento
-            'scheduler_type': 'cosine_warmup',  # 'onecycle', 'cosine_warmup', 'cosine'
+            'scheduler_type': 'cosine_warmup',
             'warmup_epochs': 5,
             'loss_type': 'huber',  # 'mse', 'huber', 'smooth_l1' - Huber es ms robusto a outliers
             'max_grad_norm': 1.0,  # Gradient clipping para estabilidad
@@ -1305,9 +1283,8 @@ def run_training_pipeline(
             'improvement_threshold': 1e-4,  # Umbral mnimo de mejora para early stopping
         }
         
-        # Crear y ejecutar pipeline
         pipeline = CacaoTrainingPipeline(config)
-        results = pipeline.run_pipeline(multi_head)
+        results = pipeline.run_pipeline()
         
         logger.info("[OK] Pipeline de entrenamiento completado exitosamente!")
         logger.info(f"Tiempo total: {results['total_time']:.2f}s")
@@ -1315,7 +1292,7 @@ def run_training_pipeline(
         return True
         
     except Exception as e:
-        logger.error(f"[ERROR] Error en pipeline de entrenamiento: {e}")
+        logger.error(f"[ERROR] Error en pipeline de entrenamiento: {e}", exc_info=True)
         return False
 
 
@@ -1408,5 +1385,3 @@ def get_incremental_training_status() -> Dict:
 
 if __name__ == "__main__":
     main()
-
-
