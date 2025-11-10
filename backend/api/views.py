@@ -801,8 +801,13 @@ class AutoInitializeView(APIView):
                 crops_dir = get_crops_dir()
                 
                 if not crops_dir.exists() or len(list(crops_dir.glob("*.png"))) == 0:
+<<<<<<< HEAD
                     logger.info("Generando crops automáticamente...")
                     from management.commands.make_cacao_crops import Command as CropCommand
+=======
+                    logger.info("Generando crops automÃ¡ticamente...")
+                    from api.management.commands.make_cacao_crops import Command as CropCommand
+>>>>>>> 70136e3 (refactor: actualizar views para nuevos comandos)
                     
                     # Simular comando de crops
                     crop_command = CropCommand()

@@ -1,20 +1,25 @@
 """
 Comando Django para entrenar modelos de regresión de cacao.
+ACTUALIZADO:
+- Añadido '--segmentation-backend' para controlar cómo se generan los crops.
 """
 import time
-import subprocess
-import sys
 import platform
-import signal
 import os
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from pathlib import Path
-from typing import List, Optional
+from typing import List
+
+# Asegurar que el path del proyecto esté configurado para ml
+import sys
+project_root = Path(__file__).resolve().parents[4] # Sube 4 niveles (commands/management/training/backend)
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 from ml.pipeline.train_all import CacaoTrainingPipeline
 from ml.utils.logs import get_ml_logger
-
+from ml.utils.paths import get_raw_images_dir, get_regressors_artifacts_dir
 
 logger = get_ml_logger("cacaoscan.ml.commands")
 
@@ -23,11 +28,11 @@ class Command(BaseCommand):
     help = 'Entrena modelos de regresión para dimensiones y peso de granos de cacao'
     
     def add_arguments(self, parser):
-        # Argumentos del modelo
+        # --- Argumentos del Modelo (Mejorados) ---
         parser.add_argument(
             '--multihead',
             action='store_true',
-            help='Usar modelo multi-head en lugar de modelos individuales'
+            help='Usar modelo multi-head (un solo modelo para todos los targets)'
         )
         parser.add_argument(
             '--model-type',
@@ -39,16 +44,16 @@ class Command(BaseCommand):
         parser.add_argument(
             '--hybrid',
             action='store_true',
-            help='Usar modelo híbrido que fusiona ResNet18 + ConvNeXt + Features de píxeles (equivalente a --model-type hybrid)'
+            help='(Recomendado) Usar modelo híbrido que fusiona CNN + Features de Píxeles (equivale a --model-type hybrid)'
         )
         parser.add_argument(
             '--use-pixel-features',
             action='store_true',
             default=True,
-            help='Usar features de píxeles del dataset si pixel_calibration.json existe (default: True)'
+            help='(Recomendado) Usar features de píxeles del dataset si pixel_calibration.json existe (default: True)'
         )
         
-        # Argumentos de entrenamiento
+        # --- Argumentos de Entrenamiento ---
         parser.add_argument(
             '--epochs',
             type=int,
@@ -74,7 +79,7 @@ class Command(BaseCommand):
             help='Learning rate (default: 1e-4)'
         )
         
-        # Argumentos de targets
+        # --- Argumentos de Targets ---
         parser.add_argument(
             '--targets',
             type=str,
@@ -82,7 +87,7 @@ class Command(BaseCommand):
             help='Targets a entrenar: alto,ancho,grosor,peso o "all" (default: all)'
         )
         
-        # Argumentos de configuración
+        # --- Argumentos de Configuración ---
         parser.add_argument(
             '--resume',
             action='store_true',
@@ -92,7 +97,7 @@ class Command(BaseCommand):
             '--num-workers',
             type=int,
             default=2,
-            help='Número de workers para data loading (default: 2)'
+            help='Número de workers para data loading (default: 2). Usar 0 en Windows si hay problemas.'
         )
         parser.add_argument(
             '--early-stopping-patience',
@@ -106,8 +111,23 @@ class Command(BaseCommand):
             default=0.2,
             help='Tasa de dropout (default: 0.2)'
         )
+        parser.add_argument(
+            '--use-raw-images',
+            action='store_true',
+            help='Usar únicamente las imágenes BMP originales (sin generar nuevos crops).'
+        )
         
-        # Argumentos de validación
+        # --- INICIO DE CORRECCIÓN ---
+        parser.add_argument(
+            '--segmentation-backend',
+            type=str,
+            default='auto',
+            choices=['auto', 'opencv'],
+            help="Backend para generar crops: 'auto' (YOLO/rembg) o 'opencv' (fallback rembg/opencv)"
+        )
+        # --- FIN DE CORRECCIÓN ---
+        
+        # --- Argumentos de Validación y Pruebas ---
         parser.add_argument(
             '--validate-only',
             action='store_true',
@@ -116,24 +136,13 @@ class Command(BaseCommand):
         parser.add_argument(
             '--test-mode',
             action='store_true',
-            help='Modo de prueba con configuración reducida'
-        )
-        parser.add_argument(
-            '--use-celery',
-            action='store_true',
-            help='Ejecutar entrenamiento con Celery (asíncrono)'
-        )
-        parser.add_argument(
-            '--force',
-            action='store_true',
-            help='Forzar reentrenamiento aunque ya existan modelos entrenados'
+            help='Modo de prueba con configuración reducida (epochs=5, batch=16)'
         )
     
     def handle(self, *args, **options):
         """Maneja la ejecución del comando."""
         start_time = time.time()
         
-        # Configurar parámetros
         config = self._create_config(options)
         
         self.stdout.write(
@@ -143,84 +152,52 @@ class Command(BaseCommand):
         )
         
         try:
-            # Validar configuración
             self._validate_config(config)
-            
-            # Mostrar configuración
             self._display_config(config)
             
             if options['validate_only']:
                 self._validate_data_only()
                 return
-            
-            # Verificar si hay modelos entrenados (a menos que se fuerce el reentrenamiento)
-            if not options.get('force'):
-                models_exist = self._check_models_exist()
-                
-                if models_exist:
-                    self.stdout.write(
-                        self.style.SUCCESS(
-                            "✅ Modelos entrenados encontrados. No es necesario entrenar."
-                        )
-                    )
-                    self.stdout.write(
-                        self.style.WARNING(
-                            "💡 Para forzar el reentrenamiento, usa la opción --force"
-                        )
-                    )
-                    return
-            else:
-                models_exist = self._check_models_exist()
-                if models_exist:
-                    self.stdout.write(
-                        self.style.WARNING(
-                            "[WARN]  Modelos entrenados encontrados, pero se fuerza el reentrenamiento (--force activado)"
-                        )
-                    )
-            
-            self.stdout.write(
-                self.style.WARNING(
-                    "[WARN]  Modelos entrenados no encontrados. Iniciando entrenamiento..."
-                )
-            )
-            
-            # Ejecutar con Celery si se solicita
-            if options.get('use_celery'):
-                self._run_with_celery(config, options)
-                return
-            
-            # Ejecución directa (sin Celery)
             pipeline = CacaoTrainingPipeline(config)
-            results = pipeline.run_pipeline(config['multi_head'])
+            results = pipeline.run_pipeline()
             self._display_results(results, start_time)
             
         except Exception as e:
+            import traceback
+            logger.error(f"Error fatal durante el entrenamiento: {e}\n{traceback.format_exc()}")
             raise CommandError(f"Error durante el entrenamiento: {e}")
     
     def _create_config(self, options: dict) -> dict:
         """Crea la configuración del entrenamiento."""
-        # Determinar si usar modelo híbrido
+        
         use_hybrid = options.get('hybrid', False) or options.get('model_type') == 'hybrid'
         
+        is_windows = platform.system() == 'Windows'
+        num_workers = options['num_workers']
+        if is_windows and num_workers > 0:
+            logger.warning("Windows detectado: Se recomienda usar --num-workers 0 para evitar problemas.")
+            num_workers = 0
+
         config = {
-            'multi_head': options['multihead'] or use_hybrid,  # Híbrido es multi-output por defecto
+            'multi_head': options['multihead'] or use_hybrid,
             'model_type': 'hybrid' if use_hybrid else options['model_type'],
             'hybrid': use_hybrid,
-            'use_pixel_features': options.get('use_pixel_features', True),
+            'use_pixel_features': options.get('use_pixel_features', True) and use_hybrid,
             'epochs': options['epochs'],
             'batch_size': options['batch_size'],
             'img_size': options['img_size'],
             'learning_rate': options['learning_rate'],
-            'num_workers': options['num_workers'],
+            'num_workers': num_workers,
             'early_stopping_patience': options['early_stopping_patience'],
             'dropout_rate': options['dropout_rate'],
+            'use_raw_images': options.get('use_raw_images', False),
+            'segmentation_backend': options.get('segmentation_backend', 'auto'), # <-- AÑADIR
             'pretrained': True,
             'weight_decay': 1e-4,
             'min_lr': 1e-6,
             'targets': self._parse_targets(options['targets'])
         }
         
-        # Modo de prueba
         if options['test_mode']:
             config.update({
                 'epochs': min(config['epochs'], 5),
@@ -249,35 +226,53 @@ class Command(BaseCommand):
     
     def _validate_config(self, config: dict) -> None:
         """Valida la configuración."""
-        # Validar que los crops existan
-        crops_dir = Path(settings.MEDIA_ROOT) / "cacao_images" / "crops"
-        if not crops_dir.exists():
-            raise CommandError(f"Directorio de crops no encontrado: {crops_dir}")
+        raw_dir = get_raw_images_dir()
+        if not raw_dir.exists():
+            raise CommandError(f"Directorio de imágenes raw no encontrado: {raw_dir}")
         
-        # Contar crops disponibles
-        crop_files = list(crops_dir.glob("*.png"))
-        if len(crop_files) < 10:
+        raw_files = list(raw_dir.glob("*.bmp"))
+        if len(raw_files) < 10:
             raise CommandError(
-                f"Muy pocos crops disponibles: {len(crop_files)}. "
+                f"Muy pocas imágenes raw disponibles: {len(raw_files)}. "
                 "Se necesitan al menos 10 para entrenamiento."
             )
         
-        # Validar configuración de modelo
-        if config['multi_head'] and config['model_type'] == 'convnext_tiny':
+        from ml.data.dataset_loader import CacaoDatasetLoader
+        try:
+            loader = CacaoDatasetLoader()
+            df = loader.load_dataset()
+            if len(df) < 10:
+                raise CommandError(
+                    f"Muy pocos registros en el CSV: {len(df)}. "
+                    "Se necesitan al menos 10 para entrenamiento."
+                )
+        except Exception as e:
+            raise CommandError(f"Error cargando dataset: {e}")
+
+        try:
+            loader = CacaoDatasetLoader()
+            valid_records = loader.get_valid_records()
+            if len(valid_records) < 10:
+                raise CommandError(
+                    f"Muy pocos registros válidos (CSV + Imagen): {len(valid_records)}. "
+                    "Se necesitan al menos 10 para entrenamiento."
+                )
+            logger.info(f"✅ {len(valid_records)} registros válidos encontrados. Los crops se generarán automáticamente si faltan.")
+        except Exception as e:
+            raise CommandError(f"Error validando registros: {e}")
+        
+        if config['model_type'] == 'convnext_tiny' or config['hybrid']:
             try:
                 import timm
             except ImportError:
                 raise CommandError(
-                    "timm es requerido para ConvNeXt. Instalar con: pip install timm"
+                    "timm es requerido para ConvNeXt o Modelos Híbridos. Instalar con: pip install timm"
                 )
         
-        # Validar parámetros de entrenamiento
         if config['epochs'] < 1:
             raise CommandError("Número de épocas debe ser >= 1")
-        
         if config['batch_size'] < 1:
             raise CommandError("Tamaño de batch debe ser >= 1")
-        
         if config['learning_rate'] <= 0:
             raise CommandError("Learning rate debe ser > 0")
     
@@ -289,7 +284,7 @@ class Command(BaseCommand):
         
         self.stdout.write(f"Modelo: {config['model_type']}")
         if config.get('hybrid'):
-            self.stdout.write("  → Modelo HÍBRIDO: ResNet18 + ConvNeXt + Features de Píxeles")
+            self.stdout.write(self.style.SUCCESS("  → Modelo HÍBRIDO: ResNet18 + ConvNeXt + Features de Píxeles"))
         self.stdout.write(f"Multi-head: {config['multi_head']}")
         self.stdout.write(f"Usar features de píxeles: {config.get('use_pixel_features', False)}")
         self.stdout.write(f"Targets: {config['targets']}")
@@ -300,11 +295,12 @@ class Command(BaseCommand):
         self.stdout.write(f"Dropout rate: {config['dropout_rate']}")
         self.stdout.write(f"Early stopping patience: {config['early_stopping_patience']}")
         self.stdout.write(f"Workers: {config['num_workers']}")
+        self.stdout.write(f"Usar imágenes raw sin crops: {config.get('use_raw_images', False)}")
+        self.stdout.write(f"Backend de segmentación: {config.get('segmentation_backend', 'auto')}") # <-- AÑADIR
         
-        # Mostrar información de datos
-        crops_dir = Path(settings.MEDIA_ROOT) / "cacao_images" / "crops"
-        crop_files = list(crops_dir.glob("*.png"))
-        self.stdout.write(f"Crops disponibles: {len(crop_files)}")
+        raw_dir = get_raw_images_dir()
+        raw_files = list(raw_dir.glob("*.bmp"))
+        self.stdout.write(f"Imágenes raw disponibles: {len(raw_files)}")
         
         self.stdout.write("="*50)
     
@@ -321,22 +317,18 @@ class Command(BaseCommand):
             if not valid_records:
                 raise CommandError("No se encontraron registros válidos")
             
-            # Contar crops disponibles
             crops_available = 0
             for record in valid_records:
-                if record['crop_image_path'] and record['crop_image_path'].exists():
+                crop_path = Path(record['crop_image_path'])
+                if not crop_path.is_absolute():
+                    crop_path = Path(settings.MEDIA_ROOT) / crop_path
+                if crop_path.exists():
                     crops_available += 1
             
-            self.stdout.write(f"Registros válidos: {len(valid_records)}")
-            self.stdout.write(f"Crops disponibles: {crops_available}")
+            self.stdout.write(f"Registros válidos (CSV + Imagen raw): {len(valid_records)}")
+            self.stdout.write(f"Crops ya generados: {crops_available}")
+            self.stdout.write(f"Crops a generar: {len(valid_records) - crops_available}")
             
-            if crops_available < 10:
-                raise CommandError(
-                    f"Muy pocos crops disponibles: {crops_available}. "
-                    "Se necesitan al menos 10 para entrenamiento."
-                )
-            
-            # Mostrar estadísticas
             stats = loader.get_dataset_stats()
             self.stdout.write("\nEstadísticas del dataset:")
             for target in ['alto', 'ancho', 'grosor', 'peso']:
@@ -366,12 +358,11 @@ class Command(BaseCommand):
         
         self.stdout.write(f"Tiempo total: {total_time:.2f} segundos")
         
-        # Mostrar resultados de evaluación
         if 'evaluation_results' in results:
             eval_results = results['evaluation_results']
             self.stdout.write("\nMétricas de evaluación:")
             
-            if results['config']['multi_head'] and 'multihead' in eval_results:
+            if (results['config']['multi_head'] or results['config']['hybrid']) and 'multihead' in eval_results:
                 multihead_results = eval_results['multihead']
                 for target in ['alto', 'ancho', 'grosor', 'peso']:
                     if target in multihead_results:
@@ -393,11 +384,9 @@ class Command(BaseCommand):
                             f"R²={metrics['r2']:.4f}"
                         )
         
-        # Mostrar ubicación de archivos
-        artifacts_dir = Path(settings.MEDIA_ROOT).parent / "ml" / "artifacts" / "regressors"
+        artifacts_dir = get_regressors_artifacts_dir()
         self.stdout.write(f"\nModelos guardados en: {artifacts_dir}")
         
-        # Listar archivos generados
         if artifacts_dir.exists():
             model_files = list(artifacts_dir.glob("*.pt"))
             scaler_files = list(artifacts_dir.glob("*.pkl"))
@@ -409,6 +398,7 @@ class Command(BaseCommand):
         
         self.stdout.write(
             self.style.SUCCESS("¡Entrenamiento completado exitosamente!")
+<<<<<<< HEAD
         )
     
     def _run_with_celery(self, config: dict, options: dict) -> None:
@@ -853,3 +843,6 @@ class Command(BaseCommand):
                 self.style.WARNING(f"Error deteniendo worker: {e}")
             )
 
+=======
+        )
+>>>>>>> 9951c9e (feat: actualizar train_cacao_models en training)
