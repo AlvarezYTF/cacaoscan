@@ -159,24 +159,52 @@ class RegressionEvaluator:
         Returns:
             Diccionario con métricas por target
         """
-        logger.info("Evaluando modelo multi-head")
+        logger.info("Evaluando modelo multi-head/híbrido")
         
         self.model.eval()
         all_predictions = {target: [] for target in TARGETS}
         all_targets = {target: [] for target in TARGETS}
         
+        # Determinar si el modelo es híbrido (basado en el tipo de modelo)
+        is_hybrid = "Hybrid" in type(self.model).__name__
+        
         with torch.no_grad():
-            for images, targets_dict in self.test_loader:
+            # --- INICIO DE CORRECCIÓN ---
+            # El loader puede devolver 2 o 3 items
+            for batch_data in self.test_loader:
+                images, targets_dict, pixel_features = None, None, None
+                
+                # Desempaquetar datos basado en si es híbrido o no
+                if is_hybrid and len(batch_data) == 3:
+                    images, targets_dict, pixel_features = batch_data
+                    pixel_features = pixel_features.to(self.device)
+                elif not is_hybrid and len(batch_data) == 2:
+                    images, targets_dict = batch_data
+                elif len(batch_data) == 3: # Asumir híbrido si da 3
+                    images, targets_dict, pixel_features = batch_data
+                    pixel_features = pixel_features.to(self.device)
+                elif len(batch_data) == 2: # Asumir no híbrido si da 2
+                     images, targets_dict = batch_data
+                else:
+                    logger.error(f"Batch de datos inesperado. Se esperaban 2 o 3 tensores, se obtuvieron {len(batch_data)}")
+                    continue
+                
                 images = images.to(self.device)
-                outputs = self.model(images)
+                
+                # Forward pass
+                if is_hybrid and pixel_features is not None:
+                    outputs = self.model(images, pixel_features)
+                else:
+                    outputs = self.model(images)
+                # --- FIN DE CORRECCIÓN ---
                 
                 for target in TARGETS:
                     # Obtener predicciones y targets
-                    predictions = outputs[target].cpu().numpy().flatten()
-                    targets_np = targets_dict[target].cpu().numpy().flatten()
+                    predictions_batch = outputs[target].cpu().numpy().flatten()
+                    targets_batch = targets_dict[target].cpu().numpy().flatten()
                     
-                    all_predictions[target].extend(predictions)
-                    all_targets[target].extend(targets_np)
+                    all_predictions[target].extend(predictions_batch)
+                    all_targets[target].extend(targets_batch)
         
         # Convertir a arrays numpy
         for target in TARGETS:
@@ -186,15 +214,21 @@ class RegressionEvaluator:
         # Desnormalizar si se especifica
         if denormalize and self.scalers is not None:
             try:
-                denorm_pred = self.scalers.inverse_transform(all_predictions)
-                denorm_targets = self.scalers.inverse_transform(all_targets)
+                # Usar .transform(dict) y .inverse_transform(dict)
+                
+                # Preparar dict para desnormalización
+                pred_dict_norm = {t: all_predictions[t] for t in TARGETS}
+                targ_dict_norm = {t: all_targets[t] for t in TARGETS}
+
+                denorm_pred = self.scalers.inverse_transform(pred_dict_norm)
+                denorm_targets = self.scalers.inverse_transform(targ_dict_norm)
                 
                 all_predictions = denorm_pred
                 all_targets = denorm_targets
                 
                 logger.info("Predicciones desnormalizadas para modelo multi-head")
             except Exception as e:
-                logger.warning(f"Error desnormalizando modelo multi-head: {e}")
+                logger.warning(f"Error desnormalizando modelo multi-head: {e}", exc_info=True)
         
         # Calcular métricas para cada target
         results = {}
@@ -202,12 +236,25 @@ class RegressionEvaluator:
             predictions = all_predictions[target]
             targets = all_targets[target]
             
+            # Asegurarse de que no estén vacíos
+            if len(targets) == 0 or len(predictions) == 0:
+                logger.warning(f"No hay datos para evaluar el target {target}")
+                continue
+
             mae = mean_absolute_error(targets, predictions)
             mse = mean_squared_error(targets, predictions)
             rmse = np.sqrt(mse)
             r2 = r2_score(targets, predictions)
-            mape = mean_absolute_percentage_error(targets, predictions) * 100
-            relative_error = np.mean(np.abs((targets - predictions) / targets)) * 100
+            
+            # Calcular MAPE de forma segura (evitar división por cero)
+            non_zero_mask = targets != 0
+            if np.any(non_zero_mask):
+                mape = mean_absolute_percentage_error(targets[non_zero_mask], predictions[non_zero_mask]) * 100
+                relative_error = np.mean(np.abs((targets[non_zero_mask] - predictions[non_zero_mask]) / targets[non_zero_mask])) * 100
+            else:
+                mape = 0.0
+                relative_error = 0.0
+
             
             results[target] = {
                 'mae': float(mae),
