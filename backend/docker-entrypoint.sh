@@ -13,26 +13,35 @@ DB_WAIT_TIMEOUT=${DB_WAIT_TIMEOUT:-60}
 export PATH="/opt/venv/bin:$PATH"
 export PYTHONUNBUFFERED=1
 export PYTHONDONTWRITEBYTECODE=1
+export PYTHONUNBUFFERED=1
 
-log "🚀 Iniciando CacaoScan (${ROLE})..."
+# Configurar pkg_resources para que no escanee directorios problemáticos
+# Esto reduce significativamente el uso de memoria
+export PKG_RESOURCES_CACHE_DIR=/tmp/pkg_resources_cache
+mkdir -p "$PKG_RESOURCES_CACHE_DIR" 2>/dev/null || true
 
-# Crear directorios necesarios (ya corremos como appuser)
-mkdir -p "$STATIC_ROOT" "$MEDIA_ROOT" /tmp/cacaoscan /app/logs
+# Crear directorios necesarios para la aplicación
+mkdir -p /app/logs /app/media/logs /app/staticfiles 2>/dev/null || true
+mkdir -p /app/media/datasets /app/media/reportes 2>/dev/null || true
+mkdir -p /app/media/cacao_images/raw \
+         /app/media/cacao_images/crops \
+         /app/media/cacao_images/crops_runtime \
+         /app/media/cacao_images/processed \
+         /app/media/cacao_images/masks \
+         /app/media/cacao_images/converted_jpg 2>/dev/null || true
 
-wait_for_database() {
-    local elapsed=0
-    if [[ -z "${DB_HOST:-}" ]]; then
-        log "⚠️  Variable DB_HOST no definida; se omite espera activa"
-        return
-    fi
-    log "⏳ Esperando a la base de datos ${DB_HOST}:${DB_PORT:-5432}..."
-    until nc -z "${DB_HOST}" "${DB_PORT:-5432}"; do
-        sleep 2
-        elapsed=$((elapsed + 2))
-        if (( elapsed >= DB_WAIT_TIMEOUT )); then
-            log "❌ Tiempo de espera alcanzado al conectar con la base de datos"
-            exit 1
-        fi
+# Verificar que gunicorn está disponible
+if ! python -m gunicorn --version > /dev/null 2>&1; then
+    echo "⚠️  Gunicorn no encontrado, instalando..."
+    pip install --user gunicorn
+fi
+
+# Esperar a que la base de datos esté lista
+if [ -n "$DB_HOST" ]; then
+    echo "⏳ Esperando a que la base de datos esté lista..."
+    until nc -z "$DB_HOST" "${DB_PORT:-5432}"; do
+        echo "   Base de datos no disponible, esperando..."
+        sleep 1
     done
     log "✅ Base de datos disponible"
 }

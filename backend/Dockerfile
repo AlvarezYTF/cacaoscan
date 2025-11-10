@@ -73,22 +73,22 @@ COPY --from=builder /opt/venv /opt/venv
 
 COPY . .
 
-COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh \
-    && chmod 0755 /usr/local/bin/entrypoint.sh
+# Crear directorios necesarios para la aplicación
+RUN mkdir -p staticfiles logs \
+    media/logs \
+    media/datasets \
+    media/reportes \
+    media/cacao_images/raw \
+    media/cacao_images/crops \
+    media/cacao_images/crops_runtime \
+    media/cacao_images/processed \
+    media/cacao_images/masks \
+    media/cacao_images/converted_jpg
 
-ENV DJANGO_SETTINGS_MODULE=cacaoscan.settings
-
-USER appuser
-
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-
-# ========================================
-# Etapa 3: Backend Web
-# ========================================
-FROM runtime-base AS backend
-
-ENV SERVICE_ROLE=web
+# Script de inicio - convertir finales de línea Windows (CRLF) a Unix (LF)
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN sed -i 's/\r$//' /docker-entrypoint.sh && \
+    chmod +x /docker-entrypoint.sh
 
 EXPOSE 8000
 
