@@ -9,11 +9,10 @@ x-backend-health: &backend-health
   start_period: 40s
 
 services:
+  # Base de datos PostgreSQL
   db:
     image: postgres:16-alpine
-    container_name: cacaoscan-db
-    restart: unless-stopped
-    env_file: *common-env
+    container_name: cacaoscan_db
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -31,6 +30,7 @@ services:
     networks:
       - private
 
+  # Redis para (futuros) Channels
   redis:
     image: redis:7-alpine
     container_name: cacaoscan-redis
@@ -44,8 +44,8 @@ services:
       - "yes"
     volumes:
       - redis_data:/data
-    expose:
-      - "6379"
+    ports:
+      - "6380:6379"
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping"]
       interval: 10s
@@ -54,26 +54,31 @@ services:
     networks:
       - private
 
+  # Backend Django
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: backend
-      args:
-        APP_VERSION: ${APP_VERSION:-v1.3.0}
-    image: cacaoscan-backend:${APP_VERSION:-v1.3.0}
-    container_name: cacaoscan-backend
-    restart: unless-stopped
-    env_file: *common-env
+    container_name: cacaoscan_backend
     environment:
-      SERVICE_ROLE: web
-      DJANGO_STATIC_ROOT: /var/www/staticfiles
-      DJANGO_MEDIA_ROOT: /var/www/media
-    tmpfs:
-      - /tmp:size=128m
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-cacaoscan_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres123}
+      USE_REDIS: ${USE_REDIS:-True}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
+      PYTHONHASHSEED: random
+      PKG_RESOURCES_CACHE_DIR: /tmp/pkg_resources_cache
     volumes:
-      - backend_static:/var/www/staticfiles
-      - backend_media:/var/www/media
+      # --- ESTA ES LA CORRECCIÓN ---
+      # Mapea su carpeta local 'backend/media' al '/app/media' del contenedor
+      - ./backend/media:/app/media
+      # Mantenemos el volumen con nombre para los estáticos
+      - backend_static:/app/staticfiles
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -86,80 +91,18 @@ services:
       - private
       - public
 
-  celery_worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: celery
-      args:
-        APP_VERSION: ${APP_VERSION:-v1.3.0}
-    image: cacaoscan-celery:${APP_VERSION:-v1.3.0}
-    container_name: cacaoscan-celery-worker
-    restart: unless-stopped
-    env_file: *common-env
-    environment:
-      SERVICE_ROLE: worker
-      CELERY_QUEUES: default
-      DJANGO_STATIC_ROOT: /var/www/staticfiles
-      DJANGO_MEDIA_ROOT: /var/www/media
-    volumes:
-      - backend_media:/var/www/media:rw
-    depends_on:
-      backend:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-    healthcheck:
-      test:
-        - "CMD-SHELL"
-        - "celery -A cacaoscan inspect ping -d celery@$(hostname)"
-      interval: 45s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-      - private
+  # --- SERVICIOS DE CELERY ELIMINADOS ---
 
-  celery_beat:
-    image: cacaoscan-celery:${APP_VERSION:-v1.3.0}
-    container_name: cacaoscan-celery-beat
-    restart: unless-stopped
-    env_file: *common-env
-    environment:
-      SERVICE_ROLE: beat
-      DJANGO_STATIC_ROOT: /var/www/staticfiles
-      DJANGO_MEDIA_ROOT: /var/www/media
-    volumes:
-      - backend_media:/var/www/media:rw
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test:
-        - "CMD-SHELL"
-        - "celery -A cacaoscan beat --help > /dev/null"
-      interval: 60s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    networks:
-      - private
-
+  # Frontend Vue/Vite
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        APP_VERSION: ${APP_VERSION:-v1.3.0}
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
-    image: cacaoscan-frontend:${APP_VERSION:-v1.3.0}
-    container_name: cacaoscan-frontend
-    restart: unless-stopped
-    env_file: *common-env
+        VITE_API_BASE_URL: http://backend:8000/api/v1
+    container_name: cacaoscan_frontend
+    environment:
+      VITE_API_BASE_URL: http://backend:8000/api/v1
     ports:
       - "127.0.0.1:5173:8080"
     depends_on:
@@ -182,8 +125,9 @@ volumes:
     driver: local
   backend_static:
     driver: local
-  backend_media:
-    driver: local
+  # --- 'backend_media' ya no es necesario aquí si usamos bind mount ---
+  # backend_media:
+  #   driver: local
 
 networks:
   private:
