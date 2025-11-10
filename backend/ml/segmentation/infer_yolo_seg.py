@@ -49,15 +49,62 @@ class YOLOSegmentationInference:
             if model_path and model_path.exists():
                 logger.info(f"Cargando modelo personalizado desde {model_path}")
                 self.model = YOLO(str(model_path))
+                self.is_custom_model = True
             else:
-                logger.info("Cargando modelo base YOLOv8s-seg")
-                self.model = YOLO('yolov8s-seg.pt')
+                # Buscar modelo personalizado entrenado automáticamente
+                custom_model_path = self._find_custom_model()
+                if custom_model_path:
+                    logger.info(f"Cargando modelo personalizado entrenado desde {custom_model_path}")
+                    self.model = YOLO(str(custom_model_path))
+                    self.is_custom_model = True
+                else:
+                    logger.info("Cargando modelo base YOLOv8s-seg (no se encontró modelo personalizado)")
+                    logger.warning("El modelo base está entrenado en COCO y puede clasificar incorrectamente los granos de cacao")
+                    logger.warning("Se recomienda entrenar un modelo personalizado para mejor precisión")
+                    self.model = YOLO('yolov8s-seg.pt')
+                    self.is_custom_model = False
             
             logger.info("Modelo YOLOv8-seg cargado exitosamente")
             
         except Exception as e:
             logger.error(f"Error al cargar el modelo YOLO: {e}")
             raise
+    
+    def _find_custom_model(self) -> Optional[Path]:
+        """
+        Busca automáticamente un modelo personalizado entrenado.
+        
+        Returns:
+            Ruta al modelo personalizado si existe, None en caso contrario
+        """
+        artifacts_dir = get_yolo_artifacts_dir()
+        models_dir = artifacts_dir / "models"
+        
+        if not models_dir.exists():
+            return None
+        
+        # Buscar el mejor modelo en subdirectorios de entrenamiento
+        # Los modelos se guardan en: models/cacao_seg_YYYYMMDD_HHMMSS/weights/best.pt
+        best_models = []
+        for train_dir in models_dir.iterdir():
+            if train_dir.is_dir():
+                weights_dir = train_dir / "weights"
+                best_model = weights_dir / "best.pt"
+                if best_model.exists():
+                    # Obtener timestamp del directorio para ordenar
+                    try:
+                        timestamp = train_dir.name.split("_")[-2:]  # Obtener fecha y hora
+                        timestamp_str = "_".join(timestamp)
+                        best_models.append((timestamp_str, best_model))
+                    except:
+                        best_models.append((train_dir.name, best_model))
+        
+        if best_models:
+            # Ordenar por timestamp (más reciente primero)
+            best_models.sort(reverse=True)
+            return best_models[0][1]
+        
+        return None
     
     def predict(self, image_path: Path, conf_threshold: Optional[float] = None) -> List[Dict[str, Any]]:
         """
@@ -216,7 +263,39 @@ class YOLOSegmentationInference:
             Mejor predicción o None si no hay detecciones
         """
         predictions = self.predict(image_path)
-        return predictions[0] if predictions else None
+        if not predictions:
+            return None
+        
+        # Si es modelo personalizado, usar la primera (ya ordenada por confianza)
+        if hasattr(self, 'is_custom_model') and self.is_custom_model:
+            return predictions[0]
+        
+        # Para modelo base, ignorar la clase y seleccionar por mejor combinación de área y confianza
+        # Priorizar predicciones con mayor área y confianza razonable
+        best_pred = None
+        best_score = 0
+        
+        for pred in predictions:
+            # Score combinado: área * confianza
+            # Esto prioriza máscaras grandes con buena confianza
+            area = pred.get('area', 0)
+            confidence = pred.get('confidence', 0)
+            score = area * confidence
+            
+            if score > best_score:
+                best_score = score
+                best_pred = pred
+        
+        if best_pred:
+            # Log informativo sobre la clase detectada (pero no afecta la selección)
+            class_name = best_pred.get('class_name', 'unknown')
+            if class_name not in ['cacao_grain', 'cacao']:
+                logger.debug(
+                    f"Modelo base detectó clase '{class_name}' en {image_path.name}. "
+                    f"Usando máscara con área={best_pred.get('area', 0)} y confianza={best_pred.get('confidence', 0):.2f}"
+                )
+        
+        return best_pred
     
     def filter_predictions_by_class(
         self,
