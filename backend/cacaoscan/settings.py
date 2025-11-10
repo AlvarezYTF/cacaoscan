@@ -11,6 +11,50 @@ from datetime import timedelta
 # Cargar variables de entorno desde .env
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = os.path.join(BASE_DIR, ".env")
+
+# Crear .env si no existe con valores por defecto
+if not os.path.exists(dotenv_path):
+    default_env_content = """# ===========================
+# Configuración de Base de Datos PostgreSQL
+# ===========================
+DB_NAME=cacaoscan_db
+DB_USER=cristian
+DB_PASSWORD=123456
+DB_HOST=localhost
+DB_PORT=5432
+
+# ===========================
+# Configuración de Django
+# ===========================
+# IMPORTANTE: Genera tu propia clave secreta. Puedes usar un generador online.
+SECRET_KEY=django-insecure-m#z@j!v+e)d^u_r-f&q!w)t#b@s&y*p(k$l-!g@h_c^x@o
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# ===========================
+# Configuración de API
+# ===========================
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+
+# ===========================
+# Configuración de Email (Opcional)
+# ===========================
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=tu-email@gmail.com
+EMAIL_HOST_PASSWORD=tu-app-password
+
+# ===========================
+# Configuración de CORS (Producción)
+# ===========================
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+AUTO_TRAIN_ENABLED=0
+"""
+    with open(dotenv_path, 'w', encoding='utf-8') as f:
+        f.write(default_env_content)
+    print(f"✅ Archivo .env creado automáticamente en: {dotenv_path}")
+
 load_dotenv(dotenv_path)
 
 
