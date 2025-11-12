@@ -126,7 +126,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <!-- Tabla -->
               <div class="overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200">
+                <table class="min-w-full divide-y divide-gray-200" aria-label="Tabla de detalles del análisis">
+                  <caption class="sr-only">Tabla mostrando categoría, porcentaje y cantidad de granos de cacao</caption>
                   <thead class="bg-gray-50">
                     <tr>
                       <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
@@ -338,4 +339,15 @@ export default {
 
 <style scoped>
 /* Estilos personalizados si son necesarios */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
 </style>
