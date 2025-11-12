@@ -22,7 +22,8 @@
         </router-link>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left text-gray-500">
+        <table class="w-full text-sm text-left text-gray-500" :aria-label="usersTableTitle">
+          <caption class="sr-only">{{ usersTableTitle }} - Tabla con información de usuarios recientes mostrando usuario, email, rol y estado</caption>
           <thead class="text-xs text-gray-700 uppercase bg-gray-100 font-bold">
             <tr>
               <th scope="col" class="px-6 py-3">Usuario</th>
@@ -97,7 +98,8 @@
         </router-link>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left text-gray-500">
+        <table class="w-full text-sm text-left text-gray-500" :aria-label="activityTableTitle">
+          <caption class="sr-only">{{ activityTableTitle }} - Tabla con información de actividad reciente mostrando usuario, acción, modelo y fecha</caption>
           <thead class="text-xs text-gray-700 uppercase bg-gray-100 font-bold">
             <tr>
               <th scope="col" class="px-6 py-3">Usuario</th>
@@ -243,4 +245,15 @@ const formatDateTime = (dateString) => {
 
 <style scoped>
 /* Solo estilos que no están en Tailwind si es necesario */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
 </style>
