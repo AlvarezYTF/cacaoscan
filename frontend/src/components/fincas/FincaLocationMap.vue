@@ -176,7 +176,7 @@ onUnmounted(() => {
 
 <style scoped>
 /* Asegurar que Leaflet se muestre correctamente */
-:deep(.leaflet-container) {
+::v-deep(.leaflet-container) {
   font-family: inherit;
 }
 </style>
