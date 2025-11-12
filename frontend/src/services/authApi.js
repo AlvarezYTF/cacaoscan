@@ -10,8 +10,7 @@ const authApi = {
    * Iniciar sesión con email/username y contraseña
    */
   async login(credentials) {
-    try {
-      // Enviar email si está disponible, de lo contrario username
+    // Enviar email si está disponible, de lo contrario username
       const loginData = {
         password: credentials.password
       }
@@ -32,7 +31,7 @@ const authApi = {
       
       let normalizedData;
       
-      if (response.data && response.data.data) {
+      if (response.data?.data) {
         // Estructura con wrapper 'data'
         normalizedData = {
           token: response.data.data.access,
@@ -42,7 +41,7 @@ const authApi = {
           refresh_expires_at: response.data.data.refresh_expires_at,
           message: response.data.message
         }
-      } else if (response.data && response.data.access && response.data.user) {
+      } else if (response.data?.access && response.data?.user) {
         // Estructura plana (la que realmente usa el backend)
         normalizedData = {
           token: response.data.access,
@@ -57,9 +56,6 @@ const authApi = {
       }
       
       return normalizedData
-    } catch (error) {
-      throw error
-    }
   },
 
   /**
@@ -68,80 +64,98 @@ const authApi = {
    */
   async register(userData) {
     try {
-      // Payload para el nuevo endpoint de personas
-      const payload = {
-        // Datos del usuario
-        email: userData.email,
-        password: userData.password,
-        
-        // Datos de la persona
-        tipo_documento: userData.tipo_documento || 'CC', // Por defecto Cédula
-        numero_documento: userData.numero_documento || '',
-        primer_nombre: userData.first_name || userData.primer_nombre || '',
-        segundo_nombre: userData.segundo_nombre || userData.middle_name || '',
-        primer_apellido: userData.last_name || userData.primer_apellido || '',
-        segundo_apellido: userData.segundo_apellido || userData.last_name_2 || '',
-        telefono: userData.phone_number || userData.telefono || '',
-        direccion: userData.direccion || userData.address || '',
-        genero: userData.genero || 'M', // Por defecto Masculino
-        fecha_nacimiento: userData.fecha_nacimiento || userData.birthdate || '',
-        municipio: userData.municipio || '',
-        departamento: userData.departamento || ''
-      };
-      
+      const payload = this._buildRegisterPayload(userData)
       const response = await api.post('/personas/registrar/', payload)
-      
-      // La respuesta del endpoint personas/registrar/ ahora incluye verification_required
-      // No hacer login automático, el usuario debe verificar su email primero
-      if (response.data && response.data.verification_required) {
-        return {
-          success: true,
-          verification_required: true,
-          data: {
-            email: response.data.email || userData.email,
-            verification_required: true
-          },
-          message: 'Registro exitoso. Por favor verifica tu correo electrónico.'
-        }
-      }
-      
-      // Fallback para estructura legacy (no debería llegar aquí ahora)
-      return {
-        success: true,
-        verification_required: true,
-        data: {
-          email: response.data?.email || response.data?.user?.email || userData.email,
-          verification_required: true
-        },
-        message: 'Registro exitoso. Por favor verifica tu correo electrónico.'
-      }
-      
+      return this._handleRegisterResponse(response, userData)
     } catch (error) {
-      // Extraer mensaje de error más detallado
-      if (error.response?.data) {
-        // Si hay errores de validación específicos
-        if (error.response.data.detail) {
-          error.message = error.response.data.detail
-        } else if (error.response.data.error) {
-          error.message = error.response.data.error
-        } else if (typeof error.response.data === 'string') {
-          error.message = error.response.data
-        } else if (error.response.data.non_field_errors) {
-          error.message = error.response.data.non_field_errors[0]
-        } else {
-          // Intentar extraer el primer error de campo
-          const firstError = Object.values(error.response.data)[0]
-          if (Array.isArray(firstError)) {
-            error.message = firstError[0]
-          } else if (typeof firstError === 'string') {
-            error.message = firstError
-          } else {
-            error.message = 'Error en los datos proporcionados'
-          }
+      this._processRegisterError(error)
+      throw error
+    }
+  },
+
+  /**
+   * Construir payload para registro de usuario
+   * @private
+   */
+  _buildRegisterPayload(userData) {
+    return {
+      // Datos del usuario
+      email: userData.email,
+      password: userData.password,
+      
+      // Datos de la persona
+      tipo_documento: userData.tipo_documento || 'CC',
+      numero_documento: userData.numero_documento || '',
+      primer_nombre: userData.first_name || userData.primer_nombre || '',
+      segundo_nombre: userData.segundo_nombre || userData.middle_name || '',
+      primer_apellido: userData.last_name || userData.primer_apellido || '',
+      segundo_apellido: userData.segundo_apellido || userData.last_name_2 || '',
+      telefono: userData.phone_number || userData.telefono || '',
+      direccion: userData.direccion || userData.address || '',
+      genero: userData.genero || 'M',
+      fecha_nacimiento: userData.fecha_nacimiento || userData.birthdate || '',
+      municipio: userData.municipio || '',
+      departamento: userData.departamento || ''
+    }
+  },
+
+  /**
+   * Procesar respuesta del registro
+   * @private
+   */
+  _handleRegisterResponse(response, userData) {
+    const successResponse = {
+      success: true,
+      verification_required: true,
+      message: 'Registro exitoso. Por favor verifica tu correo electrónico.'
+    }
+
+    if (response.data?.verification_required) {
+      return {
+        ...successResponse,
+        data: {
+          email: response.data.email || userData.email,
+          verification_required: true
         }
       }
-      
-      throw error
+    }
+
+    // Fallback para estructura legacy
+    return {
+      ...successResponse,
+      data: {
+        email: response.data?.email || response.data?.user?.email || userData.email,
+        verification_required: true
+      }
+    }
+  },
+
+  /**
+   * Procesar errores del registro
+   * @private
+   */
+  _processRegisterError(error) {
+    if (!error.response?.data) return
+
+    const errorData = error.response.data
+
+    if (errorData.detail) {
+      error.message = errorData.detail
+    } else if (errorData.error) {
+      error.message = errorData.error
+    } else if (typeof errorData === 'string') {
+      error.message = errorData
+    } else if (errorData.non_field_errors) {
+      error.message = errorData.non_field_errors[0]
+    } else {
+      const firstError = Object.values(errorData)[0]
+      if (Array.isArray(firstError)) {
+        error.message = firstError[0]
+      } else if (typeof firstError === 'string') {
+        error.message = firstError
+      } else {
+        error.message = 'Error en los datos proporcionados'
+      }
     }
   },
 
@@ -149,26 +163,18 @@ const authApi = {
    * Cerrar sesión (blacklist refresh token)
    */
   async logout() {
-    try {
-      const response = await api.post('/auth/logout/')
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/auth/logout/')
+    return response.data
   },
 
   /**
    * Refrescar token de acceso usando refresh token
    */
   async refreshToken(refreshToken) {
-    try {
-      const response = await api.post('/auth/refresh/', {
-        refresh: refreshToken
-      })
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/auth/refresh/', {
+      refresh: refreshToken
+    })
+    return response.data
   },
 
   /**
@@ -182,174 +188,126 @@ const authApi = {
    * Verificar token (comprobar si es válido)
    */
   async verifyToken(token) {
-    try {
-      const response = await api.post('/auth/verify/', {
-        token: token
-      })
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/auth/verify/', {
+      token: token
+    })
+    return response.data
   },
 
   /**
    * Obtener información del usuario actual
    */
   async getCurrentUser() {
-    try {
-      const response = await api.get('/auth/profile/')
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.get('/auth/profile/')
+    return response.data
   },
 
   /**
    * Actualizar información del usuario actual
    */
   async updateProfile(profileData) {
-    try {
-      const payload = {
-        first_name: profileData.firstName || profileData.fullName?.split(' ')[0] || '',
-        last_name: profileData.lastName || profileData.fullName?.split(' ').slice(1).join(' ') || ''
-      }
-      
-      // Incluir phone_number si está disponible
-      if (profileData.phoneNumber || profileData.phone) {
-        payload.phone_number = profileData.phoneNumber || profileData.phone
-      }
-      
-      const response = await api.put('/auth/profile/', payload)
-      return response.data
-    } catch (error) {
-      throw error
+    const payload = {
+      first_name: profileData.firstName || profileData.fullName?.split(' ')[0] || '',
+      last_name: profileData.lastName || profileData.fullName?.split(' ').slice(1).join(' ') || ''
     }
+    
+    // Incluir phone_number si está disponible
+    if (profileData.phoneNumber || profileData.phone) {
+      payload.phone_number = profileData.phoneNumber || profileData.phone
+    }
+    
+    const response = await api.put('/auth/profile/', payload)
+    return response.data
   },
 
   /**
    * Obtener perfil del usuario actual
    */
   async getProfile() {
-    try {
-      const response = await api.get('/auth/profile/')
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.get('/auth/profile/')
+    return response.data
   },
 
   /**
    * Cambiar contraseña del usuario actual
    */
   async changePassword(passwordData) {
-    try {
-      const response = await api.post('/auth/change-password/', {
-        old_password: passwordData.oldPassword,
-        new_password: passwordData.newPassword,
-        confirm_password: passwordData.confirmPassword
-      })
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/auth/change-password/', {
+      old_password: passwordData.oldPassword,
+      new_password: passwordData.newPassword,
+      confirm_password: passwordData.confirmPassword
+    })
+    return response.data
   },
 
   /**
    * Solicitar restablecimiento de contraseña
    */
   async requestPasswordReset(email) {
-    try {
-      const response = await api.post('/auth/forgot-password/', {
-        email: email
-      })
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/auth/forgot-password/', {
+      email: email
+    })
+    return response.data
   },
 
   /**
    * Confirmar restablecimiento de contraseña
    */
   async confirmPasswordReset(resetData) {
-    try {
-      const response = await api.post('/auth/reset-password/', {
-        uid: resetData.uid,
-        token: resetData.token,
-        new_password: resetData.newPassword,
-        confirm_password: resetData.confirmPassword
-      })
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/auth/reset-password/', {
+      uid: resetData.uid,
+      token: resetData.token,
+      new_password: resetData.newPassword,
+      confirm_password: resetData.confirmPassword
+    })
+    return response.data
   },
 
   /**
    * Verificar email con token (POST con token en body)
    */
   async verifyEmail(uid, token) {
-    try {
-      const response = await api.post('/auth/verify-email/', {
-        uid: uid,
-        token: token
-      })
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/auth/verify-email/', {
+      uid: uid,
+      token: token
+    })
+    return response.data
   },
 
   /**
    * Verificar email con token desde la URL (GET con token en path)
    */
   async verifyEmailFromToken(token) {
-    try {
-      const response = await api.get(`/auth/verify-email/${token}/`)
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.get(`/auth/verify-email/${token}/`)
+    return response.data
   },
 
   /**
    * Reenviar email de verificación
    */
   async resendEmailVerification(email = null) {
-    try {
-      const payload = email ? { email } : {}
-      const response = await api.post('/auth/resend-verification/', payload)
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const payload = email ? { email } : {}
+    const response = await api.post('/auth/resend-verification/', payload)
+    return response.data
   },
 
   /**
    * Obtener estadísticas de usuarios (solo admin)
    */
   async getUserStats() {
-    try {
-      const response = await api.get('/auth/admin/stats/')
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.get('/auth/admin/stats/')
+    return response.data
   },
 
   /**
    * Realizar acciones masivas en usuarios (solo admin)
    */
   async bulkUserActions(actionData) {
-    try {
-      const response = await api.post('/auth/admin/bulk-actions/', {
-        user_ids: actionData.userIds,
-        action: actionData.action
-      })
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/auth/admin/bulk-actions/', {
+      user_ids: actionData.userIds,
+      action: actionData.action
+    })
+    return response.data
   },
 
   /**
@@ -372,116 +330,72 @@ const authApi = {
    * Obtener un usuario específico por ID (admin/analyst)
    */
   async getUser(userId) {
-    try {
-      const response = await api.get(`/auth/users/${userId}/`)
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.get(`/auth/users/${userId}/`)
+    return response.data
   },
 
   /**
    * Actualizar usuario específico (admin)
    */
   async updateUser(userId, userData) {
-    try {
-      const response = await api.patch(`/auth/users/${userId}/update/`, userData)
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.patch(`/auth/users/${userId}/update/`, userData)
+    return response.data
   },
 
   /**
    * Eliminar usuario (admin)
    */
   async deleteUser(userId) {
-    try {
-      const response = await api.delete(`/auth/users/${userId}/delete/`)
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.delete(`/auth/users/${userId}/delete/`)
+    return response.data
   },
 
   /**
    * Cambiar estado de usuario (activo/inactivo)
    */
   async toggleUserStatus(userId, isActive) {
-    try {
-      const response = await api.patch(`/auth/users/${userId}/update/`, {
-        is_active: isActive
-      })
-      return response.data
-    } catch (error) {
-      throw error
-    }
-  },
-
-  /**
-   * Obtener estadísticas de usuarios
-   */
-  async getUserStats() {
-    try {
-      const response = await api.get('/auth/users/stats/')
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.patch(`/auth/users/${userId}/update/`, {
+      is_active: isActive
+    })
+    return response.data
   },
 
   /**
    * Solicitar recuperación de contraseña
    */
   async forgotPassword(email) {
-    try {
-      const response = await api.post('/auth/forgot-password/', {
-        email: email
-      })
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/auth/forgot-password/', {
+      email: email
+    })
+    return response.data
   },
 
   /**
    * Restablecer contraseña con token
    */
   async resetPassword(token, newPassword, confirmPassword) {
-    try {
-      const response = await api.post('/auth/reset-password/', {
-        token: token,
-        new_password: newPassword,
-        confirm_password: confirmPassword
-      })
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/auth/reset-password/', {
+      token: token,
+      new_password: newPassword,
+      confirm_password: confirmPassword
+    })
+    return response.data
   },
 
   /**
    * Enviar código OTP para verificación de email
    */
   async sendOtp(email) {
-    try {
-      const response = await api.post('/auth/send-otp/', { email })
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/auth/send-otp/', { email })
+    return response.data
   },
 
   /**
    * Verificar código OTP
    */
   async verifyOtp(email, code) {
-    try {
-      const response = await api.post('/auth/verify-otp/', { email, code })
-      return response.data
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/auth/verify-otp/', { email, code })
+    return response.data
   }
 }
 
