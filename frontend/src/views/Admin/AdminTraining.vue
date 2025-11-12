@@ -40,11 +40,11 @@
             <div class="p-6">
               <!-- Image Upload -->
               <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Imágenes</label>
+                <label for="file-input" class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Imágenes</label>
                 <div @drop="handleImageDrop" @dragover.prevent @dragenter="handleDragEnter" @dragleave="handleDragLeave"
                   class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-green-400 transition-colors duration-200"
                   :class="{ 'border-green-400 bg-green-50': isDragOver }">
-                  <input ref="fileInput" type="file" multiple accept="image/*" @change="handleFileSelect"
+                  <input id="file-input" ref="fileInput" type="file" multiple accept="image/*" @change="handleFileSelect"
                     class="hidden" />
 
                   <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor"
@@ -96,26 +96,26 @@
 
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">Alto (mm)</label>
-                      <input v-model.number="image.height" type="number" step="0.1" placeholder="12.5"
+                      <label :for="`height-${index}`" class="block text-sm font-medium text-gray-700 mb-1">Alto (mm)</label>
+                      <input :id="`height-${index}`" v-model.number="image.height" type="number" step="0.1" placeholder="12.5"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200" />
                     </div>
 
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">Ancho (mm)</label>
-                      <input v-model.number="image.width" type="number" step="0.1" placeholder="8.3"
+                      <label :for="`width-${index}`" class="block text-sm font-medium text-gray-700 mb-1">Ancho (mm)</label>
+                      <input :id="`width-${index}`" v-model.number="image.width" type="number" step="0.1" placeholder="8.3"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200" />
                     </div>
 
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">Grosor (mm)</label>
-                      <input v-model.number="image.thickness" type="number" step="0.1" placeholder="6.2"
+                      <label :for="`thickness-${index}`" class="block text-sm font-medium text-gray-700 mb-1">Grosor (mm)</label>
+                      <input :id="`thickness-${index}`" v-model.number="image.thickness" type="number" step="0.1" placeholder="6.2"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200" />
                     </div>
 
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">Peso (g)</label>
-                      <input v-model.number="image.weight" type="number" step="0.01" placeholder="1.25"
+                      <label :for="`weight-${index}`" class="block text-sm font-medium text-gray-700 mb-1">Peso (g)</label>
+                      <input :id="`weight-${index}`" v-model.number="image.weight" type="number" step="0.01" placeholder="1.25"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200" />
                     </div>
                   </div>
@@ -425,7 +425,7 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue';
-import { getTrainingHistory, cancelTrainingJob, getModelMetrics, compareModels, startMLTraining } from '@/services/adminApi.js';
+import { getTrainingHistory, cancelTrainingJob, compareModels as compareModelsApi, startMLTraining } from '@/services/adminApi.js';
 
 export default {
   name: 'AdminTraining',
@@ -633,7 +633,7 @@ export default {
       if (selectedJobsForComparison.value.length < 2) return;
 
       try {
-        const comparison = await compareModels(selectedJobsForComparison.value);
+        const comparison = await compareModelsApi(selectedJobsForComparison.value);
         console.log('Model comparison:', comparison);
         // Implement comparison view
       } catch (error) {
@@ -668,7 +668,7 @@ export default {
     };
 
     const processFiles = (files) => {
-      files.forEach((file, index) => {
+      for (const [index, file] of files.entries()) {
         const reader = new FileReader();
         reader.onload = (e) => {
           const imageData = {
@@ -683,7 +683,7 @@ export default {
           uploadedImages.value.push(imageData);
         };
         reader.readAsDataURL(file);
-      });
+      }
     };
 
     const removeImage = (index) => {
@@ -709,7 +709,7 @@ export default {
         const formData = new FormData();
 
         // Add images and their data
-        uploadedImages.value.forEach((image, index) => {
+        for (const [index, image] of uploadedImages.value.entries()) {
           formData.append('images', image.file);
           formData.append(`data_${index}`, JSON.stringify({
             height: image.height,
@@ -717,9 +717,9 @@ export default {
             thickness: image.thickness,
             weight: image.weight
           }));
-        });
+        }
 
-        // TODO: Implement API call to submit dataset
+        // Submit dataset to API
         console.log('Submitting dataset with:', uploadedImages.value.length, 'samples');
 
         // Simulate API call
