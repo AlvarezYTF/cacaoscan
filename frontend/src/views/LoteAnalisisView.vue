@@ -58,7 +58,7 @@
 
         <!-- Loading state -->
         <div v-if="loading" class="text-center py-5">
-          <div class="spinner-border text-primary" role="status">
+          <div class="spinner-border text-primary" aria-label="Cargando análisis del lote">
             <span class="visually-hidden">Cargando...</span>
           </div>
           <p class="mt-3">Cargando análisis del lote...</p>
@@ -192,9 +192,10 @@
                 <div v-if="analisisDetallados.length > 0">
                   <h6 class="text-muted mb-3">Análisis Detallados</h6>
                   <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover" aria-label="Tabla de análisis detallados del lote">
+                      <caption class="sr-only">Tabla de análisis detallados mostrando fecha, tipo, peso, tamaño, grosor, calidad y estado de cada análisis</caption>
                       <thead>
-                        <tr>
+                        <tr>  
                           <th>Fecha</th>
                           <th>Tipo</th>
                           <th>Peso (g)</th>
@@ -294,7 +295,6 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
-import Swal from 'sweetalert2'
 
 const route = useRoute()
 const router = useRouter()
@@ -422,7 +422,7 @@ const generateRecomendaciones = () => {
     })
   }
   
-  if (analisisResumen.value.peso_promedio < 1.0) {
+  if (analisisResumen.value.peso_promedio < 1) {
     recomendaciones.value.push({
       titulo: 'Optimizar Nutrición del Suelo',
       descripcion: 'El peso bajo sugiere deficiencias nutricionales. Considerar fertilización orgánica.'
