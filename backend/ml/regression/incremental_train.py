@@ -654,16 +654,16 @@ class IncrementalTrainer:
             try:
                 base_model, base_metadata = self.model_manager.load_model_version(
                     base_model_version, 
-                    create_model(target=target),
+                    create_model(num_outputs=1),
                     self.device
                 )
                 logger.info(f"Modelo base versión {base_model_version} cargado")
             except FileNotFoundError:
                 logger.warning("Modelo base no encontrado, entrenando desde cero")
-                base_model = create_model(target=target).to(self.device)
+                base_model = create_model(num_outputs=1).to(self.device)
                 base_metadata = None
         else:
-            base_model = create_model(target=target).to(self.device)
+            base_model = create_model(num_outputs=1).to(self.device)
             base_metadata = None
         
         # 3. Preparar datos de entrenamiento
