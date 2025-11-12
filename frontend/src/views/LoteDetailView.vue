@@ -26,7 +26,7 @@
 
         <!-- Loading state -->
         <div v-if="loading" class="text-center py-5">
-          <div class="spinner-border text-primary" role="status">
+          <div class="spinner-border text-primary" aria-label="Cargando información del lote">
             <span class="visually-hidden">Cargando...</span>
           </div>
           <p class="mt-3">Cargando información del lote...</p>
@@ -377,7 +377,7 @@ const generateReport = async () => {
       }
     })
     
-    const response = await api.post('/reportes/', {
+    await api.post('/reportes/', {
       tipo_reporte: 'lote',
       formato: 'pdf',
       titulo: `Reporte de Lote: ${lote.value.identificador}`,
@@ -394,6 +394,7 @@ const generateReport = async () => {
     
     router.push('/reportes')
   } catch (err) {
+    console.error('Error generando reporte:', err)
     await Swal.fire({
       title: 'Error',
       text: 'No se pudo generar el reporte',
@@ -426,6 +427,7 @@ const deleteLote = async () => {
       
       router.push(`/fincas/${lote.value.finca}/lotes`)
     } catch (err) {
+      console.error('Error eliminando lote:', err)
       await Swal.fire({
         title: 'Error',
         text: 'No se pudo eliminar el lote',
@@ -447,7 +449,7 @@ onMounted(() => {
 
 <style scoped>
 .border-end:last-child {
-  border-end: none !important;
+  border-right: none !important;
 }
 
 .card {
