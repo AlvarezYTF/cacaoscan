@@ -6,7 +6,8 @@
     </div>
     
     <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
+      <table class="min-w-full divide-y divide-gray-200" aria-label="Tabla de reportes generados">
+        <caption class="sr-only">Tabla de reportes mostrando nombre, tipo, período, fecha de creación, estado y acciones disponibles</caption>
         <thead class="bg-gray-50">
           <tr>
             <th v-for="column in columns" :key="column.key" 
