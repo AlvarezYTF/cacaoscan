@@ -73,7 +73,7 @@ class IncrementalTrainingStatusView(APIView):
             logger.error(f"Error obteniendo estado incremental: {str(e)}")
             return create_error_response(
                 message="Error interno obteniendo estado incremental",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -257,7 +257,7 @@ class IncrementalTrainingView(APIView):
             
             return create_error_response(
                 message="Error interno en entrenamiento incremental",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -407,7 +407,7 @@ class IncrementalDataUploadView(APIView):
             logger.error(f"Error subiendo datos incrementales: {str(e)}")
             return create_error_response(
                 message="Error interno subiendo datos",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -492,7 +492,7 @@ class IncrementalModelVersionsView(APIView):
             logger.error(f"Error obteniendo versiones de modelos: {str(e)}")
             return create_error_response(
                 message="Error interno obteniendo versiones",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -561,7 +561,7 @@ class IncrementalDataVersionsView(APIView):
             logger.error(f"Error obteniendo versiones de datos: {str(e)}")
             return create_error_response(
                 message="Error interno obteniendo versiones",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

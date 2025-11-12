@@ -186,7 +186,7 @@ class ModelMetricsListView(APIView):
             logger.error(f"Error listando métricas de modelos: {str(e)}")
             return create_error_response(
                 message="Error interno listando métricas",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -240,7 +240,7 @@ class ModelMetricsDetailView(APIView):
             logger.error(f"Error obteniendo detalles de métricas: {str(e)}")
             return create_error_response(
                 message="Error interno obteniendo detalles",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -301,7 +301,7 @@ class ModelMetricsCreateView(APIView):
             else:
                 return create_error_response(
                     message="Datos de métricas inválidos",
-                    errors=serializer.errors,
+                    details=serializer.errors,
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
                 
@@ -309,7 +309,7 @@ class ModelMetricsCreateView(APIView):
             logger.error(f"Error creando métricas de modelo: {str(e)}")
             return create_error_response(
                 message="Error interno creando métricas",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -371,7 +371,7 @@ class ModelMetricsUpdateView(APIView):
             else:
                 return create_error_response(
                     message="Datos de métricas inválidos",
-                    errors=serializer.errors,
+                    details=serializer.errors,
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
                 
@@ -384,7 +384,7 @@ class ModelMetricsUpdateView(APIView):
             logger.error(f"Error actualizando métricas de modelo: {str(e)}")
             return create_error_response(
                 message="Error interno actualizando métricas",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -437,7 +437,7 @@ class ModelMetricsDeleteView(APIView):
             logger.error(f"Error eliminando métricas de modelo: {str(e)}")
             return create_error_response(
                 message="Error interno eliminando métricas",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -522,7 +522,7 @@ class ModelMetricsStatsView(APIView):
             logger.error(f"Error obteniendo estadísticas de métricas: {str(e)}")
             return create_error_response(
                 message="Error interno obteniendo estadísticas",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -640,7 +640,7 @@ class ModelPerformanceTrendView(APIView):
             logger.error(f"Error obteniendo tendencia de rendimiento: {str(e)}")
             return create_error_response(
                 message="Error interno obteniendo tendencia",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -773,7 +773,7 @@ class ModelComparisonView(APIView):
             logger.error(f"Error comparando modelos: {str(e)}")
             return create_error_response(
                 message="Error interno comparando modelos",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -824,7 +824,7 @@ class BestModelsView(APIView):
             logger.error(f"Error obteniendo mejores modelos: {str(e)}")
             return create_error_response(
                 message="Error interno obteniendo mejores modelos",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -875,7 +875,7 @@ class ProductionModelsView(APIView):
             logger.error(f"Error obteniendo modelos en producción: {str(e)}")
             return create_error_response(
                 message="Error interno obteniendo modelos en producción",
-                errors={"error": str(e)},
+                details={"error": str(e)},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

@@ -60,7 +60,7 @@ class LoginView(APIView):
         if not serializer.is_valid():
             return create_error_response(
                 message="Datos de login inválidos",
-                errors=serializer.errors,
+                details=serializer.errors,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
         
@@ -80,7 +80,7 @@ class LoginView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_401_UNAUTHORIZED
             )
 
@@ -120,7 +120,7 @@ class RegisterView(APIView):
         if not serializer.is_valid():
             return create_error_response(
                 message="Datos de registro inválidos",
-                errors=serializer.errors,
+                details=serializer.errors,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
         
@@ -139,7 +139,7 @@ class RegisterView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
@@ -187,7 +187,7 @@ class LogoutView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
@@ -247,7 +247,7 @@ class RefreshTokenView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
@@ -287,7 +287,7 @@ class VerifyEmailView(APIView):
         if not serializer.is_valid():
             return create_error_response(
                 message="Datos de verificación inválidos",
-                errors=serializer.errors,
+                details=serializer.errors,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
         
@@ -304,7 +304,7 @@ class VerifyEmailView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
@@ -344,7 +344,7 @@ class ResendVerificationView(APIView):
         if not serializer.is_valid():
             return create_error_response(
                 message="Datos de reenvío inválidos",
-                errors=serializer.errors,
+                details=serializer.errors,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
         
@@ -361,7 +361,7 @@ class ResendVerificationView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
@@ -423,7 +423,7 @@ class ForgotPasswordView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
@@ -489,7 +489,7 @@ class ResetPasswordView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
@@ -534,7 +534,7 @@ class UserProfileView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
     
@@ -584,7 +584,7 @@ class UserProfileView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
@@ -655,7 +655,7 @@ class ScanMeasureView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
@@ -755,7 +755,7 @@ class AnalysisHistoryView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
@@ -805,7 +805,7 @@ class AnalysisDetailView(APIView):
             status_code = status.HTTP_404_NOT_FOUND if result.error.error_code == 'not_found' else status.HTTP_400_BAD_REQUEST
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status_code
             )
 
@@ -853,7 +853,7 @@ class AnalysisDeleteView(APIView):
             status_code = status.HTTP_404_NOT_FOUND if result.error.error_code == 'not_found' else status.HTTP_400_BAD_REQUEST
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status_code
             )
 
@@ -923,7 +923,7 @@ class AnalysisStatsView(APIView):
         else:
             return create_error_response(
                 message=result.error.message,
-                errors=result.error.details,
+                details=result.error.details,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
