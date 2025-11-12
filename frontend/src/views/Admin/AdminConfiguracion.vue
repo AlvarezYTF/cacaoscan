@@ -83,10 +83,11 @@
                   </div>
                   
                   <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Logo actual</label>
+                    <label for="logo-upload" class="block text-sm font-medium text-gray-700 mb-2">Logo actual</label>
                     <div class="flex items-center space-x-4">
                       <img v-if="generalConfig.logo_url" :src="generalConfig.logo_url" alt="Logo" class="h-20 w-20 object-contain border border-gray-200 rounded-lg p-2">
                       <input
+                        id="logo-upload"
                         type="file"
                         accept="image/*"
                         @change="handleLogoUpload"
@@ -172,9 +173,10 @@
                   
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">Tiempo máximo de sesión (minutos)</label>
+                      <label for="session-timeout" class="block text-sm font-medium text-gray-700 mb-2">Tiempo máximo de sesión (minutos)</label>
                       <div class="flex items-center space-x-4">
                         <input
+                          id="session-timeout"
                           type="range"
                           v-model.number="securityConfig.session_timeout"
                           min="5"
@@ -189,8 +191,9 @@
                     </div>
                     
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">Límite de intentos de login</label>
+                      <label for="login-attempts" class="block text-sm font-medium text-gray-700 mb-2">Límite de intentos de login</label>
                       <input
+                        id="login-attempts"
                         type="number"
                         v-model.number="securityConfig.login_attempts"
                         min="3"
@@ -486,20 +489,6 @@ export default {
       set: (val) => configStore.updateSecurity(val)
     })
 
-    const mlConfigData = computed({
-      get: () => ({
-        ...configStore.ml,
-        metrics: {
-          mae: '0.045',
-          rmse: '0.068',
-          r2: '0.92'
-        },
-        last_training: configStore.ml.last_training 
-          ? new Date(configStore.ml.last_training).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })
-          : '15 de Noviembre, 2024'
-      }),
-      set: (val) => configStore.updateML(val)
-    })
     
     // Referencia reactiva para uso en el template
     const mlConfig = ref({
@@ -694,6 +683,7 @@ export default {
           `
         })
       } catch (error) {
+        console.error('Error verificando estado del sistema:', error)
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -813,11 +803,11 @@ input[type="range"]::-moz-range-thumb {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .md\\:grid-cols-2 {
+  [class*="md:grid-cols-2"] {
     grid-template-columns: 1fr;
   }
   
-  .md\\:grid-cols-3 {
+  [class*="md:grid-cols-3"] {
     grid-template-columns: 1fr;
   }
 }
