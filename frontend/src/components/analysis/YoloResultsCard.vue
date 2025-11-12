@@ -1,5 +1,5 @@
 <template>
-  <div class="yolo-results-container">
+  <div class="max-w-5xl mx-auto">
     <!-- Header con método de predicción -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center space-x-3">
@@ -305,11 +305,6 @@ export default {
 </script>
 
 <style scoped>
-@reference "tailwindcss";
-
-.yolo-results-container {
-  @apply max-w-5xl mx-auto;
-}
 
 /* Animaciones suaves */
 .transition-all {
