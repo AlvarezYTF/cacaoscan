@@ -287,7 +287,7 @@
                       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                         <div v-for="(img, index) in capturedImages" :key="getImageKey(img, index)" class="relative group">
                           <div class="aspect-square rounded-2xl overflow-hidden bg-gray-200 border-2 border-gray-200 group-hover:border-green-300 transition-all duration-300">
-                            <img :src="URL.createObjectURL(img)" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                            <img :src="URL.createObjectURL(img)" :alt="`Foto capturada ${index + 1} del análisis de cacao`" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                           </div>
                           <button
                             @click="removeCapturedImage(index)"
