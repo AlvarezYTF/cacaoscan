@@ -80,8 +80,8 @@
             <div class="card-body">
               <div class="row align-items-center">
                 <div class="col-md-3">
-                  <label class="form-label">Tipo de Reporte</label>
-                  <select v-model="filtros.tipo_reporte" class="form-select">
+                  <label for="tipo-reporte" class="form-label">Tipo de Reporte</label>
+                  <select id="tipo-reporte" v-model="filtros.tipo_reporte" class="form-select">
                     <option value="">Todos los tipos</option>
                     <option value="calidad">Calidad</option>
                     <option value="finca">Finca</option>
@@ -90,8 +90,8 @@
                   </select>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label">Formato</label>
-                  <select v-model="filtros.formato" class="form-select">
+                  <label for="formato-reporte" class="form-label">Formato</label>
+                  <select id="formato-reporte" v-model="filtros.formato" class="form-select">
                     <option value="">Todos los formatos</option>
                     <option value="pdf">PDF</option>
                     <option value="excel">Excel</option>
@@ -100,8 +100,8 @@
                   </select>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label">Estado</label>
-                  <select v-model="filtros.estado" class="form-select">
+                  <label for="estado-reporte" class="form-label">Estado</label>
+                  <select id="estado-reporte" v-model="filtros.estado" class="form-select">
                     <option value="">Todos los estados</option>
                     <option value="completado">Completado</option>
                     <option value="generando">Generando</option>
@@ -109,7 +109,6 @@
                   </select>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label">&nbsp;</label>
                   <div class="d-flex gap-2">
                     <button @click="aplicarFiltros" class="btn btn-primary">
                       <i class="fas fa-filter"></i>
@@ -139,7 +138,7 @@
             </div>
             <div class="card-body">
               <div v-if="cargando" class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
+                <div class="spinner-border text-primary" aria-label="Cargando reportes">
                   <span class="visually-hidden">Cargando...</span>
                 </div>
                 <p class="mt-2 text-muted">Cargando reportes...</p>
@@ -152,7 +151,8 @@
               </div>
 
               <div v-else class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover" aria-label="Tabla de reportes generados">
+                  <caption class="sr-only">Tabla de reportes mostrando título, tipo, formato, estado, fecha de solicitud, tamaño y acciones disponibles</caption>
                   <thead>
                     <tr>
                       <th>Título</th>
@@ -205,7 +205,7 @@
                         <small v-else class="text-muted">-</small>
                       </td>
                       <td>
-                        <div class="btn-group" role="group">
+                        <div class="btn-group" aria-label="Acciones del reporte">
                           <ReportDownloadButton :reporte="reporte" />
                           <button
                             @click="verDetallesReporte(reporte.id)"
@@ -297,57 +297,71 @@
               <div class="row">
                 <div class="col-md-6">
                   <h6>Información General</h6>
-                  <table class="table table-sm">
+                  <table class="table table-sm" aria-label="Información general del reporte">
+                    <caption class="sr-only">Tabla con información general del reporte mostrando título, tipo y formato</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Campo</th>
+                        <th scope="col">Valor</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       <tr>
-                        <td><strong>Título:</strong></td>
+                        <th scope="row">Título:</th>
                         <td>{{ detallesReporte.titulo }}</td>
                       </tr>
                       <tr>
-                        <td><strong>Tipo:</strong></td>
+                        <th scope="row">Tipo:</th>
                         <td>{{ detallesReporte.tipo_reporte_display }}</td>
                       </tr>
                       <tr>
-                        <td><strong>Formato:</strong></td>
+                        <th scope="row">Formato:</th>
                         <td>{{ detallesReporte.formato_display }}</td>
                       </tr>
                       <tr>
-                        <td><strong>Estado:</strong></td>
-                      <td>
-                        <span
-                          class="badge"
-                          :class="{
-                            'bg-success': detallesReporte.estado === 'completado',
-                            'bg-warning': detallesReporte.estado === 'generando',
-                            'bg-danger': detallesReporte.estado === 'fallido'
-                          }"
-                        >
-                          {{ detallesReporte.estado_display }}
-                        </span>
-                      </td>
+                        <th scope="row">Estado:</th>
+                        <td>
+                          <span
+                            class="badge"
+                            :class="{
+                              'bg-success': detallesReporte.estado === 'completado',
+                              'bg-warning': detallesReporte.estado === 'generando',
+                              'bg-danger': detallesReporte.estado === 'fallido'
+                            }"
+                          >
+                            {{ detallesReporte.estado_display }}
+                          </span>
+                        </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
                 <div class="col-md-6">
                   <h6>Información Técnica</h6>
-                  <table class="table table-sm">
+                  <table class="table table-sm" aria-label="Información técnica del reporte">
+                    <caption class="sr-only">Tabla con información técnica del reporte mostrando fechas, tiempo de generación y tamaño</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Campo</th>
+                        <th scope="col">Valor</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       <tr>
-                        <td><strong>Fecha Solicitud:</strong></td>
+                        <th scope="row">Fecha Solicitud:</th>
                         <td>{{ formatearFecha(detallesReporte.fecha_solicitud) }}</td>
                       </tr>
                       <tr>
-                        <td><strong>Fecha Generación:</strong></td>
+                        <th scope="row">Fecha Generación:</th>
                         <td>{{ detallesReporte.fecha_generacion ? formatearFecha(detallesReporte.fecha_generacion) : 'N/A' }}</td>
                       </tr>
                       <tr>
-                        <td><strong>Tiempo Generación:</strong></td>
+                        <th scope="row">Tiempo Generación:</th>
                         <td>{{ detallesReporte.tiempo_generacion_segundos ? `${detallesReporte.tiempo_generacion_segundos}s` : 'N/A' }}</td>
-                    </tr>
-                    <tr>
-                      <td><strong>Tamaño:</strong></td>
-                      <td>{{ detallesReporte.tamaño_archivo_mb ? `${detallesReporte.tamaño_archivo_mb} MB` : 'N/A' }}</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Tamaño:</th>
+                        <td>{{ detallesReporte.tamaño_archivo_mb ? `${detallesReporte.tamaño_archivo_mb} MB` : 'N/A' }}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -390,7 +404,7 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
 import ReportGenerator from '@/components/reportes/ReportGenerator.vue'
