@@ -107,14 +107,16 @@
                   :src="previewData.content"
                   width="100%"
                   height="600px"
-                  frameborder="0"
+                  style="border: none;"
+                  :title="`Vista previa del reporte ${report.nombre || 'PDF'}`"
                 ></iframe>
               </div>
 
               <!-- Excel Preview -->
               <div v-else-if="report.formato === 'excel'" class="excel-preview">
                 <div class="table-container">
-                  <table class="data-table">
+                  <table class="data-table" aria-label="Vista previa de datos del reporte Excel">
+                    <caption class="sr-only">Tabla mostrando los datos del reporte en formato Excel con columnas y filas</caption>
                     <thead>
                       <tr>
                         <th v-for="header in previewData.headers" :key="header">
@@ -140,7 +142,8 @@
               <!-- CSV Preview -->
               <div v-else-if="report.formato === 'csv'" class="csv-preview">
                 <div class="table-container">
-                  <table class="data-table">
+                  <table class="data-table" aria-label="Vista previa de datos del reporte CSV">
+                    <caption class="sr-only">Tabla mostrando los datos del reporte en formato CSV con columnas y filas</caption>
                     <thead>
                       <tr>
                         <th v-for="header in previewData.headers" :key="header">
@@ -315,6 +318,14 @@ export default {
       return `${minutes}m ${remainingSeconds}s`
     }
 
+    // Función auxiliar para capitalizar palabras sin usar replace() con regex
+    const capitalizeWords = (str) => {
+      return str.split(' ').map(word => {
+        if (word.length === 0) return word
+        return word[0].toUpperCase() + word.slice(1).toLowerCase()
+      }).join(' ')
+    }
+
     const formatParameterLabel = (key) => {
       const labels = {
         'finca_id': 'Finca',
@@ -334,7 +345,7 @@ export default {
         'schedule_email': 'Email',
         'schedule_retention': 'Retención'
       }
-      return labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      return labels[key] || capitalizeWords(key.replaceAll('_', ' '))
     }
 
     const formatParameterValue = (value) => {
@@ -360,7 +371,7 @@ export default {
         'altitud_minima': 'Altitud Mínima',
         'altitud_maxima': 'Altitud Máxima'
       }
-      return labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      return labels[key] || capitalizeWords(key.replaceAll('_', ' '))
     }
 
     const formatFilterValue = (value) => {
@@ -380,15 +391,11 @@ export default {
         'charts_count': 'Número de Gráficos',
         'tables_count': 'Número de Tablas'
       }
-      return labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      return labels[key] || capitalizeWords(key.replaceAll('_', ' '))
     }
 
-    const formatStatValue = (value) => {
-      if (typeof value === 'number') {
-        return value.toLocaleString()
-      }
-      return value
-    }
+    // Reutilizar formatFilterValue en lugar de duplicar código
+    const formatStatValue = formatFilterValue
 
     const formatJson = (data) => {
       try {
@@ -459,8 +466,8 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #4c51bf 0%, #553c9a 100%);
+  color: #ffffff;
 }
 
 .header-content {
@@ -488,14 +495,14 @@ export default {
 
 .header-text p {
   margin: 0.25rem 0 0 0;
-  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.95);
   font-size: 0.875rem;
 }
 
 .close-btn {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.2);
   border: none;
-  color: white;
+  color: #ffffff;
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
@@ -507,7 +514,7 @@ export default {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .modal-body {
@@ -794,9 +801,9 @@ export default {
 }
 
 .btn-primary {
-  background-color: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
+  background-color: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
 }
 
 .btn-primary:hover:not(:disabled) {
