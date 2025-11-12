@@ -421,7 +421,7 @@ export default {
   font-size: 1.125rem;
   font-weight: 600;
   color: #1f2937;
-  font-family: "'Inter', sans-serif";
+  font-family: "Inter", sans-serif;
 }
 
 .chart-controls {
