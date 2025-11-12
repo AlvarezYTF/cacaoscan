@@ -40,7 +40,7 @@
 
         <!-- Loading state -->
         <div v-if="loading" class="text-center py-5">
-          <div class="spinner-border text-primary" role="status">
+          <div class="spinner-border text-primary" aria-label="Cargando lotes">
             <span class="visually-hidden">Cargando...</span>
           </div>
           <p class="mt-3">Cargando lotes...</p>
@@ -145,7 +145,8 @@
           <div class="card">
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-hover">
+                image.png                <table class="table table-hover" aria-label="Tabla de lotes de la finca">
+                  <caption class="sr-only">Tabla de lotes mostrando identificador, variedad, área, estado, fecha de plantación, análisis y acciones disponibles</caption>
                   <thead>
                     <tr>
                       <th>Identificador</th>
@@ -218,7 +219,7 @@
               </div>
 
               <!-- Paginación -->
-              <nav v-if="totalPages > 1" class="mt-4">
+              <nav v-if="totalPages > 1" class="mt-4" aria-label="Navegación de paginación">
                 <ul class="pagination justify-content-center">
                   <li class="page-item" :class="{ disabled: currentPage === 1 }">
                     <button 
@@ -270,7 +271,6 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
-import Swal from 'sweetalert2'
 
 const route = useRoute()
 const router = useRouter()
