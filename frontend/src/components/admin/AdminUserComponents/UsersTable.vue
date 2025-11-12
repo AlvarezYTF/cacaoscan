@@ -35,7 +35,8 @@
     </div>
 
     <div v-else class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
+      <table class="min-w-full divide-y divide-gray-200" aria-label="Tabla de usuarios del sistema">
+        <caption class="sr-only">Tabla de usuarios mostrando información de usuario, email, rol, estado, último login, fecha de registro y acciones disponibles</caption>
         <thead class="bg-gradient-to-r from-gray-50 to-gray-50">
           <tr>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -286,4 +287,15 @@ const getRoleBadgeClass = (role) => {
 
 <style scoped>
 /* Solo estilos que no están en Tailwind si es necesario */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
 </style>
