@@ -37,7 +37,8 @@
       
       <!-- Samples table -->
       <div v-else class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
+        <table class="min-w-full divide-y divide-gray-200" aria-label="Tabla de muestras de entrenamiento">
+          <caption class="sr-only">Tabla de muestras mostrando imagen, ID, dimensiones, peso, fecha y acciones disponibles</caption>
           <thead class="bg-gray-50">
             <tr>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Imagen</th>
@@ -233,5 +234,17 @@ th {
 .overflow-x-auto::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 </style>
