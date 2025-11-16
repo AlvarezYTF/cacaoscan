@@ -1,9 +1,10 @@
-"""
+""" 
 Comando Django para entrenar modelos de regresión de cacao.
 ACTUALIZADO:
 - Añadido '--segmentation-backend' para controlar cómo se generan los crops.
 """
 import time
+import platform
 import subprocess
 import signal
 from django.core.management.base import BaseCommand, CommandError
@@ -175,7 +176,16 @@ class Command(BaseCommand):
         is_windows = platform.system() == 'Windows'
         num_workers = options['num_workers']
         if is_windows and num_workers > 0:
-            logger.warning("Windows detectado: Se recomienda usar --num-workers 0 para evitar problemas.")
+            logger.warning("Windows detectado: Se usará --num-workers 0 para evitar problemas de multiprocessing.")
+            num_workers = 0
+
+        # En contenedores Docker es frecuente quedarse sin memoria compartida (shm)
+        # al usar múltiples workers del DataLoader. Forzamos 0 workers salvo que
+        # el usuario lo haya fijado explícitamente en 0.
+        if num_workers != 0:
+            logger.warning(
+                "Forzando num_workers=0 para evitar errores de shared memory en DataLoader."
+            )
             num_workers = 0
 
         config = {

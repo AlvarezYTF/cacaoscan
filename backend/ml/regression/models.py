@@ -321,7 +321,8 @@ class HybridCacaoRegression(nn.Module):
         )
         convnext_features = self.convnext.num_features  # 768
         
-        # Branch para features de pxeles (si est habilitado)
+        # Branch para features de píxeles (si está habilitado)
+        pixel_features_dim = 0
         if use_pixel_features:
             self.pixel_branch = nn.Sequential(
                 nn.Linear(num_pixel_features, 64),
@@ -331,11 +332,9 @@ class HybridCacaoRegression(nn.Module):
                 nn.ReLU(inplace=True)
             )
             pixel_features_dim = 128
-        else:
-            pixel_features = 0
         
-        # Calcular tamao total de features fusionadas
-        total_features = resnet_features + convnext_features + pixel_features
+        # Calcular tamaño total de features fusionadas
+        total_features = resnet_features + convnext_features + pixel_features_dim
         
         # Proyeccin de features para normalizar dimensiones
         self.resnet_projection = nn.Sequential(
@@ -350,10 +349,10 @@ class HybridCacaoRegression(nn.Module):
             nn.Dropout(dropout_rate)
         )
         
-        # Tamao despus de proyeccin
-        fused_features = 256 + 256 + pixel_features  # 512 + 128 si usa pxeles, 512 si no
+        # Tamaño después de proyección
+        fused_features_dim = 256 + 256 + pixel_features_dim  # 512 + 128 si usa píxeles, 512 si no
         
-        # Capa de fusin
+        # Capa de fusión
         self.fusion = nn.Sequential(
             nn.Linear(fused_features_dim, 512),
             nn.ReLU(inplace=True),

@@ -26,6 +26,7 @@ from ml.utils.paths import (
     ensure_dir_exists,
     get_datasets_dir,
     get_crop_image_path,
+    get_crops_dir,
 )
 from ml.utils.logs import get_ml_logger
 # Importar el procesador de segmentación que SÍ funciona (rembg/opencv)
@@ -77,6 +78,7 @@ class Command(BaseCommand):
         output_dir = Path(options['output_dir'])
         calibration_file = Path(options['calibration_file'])
         # Usar directamente la carpeta de crops (cacao_images/crops/{id}.png)
+        processed_images_dir = get_crops_dir()
         ensure_dir_exists(output_dir)
         
         # Preparar registros existentes si el archivo ya existe

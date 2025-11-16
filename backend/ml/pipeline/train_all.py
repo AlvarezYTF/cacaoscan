@@ -187,6 +187,11 @@ class CacaoTrainingPipeline:
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
+        # Flags principales de configuración de modelo
+        self.is_multi_head = bool(self.config.get("multi_head", False))
+        self.is_hybrid = bool(self.config.get("hybrid", False))
+        # Flag para controlar si se usan features de píxeles en los splits y datasets
+        self.use_pixel_features = bool(self.config.get("use_pixel_features", False))
         
         logger.info(f"Pipeline inicializado con configuración: {config}")
     
@@ -198,6 +203,17 @@ class CacaoTrainingPipeline:
             Tuple con (rutas de imágenes, targets, pixel_features)
         """
         logger.info("Cargando datos...")
+        
+        # Intentar cargar calibración de píxeles (pixel_calibration.json)
+        pixel_calibration = None
+        calibration_file = get_datasets_dir() / "pixel_calibration.json"
+        if calibration_file.exists():
+            try:
+                pixel_calibration = load_json(calibration_file)
+                num_calib = len(pixel_calibration.get("calibration_records", []))
+                logger.info(f"Calibración de píxeles cargada: {num_calib} registros desde {calibration_file}")
+            except Exception as e:
+                logger.warning(f"Error cargando pixel_calibration.json ({calibration_file}): {e}")
         
         # Cargar registros válidos
         loader = CacaoDatasetLoader()
@@ -230,6 +246,12 @@ class CacaoTrainingPipeline:
         # Validar y regenerar crops de mala calidad si est configurado
         validate_crops = self.config.get('validate_crops_quality', True)
         regenerate_bad = self.config.get('regenerate_bad_crops', True)
+        seg_backend = self.config.get('segmentation_backend', 'auto')
+        # Si el backend es 'opencv', no queremos generar ni regenerar PNGs:
+        # entrenamos solo con los crops ya existentes.
+        if seg_backend == 'opencv':
+            validate_crops = False
+            regenerate_bad = False
         
         if validate_crops and crop_records:
             logger.info("Validando calidad de crops existentes...")
@@ -298,16 +320,28 @@ class CacaoTrainingPipeline:
             
             crop_records = good_crop_records
         
-        # Generar crops para los que faltan
+        # Generar crops para los que faltan (solo si está permitido)
         if missing_crop_records:
-            logger.info(f"Generando crops para {len(missing_crop_records)} imágenes faltantes...")
-            new_crop_records = self._generate_crops_for_missing(missing_crop_records)
-            crop_records.extend(new_crop_records)
-            
-            logger.info(f"Total de registros con crops después de generación: {len(crop_records)}")
-            
-            if len(crop_records) < 10:
-                raise ValueError(f"Muy pocos registros con crops después de generación: {len(crop_records)}")
+            if seg_backend == 'opencv':
+                # Modo "solo usar PNG existentes": no generar nuevos crops
+                logger.info(
+                    f"Modo sólo-crops-existentes (segmentation_backend=opencv): "
+                    f"se omiten {len(missing_crop_records)} registros sin PNG."
+                )
+                if len(crop_records) < 10:
+                    raise ValueError(
+                        f"Muy pocos registros con crops existentes: {len(crop_records)}. "
+                        "Se necesitan al menos 10 para entrenamiento."
+                    )
+            else:
+                logger.info(f"Generando crops para {len(missing_crop_records)} imágenes faltantes...")
+                new_crop_records = self._generate_crops_for_missing(missing_crop_records)
+                crop_records.extend(new_crop_records)
+                
+                logger.info(f"Total de registros con crops después de generación: {len(crop_records)}")
+                
+                if len(crop_records) < 10:
+                    raise ValueError(f"Muy pocos registros con crops después de generación: {len(crop_records)}")
         else:
             logger.info("[OK] Todos los crops ya existen y estn validados.")
         
@@ -944,8 +978,18 @@ class CacaoTrainingPipeline:
             
             # 4. Crear splits con targets normalizados
             logger.info("Paso 4: Creando splits de datos...")
-            train_images, val_images, test_images, train_targets, val_targets, test_targets = self.create_stratified_split(
-                image_paths, normalized_targets
+            (
+                train_images,
+                val_images,
+                test_images,
+                train_targets,
+                val_targets,
+                test_targets,
+                train_pixel_features,
+                val_pixel_features,
+                test_pixel_features,
+            ) = self.create_stratified_split(
+                image_paths, normalized_targets, pixel_features
             )
             
             logger.info(f"Splits creados - Train: {len(train_images)}, Val: {len(val_images)}, Test: {len(test_images)}")
@@ -960,25 +1004,14 @@ class CacaoTrainingPipeline:
             val_images_indices = [image_paths.index(img) for img in val_images]
             test_images_indices = [image_paths.index(img) for img in test_images]
             
-            self.train_targets_original = {t: targets[t][train_images_indices] for t in TARGETS}
-            self.val_targets_original = {t: targets[t][val_images_indices] for t in TARGETS}
-            self.test_targets_original = {t: targets[t][test_images_indices] for t in TARGETS}
+            self.train_targets_original = {t: targets_original[t][train_images_indices] for t in TARGETS}
+            self.val_targets_original = {t: targets_original[t][val_images_indices] for t in TARGETS}
+            self.test_targets_original = {t: targets_original[t][test_images_indices] for t in TARGETS}
             
             # Guardar targets normalizados para usar en datasets
             self.train_targets = train_targets
             self.val_targets = val_targets
             self.test_targets = test_targets
-            
-            # Dividir pixel_features por splits si estn disponibles
-            train_pixel_features = None
-            val_pixel_features = None
-            test_pixel_features = None
-            
-            if pixel_features is not None:
-                train_pixel_features = {k: v[train_images_indices] for k, v in pixel_features.items()}
-                val_pixel_features = {k: v[val_images_indices] for k, v in pixel_features.items()}
-                test_pixel_features = {k: v[test_images_indices] for k, v in pixel_features.items()}
-                logger.info(" Features de pxeles divididas por splits")
             
             # Guardar pixel_features para usar en datasets
             self.pixel_features = pixel_features

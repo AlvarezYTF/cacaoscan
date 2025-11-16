@@ -476,6 +476,72 @@ def train_multi_head_model(
     best_val_loss = float('inf')
     patience_counter = 0
     best_model_state = None
+
+    def _split_targets(batch_targets: Any, device: torch.device) -> Dict[str, torch.Tensor]:
+        """
+        Normaliza el formato de targets por batch a un dict por clave en TARGETS.
+        Soporta:
+        - Dict[str, Tensor]
+        - Tensor 1D o 2D donde el último dim tiene al menos 4 valores en el orden:
+          [alto, ancho, grosor, peso, ...]
+        """
+        if isinstance(batch_targets, dict):
+            return {k: v.to(device) for k, v in batch_targets.items()}
+
+        if isinstance(batch_targets, torch.Tensor):
+            # Asegurar dimensión de batch
+            if batch_targets.ndim == 1:
+                batch_targets = batch_targets.unsqueeze(0)
+
+            # Aplanar todo menos la última dimensión
+            if batch_targets.ndim > 2:
+                batch_targets = batch_targets.view(-1, batch_targets.shape[-1])
+
+            if batch_targets.shape[-1] < len(TARGETS):
+                raise ValueError(
+                    f"Se esperaban al menos {len(TARGETS)} columnas para targets tensor, "
+                    f"se obtuvo shape={batch_targets.shape}"
+                )
+
+            batch_targets = batch_targets.to(device)
+            return {
+                "alto": batch_targets[:, 0],
+                "ancho": batch_targets[:, 1],
+                "grosor": batch_targets[:, 2],
+                "peso": batch_targets[:, 3],
+            }
+
+        raise TypeError(f"Formato de targets no soportado: {type(batch_targets)}")
+
+    def _split_outputs(batch_outputs: Any) -> Dict[str, torch.Tensor]:
+        """
+        Normaliza la salida del modelo a un dict por TARGET.
+        Soporta:
+        - Dict[str, Tensor] (ya en formato esperado)
+        - Tensor [B, C, ...] con C>=4; se usan las 4 primeras columnas como
+          [alto, ancho, grosor, peso].
+        """
+        if isinstance(batch_outputs, dict):
+            return batch_outputs
+
+        if isinstance(batch_outputs, torch.Tensor):
+            out = batch_outputs
+            # Aplanar todas las dimensiones excepto batch
+            if out.ndim > 2:
+                out = out.view(out.shape[0], -1)
+            if out.shape[1] < len(TARGETS):
+                raise ValueError(
+                    f"Se esperaban al menos {len(TARGETS)} columnas en outputs tensor, "
+                    f"se obtuvo shape={out.shape}"
+                )
+            return {
+                "alto": out[:, 0],
+                "ancho": out[:, 1],
+                "grosor": out[:, 2],
+                "peso": out[:, 3],
+            }
+
+        raise TypeError(f"Formato de outputs no soportado: {type(batch_outputs)}")
     
     for epoch in range(config['epochs']):
         # --- Entrenamiento ---
@@ -489,7 +555,7 @@ def train_multi_head_model(
                 if len(batch_data) != 3:
                     logger.error(f"Error: Se esperaban 3 tensores (img, targets, pixels), se obtuvieron {len(batch_data)}")
                     continue
-                images, targets_dict, pixel_features = batch_data
+                images, targets_batch, pixel_features = batch_data
                 images = images.to(device, non_blocking=True)
                 pixel_features = pixel_features.to(device, non_blocking=True)
                 inputs = (images, pixel_features)
@@ -497,19 +563,21 @@ def train_multi_head_model(
                 if len(batch_data) != 2:
                     logger.error(f"Error: Se esperaban 2 tensores (img, targets), se obtuvieron {len(batch_data)}")
                     continue
-                images, targets_dict = batch_data
+                images, targets_batch = batch_data
                 images = images.to(device, non_blocking=True)
                 inputs = (images,)
             
             optimizer.zero_grad()
             
             outputs = model(*inputs)
+            outputs_dict = _split_outputs(outputs)
             loss = 0.0
-            
+            targets_dict = _split_targets(targets_batch, device)
+
             for target in TARGETS:
-                target_values = targets_dict[target].to(device)
+                target_values = targets_dict[target]
                 # Asegurar que ambos tengan la misma forma (ej. [B] o [B, 1])
-                target_loss = criterion(outputs[target].squeeze(), target_values.squeeze())
+                target_loss = criterion(outputs_dict[target].squeeze(), target_values.squeeze())
                 loss += target_loss
             
             loss.backward()
@@ -530,26 +598,32 @@ def train_multi_head_model(
                 # --- MANEJO DE MODELO HÍBRIDO ---
                 if use_pixel_features:
                     if len(batch_data) != 3: continue # Ignorar batch corrupto
-                    images, targets_dict, pixel_features = batch_data
+                    images, targets_batch, pixel_features = batch_data
                     images = images.to(device)
                     pixel_features = pixel_features.to(device)
                     inputs = (images, pixel_features)
                 else:
                     if len(batch_data) != 2: continue # Ignorar batch corrupto
-                    images, targets_dict = batch_data
+                    images, targets_batch = batch_data
                     images = images.to(device)
                     inputs = (images,)
                 
                 outputs = model(*inputs)
+                outputs_dict = _split_outputs(outputs)
                 batch_loss = 0.0
-                
+                targets_dict = _split_targets(targets_batch, device)
+
                 for target in TARGETS:
-                    target_values = targets_dict[target].to(device)
-                    target_loss = criterion(outputs[target].squeeze(), target_values.squeeze())
+                    target_values = targets_dict[target]
+                    target_loss = criterion(outputs_dict[target].squeeze(), target_values.squeeze())
                     batch_loss += target_loss
                     
-                    val_metrics_epoch[target]['preds'].extend(outputs[target].cpu().numpy().flatten())
-                    val_metrics_epoch[target]['targets'].extend(target_values.cpu().numpy().flatten())
+                    val_metrics_epoch[target]['preds'].extend(
+                        outputs_dict[target].cpu().numpy().flatten()
+                    )
+                    val_metrics_epoch[target]['targets'].extend(
+                        target_values.cpu().numpy().flatten()
+                    )
                 
                 val_loss += batch_loss.item()
         
