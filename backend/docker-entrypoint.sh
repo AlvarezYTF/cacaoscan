@@ -30,21 +30,22 @@ mkdir -p /app/media/cacao_images/raw \
          /app/media/cacao_images/masks \
          /app/media/cacao_images/converted_jpg 2>/dev/null || true
 
+wait_for_database() {
+    if [ -n "${DB_HOST:-}" ]; then
+        echo "⏳ Esperando a que la base de datos esté lista..."
+        until nc -z "$DB_HOST" "${DB_PORT:-5432}"; do
+            echo "   Base de datos no disponible, esperando..."
+            sleep 1
+        done
+        log "✅ Base de datos disponible"
+    fi
+}
+
 # Verificar que gunicorn está disponible
 if ! python -m gunicorn --version > /dev/null 2>&1; then
     echo "⚠️  Gunicorn no encontrado, instalando..."
     pip install --user gunicorn
 fi
-
-# Esperar a que la base de datos esté lista
-if [ -n "$DB_HOST" ]; then
-    echo "⏳ Esperando a que la base de datos esté lista..."
-    until nc -z "$DB_HOST" "${DB_PORT:-5432}"; do
-        echo "   Base de datos no disponible, esperando..."
-        sleep 1
-    done
-    log "✅ Base de datos disponible"
-}
 
 run_management_command() {
     local command=$1

@@ -80,6 +80,8 @@ services:
       - ./backend/media:/app/media
       # Mantenemos el volumen con nombre para los estáticos
       - backend_static:/app/staticfiles
+    entrypoint: ["/docker-entrypoint.sh"]
+    command: ["gunicorn", "cacaoscan.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120"]
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
