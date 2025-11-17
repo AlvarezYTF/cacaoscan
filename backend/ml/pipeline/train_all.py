@@ -8,7 +8,7 @@ import os
 import sys
 import platform
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 import time
 from datetime import datetime
 
@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import QuantileTransformer
+from sklearn.preprocessing import QuantileTransformer, StandardScaler
 from PIL import Image
 import torchvision.transforms as transforms
 
@@ -27,82 +27,153 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 # Configurar Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cacaoscan.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cacaoscan.settings")
 import django
+
 try:
     django.setup()
     from django.conf import settings
+
     DJANGO_LOADED = True
 except Exception as e:
-    print(f"Warning: Django setup failed (normal if not in Django context). Error: {e}")
-    # Definir settings dummy si Django no está cargado
+    print(
+        f"Warning: Django setup failed (normal if not in Django context). Error: {e}"
+    )
+
     class DummySettings:
         MEDIA_ROOT = str(project_root / "media")
         BASE_DIR = project_root
+
     settings = DummySettings()
 
 from ml.data.dataset_loader import CacaoDatasetLoader
-from ml.regression.models import create_model, TARGETS, TARGET_NAMES
+from ml.regression.models import (
+    create_model,
+    TARGETS,
+    TARGET_NAMES,
+    HybridCacaoRegression,
+)
 from ml.regression.scalers import create_scalers_from_data, save_scalers
 from ml.regression.train import train_single_model, train_multi_head_model, get_device
 from ml.regression.evaluate import RegressionEvaluator
-from ml.utils.paths import get_regressors_artifacts_dir, get_artifacts_dir, get_datasets_dir
-from ml.utils.io import save_json, load_json
+from ml.utils.paths import (
+    get_regressors_artifacts_dir,
+    get_artifacts_dir,
+    get_datasets_dir,
+)
+from ml.utils.io import save_json, load_json, save_pickle
 from ml.utils.logs import get_ml_logger
-from ml.regression.augmentation import create_advanced_train_transform, create_advanced_val_transform
-# --- CORRECCIÓN ---
-# Importar el cropper correcto
+from ml.regression.augmentation import (
+    create_advanced_train_transform,
+    create_advanced_val_transform,
+)
 from ml.segmentation.cropper import create_cacao_cropper
 
 
 logger = get_ml_logger("cacaoscan.ml.pipeline")
 
-# Constantes de Features de Píxeles
+# Constantes de Features de Píxeles (pipeline existente)
 PIXEL_FEATURE_KEYS = [
-    'pixel_width', 'pixel_height', 'pixel_area', 'scale_factor', 'aspect_ratio'
+    "pixel_width",
+    "pixel_height",
+    "pixel_area",
+    "scale_factor",
+    "aspect_ratio",
 ]
+
+# Targets para el nuevo modo single_dimension_training (valores reales en mm / g)
+SINGLE_DIM_TARGETS = ["alto_mm", "ancho_mm", "grosor_mm", "peso_g"]
+
+# Features extendidos obligatorios provenientes de pixel_calibration.json
+CALIB_PIXEL_FEATURE_KEYS = [
+    "grain_area_pixels",
+    "width_pixels",
+    "height_pixels",
+    "bbox_area_pixels",
+    "aspect_ratio",
+    "original_total_pixels",
+    "background_pixels",
+    "background_ratio",
+    "alto_mm_per_pixel",
+    "ancho_mm_per_pixel",
+    "average_mm_per_pixel",
+    "segmentation_confidence",
+]
+
 
 class CacaoDataset(Dataset):
     """
     Dataset personalizado para entrenamiento de modelos de cacao.
+    (Modo multi-head / individual clásico del pipeline existente)
+    
+    MEJORADO:
+    - Validación de formato de imágenes (RGB, normalización ImageNet)
+    - Verificación de mezclas entre .bmp y .png
+    - Labels en orden correcto: [alto, ancho, grosor, peso]
+    - Validación automática de estructura de datos
     """
+    
+    # Orden correcto de targets
+    TARGET_ORDER = ["alto", "ancho", "grosor", "peso"]
 
     def __init__(
         self,
         image_paths: List[Path],
         targets: Dict[str, np.ndarray],
-        transform,
+        transform: Any,
         pixel_features: Optional[Dict[str, np.ndarray]] = None,
         is_multi_head: bool = False,
         is_hybrid: bool = False,
+        validate_structure: bool = True,
     ):
-        """
-        Inicializa el dataset.
-
-        Args:
-            image_paths: Lista de rutas a imágenes.
-            targets: Diccionario con targets normalizados.
-            transform: Transformaciones a aplicar.
-            pixel_features: Diccionario con features de píxeles (opcional).
-            is_multi_head: Indica si el modelo es multi‑head.
-            is_hybrid: Indica si el modelo es híbrido (usa features de píxeles).
-        """
         self.image_paths = image_paths
         self.targets = targets
         self.transform = transform
         self.pixel_features = pixel_features
         self.is_multi_head = is_multi_head
         self.is_hybrid = is_hybrid
-
-        lengths = [len(image_paths)] + [len(v) for v in targets.values()]
+        
+        # Paso 2: Normalizar pixel_features antes de fusionar
+        self.pixel_means = None
+        self.pixel_stds = None
         if pixel_features is not None and is_hybrid:
-            missing_keys = [k for k in PIXEL_FEATURE_KEYS if k not in pixel_features]
+            # Determinar qué features usar
+            available_keys = list(pixel_features.keys())
+            if all(k in available_keys for k in CALIB_PIXEL_FEATURE_KEYS):
+                feature_keys = CALIB_PIXEL_FEATURE_KEYS
+            else:
+                feature_keys = PIXEL_FEATURE_KEYS
+            
+            # Crear DataFrame con los features
+            pixel_df = pd.DataFrame({k: pixel_features[k] for k in feature_keys})
+            self.pixel_means = pixel_df.mean().values
+            self.pixel_stds = pixel_df.std().values
+            # Evitar división por cero
+            self.pixel_stds = np.where(self.pixel_stds < 1e-8, 1.0, self.pixel_stds)
+            logger.debug(f"Pixel features normalizados: mean shape={self.pixel_means.shape}, std shape={self.pixel_stds.shape}")
+
+        # Validar estructura si se solicita
+        if validate_structure:
+            self._validate_structure()
+
+        lengths: List[int] = [len(image_paths)] + [len(v) for v in targets.values()]
+        if pixel_features is not None and is_hybrid:
+            # Verificar features disponibles (pueden ser básicos o extendidos)
+            available_keys = list(pixel_features.keys())
+            if all(k in available_keys for k in CALIB_PIXEL_FEATURE_KEYS):
+                feature_keys = CALIB_PIXEL_FEATURE_KEYS
+            else:
+                feature_keys = PIXEL_FEATURE_KEYS
+            
+            missing_keys = [k for k in feature_keys if k not in pixel_features]
             if missing_keys:
-                raise ValueError(f"Faltan las siguientes features de píxeles: {missing_keys}")
-            lengths.extend(len(pixel_features[feat]) for feat in PIXEL_FEATURE_KEYS)
+                raise ValueError(
+                    f"Faltan las siguientes features de píxeles: {missing_keys}"
+                )
+            lengths.extend(len(pixel_features[feat]) for feat in feature_keys)
 
         if len(set(lengths)) > 1:
-            mismatched = {
+            mismatched: Dict[str, int] = {
                 "images": len(image_paths),
                 **{f"target_{k}": len(v) for k, v in targets.items()},
                 **(
@@ -111,16 +182,92 @@ class CacaoDataset(Dataset):
                     else {}
                 ),
             }
-            logger.error(f"Error: Longitudes de datos inconsistentes: {mismatched}")
-            raise ValueError(f"Longitudes inconsistentes en los datos del dataset: {mismatched}")
+            logger.error(
+                f"Error: Longitudes de datos inconsistentes: {mismatched}"
+            )
+            raise ValueError(
+                f"Longitudes inconsistentes en los datos del dataset: {mismatched}"
+            )
+    
+    def _validate_structure(self) -> None:
+        """Valida la estructura de datos."""
+        # Validar que todos los targets estén presentes
+        missing_targets = set(self.TARGET_ORDER) - set(self.targets.keys())
+        if missing_targets:
+            raise ValueError(f"Targets faltantes: {missing_targets}")
+        
+        # Validar orden de targets
+        target_keys = list(self.targets.keys())
+        if target_keys != self.TARGET_ORDER:
+            logger.warning(
+                f"Orden de targets no es el esperado. Esperado: {self.TARGET_ORDER}, "
+                f"Obtenido: {target_keys}. Reordenando..."
+            )
+            # Reordenar targets
+            self.targets = {k: self.targets[k] for k in self.TARGET_ORDER}
+        
+        # Validar formato de imágenes
+        self._validate_image_paths()
+        
+        logger.debug("✅ Estructura de datos validada correctamente")
+    
+    def _validate_image_paths(self) -> None:
+        """Valida que las rutas de imágenes sean consistentes."""
+        bmp_count = 0
+        png_count = 0
+        other_count = 0
+        
+        for img_path in self.image_paths:
+            suffix = img_path.suffix.lower()
+            if suffix == '.bmp':
+                bmp_count += 1
+            elif suffix == '.png':
+                png_count += 1
+            else:
+                other_count += 1
+        
+        if other_count > 0:
+            logger.warning(f"Encontradas {other_count} imágenes con formato no estándar (.bmp/.png)")
+        
+        # El dataset debe usar crops (.png) para entrenamiento
+        if bmp_count > 0 and png_count > 0:
+            logger.warning(
+                f"Mezcla de formatos detectada: {bmp_count} .bmp y {png_count} .png. "
+                f"Se recomienda usar solo .png (crops) para entrenamiento."
+            )
+        
+        logger.debug(f"Formato de imágenes: {bmp_count} .bmp, {png_count} .png, {other_count} otros")
 
     def __len__(self) -> int:
         return len(self.image_paths)
 
     def __getitem__(self, idx: int):
         image_path = self.image_paths[idx]
-        image = Image.open(image_path).convert("RGB")
-        image = self.transform(image)
+        
+        try:
+            # Abrir imagen y convertir a RGB explícitamente
+            image = Image.open(image_path)
+            
+            # Validar que la imagen sea válida
+            if image is None:
+                raise ValueError(f"Imagen no se pudo cargar: {image_path}")
+            
+            # Convertir a RGB (asegura 3 canales)
+            if image.mode != 'RGB':
+                logger.debug(f"Convirtiendo imagen {image_path.name} de {image.mode} a RGB")
+                image = image.convert('RGB')
+            
+            # Aplicar transformaciones
+            image_tensor = self.transform(image)
+            
+            # Validar formato del tensor
+            if image_tensor.shape[0] != 3:
+                raise ValueError(
+                    f"Imagen debe tener 3 canales RGB, obtuvo {image_tensor.shape[0]} canales"
+                )
+        except Exception as e:
+            logger.error(f"Error cargando imagen {image_path}: {e}")
+            raise
 
         available_targets = list(self.targets.keys())
 
@@ -130,21 +277,30 @@ class CacaoDataset(Dataset):
             target_value = float(self.targets[target_name][idx])
 
             if self.pixel_features is not None:
-                pixel_feat = torch.tensor(
-                    [
-                        float(self.pixel_features["pixel_width"][idx]),
-                        float(self.pixel_features["pixel_height"][idx]),
-                        float(self.pixel_features["pixel_area"][idx]),
-                        float(self.pixel_features["scale_factor"][idx]),
-                        float(self.pixel_features["aspect_ratio"][idx]),
-                    ],
-                    dtype=torch.float32,
+                # Detectar dinámicamente qué features están disponibles
+                pixel_feat_values = []
+                # Intentar usar features extendidos primero
+                if all(k in self.pixel_features for k in CALIB_PIXEL_FEATURE_KEYS):
+                    for key in CALIB_PIXEL_FEATURE_KEYS:
+                        pixel_feat_values.append(float(self.pixel_features[key][idx]))
+                else:
+                    # Fallback a features básicos
+                    for key in PIXEL_FEATURE_KEYS:
+                        if key in self.pixel_features:
+                            pixel_feat_values.append(float(self.pixel_features[key][idx]))
+                
+                pixel_feat = torch.tensor(pixel_feat_values, dtype=torch.float32)
+                # Para compatibilidad con RegressionTrainer, se omite metadata aquí
+                return (
+                    image_tensor,
+                    torch.tensor(target_value, dtype=torch.float32),
+                    pixel_feat,
                 )
-                return image, torch.tensor(target_value, dtype=torch.float32), pixel_feat
 
-            return image, torch.tensor(target_value, dtype=torch.float32)
+            return image_tensor, torch.tensor(target_value, dtype=torch.float32)
 
-        # Modelo multi‑head / híbrido: devolver los 4 targets
+        # Modelo multi‑head / híbrido: devolver los 4 targets en orden correcto
+        # Orden: [alto, ancho, grosor, peso]
         targets_tensor = torch.tensor(
             [
                 float(self.targets["alto"][idx]),
@@ -156,246 +312,522 @@ class CacaoDataset(Dataset):
         )
 
         if self.pixel_features is not None:
-            pixel_feat = torch.tensor(
-                [
-                    float(self.pixel_features["pixel_width"][idx]),
-                    float(self.pixel_features["pixel_height"][idx]),
-                    float(self.pixel_features["pixel_area"][idx]),
-                    float(self.pixel_features["scale_factor"][idx]),
-                    float(self.pixel_features["aspect_ratio"][idx]),
-                ],
-                dtype=torch.float32,
-            )
-            return image, targets_tensor, pixel_feat
+            # Usar todos los features disponibles (pueden ser 5 básicos o 12 extendidos)
+            pixel_feat_values = []
+            # Intentar usar features extendidos primero
+            if all(k in self.pixel_features for k in CALIB_PIXEL_FEATURE_KEYS):
+                for key in CALIB_PIXEL_FEATURE_KEYS:
+                    pixel_feat_values.append(float(self.pixel_features[key][idx]))
+            else:
+                # Fallback a features básicos
+                for key in PIXEL_FEATURE_KEYS:
+                    if key in self.pixel_features:
+                        pixel_feat_values.append(float(self.pixel_features[key][idx]))
+            
+            pixel_feat = np.array(pixel_feat_values, dtype=np.float32)
+            
+            # Normalizar pixel_features
+            if self.pixel_means is not None and self.pixel_stds is not None:
+                pixel_feat = (pixel_feat - self.pixel_means) / self.pixel_stds
+            
+            pixel_feat = torch.tensor(pixel_feat, dtype=torch.float32)
+            return image_tensor, targets_tensor, pixel_feat
 
-        return image, targets_tensor
+        return image_tensor, targets_tensor
+
+
+class SingleDimensionDataset(Dataset):
+    """
+    Dataset para el modo single_dimension_training.
+
+    Cada entrada devuelve:
+        image_tensor,
+        target_scalar (escalado),
+        pixel_features_vector (11 features),
+        extra_metadata
+    """
+
+    def __init__(
+        self,
+        image_paths: List[Path],
+        targets: np.ndarray,
+        transform: Any,
+        pixel_features_matrix: np.ndarray,
+        metadata: List[Dict[str, Any]],
+    ):
+        if len(image_paths) != len(targets):
+            raise ValueError("Longitudes inconsistentes entre imágenes y targets")
+        if len(image_paths) != len(pixel_features_matrix):
+            raise ValueError(
+                "Longitudes inconsistentes entre imágenes y pixel_features"
+            )
+        if len(image_paths) != len(metadata):
+            raise ValueError("Longitudes inconsistentes entre imágenes y metadata")
+
+        self.image_paths = image_paths
+        self.targets = targets.astype(np.float32)
+        self.transform = transform
+        self.pixel_features_matrix = pixel_features_matrix.astype(np.float32)
+        self.metadata = metadata
+
+    def __len__(self) -> int:
+        return len(self.image_paths)
+
+    def __getitem__(self, idx: int):
+        image_path = self.image_paths[idx]
+        image = Image.open(image_path).convert("RGB")
+        image_tensor = self.transform(image)
+
+        target_scalar = float(self.targets[idx])
+        pixel_vector = torch.tensor(
+            self.pixel_features_matrix[idx], dtype=torch.float32
+        )
+        extra_metadata = self.metadata[idx]
+
+        return (
+            image_tensor,
+            torch.tensor(target_scalar, dtype=torch.float32),
+            pixel_vector,
+            extra_metadata,
+        )
 
 
 class CacaoTrainingPipeline:
     """Pipeline completo de entrenamiento."""
-    
-    def __init__(self, config: Dict):
-        """
-        Inicializa el pipeline.
-        
-        Args:
-            config: Configuración del entrenamiento
-        """
+
+    def __init__(self, config: Dict[str, Any]):
         self.config = config
         self.device = get_device()
         self.scalers = None
-        self.train_loader = None
-        self.val_loader = None
-        self.test_loader = None
+        self.train_loader: Optional[DataLoader] = None
+        self.val_loader: Optional[DataLoader] = None
+        self.test_loader: Optional[DataLoader] = None
         # Flags principales de configuración de modelo
         self.is_multi_head = bool(self.config.get("multi_head", False))
         self.is_hybrid = bool(self.config.get("hybrid", False))
         # Flag para controlar si se usan features de píxeles en los splits y datasets
         self.use_pixel_features = bool(self.config.get("use_pixel_features", False))
-        
+        # Nuevo flag: modo single_dimension_training
+        self.single_dimension_training = bool(
+            self.config.get("single_dimension_training", False)
+        )
+
+        # Buffers para modo single-dimension (se rellenan en load_data / run_pipeline)
+        self.single_dim_real_dimensions: Optional[Dict[str, np.ndarray]] = None
+        self.single_dim_pixel_features: Optional[Dict[str, np.ndarray]] = None
+        self.single_dim_metadata: Optional[List[Dict[str, Any]]] = None
+
+        self.train_images: Optional[List[Path]] = None
+        self.val_images: Optional[List[Path]] = None
+        self.test_images: Optional[List[Path]] = None
+
+        self.train_targets: Optional[Dict[str, np.ndarray]] = None
+        self.val_targets: Optional[Dict[str, np.ndarray]] = None
+        self.test_targets: Optional[Dict[str, np.ndarray]] = None
+
+        self.train_targets_original: Optional[Dict[str, np.ndarray]] = None
+        self.val_targets_original: Optional[Dict[str, np.ndarray]] = None
+        self.test_targets_original: Optional[Dict[str, np.ndarray]] = None
+
+        self.pixel_features: Optional[Dict[str, np.ndarray]] = None
+        self.train_pixel_features: Optional[Dict[str, np.ndarray]] = None
+        self.val_pixel_features: Optional[Dict[str, np.ndarray]] = None
+        self.test_pixel_features: Optional[Dict[str, np.ndarray]] = None
+
+        self.train_real_dimensions: Optional[Dict[str, np.ndarray]] = None
+        self.val_real_dimensions: Optional[Dict[str, np.ndarray]] = None
+        self.test_real_dimensions: Optional[Dict[str, np.ndarray]] = None
+
+        self.train_single_dim_pixel_features: Optional[Dict[str, np.ndarray]] = None
+        self.val_single_dim_pixel_features: Optional[Dict[str, np.ndarray]] = None
+        self.test_single_dim_pixel_features: Optional[Dict[str, np.ndarray]] = None
+
+        self.train_single_dim_metadata: Optional[List[Dict[str, Any]]] = None
+        self.val_single_dim_metadata: Optional[List[Dict[str, Any]]] = None
+        self.test_single_dim_metadata: Optional[List[Dict[str, Any]]] = None
+
         logger.info(f"Pipeline inicializado con configuración: {config}")
-    
-    def load_data(self) -> Tuple[List[Path], Dict[str, np.ndarray], Optional[Dict[str, np.ndarray]]]:
+
+    def load_data(
+        self,
+    ) -> Tuple[List[Path], Dict[str, np.ndarray], Optional[Dict[str, np.ndarray]]]:
         """
-        Carga y prepara los datos, incluyendo features de pxeles si estn disponibles.
-        
-        Returns:
-            Tuple con (rutas de imágenes, targets, pixel_features)
+        Carga y prepara los datos, incluyendo features de píxeles si están disponibles.
         """
         logger.info("Cargando datos...")
-        
+
         # Intentar cargar calibración de píxeles (pixel_calibration.json)
-        pixel_calibration = None
+        pixel_calibration: Optional[Dict[str, Any]] = None
         calibration_file = get_datasets_dir() / "pixel_calibration.json"
         if calibration_file.exists():
             try:
                 pixel_calibration = load_json(calibration_file)
                 num_calib = len(pixel_calibration.get("calibration_records", []))
-                logger.info(f"Calibración de píxeles cargada: {num_calib} registros desde {calibration_file}")
+                logger.info(
+                    f"Calibración de píxeles cargada: {num_calib} registros desde {calibration_file}"
+                )
             except Exception as e:
-                logger.warning(f"Error cargando pixel_calibration.json ({calibration_file}): {e}")
-        
+                logger.warning(
+                    f"Error cargando pixel_calibration.json ({calibration_file}): {e}"
+                )
+
         # Cargar registros válidos
         loader = CacaoDatasetLoader()
         valid_records = loader.get_valid_records()
-        
+
         if not valid_records:
             raise ValueError("No se encontraron registros válidos")
-        
+
         logger.info(f"Encontrados {len(valid_records)} registros válidos")
-        
+
         # Filtrar registros que tienen crops
-        crop_records = []
-        missing_crop_records = []
-        
+        crop_records: List[Dict[str, Any]] = []
+        missing_crop_records: List[Dict[str, Any]] = []
+
         for record in valid_records:
-            crop_path_value = record['crop_image_path']
+            crop_path_value = record["crop_image_path"]
             if crop_path_value:
-                crop_path = crop_path_value if isinstance(crop_path_value, Path) else Path(crop_path_value)
+                crop_path = (
+                    crop_path_value
+                    if isinstance(crop_path_value, Path)
+                    else Path(crop_path_value)
+                )
             else:
                 crop_path = None
-            record['crop_image_path'] = crop_path
+            record["crop_image_path"] = crop_path
             if crop_path and crop_path.exists():
                 crop_records.append(record)
             else:
                 missing_crop_records.append(record)
-        
+
         logger.info(f"Registros con crops disponibles: {len(crop_records)}")
         logger.info(f"Registros sin crops: {len(missing_crop_records)}")
-        
-        # Validar y regenerar crops de mala calidad si est configurado
-        validate_crops = self.config.get('validate_crops_quality', True)
-        regenerate_bad = self.config.get('regenerate_bad_crops', True)
-        seg_backend = self.config.get('segmentation_backend', 'auto')
-        # Si el backend es 'opencv', no queremos generar ni regenerar PNGs:
-        # entrenamos solo con los crops ya existentes.
-        if seg_backend == 'opencv':
+
+        # Validar y regenerar crops de mala calidad si está configurado
+        validate_crops = self.config.get("validate_crops_quality", True)
+        regenerate_bad = self.config.get("regenerate_bad_crops", True)
+        seg_backend = self.config.get("segmentation_backend", "auto")
+
+        if seg_backend == "opencv":
             validate_crops = False
             regenerate_bad = False
-        
+
         if validate_crops and crop_records:
             logger.info("Validando calidad de crops existentes...")
-            bad_crop_records = []
-            good_crop_records = []
-            
-            from ..segmentation.cropper import create_cacao_cropper
-            from ..data.transforms import validate_crop_quality
+            bad_crop_records: List[Dict[str, Any]] = []
+            good_crop_records: List[Dict[str, Any]] = []
+
+            from ..segmentation.cropper import create_cacao_cropper as _create_c
+            from ..data.transforms import validate_crop_quality  # noqa: F401
             import cv2
-            from PIL import Image
-            
-            cropper = create_cacao_cropper(
+
+            cropper = _create_c(  # noqa: F841
                 confidence_threshold=0.3,
                 crop_size=512,
-                padding=10
+                padding=10,
             )
-            
+
             for record in crop_records:
                 try:
-                    crop_path = record['crop_image_path']
-                    original_path = record['image_path']
-                    
-                    # Validar que el crop sea de buena calidad
+                    crop_path = record["crop_image_path"]
+                    _original_path = record["image_path"]
+
                     crop_img = cv2.imread(str(crop_path))
                     if crop_img is None:
                         bad_crop_records.append(record)
                         continue
-                    
+
                     crop_img_rgb = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB)
-                    
-                    # Validar tamao mnimo
+
                     h, w = crop_img_rgb.shape[:2]
                     if h < 100 or w < 100:
-                        logger.warning(f"Crop demasiado pequeo ({w}x{h}) para {crop_path.name}")
+                        logger.warning(
+                            f"Crop demasiado pequeño ({w}x{h}) para {crop_path.name}"
+                        )
                         bad_crop_records.append(record)
                         continue
-                    
-                    # Verificar que no sea solo fondo (puede ser RGBA)
+
                     if crop_img_rgb.shape[2] == 4:
-                        # RGBA: verificar que haya pxeles no transparentes
                         alpha = crop_img_rgb[:, :, 3]
-                        if np.sum(alpha > 128) < (h * w * 0.1):  # Menos del 10% es visible
-                            logger.warning(f"Crop con muy poco contenido visible para {crop_path.name}")
+                        if np.sum(alpha > 128) < (h * w * 0.1):
+                            logger.warning(
+                                f"Crop con muy poco contenido visible para {crop_path.name}"
+                            )
                             bad_crop_records.append(record)
                             continue
-                    
+
                     good_crop_records.append(record)
-                    
+
                 except Exception as e:
-                    logger.warning(f"Error validando crop {record.get('id', 'unknown')}: {e}")
+                    logger.warning(
+                        f"Error validando crop {record.get('id', 'unknown')}: {e}"
+                    )
                     bad_crop_records.append(record)
-            
-            logger.info(f"Crops vlidos: {len(good_crop_records)}, crops invlidos: {len(bad_crop_records)}")
-            
+
+            logger.info(
+                "Crops válidos: %d, crops inválidos: %d",
+                len(good_crop_records),
+                len(bad_crop_records),
+            )
+
             if regenerate_bad and bad_crop_records:
-                logger.info(f"Regenerando {len(bad_crop_records)} crops de mala calidad...")
-                # Eliminar crops malos
+                logger.info(
+                    "Regenerando %d crops de mala calidad...", len(bad_crop_records)
+                )
                 for record in bad_crop_records:
-                    crop_path = record['crop_image_path']
+                    crop_path = record["crop_image_path"]
                     if crop_path.exists():
                         crop_path.unlink()
-                
-                # Regenerar crops
+
                 new_crop_records = self._generate_crops_for_missing(bad_crop_records)
                 good_crop_records.extend(new_crop_records)
-            
+
             crop_records = good_crop_records
-        
-        # Generar crops para los que faltan (solo si está permitido)
+
         if missing_crop_records:
-            if seg_backend == 'opencv':
-                # Modo "solo usar PNG existentes": no generar nuevos crops
+            if seg_backend == "opencv":
                 logger.info(
-                    f"Modo sólo-crops-existentes (segmentation_backend=opencv): "
-                    f"se omiten {len(missing_crop_records)} registros sin PNG."
+                    "Modo sólo-crops-existentes "
+                    "(segmentation_backend=opencv): se omiten %d registros sin PNG.",
+                    len(missing_crop_records),
                 )
                 if len(crop_records) < 10:
                     raise ValueError(
-                        f"Muy pocos registros con crops existentes: {len(crop_records)}. "
-                        "Se necesitan al menos 10 para entrenamiento."
+                        "Muy pocos registros con crops existentes: "
+                        f"{len(crop_records)}. Se necesitan al menos 10 para entrenamiento."
                     )
             else:
-                logger.info(f"Generando crops para {len(missing_crop_records)} imágenes faltantes...")
-                new_crop_records = self._generate_crops_for_missing(missing_crop_records)
+                logger.info(
+                    "Generando crops para %d imágenes faltantes...",
+                    len(missing_crop_records),
+                )
+                new_crop_records = self._generate_crops_for_missing(
+                    missing_crop_records
+                )
                 crop_records.extend(new_crop_records)
-                
-                logger.info(f"Total de registros con crops después de generación: {len(crop_records)}")
-                
+
+                logger.info(
+                    "Total de registros con crops después de generación: %d",
+                    len(crop_records),
+                )
+
                 if len(crop_records) < 10:
-                    raise ValueError(f"Muy pocos registros con crops después de generación: {len(crop_records)}")
+                    raise ValueError(
+                        "Muy pocos registros con crops después de generación: "
+                        f"{len(crop_records)}"
+                    )
         else:
-            logger.info("[OK] Todos los crops ya existen y estn validados.")
-        
-        # Extraer rutas de imágenes y targets
-        image_paths = [record['crop_image_path'] for record in crop_records]
-        targets = {target: np.array([record[target] for record in crop_records]) for target in TARGETS}
-        
-        # Extraer features de pxeles si la calibracin est disponible
-        pixel_features = None
+            logger.info("[OK] Todos los crops ya existen y están validados.")
+
+        # Extraer rutas de imágenes y targets clásicos
+        image_paths: List[Path] = [record["crop_image_path"] for record in crop_records]
+        targets: Dict[str, np.ndarray] = {
+            target: np.array([record[target] for record in crop_records])
+            for target in TARGETS
+        }
+
+        # Extraer features de píxeles base y extendidos
+        pixel_features: Optional[Dict[str, np.ndarray]] = None
+
+        self.single_dim_real_dimensions = None
+        self.single_dim_pixel_features = None
+        self.single_dim_metadata = None
+
         if pixel_calibration is not None:
-            calibration_records = pixel_calibration.get('calibration_records', [])
+            calibration_records = pixel_calibration.get("calibration_records", [])
             if calibration_records:
-                # Crear diccionario de calibracin por ID para bsqueda rpida
-                calibration_by_id = {rec['id']: rec for rec in calibration_records}
-                
-                # Extraer features de pxeles para cada registro
+                calibration_by_id: Dict[int, Dict[str, Any]] = {
+                    rec["id"]: rec for rec in calibration_records
+                }
+
                 pixel_features = {
-                    'pixel_width': [],
-                    'pixel_height': [],
-                    'pixel_area': [],
-                    'scale_factor': [],
-                    'aspect_ratio': []
+                    "pixel_width": [],
+                    "pixel_height": [],
+                    "pixel_area": [],
+                    "scale_factor": [],
+                    "aspect_ratio": [],
+                }
+
+                real_dimensions: Dict[str, List[float]] = {
+                    "alto_mm": [],
+                    "ancho_mm": [],
+                    "grosor_mm": [],
+                    "peso_g": [],
+                }
+                extended_features: Dict[str, List[float]] = {
+                    k: [] for k in CALIB_PIXEL_FEATURE_KEYS
+                }
+                metadata_list: List[Dict[str, Any]] = []
+
+                for record in crop_records:
+                    image_id = record["id"]
+                    calib_record = calibration_by_id.get(image_id)
+
+                    if calib_record:
+                        pixel_meas = calib_record.get("pixel_measurements", {})
+                        scale_factors = calib_record.get("scale_factors", {})
+                        bg_info = calib_record.get("background_info", {})
+                        real_dims = calib_record.get("real_dimensions", {})
+
+                        pixel_features["pixel_width"].append(
+                            float(pixel_meas.get("width_pixels", 0.0))
+                        )
+                        pixel_features["pixel_height"].append(
+                            float(pixel_meas.get("height_pixels", 0.0))
+                        )
+                        pixel_features["pixel_area"].append(
+                            float(pixel_meas.get("grain_area_pixels", 0.0))
+                        )
+                        pixel_features["scale_factor"].append(
+                            float(scale_factors.get("average_mm_per_pixel", 0.0))
+                        )
+                        pixel_features["aspect_ratio"].append(
+                            float(pixel_meas.get("aspect_ratio", 0.0))
+                        )
+
+                        real_dimensions["alto_mm"].append(
+                            float(real_dims.get("alto_mm", 0.0))
+                        )
+                        real_dimensions["ancho_mm"].append(
+                            float(real_dims.get("ancho_mm", 0.0))
+                        )
+                        real_dimensions["grosor_mm"].append(
+                            float(real_dims.get("grosor_mm", 0.0))
+                        )
+                        real_dimensions["peso_g"].append(
+                            float(real_dims.get("peso_g", 0.0))
+                        )
+
+                        extended_features["grain_area_pixels"].append(
+                            float(pixel_meas.get("grain_area_pixels", 0.0))
+                        )
+                        extended_features["width_pixels"].append(
+                            float(pixel_meas.get("width_pixels", 0.0))
+                        )
+                        extended_features["height_pixels"].append(
+                            float(pixel_meas.get("height_pixels", 0.0))
+                        )
+                        extended_features["bbox_area_pixels"].append(
+                            float(pixel_meas.get("bbox_area_pixels", 0.0))
+                        )
+                        extended_features["aspect_ratio"].append(
+                            float(pixel_meas.get("aspect_ratio", 0.0))
+                        )
+                        extended_features["original_total_pixels"].append(
+                            float(bg_info.get("original_total_pixels", 0.0))
+                        )
+                        extended_features["background_pixels"].append(
+                            float(bg_info.get("background_pixels", 0.0))
+                        )
+                        extended_features["background_ratio"].append(
+                            float(bg_info.get("background_ratio", 0.0))
+                        )
+                        extended_features["alto_mm_per_pixel"].append(
+                            float(scale_factors.get("alto_mm_per_pixel", 0.0))
+                        )
+                        extended_features["ancho_mm_per_pixel"].append(
+                            float(scale_factors.get("ancho_mm_per_pixel", 0.0))
+                        )
+                        extended_features["average_mm_per_pixel"].append(
+                            float(scale_factors.get("average_mm_per_pixel", 0.0))
+                        )
+                        extended_features["segmentation_confidence"].append(
+                            float(calib_record.get("segmentation_confidence", 0.0))
+                        )
+
+                        metadata_list.append(
+                            {
+                                "id": image_id,
+                                "filename": calib_record.get("filename"),
+                                "original_image_path": calib_record.get(
+                                    "original_image_path"
+                                ),
+                                "processed_image_path": calib_record.get(
+                                    "processed_image_path"
+                                ),
+                                "real_dimensions": real_dims,
+                                "pixel_measurements": pixel_meas,
+                                "background_info": bg_info,
+                                "scale_factors": scale_factors,
+                                "segmentation_confidence": calib_record.get(
+                                    "segmentation_confidence", 0.0
+                                ),
+                            }
+                        )
+                    else:
+                        pixel_features["pixel_width"].append(0.0)
+                        pixel_features["pixel_height"].append(0.0)
+                        pixel_features["pixel_area"].append(0.0)
+                        pixel_features["scale_factor"].append(0.0)
+                        pixel_features["aspect_ratio"].append(1.0)
+
+                        for k in SINGLE_DIM_TARGETS:
+                            real_dimensions[k].append(0.0)
+
+                        for k in CALIB_PIXEL_FEATURE_KEYS:
+                            extended_features[k].append(0.0)
+
+                        metadata_list.append(
+                            {
+                                "id": image_id,
+                                "real_dimensions": {},
+                                "pixel_measurements": {},
+                                "background_info": {},
+                                "scale_factors": {},
+                                "segmentation_confidence": 0.0,
+                            }
+                        )
+
+                # Guardar features básicos en pixel_features (para compatibilidad con dataset)
+                pixel_features = {
+                    k: np.array(v, dtype=np.float32) for k, v in pixel_features.items()
                 }
                 
-                for record in crop_records:
-                    image_id = record['id']
-                    calib_record = calibration_by_id.get(image_id)
-                    
-                    if calib_record:
-                        pixel_meas = calib_record.get('pixel_measurements', {})
-                        scale_factors = calib_record.get('scale_factors', {})
-                        
-                        pixel_features['pixel_width'].append(pixel_meas.get('width_pixels', 0))
-                        pixel_features['pixel_height'].append(pixel_meas.get('height_pixels', 0))
-                        pixel_features['pixel_area'].append(pixel_meas.get('grain_area_pixels', 0))
-                        pixel_features['scale_factor'].append(scale_factors.get('average_mm_per_pixel', 0))
-                        pixel_features['aspect_ratio'].append(pixel_meas.get('aspect_ratio', 0))
-                    else:
-                        # Si no hay calibracin para esta imagen, usar valores por defecto
-                        pixel_features['pixel_width'].append(0)
-                        pixel_features['pixel_height'].append(0)
-                        pixel_features['pixel_area'].append(0)
-                        pixel_features['scale_factor'].append(0)
-                        pixel_features['aspect_ratio'].append(0)
+                # También agregar features extendidos a pixel_features si están disponibles
+                # Esto permite que el dataset use los features extendidos cuando estén disponibles
+                for key in CALIB_PIXEL_FEATURE_KEYS:
+                    if key not in pixel_features and key in extended_features:
+                        pixel_features[key] = np.array(extended_features[key], dtype=np.float32)
                 
-                # Convertir a arrays numpy
-                pixel_features = {k: np.array(v, dtype=np.float32) for k, v in pixel_features.items()}
-                
-                logger.info(f" Features de pxeles cargadas para {len([r for r in crop_records if calibration_by_id.get(r['id'])])}/{len(crop_records)} registros")
+                self.single_dim_real_dimensions = {
+                    k: np.array(v, dtype=np.float32) for k, v in real_dimensions.items()
+                }
+                self.single_dim_pixel_features = {
+                    k: np.array(v, dtype=np.float32)
+                    for k, v in extended_features.items()
+                }
+                self.single_dim_metadata = metadata_list
+
+                logger.info(
+                    " Features de píxeles cargadas para %d/%d registros",
+                    len(
+                        [
+                            r
+                            for r in crop_records
+                            if calibration_by_id.get(r["id"]) is not None
+                        ]
+                    ),
+                    len(crop_records),
+                )
             else:
-                logger.warning("[WARN] pixel_calibration.json existe pero no tiene registros")
+                logger.warning(
+                    "[WARN] pixel_calibration.json existe pero no tiene registros"
+                )
         else:
-            logger.info(" Calibracin de pxeles no disponible. Entrenando sin features de pxeles.")
-        
+            logger.info(
+                " Calibración de píxeles no disponible. Entrenando sin features de píxeles."
+            )
+
+        if self.single_dimension_training and (
+            self.single_dim_real_dimensions is None
+            or self.single_dim_pixel_features is None
+            or self.single_dim_metadata is None
+        ):
+            raise ValueError(
+                "single_dimension_training requiere pixel_calibration.json completo. "
+                "No se pudieron cargar real_dimensions / pixel_features extendidos."
+            )
+
         return image_paths, targets, pixel_features
     
     def create_stratified_split(
@@ -496,10 +928,31 @@ class CacaoTrainingPipeline:
         test_pixel_features = None
         
         if self.use_pixel_features and pixel_features is not None:
-            train_pixel_features = {key: pixel_features[key][train_idx] for key in PIXEL_FEATURE_KEYS}
-            val_pixel_features = {key: pixel_features[key][val_idx] for key in PIXEL_FEATURE_KEYS}
-            test_pixel_features = {key: pixel_features[key][test_idx] for key in PIXEL_FEATURE_KEYS}
-            logger.info("✅ Features de píxeles divididas por splits")
+            # Determinar qué features usar (básicos o extendidos)
+            # Si tenemos single_dim_pixel_features, significa que usamos features extendidos
+            if self.single_dim_pixel_features is not None and len(self.single_dim_pixel_features) == len(CALIB_PIXEL_FEATURE_KEYS):
+                # Usar features extendidos de pixel_calibration.json
+                feature_keys = CALIB_PIXEL_FEATURE_KEYS
+                logger.info(f"✅ Usando {len(feature_keys)} features extendidos de pixel_calibration.json")
+            else:
+                # Usar features básicos
+                feature_keys = PIXEL_FEATURE_KEYS
+                logger.info(f"✅ Usando {len(feature_keys)} features básicos de píxeles")
+            
+            # Verificar que todos los keys existen en pixel_features
+            available_keys = [k for k in feature_keys if k in pixel_features]
+            if len(available_keys) != len(feature_keys):
+                missing = set(feature_keys) - set(available_keys)
+                logger.warning(f"Algunos features faltantes: {missing}. Usando solo los disponibles.")
+                feature_keys = available_keys
+            
+            if feature_keys:
+                train_pixel_features = {key: pixel_features[key][train_idx] for key in feature_keys}
+                val_pixel_features = {key: pixel_features[key][val_idx] for key in feature_keys}
+                test_pixel_features = {key: pixel_features[key][test_idx] for key in feature_keys}
+                logger.info(f"✅ Features de píxeles divididas por splits ({len(feature_keys)} features)")
+            else:
+                logger.warning("No hay features de píxeles disponibles después de validación")
         
         logger.info(f"Split creado: Train={len(train_images)}, Val={len(val_images)}, Test={len(test_images)}")
         
@@ -552,10 +1005,35 @@ class CacaoTrainingPipeline:
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
         
-        # Crear datasets con pixel_features si estn disponibles
-        train_dataset = CacaoDataset(train_images, train_targets, train_transform, train_pixel_features)
-        val_dataset = CacaoDataset(val_images, val_targets, val_transform, val_pixel_features)
-        test_dataset = CacaoDataset(test_images, test_targets, val_transform, test_pixel_features)
+        # Determinar si es modelo multi-head o híbrido
+        is_multi_head = self.is_multi_head
+        is_hybrid = self.is_hybrid or (train_pixel_features is not None and len(train_pixel_features) > 0)
+        
+        # Crear datasets con pixel_features si están disponibles
+        train_dataset = CacaoDataset(
+            train_images,
+            train_targets,
+            train_transform,
+            train_pixel_features,
+            is_multi_head=is_multi_head,
+            is_hybrid=is_hybrid
+        )
+        val_dataset = CacaoDataset(
+            val_images,
+            val_targets,
+            val_transform,
+            val_pixel_features,
+            is_multi_head=is_multi_head,
+            is_hybrid=is_hybrid
+        )
+        test_dataset = CacaoDataset(
+            test_images,
+            test_targets,
+            val_transform,
+            test_pixel_features,
+            is_multi_head=is_multi_head,
+            is_hybrid=is_hybrid
+        )
         
         # Detectar Windows y ajustar num_workers (multiprocessing en Windows causa MemoryError)
         is_windows = platform.system() == 'Windows'
@@ -641,9 +1119,32 @@ class CacaoTrainingPipeline:
             train_targets_single = {target: self.train_targets[target]}
             val_targets_single = {target: self.val_targets[target]}
             
+            # Crear datasets individuales
+            is_windows = platform.system() == 'Windows'
+            num_workers_single = 0 if is_windows else self.config.get('num_workers', 0)
+            pin_memory_single = (not is_windows) and (self.device.type == 'cuda')
+            
+            train_dataset_single = CacaoDataset(
+                self.train_images, 
+                train_targets_single, 
+                self.train_loader.dataset.transform, 
+                is_multi_head=False, 
+                is_hybrid=False
+            )
+            val_dataset_single = CacaoDataset(
+                self.val_images,
+                val_targets_single,
+                self.val_loader.dataset.transform,
+                is_multi_head=False,
+                is_hybrid=False
+            )
+            
             train_loader_single = DataLoader(
-                CacaoDataset(self.train_images, train_targets_single, self.train_loader.dataset.transform, is_multi_head=False, is_hybrid=False),
-                batch_size=self.config['batch_size'], shuffle=True, num_workers=self.config['num_workers']
+                train_dataset_single,
+                batch_size=self.config['batch_size'], 
+                shuffle=True, 
+                num_workers=num_workers_single,
+                pin_memory=pin_memory_single
             )
             val_loader_single = DataLoader(
                 val_dataset_single,
@@ -675,15 +1176,68 @@ class CacaoTrainingPipeline:
         return histories
 
     def _train_multi_head_model(self) -> Dict[str, Union[Dict, List]]:
-        """Entrena modelo multi-head o hbrido."""
-        # Verificar si es modelo hbrido
+        """Entrena modelo multi-head o híbrido."""
+        # Verificar si es modelo híbrido nuevo (usando el sistema híbrido mejorado)
         is_hybrid = self.config.get('hybrid', False) or self.config.get('model_type') == 'hybrid'
         use_pixel_features = self.config.get('use_pixel_features', True)
+        use_hybrid_v2 = self.config.get('hybrid_v2', False)
         
+        # Check if using new hybrid v2 system (optimized)
+        if (is_hybrid or use_hybrid_v2) and use_pixel_features:
+            try:
+                from .hybrid_v2_training import train_hybrid_v2
+                logger.info("Using optimized hybrid v2 training system")
+                results = train_hybrid_v2(self.config)
+                return {
+                    'hybrid': results,
+                    'history': results.get('history', {}),
+                    'test_metrics': results.get('test_metrics', {})
+                }
+            except ImportError as e:
+                logger.warning(f"Hybrid v2 training not available: {e}. Trying hybrid v1.")
+            except Exception as e:
+                logger.error(f"Error in hybrid v2 training: {e}. Trying hybrid v1.")
+        
+        # Check if using hybrid v1 system
+        if is_hybrid and use_pixel_features:
+            try:
+                from .hybrid_training import train_hybrid_model
+                logger.info("Using hybrid v1 training system with normalized pixel features")
+                results = train_hybrid_model(self.config)
+                return {
+                    'hybrid': results,
+                    'history': results.get('history', {}),
+                    'test_metrics': results.get('test_metrics', {})
+                }
+            except ImportError as e:
+                logger.warning(f"Hybrid v1 training not available: {e}. Falling back to legacy hybrid.")
+            except Exception as e:
+                logger.error(f"Error in hybrid v1 training: {e}. Falling back to legacy hybrid.")
+        
+        # Legacy hybrid/multi-head training
         if is_hybrid:
-            logger.info("Entrenando modelo HBRIDO (ResNet18 + ConvNeXt + Pxeles)...")
+            logger.info("Entrenando modelo HÍBRIDO (ResNet18 + ConvNeXt + Píxeles)...")
         else:
             logger.info("Entrenando modelo multi-head...")
+        
+        # Determinar número de features de píxeles
+        pixel_feature_dim = None
+        if is_hybrid and use_pixel_features:
+            # Verificar si se están usando features extendidos de pixel_calibration.json
+            if self.train_pixel_features is not None:
+                # Contar cuántas keys hay en pixel_features
+                num_keys = len(self.train_pixel_features.keys())
+                if num_keys == len(CALIB_PIXEL_FEATURE_KEYS):
+                    pixel_feature_dim = len(CALIB_PIXEL_FEATURE_KEYS)  # 12 features extendidos
+                    logger.info(f"Usando {pixel_feature_dim} features de píxeles extendidos de pixel_calibration.json")
+                elif num_keys == len(PIXEL_FEATURE_KEYS):
+                    pixel_feature_dim = len(PIXEL_FEATURE_KEYS)  # 5 features básicos
+                    logger.info(f"Usando {pixel_feature_dim} features de píxeles básicos")
+                else:
+                    logger.warning(f"Número inesperado de features de píxeles: {num_keys}. Usando 5 por defecto.")
+                    pixel_feature_dim = 5
+            else:
+                pixel_feature_dim = 5  # Por defecto
         
         # Crear modelo multi-head o hbrido
         model = create_model(
@@ -693,7 +1247,8 @@ class CacaoTrainingPipeline:
             dropout_rate=self.config.get('dropout_rate', 0.2),
             multi_head=not is_hybrid,  # Si es hbrido, no usar multi_head (usa hybrid=True)
             hybrid=is_hybrid,
-            use_pixel_features=use_pixel_features
+            use_pixel_features=use_pixel_features,
+            pixel_feature_dim=pixel_feature_dim
         )
         
         # Preparar información del dataset
@@ -703,6 +1258,10 @@ class CacaoTrainingPipeline:
             'test_size': len(self.test_loader.dataset) if self.test_loader else 0
         }
         
+        # Determinar si usar UncertaintyWeightedLoss
+        # Se puede configurar explícitamente o se detecta automáticamente
+        use_uncertainty_loss = self.config.get('use_uncertainty_loss', None)
+        
         # Entrenar modelo
         history = train_multi_head_model(
             model=model,
@@ -710,7 +1269,8 @@ class CacaoTrainingPipeline:
             val_loader=self.val_loader,
             scalers=self.scalers,
             config=self.config,
-            device=self.device
+            device=self.device,
+            use_uncertainty_loss=use_uncertainty_loss
         )
         
         return {'multihead': history}
@@ -774,7 +1334,7 @@ class CacaoTrainingPipeline:
             # Crear loader especfico para este target
             is_windows = platform.system() == 'Windows'
             num_workers = 0 if is_windows else self.config.get('num_workers', 2)
-            target_loader = DataLoader(
+            test_loader_single = DataLoader(
                 target_only_dataset,
                 batch_size=self.config['batch_size'],
                 shuffle=False,
@@ -807,13 +1367,68 @@ class CacaoTrainingPipeline:
                  logger.warning(f"Modelo {model_name} no encontrado: {model_path}")
                  return {}
 
+        # Cargar checkpoint para detectar pixel_feature_dim
+        checkpoint = torch.load(model_path, map_location=self.device)
+        
+        # Determinar pixel_feature_dim de la misma manera que en entrenamiento
+        pixel_feature_dim = None
+        if self.is_hybrid and self.use_pixel_features:
+            # Método 1: Intentar detectar desde el checkpoint (shape de pixel_branch.0.weight)
+            if 'model_state_dict' in checkpoint:
+                state_dict = checkpoint['model_state_dict']
+                if 'pixel_branch.0.weight' in state_dict:
+                    # El shape es [256, num_pixel_features]
+                    pixel_feature_dim = state_dict['pixel_branch.0.weight'].shape[1]
+                    logger.info(f"Detectado pixel_feature_dim={pixel_feature_dim} desde checkpoint (pixel_branch.0.weight.shape)")
+            
+            # Método 2: Intentar desde model_info si está disponible
+            if pixel_feature_dim is None and 'model_info' in checkpoint:
+                model_info = checkpoint.get('model_info', {})
+                config = model_info.get('config', {})
+                if 'pixel_feature_dim' in config:
+                    pixel_feature_dim = config['pixel_feature_dim']
+                    logger.info(f"Detectado pixel_feature_dim={pixel_feature_dim} desde model_info.config")
+            
+            # Método 3: Inferir desde pixel_features disponibles (igual que en entrenamiento)
+            if pixel_feature_dim is None:
+                if self.test_pixel_features is not None:
+                    num_keys = len(self.test_pixel_features.keys())
+                    if num_keys == len(CALIB_PIXEL_FEATURE_KEYS):
+                        pixel_feature_dim = len(CALIB_PIXEL_FEATURE_KEYS)  # 12 features extendidos
+                        logger.info(f"Inferido pixel_feature_dim={pixel_feature_dim} desde test_pixel_features (12 features extendidos)")
+                    elif num_keys == len(PIXEL_FEATURE_KEYS):
+                        pixel_feature_dim = len(PIXEL_FEATURE_KEYS)  # 5 features básicos
+                        logger.info(f"Inferido pixel_feature_dim={pixel_feature_dim} desde test_pixel_features (5 features básicos)")
+                    else:
+                        logger.warning(f"Número inesperado de features de píxeles: {num_keys}. Usando 10 por defecto.")
+                        pixel_feature_dim = 10
+                elif self.train_pixel_features is not None:
+                    num_keys = len(self.train_pixel_features.keys())
+                    if num_keys == len(CALIB_PIXEL_FEATURE_KEYS):
+                        pixel_feature_dim = len(CALIB_PIXEL_FEATURE_KEYS)  # 12 features extendidos
+                        logger.info(f"Inferido pixel_feature_dim={pixel_feature_dim} desde train_pixel_features (12 features extendidos)")
+                    elif num_keys == len(PIXEL_FEATURE_KEYS):
+                        pixel_feature_dim = len(PIXEL_FEATURE_KEYS)  # 5 features básicos
+                        logger.info(f"Inferido pixel_feature_dim={pixel_feature_dim} desde train_pixel_features (5 features básicos)")
+                    else:
+                        logger.warning(f"Número inesperado de features de píxeles: {num_keys}. Usando 10 por defecto.")
+                        pixel_feature_dim = 10
+                else:
+                    # Fallback: usar 10 por defecto (pero advertir)
+                    pixel_feature_dim = 10
+                    logger.warning(
+                        f"No se pudo detectar pixel_feature_dim. Usando default={pixel_feature_dim}. "
+                        f"Si el modelo fue entrenado con 12 features, esto causará un error de size mismatch."
+                    )
+        
+        # Crear modelo con el pixel_feature_dim detectado
         model = create_model(
             model_type=self.config['model_type'], num_outputs=4, pretrained=False,
             multi_head=self.is_multi_head, hybrid=self.is_hybrid,
-            use_pixel_features=self.use_pixel_features
+            use_pixel_features=self.use_pixel_features,
+            pixel_feature_dim=pixel_feature_dim  # CRÍTICO: pasar pixel_feature_dim detectado
         )
         
-        checkpoint = torch.load(model_path, map_location=self.device)
         model.load_state_dict(checkpoint['model_state_dict'])
         
         evaluator = RegressionEvaluator(
@@ -843,9 +1458,9 @@ class CacaoTrainingPipeline:
             model_name = "hybrid.pt" if self.is_hybrid else "multihead.pt"
             model_path = artifacts_dir / model_name
             if not model_path.exists():
-                missing_files.append(f"Modelo {target}: {model_path}")
+                missing_files.append(f"Modelo {model_name}: {model_path}")
             elif model_path.stat().st_size == 0:
-                missing_files.append(f"Modelo {target} está vacío: {model_path}")
+                missing_files.append(f"Modelo {model_name} está vacío: {model_path}")
         
         for target in TARGETS:
             scaler_path = artifacts_dir / f"{target}_scaler.pkl"
@@ -862,12 +1477,32 @@ class CacaoTrainingPipeline:
             logger.info("[OK] Todos los artefactos se guardaron correctamente")
             
             # Mostrar resumen de archivos guardados
-            total_size = sum(
-                (artifacts_dir / f"{target}.pt").stat().st_size + 
-                (artifacts_dir / f"{target}_scaler.pkl").stat().st_size
-                for target in TARGETS
-            )
-            logger.info(f"[OK] Total de artefactos guardados: {len(TARGETS) * 2} archivos, {total_size / 1024 / 1024:.2f} MB")
+            # Calcular tamaño total según el tipo de modelo
+            if self.is_multi_head or self.is_hybrid:
+                # Modelo híbrido o multi-head: solo hay un archivo de modelo
+                model_name = "hybrid.pt" if self.is_hybrid else "multihead.pt"
+                model_path = artifacts_dir / model_name
+                model_size = model_path.stat().st_size
+                
+                # Sumar tamaños de escaladores (4 escaladores)
+                scaler_size = sum(
+                    (artifacts_dir / f"{target}_scaler.pkl").stat().st_size
+                    for target in TARGETS
+                )
+                
+                total_size = model_size + scaler_size
+                total_files = 1 + len(TARGETS)  # 1 modelo + 4 escaladores
+                logger.info(f"[OK] Total de artefactos guardados: {total_files} archivos, {total_size / 1024 / 1024:.2f} MB")
+                logger.info(f"  - Modelo: {model_name} ({model_size / 1024 / 1024:.2f} MB)")
+                logger.info(f"  - Escaladores: {len(TARGETS)} archivos ({scaler_size / 1024 / 1024:.2f} MB)")
+            else:
+                # Modelos individuales: un archivo por target
+                total_size = sum(
+                    (artifacts_dir / f"{target}.pt").stat().st_size + 
+                    (artifacts_dir / f"{target}_scaler.pkl").stat().st_size
+                    for target in TARGETS
+                )
+                logger.info(f"[OK] Total de artefactos guardados: {len(TARGETS) * 2} archivos, {total_size / 1024 / 1024:.2f} MB")
     
     def generate_reports(self, evaluation_results: Dict, save_dir: Optional[Path] = None) -> None:
         """
@@ -905,7 +1540,7 @@ class CacaoTrainingPipeline:
         # Configuración para entrenamiento incremental
         incremental_config = {
             'strategy_type': 'elastic_weight_consolidation',
-            'learning_rate': self.config.get('learning_rate', 1e-4),
+            'learning_rate': self.config.get('learning_rate', 1e-5),  # REDUCIDO de 1e-4 a 1e-5
             'epochs': self.config.get('incremental_epochs', 20),
             'batch_size': self.config.get('batch_size', 16),
             'ewc_lambda': self.config.get('ewc_lambda', 1000.0),
@@ -956,6 +1591,10 @@ class CacaoTrainingPipeline:
         """
         logger.info("=== INICIANDO PIPELINE DE ENTRENAMIENTO MEJORADO ===")
         start_time = time.time()
+        
+        # Si está activado el modo de entrenamiento por dimensión separada
+        if self.config.get('train_separate_dimensions', False):
+            return self._run_separate_dimensions_pipeline()
         
         try:
             logger.info("="*60)
@@ -1061,6 +1700,206 @@ class CacaoTrainingPipeline:
             raise
         except Exception as e:
             logger.error(f"Error fatal en pipeline: {e}", exc_info=True)
+            raise
+
+    def _run_separate_dimensions_pipeline(self) -> Dict[str, Union[Dict, List]]:
+        """
+        Ejecuta el pipeline entrenando cada dimensión por separado.
+        Cada dimensión usa sus propios datos de pixel_calibration.json.
+        """
+        logger.info("=== INICIANDO PIPELINE DE ENTRENAMIENTO POR DIMENSIÓN SEPARADA ===")
+        start_time = time.time()
+        
+        try:
+            # 1. Cargar datos con pixel_calibration.json
+            logger.info("PASO 1: Cargando datos con pixel_calibration.json...")
+            image_paths, targets_original, pixel_features = self.load_data()
+            
+            # Verificar que tenemos los datos de calibración necesarios
+            if self.single_dim_real_dimensions is None or self.single_dim_pixel_features is None:
+                raise ValueError(
+                    "train_separate_dimensions requiere pixel_calibration.json completo. "
+                    "Ejecuta primero: python manage.py calibrate_dataset_pixels"
+                )
+            
+            results = {}
+            training_histories = {}
+            evaluation_results = {}
+            
+            # 2. Entrenar cada dimensión por separado
+            for dim_name, dim_key in [
+                ('alto', 'alto_mm'),
+                ('ancho', 'ancho_mm'),
+                ('grosor', 'grosor_mm'),
+                ('peso', 'peso_g')
+            ]:
+                logger.info(f"\n{'='*60}")
+                logger.info(f"ENTRENANDO MODELO PARA: {dim_name.upper()}")
+                logger.info(f"{'='*60}")
+                
+                # Extraer targets y features para esta dimensión
+                dim_targets = self.single_dim_real_dimensions[dim_key]
+                dim_pixel_features = self.single_dim_pixel_features
+                
+                # Crear escalador solo para esta dimensión
+                from sklearn.preprocessing import StandardScaler
+                target_scaler = StandardScaler()
+                dim_targets_scaled = target_scaler.fit_transform(dim_targets.reshape(-1, 1)).flatten()
+                
+                # Crear split estratificado para esta dimensión
+                from sklearn.model_selection import train_test_split
+                train_idx, test_idx = train_test_split(
+                    range(len(image_paths)),
+                    test_size=0.2,
+                    random_state=42,
+                    stratify=pd.qcut(dim_targets, q=min(5, len(dim_targets)//10), duplicates='drop') if len(dim_targets) > 10 else None
+                )
+                train_idx, val_idx = train_test_split(
+                    train_idx,
+                    test_size=0.1/(1-0.2),
+                    random_state=42
+                )
+                
+                # Preparar datos para esta dimensión
+                train_images_dim = [image_paths[i] for i in train_idx]
+                val_images_dim = [image_paths[i] for i in val_idx]
+                test_images_dim = [image_paths[i] for i in test_idx]
+                
+                train_targets_dim = dim_targets_scaled[train_idx]
+                val_targets_dim = dim_targets_scaled[val_idx]
+                test_targets_dim = dim_targets_scaled[test_idx]
+                
+                # Preparar features de píxeles extendidos
+                pixel_features_matrix = np.array([
+                    [dim_pixel_features[k][i] for k in CALIB_PIXEL_FEATURE_KEYS]
+                    for i in range(len(image_paths))
+                ])
+                
+                train_pixel_features_dim = pixel_features_matrix[train_idx]
+                val_pixel_features_dim = pixel_features_matrix[val_idx]
+                test_pixel_features_dim = pixel_features_matrix[test_idx]
+                
+                # Preparar metadata
+                metadata = self.single_dim_metadata
+                train_metadata_dim = [metadata[i] for i in train_idx]
+                val_metadata_dim = [metadata[i] for i in val_idx]
+                test_metadata_dim = [metadata[i] for i in test_idx]
+                
+                # Crear datasets
+                from ..regression.augmentation import create_advanced_train_transform, create_advanced_val_transform
+                train_transform = create_advanced_train_transform(self.config['img_size'])
+                val_transform = create_advanced_val_transform(self.config['img_size'])
+                
+                train_dataset = SingleDimensionDataset(
+                    train_images_dim,
+                    train_targets_dim,
+                    train_transform,
+                    train_pixel_features_dim,
+                    train_metadata_dim
+                )
+                val_dataset = SingleDimensionDataset(
+                    val_images_dim,
+                    val_targets_dim,
+                    val_transform,
+                    val_pixel_features_dim,
+                    val_metadata_dim
+                )
+                test_dataset = SingleDimensionDataset(
+                    test_images_dim,
+                    test_targets_dim,
+                    val_transform,
+                    test_pixel_features_dim,
+                    test_metadata_dim
+                )
+                
+                # Crear data loaders
+                is_windows = platform.system() == 'Windows'
+                num_workers = 0 if is_windows else self.config.get('num_workers', 0)
+                
+                train_loader = DataLoader(
+                    train_dataset,
+                    batch_size=self.config['batch_size'],
+                    shuffle=True,
+                    num_workers=num_workers,
+                    pin_memory=(not is_windows) and (self.device.type == 'cuda'),
+                    drop_last=True
+                )
+                val_loader = DataLoader(
+                    val_dataset,
+                    batch_size=self.config['batch_size'] * 2,
+                    shuffle=False,
+                    num_workers=num_workers,
+                    pin_memory=(not is_windows) and (self.device.type == 'cuda')
+                )
+                test_loader = DataLoader(
+                    test_dataset,
+                    batch_size=self.config['batch_size'] * 2,
+                    shuffle=False,
+                    num_workers=num_workers,
+                    pin_memory=(not is_windows) and (self.device.type == 'cuda')
+                )
+                
+                # Crear modelo híbrido para esta dimensión
+                model = create_model(
+                    model_type='hybrid',
+                    num_outputs=1,
+                    pretrained=self.config.get('pretrained', True),
+                    dropout_rate=self.config.get('dropout_rate', 0.2),
+                    multi_head=False,
+                    hybrid=True,
+                    use_pixel_features=True,
+                    pixel_feature_dim=len(CALIB_PIXEL_FEATURE_KEYS)
+                )
+                
+                # Crear escaladores para esta dimensión
+                from ml.regression.scalers import CacaoScalers
+                dim_scalers = CacaoScalers()
+                dim_scalers.scalers = {dim_name: target_scaler}
+                
+                # Entrenar modelo
+                logger.info(f"Entrenando modelo para {dim_name}...")
+                history = train_single_model(
+                    model=model,
+                    train_loader=train_loader,
+                    val_loader=val_loader,
+                    scalers=dim_scalers,
+                    target=dim_name,
+                    config=self.config,
+                    device=self.device
+                )
+                training_histories[dim_name] = history
+                
+                # Guardar escalador específico para esta dimensión
+                from ml.regression.scalers import save_scalers
+                save_scalers(dim_scalers)
+                
+                # Evaluar modelo
+                logger.info(f"Evaluando modelo para {dim_name}...")
+                from ml.regression.evaluate import RegressionEvaluator
+                evaluator = RegressionEvaluator(
+                    model=model,
+                    test_loader=test_loader,
+                    scalers=dim_scalers,
+                    device=self.device
+                )
+                dim_results = evaluator.evaluate_single_model(dim_name, denormalize=True)
+                evaluation_results[dim_name] = dim_results
+                
+                logger.info(f"✅ Modelo para {dim_name} completado")
+                logger.info(f"   MAE: {dim_results['mae']:.4f}, RMSE: {dim_results['rmse']:.4f}, R²: {dim_results['r2']:.4f}")
+            
+            total_time = time.time() - start_time
+            logger.info(f"\n=== PIPELINE POR DIMENSIÓN SEPARADA COMPLETADO EN {total_time:.2f}s ===")
+            
+            return {
+                'training_histories': training_histories,
+                'evaluation_results': evaluation_results,
+                'total_time': total_time,
+                'config': self.config
+            }
+            
+        except Exception as e:
+            logger.error(f"Error en pipeline por dimensión separada: {e}", exc_info=True)
             raise
 
     def _generate_crops_for_missing(self, missing_records: List[Dict]) -> List[Dict]:
@@ -1207,14 +2046,21 @@ def main():
                        help='Tamaño de batch (default: 32)')
     parser.add_argument('--img-size', type=int, default=224,
                        help='Tamaño de imagen (default: 224)')
-    parser.add_argument('--learning-rate', type=float, default=1e-4,
-                       help='Learning rate (default: 1e-4)')
+    parser.add_argument('--learning-rate', type=float, default=1e-5,
+                       help='Learning rate (default: 1e-5, reducido para estabilidad con Uncertainty Loss)')
     
     # Argumentos adicionales
     parser.add_argument('--num-workers', type=int, default=2,
                        help='Número de workers para data loading (default: 2)')
     parser.add_argument('--early-stopping-patience', type=int, default=10,
                        help='Paciencia para early stopping (default: 10)')
+    
+    # Nuevo argumento para entrenamiento por dimensión separada
+    parser.add_argument(
+        '--train-separate-dimensions',
+        action='store_true',
+        help='Entrenar cada dimensión (alto, ancho, grosor, peso) por separado usando pixel_calibration.json'
+    )
     
     args = parser.parse_args()
     
@@ -1231,7 +2077,8 @@ def main():
         'pretrained': True,
         'dropout_rate': 0.2,
         'weight_decay': 1e-4,
-        'min_lr': 1e-6
+        'min_lr': 1e-6,
+        'train_separate_dimensions': args.train_separate_dimensions,
     }
     
     # Crear y ejecutar pipeline
@@ -1262,7 +2109,7 @@ def main():
 def run_training_pipeline(
     epochs: int = 50,
     batch_size: int = 32,
-    learning_rate: float = 1e-4,
+    learning_rate: float = 1e-5,  # REDUCIDO de 1e-4 a 1e-5 para estabilidad con Uncertainty Loss
     multi_head: bool = False,
     model_type: str = 'resnet18',
     img_size: int = 224,
@@ -1292,6 +2139,9 @@ def run_training_pipeline(
         # Detectar Windows y ajustar num_workers automticamente (multiprocessing en Windows causa MemoryError)
         is_windows = platform.system() == 'Windows'
         default_num_workers = 0 if is_windows else 2
+        
+        # Determinar si es modelo híbrido
+        is_hybrid = kwargs.get('hybrid', False) or model_type == 'hybrid'
         
         # Crear configuracin mejorada con todas las optimizaciones avanzadas
         config = {
@@ -1339,7 +2189,7 @@ def run_incremental_training_pipeline(
     target: str = "alto",
     epochs: int = 20,
     batch_size: int = 16,
-    learning_rate: float = 1e-4,
+    learning_rate: float = 1e-5,  # REDUCIDO de 1e-4 a 1e-5 para estabilidad
     strategy_type: str = "elastic_weight_consolidation",
     ewc_lambda: float = 1000.0,
     replay_ratio: float = 0.3

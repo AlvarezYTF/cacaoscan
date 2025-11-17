@@ -10,7 +10,7 @@ import signal
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict, Union
 
 # Asegurar que el path del proyecto esté configurado para ml
 import sys
@@ -48,10 +48,21 @@ class Command(BaseCommand):
             help='(Recomendado) Usar modelo híbrido que fusiona CNN + Features de Píxeles (equivale a --model-type hybrid)'
         )
         parser.add_argument(
+            '--hybrid-v2',
+            action='store_true',
+            help='Usar nuevo modelo híbrido mejorado v2 con RobustScaler, log-transform para peso, y pixel features mejorados'
+        )
+        parser.add_argument(
             '--use-pixel-features',
             action='store_true',
             default=True,
             help='(Recomendado) Usar features de píxeles del dataset si pixel_calibration.json existe (default: True)'
+        )
+        parser.add_argument(
+            '--use-mixed-precision',
+            action='store_true',
+            default=False,
+            help='Usar mixed precision training (requiere GPU NVIDIA)'
         )
         
         # --- Argumentos de Entrenamiento ---
@@ -76,8 +87,28 @@ class Command(BaseCommand):
         parser.add_argument(
             '--learning-rate',
             type=float,
-            default=1e-4,
-            help='Learning rate (default: 1e-4)'
+            default=1e-5,  # REDUCIDO de 1e-4 a 1e-5 para estabilidad con Uncertainty Loss
+            help='Learning rate (default: 1e-5, reducido para estabilidad con Uncertainty Loss)'
+        )
+        parser.add_argument(
+            '--loss-type',
+            type=str,
+            default='smooth_l1',
+            choices=['mse', 'smooth_l1', 'huber'],
+            help='Tipo de loss function: mse, smooth_l1 (recomendado), o huber (default: smooth_l1)'
+        )
+        parser.add_argument(
+            '--scheduler-type',
+            type=str,
+            default='reduce_on_plateau',
+            choices=['reduce_on_plateau', 'cosine', 'cosine_warmup', 'onecycle'],
+            help='Tipo de scheduler: reduce_on_plateau (recomendado), cosine, cosine_warmup, o onecycle (default: reduce_on_plateau)'
+        )
+        parser.add_argument(
+            '--max-grad-norm',
+            type=float,
+            default=1.0,
+            help='Máxima norma de gradiente para clipping (default: 1.0)'
         )
         
         # --- Argumentos de Targets ---
@@ -139,6 +170,13 @@ class Command(BaseCommand):
             action='store_true',
             help='Modo de prueba con configuración reducida (epochs=5, batch=16)'
         )
+        
+        # Nuevo argumento para entrenamiento por dimensión separada
+        parser.add_argument(
+            '--train-separate-dimensions',
+            action='store_true',
+            help='Entrenar cada dimensión (alto, ancho, grosor, peso) por separado usando pixel_calibration.json'
+        )
     
     def handle(self, *args, **options):
         """Maneja la ejecución del comando."""
@@ -159,9 +197,16 @@ class Command(BaseCommand):
             if options['validate_only']:
                 self._validate_data_only()
                 return
-            pipeline = CacaoTrainingPipeline(config)
-            results = pipeline.run_pipeline()
-            self._display_results(results, start_time)
+            
+            # Use new hybrid-v2 pipeline if requested
+            if options.get('hybrid_v2', False):
+                from ml.pipeline.hybrid_v2_training import train_hybrid_v2
+                results = train_hybrid_v2(config)
+                self._display_results_v2(results, start_time)
+            else:
+                pipeline = CacaoTrainingPipeline(config)
+                results = pipeline.run_pipeline()
+                self._display_results(results, start_time)
             
         except Exception as e:
             import traceback
@@ -172,6 +217,8 @@ class Command(BaseCommand):
         """Crea la configuración del entrenamiento."""
         
         use_hybrid = options.get('hybrid', False) or options.get('model_type') == 'hybrid'
+        use_hybrid_v2 = options.get('hybrid_v2', False)
+        train_separate_dimensions = options.get('train_separate_dimensions', False)
         
         is_windows = platform.system() == 'Windows'
         num_workers = options['num_workers']
@@ -189,10 +236,12 @@ class Command(BaseCommand):
             num_workers = 0
 
         config = {
-            'multi_head': options['multihead'] or use_hybrid,
-            'model_type': 'hybrid' if use_hybrid else options['model_type'],
+            'multi_head': options['multihead'] or use_hybrid or use_hybrid_v2,
+            'model_type': 'hybrid' if (use_hybrid or use_hybrid_v2) else options['model_type'],
             'hybrid': use_hybrid,
-            'use_pixel_features': options.get('use_pixel_features', True) and use_hybrid,
+            'hybrid_v2': use_hybrid_v2,
+            'use_pixel_features': options.get('use_pixel_features', True) and (use_hybrid or use_hybrid_v2 or train_separate_dimensions),
+            'train_separate_dimensions': train_separate_dimensions,  # Nuevo flag
             'epochs': options['epochs'],
             'batch_size': options['batch_size'],
             'img_size': options['img_size'],
@@ -204,7 +253,11 @@ class Command(BaseCommand):
             'segmentation_backend': options.get('segmentation_backend', 'auto'), # <-- AÑADIR
             'pretrained': True,
             'weight_decay': 1e-4,
-            'min_lr': 1e-6,
+            'min_lr': 1e-7,  # Reducido para mejor fine-tuning
+            'loss_type': options.get('loss_type', 'smooth_l1'),  # SmoothL1Loss por defecto (más robusta)
+            'scheduler_type': options.get('scheduler_type', 'reduce_on_plateau'),  # ReduceLROnPlateau por defecto
+            'max_grad_norm': options.get('max_grad_norm', 1.0),
+            'use_mixed_precision': options.get('use_mixed_precision', False),
             'targets': self._parse_targets(options['targets'])
         }
         
@@ -307,6 +360,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Workers: {config['num_workers']}")
         self.stdout.write(f"Usar imágenes raw sin crops: {config.get('use_raw_images', False)}")
         self.stdout.write(f"Backend de segmentación: {config.get('segmentation_backend', 'auto')}") # <-- AÑADIR
+        self.stdout.write(f"Entrenar por dimensiones separadas: {config.get('train_separate_dimensions', False)}") # <-- AÑADIR
         
         raw_dir = get_raw_images_dir()
         raw_files = list(raw_dir.glob("*.bmp"))
@@ -407,6 +461,40 @@ class Command(BaseCommand):
         self.stdout.write("="*50)
         self.stdout.write(
             self.style.SUCCESS("¡Entrenamiento completado exitosamente!")
+        )
+    
+    def _display_results_v2(self, results: dict, start_time: float) -> None:
+        """Muestra los resultados del entrenamiento v2."""
+        total_time = time.time() - start_time
+        
+        self.stdout.write("\n" + "="*50)
+        self.stdout.write("RESULTADOS DEL ENTRENAMIENTO HÍBRIDO V2")
+        self.stdout.write("="*50)
+        
+        self.stdout.write(f"Tiempo total: {total_time:.2f} segundos")
+        self.stdout.write(f"Mejor epoch: {results.get('best_epoch', 'N/A')}")
+        self.stdout.write(f"Mejor val_loss: {results.get('best_val_loss', 'N/A'):.4f}")
+        self.stdout.write(f"Test loss: {results.get('test_loss', 'N/A'):.4f}")
+        
+        if 'test_metrics' in results:
+            self.stdout.write("\nMétricas de test (desnormalizadas):")
+            for target in ['alto', 'ancho', 'grosor', 'peso']:
+                if target in results['test_metrics']:
+                    metrics = results['test_metrics'][target]
+                    self.stdout.write(
+                        f"  {target.upper()}: "
+                        f"R²={metrics['r2']:.4f}, "
+                        f"MAE={metrics['mae']:.4f}, "
+                        f"RMSE={metrics['rmse']:.4f}"
+                    )
+        
+        artifacts_dir = get_regressors_artifacts_dir()
+        self.stdout.write(f"\nModelos guardados en: {artifacts_dir}")
+        self.stdout.write(f"Modelo final: {results.get('model_path', 'N/A')}")
+        
+        self.stdout.write("="*50)
+        self.stdout.write(
+            self.style.SUCCESS("¡Entrenamiento híbrido v2 completado exitosamente!")
         )
     
     def _run_with_celery(self, config: dict, options: dict) -> None:
@@ -520,7 +608,7 @@ class Command(BaseCommand):
                 celery_config = {
                     'epochs': config.get('epochs', 50),
                     'batch_size': config.get('batch_size', 32),
-                    'learning_rate': config.get('learning_rate', 1e-4),
+                    'learning_rate': config.get('learning_rate', 1e-5),  # REDUCIDO de 1e-4 a 1e-5
                     'multi_head': config.get('multi_head', False),
                     'model_type': config.get('model_type', 'resnet18'),
                     'img_size': config.get('img_size', 224),
@@ -839,6 +927,7 @@ class Command(BaseCommand):
             if platform.system() == 'Windows':
                 process.terminate()
             else:
+                import os
                 os.killpg(os.getpgid(process.pid), signal.SIGTERM)
             
             try:

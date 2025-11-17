@@ -18,7 +18,14 @@ logger = get_ml_logger("cacaoscan.ml.regression")
 
 
 class CacaoScalers:
-    """Manejador de escaladores para targets de regresión."""
+    """
+    Manejador de escaladores para targets de regresión con log-transform selectivo.
+    
+    Aplica log1p SOLO a grosor y peso.
+    """
+    
+    # Targets que requieren log-transform
+    LOG_TARGETS = {"grosor", "peso"}
     
     def __init__(self, scaler_type: str = "standard"):
         """
@@ -33,6 +40,8 @@ class CacaoScalers:
         
         # Asegurar que el directorio de artefactos existe
         ensure_dir_exists(get_regressors_artifacts_dir())
+        
+        logger.info(f"CacaoScalers initialized with LOG_TARGETS: {self.LOG_TARGETS}")
     
     def _create_scaler(self) -> StandardScaler:
         """Crea un escalador según el tipo especificado."""
@@ -89,8 +98,16 @@ class CacaoScalers:
             if target not in target_data:
                 raise ValueError(f"Target '{target}' no encontrado en datos")
             
+            # Aplicar log1p SOLO a grosor y peso ANTES de normalizar
+            target_array = target_data[target].copy()
+            if target in self.LOG_TARGETS:
+                target_array = np.log1p(target_array)
+                logger.info(f"Applied log1p transform to {target} before scaling")
+            else:
+                logger.debug(f"No log transform for {target}")
+            
             scaler = self._create_scaler()
-            scaler.fit(target_data[target])
+            scaler.fit(target_array)
             self.scalers[target] = scaler
             
             logger.debug(f"Escalador ajustado para {target}: mean={scaler.mean_[0]:.3f}, std={scaler.scale_[0]:.3f}")
@@ -144,7 +161,12 @@ class CacaoScalers:
             if target not in target_data:
                 raise ValueError(f"Target '{target}' no encontrado en datos")
             
-            transformed = self.scalers[target].transform(target_data[target])
+            # Aplicar log1p SOLO a grosor y peso ANTES de transformar
+            target_array = target_data[target].copy()
+            if target in self.LOG_TARGETS:
+                target_array = np.log1p(target_array)
+            
+            transformed = self.scalers[target].transform(target_array)
             transformed_data[target] = transformed.flatten()
             
         return transformed_data
@@ -170,6 +192,12 @@ class CacaoScalers:
             # Reshape para el escalador
             target_values = data[target].reshape(-1, 1)
             original = self.scalers[target].inverse_transform(target_values)
+            
+            # Aplicar expm1 SOLO a grosor y peso DESPUÉS de inverse_transform
+            if target in self.LOG_TARGETS:
+                original = np.expm1(original)
+                original = np.maximum(original, 0.0)  # Ensure non-negative
+            
             original_data[target] = original.flatten()
             
         return original_data

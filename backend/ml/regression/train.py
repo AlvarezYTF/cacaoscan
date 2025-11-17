@@ -81,21 +81,39 @@ class RegressionTrainer:
         self.device = device
         self.config = config
         
-        # Configurar optimizador
+        # Configurar optimizador mejorado
+        learning_rate = config.get('learning_rate', 1e-4)
+        # Validar learning rate
+        if learning_rate > 5e-4:
+            logger.warning(f"Learning rate {learning_rate} puede ser muy alto. Reduciendo a 5e-4")
+            learning_rate = 5e-4
+        
         self.optimizer = optim.AdamW(
             self.model.parameters(),
-            lr=config.get('learning_rate', 1e-4),
-            weight_decay=config.get('weight_decay', 1e-4)
+            lr=learning_rate,
+            weight_decay=config.get('weight_decay', 1e-4),
+            betas=(0.9, 0.999),
+            eps=1e-8
         )
         
-        # Configurar scheduler
-        scheduler_type = config.get('scheduler_type', 'cosine_warmup')
+        # Configurar scheduler mejorado
+        scheduler_type = config.get('scheduler_type', 'reduce_on_plateau')
         epochs = config.get('epochs', 50)
         
-        if scheduler_type == 'onecycle':
+        if scheduler_type == 'reduce_on_plateau':
+            # ReduceLROnPlateau es más robusto para regresión
+            self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+                self.optimizer,
+                mode='min',
+                factor=0.5,
+                patience=5,
+                verbose=True,
+                min_lr=config.get('min_lr', 1e-7)
+            )
+        elif scheduler_type == 'onecycle':
             self.scheduler = optim.lr_scheduler.OneCycleLR(
                 self.optimizer,
-                max_lr=config.get('learning_rate', 1e-4) * 10,
+                max_lr=learning_rate * 10,
                 epochs=epochs,
                 steps_per_epoch=len(train_loader),
                 pct_start=0.3
@@ -114,14 +132,16 @@ class RegressionTrainer:
                 eta_min=config.get('min_lr', 1e-6)
             )
         
-        # Criterio de pérdida
-        loss_type = config.get('loss_type', 'mse')
+        # Criterio de pérdida mejorado: SmoothL1Loss por defecto (más robusta)
+        loss_type = config.get('loss_type', 'smooth_l1')
         if loss_type == 'huber':
             self.criterion = nn.HuberLoss(delta=1.0)
-        elif loss_type == 'smooth_l1':
-            self.criterion = nn.SmoothL1Loss()
-        else: # 'mse'
+        elif loss_type == 'mse':
             self.criterion = nn.MSELoss()
+        else: # 'smooth_l1' (default)
+            self.criterion = nn.SmoothL1Loss()
+        
+        logger.info(f"Optimizador: AdamW (lr={learning_rate:.2e}), Loss: {loss_type}, Scheduler: {scheduler_type}")
         
         # Gradient clipping
         self.max_grad_norm = config.get('max_grad_norm', 1.0)
@@ -182,7 +202,11 @@ class RegressionTrainer:
         return total_loss / (len(self.train_loader) + 1e-6)
     
     def validate_epoch(self) -> Tuple[float, float, float, float]:
-        """Valida el modelo por una época."""
+        """
+        Valida el modelo por una época.
+        
+        IMPORTANTE: Desnormaliza predicciones y targets antes de calcular R².
+        """
         self.model.eval()
         total_loss = 0.0
         all_predictions = []
@@ -225,12 +249,43 @@ class RegressionTrainer:
             logger.warning("Val Loader vacío, no se pueden calcular métricas.")
             return avg_loss, 0.0, 0.0, 0.0
 
+        # CRÍTICO: Desnormalizar antes de calcular métricas
+        if self.scalers is not None and self.scalers.is_fitted:
+            try:
+                # Crear diccionarios para desnormalización
+                pred_dict_norm = {self.target: all_predictions}
+                targ_dict_norm = {self.target: all_targets}
+                
+                # Desnormalizar
+                pred_dict_denorm = self.scalers.inverse_transform(pred_dict_norm)
+                targ_dict_denorm = self.scalers.inverse_transform(targ_dict_norm)
+                
+                all_predictions = pred_dict_denorm[self.target]
+                all_targets = targ_dict_denorm[self.target]
+                
+                logger.debug(f"{self.target}: Predicciones y targets desnormalizados para métricas")
+            except Exception as e:
+                logger.warning(
+                    f"{self.target}: Error desnormalizando para métricas: {e}. "
+                    f"Usando valores normalizados (R² puede ser incorrecto)"
+                )
+        else:
+            logger.warning(
+                f"{self.target}: Scalers no disponibles, usando valores normalizados "
+                f"(R² puede ser incorrecto)"
+            )
+
+        # Usar función robusta de R²
+        from .metrics import robust_r2_score
+        
         mae = np.mean(np.abs(all_predictions - all_targets))
         rmse = np.sqrt(np.mean((all_predictions - all_targets) ** 2))
-        
-        ss_res = np.sum((all_targets - all_predictions) ** 2)
-        ss_tot = np.sum((all_targets - np.mean(all_targets)) ** 2)
-        r2 = 1 - (ss_res / (ss_tot + 1e-8)) # Evitar división por cero
+        r2 = robust_r2_score(
+            all_targets,
+            all_predictions,
+            target_name=self.target,
+            verbose=False
+        )
         
         return avg_loss, mae, rmse, r2
     
@@ -245,10 +300,16 @@ class RegressionTrainer:
             train_loss = self.train_epoch()
             val_loss, val_mae, val_rmse, val_r2 = self.validate_epoch()
             
-            if not isinstance(self.scheduler, optim.lr_scheduler.OneCycleLR):
+            # Actualizar scheduler (diferente para ReduceLROnPlateau y OneCycleLR)
+            if isinstance(self.scheduler, optim.lr_scheduler.ReduceLROnPlateau):
+                self.scheduler.step(val_loss)
+                current_lr = self.optimizer.param_groups[0]['lr']
+            elif isinstance(self.scheduler, optim.lr_scheduler.OneCycleLR):
+                # OneCycleLR se actualiza en cada step del optimizador
+                current_lr = self.optimizer.param_groups[0]['lr']
+            else:
                 self.scheduler.step()
-            
-            current_lr = self.scheduler.get_last_lr()[0]
+                current_lr = self.scheduler.get_last_lr()[0] if hasattr(self.scheduler, 'get_last_lr') else self.optimizer.param_groups[0]['lr']
             
             self.history['train_loss'].append(train_loss)
             self.history['val_loss'].append(val_loss)
@@ -436,12 +497,44 @@ def train_multi_head_model(
     device: torch.device,
     training_job: Optional[TrainingJob] = None,
     dataset_info: Optional[Dict] = None,
-    save_metrics: bool = True
+    save_metrics: bool = True,
+    use_improved: bool = True,  # Usar training loop mejorado por defecto
+    use_uncertainty_loss: Optional[bool] = None  # Si None, se detecta automáticamente
 ) -> Dict[str, List[float]]:
     """
     Entrena un modelo multi-head o híbrido.
     ACTUALIZADO: Maneja la entrada de features de píxeles para el modelo híbrido.
+    
+    Si use_improved=True, usa el training loop mejorado con:
+    - Validación de normalización
+    - Logging detallado
+    - Checkpoints automáticos
+    - Validación de pérdidas
+    
+    Args:
+        use_uncertainty_loss: Si usar UncertaintyWeightedLoss. Si None, se detecta automáticamente.
     """
+    # Intentar usar training loop mejorado si está disponible
+    if use_improved:
+        try:
+            from .train_improved import train_multi_head_model_improved
+            logger.info("Usando training loop mejorado")
+            return train_multi_head_model_improved(
+                model=model,
+                train_loader=train_loader,
+                val_loader=val_loader,
+                scalers=scalers,
+                config=config,
+                device=device,
+                training_job=training_job,
+                dataset_info=dataset_info,
+                save_metrics=save_metrics,
+                use_uncertainty_loss=use_uncertainty_loss
+            )
+        except ImportError:
+            logger.warning("Training loop mejorado no disponible, usando versión estándar")
+    
+    # Versión estándar (código original)
     is_hybrid = config.get('hybrid', False) or config.get('model_type') == 'hybrid'
     use_pixel_features = config.get('use_pixel_features', False) and is_hybrid
     
@@ -452,25 +545,132 @@ def train_multi_head_model(
 
     model = model.to(device)
     
-    optimizer = optim.AdamW(
-        model.parameters(),
-        lr=config.get('learning_rate', 1e-4),
-        weight_decay=config.get('weight_decay', 1e-4)
-    )
+    # Optimizador mejorado con learning rate más conservador
+    learning_rate = config.get('learning_rate', 1e-4)
+    # Si el learning rate es muy alto, reducirlo
+    if learning_rate > 5e-4:
+        logger.warning(f"Learning rate {learning_rate} puede ser muy alto. Reduciendo a 5e-4")
+        learning_rate = 5e-4
     
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(
-        optimizer,
-        T_max=config.get('epochs', 50),
-        eta_min=config.get('min_lr', 1e-6)
-    )
+    # CRÍTICO: Verificar si la loss tiene parámetros aprendibles (ej. UncertaintyWeightedLoss)
+    # Si los tiene, incluirlos en el optimizador
+    criterion = None
+    use_uncertainty_loss = False
+    try:
+        from ..utils.losses import UncertaintyWeightedLoss
+        # Intentar detectar si se está usando UncertaintyWeightedLoss
+        # Nota: En esta versión estándar, no se crea la loss aquí, pero verificamos si está en config
+        if config.get('use_uncertainty_loss', False):
+            use_uncertainty_loss = True
+            logger.info("UncertaintyWeightedLoss detectado en config, pero no se crea aquí (usar train_improved)")
+    except ImportError:
+        pass
     
-    criterion = nn.MSELoss()
+    # Crear loss function (estándar, sin parámetros aprendibles)
+    loss_type = config.get('loss_type', 'smooth_l1')
+    if loss_type == 'mse':
+        criterion = nn.MSELoss()
+    elif loss_type == 'huber':
+        criterion = nn.HuberLoss(delta=1.0)
+    else:  # 'smooth_l1' (default)
+        criterion = nn.SmoothL1Loss()
+    
+    # CRÍTICO: Incluir parámetros del modelo Y de la loss (si tiene parámetros aprendibles)
+    # Si la loss tiene parámetros (ej. log_sigmas en UncertaintyWeightedLoss), incluirlos
+    # IMPORTANTE: Los sigmas necesitan un LR más alto (100x) para actualizarse correctamente
+    if criterion is not None and hasattr(criterion, 'parameters'):
+        # Verificar si realmente tiene parámetros aprendibles
+        loss_params = list(criterion.parameters())
+        if len(loss_params) > 0:
+            # Definir Learning Rates separados para modelo y sigmas
+            # El modelo usa el LR bajo y estable
+            model_lr = learning_rate
+            
+            # Los sigmas necesitan un LR 100 veces más alto para moverse y balancear las tareas
+            # Esto es crítico: con LR bajo, los sigmas no se actualizan (Δ+0.0%)
+            sigma_lr = learning_rate * 100.0  # 100x más alto (ej. 1e-5 * 100 = 1e-3)
+            
+            # Usar grupos de parámetros con LR separados
+            optimizer = optim.AdamW(
+                [
+                    {'params': model.parameters(), 'lr': model_lr},
+                    {'params': criterion.parameters(), 'lr': sigma_lr}
+                ],
+                weight_decay=config.get('weight_decay', 1e-4),
+                betas=(0.9, 0.999),
+                eps=1e-8
+            )
+            logger.info("✔ Optimizador incluye parámetros del modelo Y de la loss")
+            logger.info(f"  Learning Rate del modelo: {model_lr:.2e}")
+            logger.info(f"  Learning Rate de los sigmas: {sigma_lr:.2e} (100x más alto)")
+            logger.info(f"  Parámetros del modelo: {sum(p.numel() for p in model.parameters())}")
+            logger.info(f"  Parámetros de la loss: {sum(p.numel() for p in loss_params)}")
+        else:
+            # Solo parámetros del modelo (loss estándar sin parámetros aprendibles)
+            optimizer = optim.AdamW(
+                model.parameters(),
+                lr=learning_rate,
+                weight_decay=config.get('weight_decay', 1e-4),
+                betas=(0.9, 0.999),
+                eps=1e-8
+            )
+    else:
+        # Solo parámetros del modelo (loss estándar sin parámetros aprendibles)
+        optimizer = optim.AdamW(
+            model.parameters(),
+            lr=learning_rate,
+            weight_decay=config.get('weight_decay', 1e-4),
+            betas=(0.9, 0.999),
+            eps=1e-8
+        )
+    
+    # Scheduler mejorado: ReduceLROnPlateau es más robusto para regresión
+    scheduler_type = config.get('scheduler_type', 'reduce_on_plateau')
+    
+    if scheduler_type == 'reduce_on_plateau':
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode='min',
+            factor=0.5,
+            patience=5,
+            verbose=True,
+            min_lr=config.get('min_lr', 1e-7)
+        )
+    elif scheduler_type == 'cosine':
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=config.get('epochs', 50),
+            eta_min=config.get('min_lr', 1e-6)
+        )
+    else:
+        # Default: CosineAnnealingWarmRestarts
+        scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+            optimizer,
+            T_0=max(1, config.get('epochs', 50) // 4),
+            T_mult=2,
+            eta_min=config.get('min_lr', 1e-7)
+        )
+    
+    # Loss function mejorada: SmoothL1Loss es más robusta que MSE
+    # NOTA: Si se usa UncertaintyWeightedLoss, debe crearse ANTES del optimizador
+    # En esta versión estándar, usamos loss estándar (sin parámetros aprendibles)
+    loss_type = config.get('loss_type', 'smooth_l1')
+    if loss_type == 'mse':
+        criterion = nn.MSELoss()
+    elif loss_type == 'huber':
+        criterion = nn.HuberLoss(delta=1.0)
+    else:  # 'smooth_l1' (default)
+        criterion = nn.SmoothL1Loss()
+    
+    logger.info(f"Optimizador: AdamW (lr={learning_rate:.2e}), Loss: {loss_type}, Scheduler: {scheduler_type}")
+    logger.info("NOTA: Para usar UncertaintyWeightedLoss, usar train_improved.py en lugar de esta versión estándar")
     
     history = {
         'train_loss': [], 'val_loss': [], 'learning_rate': [],
         **{f'val_mae_{t}': [] for t in TARGETS},
         **{f'val_rmse_{t}': [] for t in TARGETS},
         **{f'val_r2_{t}': [] for t in TARGETS},
+        'val_r2_avg': [],  # R² promedio sobre todos los targets
     }
     
     best_val_loss = float('inf')
@@ -629,6 +829,14 @@ def train_multi_head_model(
         
         avg_val_loss = val_loss / (len(val_loader) + 1e-6)
         
+        # Actualizar scheduler (diferente para ReduceLROnPlateau)
+        if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
+            scheduler.step(avg_val_loss)
+            current_lr = optimizer.param_groups[0]['lr']
+        else:
+            scheduler.step()
+            current_lr = scheduler.get_last_lr()[0] if hasattr(scheduler, 'get_last_lr') else optimizer.param_groups[0]['lr']
+        
         # Calcular métricas de validación
         log_str = (
             f"Epoch {epoch+1}/{config['epochs']} - "
@@ -637,27 +845,72 @@ def train_multi_head_model(
         
         history['train_loss'].append(avg_train_loss)
         history['val_loss'].append(avg_val_loss)
-        history['learning_rate'].append(scheduler.get_last_lr()[0])
+        history['learning_rate'].append(current_lr)
 
+        # CRÍTICO: Desnormalizar predicciones y targets antes de calcular métricas
+        # Usar función robusta de métricas
+        from .metrics import (
+            denormalize_and_calculate_metrics,
+            validate_predictions_targets_alignment
+        )
+        
+        # Preparar diccionarios de predicciones y targets normalizados
+        pred_dict_norm = {t: np.array(val_metrics_epoch[t]['preds']) for t in TARGETS}
+        targ_dict_norm = {t: np.array(val_metrics_epoch[t]['targets']) for t in TARGETS}
+        
+        # Validar alineación
+        if not validate_predictions_targets_alignment(pred_dict_norm, targ_dict_norm):
+            logger.error("Problema de alineación entre predicciones y targets")
+        
+        # Desnormalizar y calcular métricas usando función robusta
+        metrics_per_target, avg_r2 = denormalize_and_calculate_metrics(
+            predictions_norm=pred_dict_norm,
+            targets_norm=targ_dict_norm,
+            scalers=scalers,
+            target_names=TARGETS,
+            verbose=False  # No verbose aquí, lo haremos después
+        )
+        
+        # Guardar métricas en history y construir log string
         for target in TARGETS:
-            preds = np.array(val_metrics_epoch[target]['preds'])
-            targets = np.array(val_metrics_epoch[target]['targets'])
-            
-            if len(targets) > 0:
-                mae = np.mean(np.abs(preds - targets))
-                rmse = np.sqrt(np.mean((preds - targets) ** 2))
-                ss_res = np.sum((targets - preds) ** 2)
-                ss_tot = np.sum((targets - np.mean(targets)) ** 2)
-                r2 = 1 - (ss_res / (ss_tot + 1e-8))
+            if target in metrics_per_target:
+                mae = metrics_per_target[target]['mae']
+                rmse = metrics_per_target[target]['rmse']
+                r2 = metrics_per_target[target]['r2']
+                
+                history[f'val_mae_{target}'].append(mae)
+                history[f'val_rmse_{target}'].append(rmse)
+                history[f'val_r2_{target}'].append(r2)
+                log_str += f", {target} R²: {r2:.4f}"
             else:
-                mae, rmse, r2 = 0.0, 0.0, 0.0
-
-            history[f'val_mae_{target}'].append(mae)
-            history[f'val_rmse_{target}'].append(rmse)
-            history[f'val_r2_{target}'].append(r2)
-            log_str += f", {target} R²: {r2:.4f}"
+                logger.warning(f"No se calcularon métricas para {target}")
+                history[f'val_mae_{target}'].append(0.0)
+                history[f'val_rmse_{target}'].append(0.0)
+                history[f'val_r2_{target}'].append(0.0)
+                log_str += f", {target} R²: 0.0000"
+        
+        # Agregar R² promedio al log y al historial
+        log_str += f" | Avg R²: {avg_r2:.4f}"
+        history['val_r2_avg'].append(avg_r2)
 
         logger.info(log_str)
+        
+        # Log detallado por componente (cada 5 épocas o si R² es muy negativo)
+        if (epoch + 1) % 5 == 0 or any(
+            metrics_per_target.get(t, {}).get('r2', 0) < -100
+            for t in TARGETS
+        ):
+            logger.info("=== Métricas detalladas por componente ===")
+            for target in TARGETS:
+                if target in metrics_per_target:
+                    m = metrics_per_target[target]
+                    logger.info(
+                        f"{target.upper()}: MAE={m['mae']:.4f}, "
+                        f"RMSE={m['rmse']:.4f}, R²={m['r2']:.4f}, "
+                        f"n={m['n_samples']}"
+                    )
+            logger.info(f"R² Promedio: {avg_r2:.4f}")
+            logger.info("==========================================")
         
         # Early stopping
         improvement_threshold = config.get('improvement_threshold', 1e-4)
@@ -668,7 +921,7 @@ def train_multi_head_model(
         else:
             patience_counter += 1
         
-        scheduler.step()
+        # Nota: scheduler.step() ya se llamó arriba (antes de early stopping)
         
         if patience_counter >= config.get('early_stopping_patience', 10):
             logger.info(f"Early stopping en época {epoch+1}")

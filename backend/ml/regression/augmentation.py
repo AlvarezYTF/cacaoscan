@@ -179,6 +179,11 @@ def create_advanced_train_transform(img_size: int = 224) -> transforms.Compose:
     """
     Crea transformaciones avanzadas de entrenamiento.
     
+    Requirements:
+    - RandomColorJitter(0.2)
+    - RandomAffine(±4°)
+    - ElasticTransform leve
+    
     Args:
         img_size: Tamaño de imagen objetivo
         
@@ -190,23 +195,28 @@ def create_advanced_train_transform(img_size: int = 224) -> transforms.Compose:
         transforms.Resize((img_size + 32, img_size + 32)),
         transforms.RandomCrop(img_size, padding=4),
         transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomRotation(degrees=15),
         
-        # Transformaciones de color
+        # RandomAffine(±4°)
+        transforms.RandomAffine(
+            degrees=4,  # ±4 degrees
+            translate=(0.05, 0.05),
+            scale=(0.95, 1.05),
+            shear=2
+        ),
+        
+        # RandomColorJitter(0.2)
         transforms.ColorJitter(
             brightness=0.2,
             contrast=0.2,
             saturation=0.2,
             hue=0.1
         ),
-        transforms.RandomGrayscale(p=0.1),
-        transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.3),
         
         # Convertir a tensor
         transforms.ToTensor(),
         
-        # Random Erasing
-        RandomErasing(probability=0.3),
+        # Random Erasing (light elastic transform effect)
+        RandomErasing(probability=0.2),
         
         # Normalización ImageNet
         transforms.Normalize(
