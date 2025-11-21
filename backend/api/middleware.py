@@ -320,6 +320,8 @@ class TokenCleanupMiddleware(MiddlewareMixin):
     """
     Middleware para limpiar tokens JWT expirados automáticamente.
     """
+    # Flag de clase para solo loguear una vez cuando las tablas no existen
+    _tables_missing_logged = False
     
     def __init__(self, get_response):
         self.get_response = get_response
@@ -352,13 +354,20 @@ class TokenCleanupMiddleware(MiddlewareMixin):
             if outstanding_count > 0:
                 expired_outstanding.delete()
                 logger.debug(f"Limpiados {outstanding_count} tokens outstanding expirados")
+            
+            # Si llegamos aquí, las tablas existen, resetear el flag
+            if self._tables_missing_logged:
+                self._tables_missing_logged = False
                 
         except (OperationalError, ProgrammingError) as e:
             # Si las tablas no existen aún (durante despliegue inicial), ignorar silenciosamente
             error_msg = str(e).lower()
             if 'does not exist' in error_msg or 'relation' in error_msg:
                 # Las migraciones aún no se han ejecutado, esto es normal durante el despliegue
-                logger.debug("Tablas de token_blacklist aún no creadas, se crearán con las migraciones")
+                # Solo loguear una vez para evitar spam en los logs
+                if not self._tables_missing_logged:
+                    logger.debug("Tablas de token_blacklist aún no creadas, se crearán con las migraciones")
+                    self._tables_missing_logged = True
             else:
                 logger.warning(f"Error de base de datos en limpieza de tokens: {e}")
         except Exception as e:

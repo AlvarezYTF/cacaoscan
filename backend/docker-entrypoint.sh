@@ -82,7 +82,10 @@ if [[ "${ROLE}" == "web" ]]; then
         log "⚠️ Error aplicando migraciones de token_blacklist, continuando..."
     fi
     
-    run_management_command collectstatic --noinput
+    # Ejecutar collectstatic limpiando primero para regenerar el manifest correctamente
+    log "📦 Recolectando archivos estáticos..."
+    run_management_command collectstatic --noinput --clear
+    log "✅ Archivos estáticos recolectados"
     if [[ "${CREATE_DEFAULT_SUPERUSER:-true}" == "true" ]]; then
         log "👤 Asegurando superusuario predeterminado"
         python create_admin_user.py || log "⚠️ No se pudo crear el superusuario predeterminado"
