@@ -56,11 +56,7 @@ services:
           format: https://${host}
 
       - key: CORS_ALLOWED_ORIGINS
-        fromService:
-          type: web
-          name: cacaoscan-frontend
-          property: host
-          format: https://${host}
+        value: https://cacaoscan-frontend.onrender.com
 
       # Startup flags
       - key: SERVICE_ROLE

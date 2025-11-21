@@ -274,9 +274,32 @@ REST_FRAMEWORK = {
 # Para desarrollo: permitir todas las conexiones desde cualquier IP
 cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
 if cors_origins:
-    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
+    # Validar que cada origen tenga esquema (http:// o https://)
+    # Si el servicio frontend aún no está desplegado, fromService puede devolver solo el nombre
+    valid_origins = []
+    for origin in cors_origins.split(','):
+        origin = origin.strip()
+        if not origin:
+            continue
+        # Solo aceptar orígenes con esquema completo (http:// o https://)
+        if origin.startswith('http://') or origin.startswith('https://'):
+            # Validar que tenga un dominio válido (contenga un punto o sea localhost)
+            if '.' in origin.replace('://', '').split('/')[0] or 'localhost' in origin:
+                valid_origins.append(origin)
+        # Ignorar orígenes sin esquema (como nombres de servicios de Render)
+        # Estos se configurarán correctamente una vez que el servicio esté desplegado
+    
+    if valid_origins:
+        CORS_ALLOWED_ORIGINS = valid_origins
+        CORS_ALLOW_ALL_ORIGINS = False
+    else:
+        # Si no hay orígenes válidos, usar allow all solo en desarrollo
+        # En producción, se configurará correctamente cuando el frontend esté desplegado
+        CORS_ALLOW_ALL_ORIGINS = DEBUG
+        CORS_ALLOWED_ORIGINS = []
 else:
     CORS_ALLOW_ALL_ORIGINS = DEBUG
+    CORS_ALLOWED_ORIGINS = []
 
 # Configuración adicional de CORS para desarrollo
 CORS_ALLOW_CREDENTIALS = True
