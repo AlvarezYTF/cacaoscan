@@ -37,10 +37,16 @@ USER 101
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY start-nginx.sh /start-nginx.sh
+
+RUN chmod +x /start-nginx.sh
+
+# Render inyecta PORT automáticamente
+ENV PORT=8080
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -fsS http://127.0.0.1:8080/health || exit 1
+    CMD curl -fsS http://127.0.0.1:${PORT:-8080}/health || exit 1
 
-CMD ["/usr/sbin/nginx", "-g", "daemon off;"]
+CMD ["/start-nginx.sh"]

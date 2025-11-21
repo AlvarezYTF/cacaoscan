@@ -1,0 +1,77 @@
+services:
+  # Backend Django
+  - type: web
+    name: cacaoscan-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_NAME
+        fromDatabase:
+          name: cacaoscan-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: cacaoscan-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: cacaoscan-db
+          property: password
+      - key: DB_HOST
+        fromDatabase:
+          name: cacaoscan-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: cacaoscan-db
+          property: port
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        fromService:
+          name: cacaoscan-frontend
+          type: web
+          property: host
+          format: https://${host}
+      - key: FRONTEND_URL
+        fromService:
+          name: cacaoscan-frontend
+          type: web
+          property: host
+          format: https://${host}
+      - key: CREATE_DEFAULT_SUPERUSER
+        value: "true"
+      - key: SEED_INITIAL_DATA
+        value: "true"
+    healthCheckPath: /health
+
+  # Frontend Vue
+  - type: web
+    name: cacaoscan-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: starter
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          name: cacaoscan-backend
+          type: web
+          property: host
+          format: https://${host}/api/v1
+    buildCommand: ""
+    startCommand: ""
+
+  # Base de datos PostgreSQL
+  - type: pspg
+    name: cacaoscan-db
+    plan: starter
+    databaseName: cacaoscan_db
+    user: cacaoscan_user
+

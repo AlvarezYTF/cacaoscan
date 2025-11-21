@@ -95,5 +95,8 @@ RUN sed -i 's/\r$//' /docker-entrypoint.sh && \
 
 EXPOSE 8000
 
-CMD ["gunicorn", "cacaoscan.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "300", "--graceful-timeout", "60"]
+# Render inyecta PORT automáticamente, usar esa variable si está disponible
+ENV PORT=8000
+
+CMD ["sh", "-c", "gunicorn cacaoscan.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 300 --graceful-timeout 60"]
 
