@@ -68,8 +68,10 @@ run_management_command() {
 
 if [[ "${ROLE}" == "web" ]]; then
     wait_for_database
-    # Ejecutar migraciones, incluyendo las de apps de terceros como token_blacklist
-    run_management_command migrate --noinput --run-syncdb
+    # Ejecutar todas las migraciones, incluyendo las de apps de terceros como token_blacklist
+    run_management_command migrate --noinput
+    # Asegurar que las migraciones de token_blacklist se ejecuten explícitamente
+    python manage.py migrate token_blacklist --noinput || log "⚠️ Migraciones de token_blacklist ya aplicadas o no necesarias"
     run_management_command collectstatic --noinput
     if [[ "${CREATE_DEFAULT_SUPERUSER:-true}" == "true" ]]; then
         log "👤 Asegurando superusuario predeterminado"

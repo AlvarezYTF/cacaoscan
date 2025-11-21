@@ -14,7 +14,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    plan: starter
+    plan: standard
     healthCheckPath: /health
     envVars:
       # Backend base
