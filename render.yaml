@@ -22,6 +22,8 @@ services:
         value: "False"
       - key: SECRET_KEY
         generateValue: true
+      - key: ALLOWED_HOSTS
+        value: cacaoscan-backend.onrender.com
 
       # Database
       - key: DB_NAME
