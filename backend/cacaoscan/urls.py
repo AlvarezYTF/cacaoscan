@@ -55,7 +55,8 @@ def health_check(request):
     return JsonResponse({'status': 'ok', 'service': 'cacaoscan-backend'}, status=200)
 
 urlpatterns = [
-    path('health', health_check, name='health-check'),
+    path('health/', health_check, name='health-check'),
+    path('health', health_check, name='health-check-no-slash'),
     path('admin/', admin.site.urls),
 ]
 

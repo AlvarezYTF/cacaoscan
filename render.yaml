@@ -63,6 +63,8 @@ services:
           format: https://${host}
 
       # Startup flags
+      - key: SERVICE_ROLE
+        value: "web"
       - key: CREATE_DEFAULT_SUPERUSER
         value: "true"
       - key: SEED_INITIAL_DATA

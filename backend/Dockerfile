@@ -97,6 +97,15 @@ RUN sed -i 's/\r$//' /docker-entrypoint.sh && \
 # Exponemos múltiples puertos comunes que Render puede usar
 EXPOSE 8000 10000
 
+# Usar el entrypoint para ejecutar migraciones antes de iniciar Gunicorn
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+# HEALTHCHECK para que Render detecte el servicio correctamente
+# Render inyecta PORT, pero en HEALTHCHECK puede no estar disponible, usar 10000 como fallback
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+    CMD sh -c 'curl -f http://localhost:${PORT:-10000}/health || curl -f http://localhost:10000/health || exit 1'
+
 # No establecer PORT por defecto, Render lo inyectará
+# El entrypoint ejecutará este comando después de las migraciones
 CMD ["sh", "-c", "gunicorn cacaoscan.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --timeout 300 --graceful-timeout 60"]
 
