@@ -38,6 +38,13 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY start-nginx.sh /start-nginx.sh
 
+# Crear archivo config.js con permisos de escritura para el usuario 101 (nginx)
+# Este archivo será actualizado en runtime por start-nginx.sh
+RUN touch /usr/share/nginx/html/config.js && \
+    chown 101:101 /usr/share/nginx/html/config.js && \
+    chmod 666 /usr/share/nginx/html/config.js && \
+    echo "// Runtime API configuration will be injected here" > /usr/share/nginx/html/config.js
+
 RUN chmod +x /start-nginx.sh
 
 USER 101
