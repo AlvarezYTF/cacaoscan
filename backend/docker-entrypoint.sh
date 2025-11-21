@@ -69,9 +69,19 @@ run_management_command() {
 if [[ "${ROLE}" == "web" ]]; then
     wait_for_database
     # Ejecutar todas las migraciones, incluyendo las de apps de terceros como token_blacklist
+    log "📦 Ejecutando migraciones de todas las apps..."
     run_management_command migrate --noinput
+    
     # Asegurar que las migraciones de token_blacklist se ejecuten explícitamente
-    python manage.py migrate token_blacklist --noinput || log "⚠️ Migraciones de token_blacklist ya aplicadas o no necesarias"
+    log "📦 Verificando migraciones de token_blacklist..."
+    if python manage.py migrate token_blacklist --noinput 2>&1 | grep -q "No migrations to apply"; then
+        log "✅ Migraciones de token_blacklist ya aplicadas"
+    elif python manage.py migrate token_blacklist --noinput; then
+        log "✅ Migraciones de token_blacklist aplicadas exitosamente"
+    else
+        log "⚠️ Error aplicando migraciones de token_blacklist, continuando..."
+    fi
+    
     run_management_command collectstatic --noinput
     if [[ "${CREATE_DEFAULT_SUPERUSER:-true}" == "true" ]]; then
         log "👤 Asegurando superusuario predeterminado"

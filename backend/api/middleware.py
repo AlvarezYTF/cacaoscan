@@ -333,6 +333,7 @@ class TokenCleanupMiddleware(MiddlewareMixin):
             # Importar aquí para evitar imports circulares
             from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
             from django.utils import timezone
+            from django.db import OperationalError, ProgrammingError
             
             # Limpiar tokens expirados de la blacklist
             expired_blacklisted = BlacklistedToken.objects.filter(
@@ -352,8 +353,16 @@ class TokenCleanupMiddleware(MiddlewareMixin):
                 expired_outstanding.delete()
                 logger.debug(f"Limpiados {outstanding_count} tokens outstanding expirados")
                 
+        except (OperationalError, ProgrammingError) as e:
+            # Si las tablas no existen aún (durante despliegue inicial), ignorar silenciosamente
+            error_msg = str(e).lower()
+            if 'does not exist' in error_msg or 'relation' in error_msg:
+                # Las migraciones aún no se han ejecutado, esto es normal durante el despliegue
+                logger.debug("Tablas de token_blacklist aún no creadas, se crearán con las migraciones")
+            else:
+                logger.warning(f"Error de base de datos en limpieza de tokens: {e}")
         except Exception as e:
-            # No interrumpir el request si hay error en la limpieza
+            # Otros errores, loguear como warning
             logger.warning(f"Error en limpieza de tokens: {e}")
         
         return None
