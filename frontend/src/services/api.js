@@ -23,12 +23,19 @@ const api = axios.create({
   }
 })
 
-// Interceptor para loggear todas las peticiones (solo en desarrollo o si hay problemas)
+// Interceptor para loggear todas las peticiones (SIEMPRE en producción para debug)
 api.interceptors.request.use(
   (config) => {
-    if (import.meta.env.DEV || config.baseURL.includes('localhost')) {
-      console.log('📤 [API Request]', config.method?.toUpperCase(), config.baseURL + config.url)
+    const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : config.url
+    console.log('📤 [API Request]', config.method?.toUpperCase(), fullUrl)
+    console.log('📤 [API Request] baseURL:', config.baseURL, 'url:', config.url)
+    
+    // Validar que baseURL sea una URL absoluta
+    if (config.baseURL && !config.baseURL.startsWith('http://') && !config.baseURL.startsWith('https://')) {
+      console.error('❌ [API Error] baseURL no es una URL absoluta:', config.baseURL)
+      console.error('❌ [API Error] Esto causará que las peticiones vayan al frontend en lugar del backend')
     }
+    
     return config
   },
   (error) => {
@@ -166,14 +173,22 @@ api.interceptors.response.use(
     const endTime = new Date()
     const duration = endTime - response.config.metadata.startTime
 
-    // Log de response en desarrollo
-    if (import.meta.env.DEV) {
-      console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
-        status: response.status,
-        duration: `${duration}ms`,
-        data: response.data
-      })
+    // Validar que la respuesta sea JSON, no HTML
+    const contentType = response.headers['content-type'] || ''
+    if (contentType.includes('text/html')) {
+      console.error('❌ [API Error] Respuesta es HTML en lugar de JSON!')
+      console.error('❌ [API Error] URL:', response.config.baseURL + response.config.url)
+      console.error('❌ [API Error] Esto significa que la petición fue interceptada por Nginx del frontend')
+      console.error('❌ [API Error] baseURL debería ser:', getApiBaseUrl())
+      throw new Error('La respuesta del servidor es HTML en lugar de JSON. Verifica que baseURL esté configurada correctamente.')
     }
+
+    // Log de response
+    console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.baseURL}${response.config.url}`, {
+      status: response.status,
+      duration: `${duration}ms`,
+      contentType: contentType
+    })
 
     // Actualizar actividad del usuario
     try {

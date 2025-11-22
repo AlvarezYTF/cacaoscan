@@ -18,14 +18,24 @@
 export const getApiBaseUrl = () => {
   // Prioridad 1: Runtime injection (mejor para producción, permite cambios sin rebuild)
   if (typeof window !== 'undefined' && window.__API_BASE_URL__) {
-    console.log('🌐 [API Config] Using runtime API URL:', window.__API_BASE_URL__)
-    return window.__API_BASE_URL__
+    const url = window.__API_BASE_URL__
+    console.log('🌐 [API Config] Using runtime API URL:', url)
+    // Validar que sea una URL absoluta
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      console.error('❌ [API Config] Runtime URL no es absoluta:', url)
+    }
+    return url
   }
   
   // Prioridad 2: Build-time variable (Vite inyecta esto durante el build)
   if (import.meta.env.VITE_API_BASE_URL) {
-    console.log('🔧 [API Config] Using build-time API URL:', import.meta.env.VITE_API_BASE_URL)
-    return import.meta.env.VITE_API_BASE_URL
+    const url = import.meta.env.VITE_API_BASE_URL
+    console.log('🔧 [API Config] Using build-time API URL:', url)
+    // Validar que sea una URL absoluta
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      console.error('❌ [API Config] Build-time URL no es absoluta:', url)
+    }
+    return url
   }
   
   // Prioridad 3: Fallback para desarrollo local
@@ -33,6 +43,7 @@ export const getApiBaseUrl = () => {
   console.warn('⚠️ [API Config] Using development fallback URL:', devUrl)
   console.warn('⚠️ [API Config] window.__API_BASE_URL__:', typeof window !== 'undefined' ? window.__API_BASE_URL__ : 'N/A')
   console.warn('⚠️ [API Config] VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'N/A')
+  console.warn('⚠️ [API Config] window.location.hostname:', typeof window !== 'undefined' ? window.location.hostname : 'N/A')
   return devUrl
 }
 
