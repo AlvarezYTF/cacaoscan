@@ -14,7 +14,7 @@ from django.utils import timezone
 from typing import Dict, List, Any
 
 from ...services import analysis_service
-from ...utils import create_error_response, create_success_response
+from core.utils import create_error_response, create_success_response
 # Importar desde apps modulares
 from ...utils.model_imports import get_models_safely
 

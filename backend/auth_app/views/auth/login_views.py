@@ -17,7 +17,7 @@ from api.serializers import (
     UserSerializer,
     ErrorResponseSerializer
 )
-from api.utils import create_error_response, create_success_response
+from core.utils import create_error_response, create_success_response
 
 User = get_user_model()
 logger = logging.getLogger("cacaoscan.api.auth")

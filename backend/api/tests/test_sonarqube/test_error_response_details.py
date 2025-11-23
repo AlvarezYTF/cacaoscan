@@ -11,7 +11,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.utils import create_error_response
+from core.utils import create_error_response
 
 
 class TestCreateErrorResponseDetails(TestCase):

@@ -14,7 +14,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from api.serializers import ErrorResponseSerializer
-from api.utils import create_error_response, create_success_response
+from core.utils import create_error_response, create_success_response
 from api.services.email import send_email_notification
 from api.utils.model_imports import get_model_safely
 

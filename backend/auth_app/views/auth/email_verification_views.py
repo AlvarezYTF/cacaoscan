@@ -16,7 +16,7 @@ from api.serializers import (
     UserSerializer,
     ErrorResponseSerializer
 )
-from api.utils import create_error_response, create_success_response
+from core.utils import create_error_response, create_success_response
 from api.utils.model_imports import get_model_safely
 
 User = get_user_model()

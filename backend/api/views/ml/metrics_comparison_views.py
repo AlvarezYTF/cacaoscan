@@ -16,7 +16,7 @@ from api.serializers import (
     ModelComparisonSerializer,
     ErrorResponseSerializer
 )
-from api.utils import create_error_response, create_success_response
+from core.utils import create_error_response, create_success_response
 
 logger = logging.getLogger("cacaoscan.api")
 

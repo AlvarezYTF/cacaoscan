@@ -19,7 +19,7 @@ from api.services.email import (
     send_bulk_email_notification,
     send_custom_email
 )
-from api.utils import create_success_response, create_error_response
+from core.utils import create_success_response, create_error_response
 from api.serializers import ErrorResponseSerializer
 
 logger = logging.getLogger("cacaoscan.email")

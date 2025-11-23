@@ -19,7 +19,7 @@ from api.serializers import (
     ModelMetricsUpdateSerializer,
     ErrorResponseSerializer
 )
-from api.utils import create_error_response, create_success_response
+from core.utils import create_error_response, create_success_response
 from ..mixins import PaginationMixin
 
 TrainingJob = get_model_safely('training.models.TrainingJob')

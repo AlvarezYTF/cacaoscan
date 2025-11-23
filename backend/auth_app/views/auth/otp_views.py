@@ -229,9 +229,10 @@ class VerifyOtpView(APIView):
 
                     # Asignar rol por defecto si existe helper
                     try:
-                        from core.utils.responses import assign_default_role  # placeholder si existe
-                        assign_default_role(user, role='farmer')
-                    except Exception:
+                        from users.signals import assign_default_role
+                        assign_default_role(None, user, created=True)
+                    except (ImportError, Exception):
+                        # Si no existe la función, continuar sin asignar rol
                         pass
 
                     # Limpiar pending
