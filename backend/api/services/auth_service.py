@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
+from django.conf import settings
 from datetime import timedelta
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError
@@ -787,5 +788,438 @@ class AuthenticationService(BaseService):
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+    
+    def register_user_with_email_verification(self, user_data: Dict[str, Any], request=None) -> ServiceResult:
+        """
+        Registra un nuevo usuario y envía email de verificación.
+        
+        Args:
+            user_data: Datos del usuario
+            request: Request object para obtener IP y user agent
+            
+        Returns:
+            ServiceResult con datos del usuario creado y token de verificación
+        """
+        try:
+            # Validar campos requeridos
+            required_fields = ['email', 'password', 'password_confirm']
+            self.validate_required_fields(user_data, required_fields)
+            
+            # Validar contraseñas
+            if user_data['password'] != user_data['password_confirm']:
+                return ServiceResult.validation_error(
+                    "Las contraseñas no coinciden",
+                    details={"field": "password_confirm"}
+                )
+            
+            # Validar fortaleza de contraseña
+            password = user_data['password']
+            if len(password) < 8:
+                return ServiceResult.validation_error(
+                    "La contraseña debe tener al menos 8 caracteres",
+                    details={"field": "password", "min_length": 8}
+                )
+            
+            # Validar email único
+            if User.objects.filter(email=user_data['email']).exists():
+                return ServiceResult.validation_error(
+                    "Este email ya está registrado",
+                    details={"field": "email"}
+                )
+            
+            # Crear usuario
+            user = User.objects.create_user(
+                username=user_data['email'],
+                email=user_data['email'],
+                password=password,
+                first_name=user_data.get('first_name', ''),
+                last_name=user_data.get('last_name', ''),
+                is_active=True
+            )
+            
+            # Crear token de verificación de email
+            verification_token = EmailVerificationToken.create_for_user(user)
+            
+            # Enviar email de verificación
+            email_result = self._send_verification_email(user, verification_token)
+            if not email_result.get('success'):
+                self.log_warning(f"Error enviando email de verificación: {email_result.get('error')}")
+            
+            # Registrar registro en historial
+            self._log_user_registration(user, request)
+            
+            # Crear log de auditoría
+            self.create_audit_log(
+                user=user,
+                action="register",
+                resource_type="user",
+                resource_id=user.id,
+                details={"registration_method": "email_verification"}
+            )
+            
+            self.log_info(f"Usuario {user.username} registrado exitosamente")
+            
+            return ServiceResult.success(
+                data={
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'is_active': user.is_active,
+                        'date_joined': user.date_joined.isoformat()
+                    },
+                    'verification_token': str(verification_token.token) if settings.DEBUG else None,
+                    'verification_required': True,
+                    'email': user.email
+                },
+                message="Usuario registrado exitosamente. Por favor verifica tu correo electrónico para activar tu cuenta."
+            )
+            
+        except ValidationServiceError as e:
+            return ServiceResult.error(e)
+        except Exception as e:
+            self.log_error(f"Error en registro: {str(e)}")
+            return ServiceResult.error(
+                ValidationServiceError("Error interno durante el registro", details={"original_error": str(e)})
+            )
+    
+    def pre_register_user(self, user_data: Dict[str, Any], request=None) -> ServiceResult:
+        """
+        Pre-registra un usuario (crea registro pendiente sin crear usuario final).
+        Maneja el caso de registro pendiente existente reenviando el email si no ha expirado.
+        
+        Args:
+            user_data: Datos del usuario
+            request: Request object para obtener IP y user agent
+            
+        Returns:
+            ServiceResult con datos del registro pendiente
+        """
+        try:
+            from personas.models import PendingRegistration
+            from django.template.loader import render_to_string
+            from ..email_service import send_custom_email
+            
+            # Validar campos requeridos
+            email = user_data.get('email')
+            password = user_data.get('password')
+            
+            if not email or not password:
+                return ServiceResult.validation_error(
+                    "Email y contraseña son requeridos",
+                    details={"field": "email" if not email else "password"}
+                )
+            
+            # Validar fortaleza de contraseña
+            if len(password) < 8:
+                return ServiceResult.validation_error(
+                    "La contraseña debe tener al menos 8 caracteres",
+                    details={"field": "password", "min_length": 8}
+                )
+            
+            # Validar email único
+            if User.objects.filter(email=email).exists():
+                return ServiceResult.validation_error(
+                    "Este email ya está registrado",
+                    details={"field": "email"}
+                )
+            
+            # Verificar si ya existe un registro pendiente
+            existing_pending = PendingRegistration.objects.filter(email=email, is_verified=False).first()
+            if existing_pending:
+                # Si el token no ha expirado, reenviar el email
+                if not existing_pending.is_expired():
+                    email_result = self._send_pre_registration_verification_email(existing_pending)
+                    if email_result.get('success'):
+                        return ServiceResult.success(
+                            data={'email': email},
+                            message="Se ha reenviado el enlace de verificación a tu correo electrónico."
+                        )
+                else:
+                    # Eliminar registro expirado
+                    existing_pending.delete()
+            
+            # Crear nuevo registro pendiente
+            pending_reg = PendingRegistration.objects.create(
+                email=email,
+                data=user_data
+            )
+            
+            # Enviar email de verificación
+            email_result = self._send_pre_registration_verification_email(pending_reg)
+            if not email_result.get('success'):
+                # Eliminar registro pendiente si falla el envío
+                pending_reg.delete()
+                return ServiceResult.error(
+                    ValidationServiceError(
+                        "Error al enviar el email de verificación. Por favor intenta nuevamente.",
+                        details={"email_error": email_result.get('error')}
+                    )
+                )
+            
+            self.log_info(f"Pre-registro creado para {email}")
+            
+            return ServiceResult.success(
+                data={'email': email},
+                message="Se ha enviado un enlace de verificación a tu correo electrónico."
+            )
+            
+        except ValidationServiceError as e:
+            return ServiceResult.error(e)
+        except Exception as e:
+            self.log_error(f"Error en pre-registro: {str(e)}")
+            return ServiceResult.error(
+                ValidationServiceError("Error interno durante el pre-registro", details={"original_error": str(e)})
+            )
+    
+    def verify_pre_registration_and_create_user(self, token: str) -> ServiceResult:
+        """
+        Verifica token de pre-registro y crea el usuario final.
+        
+        Args:
+            token: Token de verificación
+            
+        Returns:
+            ServiceResult con datos del usuario creado
+        """
+        try:
+            from personas.models import PendingRegistration
+            from personas.serializers import PersonaRegistroSerializer
+            from django.db import transaction
+            import uuid
+            
+            # Validar formato de token
+            try:
+                token_uuid = uuid.UUID(str(token))
+            except (ValueError, TypeError):
+                return ServiceResult.validation_error(
+                    "Formato de token inválido",
+                    details={"field": "token"}
+                )
+            
+            # Obtener registro pendiente
+            try:
+                pending_reg = PendingRegistration.objects.get(verification_token=token_uuid)
+            except PendingRegistration.DoesNotExist:
+                return ServiceResult.validation_error(
+                    "Token inválido o expirado",
+                    details={"field": "token"}
+                )
+            
+            # Verificar si ya fue verificado
+            if pending_reg.is_verified:
+                return ServiceResult.validation_error(
+                    "Este enlace ya fue utilizado",
+                    details={"field": "token", "already_used": True}
+                )
+            
+            # Verificar si expiró
+            if pending_reg.is_expired():
+                pending_reg.delete()
+                return ServiceResult.validation_error(
+                    "El enlace de verificación ha expirado. Por favor registrate nuevamente.",
+                    details={"field": "token", "expired": True}
+                )
+            
+            # Crear el usuario final con los datos guardados
+            with transaction.atomic():
+                user_data = pending_reg.data.copy()
+                password = user_data.pop('password')
+                
+                user = User.objects.create_user(
+                    username=user_data['email'],
+                    email=user_data['email'],
+                    password=password,
+                    first_name=user_data.get('first_name', ''),
+                    last_name=user_data.get('last_name', ''),
+                    is_active=True
+                )
+                
+                # Si hay datos de persona, crear el registro de persona
+                if 'tipo_documento' in user_data or 'numero_documento' in user_data:
+                    try:
+                        persona_data = {k: v for k, v in user_data.items() if k not in ['email', 'password', 'first_name', 'last_name']}
+                        persona_data['email'] = user.email
+                        persona_data['password'] = password
+                        persona_serializer = PersonaRegistroSerializer(data=persona_data)
+                        if persona_serializer.is_valid():
+                            persona = persona_serializer.save()
+                        else:
+                            self.log_warning(f"Error creando persona para usuario {user.email}: {persona_serializer.errors}")
+                    except Exception as e:
+                        self.log_warning(f"Error creando persona: {e}")
+                
+                # Marcar registro pendiente como verificado
+                pending_reg.verify()
+                
+                # Crear log de auditoría
+                self.create_audit_log(
+                    user=user,
+                    action="user_created_from_preregistration",
+                    resource_type="user",
+                    resource_id=user.id
+                )
+                
+                self.log_info(f"Usuario {user.email} creado exitosamente después de verificación")
+                
+                return ServiceResult.success(
+                    data={
+                        'user': {
+                            'id': user.id,
+                            'username': user.username,
+                            'email': user.email,
+                            'first_name': user.first_name,
+                            'last_name': user.last_name,
+                            'is_active': user.is_active,
+                            'date_joined': user.date_joined.isoformat()
+                        }
+                    },
+                    message="Correo verificado correctamente. Ya puedes iniciar sesión."
+                )
+            
+        except ValidationServiceError as e:
+            return ServiceResult.error(e)
+        except Exception as e:
+            self.log_error(f"Error verificando pre-registro: {str(e)}")
+            return ServiceResult.error(
+                ValidationServiceError("Error interno durante la verificación", details={"original_error": str(e)})
+            )
+    
+    def _send_verification_email(self, user: User, verification_token: EmailVerificationToken) -> Dict[str, Any]:
+        """
+        Envía email de verificación al usuario.
+        
+        Args:
+            user: Usuario
+            verification_token: Token de verificación
+            
+        Returns:
+            Dict con resultado del envío
+        """
+        try:
+            from django.conf import settings
+            from ..email_service import send_custom_email
+            
+            verification_url = f"{settings.FRONTEND_URL}/verify-email/{verification_token.token}"
+            
+            # Contenido HTML del email
+            html_content = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #4CAF50;">¡Bienvenido a CacaoScan, {user.get_full_name() or user.username}!</h2>
+                    <p>Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu dirección de correo electrónico haciendo clic en el siguiente enlace:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{verification_url}" style="background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Verificar mi correo</a>
+                    </div>
+                    <p>O copia y pega este enlace en tu navegador:</p>
+                    <p style="word-break: break-all; color: #666;">{verification_url}</p>
+                    <p style="margin-top: 30px; font-size: 12px; color: #999;">Este enlace expirará en 24 horas.</p>
+                    <p style="font-size: 12px; color: #999;">Si no creaste esta cuenta, puedes ignorar este correo.</p>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # Contenido de texto plano
+            text_content = f"""
+Bienvenido a CacaoScan, {user.get_full_name() or user.username}!
+
+Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu dirección de correo electrónico visitando el siguiente enlace:
+
+{verification_url}
+
+Este enlace expirará en 24 horas.
+
+Si no creaste esta cuenta, puedes ignorar este correo.
+            """
+            
+            send_custom_email(
+                to_emails=[user.email],
+                subject="Verifica tu correo electrónico - CacaoScan",
+                html_content=html_content,
+                text_content=text_content
+            )
+            
+            return {'success': True}
+            
+        except Exception as e:
+            self.log_error(f"Error enviando email de verificación: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def _send_pre_registration_verification_email(self, pending_reg) -> Dict[str, Any]:
+        """
+        Envía email de verificación para pre-registro.
+        
+        Args:
+            pending_reg: Registro pendiente
+            
+        Returns:
+            Dict con resultado del envío
+        """
+        try:
+            from django.template.loader import render_to_string
+            from ..email_service import send_custom_email
+            
+            verification_url = f"{settings.FRONTEND_URL}/auth/verificar/{pending_reg.verification_token}"
+            
+            user_data = pending_reg.data
+            first_name = user_data.get('first_name', '')
+            user_name = first_name or pending_reg.email.split('@')[0]
+            
+            # Intentar usar template si existe
+            try:
+                html_content = render_to_string('emails/verify_email.html', {
+                    'verification_url': verification_url,
+                    'user_name': user_name,
+                    'frontend_url': settings.FRONTEND_URL
+                })
+            except:
+                # Fallback a HTML simple si no existe el template
+                html_content = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #4CAF50;">Verifica tu correo electrónico - CacaoScan</h2>
+                        <p>Gracias por registrarte. Para completar tu registro, por favor verifica tu dirección de correo electrónico haciendo clic en el siguiente enlace:</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{verification_url}" style="background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Verificar mi correo</a>
+                        </div>
+                        <p>O copia y pega este enlace en tu navegador:</p>
+                        <p style="word-break: break-all; color: #666;">{verification_url}</p>
+                        <p style="margin-top: 30px; font-size: 12px; color: #999;">Este enlace expirará en 24 horas.</p>
+                    </div>
+                </body>
+                </html>
+                """
+            
+            text_content = f"""
+Bienvenido a CacaoScan, {user_name}!
+
+Gracias por registrarte en nuestra plataforma. Para completar tu registro, verifica tu dirección de correo electrónico visitando el siguiente enlace:
+
+{verification_url}
+
+Este enlace expirará en 24 horas.
+
+Si no creaste esta cuenta, puedes ignorar este correo.
+
+Equipo CacaoScan · Proyecto SENNOVA · SENA Guaviare
+            """
+            
+            send_custom_email(
+                to_emails=[pending_reg.email],
+                subject="Verifica tu correo electrónico - CacaoScan",
+                html_content=html_content,
+                text_content=text_content
+            )
+            
+            return {'success': True}
+            
+        except Exception as e:
+            self.log_error(f"Error enviando email de verificación: {e}")
+            return {'success': False, 'error': str(e)}
 
 

@@ -30,8 +30,7 @@ from ..serializers import (
     CacaoImageDetailSerializer
 )
 from ..utils.decorators import handle_api_errors
-from ml.prediction.predict import get_predictor, load_artifacts
-from ml.segmentation.processor import segment_and_crop_cacao_bean
+from ..services.analysis_service import AnalysisService
 
 try:
     from images_app.models import CacaoImage, CacaoPrediction
@@ -106,102 +105,6 @@ class ScanMeasureView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
     
-    def _save_uploaded_image(self, image_file, user):
-        """
-        Guarda la imagen subida en el sistema de archivos y crea registro en BD.
-        Además, segmenta el grano y guarda el PNG transparente en processed/.
-        
-        Args:
-            image_file: Archivo de imagen subido
-            user: Usuario autenticado
-            
-        Returns:
-            tuple: (cacao_image_obj, success, error_message, processed_png_path)
-        """
-        try:
-            # Crear objeto CacaoImage
-            cacao_image = CacaoImage(
-                user=user,
-                image=image_file,
-                file_name=image_file.name,
-                file_size=image_file.size,
-                file_type=image_file.content_type,
-                processed=False
-            )
-            
-            # Guardar en BD (esto guarda la imagen original con subcarpetas por fecha)
-            cacao_image.save()
-            
-            logger.info(f"Imagen guardada con ID {cacao_image.id} para usuario {user.username}")
-            
-            # Segmentar y guardar PNG transparente del grano en processed/
-            processed_png_path = None
-            try:
-                # Forzar método OpenCV para asegurar segmentación aunque falte el modelo IA
-                generated_path = segment_and_crop_cacao_bean(str(cacao_image.image.path), method="opencv")
-                if generated_path:
-                    processed_png_path = Path(generated_path)
-                    logger.info(f"[OK] PNG segmentado guardado en: {processed_png_path.absolute()}")
-                else:
-                    logger.warning(f"No se pudo segmentar imagen {cacao_image.id}: retorno vacío")
-            except Exception as seg_error:
-                logger.error(f"Error en segmentación de imagen {cacao_image.id}: {seg_error}")
-            
-            return cacao_image, True, None, processed_png_path
-            
-        except Exception as e:
-            logger.error(f"Error guardando imagen: {e}")
-            return None, False, str(e), None
-    
-    def _save_prediction(self, cacao_image, result, processing_time_ms):
-        """
-        Guarda los resultados de predicción en BD con transacción.
-        
-        Args:
-            cacao_image: Objeto CacaoImage asociado
-            result: Resultados de predicción del modelo
-            processing_time_ms: Tiempo de procesamiento en milisegundos
-            
-        Returns:
-            tuple: (cacao_prediction_obj, success, error_message)
-        """
-        try:
-            if not cacao_image:
-                return None, False, "No hay imagen asociada para guardar predicción"
-            
-            # Usar transacción para asegurar integridad
-            with transaction.atomic():
-                # Crear objeto CacaoPrediction
-                cacao_prediction = CacaoPrediction(
-                    image=cacao_image,
-                    alto_mm=result['alto_mm'],
-                    ancho_mm=result['ancho_mm'],
-                    grosor_mm=result['grosor_mm'],
-                    peso_g=result['peso_g'],
-                    confidence_alto=result['confidences']['alto'],
-                    confidence_ancho=result['confidences']['ancho'],
-                    confidence_grosor=result['confidences']['grosor'],
-                    confidence_peso=result['confidences']['peso'],
-                    processing_time_ms=processing_time_ms,
-                    crop_url=result.get('crop_url'),
-                    model_version=result['debug'].get('models_version', 'v1.0'),
-                    device_used=result['debug'].get('device', 'cpu')
-                )
-                
-                # Guardar en BD
-                cacao_prediction.save()
-                
-                # Marcar imagen como procesada
-                cacao_image.processed = True
-                cacao_image.save()
-            
-            logger.info(f"Predicción guardada con ID {cacao_prediction.id} para imagen {cacao_image.id}")
-            return cacao_prediction, True, None
-            
-        except Exception as e:
-            logger.error(f"Error guardando predicción: {e}")
-            return None, False, str(e)
-    
     @swagger_auto_schema(
         operation_description="Procesa una imagen de grano de cacao y devuelve predicciones de dimensiones y peso",
         operation_summary="Medir grano de cacao",
@@ -234,129 +137,29 @@ class ScanMeasureView(APIView):
         Response:
             - JSON con predicciones de dimensiones y peso
         """
-        start_time = time.time()
+        # Validar que existe el archivo
+        if 'image' not in request.FILES:
+            return Response({
+                'error': 'Campo "image" requerido',
+                'status': 'error'
+            }, status=status.HTTP_400_BAD_REQUEST)
         
-        try:
-            # 1. Validar request
-            if 'image' not in request.FILES:
-                return Response({
-                    'error': 'Campo "image" requerido',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            image_file = request.FILES['image']
-            
-            # 2. Validar tamaño (8MB máximo)
-            max_size = 8 * 1024 * 1024  # 8MB en bytes
-            if image_file.size > max_size:
-                return Response({
-                    'error': f'Imagen demasiado grande. Máximo permitido: 8MB',
-                    'status': 'error'
-                }, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
-            
-            # 3. Validar tipo de contenido
-            allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp']
-            if image_file.content_type not in allowed_types:
-                return Response({
-                    'error': f'Tipo de archivo no permitido. Tipos válidos: {", ".join(allowed_types)}',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # 4. Validar nombre de archivo (sanitizar)
-            filename = image_file.name
-            if not filename or len(filename) > 255:
-                return Response({
-                    'error': 'Nombre de archivo inválido',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # 5. Leer y validar imagen
-            try:
-                image_bytes = image_file.read()
-                image = Image.open(io.BytesIO(image_bytes))
-                
-                # Convertir a RGB si es necesario
-                if image.mode != 'RGB':
-                    image = image.convert('RGB')
-                
-                # Validar dimensiones mínimas
-                if image.width < 50 or image.height < 50:
-                    return Response({
-                        'error': 'Imagen demasiado pequeña. Mínimo: 50x50 píxeles',
-                        'status': 'error'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-                
-            except Exception as e:
-                return Response({
-                    'error': f'Error procesando imagen: {str(e)}',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # 6. Guardar imagen en BD y segmentar grano (guardar PNG transparente)
-            cacao_image, save_success, save_error, processed_png_path = self._save_uploaded_image(image_file, request.user)
-            if not save_success:
-                logger.warning(f"Error guardando imagen en BD: {save_error}")
-            elif processed_png_path:
-                logger.info(f"PNG segmentado disponible en: {processed_png_path}")
-            
-            # 7. Obtener predictor y hacer predicción
-            try:
-                predictor = get_predictor()
-                
-                if not predictor.models_loaded:
-                    # Intentar cargar modelos automáticamente
-                    logger.info("Modelos no cargados. Intentando carga automática...")
-                    success = load_artifacts()
-                    
-                    if not success:
-                        return Response({
-                            'error': 'Modelos no disponibles. Ejecutar inicialización automática primero.',
-                            'status': 'error',
-                            'suggestion': 'POST /api/v1/auto-initialize/ para inicializar el sistema'
-                        }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-                    
-                    # Reintentar obtener predictor
-                    predictor = get_predictor()
-                    
-                    if not predictor.models_loaded:
-                        return Response({
-                            'error': 'Error cargando modelos después de intento automático.',
-                            'status': 'error'
-                        }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-                
-                # Realizar predicción
-                prediction_start = time.time()
-                result = predictor.predict(image)
-                prediction_time_ms = int((time.time() - prediction_start) * 1000)
-                
-                # 8. Guardar predicción en BD
-                cacao_prediction, pred_success, pred_error = self._save_prediction(
-                    cacao_image, result, prediction_time_ms
-                )
-                if not pred_success:
-                    logger.warning(f"Error guardando predicción en BD: {pred_error}")
-                
-                # 9. Preparar respuesta
-                response_data = {
-                    'alto_mm': result['alto_mm'],
-                    'ancho_mm': result['ancho_mm'],
-                    'grosor_mm': result['grosor_mm'],
-                    'peso_g': result['peso_g'],
-                    'confidences': result['confidences'],
-                    'crop_url': result['crop_url'],
-                    'debug': result['debug'],
-                    'image_id': cacao_image.id if cacao_image else None,
-                    'prediction_id': cacao_prediction.id if cacao_prediction else None,
-                    'saved_to_database': save_success and pred_success
-                }
-                
-                # 10. Enviar email de análisis completado
+        image_file = request.FILES['image']
+        
+        # Usar servicio de análisis para procesar imagen completa
+        analysis_service = AnalysisService()
+        result = analysis_service.process_image_with_segmentation(image_file, request.user)
+        
+        if result.success:
+            # Validar respuesta con serializer
+            serializer = ScanMeasureResponseSerializer(data=result.data)
+            if serializer.is_valid():
+                # Enviar email de análisis completado (opcional, no crítico)
                 try:
                     from ..email_service import send_email_notification
                     
-                    # Determinar nivel de confianza
-                    avg_confidence = (result['confidences']['alto'] + result['confidences']['ancho'] + 
-                                    result['confidences']['grosor'] + result['confidences']['peso']) / 4
+                    response_data = result.data
+                    avg_confidence = sum(response_data['confidences'].values()) / len(response_data['confidences'])
                     
                     if avg_confidence >= 0.8:
                         confidence_level = 'high'
@@ -368,22 +171,21 @@ class ScanMeasureView(APIView):
                     email_context = {
                         'user_name': request.user.get_full_name() or request.user.username,
                         'user_email': request.user.email,
-                        'analysis_id': cacao_prediction.id if cacao_prediction else 'N/A',
+                        'analysis_id': response_data.get('prediction_id', 'N/A'),
                         'confidence': round(avg_confidence * 100, 1),
                         'confidence_level': confidence_level,
-                        'alto_mm': result['alto_mm'],
-                        'ancho_mm': result['ancho_mm'],
-                        'grosor_mm': result['grosor_mm'],
-                        'peso_g': result['peso_g'],
-                        'confidence_alto': round(result['confidences']['alto'] * 100, 1),
-                        'confidence_ancho': round(result['confidences']['ancho'] * 100, 1),
-                        'confidence_grosor': round(result['confidences']['grosor'] * 100, 1),
-                        'confidence_peso': round(result['confidences']['peso'] * 100, 1),
-                        'processing_time_ms': prediction_time_ms,
-                        'model_version': result.get('debug', {}).get('model_version', 'v1.0'),
+                        'alto_mm': response_data['alto_mm'],
+                        'ancho_mm': response_data['ancho_mm'],
+                        'grosor_mm': response_data['grosor_mm'],
+                        'peso_g': response_data['peso_g'],
+                        'confidence_alto': round(response_data['confidences']['alto'] * 100, 1),
+                        'confidence_ancho': round(response_data['confidences']['ancho'] * 100, 1),
+                        'confidence_grosor': round(response_data['confidences']['grosor'] * 100, 1),
+                        'confidence_peso': round(response_data['confidences']['peso'] * 100, 1),
+                        'model_version': response_data.get('debug', {}).get('model_version', 'v1.0'),
                         'analysis_date': timezone.now().strftime('%d/%m/%Y %H:%M'),
-                        'crop_url': result['crop_url'],
-                        'defects_detected': []  # TODO: Implementar detección de defectos
+                        'crop_url': response_data.get('crop_url'),
+                        'defects_detected': []
                     }
                     
                     email_result = send_email_notification(
@@ -392,47 +194,37 @@ class ScanMeasureView(APIView):
                         context=email_context
                     )
                     
-                    if email_result['success']:
+                    if email_result.get('success'):
                         logger.info(f"Email de análisis completado enviado a {request.user.email}")
                     else:
                         logger.warning(f"Error enviando email de análisis: {email_result.get('error')}")
-                        
                 except Exception as e:
-                    logger.error(f"Error en envío de email de análisis: {e}")
+                    logger.warning(f"Error en envío de email de análisis: {e}")
                 
-                # Validar respuesta con serializer
-                serializer = ScanMeasureResponseSerializer(data=response_data)
-                if serializer.is_valid():
-                    total_time = time.time() - start_time
-                    logger.info(f"Predicción completada en {total_time:.2f}s para imagen {filename}")
-                    
-                    # Log información sobre guardado en BD
-                    if save_success and pred_success:
-                        logger.info(f"Datos guardados correctamente en BD - Imagen ID: {cacao_image.id}, Predicción ID: {cacao_prediction.id}")
-                    else:
-                        logger.warning(f"Problemas guardando en BD - Imagen: {save_success}, Predicción: {pred_success}")
-                    
-                    return Response(serializer.validated_data, status=status.HTTP_200_OK)
-                else:
-                    logger.error(f"Error de serialización: {serializer.errors}")
-                    return Response({
-                        'error': 'Error interno de serialización',
-                        'status': 'error'
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-            except Exception as e:
-                logger.error(f"Error en predicción: {e}")
+                return Response(serializer.validated_data, status=status.HTTP_200_OK)
+            else:
+                logger.error(f"Error de serialización: {serializer.errors}")
                 return Response({
-                    'error': f'Error en predicción: {str(e)}',
-                    'status': 'error'
+                    'error': 'Error interno de serialización',
+                    'status': 'error',
+                    'details': serializer.errors
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            # Mapear errores del servicio a códigos HTTP
+            if result.error.error_code == 'validation_error':
+                status_code = status.HTTP_400_BAD_REQUEST
+                if 'file_size' in str(result.error.details.get('field', '')):
+                    status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+            elif 'not_available' in result.error.message.lower() or 'no disponible' in result.error.message.lower():
+                status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+            else:
+                status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             
-        except Exception as e:
-            logger.error(f"Error general en endpoint: {e}")
             return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                'error': result.error.message,
+                'status': 'error',
+                'details': result.error.details
+            }, status=status_code)
 
 
 class ImagesListView(PaginationMixin, APIView, ImagePermissionMixin):

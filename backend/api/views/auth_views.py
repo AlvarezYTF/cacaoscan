@@ -24,6 +24,8 @@ from ..serializers import (
 )
 from ..utils import create_error_response, create_success_response
 from ..email_service import send_email_notification
+from ..utils.decorators import handle_api_errors
+from ..services.auth_service import AuthenticationService
 
 User = get_user_model()
 
@@ -141,72 +143,31 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=data)
         
         if serializer.is_valid():
-            user = serializer.save()
-            
-            # Crear token de verificación de email
-            verification_token = EmailVerificationToken.create_for_user(user)
-            
-            # Enviar email de verificación
-            try:
-                from ..email_service import send_custom_email
-                
-                verification_url = f"{settings.FRONTEND_URL}/verify-email/{verification_token.token}"
-                
-                # Contenido HTML del email
-                html_content = f"""
-                <html>
-                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                        <h2 style="color: #4CAF50;">¡Bienvenido a CacaoScan, {user.get_full_name() or user.username}!</h2>
-                        <p>Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu dirección de correo electrónico haciendo clic en el siguiente enlace:</p>
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="{verification_url}" style="background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Verificar mi correo</a>
-                        </div>
-                        <p>O copia y pega este enlace en tu navegador:</p>
-                        <p style="word-break: break-all; color: #666;">{verification_url}</p>
-                        <p style="margin-top: 30px; font-size: 12px; color: #999;">Este enlace expirará en 24 horas.</p>
-                        <p style="font-size: 12px; color: #999;">Si no creaste esta cuenta, puedes ignorar este correo.</p>
-                    </div>
-                </body>
-                </html>
-                """
-                
-                # Contenido de texto plano
-                text_content = f"""
-Bienvenido a CacaoScan, {user.get_full_name() or user.username}!
-
-Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu dirección de correo electrónico visitando el siguiente enlace:
-
-{verification_url}
-
-Este enlace expirará en 24 horas.
-
-Si no creaste esta cuenta, puedes ignorar este correo.
-                """
-                
-                send_custom_email(
-                    to_emails=[user.email],
-                    subject="Verifica tu correo electrónico - CacaoScan",
-                    html_content=html_content,
-                    text_content=text_content
-                )
-                
-                logger.info(f"Email de verificación enviado a {user.email}")
-            except Exception as e:
-                logger.error(f"Error enviando email de verificación: {e}")
-                # No fallar el registro si falla el envío de email
-            
-            # NO hacer auto-login, el usuario debe verificar su email primero
-            return create_success_response(
-                message='Usuario registrado exitosamente. Por favor verifica tu correo electrónico para activar tu cuenta.',
-                data={
-                    'user': UserSerializer(user).data,
-                    'verification_required': True,
-                    'email': user.email,
-                    'verification_token': str(verification_token.token) if settings.DEBUG else None  # Solo en desarrollo
-                },
-                status_code=status.HTTP_201_CREATED
+            # Usar servicio de autenticación para registrar usuario
+            auth_service = AuthenticationService()
+            result = auth_service.register_user_with_email_verification(
+                serializer.validated_data,
+                request
             )
+            
+            if result.success:
+                return create_success_response(
+                    message=result.message,
+                    data={
+                        'user': UserSerializer(User.objects.get(id=result.data['user']['id'])).data,
+                        'verification_required': result.data.get('verification_required', True),
+                        'email': result.data.get('email'),
+                        'verification_token': result.data.get('verification_token')
+                    },
+                    status_code=status.HTTP_201_CREATED
+                )
+            else:
+                return create_error_response(
+                    message=result.error.message,
+                    error_type='validation_error',
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    details=result.error.details
+                )
         
         return create_error_response(
             message='Error en los datos proporcionados',
@@ -707,132 +668,39 @@ class PreRegisterView(APIView):
         Crea un registro pendiente y envía email de verificación.
         El usuario NO se crea hasta que verifique el correo.
         """
-        from personas.models import PendingRegistration
-        from django.contrib.auth.models import User
-        from django.template.loader import render_to_string
-        from ..email_service import send_custom_email
+        # Preparar datos para el servicio
+        user_data = {
+            'email': request.data.get('email'),
+            'password': request.data.get('password'),
+            'first_name': request.data.get('first_name', ''),
+            'last_name': request.data.get('last_name', ''),
+            **{k: v for k, v in request.data.items() if k not in ['email', 'password', 'first_name', 'last_name']}
+        }
         
-        email = request.data.get('email')
-        password = request.data.get('password')
-        first_name = request.data.get('first_name', '')
-        last_name = request.data.get('last_name', '')
+        # Usar servicio de autenticación para pre-registro
+        auth_service = AuthenticationService()
+        result = auth_service.pre_register_user(user_data, request)
         
-        # Validaciones básicas
-        if not email or not password:
-            return create_error_response(
-                message='Email y contraseña son requeridos',
-                error_type='validation_error',
-                status_code=status.HTTP_400_BAD_REQUEST
+        if result.success:
+            status_code = status.HTTP_201_CREATED if 'enviado' in result.message else status.HTTP_200_OK
+            return create_success_response(
+                message=result.message,
+                data=result.data,
+                status_code=status_code
             )
-        
-        # Verificar que el email no esté registrado
-        if User.objects.filter(email=email).exists():
-            return create_error_response(
-                message='Este email ya está registrado',
-                error_type='email_exists',
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Verificar si ya existe un registro pendiente
-        existing_pending = PendingRegistration.objects.filter(email=email, is_verified=False).first()
-        if existing_pending:
-            # Si el token no ha expirado, reenviar el email
-            if not existing_pending.is_expired():
-                # Reenviar email de verificación
-                verification_url = f"{settings.FRONTEND_URL}/verify-email/{existing_pending.verification_token}"
-                
-                html_content = render_to_string('emails/verify_email.html', {
-                    'verification_url': verification_url,
-                    'user_name': first_name or email.split('@')[0],
-                    'frontend_url': settings.FRONTEND_URL
-                })
-                
-                text_content = f"""
-Bienvenido a CacaoScan, {first_name or email.split('@')[0]}!
-
-Gracias por registrarte. Para completar tu registro, verifica tu correo visitando:
-{verification_url}
-
-Este enlace expirará en 24 horas.
-                """
-                
-                try:
-                    send_custom_email(
-                        to_emails=[email],
-                        subject="Verifica tu correo electrónico - CacaoScan",
-                        html_content=html_content,
-                        text_content=text_content
-                    )
-                except Exception as e:
-                    logger.error(f"Error reenviando email: {e}")
-                
-                return create_success_response(
-                    message='Se ha reenviado el enlace de verificación a tu correo electrónico.',
-                    data={'email': email},
-                    status_code=status.HTTP_200_OK
-                )
-            else:
-                # Eliminar registro expirado
-                existing_pending.delete()
-        
-        # Crear nuevo registro pendiente
-        pending_reg = PendingRegistration.objects.create(
-            email=email,
-            data={
-                'email': email,
-                'password': password,
-                'first_name': first_name,
-                'last_name': last_name,
-                **{k: v for k, v in request.data.items() if k not in ['email', 'password', 'first_name', 'last_name']}
+        else:
+            error_type_map = {
+                'email_exists': 'email_exists',
+                'validation_error': 'validation_error'
             }
-        )
-        
-        # Enviar email de verificación
-        verification_url = f"{settings.FRONTEND_URL}/verify-email/{pending_reg.verification_token}"
-        
-        html_content = render_to_string('emails/verify_email.html', {
-            'verification_url': verification_url,
-            'user_name': first_name or email.split('@')[0],
-            'frontend_url': settings.FRONTEND_URL
-        })
-        
-        text_content = f"""
-Bienvenido a CacaoScan, {first_name or email.split('@')[0]}!
-
-Gracias por registrarte en nuestra plataforma. Para completar tu registro, verifica tu dirección de correo electrónico visitando el siguiente enlace:
-
-{verification_url}
-
-Este enlace expirará en 24 horas.
-
-Si no creaste esta cuenta, puedes ignorar este correo.
-
-Equipo CacaoScan · Proyecto SENNOVA · SENA Guaviare
-        """
-        
-        try:
-            send_custom_email(
-                to_emails=[email],
-                subject="Verifica tu correo electrónico - CacaoScan",
-                html_content=html_content,
-                text_content=text_content
-            )
-            logger.info(f"Email de verificación enviado a {email}")
-        except Exception as e:
-            logger.error(f"Error enviando email de verificación: {e}")
-            # Eliminar registro pendiente si falla el envío
-            pending_reg.delete()
+            error_type = error_type_map.get(result.error.error_code, 'validation_error')
+            
             return create_error_response(
-                message='Error al enviar el email de verificación. Por favor intenta nuevamente.',
-                error_type='email_send_error',
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                message=result.error.message,
+                error_type=error_type,
+                status_code=status.HTTP_400_BAD_REQUEST,
+                details=result.error.details
             )
-        
-        return create_success_response(
-            message='Se ha enviado un enlace de verificación a tu correo electrónico.',
-            data={'email': email},
-            status_code=status.HTTP_201_CREATED
-        )
 
 
 class VerifyEmailPreRegistrationView(APIView):
@@ -867,10 +735,6 @@ class VerifyEmailPreRegistrationView(APIView):
         """
         Verifica el token y crea el usuario final.
         """
-        from personas.models import PendingRegistration
-        from personas.serializers import PersonaRegistroSerializer
-        from django.db import transaction
-        
         if not token:
             return create_error_response(
                 message='Token de verificación requerido',
@@ -878,88 +742,32 @@ class VerifyEmailPreRegistrationView(APIView):
                 status_code=status.HTTP_400_BAD_REQUEST
             )
         
-        try:
-            import uuid
-            token_uuid = uuid.UUID(str(token))
-        except (ValueError, TypeError):
-            return create_error_response(
-                message='Formato de token inválido',
-                error_type='invalid_token_format',
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
+        # Usar servicio de autenticación para verificar pre-registro y crear usuario
+        auth_service = AuthenticationService()
+        result = auth_service.verify_pre_registration_and_create_user(str(token))
         
-        try:
-            pending_reg = PendingRegistration.objects.get(verification_token=token_uuid)
-        except PendingRegistration.DoesNotExist:
-            return create_error_response(
-                message='Token inválido o expirado',
-                error_type='invalid_token',
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Verificar si ya fue verificado
-        if pending_reg.is_verified:
-            return create_error_response(
-                message='Este enlace ya fue utilizado',
-                error_type='token_already_used',
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Verificar si expiró
-        if pending_reg.is_expired():
-            pending_reg.delete()
-            return create_error_response(
-                message='El enlace de verificación ha expirado. Por favor registrate nuevamente.',
-                error_type='token_expired',
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Crear el usuario final con los datos guardados
-        with transaction.atomic():
-            user_data = pending_reg.data.copy()
-            password = user_data.pop('password')
-            
-            from django.contrib.auth.models import User
-            user = User.objects.create_user(
-                username=user_data['email'],
-                email=user_data['email'],
-                password=password,
-                first_name=user_data.get('first_name', ''),
-                last_name=user_data.get('last_name', ''),
-                is_active=True  # Usuario activo desde el inicio
-            )
-            
-            # Si hay datos de persona, crear el registro de persona
-            if 'tipo_documento' in user_data or 'numero_documento' in user_data:
-                try:
-                    persona_data = {k: v for k, v in user_data.items() if k not in ['email', 'password', 'first_name', 'last_name']}
-                    persona_data['email'] = user.email
-                    persona_data['password'] = password
-                    persona_serializer = PersonaRegistroSerializer(data=persona_data)
-                    if persona_serializer.is_valid():
-                        persona = persona_serializer.save()
-                    else:
-                        logger.warning(f"Error creando persona para usuario {user.email}: {persona_serializer.errors}")
-                except Exception as e:
-                    logger.warning(f"Error creando persona: {e}")
-            
-            # Marcar registro pendiente como verificado
-            pending_reg.verify()
-            
-            logger.info(f"Usuario {user.email} creado exitosamente después de verificación")
-            
+        if result.success:
             return create_success_response(
-                message='Correo verificado correctamente. Ya puedes iniciar sesión.',
+                message=result.message,
                 data={
-                    'user': UserSerializer(user).data
+                    'user': UserSerializer(User.objects.get(id=result.data['user']['id'])).data
                 }
             )
-        
-        return create_error_response(
-            message='Error al crear el usuario',
-            error_type='user_creation_error',
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        else:
+            error_type_map = {
+                'invalid_token_format': 'invalid_token_format',
+                'invalid_token': 'invalid_token',
+                'token_already_used': 'token_already_used',
+                'token_expired': 'token_expired'
+            }
+            error_type = error_type_map.get(result.error.error_code, 'validation_error')
+            
+            return create_error_response(
+                message=result.error.message,
+                error_type=error_type,
+                status_code=status.HTTP_400_BAD_REQUEST,
+                details=result.error.details
+            )
 
 
 # Vistas de recuperación de contraseña

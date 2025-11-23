@@ -18,6 +18,7 @@ from ..serializers import (
     AutoTrainConfigSerializer
 )
 from ..utils.decorators import handle_api_errors
+from ..services.analysis_service import AnalysisService
 
 # ML related imports
 try:
@@ -229,153 +230,30 @@ class AutoInitializeView(APIView):
         4. Cargar modelos
         5. Sistema listo para predicciones
         """
-        start_time = time.time()
-        steps_completed = []
+        # Usar servicio de análisis para inicialización automática
+        analysis_service = AnalysisService()
+        result = analysis_service.initialize_ml_system()
         
-        logger.info("[INICIO] Iniciando inicialización automática completa del sistema")
-        
-        # Paso 1: Validar dataset
-        logger.info("Paso 1: Validando dataset...")
-        if CacaoDatasetLoader is None:
+        if result.success:
             return Response({
-                'error': 'Cargador de dataset no disponible',
-                'status': 'error'
-            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        
-        try:
-            loader = CacaoDatasetLoader()
-            stats = loader.get_dataset_stats()
-            
-            if stats['valid_records'] == 0:
-                return Response({
-                    'error': 'No hay registros válidos en el dataset. Verificar CSV e imágenes.',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            steps_completed.append("[OK] Dataset validado")
-            logger.info(f"Dataset validado: {stats['valid_records']} registros válidos")
-            
-        except Exception as e:
-            logger.error(f"Error validando dataset: {e}")
-            return Response({
-                'error': f'Error validando dataset: {str(e)}',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        # Paso 2: Generar crops (si no existen)
-        logger.info("Paso 2: Verificando crops...")
-        try:
-            from ml.utils.paths import get_crops_dir
-            crops_dir = get_crops_dir()
-            
-            if not crops_dir.exists() or len(list(crops_dir.glob("*.png"))) == 0:
-                logger.info("Generando crops automáticamente...")
-                from management.commands.make_cacao_crops import Command as CropCommand
-                
-                # Simular comando de crops
-                crop_command = CropCommand()
-                crop_command.handle(
-                    conf=0.5,
-                    limit=0,
-                    overwrite=False
-                )
-                
-                steps_completed.append("[OK] Crops generados")
-                logger.info("Crops generados exitosamente")
+                'message': result.message,
+                'status': 'success',
+                **result.data
+            }, status=status.HTTP_200_OK)
+        else:
+            # Mapear errores del servicio a códigos HTTP
+            if 'validation_error' in result.error.error_code or 'valid_records' in result.error.message.lower():
+                status_code = status.HTTP_400_BAD_REQUEST
+            elif 'no disponible' in result.error.message.lower() or 'not available' in result.error.message.lower():
+                status_code = status.HTTP_503_SERVICE_UNAVAILABLE
             else:
-                steps_completed.append("[OK] Crops ya existen")
-                logger.info("Crops ya existen, saltando generación")
-                
-        except Exception as e:
-            logger.warning(f"Advertencia en generación de crops: {e}")
-            steps_completed.append("[WARNING] Crops con advertencias")
-        
-        # Paso 3: Verificar/Entrenar modelos
-        logger.info("Paso 3: Verificando modelos...")
-        try:
-            from ml.utils.paths import get_regressors_artifacts_dir
-            artifacts_dir = get_regressors_artifacts_dir()
+                status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             
-            models_exist = all(
-                (artifacts_dir / f"{target}.pt").exists() 
-                for target in ['alto', 'ancho', 'grosor', 'peso']
-            )
-            
-            if not models_exist:
-                logger.info("Entrenando modelos automáticamente...")
-                from ml.pipeline.train_all import run_training_pipeline
-                
-                # Configuración de entrenamiento automático
-                success = run_training_pipeline(
-                    epochs=20,  # Menos epochs para inicialización rápida
-                    batch_size=16,
-                    learning_rate=0.001,
-                    multi_head=False,
-                    model_type='resnet18',
-                    img_size=224,
-                    early_stopping_patience=8,
-                    save_best_only=True
-                )
-                
-                if success:
-                    steps_completed.append("[OK] Modelos entrenados")
-                    logger.info("Modelos entrenados exitosamente")
-                else:
-                    return Response({
-                        'error': 'Error en entrenamiento de modelos',
-                        'status': 'error'
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            else:
-                steps_completed.append("[OK] Modelos ya existen")
-                logger.info("Modelos ya existen, saltando entrenamiento")
-                
-        except Exception as e:
-            logger.error(f"Error en entrenamiento de modelos: {e}")
             return Response({
-                'error': f'Error entrenando modelos: {str(e)}',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        # Paso 4: Cargar modelos
-        logger.info("Paso 4: Cargando modelos...")
-        if load_artifacts is None:
-            return Response({
-                'error': 'Sistema de carga de modelos no disponible',
-                'status': 'error'
-            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        
-        try:
-            success = load_artifacts()
-            
-            if success:
-                steps_completed.append("[OK] Modelos cargados")
-                logger.info("Modelos cargados exitosamente")
-            else:
-                return Response({
-                    'error': 'Error cargando modelos',
-                    'status': 'error'
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-        except Exception as e:
-            logger.error(f"Error cargando modelos: {e}")
-            return Response({
-                'error': f'Error cargando modelos: {str(e)}',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        # Paso 5: Sistema listo
-        total_time = time.time() - start_time
-        steps_completed.append("[OK] Sistema listo para predicciones")
-        
-        logger.info(f"[OK] Inicialización automática completada en {total_time:.2f}s")
-        
-        return Response({
-            'message': 'Sistema inicializado automáticamente y listo para predicciones',
-            'status': 'success',
-            'steps_completed': steps_completed,
-            'total_time_seconds': round(total_time, 2),
-            'ready_for_predictions': True
-        })
+                'error': result.error.message,
+                'status': 'error',
+                'details': result.error.details
+            }, status=status_code)
 
 
 class LatestMetricsView(APIView):
