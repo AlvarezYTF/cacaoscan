@@ -20,6 +20,8 @@ from django.db.models import Count  # Importar Count
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+from .views.mixins import PaginationMixin
+
 from .models import ReporteGenerado
 # Importar desde apps modulares
 try:
@@ -65,7 +67,7 @@ class ExcelRenderer(BaseRenderer):
         return data
 
 
-class ReporteListCreateView(APIView):
+class ReporteListCreateView(PaginationMixin, APIView):
     """
     Vista para listar y crear reportes.
     GET: Lista reportes del usuario
@@ -107,45 +109,37 @@ class ReporteListCreateView(APIView):
             if estado:
                 queryset = queryset.filter(estado=estado)
             
-            # Paginación
-            page = int(request.GET.get('page', 1))
-            page_size = int(request.GET.get('page_size', 20))
+            # Función de serialización personalizada
+            def serialize_reportes(reportes):
+                reportes_data = []
+                for reporte in reportes:
+                    reportes_data.append({
+                        'id': reporte.id,
+                        'tipo_reporte': reporte.tipo_reporte,
+                        'tipo_reporte_display': reporte.get_tipo_reporte_display(),
+                        'formato': reporte.formato,
+                        'formato_display': reporte.get_formato_display(),
+                        'titulo': reporte.titulo,
+                        'descripcion': reporte.descripcion,
+                        'estado': reporte.estado,
+                        'estado_display': reporte.get_estado_display(),
+                        'fecha_solicitud': reporte.fecha_solicitud.isoformat(),
+                        'fecha_generacion': reporte.fecha_generacion.isoformat() if reporte.fecha_generacion else None,
+                        'fecha_expiracion': reporte.fecha_expiracion.isoformat() if reporte.fecha_expiracion else None,
+                        'tiempo_generacion_segundos': reporte.tiempo_generacion_segundos,
+                        'tamano_archivo_mb': reporte.tamano_archivo_mb,
+                        'archivo_url': reporte.archivo_url,
+                        'esta_expirado': reporte.esta_expirado,
+                        'mensaje_error': reporte.mensaje_error,
+                    })
+                return reportes_data
             
-            paginator = Paginator(queryset, page_size)
-            page_obj = paginator.get_page(page)
-            
-            # Serializar datos
-            reportes_data = []
-            for reporte in page_obj.object_list:
-                reportes_data.append({
-                    'id': reporte.id,
-                    'tipo_reporte': reporte.tipo_reporte,
-                    'tipo_reporte_display': reporte.get_tipo_reporte_display(),
-                    'formato': reporte.formato,
-                    'formato_display': reporte.get_formato_display(),
-                    'titulo': reporte.titulo,
-                    'descripcion': reporte.descripcion,
-                    'estado': reporte.estado,
-                    'estado_display': reporte.get_estado_display(),
-                    'fecha_solicitud': reporte.fecha_solicitud.isoformat(),
-                    'fecha_generacion': reporte.fecha_generacion.isoformat() if reporte.fecha_generacion else None,
-                    'fecha_expiracion': reporte.fecha_expiracion.isoformat() if reporte.fecha_expiracion else None,
-                    'tiempo_generacion_segundos': reporte.tiempo_generacion_segundos,
-                    'tamano_archivo_mb': reporte.tamano_archivo_mb,
-                    'archivo_url': reporte.archivo_url,
-                    'esta_expirado': reporte.esta_expirado,
-                    'mensaje_error': reporte.mensaje_error,
-                })
-            
-            return Response({
-                'results': reportes_data,
-                'count': paginator.count,
-                'page': page,
-                'page_size': page_size,
-                'total_pages': paginator.num_pages,
-                'next': page_obj.next_page_number() if page_obj.has_next() else None,
-                'previous': page_obj.previous_page_number() if page_obj.has_previous() else None,
-            }, status=status.HTTP_200_OK)
+            # Paginar usando el mixin con serialización personalizada
+            return self.paginate_queryset(
+                request,
+                queryset,
+                serializer_func=serialize_reportes
+            )
             
         except Exception as e:
             logger.error(f"Error listando reportes: {e}")

@@ -72,6 +72,9 @@ import os
 from pathlib import Path
 import re
 
+# Import pagination mixin
+from .views.mixins import PaginationMixin
+
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -1316,7 +1319,7 @@ class ChangePasswordView(APIView):
         )
 
 
-class ImagesListView(APIView, ImagePermissionMixin):
+class ImagesListView(PaginationMixin, APIView, ImagePermissionMixin):
     """
     Endpoint para listar imágenes procesadas con paginación y filtros.
     """
@@ -1361,9 +1364,7 @@ class ImagesListView(APIView, ImagePermissionMixin):
         Obtiene la lista de imágenes procesadas con paginación y filtros.
         """
         try:
-            # Obtener parámetros de consulta
-            page = int(request.GET.get('page', 1))
-            page_size = min(int(request.GET.get('page_size', 20)), 100)  # Máximo 100 por página
+            # Obtener parámetros de consulta (paginación se maneja en el mixin)
             region = request.GET.get('region')
             finca = request.GET.get('finca')
             processed = request.GET.get('processed')
@@ -1403,41 +1404,12 @@ class ImagesListView(APIView, ImagePermissionMixin):
             # Ordenar por fecha de creación (más recientes primero)
             queryset = queryset.order_by('-created_at')
             
-            # Paginación
-            paginator = Paginator(queryset, page_size)
-            total_pages = paginator.num_pages
-            
-            # Validar página
-            if page > total_pages and total_pages > 0:
-                return Response({
-                    'error': f'Página {page} no existe. Total de páginas: {total_pages}',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            page_obj = paginator.get_page(page)
-            
-            # Serializar resultados
-            serializer = CacaoImageSerializer(page_obj.object_list, many=True, context={'request': request})
-            
-            # Preparar respuesta
-            response_data = {
-                'results': serializer.data,
-                'count': paginator.count,
-                'page': page,
-                'page_size': page_size,
-                'total_pages': total_pages,
-                'next': None,
-                'previous': None
-            }
-            
-            # URLs de paginación
-            if page_obj.has_next():
-                response_data['next'] = f"{request.build_absolute_uri()}?page={page + 1}&page_size={page_size}"
-            
-            if page_obj.has_previous():
-                response_data['previous'] = f"{request.build_absolute_uri()}?page={page - 1}&page_size={page_size}"
-            
-            return Response(response_data, status=status.HTTP_200_OK)
+            # Paginar usando el mixin
+            return self.paginate_queryset(
+                request,
+                queryset,
+                CacaoImageSerializer
+            )
             
         except ValueError as e:
             return Response({
@@ -2370,7 +2342,7 @@ class ResetPasswordView(APIView):
 
 
 # Vistas de gestión de usuarios (Admin)
-class UserListView(APIView):
+class UserListView(PaginationMixin, APIView):
     """
     Endpoint para listar usuarios con filtros y paginación (Admin only).
     """
@@ -2424,9 +2396,7 @@ class UserListView(APIView):
                     'status': 'error'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            # Obtener parámetros de consulta
-            page = int(request.GET.get('page', 1))
-            page_size = min(int(request.GET.get('page_size', 20)), 100)  # Máximo 100 por página
+            # Obtener parámetros de consulta (paginación se maneja en el mixin)
             role = request.GET.get('role')
             is_active = request.GET.get('is_active')
             is_verified = request.GET.get('is_verified')
@@ -2481,41 +2451,12 @@ class UserListView(APIView):
             # Ordenar por fecha de registro (más recientes primero)
             queryset = queryset.order_by('-date_joined')
             
-            # Paginación
-            paginator = Paginator(queryset, page_size)
-            total_pages = paginator.num_pages
-            
-            # Validar página
-            if page > total_pages and total_pages > 0:
-                return Response({
-                    'error': f'Página {page} no existe. Total de páginas: {total_pages}',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            page_obj = paginator.get_page(page)
-            
-            # Serializar resultados
-            serializer = UserSerializer(page_obj.object_list, many=True)
-            
-            # Preparar respuesta
-            response_data = {
-                'results': serializer.data,
-                'count': paginator.count,
-                'page': page,
-                'page_size': page_size,
-                'total_pages': total_pages,
-                'next': None,
-                'previous': None
-            }
-            
-            # URLs de paginación
-            if page_obj.has_next():
-                response_data['next'] = f"{request.build_absolute_uri()}?page={page + 1}&page_size={page_size}"
-            
-            if page_obj.has_previous():
-                response_data['previous'] = f"{request.build_absolute_uri()}?page={page - 1}&page_size={page_size}"
-            
-            return Response(response_data, status=status.HTTP_200_OK)
+            # Paginar usando el mixin
+            return self.paginate_queryset(
+                request,
+                queryset,
+                UserSerializer
+            )
             
         except ValueError as e:
             return Response({
@@ -3720,7 +3661,7 @@ class ImagesExportView(APIView, ImagePermissionMixin):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class AdminImagesListView(APIView):
+class AdminImagesListView(PaginationMixin, APIView):
     """
     Endpoint para listar todas las imágenes del sistema con filtros avanzados (Admin only).
     """
@@ -3781,9 +3722,7 @@ class AdminImagesListView(APIView):
                     'status': 'error'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            # Obtener parámetros de consulta
-            page = int(request.GET.get('page', 1))
-            page_size = min(int(request.GET.get('page_size', 20)), 100)  # Máximo 100 por página
+            # Obtener parámetros de consulta (paginación se maneja en el mixin)
             user_id = request.GET.get('user_id')
             username = request.GET.get('username')
             region = request.GET.get('region')
@@ -3866,42 +3805,13 @@ class AdminImagesListView(APIView):
             # Ordenar por fecha de creación (más recientes primero)
             queryset = queryset.order_by('-created_at')
             
-            # Paginación
-            paginator = Paginator(queryset, page_size)
-            total_pages = paginator.num_pages
-            
-            # Validar página
-            if page > total_pages and total_pages > 0:
-                return Response({
-                    'error': f'Página {page} no existe. Total de páginas: {total_pages}',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            page_obj = paginator.get_page(page)
-            
-            # Serializar resultados con información extendida
-            serializer = CacaoImageDetailSerializer(page_obj.object_list, many=True, context={'request': request})
-            
-            # Preparar respuesta
-            response_data = {
-                'results': serializer.data,
-                'count': paginator.count,
-                'page': page,
-                'page_size': page_size,
-                'total_pages': total_pages,
-                'next': None,
-                'previous': None,
-                'filters_applied': filters_applied
-            }
-            
-            # URLs de paginación
-            if page_obj.has_next():
-                response_data['next'] = f"{request.build_absolute_uri()}?page={page + 1}&page_size={page_size}"
-            
-            if page_obj.has_previous():
-                response_data['previous'] = f"{request.build_absolute_uri()}?page={page - 1}&page_size={page_size}"
-            
-            return Response(response_data, status=status.HTTP_200_OK)
+            # Paginar usando el mixin con datos extra
+            return self.paginate_queryset(
+                request,
+                queryset,
+                CacaoImageDetailSerializer,
+                extra_data={'filters_applied': filters_applied}
+            )
             
         except ValueError as e:
             return Response({

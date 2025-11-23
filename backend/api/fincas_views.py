@@ -11,6 +11,8 @@ from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+from .views.mixins import PaginationMixin
+
 try:
     from fincas_app.models import Finca
 except ImportError:
@@ -49,7 +51,7 @@ class FincaPermissionMixin:
         serializer.save(agricultor=self.request.user)
 
 
-class FincaListCreateView(FincaPermissionMixin, APIView):
+class FincaListCreateView(PaginationMixin, FincaPermissionMixin, APIView):
     """
     Vista para listar y crear fincas.
     GET: Lista fincas del usuario (o todas si es admin)
@@ -122,31 +124,18 @@ class FincaListCreateView(FincaPermissionMixin, APIView):
                     'results': serializer.data,
                     'count': queryset.count(),
                     'page': 1,
-                    'page_size': serializer.data.__len__(),
+                    'page_size': len(serializer.data),
                     'total_pages': 1,
                     'next': None,
                     'previous': None,
                 }, status=status.HTTP_200_OK)
             
-            # Paginación solo para listados generales
-            page = int(request.GET.get('page', 1))
-            page_size = int(request.GET.get('page_size', 20))
-            
-            paginator = Paginator(queryset, page_size)
-            page_obj = paginator.get_page(page)
-            
-            # Serializar datos
-            serializer = FincaListSerializer(page_obj.object_list, many=True)
-            
-            return Response({
-                'results': serializer.data,
-                'count': paginator.count,
-                'page': page,
-                'page_size': page_size,
-                'total_pages': paginator.num_pages,
-                'next': page_obj.next_page_number() if page_obj.has_next() else None,
-                'previous': page_obj.previous_page_number() if page_obj.has_previous() else None,
-            }, status=status.HTTP_200_OK)
+            # Paginación solo para listados generales usando el mixin
+            return self.paginate_queryset(
+                request,
+                queryset,
+                FincaListSerializer
+            )
             
         except Exception as e:
             logger.error(f"Error listando fincas para usuario {request.user.username}: {e}")

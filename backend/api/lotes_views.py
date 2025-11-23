@@ -11,6 +11,8 @@ from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+from .views.mixins import PaginationMixin
+
 try:
     from fincas_app.models import Lote, Finca
 except ImportError:
@@ -61,7 +63,7 @@ class LotePermissionMixin:
                 raise ValueError("Finca no encontrada.")
 
 
-class LoteListCreateView(LotePermissionMixin, APIView):
+class LoteListCreateView(PaginationMixin, LotePermissionMixin, APIView):
     """
     Vista para listar y crear lotes.
     GET: Lista lotes del usuario (o todos si es admin)
@@ -118,25 +120,12 @@ class LoteListCreateView(LotePermissionMixin, APIView):
                     Q(finca__nombre__icontains=search)
                 )
             
-            # Paginación
-            page = int(request.GET.get('page', 1))
-            page_size = int(request.GET.get('page_size', 20))
-            
-            paginator = Paginator(queryset, page_size)
-            page_obj = paginator.get_page(page)
-            
-            # Serializar datos
-            serializer = LoteListSerializer(page_obj.object_list, many=True)
-            
-            return Response({
-                'results': serializer.data,
-                'count': paginator.count,
-                'page': page,
-                'page_size': page_size,
-                'total_pages': paginator.num_pages,
-                'next': page_obj.next_page_number() if page_obj.has_next() else None,
-                'previous': page_obj.previous_page_number() if page_obj.has_previous() else None,
-            }, status=status.HTTP_200_OK)
+            # Paginar usando el mixin
+            return self.paginate_queryset(
+                request,
+                queryset,
+                LoteListSerializer
+            )
             
         except Exception as e:
             logger.error(f"Error listando lotes para usuario {request.user.username}: {e}")
