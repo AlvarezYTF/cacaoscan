@@ -72,8 +72,8 @@ import os
 from pathlib import Path
 import re
 
-# Import pagination mixin
-from .views.mixins import PaginationMixin
+# Import mixins
+from .views.mixins import PaginationMixin, AdminPermissionMixin
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -184,7 +184,7 @@ from .report_views import (
 logger = logging.getLogger("cacaoscan.api")
 
 
-class ImagePermissionMixin:
+class ImagePermissionMixin(AdminPermissionMixin):
     """
     Mixin para manejar permisos de acceso a imágenes.
     """
@@ -205,7 +205,7 @@ class ImagePermissionMixin:
             return True
         
         # Los admins pueden acceder a cualquier imagen
-        if user.is_superuser or user.is_staff:
+        if self.is_admin_user(user):
             return True
         
         # Los analistas pueden acceder a imágenes de todos los usuarios
@@ -224,7 +224,7 @@ class ImagePermissionMixin:
         Returns:
             QuerySet: Queryset filtrado según permisos
         """
-        if user.is_superuser or user.is_staff:
+        if self.is_admin_user(user):
             # Admins pueden ver todas las imágenes
             return CacaoImage.objects.all().select_related('user')
         elif user.groups.filter(name='analyst').exists():
@@ -2342,7 +2342,7 @@ class ResetPasswordView(APIView):
 
 
 # Vistas de gestión de usuarios (Admin)
-class UserListView(PaginationMixin, APIView):
+class UserListView(PaginationMixin, AdminPermissionMixin, APIView):
     """
     Endpoint para listar usuarios con filtros y paginación (Admin only).
     """
@@ -2390,11 +2390,8 @@ class UserListView(PaginationMixin, APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Obtener parámetros de consulta (paginación se maneja en el mixin)
             role = request.GET.get('role')
@@ -2472,20 +2469,9 @@ class UserListView(PaginationMixin, APIView):
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class UserUpdateView(APIView):
+class UserUpdateView(AdminPermissionMixin, APIView):
     """
     Endpoint para actualizar información de un usuario (Admin only).
     """
@@ -2523,11 +2509,8 @@ class UserUpdateView(APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Obtener usuario
             try:
@@ -2602,20 +2585,9 @@ class UserUpdateView(APIView):
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class UserDeleteView(APIView):
+class UserDeleteView(AdminPermissionMixin, APIView):
     """
     Endpoint para eliminar un usuario (Admin only).
     """
@@ -2648,11 +2620,8 @@ class UserDeleteView(APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Obtener usuario
             try:
@@ -2706,20 +2675,9 @@ class UserDeleteView(APIView):
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class UserStatsView(APIView):
+class UserStatsView(AdminPermissionMixin, APIView):
     """
     Endpoint para obtener estadísticas de usuarios (Admin only).
     """
@@ -2744,11 +2702,8 @@ class UserStatsView(APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             from datetime import timedelta, datetime
             from django.utils import timezone
@@ -2816,20 +2771,9 @@ class UserStatsView(APIView):
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class AdminStatsView(APIView):
+class AdminStatsView(AdminPermissionMixin, APIView):
     """
     Endpoint para obtener estadísticas globales del sistema (Admin only).
     """
@@ -2854,11 +2798,8 @@ class AdminStatsView(APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Estadísticas de usuarios
             total_users = User.objects.count()
@@ -3152,17 +3093,6 @@ class AdminStatsView(APIView):
                 'generated_at': timezone.now().isoformat()
             }, status=status.HTTP_200_OK)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
 class ImageUpdateView(APIView, ImagePermissionMixin):
@@ -3661,7 +3591,7 @@ class ImagesExportView(APIView, ImagePermissionMixin):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class AdminImagesListView(PaginationMixin, APIView):
+class AdminImagesListView(PaginationMixin, AdminPermissionMixin, APIView):
     """
     Endpoint para listar todas las imágenes del sistema con filtros avanzados (Admin only).
     """
@@ -3716,11 +3646,8 @@ class AdminImagesListView(PaginationMixin, APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Obtener parámetros de consulta (paginación se maneja en el mixin)
             user_id = request.GET.get('user_id')
@@ -3827,20 +3754,9 @@ class AdminImagesListView(PaginationMixin, APIView):
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class AdminImageDetailView(APIView):
+class AdminImageDetailView(AdminPermissionMixin, APIView):
     """
     Endpoint para obtener detalles completos de cualquier imagen del sistema (Admin only).
     """
@@ -3866,11 +3782,8 @@ class AdminImageDetailView(APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Obtener imagen con información completa
             try:
@@ -3936,20 +3849,9 @@ class AdminImageDetailView(APIView):
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class AdminImageUpdateView(APIView):
+class AdminImageUpdateView(AdminPermissionMixin, APIView):
     """
     Endpoint para actualizar cualquier imagen del sistema (Admin only).
     """
@@ -3989,11 +3891,8 @@ class AdminImageUpdateView(APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Obtener imagen
             try:
@@ -4059,20 +3958,9 @@ class AdminImageUpdateView(APIView):
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class AdminImageDeleteView(APIView):
+class AdminImageDeleteView(AdminPermissionMixin, APIView):
     """
     Endpoint para eliminar cualquier imagen del sistema (Admin only).
     """
@@ -4106,11 +3994,8 @@ class AdminImageDeleteView(APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Obtener imagen con predicción
             try:
@@ -4179,20 +4064,9 @@ class AdminImageDeleteView(APIView):
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class AdminBulkUpdateView(APIView):
+class AdminBulkUpdateView(AdminPermissionMixin, APIView):
     """
     Endpoint para actualizaciones masivas de imágenes (Admin only).
     """
@@ -4238,11 +4112,8 @@ class AdminBulkUpdateView(APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Obtener parámetros
             image_ids = request.data.get('image_ids', [])
@@ -4340,20 +4211,9 @@ class AdminBulkUpdateView(APIView):
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class AdminDatasetStatsView(APIView):
+class AdminDatasetStatsView(AdminPermissionMixin, APIView):
     """
     Endpoint para obtener estadísticas globales del dataset (Admin only).
     """
@@ -4378,11 +4238,8 @@ class AdminDatasetStatsView(APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Estadísticas generales del dataset
             total_images = CacaoImage.objects.count()
@@ -4574,20 +4431,9 @@ class AdminDatasetStatsView(APIView):
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class TrainingJobListView(APIView):
+class TrainingJobListView(AdminPermissionMixin, APIView):
     """
     Endpoint para listar trabajos de entrenamiento (Admin only).
     """
@@ -4619,11 +4465,8 @@ class TrainingJobListView(APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Obtener parámetros de consulta
             page = int(request.GET.get('page', 1))
@@ -4699,20 +4542,9 @@ class TrainingJobListView(APIView):
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class TrainingJobCreateView(APIView):
+class TrainingJobCreateView(AdminPermissionMixin, APIView):
     """
     Endpoint para crear trabajos de entrenamiento (Admin only).
     """
@@ -4750,11 +4582,8 @@ class TrainingJobCreateView(APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Validar datos de entrada
             from .serializers import TrainingJobCreateSerializer
@@ -4854,20 +4683,9 @@ class TrainingJobCreateView(APIView):
             logger.error(f"Error iniciando simulación de entrenamiento: {e}")
             training_job.mark_failed(f"Error iniciando entrenamiento: {str(e)}")
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class TrainingJobStatusView(APIView):
+class TrainingJobStatusView(AdminPermissionMixin, APIView):
     """
     Endpoint para obtener el estado de un trabajo de entrenamiento específico.
     """
@@ -4901,7 +4719,7 @@ class TrainingJobStatusView(APIView):
                 }, status=status.HTTP_404_NOT_FOUND)
             
             # Verificar permisos (solo el creador o admin puede ver)
-            if training_job.created_by != request.user and not self._is_admin_user(request.user):
+            if training_job.created_by != request.user and not self.is_admin_user(request.user):
                 return Response({
                     'error': 'No tienes permisos para ver este trabajo de entrenamiento',
                     'status': 'error'
@@ -4958,20 +4776,9 @@ class TrainingJobStatusView(APIView):
         
         return "Calculando..."
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 
-class UserDetailView(APIView):
+class UserDetailView(AdminPermissionMixin, APIView):
     """
     Endpoint para obtener detalles de un usuario específico (Admin only).
     """
@@ -4997,11 +4804,8 @@ class UserDetailView(APIView):
         """
         try:
             # Verificar permisos de administrador
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a esta funcionalidad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Obtener usuario
             try:
@@ -5052,16 +4856,5 @@ class UserDetailView(APIView):
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _is_admin_user(self, user):
-        """
-        Verificar si el usuario es administrador.
-        
-        Args:
-            user: Usuario autenticado
-            
-        Returns:
-            bool: True si es admin, False en caso contrario
-        """
-        return user.is_superuser or user.is_staff
 
 

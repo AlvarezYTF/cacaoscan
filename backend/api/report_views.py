@@ -545,15 +545,11 @@ class ReporteStatsView(APIView):
             }, status=status.HTTP_200_OK)
 
 
-class ReporteCleanupView(APIView):
+class ReporteCleanupView(AdminPermissionMixin, APIView):
     """
     Vista para limpiar reportes expirados (solo administradores).
     """
     permission_classes = [IsAuthenticated]
-    
-    def _is_admin_user(self, user):
-        """Verificar si el usuario es administrador."""
-        return user.is_superuser or user.is_staff
     
     @swagger_auto_schema(
         operation_description="Limpia reportes expirados del sistema (solo administradores)",
@@ -568,11 +564,8 @@ class ReporteCleanupView(APIView):
     def post(self, request):
         """Limpiar reportes expirados."""
         try:
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para realizar esta acción',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied()
             
             # Limpiar reportes expirados
             cleaned_count = ReporteGenerado.limpiar_expirados()

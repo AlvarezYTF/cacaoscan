@@ -11,7 +11,7 @@ from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .views.mixins import PaginationMixin
+from .views.mixins import PaginationMixin, AdminPermissionMixin
 
 try:
     from fincas_app.models import Finca
@@ -28,7 +28,7 @@ from .serializers import (
 logger = logging.getLogger("cacaoscan.api")
 
 
-class FincaPermissionMixin:
+class FincaPermissionMixin(AdminPermissionMixin):
     """
     Mixin para permisos de fincas.
     Los agricultores solo pueden ver/editar sus propias fincas.
@@ -39,7 +39,7 @@ class FincaPermissionMixin:
         """Obtener queryset filtrado por permisos (optimizado)."""
         user = self.request.user
         
-        if user.is_superuser or user.is_staff:
+        if self.is_admin_user(user):
             # Admin puede ver todas las fincas (activas e inactivas)
             return Finca.objects.all()
         else:
@@ -104,7 +104,7 @@ class FincaListCreateView(PaginationMixin, FincaPermissionMixin, APIView):
             
             # Filtro por estado activo (solo admins pueden ver inactivas)
             activa = request.GET.get('activa')
-            if activa is not None and (request.user.is_superuser or request.user.is_staff):
+            if activa is not None and self.is_admin_user(request.user):
                 activa_bool = activa.lower() in ['true', '1', 'yes']
                 queryset = queryset.filter(activa=activa_bool)
             
@@ -379,7 +379,7 @@ class FincaDeleteView(FincaPermissionMixin, APIView):
         """Desactivar finca (soft delete)."""
         try:
             # Usar queryset sin filtro de activa para poder desactivar fincas inactivas
-            if request.user.is_superuser or request.user.is_staff:
+            if self.is_admin_user(request.user):
                 queryset = Finca.objects.all()
             else:
                 queryset = Finca.objects.filter(agricultor=request.user)
@@ -440,11 +440,8 @@ class FincaActivateView(FincaPermissionMixin, APIView):
         """Reactivar finca (solo admins)."""
         try:
             # Solo admins pueden reactivar fincas
-            if not (request.user.is_superuser or request.user.is_staff):
-                return Response({
-                    'error': 'No tienes permisos para reactivar fincas',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied('No tienes permisos para reactivar fincas')
             
             # Obtener la finca sin filtro de activa
             try:

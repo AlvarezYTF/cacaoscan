@@ -11,7 +11,7 @@ from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .views.mixins import PaginationMixin
+from .views.mixins import PaginationMixin, AdminPermissionMixin
 
 try:
     from fincas_app.models import Lote, Finca
@@ -29,7 +29,7 @@ from .serializers import (
 logger = logging.getLogger("cacaoscan.api")
 
 
-class LotePermissionMixin:
+class LotePermissionMixin(AdminPermissionMixin):
     """
     Mixin para permisos de lotes.
     Los agricultores solo pueden ver/editar lotes de sus fincas.
@@ -40,7 +40,7 @@ class LotePermissionMixin:
         """Obtener queryset filtrado por permisos."""
         user = self.request.user
         
-        if user.is_superuser or user.is_staff:
+        if self.is_admin_user(user):
             # Admin puede ver todos los lotes
             return Lote.objects.all().select_related('finca', 'finca__agricultor')
         else:
@@ -55,7 +55,7 @@ class LotePermissionMixin:
         if finca_id:
             try:
                 finca = Finca.objects.get(id=finca_id)
-                if not (self.request.user.is_superuser or self.request.user.is_staff):
+                if not self.is_admin_user(self.request.user):
                     if finca.agricultor != self.request.user:
                         raise ValueError("No tienes permisos para crear lotes en esta finca.")
                 serializer.save()
@@ -173,7 +173,7 @@ class LoteListCreateView(PaginationMixin, LotePermissionMixin, APIView):
             
             try:
                 finca = Finca.objects.get(id=finca_id)
-                if not (request.user.is_superuser or request.user.is_staff):
+                if not self.is_admin_user(request.user):
                     if finca.agricultor != request.user:
                         return Response({
                             'error': 'No tienes permisos para crear lotes en esta finca',
@@ -478,7 +478,7 @@ class LotesPorFincaView(LotePermissionMixin, APIView):
         """Obtener lotes de una finca."""
         try:
             # Verificar que la finca existe y pertenece al usuario
-            if request.user.is_superuser or request.user.is_staff:
+            if self.is_admin_user(request.user):
                 finca = Finca.objects.get(id=finca_id)
             else:
                 finca = Finca.objects.get(id=finca_id, agricultor=request.user)

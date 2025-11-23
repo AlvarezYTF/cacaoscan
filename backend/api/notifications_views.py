@@ -298,15 +298,11 @@ class NotificationStatsView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class NotificationCreateView(APIView):
+class NotificationCreateView(AdminPermissionMixin, APIView):
     """
     Vista para crear notificaciones (solo administradores).
     """
     permission_classes = [IsAuthenticated]
-    
-    def _is_admin_user(self, user):
-        """Verificar si el usuario es administrador."""
-        return user.is_superuser or user.is_staff
     
     @swagger_auto_schema(
         operation_description="Crea una nueva notificación (solo administradores)",
@@ -333,11 +329,8 @@ class NotificationCreateView(APIView):
     def post(self, request):
         """Crear nueva notificación."""
         try:
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para crear notificaciones',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied('No tienes permisos para crear notificaciones')
             
             serializer = NotificationCreateSerializer(data=request.data)
             

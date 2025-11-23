@@ -13,6 +13,8 @@ from datetime import timedelta
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+from .views.mixins import AdminPermissionMixin
+
 from .models import LoginHistory
 try:
     from audit.models import ActivityLog
@@ -23,15 +25,11 @@ from .serializers import ErrorResponseSerializer
 logger = logging.getLogger("cacaoscan.api")
 
 
-class ActivityLogListView(APIView):
+class ActivityLogListView(AdminPermissionMixin, APIView):
     """
     Vista para listar logs de actividad (solo administradores).
     """
     permission_classes = [IsAuthenticated]
-    
-    def _is_admin_user(self, user):
-        """Verificar si el usuario es administrador."""
-        return user.is_superuser or user.is_staff
     
     @swagger_auto_schema(
         operation_description="Lista logs de actividad del sistema (solo administradores)",
@@ -56,11 +54,8 @@ class ActivityLogListView(APIView):
     def get(self, request):
         """Listar logs de actividad con filtros."""
         try:
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a los logs de actividad',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied('No tienes permisos para acceder a los logs de actividad')
             
             if ActivityLog is None:
                 # Si el modelo no está disponible, retornar vacío
@@ -158,15 +153,11 @@ class ActivityLogListView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class LoginHistoryListView(APIView):
+class LoginHistoryListView(AdminPermissionMixin, APIView):
     """
     Vista para listar historial de logins (solo administradores).
     """
     permission_classes = [IsAuthenticated]
-    
-    def _is_admin_user(self, user):
-        """Verificar si el usuario es administrador."""
-        return user.is_superuser or user.is_staff
     
     @swagger_auto_schema(
         operation_description="Lista historial de logins del sistema (solo administradores)",
@@ -190,11 +181,8 @@ class LoginHistoryListView(APIView):
     def get(self, request):
         """Listar historial de logins con filtros."""
         try:
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder al historial de logins',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied('No tienes permisos para acceder al historial de logins')
             
             queryset = LoginHistory.objects.all().select_related('usuario')
             
@@ -275,15 +263,11 @@ class LoginHistoryListView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class AuditStatsView(APIView):
+class AuditStatsView(AdminPermissionMixin, APIView):
     """
     Vista para obtener estadísticas de auditoría (solo administradores).
     """
     permission_classes = [IsAuthenticated]
-    
-    def _is_admin_user(self, user):
-        """Verificar si el usuario es administrador."""
-        return user.is_superuser or user.is_staff
     
     @swagger_auto_schema(
         operation_description="Obtiene estadísticas de auditoría del sistema (solo administradores)",
@@ -298,11 +282,8 @@ class AuditStatsView(APIView):
     def get(self, request):
         """Obtener estadísticas de auditoría."""
         try:
-            if not self._is_admin_user(request.user):
-                return Response({
-                    'error': 'No tienes permisos para acceder a las estadísticas de auditoría',
-                    'status': 'error'
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not self.is_admin_user(request.user):
+                return self.admin_permission_denied('No tienes permisos para acceder a las estadísticas de auditoría')
             
             # Estadísticas de ActivityLog
             total_activities = ActivityLog.objects.count()
