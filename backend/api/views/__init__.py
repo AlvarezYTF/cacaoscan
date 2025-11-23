@@ -2,7 +2,7 @@
 Views module for CacaoScan API.
 Organized by domain for better maintainability.
 """
-from .auth_views import (
+from .auth import (
     LoginView,
     RegisterView,
     LogoutView,
@@ -14,10 +14,10 @@ from .auth_views import (
     PreRegisterView,
     VerifyEmailPreRegistrationView,
     ForgotPasswordView,
-    ResetPasswordView
+    ResetPasswordView,
 )
 
-from .image_views import (
+from .image import (
     ScanMeasureView,
     ImagesListView,
     ImageDetailView,
@@ -32,7 +32,8 @@ from .image_views import (
     AdminImageDeleteView,
     AdminBulkUpdateView,
     AdminDatasetStatsView,
-    ImagePermissionMixin
+    ImagePermissionMixin,
+    BatchAnalysisView,
 )
 
 from .user_views import (
@@ -67,7 +68,7 @@ from .finca import (
     LoteListCreateView, LoteDetailView, LoteUpdateView,
     LoteDeleteView, LoteStatsView, LotesPorFincaView,
 )
-from .auth import SendOtpView, VerifyOtpView
+# OTP views already imported from .auth above
 from .notifications import (
     NotificationListCreateView, NotificationDetailView,
     NotificationMarkReadView, NotificationMarkAllReadView,
@@ -94,8 +95,6 @@ from .ml import (
     ModelPerformanceTrendView, ModelComparisonView, BestModelsView,
     ProductionModelsView,
 )
-from .image import BatchAnalysisView
-
 __all__ = [
     # Auth views
     'LoginView',
