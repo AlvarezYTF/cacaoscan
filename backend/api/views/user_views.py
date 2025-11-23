@@ -484,9 +484,19 @@ class UserDetailView(AdminPermissionMixin, APIView):
             if not self.is_admin_user(request.user):
                 return self.admin_permission_denied()
             
-            # Obtener usuario
+            # Obtener usuario con optimizaciones para evitar N+1 queries
             try:
-                user = User.objects.select_related('api_profile', 'api_email_token').prefetch_related('groups', 'api_cacao_images', 'images_app_cacao_images').get(id=user_id)
+                user = User.objects.select_related(
+                    'api_profile', 
+                    'api_email_token'
+                ).prefetch_related(
+                    'groups',
+                    'api_cacao_images',
+                    'images_app_cacao_images',
+                    'images_app_cacao_images__prediction',
+                    'images_app_cacao_images__finca',
+                    'images_app_cacao_images__lote'
+                ).get(id=user_id)
             except User.DoesNotExist:
                 return Response({
                     'error': 'Usuario no encontrado',

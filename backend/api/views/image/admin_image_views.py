@@ -4,7 +4,7 @@ Admin image views for CacaoScan API.
 import logging
 import os
 from datetime import datetime, timedelta
-from django.db.models import Q, Count, Avg, Sum
+from django.db.models import Q, Count, Avg, Sum, F, Min, Max
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -346,7 +346,7 @@ class AdminImageUpdateView(AdminPermissionMixin, APIView):
             if not self.is_admin_user(request.user):
                 return self.admin_permission_denied()
             
-            # Obtener imagen (optimizado)
+            # Obtener imagen (optimizado para evitar N+1 queries)
             try:
                 image = CacaoImage.objects.select_related(
                     'user',
@@ -355,7 +355,10 @@ class AdminImageUpdateView(AdminPermissionMixin, APIView):
                     'lote',
                     'lote__finca',
                     'lote__finca__agricultor'
-                ).prefetch_related('prediction').get(id=image_id)
+                ).prefetch_related(
+                    'prediction',
+                    'user__groups'
+                ).get(id=image_id)
             except CacaoImage.DoesNotExist:
                 return Response({
                     'error': 'Imagen no encontrada',
@@ -754,33 +757,42 @@ class AdminDatasetStatsView(AdminPermissionMixin, APIView):
                 avg_processing_time=Avg('processing_time_ms')
             )
             
-            # Calcular confidence manualmente
-            avg_confidence = 0
-            min_confidence = 0
-            max_confidence = 0
-            if CacaoPrediction.objects.exists():
-                confidences = []
-                for pred in CacaoPrediction.objects.all():
-                    conf = float(pred.average_confidence)
-                    confidences.append(conf)
-                if confidences:
-                    avg_confidence = sum(confidences) / len(confidences)
-                    min_confidence = min(confidences)
-                    max_confidence = max(confidences)
+            # Calcular confidence usando agregaciones SQL
+            # average_confidence = (confidence_alto + confidence_ancho + confidence_grosor + confidence_peso) / 4
+            avg_confidence_expr = (
+                F('confidence_alto') + F('confidence_ancho') + 
+                F('confidence_grosor') + F('confidence_peso')
+            ) / 4
             
-            # Estadísticas por modelo
-            model_stats = []
-            for model in CacaoPrediction.objects.values_list('model_version', flat=True).distinct():
-                predictions = CacaoPrediction.objects.filter(model_version=model)
-                count = predictions.count()
-                avg_time = predictions.aggregate(avg=Avg('processing_time_ms'))['avg'] or 0
-                model_stats.append({
-                    'model_version': model,
-                    'count': count,
-                    'avg_confidence': avg_confidence,
-                    'avg_processing_time_ms': round(float(avg_time), 0)
-                })
-            model_stats.sort(key=lambda x: x['count'], reverse=True)
+            confidence_stats = CacaoPrediction.objects.aggregate(
+                avg_confidence=Avg(avg_confidence_expr),
+                min_confidence=Min(avg_confidence_expr),
+                max_confidence=Max(avg_confidence_expr)
+            )
+            
+            avg_confidence = float(confidence_stats.get('avg_confidence', 0) or 0)
+            min_confidence = float(confidence_stats.get('min_confidence', 0) or 0)
+            max_confidence = float(confidence_stats.get('max_confidence', 0) or 0)
+            
+            # Estadísticas por modelo usando agregaciones SQL
+            model_stats = list(
+                CacaoPrediction.objects.values('model_version').annotate(
+                    count=Count('id'),
+                    avg_confidence=Avg(avg_confidence_expr),
+                    avg_processing_time=Avg('processing_time_ms')
+                ).order_by('-count')
+            )
+            
+            # Convertir a formato esperado
+            model_stats = [
+                {
+                    'model_version': stat['model_version'],
+                    'count': stat['count'],
+                    'avg_confidence': round(float(stat['avg_confidence'] or 0), 3),
+                    'avg_processing_time_ms': round(float(stat['avg_processing_time'] or 0), 0)
+                }
+                for stat in model_stats
+            ]
             
             # Estadísticas por dispositivo
             device_stats = CacaoPrediction.objects.values('device_used').annotate(

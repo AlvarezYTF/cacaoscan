@@ -4,7 +4,7 @@ Statistics service for CacaoScan API.
 import logging
 from datetime import timedelta
 from typing import Dict, Any, List, Tuple
-from django.db.models import Q, Count, Avg
+from django.db.models import Q, Count, Avg, F, Case, When, IntegerField
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -144,39 +144,36 @@ class StatsService(BaseService):
         
         total_predictions = self.CacaoPrediction.objects.count()
         
+        # Calculate average_confidence using SQL aggregation
+        # average_confidence = (confidence_alto + confidence_ancho + confidence_grosor + confidence_peso) / 4
+        avg_confidence_expr = (
+            F('confidence_alto') + F('confidence_ancho') + 
+            F('confidence_grosor') + F('confidence_peso')
+        ) / 4
+        
         avg_dimensions = self.CacaoPrediction.objects.aggregate(
             avg_alto=Avg('alto_mm'),
             avg_ancho=Avg('ancho_mm'),
             avg_grosor=Avg('grosor_mm'),
             avg_peso=Avg('peso_g'),
-            avg_processing_time=Avg('processing_time_ms')
+            avg_processing_time=Avg('processing_time_ms'),
+            avg_confidence=Avg(avg_confidence_expr)
         )
         
-        avg_confidence = 0
-        if self.CacaoPrediction.objects.exists():
-            confidences = []
-            for pred in self.CacaoPrediction.objects.all():
-                confidences.append(float(pred.average_confidence))
-            avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+        avg_confidence = float(avg_dimensions.get('avg_confidence', 0) or 0)
+        
+        # Calculate quality distribution using SQL aggregations
+        # Annotate each prediction with its average_confidence
+        queryset = self.CacaoPrediction.objects.annotate(
+            avg_conf=avg_confidence_expr
+        )
         
         quality_distribution = {
-            'excelente': 0,
-            'buena': 0,
-            'regular': 0,
-            'baja': 0
+            'excelente': queryset.filter(avg_conf__gte=0.8).count(),
+            'buena': queryset.filter(avg_conf__gte=0.6, avg_conf__lt=0.8).count(),
+            'regular': queryset.filter(avg_conf__gte=0.4, avg_conf__lt=0.6).count(),
+            'baja': queryset.filter(avg_conf__lt=0.4).count()
         }
-        
-        if self.CacaoPrediction.objects.exists():
-            for pred in self.CacaoPrediction.objects.all():
-                conf = float(pred.average_confidence)
-                if conf >= 0.8:
-                    quality_distribution['excelente'] += 1
-                elif conf >= 0.6:
-                    quality_distribution['buena'] += 1
-                elif conf >= 0.4:
-                    quality_distribution['regular'] += 1
-                else:
-                    quality_distribution['baja'] += 1
         
         self.log_info(f"Distribución de calidad: {quality_distribution}")
         

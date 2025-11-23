@@ -379,19 +379,24 @@ class ImagesStatsView(APIView, ImagePermissionMixin):
             ).count()
             
             # Estadísticas de predicciones
+            # Use SQL aggregation to calculate average_confidence
+            # average_confidence = (confidence_alto + confidence_ancho + confidence_grosor + confidence_peso) / 4
+            from django.db.models import F
+            
+            avg_confidence_expr = (
+                F('confidence_alto') + F('confidence_ancho') + 
+                F('confidence_grosor') + F('confidence_peso')
+            ) / 4
+            
             predictions = CacaoPrediction.objects.filter(image__user_id=request.user.id)
             
-            # Calcular promedio de confidence manualmente ya que es una propiedad
-            avg_confidence = 0
-            if predictions.exists():
-                confidences = []
-                for pred in predictions:
-                    confidences.append(float(pred.average_confidence))
-                avg_confidence = sum(confidences) / len(confidences) if confidences else 0
-            
-            avg_processing_time = predictions.aggregate(
+            prediction_stats = predictions.aggregate(
+                avg_confidence=Avg(avg_confidence_expr),
                 avg_time=Avg('processing_time_ms')
-            )['avg_time'] or 0
+            )
+            
+            avg_confidence = float(prediction_stats.get('avg_confidence', 0) or 0)
+            avg_processing_time = float(prediction_stats.get('avg_time', 0) or 0)
             
             # Estadísticas por región
             region_stats = user_images.values('region').annotate(
