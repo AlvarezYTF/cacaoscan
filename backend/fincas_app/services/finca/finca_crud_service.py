@@ -7,8 +7,8 @@ from typing import Dict, Any
 from django.db.models import Q
 from django.contrib.auth.models import User
 
-from ..base import BaseService, ServiceResult, ValidationServiceError
-from ...utils.model_imports import get_models_safely
+from api.services.base import BaseService, ServiceResult, ValidationServiceError
+from api.utils.model_imports import get_models_safely
 from .finca_validation_service import FincaValidationService
 
 # Import models safely
@@ -28,7 +28,7 @@ class FincaCRUDService(BaseService):
     def __init__(self):
         super().__init__()
         self.validation_service = FincaValidationService()
-        from ..lote_service import LoteService
+        from fincas_app.services.lote_service import LoteService
         self.lote_service = LoteService()
     
     def create_finca(self, finca_data: Dict[str, Any], user: User) -> ServiceResult:

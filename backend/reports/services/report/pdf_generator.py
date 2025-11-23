@@ -17,7 +17,7 @@ from reportlab.platypus import Image as RLImage
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
 # Importar desde apps modulares
-from ...utils.model_imports import get_models_safely
+from api.utils.model_imports import get_models_safely
 
 # Import models safely
 models = get_models_safely({

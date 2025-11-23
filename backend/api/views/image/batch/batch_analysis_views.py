@@ -421,7 +421,7 @@ class BatchAnalysisView(AdminPermissionMixin, APIView):
         
         try:
             # Obtener predictor usando MLService (singleton, carga solo una vez)
-            from ....services.ml.ml_service import MLService
+            from training.services import MLService
             
             ml_service = MLService()
             predictor_result = ml_service.get_predictor()

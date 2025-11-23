@@ -6,7 +6,7 @@ from .finca_stats_service import FincaStatsService
 from .finca_validation_service import FincaValidationService
 
 # Backward compatibility: Create a combined service that delegates to individual services
-from ..base import BaseService, ServiceResult
+from api.services.base import BaseService, ServiceResult
 
 
 class FincaService(BaseService):
@@ -19,7 +19,7 @@ class FincaService(BaseService):
         super().__init__()
         self.crud_service = FincaCRUDService()
         self.stats_service = FincaStatsService()
-        from ..lote_service import LoteService
+        from fincas_app.services.lote_service import LoteService
         self.lote_service = LoteService()
     
     # CRUD methods

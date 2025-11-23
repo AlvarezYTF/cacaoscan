@@ -7,7 +7,7 @@ import time
 from typing import Dict, Any
 from PIL import Image
 
-from ..base import BaseService, ServiceResult, ValidationServiceError
+from api.services.base import BaseService, ServiceResult, ValidationServiceError
 from .ml_service import MLService
 
 logger = logging.getLogger("cacaoscan.services.ml.prediction")

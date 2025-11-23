@@ -5,7 +5,7 @@ Handles finca data validation.
 import logging
 from typing import Dict, Any
 
-from ..base import BaseService, ValidationServiceError
+from api.services.base import BaseService, ValidationServiceError
 
 logger = logging.getLogger("cacaoscan.services.fincas.validation")
 

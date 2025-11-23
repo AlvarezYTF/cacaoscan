@@ -9,9 +9,8 @@ from django.core.files.uploadedfile import UploadedFile
 from django.contrib.auth.models import User
 
 from .base import BaseService, ServiceResult, ValidationServiceError
-from .image.processing_service import ImageProcessingService
-from .image.storage_service import ImageStorageService
-from .ml.prediction_service import PredictionService
+from images_app.services import ImageProcessingService, ImageStorageService
+from training.services import PredictionService
 
 logger = logging.getLogger("cacaoscan.services.analysis")
 
@@ -526,7 +525,7 @@ class AnalysisService(BaseService):
             # Step 4: Load models
             self.log_info("Step 4: Loading models...")
             try:
-                from .ml.ml_service import MLService
+                from training.services import MLService
                 
                 ml_service = MLService()
                 load_result = ml_service.load_models(force=False)

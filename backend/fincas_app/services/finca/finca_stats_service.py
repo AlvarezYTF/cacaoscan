@@ -9,8 +9,8 @@ from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.models import User
 
-from ..base import BaseService, ServiceResult, ValidationServiceError
-from ...utils.model_imports import get_models_safely
+from api.services.base import BaseService, ServiceResult, ValidationServiceError
+from api.utils.model_imports import get_models_safely
 
 # Import models safely
 models = get_models_safely({

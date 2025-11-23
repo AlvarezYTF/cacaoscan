@@ -8,7 +8,7 @@ from typing import Dict, Any
 from django.core.files.uploadedfile import UploadedFile
 from PIL import Image
 
-from ..base import BaseService, ServiceResult, ValidationServiceError
+from api.services.base import BaseService, ServiceResult, ValidationServiceError
 
 logger = logging.getLogger("cacaoscan.services.image.processing")
 

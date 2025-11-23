@@ -9,7 +9,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db.models.functions import Extract
 
-from ..base import BaseService, ServiceResult, ValidationServiceError
+from api.services.base import BaseService, ServiceResult, ValidationServiceError
 from reports.models import ReporteGenerado
 
 from django.contrib.auth.models import User

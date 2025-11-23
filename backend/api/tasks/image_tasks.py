@@ -12,7 +12,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.files.base import ContentFile
 from django.db import transaction
 
-from ..services.ml.ml_service import MLService
+from training.services import MLService
 from ..utils.model_imports import get_models_safely
 
 logger = logging.getLogger("cacaoscan.api.tasks.image")

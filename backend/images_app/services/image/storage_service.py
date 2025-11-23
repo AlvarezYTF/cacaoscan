@@ -7,8 +7,8 @@ from typing import Dict, Any
 from django.core.files.uploadedfile import UploadedFile
 from django.contrib.auth.models import User
 
-from ..base import BaseService, ServiceResult, ValidationServiceError
-from ...utils.model_imports import get_models_safely
+from api.services.base import BaseService, ServiceResult, ValidationServiceError
+from api.utils.model_imports import get_models_safely
 
 # Import models safely
 models = get_models_safely({
@@ -59,7 +59,7 @@ class ImageStorageService(BaseService):
             
             # Invalidar cache de validación de dataset cuando se crean nuevas imágenes
             try:
-                from ...utils.cache_helpers import invalidate_dataset_validation_cache, invalidate_system_stats_cache
+                from api.utils.cache_helpers import invalidate_dataset_validation_cache, invalidate_system_stats_cache
                 invalidate_dataset_validation_cache()
                 invalidate_system_stats_cache()
             except Exception as e:
@@ -107,7 +107,7 @@ class ImageStorageService(BaseService):
             
             # Invalidar cache de validación de dataset cuando se crean nuevas imágenes
             try:
-                from ...utils.cache_helpers import invalidate_dataset_validation_cache, invalidate_system_stats_cache
+                from api.utils.cache_helpers import invalidate_dataset_validation_cache, invalidate_system_stats_cache
                 invalidate_dataset_validation_cache()
                 invalidate_system_stats_cache()
             except Exception as e:
@@ -178,7 +178,7 @@ class ImageStorageService(BaseService):
             
             # Invalidar cache de estadísticas cuando se crean nuevas predicciones
             try:
-                from ...utils.cache_helpers import invalidate_system_stats_cache
+                from api.utils.cache_helpers import invalidate_system_stats_cache
                 invalidate_system_stats_cache()
             except Exception as e:
                 self.log_warning(f"Error invalidating cache after prediction save: {e}")

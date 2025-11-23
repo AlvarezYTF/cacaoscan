@@ -12,7 +12,7 @@ from openpyxl.chart import BarChart, Reference
 from .excel_base import ExcelBaseGenerator
 
 # Import models safely
-from ....utils.model_imports import get_models_safely
+from api.utils.model_imports import get_models_safely
 
 models = get_models_safely({
     'CacaoPrediction': 'images_app.models.CacaoPrediction',

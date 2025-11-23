@@ -8,7 +8,7 @@ import threading
 from typing import Optional, Dict, Any
 from enum import Enum
 
-from ..base import BaseService, ServiceResult, ValidationServiceError
+from api.services.base import BaseService, ServiceResult, ValidationServiceError
 
 logger = logging.getLogger("cacaoscan.services.ml")
 

@@ -21,7 +21,7 @@ from ...serializers import (
 )
 from ...utils.decorators import handle_api_errors
 from ...services.analysis_service import AnalysisService
-from ...services.ml.ml_service import MLService
+from training.services import MLService
 from ...utils.cache_helpers import invalidate_models_status_cache, invalidate_dataset_validation_cache, invalidate_latest_metrics_cache
 
 from ...utils.model_imports import get_model_safely, get_models_safely

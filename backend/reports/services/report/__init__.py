@@ -7,7 +7,7 @@ from .report_generation_service import ReportGenerationService
 from .report_management_service import ReportManagementService
 
 # Backward compatibility: Create a combined service that delegates to individual services
-from ..base import BaseService, ServiceResult
+from api.services.base import BaseService, ServiceResult
 
 
 class ReportService(BaseService):

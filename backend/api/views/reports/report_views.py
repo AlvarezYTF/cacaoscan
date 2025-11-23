@@ -36,8 +36,7 @@ CacaoImage = models['CacaoImage']
 CacaoPrediction = models['CacaoPrediction']
 Finca = models['Finca']
 Lote = models['Lote']
-from ...services.report import CacaoReportPDFGenerator
-from ...services.report.excel import ExcelAgricultoresService, ExcelUsuariosService, ExcelAnalisisService
+from reports.services import CacaoReportPDFGenerator, ExcelAgricultoresGenerator, ExcelUsuariosGenerator, ExcelAnalisisGenerator
 from ...serializers import ErrorResponseSerializer
 
 logger = logging.getLogger("cacaoscan.api")
@@ -247,7 +246,7 @@ class ReporteListCreateView(PaginationMixin, APIView):
                 # PDF generation logic (to be implemented if needed)
                 raise ValueError("Generación de PDF no implementada aún")
             elif reporte.formato == 'excel':
-                excel_service = ExcelAnalisisService()
+                excel_service = ExcelAnalisisGenerator()
                 # Generar contenido según tipo
                 if reporte.tipo_reporte == 'calidad':
                     content = excel_service.generate_quality_report(user, reporte.filtros_aplicados)
@@ -912,7 +911,7 @@ class ReporteUsuariosView(APIView):
     def get(self, request):
         try:
             # Generar el reporte Excel
-            excel_service = ExcelUsuariosService()
+            excel_service = ExcelUsuariosGenerator()
             excel_content = excel_service.generate_users_report()
             
             # Validar que el contenido no esté vacío

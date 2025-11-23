@@ -15,16 +15,12 @@ from .base import (
 # Importar servicios específicos
 from .auth import LoginService, RegistrationService, PasswordService, VerificationService, ProfileService
 from .analysis_service import AnalysisService
-from .finca import FincaService
-from .lote_service import LoteService
-from .report import ReportService
 
-# Importar servicios por dominio
-from .ml.prediction_service import PredictionService
-from .ml.ml_service import MLService
-from .image.processing_service import ImageProcessingService
-from .image.storage_service import ImageStorageService
-from .image.management_service import ImageManagementService
+# Importar servicios desde apps modulares (wrappers de compatibilidad)
+from fincas_app.services import FincaService, LoteService
+from reports.services import ReportService
+from images_app.services import ImageProcessingService, ImageStorageService, ImageManagementService
+from training.services import MLService, PredictionService
 
 # Crear instancias de servicios para uso fácil
 login_service = LoginService()

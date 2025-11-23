@@ -13,8 +13,8 @@ from PIL import Image
 import io
 import os
 
-from ..base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError, NotFoundServiceError
-from ...utils.model_imports import get_model_safely
+from api.services.base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError, NotFoundServiceError
+from api.utils.model_imports import get_model_safely
 
 # Import model safely
 CacaoImage = get_model_safely('images_app.models.CacaoImage')
