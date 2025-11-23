@@ -6,14 +6,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.core.paginator import Paginator
 from django.db.models import Q, Count, Avg
 from django.utils import timezone
 from datetime import timedelta
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from ..mixins import AdminPermissionMixin
+from ..mixins import AdminPermissionMixin, PaginationMixin
 
 from ...models import LoginHistory
 from ...utils.model_imports import get_model_safely
@@ -24,7 +23,7 @@ from ...serializers import ErrorResponseSerializer
 logger = logging.getLogger("cacaoscan.api")
 
 
-class ActivityLogListView(AdminPermissionMixin, APIView):
+class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
     """
     Vista para listar logs de actividad (solo administradores).
     """
@@ -110,17 +109,9 @@ class ActivityLogListView(AdminPermissionMixin, APIView):
                         'status': 'error'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Paginación
-            page = int(request.GET.get('page', 1))
-            page_size = int(request.GET.get('page_size', 50))
-            
-            paginator = Paginator(queryset, page_size)
-            page_obj = paginator.get_page(page)
-            
-            # Serializar datos
-            logs_data = []
-            for log in page_obj.object_list:
-                logs_data.append({
+            # Paginar usando el mixin con serialización personalizada
+            def serialize_logs(logs):
+                return [{
                     'id': log.id,
                     'usuario': log.usuario.username if log.usuario else 'Usuario Anónimo',
                     'accion': log.accion,
@@ -132,17 +123,14 @@ class ActivityLogListView(AdminPermissionMixin, APIView):
                     'timestamp': log.timestamp.isoformat(),
                     'datos_antes': log.datos_antes,
                     'datos_despues': log.datos_despues,
-                })
+                } for log in logs]
             
-            return Response({
-                'results': logs_data,
-                'count': paginator.count,
-                'page': page,
-                'page_size': page_size,
-                'total_pages': paginator.num_pages,
-                'next': page_obj.next_page_number() if page_obj.has_next() else None,
-                'previous': page_obj.previous_page_number() if page_obj.has_previous() else None,
-            }, status=status.HTTP_200_OK)
+            return self.paginate_queryset(
+                request,
+                queryset,
+                serializer_func=serialize_logs,
+                extra_data=None
+            )
             
         except Exception as e:
             logger.error(f"Error listando logs de actividad: {e}")
@@ -152,7 +140,7 @@ class ActivityLogListView(AdminPermissionMixin, APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class LoginHistoryListView(AdminPermissionMixin, APIView):
+class LoginHistoryListView(PaginationMixin, AdminPermissionMixin, APIView):
     """
     Vista para listar historial de logins (solo administradores).
     """
@@ -222,17 +210,9 @@ class LoginHistoryListView(AdminPermissionMixin, APIView):
                         'status': 'error'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Paginación
-            page = int(request.GET.get('page', 1))
-            page_size = int(request.GET.get('page_size', 50))
-            
-            paginator = Paginator(queryset, page_size)
-            page_obj = paginator.get_page(page)
-            
-            # Serializar datos
-            logins_data = []
-            for login in page_obj.object_list:
-                logins_data.append({
+            # Paginar usando el mixin con serialización personalizada
+            def serialize_logins(logins):
+                return [{
                     'id': login.id,
                     'usuario': login.usuario.username,
                     'ip_address': login.ip_address,
@@ -242,17 +222,14 @@ class LoginHistoryListView(AdminPermissionMixin, APIView):
                     'session_duration': str(login.session_duration) if login.session_duration else None,
                     'success': login.success,
                     'failure_reason': login.failure_reason,
-                })
+                } for login in logins]
             
-            return Response({
-                'results': logins_data,
-                'count': paginator.count,
-                'page': page,
-                'page_size': page_size,
-                'total_pages': paginator.num_pages,
-                'next': page_obj.next_page_number() if page_obj.has_next() else None,
-                'previous': page_obj.previous_page_number() if page_obj.has_previous() else None,
-            }, status=status.HTTP_200_OK)
+            return self.paginate_queryset(
+                request,
+                queryset,
+                serializer_func=serialize_logins,
+                extra_data=None
+            )
             
         except Exception as e:
             logger.error(f"Error listando historial de logins: {e}")

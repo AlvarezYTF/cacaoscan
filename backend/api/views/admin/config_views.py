@@ -10,9 +10,10 @@ try:
 except ImportError:
     SystemSettings = None
 from ...serializers import SystemSettingsSerializer
+from ..mixins import AdminPermissionMixin
 
 
-class SystemSettingsView(APIView):
+class SystemSettingsView(AdminPermissionMixin, APIView):
     """
     Vista para obtener y actualizar la configuración del sistema.
     """
@@ -69,7 +70,7 @@ class SystemSettingsView(APIView):
             )
 
 
-class SystemGeneralConfigView(APIView):
+class SystemGeneralConfigView(AdminPermissionMixin, APIView):
     """
     Vista específica para la configuración general.
     """
@@ -116,11 +117,8 @@ class SystemGeneralConfigView(APIView):
         Actualizar la configuración general.
         """
         # Verificar permisos de admin para PUT
-        if not request.user.is_authenticated or not request.user.is_staff:
-            return Response(
-                {'error': 'No tienes permisos para editar la configuración'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        if not self.is_admin_user(request.user):
+            return self.admin_permission_denied('No tienes permisos para editar la configuración')
             
         try:
             settings = SystemSettings.get_singleton()
@@ -150,11 +148,11 @@ class SystemGeneralConfigView(APIView):
             )
 
 
-class SystemSecurityConfigView(APIView):
+class SystemSecurityConfigView(AdminPermissionMixin, APIView):
     """
     Vista específica para la configuración de seguridad.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
         """
@@ -225,11 +223,11 @@ class SystemSecurityConfigView(APIView):
             )
 
 
-class SystemMLConfigView(APIView):
+class SystemMLConfigView(AdminPermissionMixin, APIView):
     """
     Vista específica para la configuración de modelos ML.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
         """

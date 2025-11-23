@@ -26,11 +26,12 @@ Finca = models['Finca']
 CacaoImage = models['CacaoImage']
 CacaoPrediction = models['CacaoPrediction']
 from ...serializers import ErrorResponseSerializer
+from ..mixins import AdminPermissionMixin
 
 logger = logging.getLogger("cacaoscan.api")
 
 
-class BatchAnalysisView(APIView):
+class BatchAnalysisView(AdminPermissionMixin, APIView):
     """
     Endpoint para análisis batch de lotes con múltiples imágenes.
     """
@@ -207,7 +208,7 @@ class BatchAnalysisView(APIView):
         """Obtener o crear finca."""
         try:
             # Buscar finca existente por nombre
-            if request.user.is_superuser or request.user.is_staff:
+            if self.is_admin_user(request.user):
                 # Admin puede ver todas las fincas
                 finca = Finca.objects.filter(nombre=farm_name).first()
             else:

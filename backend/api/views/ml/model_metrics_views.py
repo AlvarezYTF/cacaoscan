@@ -6,7 +6,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, Count, Avg, Min, Max
 from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
@@ -29,23 +28,18 @@ from ...serializers import (
     ErrorResponseSerializer
 )
 from ...utils import create_error_response, create_success_response
+from ..mixins import PaginationMixin
 
 logger = logging.getLogger("cacaoscan.api")
 
 
-class ModelMetricsPagination(PageNumberPagination):
-    """Paginación para métricas de modelos."""
-    page_size = 20
-    page_size_query_param = 'page_size'
-    max_page_size = 100
-
-
-class ModelMetricsListView(APIView):
+class ModelMetricsListView(PaginationMixin, APIView):
     """
     Endpoint para listar métricas de modelos con filtros y paginación.
     """
     permission_classes = [IsAuthenticated]
-    pagination_class = ModelMetricsPagination
+    default_page_size = 20
+    max_page_size = 100
     
     @swagger_auto_schema(
         operation_description="Lista métricas de modelos con filtros opcionales",
@@ -157,29 +151,13 @@ class ModelMetricsListView(APIView):
             # Ordenar por fecha de creación descendente
             queryset = queryset.order_by('-created_at')
             
-            # Aplicar paginación
-            paginator = self.pagination_class()
-            page = paginator.paginate_queryset(queryset, request)
-            
-            if page is not None:
-                serializer = ModelMetricsListSerializer(page, many=True)
-                return paginator.get_paginated_response({
-                    'metrics': serializer.data,
-                    'total_count': paginator.page.paginator.count,
-                    'page_count': paginator.page.paginator.num_pages,
-                    'current_page': paginator.page.number,
-                    'page_size': paginator.page_size
-                })
-            else:
-                serializer = ModelMetricsListSerializer(queryset, many=True)
-                return create_success_response(
-                    data={
-                        'metrics': serializer.data,
-                        'total_count': queryset.count()
-                    },
-                    message="Métricas de modelos obtenidas exitosamente",
-                    status_code=status.HTTP_200_OK
-                )
+            # Paginar usando el mixin
+            return self.paginate_queryset(
+                request,
+                queryset,
+                ModelMetricsListSerializer,
+                extra_data=None
+            )
                 
         except Exception as e:
             logger.error(f"Error listando métricas de modelos: {str(e)}")
