@@ -5,32 +5,25 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 # Importar modelos desde apps modulares
-try:
-    from auth_app.models import UserProfile
-except ImportError:
-    UserProfile = None
+from .utils.model_imports import get_models_safely
 
-try:
-    from images_app.models import CacaoImage, CacaoPrediction
-except ImportError:
-    CacaoImage = None
-    CacaoPrediction = None
-
-try:
-    from training.models import TrainingJob
-except ImportError:
-    TrainingJob = None
-
-try:
-    from fincas_app.models import Finca, Lote
-except ImportError:
-    Finca = None
-    Lote = None
-
-try:
-    from notifications.models import Notification
-except ImportError:
-    Notification = None
+# Import models safely
+models = get_models_safely({
+    'UserProfile': 'auth_app.models.UserProfile',
+    'CacaoImage': 'images_app.models.CacaoImage',
+    'CacaoPrediction': 'images_app.models.CacaoPrediction',
+    'TrainingJob': 'training.models.TrainingJob',
+    'Finca': 'fincas_app.models.Finca',
+    'Lote': 'fincas_app.models.Lote',
+    'Notification': 'notifications.models.Notification'
+})
+UserProfile = models['UserProfile']
+CacaoImage = models['CacaoImage']
+CacaoPrediction = models['CacaoPrediction']
+TrainingJob = models['TrainingJob']
+Finca = models['Finca']
+Lote = models['Lote']
+Notification = models['Notification']
 
 # Modelos únicos de API
 from .models import ModelMetrics, SystemSettings

@@ -10,18 +10,19 @@ import json
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError, NotFoundServiceError
 from ..models import ReporteGenerado
-# Importar desde apps modulares
-try:
-    from images_app.models import CacaoPrediction, CacaoImage
-except ImportError:
-    CacaoPrediction = None
-    CacaoImage = None
+from ..utils.model_imports import get_models_safely
 
-try:
-    from fincas_app.models import Finca, Lote
-except ImportError:
-    Finca = None
-    Lote = None
+# Import models safely
+models = get_models_safely({
+    'CacaoPrediction': 'images_app.models.CacaoPrediction',
+    'CacaoImage': 'images_app.models.CacaoImage',
+    'Finca': 'fincas_app.models.Finca',
+    'Lote': 'fincas_app.models.Lote'
+})
+CacaoPrediction = models['CacaoPrediction']
+CacaoImage = models['CacaoImage']
+Finca = models['Finca']
+Lote = models['Lote']
 
 from django.contrib.auth.models import User
 

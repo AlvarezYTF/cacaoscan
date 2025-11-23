@@ -12,17 +12,19 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-try:
-    from fincas_app.models import Lote, Finca
-except ImportError:
-    Lote = None
-    Finca = None
+from .utils.model_imports import get_models_safely
 
-try:
-    from images_app.models import CacaoImage, CacaoPrediction
-except ImportError:
-    CacaoImage = None
-    CacaoPrediction = None
+# Import models safely
+models = get_models_safely({
+    'Lote': 'fincas_app.models.Lote',
+    'Finca': 'fincas_app.models.Finca',
+    'CacaoImage': 'images_app.models.CacaoImage',
+    'CacaoPrediction': 'images_app.models.CacaoPrediction'
+})
+Lote = models['Lote']
+Finca = models['Finca']
+CacaoImage = models['CacaoImage']
+CacaoPrediction = models['CacaoPrediction']
 from .serializers import ErrorResponseSerializer
 
 logger = logging.getLogger("cacaoscan.api")

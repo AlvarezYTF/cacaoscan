@@ -14,27 +14,23 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import BarChart, Reference, PieChart
 
 # Importar desde apps modulares
-try:
-    from notifications.models import Notification
-except ImportError:
-    Notification = None
+from .utils.model_imports import get_models_safely
 
-try:
-    from images_app.models import CacaoImage, CacaoPrediction
-except ImportError:
-    CacaoImage = None
-    CacaoPrediction = None
-
-try:
-    from fincas_app.models import Finca, Lote
-except ImportError:
-    Finca = None
-    Lote = None
-
-try:
-    from audit.models import ActivityLog
-except ImportError:
-    ActivityLog = None
+# Import models safely
+models = get_models_safely({
+    'Notification': 'notifications.models.Notification',
+    'CacaoImage': 'images_app.models.CacaoImage',
+    'CacaoPrediction': 'images_app.models.CacaoPrediction',
+    'Finca': 'fincas_app.models.Finca',
+    'Lote': 'fincas_app.models.Lote',
+    'ActivityLog': 'audit.models.ActivityLog'
+})
+Notification = models['Notification']
+CacaoImage = models['CacaoImage']
+CacaoPrediction = models['CacaoPrediction']
+Finca = models['Finca']
+Lote = models['Lote']
+ActivityLog = models['ActivityLog']
 
 from .models import LoginHistory, ReporteGenerado
 

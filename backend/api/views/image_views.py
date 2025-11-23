@@ -32,11 +32,15 @@ from ..serializers import (
 from ..utils.decorators import handle_api_errors
 from ..services.analysis_service import AnalysisService
 
-try:
-    from images_app.models import CacaoImage, CacaoPrediction
-except ImportError:
-    CacaoImage = None
-    CacaoPrediction = None
+from ..utils.model_imports import get_models_safely
+
+# Import models safely
+models = get_models_safely({
+    'CacaoImage': 'images_app.models.CacaoImage',
+    'CacaoPrediction': 'images_app.models.CacaoPrediction'
+})
+CacaoImage = models['CacaoImage']
+CacaoPrediction = models['CacaoPrediction']
 
 try:
     from django.contrib.auth.models import User

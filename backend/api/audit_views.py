@@ -16,10 +16,9 @@ from drf_yasg import openapi
 from .views.mixins import AdminPermissionMixin
 
 from .models import LoginHistory
-try:
-    from audit.models import ActivityLog
-except ImportError:
-    ActivityLog = None
+from .utils.model_imports import get_model_safely
+
+ActivityLog = get_model_safely('audit.models.ActivityLog')
 from .serializers import ErrorResponseSerializer
 
 logger = logging.getLogger("cacaoscan.api")

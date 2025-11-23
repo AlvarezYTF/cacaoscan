@@ -29,10 +29,9 @@ from ..services.auth_service import AuthenticationService
 
 User = get_user_model()
 
-try:
-    from auth_app.models import EmailVerificationToken
-except ImportError:
-    EmailVerificationToken = None
+from ..utils.model_imports import get_model_safely
+
+EmailVerificationToken = get_model_safely('auth_app.models.EmailVerificationToken')
 
 logger = logging.getLogger("cacaoscan.api.auth")
 

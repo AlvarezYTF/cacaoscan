@@ -12,11 +12,15 @@ import io
 import os
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError
-try:
-    from images_app.models import CacaoImage, CacaoPrediction
-except ImportError:
-    CacaoImage = None
-    CacaoPrediction = None
+from ..utils.model_imports import get_models_safely
+
+# Import models safely
+models = get_models_safely({
+    'CacaoImage': 'images_app.models.CacaoImage',
+    'CacaoPrediction': 'images_app.models.CacaoPrediction'
+})
+CacaoImage = models['CacaoImage']
+CacaoPrediction = models['CacaoPrediction']
 
 from django.contrib.auth.models import User
 from ml.prediction.predict import get_predictor, load_artifacts

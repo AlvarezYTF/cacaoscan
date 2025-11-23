@@ -11,17 +11,17 @@ from django.conf import settings
 from datetime import timedelta
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError
-# Importar desde apps modulares
-try:
-    from auth_app.models import EmailVerificationToken, UserProfile
-except ImportError:
-    EmailVerificationToken = None
-    UserProfile = None
+from ..utils.model_imports import get_models_safely
 
-try:
-    from audit.models import ActivityLog
-except ImportError:
-    ActivityLog = None
+# Import models safely
+models = get_models_safely({
+    'EmailVerificationToken': 'auth_app.models.EmailVerificationToken',
+    'UserProfile': 'auth_app.models.UserProfile',
+    'ActivityLog': 'audit.models.ActivityLog'
+})
+EmailVerificationToken = models['EmailVerificationToken']
+UserProfile = models['UserProfile']
+ActivityLog = models['ActivityLog']
 
 from ..models import LoginHistory
 

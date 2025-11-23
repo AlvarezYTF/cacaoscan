@@ -9,6 +9,7 @@ from .pagination import (
     build_pagination_urls,
     create_paginated_response
 )
+from .model_imports import get_model_safely, get_models_safely
 
 __all__ = [
     'create_error_response',
@@ -17,6 +18,8 @@ __all__ = [
     'get_pagination_params',
     'paginate_queryset',
     'build_pagination_urls',
-    'create_paginated_response'
+    'create_paginated_response',
+    'get_model_safely',
+    'get_models_safely'
 ]
 

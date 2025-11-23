@@ -15,16 +15,17 @@ from typing import Dict, List, Any
 from .services import analysis_service
 from .utils import create_error_response, create_success_response
 # Importar desde apps modulares
-try:
-    from training.models import TrainingJob
-except ImportError:
-    TrainingJob = None
+from .utils.model_imports import get_models_safely
 
-try:
-    from images_app.models import CacaoPrediction, CacaoImage
-except ImportError:
-    CacaoPrediction = None
-    CacaoImage = None
+# Import models safely
+models = get_models_safely({
+    'TrainingJob': 'training.models.TrainingJob',
+    'CacaoPrediction': 'images_app.models.CacaoPrediction',
+    'CacaoImage': 'images_app.models.CacaoImage'
+})
+TrainingJob = models['TrainingJob']
+CacaoPrediction = models['CacaoPrediction']
+CacaoImage = models['CacaoImage']
 
 logger = logging.getLogger("cacaoscan.api")
 

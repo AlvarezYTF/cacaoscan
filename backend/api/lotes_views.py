@@ -13,11 +13,15 @@ from drf_yasg import openapi
 
 from .views.mixins import PaginationMixin, AdminPermissionMixin
 
-try:
-    from fincas_app.models import Lote, Finca
-except ImportError:
-    Lote = None
-    Finca = None
+from .utils.model_imports import get_models_safely
+
+# Import models safely
+models = get_models_safely({
+    'Lote': 'fincas_app.models.Lote',
+    'Finca': 'fincas_app.models.Finca'
+})
+Lote = models['Lote']
+Finca = models['Finca']
 from .serializers import (
     LoteSerializer,
     LoteListSerializer,

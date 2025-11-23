@@ -15,10 +15,9 @@ from typing import Dict, List, Any
 
 from .models import ModelMetrics
 # Importar desde apps modulares
-try:
-    from training.models import TrainingJob
-except ImportError:
-    TrainingJob = None
+from .utils.model_imports import get_model_safely
+
+TrainingJob = get_model_safely('training.models.TrainingJob')
 from .serializers import (
     ModelMetricsSerializer,
     ModelMetricsListSerializer,

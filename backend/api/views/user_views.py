@@ -21,17 +21,17 @@ from ..utils.decorators import handle_api_errors
 
 User = get_user_model()
 
-# Importar modelos opcionales
-try:
-    from images_app.models import CacaoImage, CacaoPrediction
-except ImportError:
-    CacaoImage = None
-    CacaoPrediction = None
+from ..utils.model_imports import get_models_safely
 
-try:
-    from fincas_app.models import Finca
-except ImportError:
-    Finca = None
+# Import models safely
+models = get_models_safely({
+    'CacaoImage': 'images_app.models.CacaoImage',
+    'CacaoPrediction': 'images_app.models.CacaoPrediction',
+    'Finca': 'fincas_app.models.Finca'
+})
+CacaoImage = models['CacaoImage']
+CacaoPrediction = models['CacaoPrediction']
+Finca = models['Finca']
 
 logger = logging.getLogger("cacaoscan.api.users")
 

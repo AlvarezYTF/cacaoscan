@@ -5,41 +5,35 @@ Este archivo actúa como un punto de acceso para evitar conflictos de importaci�
 En lugar de definir modelos aquí, importamos desde las apps modulares correspondientes.
 """
 
-# Importar modelos desde apps modulares para evitar duplicación
-try:
-    from auth_app.models import EmailVerificationToken, UserProfile
-except ImportError:
-    pass
+# Import models from modular apps to avoid duplication
+# Note: These imports are for type hints and re-exports, not for direct use
+# Direct model usage should use get_model_safely from utils.model_imports
+from .utils.model_imports import get_models_safely
 
-try:
-    from fincas_app.models import Finca, Lote
-except ImportError:
-    pass
-
-try:
-    from images_app.models import CacaoImage, CacaoPrediction
-except ImportError:
-    pass
-
-try:
-    from notifications.models import Notification
-except ImportError:
-    pass
-
-try:
-    from audit.models import ActivityLog
-except ImportError:
-    pass
-
-try:
-    from training.models import TrainingJob
-except ImportError:
-    pass
-
-try:
-    from core.models import SystemSettings
-except ImportError:
-    pass
+# Import models safely (for re-export purposes)
+_models = get_models_safely({
+    'EmailVerificationToken': 'auth_app.models.EmailVerificationToken',
+    'UserProfile': 'auth_app.models.UserProfile',
+    'Finca': 'fincas_app.models.Finca',
+    'Lote': 'fincas_app.models.Lote',
+    'CacaoImage': 'images_app.models.CacaoImage',
+    'CacaoPrediction': 'images_app.models.CacaoPrediction',
+    'Notification': 'notifications.models.Notification',
+    'ActivityLog': 'audit.models.ActivityLog',
+    'TrainingJob': 'training.models.TrainingJob',
+    'SystemSettings': 'core.models.SystemSettings'
+})
+# Re-export for backward compatibility
+EmailVerificationToken = _models['EmailVerificationToken']
+UserProfile = _models['UserProfile']
+Finca = _models['Finca']
+Lote = _models['Lote']
+CacaoImage = _models['CacaoImage']
+CacaoPrediction = _models['CacaoPrediction']
+Notification = _models['Notification']
+ActivityLog = _models['ActivityLog']
+TrainingJob = _models['TrainingJob']
+SystemSettings = _models['SystemSettings']
 
 # Mantener solo modelos únicos de API (si los hay)
 from django.db import models

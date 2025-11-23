@@ -12,10 +12,10 @@ import io
 import os
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError, NotFoundServiceError
-try:
-    from images_app.models import CacaoImage
-except ImportError:
-    CacaoImage = None
+from ..utils.model_imports import get_model_safely
+
+# Import model safely
+CacaoImage = get_model_safely('images_app.models.CacaoImage')
 
 from django.contrib.auth.models import User
 

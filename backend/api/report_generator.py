@@ -22,27 +22,23 @@ from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils.dataframe import dataframe_to_rows
 
 # Importar desde apps modulares
-try:
-    from images_app.models import CacaoImage, CacaoPrediction
-except ImportError:
-    CacaoImage = None
-    CacaoPrediction = None
+from .utils.model_imports import get_models_safely
 
-try:
-    from fincas_app.models import Finca, Lote
-except ImportError:
-    Finca = None
-    Lote = None
-
-try:
-    from notifications.models import Notification
-except ImportError:
-    Notification = None
-
-try:
-    from audit.models import ActivityLog
-except ImportError:
-    ActivityLog = None
+# Import models safely
+models = get_models_safely({
+    'CacaoImage': 'images_app.models.CacaoImage',
+    'CacaoPrediction': 'images_app.models.CacaoPrediction',
+    'Finca': 'fincas_app.models.Finca',
+    'Lote': 'fincas_app.models.Lote',
+    'Notification': 'notifications.models.Notification',
+    'ActivityLog': 'audit.models.ActivityLog'
+})
+CacaoImage = models['CacaoImage']
+CacaoPrediction = models['CacaoPrediction']
+Finca = models['Finca']
+Lote = models['Lote']
+Notification = models['Notification']
+ActivityLog = models['ActivityLog']
 
 from .models import LoginHistory, ReporteGenerado
 

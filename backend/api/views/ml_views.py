@@ -20,7 +20,9 @@ from ..serializers import (
 from ..utils.decorators import handle_api_errors
 from ..services.analysis_service import AnalysisService
 
-# ML related imports
+from ..utils.model_imports import get_model_safely, get_models_safely
+
+# ML related imports (these are functions, not models, but we use the same pattern)
 try:
     from ml.data.dataset_loader import CacaoDatasetLoader
     from ml.prediction.predict import get_predictor, load_artifacts
@@ -29,12 +31,13 @@ except ImportError:
     get_predictor = None
     load_artifacts = None
 
-# Importar modelos
-try:
-    from ..models import ModelMetrics, TrainingJob
-except ImportError:
-    ModelMetrics = None
-    TrainingJob = None
+# Import models safely
+models = get_models_safely({
+    'ModelMetrics': 'api.models.ModelMetrics',
+    'TrainingJob': 'training.models.TrainingJob'
+})
+ModelMetrics = models['ModelMetrics']
+TrainingJob = models['TrainingJob']
 
 logger = logging.getLogger("cacaoscan.api.ml_views")
 

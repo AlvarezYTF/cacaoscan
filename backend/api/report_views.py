@@ -23,18 +23,19 @@ from drf_yasg import openapi
 from .views.mixins import PaginationMixin
 
 from .models import ReporteGenerado
-# Importar desde apps modulares
-try:
-    from images_app.models import CacaoImage, CacaoPrediction
-except ImportError:
-    CacaoImage = None
-    CacaoPrediction = None
+from .utils.model_imports import get_models_safely
 
-try:
-    from fincas_app.models import Finca, Lote
-except ImportError:
-    Finca = None
-    Lote = None
+# Import models safely
+models = get_models_safely({
+    'CacaoImage': 'images_app.models.CacaoImage',
+    'CacaoPrediction': 'images_app.models.CacaoPrediction',
+    'Finca': 'fincas_app.models.Finca',
+    'Lote': 'fincas_app.models.Lote'
+})
+CacaoImage = models['CacaoImage']
+CacaoPrediction = models['CacaoPrediction']
+Finca = models['Finca']
+Lote = models['Lote']
 from .report_generator import CacaoReportPDFGenerator
 from .excel_generator import CacaoReportExcelGenerator
 from .serializers import ErrorResponseSerializer

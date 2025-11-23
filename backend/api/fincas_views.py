@@ -13,10 +13,9 @@ from drf_yasg import openapi
 
 from .views.mixins import PaginationMixin, AdminPermissionMixin
 
-try:
-    from fincas_app.models import Finca
-except ImportError:
-    Finca = None
+from .utils.model_imports import get_model_safely
+
+Finca = get_model_safely('fincas_app.models.Finca')
 from .serializers import (
     FincaSerializer,
     FincaListSerializer,

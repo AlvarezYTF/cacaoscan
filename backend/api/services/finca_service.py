@@ -8,11 +8,15 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError, NotFoundServiceError
-try:
-    from fincas_app.models import Finca, Lote
-except ImportError:
-    Finca = None
-    Lote = None
+from ..utils.model_imports import get_models_safely
+
+# Import models safely
+models = get_models_safely({
+    'Finca': 'fincas_app.models.Finca',
+    'Lote': 'fincas_app.models.Lote'
+})
+Finca = models['Finca']
+Lote = models['Lote']
 
 from django.contrib.auth.models import User
 

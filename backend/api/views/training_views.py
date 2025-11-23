@@ -21,11 +21,10 @@ from ..serializers import (
 )
 from ..utils.decorators import handle_api_errors
 
-# Importar modelo de entrenamiento
-try:
-    from training.models import TrainingJob
-except ImportError:
-    TrainingJob = None
+from ..utils.model_imports import get_model_safely
+
+# Import training model safely
+TrainingJob = get_model_safely('training.models.TrainingJob')
 
 logger = logging.getLogger("cacaoscan.api.training")
 

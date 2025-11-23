@@ -13,10 +13,9 @@ from drf_yasg import openapi
 
 from .views.mixins import PaginationMixin
 
-try:
-    from notifications.models import Notification
-except ImportError:
-    Notification = None
+from .utils.model_imports import get_model_safely
+
+Notification = get_model_safely('notifications.models.Notification')
 from .serializers import (
     NotificationSerializer,
     NotificationListSerializer,
