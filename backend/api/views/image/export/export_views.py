@@ -13,8 +13,8 @@ from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from ...serializers import ErrorResponseSerializer
-from .mixins import ImagePermissionMixin
+from ....serializers import ErrorResponseSerializer
+from ..mixins import ImagePermissionMixin
 
 logger = logging.getLogger("cacaoscan.api.images")
 

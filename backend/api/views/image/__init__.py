@@ -1,7 +1,7 @@
 """
 Image views module.
 """
-from .user_image_views import (
+from .user import (
     ScanMeasureView,
     ImagesListView,
     ImageDetailView,
@@ -10,7 +10,7 @@ from .user_image_views import (
     ImageDeleteView,
     ImageDownloadView,
 )
-from .admin_image_views import (
+from .admin import (
     AdminImagesListView,
     AdminImageDetailView,
     AdminImageUpdateView,
@@ -18,8 +18,8 @@ from .admin_image_views import (
     AdminBulkUpdateView,
     AdminDatasetStatsView,
 )
-from .image_export_views import ImagesExportView
-from .batch_analysis_views import BatchAnalysisView
+from .export import ImagesExportView
+from .batch import BatchAnalysisView
 from .mixins import ImagePermissionMixin
 
 __all__ = [
