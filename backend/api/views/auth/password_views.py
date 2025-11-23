@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.utils import timezone
@@ -263,11 +264,14 @@ class ResetPasswordView(APIView):
         if not all([token, new_password, confirm_password]):
             return Response({"success": False, "message": "Datos incompletos."}, status=400)
 
-        if new_password != confirm_password:
-            return Response({"success": False, "message": "Las contraseñas no coinciden."}, status=400)
-
-        if len(new_password) < 8:
-            return Response({"success": False, "message": "La contraseña debe tener al menos 8 caracteres."}, status=400)
+        # Validate password using centralized validator
+        try:
+            from ...utils.validators import validate_password_strength, validate_passwords_match
+            validate_password_strength(new_password)
+            validate_passwords_match(new_password, confirm_password)
+        except serializers.ValidationError as e:
+            error_message = str(e) if isinstance(e, str) else (e.detail.get('confirm_password', [str(e)])[0] if hasattr(e, 'detail') else str(e))
+            return Response({"success": False, "message": error_message}, status=400)
 
         # Validar token
         token_obj = EmailVerificationToken.get_valid_token(token)

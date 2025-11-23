@@ -143,11 +143,17 @@ class AuthenticationService(BaseService):
             
             # Validar fortaleza de contraseña
             password = user_data['password']
-            if len(password) < 8:
-                return ServiceResult.validation_error(
-                    "La contraseña debe tener al menos 8 caracteres",
-                    details={"field": "password", "min_length": 8}
-                )
+            try:
+                from ..utils.validators import validate_password_strength
+                validate_password_strength(password, raise_serializer_error=False)
+            except Exception as e:
+                from ..utils.validators import PasswordValidationError
+                if isinstance(e, PasswordValidationError):
+                    return ServiceResult.validation_error(
+                        e.message,
+                        details={"field": "password"}
+                    )
+                raise
             
             # Validar email único
             if User.objects.filter(email=user_data['email']).exists():
@@ -519,11 +525,17 @@ class AuthenticationService(BaseService):
                 )
             
             # Validar fortaleza de contraseña
-            if len(new_password) < 8:
-                return ServiceResult.validation_error(
-                    "La contraseña debe tener al menos 8 caracteres",
-                    details={"field": "new_password", "min_length": 8}
-                )
+            try:
+                from ..utils.validators import validate_password_strength
+                validate_password_strength(new_password, raise_serializer_error=False)
+            except Exception as e:
+                from ..utils.validators import PasswordValidationError
+                if isinstance(e, PasswordValidationError):
+                    return ServiceResult.validation_error(
+                        e.message,
+                        details={"field": "new_password"}
+                    )
+                raise
             
             # Verificar token
             token_obj = EmailVerificationToken.objects.filter(token=token).first()
@@ -814,11 +826,17 @@ class AuthenticationService(BaseService):
             
             # Validar fortaleza de contraseña
             password = user_data['password']
-            if len(password) < 8:
-                return ServiceResult.validation_error(
-                    "La contraseña debe tener al menos 8 caracteres",
-                    details={"field": "password", "min_length": 8}
-                )
+            try:
+                from ..utils.validators import validate_password_strength
+                validate_password_strength(password, raise_serializer_error=False)
+            except Exception as e:
+                from ..utils.validators import PasswordValidationError
+                if isinstance(e, PasswordValidationError):
+                    return ServiceResult.validation_error(
+                        e.message,
+                        details={"field": "password"}
+                    )
+                raise
             
             # Validar email único
             if User.objects.filter(email=user_data['email']).exists():
@@ -913,11 +931,17 @@ class AuthenticationService(BaseService):
                 )
             
             # Validar fortaleza de contraseña
-            if len(password) < 8:
-                return ServiceResult.validation_error(
-                    "La contraseña debe tener al menos 8 caracteres",
-                    details={"field": "password", "min_length": 8}
-                )
+            try:
+                from ..utils.validators import validate_password_strength
+                validate_password_strength(password, raise_serializer_error=False)
+            except Exception as e:
+                from ..utils.validators import PasswordValidationError
+                if isinstance(e, PasswordValidationError):
+                    return ServiceResult.validation_error(
+                        e.message,
+                        details={"field": "password"}
+                    )
+                raise
             
             # Validar email único
             if User.objects.filter(email=email).exists():

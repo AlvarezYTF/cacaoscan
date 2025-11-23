@@ -144,25 +144,10 @@ class PersonaRegistroSerializer(serializers.Serializer):
     
     def validate_password(self, value):
         """
-        Validar que la contraseña cumpla con los requisitos de seguridad:
-        - Mínimo 8 caracteres
-        - Al menos una letra mayúscula
-        - Al menos una letra minúscula
-        - Al menos un número
+        Validar que la contraseña cumpla con los requisitos de seguridad.
         """
-        if len(value) < 8:
-            raise serializers.ValidationError("La contraseña debe tener al menos 8 caracteres.")
-        
-        if not re.search(r"[A-Z]", value):
-            raise serializers.ValidationError("La contraseña debe contener al menos una letra mayúscula.")
-        
-        if not re.search(r"[a-z]", value):
-            raise serializers.ValidationError("La contraseña debe contener al menos una letra minúscula.")
-        
-        if not re.search(r"[0-9]", value):
-            raise serializers.ValidationError("La contraseña debe contener al menos un número.")
-        
-        return value
+        from api.utils.validators import validate_password_strength
+        return validate_password_strength(value)
     
     def validate_telefono(self, value):
         """

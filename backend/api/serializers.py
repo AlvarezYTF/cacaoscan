@@ -198,27 +198,13 @@ class RegisterSerializer(serializers.ModelSerializer):
     
     def validate_password(self, value):
         """Validar fortaleza de contraseña."""
-        if len(value) < 8:
-            raise serializers.ValidationError("La contraseña debe tener al menos 8 caracteres.")
-        
-        # Verificar que tenga al menos una letra mayúscula
-        if not any(c.isupper() for c in value):
-            raise serializers.ValidationError("La contraseña debe contener al menos una letra mayúscula.")
-        
-        # Verificar que tenga al menos una letra minúscula
-        if not any(c.islower() for c in value):
-            raise serializers.ValidationError("La contraseña debe contener al menos una letra minúscula.")
-        
-        # Verificar que tenga al menos un número
-        if not any(c.isdigit() for c in value):
-            raise serializers.ValidationError("La contraseña debe contener al menos un número.")
-        
-        return value
+        from ..utils.validators import validate_password_strength
+        return validate_password_strength(value)
     
     def validate(self, attrs):
         """Validaciones generales."""
-        if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError("Las contraseñas no coinciden.")
+        from ..utils.validators import validate_passwords_match
+        validate_passwords_match(attrs['password'], attrs['password_confirm'])
         
         # Validar que first_name y last_name no estén vacíos
         if not attrs.get('first_name', '').strip():
@@ -282,45 +268,24 @@ class ChangePasswordSerializer(serializers.Serializer):
     
     def validate_new_password(self, value):
         """
-        Validar que la nueva contraseña cumpla con los requisitos de seguridad:
-        - Mínimo 8 caracteres
-        - Al menos una letra mayúscula
-        - Al menos una letra minúscula
-        - Al menos un número
+        Validar que la nueva contraseña cumpla con los requisitos de seguridad.
         """
-        import re
-        
-        if len(value) < 8:
-            raise serializers.ValidationError("La contraseña debe tener al menos 8 caracteres.")
-        
-        if not re.search(r"[A-Z]", value):
-            raise serializers.ValidationError("La contraseña debe contener al menos una letra mayúscula.")
-        
-        if not re.search(r"[a-z]", value):
-            raise serializers.ValidationError("La contraseña debe contener al menos una letra minúscula.")
-        
-        if not re.search(r"[0-9]", value):
-            raise serializers.ValidationError("La contraseña debe contener al menos un número.")
-        
-        return value
+        from ..utils.validators import validate_password_strength
+        return validate_password_strength(value)
     
     def validate(self, attrs):
         """Validaciones generales."""
+        from ..utils.validators import validate_passwords_match, validate_password_different
+        
         old_password = attrs.get('old_password')
         new_password = attrs.get('new_password')
         confirm_password = attrs.get('confirm_password')
         
-        # Validar que las contraseñas nuevas coincidan
-        if new_password != confirm_password:
-            raise serializers.ValidationError({
-                'confirm_password': 'Las contraseñas nuevas no coinciden.'
-            })
+        # Validate that new passwords match
+        validate_passwords_match(new_password, confirm_password)
         
-        # Validar que la nueva contraseña sea diferente a la actual
-        if old_password == new_password:
-            raise serializers.ValidationError({
-                'new_password': 'La nueva contraseña debe ser diferente a la contraseña actual.'
-            })
+        # Validate that new password is different from old password
+        validate_password_different(old_password, new_password)
         
         return attrs
 
@@ -700,20 +665,18 @@ class FincaSerializer(serializers.ModelSerializer):
     
     def validate_coordenadas_lat(self, value):
         """Validar latitud GPS."""
-        if value is not None:
-            if value < -90 or value > 90:
-                raise serializers.ValidationError("La latitud debe estar entre -90 y 90 grados.")
-        return value
+        from ..utils.validators import validate_latitude
+        return validate_latitude(value)
     
     def validate_coordenadas_lng(self, value):
         """Validar longitud GPS."""
-        if value is not None:
-            if value < -180 or value > 180:
-                raise serializers.ValidationError("La longitud debe estar entre -180 y 180 grados.")
-        return value
+        from ..utils.validators import validate_longitude
+        return validate_longitude(value)
     
     def validate(self, attrs):
         """Validaciones generales."""
+        from ..utils.validators import validate_coordinates
+        
         # Validar que municipio y departamento no estén vacíos
         if not attrs.get('municipio', '').strip():
             raise serializers.ValidationError("El municipio es requerido.")
@@ -721,12 +684,8 @@ class FincaSerializer(serializers.ModelSerializer):
         if not attrs.get('departamento', '').strip():
             raise serializers.ValidationError("El departamento es requerido.")
         
-        # Validar que si se proporcionan coordenadas, ambas estén presentes
-        lat = attrs.get('coordenadas_lat')
-        lng = attrs.get('coordenadas_lng')
-        
-        if (lat is not None and lng is None) or (lat is None and lng is not None):
-            raise serializers.ValidationError("Debe proporcionar tanto latitud como longitud, o ninguna.")
+        # Validar coordenadas GPS
+        validate_coordinates(attrs)
         
         return attrs
 
@@ -865,30 +824,24 @@ class LoteSerializer(serializers.ModelSerializer):
     
     def validate_coordenadas_lat(self, value):
         """Validar latitud GPS."""
-        if value is not None:
-            if value < -90 or value > 90:
-                raise serializers.ValidationError("La latitud debe estar entre -90 y 90 grados.")
-        return value
+        from ..utils.validators import validate_latitude
+        return validate_latitude(value)
     
     def validate_coordenadas_lng(self, value):
         """Validar longitud GPS."""
-        if value is not None:
-            if value < -180 or value > 180:
-                raise serializers.ValidationError("La longitud debe estar entre -180 y 180 grados.")
-        return value
+        from ..utils.validators import validate_longitude
+        return validate_longitude(value)
     
     def validate(self, attrs):
         """Validaciones generales."""
+        from ..utils.validators import validate_coordinates
+        
         # Validar que variedad no esté vacía
         if not attrs.get('variedad', '').strip():
             raise serializers.ValidationError("La variedad es requerida.")
         
-        # Validar que si se proporcionan coordenadas, ambas estén presentes
-        lat = attrs.get('coordenadas_lat')
-        lng = attrs.get('coordenadas_lng')
-        
-        if (lat is not None and lng is None) or (lat is None and lng is not None):
-            raise serializers.ValidationError("Debe proporcionar tanto latitud como longitud, o ninguna.")
+        # Validar coordenadas GPS
+        validate_coordinates(attrs)
         
         return attrs
 
