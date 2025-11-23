@@ -1,22 +1,22 @@
 """
-Servicio de gestión de fincas y lotes para CacaoScan.
+Finca service for CacaoScan.
+Handles all finca (farm) management operations.
 """
 import logging
-from typing import Dict, Any, Optional, List
-from django.db.models import Q, Count, Avg, Sum, Prefetch
+from typing import Dict, Any
+from django.db.models import Q, Count, Avg, Sum
 from django.utils import timezone
 from datetime import timedelta
 
-from .base import BaseService, ServiceResult, ValidationServiceError, PermissionServiceError, NotFoundServiceError
+from .base import BaseService, ServiceResult, ValidationServiceError
+from .lote_service import LoteService
 from ..utils.model_imports import get_models_safely
 
 # Import models safely
 models = get_models_safely({
-    'Finca': 'fincas_app.models.Finca',
-    'Lote': 'fincas_app.models.Lote'
+    'Finca': 'fincas_app.models.Finca'
 })
 Finca = models['Finca']
-Lote = models['Lote']
 
 from django.contrib.auth.models import User
 
@@ -25,11 +25,18 @@ logger = logging.getLogger("cacaoscan.services.fincas")
 
 class FincaService(BaseService):
     """
-    Servicio para manejar gestión de fincas.
+    Service for handling finca (farm) management.
+    
+    Responsibilities:
+    - Creating, updating, and deleting fincas
+    - Retrieving finca information
+    - Calculating finca statistics
+    - Managing finca-agricultor relationships
     """
     
     def __init__(self):
         super().__init__()
+        self.lote_service = LoteService()
     
     def create_finca(self, finca_data: Dict[str, Any], user: User) -> ServiceResult:
         """
@@ -189,27 +196,14 @@ class FincaService(BaseService):
             except Finca.DoesNotExist:
                 return ServiceResult.not_found_error("Finca no encontrada")
             
-            # Obtener estadísticas de lotes
-            lotes_stats = finca.lotes.aggregate(
-                total_lotes=Count('id'),
-                hectareas_cultivadas=Sum('hectareas'),
-                promedio_edad=Avg('edad_plantas')
-            )
-            
-            # Obtener lotes recientes
-            lotes_recientes = finca.lotes.order_by('-created_at')[:5]
-            lotes_data = []
-            
-            for lote in lotes_recientes:
-                lotes_data.append({
-                    'id': lote.id,
-                    'identificador': lote.identificador,
-                    'variedad': lote.variedad,
-                    'hectareas': lote.hectareas,
-                    'fecha_plantacion': lote.fecha_plantacion.isoformat(),
-                    'edad_plantas': lote.edad_plantas,
-                    'estado': lote.estado
-                })
+            # Get lote statistics using LoteService
+            lotes_stats_result = self.lote_service.get_finca_lotes_stats(finca_id, user)
+            if lotes_stats_result.success:
+                lotes_stats = lotes_stats_result.data['lotes_stats']
+                lotes_data = lotes_stats_result.data['lotes_recientes']
+            else:
+                lotes_stats = {}
+                lotes_data = []
             
             finca_data = self._serialize_finca(finca)
             finca_data.update({
@@ -335,8 +329,8 @@ class FincaService(BaseService):
             except Finca.DoesNotExist:
                 return ServiceResult.not_found_error("Finca no encontrada")
             
-            # Verificar si tiene lotes asociados
-            lotes_count = finca.lotes.count()
+            # Verify if it has associated lotes using LoteService
+            lotes_count = self.lote_service.count_finca_lotes(finca_id)
             if lotes_count > 0:
                 return ServiceResult.validation_error(
                     f"No se puede eliminar la finca porque tiene {lotes_count} lotes asociados",
@@ -454,11 +448,8 @@ class FincaService(BaseService):
             'temperatura_promedio': finca.temperatura_promedio,
             'created_at': finca.created_at.isoformat(),
             'updated_at': finca.updated_at.isoformat(),
-            'lotes_count': finca.lotes.count()
+            'lotes_count': self.lote_service.count_finca_lotes(finca.id)
         }
-
-
-class LoteService(BaseService):
     """
     Servicio para manejar gestión de lotes.
     """
