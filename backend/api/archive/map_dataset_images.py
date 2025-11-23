@@ -65,4 +65,3 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Mapped images for dataset: matched={found}, missing={missing}, file={in_path}"))
 
-

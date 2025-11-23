@@ -24,6 +24,41 @@ from .views import (
     ModelsStatusView, DatasetValidationView, LoadModelsView, AutoInitializeView,
     LatestMetricsView, PromoteModelView
 )
+# Import views from new modular structure
+from .views.finca import (
+    FincaListCreateView, FincaDetailView, FincaUpdateView,
+    FincaDeleteView, FincaActivateView, FincaStatsView,
+    LoteListCreateView, LoteDetailView, LoteUpdateView,
+    LoteDeleteView, LoteStatsView, LotesPorFincaView,
+)
+from .views.auth import SendOtpView, VerifyOtpView
+from .views.notifications import (
+    NotificationListCreateView, NotificationDetailView,
+    NotificationMarkReadView, NotificationMarkAllReadView,
+    NotificationUnreadCountView, NotificationStatsView,
+    NotificationCreateView,
+)
+from .views.admin import (
+    ActivityLogListView, LoginHistoryListView, AuditStatsView,
+    SystemSettingsView, SystemGeneralConfigView, SystemSecurityConfigView,
+    SystemMLConfigView, SystemInfoView,
+)
+from .views.reports import (
+    ReporteListCreateView, ReporteDetailView, ReporteDownloadView,
+    ReporteDeleteView, ReporteStatsView, ReporteCleanupView,
+    ReporteAgricultoresView, ReporteUsuariosView,
+)
+from .views.ml import (
+    CalibrationStatusView, CalibrationView, CalibratedScanMeasureView,
+    IncrementalTrainingStatusView, IncrementalTrainingView,
+    IncrementalDataUploadView, IncrementalModelVersionsView,
+    IncrementalDataVersionsView,
+    ModelMetricsListView, ModelMetricsDetailView, ModelMetricsCreateView,
+    ModelMetricsUpdateView, ModelMetricsDeleteView, ModelMetricsStatsView,
+    ModelPerformanceTrendView, ModelComparisonView, BestModelsView,
+    ProductionModelsView,
+)
+from .views.image import BatchAnalysisView
 
 urlpatterns = [
     # Endpoints principales
@@ -49,8 +84,8 @@ urlpatterns = [
     path('auth/resend-verification/', ResendVerificationView.as_view(), name='auth-resend-verification'),
     
     # Endpoints OTP de verificación
-    path('auth/send-otp/', views.SendOtpView.as_view(), name='auth-send-otp'),
-    path('auth/verify-otp/', views.VerifyOtpView.as_view(), name='auth-verify-otp'),
+    path('auth/send-otp/', SendOtpView.as_view(), name='auth-send-otp'),
+    path('auth/verify-otp/', VerifyOtpView.as_view(), name='auth-verify-otp'),
     
     # Endpoints de pre-registro (verificación previa)
     path('auth/preregistro/', PreRegisterView.as_view(), name='auth-preregister'),
@@ -96,81 +131,81 @@ urlpatterns = [
     path('ml/promote/<str:version>/', PromoteModelView.as_view(), name='ml-promote'),
     
     # Endpoints de gestin de fincas
-    path('fincas/', views.FincaListCreateView.as_view(), name='fincas-list-create'),
-    path('fincas/<int:finca_id>/', views.FincaDetailView.as_view(), name='finca-detail'),
-    path('fincas/<int:finca_id>/update/', views.FincaUpdateView.as_view(), name='finca-update'),
-    path('fincas/<int:finca_id>/delete/', views.FincaDeleteView.as_view(), name='finca-delete'),
-    path('fincas/<int:finca_id>/activate/', views.FincaActivateView.as_view(), name='finca-activate'),
-    path('fincas/<int:finca_id>/stats/', views.FincaStatsView.as_view(), name='finca-stats'),
+    path('fincas/', FincaListCreateView.as_view(), name='fincas-list-create'),
+    path('fincas/<int:finca_id>/', FincaDetailView.as_view(), name='finca-detail'),
+    path('fincas/<int:finca_id>/update/', FincaUpdateView.as_view(), name='finca-update'),
+    path('fincas/<int:finca_id>/delete/', FincaDeleteView.as_view(), name='finca-delete'),
+    path('fincas/<int:finca_id>/activate/', FincaActivateView.as_view(), name='finca-activate'),
+    path('fincas/<int:finca_id>/stats/', FincaStatsView.as_view(), name='finca-stats'),
     
     # Endpoints de gestión de lotes
-    path('lotes/', views.LoteListCreateView.as_view(), name='lotes-list-create'),
-    path('lotes/<int:lote_id>/', views.LoteDetailView.as_view(), name='lote-detail'),
-    path('lotes/<int:lote_id>/update/', views.LoteUpdateView.as_view(), name='lote-update'),
-    path('lotes/<int:lote_id>/delete/', views.LoteDeleteView.as_view(), name='lote-delete'),
-    path('lotes/<int:lote_id>/stats/', views.LoteStatsView.as_view(), name='lote-stats'),
-    path('fincas/<int:finca_id>/lotes/', views.LotesPorFincaView.as_view(), name='lotes-por-finca'),
+    path('lotes/', LoteListCreateView.as_view(), name='lotes-list-create'),
+    path('lotes/<int:lote_id>/', LoteDetailView.as_view(), name='lote-detail'),
+    path('lotes/<int:lote_id>/update/', LoteUpdateView.as_view(), name='lote-update'),
+    path('lotes/<int:lote_id>/delete/', LoteDeleteView.as_view(), name='lote-delete'),
+    path('lotes/<int:lote_id>/stats/', LoteStatsView.as_view(), name='lote-stats'),
+    path('fincas/<int:finca_id>/lotes/', LotesPorFincaView.as_view(), name='lotes-por-finca'),
     
     # Endpoints de gestión de notificaciones
-    path('notifications/', views.NotificationListCreateView.as_view(), name='notifications-list'),
-    path('notifications/<int:notification_id>/', views.NotificationDetailView.as_view(), name='notification-detail'),
-    path('notifications/<int:notification_id>/read/', views.NotificationMarkReadView.as_view(), name='notification-mark-read'),
-    path('notifications/mark-all-read/', views.NotificationMarkAllReadView.as_view(), name='notifications-mark-all-read'),
-    path('notifications/unread-count/', views.NotificationUnreadCountView.as_view(), name='notifications-unread-count'),
-    path('notifications/stats/', views.NotificationStatsView.as_view(), name='notifications-stats'),
-    path('notifications/create/', views.NotificationCreateView.as_view(), name='notification-create'),
+    path('notifications/', NotificationListCreateView.as_view(), name='notifications-list'),
+    path('notifications/<int:notification_id>/', NotificationDetailView.as_view(), name='notification-detail'),
+    path('notifications/<int:notification_id>/read/', NotificationMarkReadView.as_view(), name='notification-mark-read'),
+    path('notifications/mark-all-read/', NotificationMarkAllReadView.as_view(), name='notifications-mark-all-read'),
+    path('notifications/unread-count/', NotificationUnreadCountView.as_view(), name='notifications-unread-count'),
+    path('notifications/stats/', NotificationStatsView.as_view(), name='notifications-stats'),
+    path('notifications/create/', NotificationCreateView.as_view(), name='notification-create'),
     
     # Endpoints de auditoría (solo administradores)
-    path('audit/activity-logs/', views.ActivityLogListView.as_view(), name='activity-logs-list'),
-    path('audit/login-history/', views.LoginHistoryListView.as_view(), name='login-history-list'),
-    path('audit/stats/', views.AuditStatsView.as_view(), name='audit-stats'),
+    path('audit/activity-logs/', ActivityLogListView.as_view(), name='activity-logs-list'),
+    path('audit/login-history/', LoginHistoryListView.as_view(), name='login-history-list'),
+    path('audit/stats/', AuditStatsView.as_view(), name='audit-stats'),
     
     # Endpoints de gestión de reportes
-    path('reportes/', views.ReporteListCreateView.as_view(), name='reportes-list-create'),
-    path('reportes/<int:reporte_id>/', views.ReporteDetailView.as_view(), name='reporte-detail'),
-    path('reportes/<int:reporte_id>/download/', views.ReporteDownloadView.as_view(), name='reporte-download'),
-    path('reportes/<int:reporte_id>/delete/', views.ReporteDeleteView.as_view(), name='reporte-delete'),
-    path('reportes/stats/', views.ReporteStatsView.as_view(), name='reportes-stats'),
-    path('reportes/cleanup/', views.ReporteCleanupView.as_view(), name='reportes-cleanup'),
+    path('reportes/', ReporteListCreateView.as_view(), name='reportes-list-create'),
+    path('reportes/<int:reporte_id>/', ReporteDetailView.as_view(), name='reporte-detail'),
+    path('reportes/<int:reporte_id>/download/', ReporteDownloadView.as_view(), name='reporte-download'),
+    path('reportes/<int:reporte_id>/delete/', ReporteDeleteView.as_view(), name='reporte-delete'),
+    path('reportes/stats/', ReporteStatsView.as_view(), name='reportes-stats'),
+    path('reportes/cleanup/', ReporteCleanupView.as_view(), name='reportes-cleanup'),
     
     # Endpoints de reportes especiales (solo admin)
-    path('reports/agricultores/', views.ReporteAgricultoresView.as_view(), name='reporte-agricultores'),
-    path('reports/usuarios/', views.ReporteUsuariosView.as_view(), name='reporte-usuarios'),
+    path('reports/agricultores/', ReporteAgricultoresView.as_view(), name='reporte-agricultores'),
+    path('reports/usuarios/', ReporteUsuariosView.as_view(), name='reporte-usuarios'),
     
     # Endpoints de calibración
-    path('calibration/status/', views.CalibrationStatusView.as_view(), name='calibration-status'),
-    path('calibration/', views.CalibrationView.as_view(), name='calibration'),
-    path('scan/measure/calibrated/', views.CalibratedScanMeasureView.as_view(), name='scan-measure-calibrated'),
+    path('calibration/status/', CalibrationStatusView.as_view(), name='calibration-status'),
+    path('calibration/', CalibrationView.as_view(), name='calibration'),
+    path('scan/measure/calibrated/', CalibratedScanMeasureView.as_view(), name='scan-measure-calibrated'),
     
     
     # Endpoints de entrenamiento incremental
-    path('incremental/status/', views.IncrementalTrainingStatusView.as_view(), name='incremental-status'),
-    path('incremental/train/', views.IncrementalTrainingView.as_view(), name='incremental-train'),
-    path('incremental/upload/', views.IncrementalDataUploadView.as_view(), name='incremental-upload'),
-    path('incremental/models/', views.IncrementalModelVersionsView.as_view(), name='incremental-models'),
-    path('incremental/data/', views.IncrementalDataVersionsView.as_view(), name='incremental-data'),
+    path('incremental/status/', IncrementalTrainingStatusView.as_view(), name='incremental-status'),
+    path('incremental/train/', IncrementalTrainingView.as_view(), name='incremental-train'),
+    path('incremental/upload/', IncrementalDataUploadView.as_view(), name='incremental-upload'),
+    path('incremental/models/', IncrementalModelVersionsView.as_view(), name='incremental-models'),
+    path('incremental/data/', IncrementalDataVersionsView.as_view(), name='incremental-data'),
     
     # Endpoints de métricas de modelos
-    path('model-metrics/', views.ModelMetricsListView.as_view(), name='model-metrics-list'),
-    path('model-metrics/create/', views.ModelMetricsCreateView.as_view(), name='model-metrics-create'),
-    path('model-metrics/<int:metrics_id>/', views.ModelMetricsDetailView.as_view(), name='model-metrics-detail'),
-    path('model-metrics/<int:metrics_id>/update/', views.ModelMetricsUpdateView.as_view(), name='model-metrics-update'),
-    path('model-metrics/<int:metrics_id>/delete/', views.ModelMetricsDeleteView.as_view(), name='model-metrics-delete'),
-    path('model-metrics/stats/', views.ModelMetricsStatsView.as_view(), name='model-metrics-stats'),
-    path('model-metrics/trend/', views.ModelPerformanceTrendView.as_view(), name='model-metrics-trend'),
-    path('model-metrics/compare/', views.ModelComparisonView.as_view(), name='model-metrics-compare'),
-    path('model-metrics/best/', views.BestModelsView.as_view(), name='model-metrics-best'),
-    path('model-metrics/production/', views.ProductionModelsView.as_view(), name='model-metrics-production'),
+    path('model-metrics/', ModelMetricsListView.as_view(), name='model-metrics-list'),
+    path('model-metrics/create/', ModelMetricsCreateView.as_view(), name='model-metrics-create'),
+    path('model-metrics/<int:metrics_id>/', ModelMetricsDetailView.as_view(), name='model-metrics-detail'),
+    path('model-metrics/<int:metrics_id>/update/', ModelMetricsUpdateView.as_view(), name='model-metrics-update'),
+    path('model-metrics/<int:metrics_id>/delete/', ModelMetricsDeleteView.as_view(), name='model-metrics-delete'),
+    path('model-metrics/stats/', ModelMetricsStatsView.as_view(), name='model-metrics-stats'),
+    path('model-metrics/trend/', ModelPerformanceTrendView.as_view(), name='model-metrics-trend'),
+    path('model-metrics/compare/', ModelComparisonView.as_view(), name='model-metrics-compare'),
+    path('model-metrics/best/', BestModelsView.as_view(), name='model-metrics-best'),
+    path('model-metrics/production/', ProductionModelsView.as_view(), name='model-metrics-production'),
     
     # Endpoints de análisis batch
-    path('analysis/batch/', views.BatchAnalysisView.as_view(), name='batch-analysis'),
+    path('analysis/batch/', BatchAnalysisView.as_view(), name='batch-analysis'),
     
     # Endpoints de configuración del sistema
-    path('config/', views.SystemSettingsView.as_view(), name='system-settings'),
-    path('config/general/', views.SystemGeneralConfigView.as_view(), name='system-general-config'),
-    path('config/security/', views.SystemSecurityConfigView.as_view(), name='system-security-config'),
-    path('config/ml/', views.SystemMLConfigView.as_view(), name='system-ml-config'),
-    path('config/system/', views.SystemInfoView.as_view(), name='system-info'),
+    path('config/', SystemSettingsView.as_view(), name='system-settings'),
+    path('config/general/', SystemGeneralConfigView.as_view(), name='system-general-config'),
+    path('config/security/', SystemSecurityConfigView.as_view(), name='system-security-config'),
+    path('config/ml/', SystemMLConfigView.as_view(), name='system-ml-config'),
+    path('config/system/', SystemInfoView.as_view(), name='system-info'),
 ]
 
 

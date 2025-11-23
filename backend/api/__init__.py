@@ -1,7 +1,12 @@
 ﻿"""
 API module for CacaoScan.
+
+This module re-exports views from separate modules for backward compatibility.
+All new code should import directly from api.views instead.
 """
 # Re-export views from separate modules for backward compatibility
+# NOTE: These re-exports are maintained for compatibility with urls.py
+# New code should import from api.views or specific view modules directly
 from .otp_views import SendOtpView, VerifyOtpView
 from .fincas_views import (
     FincaListCreateView, FincaDetailView, FincaUpdateView,

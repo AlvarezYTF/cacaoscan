@@ -11,7 +11,7 @@ from django.db.models import Q, Count
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from ..mixins import PaginationMixin
+from ..mixins import PaginationMixin, AdminPermissionMixin
 
 from ...utils.model_imports import get_model_safely
 
@@ -20,6 +20,7 @@ from ...serializers import (
     NotificationSerializer,
     NotificationListSerializer,
     NotificationStatsSerializer,
+    NotificationCreateSerializer,
     ErrorResponseSerializer
 )
 

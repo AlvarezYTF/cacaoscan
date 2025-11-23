@@ -58,4 +58,3 @@ class Command(BaseCommand):
             )
         )
 
-

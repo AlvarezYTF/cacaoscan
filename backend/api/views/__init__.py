@@ -60,6 +60,42 @@ from .ml_views import (
     AutoTrainView
 )
 
+# Import views from new modular structure
+from .finca import (
+    FincaListCreateView, FincaDetailView, FincaUpdateView,
+    FincaDeleteView, FincaActivateView, FincaStatsView,
+    LoteListCreateView, LoteDetailView, LoteUpdateView,
+    LoteDeleteView, LoteStatsView, LotesPorFincaView,
+)
+from .auth import SendOtpView, VerifyOtpView
+from .notifications import (
+    NotificationListCreateView, NotificationDetailView,
+    NotificationMarkReadView, NotificationMarkAllReadView,
+    NotificationUnreadCountView, NotificationStatsView,
+    NotificationCreateView,
+)
+from .admin import (
+    ActivityLogListView, LoginHistoryListView, AuditStatsView,
+    SystemSettingsView, SystemGeneralConfigView, SystemSecurityConfigView,
+    SystemMLConfigView, SystemInfoView,
+)
+from .reports import (
+    ReporteListCreateView, ReporteDetailView, ReporteDownloadView,
+    ReporteDeleteView, ReporteStatsView, ReporteCleanupView,
+    ReporteAgricultoresView, ReporteUsuariosView,
+)
+from .ml import (
+    CalibrationStatusView, CalibrationView, CalibratedScanMeasureView,
+    IncrementalTrainingStatusView, IncrementalTrainingView,
+    IncrementalDataUploadView, IncrementalModelVersionsView,
+    IncrementalDataVersionsView,
+    ModelMetricsListView, ModelMetricsDetailView, ModelMetricsCreateView,
+    ModelMetricsUpdateView, ModelMetricsDeleteView, ModelMetricsStatsView,
+    ModelPerformanceTrendView, ModelComparisonView, BestModelsView,
+    ProductionModelsView,
+)
+from .image import BatchAnalysisView
+
 __all__ = [
     # Auth views
     'LoginView',
@@ -109,5 +145,68 @@ __all__ = [
     'LatestMetricsView',
     'PromoteModelView',
     'AutoTrainView',
+    # Finca views
+    'FincaListCreateView',
+    'FincaDetailView',
+    'FincaUpdateView',
+    'FincaDeleteView',
+    'FincaActivateView',
+    'FincaStatsView',
+    'LoteListCreateView',
+    'LoteDetailView',
+    'LoteUpdateView',
+    'LoteDeleteView',
+    'LoteStatsView',
+    'LotesPorFincaView',
+    # Auth OTP views
+    'SendOtpView',
+    'VerifyOtpView',
+    # Notification views
+    'NotificationListCreateView',
+    'NotificationDetailView',
+    'NotificationMarkReadView',
+    'NotificationMarkAllReadView',
+    'NotificationUnreadCountView',
+    'NotificationStatsView',
+    'NotificationCreateView',
+    # Admin views
+    'ActivityLogListView',
+    'LoginHistoryListView',
+    'AuditStatsView',
+    'SystemSettingsView',
+    'SystemGeneralConfigView',
+    'SystemSecurityConfigView',
+    'SystemMLConfigView',
+    'SystemInfoView',
+    # Report views
+    'ReporteListCreateView',
+    'ReporteDetailView',
+    'ReporteDownloadView',
+    'ReporteDeleteView',
+    'ReporteStatsView',
+    'ReporteCleanupView',
+    'ReporteAgricultoresView',
+    'ReporteUsuariosView',
+    # ML views (calibration, incremental, metrics)
+    'CalibrationStatusView',
+    'CalibrationView',
+    'CalibratedScanMeasureView',
+    'IncrementalTrainingStatusView',
+    'IncrementalTrainingView',
+    'IncrementalDataUploadView',
+    'IncrementalModelVersionsView',
+    'IncrementalDataVersionsView',
+    'ModelMetricsListView',
+    'ModelMetricsDetailView',
+    'ModelMetricsCreateView',
+    'ModelMetricsUpdateView',
+    'ModelMetricsDeleteView',
+    'ModelMetricsStatsView',
+    'ModelPerformanceTrendView',
+    'ModelComparisonView',
+    'BestModelsView',
+    'ProductionModelsView',
+    # Image batch views
+    'BatchAnalysisView',
 ]
 

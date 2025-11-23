@@ -48,7 +48,7 @@ class CalibrationStatusView(APIView):
         Obtiene el estado actual de la calibración.
         """
         try:
-            from ..ml.prediction.calibrated_predict import get_calibrated_predictor
+            from ml.prediction.calibrated_predict import get_calibrated_predictor
             
             predictor = get_calibrated_predictor(use_calibration=True)
             calibration_status = predictor.get_calibration_status()
@@ -152,7 +152,7 @@ class CalibrationView(APIView):
             reference_object_str = request.data.get('reference_object')
             
             # Convertir parámetros
-            from ..ml.measurement.calibration import CalibrationMethod, ReferenceObject
+            from ml.measurement.calibration import CalibrationMethod, ReferenceObject
             
             try:
                 method = CalibrationMethod(method_str)
@@ -180,7 +180,7 @@ class CalibrationView(APIView):
             image = Image.open(io.BytesIO(image_data))
             
             # Realizar calibración
-            from ..ml.prediction.calibrated_predict import get_calibrated_predictor
+            from ml.prediction.calibrated_predict import get_calibrated_predictor
             
             predictor = get_calibrated_predictor(use_calibration=True)
             calibration_result = predictor.calibrate_image(image, method, reference_object)
@@ -289,7 +289,7 @@ class CalibratedScanMeasureView(APIView):
             image = Image.open(io.BytesIO(image_data))
             
             # Obtener predictor calibrado
-            from ..ml.prediction.calibrated_predict import get_calibrated_predictor
+            from ml.prediction.calibrated_predict import get_calibrated_predictor
             
             predictor = get_calibrated_predictor(use_calibration=True)
             

@@ -20,7 +20,7 @@ from django.db.models import Count  # Importar Count
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from ..mixins import PaginationMixin
+from ..mixins import PaginationMixin, AdminPermissionMixin
 
 from ...models import ReporteGenerado
 from ...utils.model_imports import get_models_safely
@@ -239,6 +239,7 @@ class ReporteListCreateView(PaginationMixin, APIView):
         """Generar reporte de forma asíncrona (simulado)."""
         try:
             start_time = timezone.now()
+            user = reporte.usuario  # Get user from reporte object
             
             # Generar según tipo y formato
             if reporte.formato == 'pdf':
@@ -250,17 +251,17 @@ class ReporteListCreateView(PaginationMixin, APIView):
             
             # Generar contenido según tipo
             if reporte.tipo_reporte == 'calidad':
-                content = generator.generate_quality_report(request.user, reporte.filtros_aplicados)
+                content = generator.generate_quality_report(user, reporte.filtros_aplicados)
             elif reporte.tipo_reporte == 'finca':
                 finca_id = reporte.parametros.get('finca_id')
                 if not finca_id:
                     raise ValueError("finca_id es requerido para reportes de finca")
-                content = generator.generate_finca_report(finca_id, request.user, reporte.filtros_aplicados)
+                content = generator.generate_finca_report(finca_id, user, reporte.filtros_aplicados)
             elif reporte.tipo_reporte == 'auditoria':
-                content = generator.generate_audit_report(request.user, reporte.filtros_aplicados)
+                content = generator.generate_audit_report(user, reporte.filtros_aplicados)
             elif reporte.tipo_reporte == 'personalizado':
                 content = generator.generate_custom_report(
-                    request.user, 
+                    user, 
                     reporte.parametros.get('tipo_reporte', 'calidad'),
                     reporte.parametros,
                     reporte.filtros_aplicados
@@ -545,8 +546,6 @@ class ReporteStatsView(APIView):
                 'reportes_recientes': []
             }, status=status.HTTP_200_OK)
 
-
-from ..mixins import AdminPermissionMixin
 
 class ReporteCleanupView(AdminPermissionMixin, APIView):
     """
