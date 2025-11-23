@@ -158,7 +158,7 @@ class MLTrainView(APIView):
         """
         Redirige a TrainingJobCreateView para mantener compatibilidad.
         """
-        from .views import TrainingJobCreateView
+        from .views.training_views import TrainingJobCreateView
         view = TrainingJobCreateView()
         return view.post(request)
 
