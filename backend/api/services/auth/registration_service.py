@@ -49,10 +49,10 @@ class RegistrationService(BaseService):
             # Validate password strength
             password = user_data['password']
             try:
-                from ...utils.validators import validate_password_strength
+                from core.utils import validate_password_strength
                 validate_password_strength(password, raise_serializer_error=False)
             except Exception as e:
-                from ...utils.validators import PasswordValidationError
+                from core.utils import PasswordValidationError
                 if isinstance(e, PasswordValidationError):
                     return ServiceResult.validation_error(
                         e.message,
@@ -167,10 +167,10 @@ class RegistrationService(BaseService):
             # Validate password strength
             password = user_data['password']
             try:
-                from ...utils.validators import validate_password_strength
+                from core.utils import validate_password_strength
                 validate_password_strength(password, raise_serializer_error=False)
             except Exception as e:
-                from ...utils.validators import PasswordValidationError
+                from core.utils import PasswordValidationError
                 if isinstance(e, PasswordValidationError):
                     return ServiceResult.validation_error(
                         e.message,
@@ -276,10 +276,10 @@ class RegistrationService(BaseService):
             
             # Validate password strength
             try:
-                from ...utils.validators import validate_password_strength
+                from core.utils import validate_password_strength
                 validate_password_strength(password, raise_serializer_error=False)
             except Exception as e:
-                from ...utils.validators import PasswordValidationError
+                from core.utils import PasswordValidationError
                 if isinstance(e, PasswordValidationError):
                     return ServiceResult.validation_error(
                         e.message,
@@ -423,7 +423,7 @@ class RegistrationService(BaseService):
                 
                 # Invalidate cache when new users are created
                 try:
-                    from ...utils.cache_helpers import invalidate_system_stats_cache
+                    from core.utils import invalidate_system_stats_cache
                     invalidate_system_stats_cache()
                 except Exception as e:
                     self.log_warning(f"Error invalidating cache after user creation: {e}")

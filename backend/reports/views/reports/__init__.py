@@ -1,15 +1,20 @@
 """
 Reports views module.
 """
-from .report_views import (
+from .report_crud_views import (
     ReporteListCreateView,
     ReporteDetailView,
-    ReporteDownloadView,
     ReporteDeleteView,
-    ReporteStatsView,
-    ReporteCleanupView,
+    ExcelRenderer,
+)
+from .report_download_views import (
+    ReporteDownloadView,
     ReporteAgricultoresView,
     ReporteUsuariosView,
+)
+from .report_stats_views import (
+    ReporteStatsView,
+    ReporteCleanupView,
 )
 
 __all__ = [
@@ -21,5 +26,6 @@ __all__ = [
     'ReporteCleanupView',
     'ReporteAgricultoresView',
     'ReporteUsuariosView',
+    'ExcelRenderer',
 ]
 

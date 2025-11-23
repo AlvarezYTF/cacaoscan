@@ -22,7 +22,7 @@ from ...serializers import (
 from ...utils.decorators import handle_api_errors
 from ...services.analysis_service import AnalysisService
 from training.services import MLService
-from ...utils.cache_helpers import invalidate_models_status_cache, invalidate_dataset_validation_cache, invalidate_latest_metrics_cache
+from core.utils import invalidate_models_status_cache, invalidate_dataset_validation_cache, invalidate_latest_metrics_cache
 
 from ...utils.model_imports import get_model_safely, get_models_safely
 
@@ -151,7 +151,7 @@ class DatasetValidationView(APIView):
         Si no, encola una tarea Celery y retorna un task_id.
         """
         from django.core.cache import cache
-        from ...utils.cache_helpers import get_cache_key
+        from core.utils import get_cache_key
         from ...tasks.ml_tasks import validate_dataset_task
         
         # Cache key basado en el dataset

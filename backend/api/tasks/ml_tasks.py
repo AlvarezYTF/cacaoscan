@@ -7,7 +7,7 @@ from typing import Dict, Any
 from celery import shared_task
 from django.core.cache import cache
 
-from ..utils.cache_helpers import get_cache_key
+from core.utils import get_cache_key
 from ..utils.model_imports import get_model_safely
 
 logger = logging.getLogger("cacaoscan.api.tasks.ml")

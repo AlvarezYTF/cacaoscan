@@ -140,10 +140,10 @@ class PasswordService(BaseService):
             
             # Validate password strength
             try:
-                from ...utils.validators import validate_password_strength
+                from core.utils import validate_password_strength
                 validate_password_strength(new_password, raise_serializer_error=False)
             except Exception as e:
-                from ...utils.validators import PasswordValidationError
+                from core.utils import PasswordValidationError
                 if isinstance(e, PasswordValidationError):
                     return ServiceResult.validation_error(
                         e.message,

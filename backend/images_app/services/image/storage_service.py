@@ -59,7 +59,7 @@ class ImageStorageService(BaseService):
             
             # Invalidar cache de validación de dataset cuando se crean nuevas imágenes
             try:
-                from api.utils.cache_helpers import invalidate_dataset_validation_cache, invalidate_system_stats_cache
+                from core.utils import invalidate_dataset_validation_cache, invalidate_system_stats_cache
                 invalidate_dataset_validation_cache()
                 invalidate_system_stats_cache()
             except Exception as e:
@@ -107,7 +107,7 @@ class ImageStorageService(BaseService):
             
             # Invalidar cache de validación de dataset cuando se crean nuevas imágenes
             try:
-                from api.utils.cache_helpers import invalidate_dataset_validation_cache, invalidate_system_stats_cache
+                from core.utils import invalidate_dataset_validation_cache, invalidate_system_stats_cache
                 invalidate_dataset_validation_cache()
                 invalidate_system_stats_cache()
             except Exception as e:
@@ -178,7 +178,7 @@ class ImageStorageService(BaseService):
             
             # Invalidar cache de estadísticas cuando se crean nuevas predicciones
             try:
-                from api.utils.cache_helpers import invalidate_system_stats_cache
+                from core.utils import invalidate_system_stats_cache
                 invalidate_system_stats_cache()
             except Exception as e:
                 self.log_warning(f"Error invalidating cache after prediction save: {e}")

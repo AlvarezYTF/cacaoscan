@@ -100,12 +100,12 @@ class RegisterSerializer(serializers.ModelSerializer):
     
     def validate_password(self, value):
         """Validate password strength."""
-        from ..utils.validators import validate_password_strength
+        from core.utils import validate_password_strength
         return validate_password_strength(value)
     
     def validate(self, attrs):
         """General validations."""
-        from ..utils.validators import validate_passwords_match
+        from core.utils import validate_passwords_match
         validate_passwords_match(attrs['password'], attrs['password_confirm'])
         if not attrs.get('first_name', '').strip():
             raise serializers.ValidationError("El nombre es requerido.")
@@ -134,7 +134,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         
         # Invalidar cache de estadísticas cuando se crean nuevos usuarios
         try:
-            from ..utils.cache_helpers import invalidate_system_stats_cache
+            from core.utils import invalidate_system_stats_cache
             invalidate_system_stats_cache()
         except Exception:
             pass  # No fallar si hay error en invalidación de cache
@@ -173,12 +173,12 @@ class ChangePasswordSerializer(serializers.Serializer):
         """
         Validate that new password meets security requirements.
         """
-        from ..utils.validators import validate_password_strength
+        from core.utils import validate_password_strength
         return validate_password_strength(value)
     
     def validate(self, attrs):
         """General validations."""
-        from ..utils.validators import validate_passwords_match, validate_password_different
+        from core.utils import validate_passwords_match, validate_password_different
         validate_passwords_match(attrs.get('new_password'), attrs.get('confirm_password'))
         validate_password_different(attrs.get('old_password'), attrs.get('new_password'))
         return attrs

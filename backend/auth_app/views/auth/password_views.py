@@ -266,7 +266,7 @@ class ResetPasswordView(APIView):
 
         # Validate password using centralized validator
         try:
-            from api.utils.validators import validate_password_strength, validate_passwords_match
+            from core.utils import validate_password_strength, validate_passwords_match
             validate_password_strength(new_password)
             validate_passwords_match(new_password, confirm_password)
         except serializers.ValidationError as e:

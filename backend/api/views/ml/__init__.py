@@ -13,17 +13,21 @@ from .incremental_views import (
     IncrementalModelVersionsView,
     IncrementalDataVersionsView,
 )
-from .model_metrics_views import (
+from .metrics_crud_views import (
     ModelMetricsListView,
     ModelMetricsDetailView,
     ModelMetricsCreateView,
     ModelMetricsUpdateView,
     ModelMetricsDeleteView,
+)
+from .metrics_analysis_views import (
     ModelMetricsStatsView,
     ModelPerformanceTrendView,
-    ModelComparisonView,
     BestModelsView,
     ProductionModelsView,
+)
+from .metrics_comparison_views import (
+    ModelComparisonView,
 )
 from .model_views import (
     ModelsStatusView,

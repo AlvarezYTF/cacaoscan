@@ -146,7 +146,7 @@ class PersonaRegistroSerializer(serializers.Serializer):
         """
         Validar que la contraseña cumpla con los requisitos de seguridad.
         """
-        from api.utils.validators import validate_password_strength
+        from core.utils import validate_password_strength
         return validate_password_strength(value)
     
     def validate_telefono(self, value):

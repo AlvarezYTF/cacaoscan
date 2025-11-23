@@ -86,17 +86,17 @@ class FincaSerializer(serializers.ModelSerializer):
     
     def validate_coordenadas_lat(self, value):
         """Validate GPS latitude."""
-        from ..utils.validators import validate_latitude
+        from core.utils import validate_latitude
         return validate_latitude(value)
     
     def validate_coordenadas_lng(self, value):
         """Validate GPS longitude."""
-        from ..utils.validators import validate_longitude
+        from core.utils import validate_longitude
         return validate_longitude(value)
     
     def validate(self, attrs):
         """General validations."""
-        from ..utils.validators import validate_coordinates
+        from core.utils import validate_coordinates
         if not attrs.get('municipio', '').strip():
             raise serializers.ValidationError("El municipio es requerido.")
         if not attrs.get('departamento', '').strip():
@@ -236,17 +236,17 @@ class LoteSerializer(serializers.ModelSerializer):
     
     def validate_coordenadas_lat(self, value):
         """Validate GPS latitude."""
-        from ..utils.validators import validate_latitude
+        from core.utils import validate_latitude
         return validate_latitude(value)
     
     def validate_coordenadas_lng(self, value):
         """Validate GPS longitude."""
-        from ..utils.validators import validate_longitude
+        from core.utils import validate_longitude
         return validate_longitude(value)
     
     def validate(self, attrs):
         """General validations."""
-        from ..utils.validators import validate_coordinates
+        from core.utils import validate_coordinates
         if not attrs.get('variedad', '').strip():
             raise serializers.ValidationError("La variedad es requerida.")
         validate_coordinates(attrs)
