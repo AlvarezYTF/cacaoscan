@@ -93,15 +93,16 @@ services:
       - "127.0.0.1:8000:8000"
     # Habilitar GPU para entrenamiento ML (opcional, solo si está disponible)
     # Si no hay GPU, el contenedor funcionará normalmente usando CPU
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    # DESCOMENTAR LA SIGUIENTE SECCIÓN SOLO SI TIENES GPU NVIDIA DISPONIBLE Y CONFIGURADA
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
     # Alternativa: usar runtime nvidia si está disponible (más flexible)
-    # runtime: nvidia  # Descomentar si deploy no funciona
+    # runtime: nvidia  # Descomentar si deploy no funciona y tienes GPU NVIDIA
     depends_on:
       db:
         condition: service_healthy

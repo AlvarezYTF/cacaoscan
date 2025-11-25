@@ -55,7 +55,12 @@ AUTO_TRAIN_ENABLED=0
         f.write(default_env_content)
     print(f"✅ Archivo .env creado automáticamente en: {dotenv_path}")
 
-load_dotenv(dotenv_path)
+# Load .env file with explicit UTF-8 encoding to avoid decode errors
+try:
+    load_dotenv(dotenv_path, encoding='utf-8')
+except Exception as e:
+    print(f"⚠️ Warning: Error loading .env file: {e}")
+    print(f"Continuing with environment variables...")
 
 
 # Suprimir warnings molestos
@@ -176,22 +181,57 @@ TEMPLATES = [
 WSGI_APPLICATION = 'cacaoscan.wsgi.application'
 
 # Database
+# Ensure all database credentials are properly encoded as UTF-8 strings
+db_password = os.environ.get('DB_PASSWORD', '')
+if db_password and isinstance(db_password, bytes):
+    db_password = db_password.decode('utf-8', errors='ignore')
+elif not isinstance(db_password, str):
+    db_password = str(db_password)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', 'cacaoscan_db'),
         'USER': os.environ.get('DB_USER', 'cacaoscan'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'PASSWORD': db_password,
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
     }
 }
 
 # Cache configuration
 # Try to import from cache_config, fallback to default if not available
+# Use importlib to avoid executing api/__init__.py which imports views
+import importlib.util
+import sys
 try:
-    from api.cache_config import CACHES
-except ImportError:
+    # Import cache_config directly without triggering api/__init__.py
+    cache_config_path = BASE_DIR / 'api' / 'cache_config.py'
+    if cache_config_path.exists():
+        spec = importlib.util.spec_from_file_location("cache_config", str(cache_config_path))
+        cache_config = importlib.util.module_from_spec(spec)
+        sys.modules["cache_config"] = cache_config
+        spec.loader.exec_module(cache_config)
+        CACHES = cache_config.CACHES
+    else:
+        raise ImportError("cache_config.py not found")
+    
+    # Override cache configuration for DEBUG mode after import to avoid circular dependency
+    if DEBUG:
+        CACHES['default'] = {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+            'TIMEOUT': 300,
+        }
+        CACHES['sessions'] = {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-sessions',
+            'TIMEOUT': 86400,
+        }
+except (ImportError, AttributeError, FileNotFoundError) as e:
     # Default cache configuration (fallback)
     REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
     REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
