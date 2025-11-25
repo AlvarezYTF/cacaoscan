@@ -88,7 +88,7 @@ if [[ "${ROLE}" == "web" ]]; then
     log "✅ Archivos estáticos recolectados"
     if [[ "${CREATE_DEFAULT_SUPERUSER:-true}" == "true" ]]; then
         log "👤 Asegurando superusuario predeterminado"
-        python create_admin_user.py || log "⚠️ No se pudo crear el superusuario predeterminado"
+        run_management_command create_admin_user || log "⚠️ No se pudo crear el superusuario predeterminado"
     fi
     if [[ "${SEED_INITIAL_DATA:-true}" == "true" ]]; then
         log "🌱 Inicializando catálogos y datos base"

@@ -50,7 +50,7 @@ class TestModelMetricsViewsErrorResponse(APITestCase):
     @patch('api.model_metrics_views.ModelMetrics')
     def test_model_metrics_exception_uses_details(self, mock_model):
         """Verifica que las excepciones usan 'details'."""
-        from api.models import ModelMetrics
+        from training.models import ModelMetrics
         
         # Mock para simular error de base de datos
         mock_model.objects.create.side_effect = Exception("Error de base de datos")

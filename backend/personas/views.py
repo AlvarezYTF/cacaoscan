@@ -92,7 +92,7 @@ class PersonaRegistroView(APIView):
             )
 
             # Enviar email con servicio centralizado
-            from api.email_service import email_service
+            from api.services.email import email_service
             email_service.send_email(
                 to_emails=[email],
                 subject='Verificación de cuenta CacaoScan',

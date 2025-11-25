@@ -13,14 +13,21 @@ from .base import (
 )
 
 # Importar servicios específicos
-from .auth_service import AuthenticationService
+from .auth import LoginService, RegistrationService, PasswordService, VerificationService, ProfileService
 from .analysis_service import AnalysisService
-from .image_service import ImageManagementService
-from .finca_service import FincaService, LoteService
-from .report_service import ReportService
+
+# Importar servicios desde apps modulares (wrappers de compatibilidad)
+from fincas_app.services import FincaService, LoteService
+from reports.services import ReportService
+from images_app.services import ImageProcessingService, ImageStorageService, ImageManagementService
+from training.services import MLService, PredictionService
 
 # Crear instancias de servicios para uso fácil
-auth_service = AuthenticationService()
+login_service = LoginService()
+registration_service = RegistrationService()
+password_service = PasswordService()
+verification_service = VerificationService()
+profile_service = ProfileService()
 analysis_service = AnalysisService()
 image_service = ImageManagementService()
 finca_service = FincaService()
@@ -38,15 +45,29 @@ __all__ = [
     'NotFoundServiceError',
     
     # Servicios específicos
-    'AuthenticationService',
+    'LoginService',
+    'RegistrationService',
+    'PasswordService',
+    'VerificationService',
+    'ProfileService',
     'AnalysisService', 
     'ImageManagementService',
     'FincaService',
     'LoteService',
     'ReportService',
     
+    # Servicios por dominio
+    'PredictionService',
+    'MLService',
+    'ImageProcessingService',
+    'ImageStorageService',
+    
     # Instancias de servicios
-    'auth_service',
+    'login_service',
+    'registration_service',
+    'password_service',
+    'verification_service',
+    'profile_service',
     'analysis_service',
     'image_service', 
     'finca_service',

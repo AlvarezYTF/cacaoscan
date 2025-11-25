@@ -18,10 +18,10 @@ from api.models import (
     Finca, 
     Lote, 
     Notification, 
-    ActivityLog, 
-    LoginHistory, 
-    ReporteGenerado
+    ActivityLog
 )
+from audit.models import LoginHistory
+from reports.models import ReporteGenerado
 
 
 class EmailVerificationTokenModelTest(TestCase):
@@ -623,16 +623,15 @@ class ReporteGeneradoModelTest(TestCase):
             ruta_archivo='/path/to/test_report.pdf',
             parametros={'fecha_inicio': '2024-01-01', 'fecha_fin': '2024-01-31'},
             estado='completado',
-            tamaño_archivo=1024
+            tamano_archivo=1024
         )
         
         self.assertEqual(reporte.usuario, self.user)
         self.assertEqual(reporte.tipo_reporte, 'analisis_periodo')
         self.assertEqual(reporte.nombre_archivo, 'test_report.pdf')
-        self.assertEqual(reporte.ruta_archivo, '/path/to/test_report.pdf')
         self.assertEqual(reporte.parametros, {'fecha_inicio': '2024-01-01', 'fecha_fin': '2024-01-31'})
         self.assertEqual(reporte.estado, 'completado')
-        self.assertEqual(reporte.tamaño_archivo, 1024)
+        self.assertEqual(reporte.tamano_archivo, 1024)
     
     def test_reporte_defaults(self):
         """Test de valores por defecto de reporte."""

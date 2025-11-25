@@ -5,23 +5,21 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-# Importar desde apps modulares
-try:
-    from auth_app.models import EmailVerificationToken, UserProfile
-except ImportError:
-    EmailVerificationToken = None
-    UserProfile = None
+from .utils.model_imports import get_models_safely
 
-try:
-    from images_app.models import CacaoImage, CacaoPrediction
-except ImportError:
-    CacaoImage = None
-    CacaoPrediction = None
-
-try:
-    from core.models import SystemSettings
-except ImportError:
-    SystemSettings = None
+# Import models safely
+models = get_models_safely({
+    'EmailVerificationToken': 'auth_app.models.EmailVerificationToken',
+    'UserProfile': 'auth_app.models.UserProfile',
+    'CacaoImage': 'images_app.models.CacaoImage',
+    'CacaoPrediction': 'images_app.models.CacaoPrediction',
+    'SystemSettings': 'core.models.SystemSettings'
+})
+EmailVerificationToken = models['EmailVerificationToken']
+UserProfile = models['UserProfile']
+CacaoImage = models['CacaoImage']
+CacaoPrediction = models['CacaoPrediction']
+SystemSettings = models['SystemSettings']
 
 
 # Configuración personalizada para User

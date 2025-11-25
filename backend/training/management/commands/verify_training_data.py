@@ -1,17 +1,21 @@
 """
-Comando Django para verificar que el código de entrenamiento lee correctamente
-las imágenes desde raw y los datos del CSV.
+Django management command to verify that training code correctly reads
+images from raw directory and data from CSV.
 """
-from django.core.management.base import BaseCommand
+import logging
+from django.core.management.base import BaseCommand, CommandError
 from pathlib import Path
 from ml.data.dataset_loader import CacaoDatasetLoader
 from ml.utils.paths import get_raw_images_dir, get_datasets_dir
+
+logger = logging.getLogger("cacaoscan.management.verify_training_data")
 
 
 class Command(BaseCommand):
     help = 'Verifica que el código de entrenamiento lee correctamente las imágenes desde raw y los datos del CSV'
 
     def handle(self, *args, **options):
+        logger.info("Verifying training data")
         self.stdout.write("=" * 60)
         self.stdout.write("VERIFICACIÓN DE DATOS PARA ENTRENAMIENTO")
         self.stdout.write("=" * 60)
@@ -116,8 +120,9 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING("\n⚠️ ADVERTENCIA: Algunos registros no apuntan a raw o faltan datos"))
             
         except Exception as e:
+            logger.error(f"Error verifying training data: {e}", exc_info=True)
             self.stdout.write(self.style.ERROR(f"\n❌ ERROR: {e}"))
             import traceback
             self.stdout.write(traceback.format_exc())
-            raise
+            raise CommandError(f'Error al verificar datos de entrenamiento: {str(e)}')
 

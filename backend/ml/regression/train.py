@@ -38,7 +38,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cacaoscan.settings')
 import django
 try:
     django.setup()
-    from api.models import ModelMetrics, TrainingJob
+    from training.models import ModelMetrics, TrainingJob
     from django.contrib.auth.models import User
     DJANGO_LOADED = True
 except Exception as e:
