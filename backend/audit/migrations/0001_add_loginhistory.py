@@ -14,8 +14,11 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='LoginHistory',
+        # Check if table exists before creating - use state_operations for model registration
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.CreateModel(
+                    name='LoginHistory',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('ip_address', models.GenericIPAddressField(help_text='Dirección IP del usuario')),
@@ -49,6 +52,13 @@ class Migration(migrations.Migration):
         migrations.AddIndex(
             model_name='loginhistory',
             index=models.Index(fields=['success'], name='api_loginhi_success_78b423_idx'),
+        ),
+            ],
+            database_operations=[
+                # Table already exists (created by api migrations)
+                # Only update Django's state, don't modify the database
+                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+            ],
         ),
     ]
 
