@@ -16,9 +16,11 @@ import os
 
 from api.models import (
     CacaoImage, CacaoPrediction, TrainingJob, Finca, Lote, 
-    Notification, ActivityLog, LoginHistory, ReporteGenerado
+    Notification, ActivityLog
 )
-from api.optimizations import QueryOptimizer, CacheManager
+from audit.models import LoginHistory
+from reports.models import ReporteGenerado
+# Removed: optimizations.py deleted (YAGNI - only used in tests, not in production)
 from api.cache_config import API_CACHE_TIMEOUTS
 
 
@@ -401,175 +403,13 @@ class ReportAPITestCase(APITestCase):
         return ContentFile(b'Test PDF content', name='test.pdf')
 
 
-class CacheIntegrationTestCase(TestCase):
-    """Tests de integración para el sistema de caché."""
-    
-    def setUp(self):
-        """Configuración inicial para cada test."""
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
-            password='testpass123'
-        )
-    
-    def test_cache_manager_get_or_set(self):
-        """Test del CacheManager get_or_set."""
-        cache_key = 'test_cache_key'
-        
-        def expensive_operation():
-            return {'result': 'expensive_data'}
-        
-        # Primera llamada - debe ejecutar la función
-        result1 = CacheManager.get_or_set(cache_key, expensive_operation)
-        self.assertEqual(result1['result'], 'expensive_data')
-        
-        # Segunda llamada - debe obtener del caché
-        result2 = CacheManager.get_or_set(cache_key, expensive_operation)
-        self.assertEqual(result2['result'], 'expensive_data')
-    
-    def test_cache_invalidation(self):
-        """Test de invalidación de caché."""
-        from django.core.cache import cache
-        
-        # Establecer algunos valores en caché
-        cache.set('user_stats_1_2024-01-01', {'total': 10})
-        cache.set('user_stats_1_2024-01-02', {'total': 20})
-        
-        # Invalidar caché del usuario
-        CacheManager.invalidate_user_cache(1)
-        
-        # Verificar que los valores fueron invalidados
-        self.assertIsNone(cache.get('user_stats_1_2024-01-01'))
-        self.assertIsNone(cache.get('user_stats_1_2024-01-02'))
+# Removed: CacheIntegrationTestCase - tested optimizations.py which was deleted (YAGNI)
 
 
-class QueryOptimizationTestCase(TestCase):
-    """Tests para optimizaciones de consultas."""
-    
-    def setUp(self):
-        """Configuración inicial para cada test."""
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
-            password='testpass123'
-        )
-        
-        self.finca = Finca.objects.create(
-            nombre='Finca Test',
-            ubicacion='Test Location',
-            area_total=10.5,
-            propietario=self.user
-        )
-        
-        self.lote = Lote.objects.create(
-            identificador='LOTE-001',
-            variedad='Criollo',
-            area=2.5,
-            fecha_siembra=timezone.now().date(),
-            finca=self.finca
-        )
-    
-    def test_optimize_cacao_images_query(self):
-        """Test de optimización de consultas de imágenes."""
-        from api.models import CacaoImage
-        
-        # Crear algunas imágenes
-        for i in range(3):
-            CacaoImage.objects.create(
-                usuario=self.user,
-                lote=self.lote,
-                imagen=self.create_test_image(),
-                descripcion=f'Imagen {i+1}'
-            )
-        
-        # Obtener queryset optimizado
-        queryset = QueryOptimizer.optimize_cacao_images_query(
-            CacaoImage.objects.all()
-        )
-        
-        # Verificar que las relaciones están incluidas
-        with self.assertNumQueries(1):  # Solo una consulta
-            list(queryset)  # Evaluar el queryset
-    
-    def test_optimize_fincas_query(self):
-        """Test de optimización de consultas de fincas."""
-        # Crear algunos lotes adicionales
-        for i in range(2):
-            Lote.objects.create(
-                identificador=f'LOTE-{i+2}',
-                variedad='Forastero',
-                area=1.5,
-                fecha_siembra=timezone.now().date(),
-                finca=self.finca
-            )
-        
-        # Obtener queryset optimizado
-        queryset = QueryOptimizer.optimize_fincas_query(
-            Finca.objects.all()
-        )
-        
-        # Verificar que las relaciones están incluidas
-        with self.assertNumQueries(2):  # Finca + lotes
-            finca = queryset.first()
-            list(finca.lotes.all())  # Acceder a los lotes
-    
-    def create_test_image(self):
-        """Crea un archivo de imagen de prueba."""
-        from django.core.files.base import ContentFile
-        return ContentFile(b'fake image content', name='test.jpg')
+# Removed: QueryOptimizationTestCase - tested optimizations.py which was deleted (YAGNI)
 
 
-class PerformanceTestCase(TestCase):
-    """Tests de performance y optimización."""
-    
-    def setUp(self):
-        """Configuración inicial para cada test."""
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
-            password='testpass123'
-        )
-    
-    def test_pagination_performance(self):
-        """Test de performance de paginación."""
-        from api.optimizations import PaginationOptimizer
-        
-        # Crear muchos registros
-        for i in range(100):
-            Finca.objects.create(
-                nombre=f'Finca {i}',
-                ubicacion=f'Ubicación {i}',
-                area_total=10.0 + i,
-                propietario=self.user
-            )
-        
-        # Test de paginación optimizada
-        page = 1
-        page_size = 20
-        
-        pagination_info = PaginationOptimizer.get_pagination_info(
-            Finca.objects.all(), page, page_size
-        )
-        
-        self.assertEqual(pagination_info['count'], 100)
-        self.assertEqual(pagination_info['total_pages'], 5)
-        self.assertTrue(pagination_info['has_next'])
-        self.assertFalse(pagination_info['has_previous'])
-    
-    def test_database_indexes_suggestion(self):
-        """Test de sugerencia de índices de base de datos."""
-        from api.optimizations import DatabaseOptimizer
-        
-        indexes = DatabaseOptimizer.add_database_indexes()
-        
-        # Verificar que se sugieren índices importantes
-        index_fields = [index[1] for index in indexes]
-        
-        self.assertIn('usuario_id', index_fields)
-        self.assertIn('finca_id', index_fields)
-        self.assertIn('lote_id', index_fields)
-        self.assertIn('tipo', index_fields)
-        self.assertIn('leida', index_fields)
+# Removed: PerformanceTestCase - tested optimizations.py which was deleted (YAGNI)
 
 
 class IntegrationWorkflowTestCase(TransactionTestCase):

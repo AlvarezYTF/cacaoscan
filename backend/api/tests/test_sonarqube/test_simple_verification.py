@@ -32,24 +32,13 @@ class TestSonarQubeFixesInCode(TestCase):
         self.assertIn("response_data['details']", content,
                      "create_error_response debe usar 'details' en la respuesta")
     
-    def test_refactored_views_use_details(self):
-        """Verifica que refactored_views.py usa 'details' y no 'errors'."""
+    def test_refactored_views_removed(self):
+        """Verifica que refactored_views.py fue eliminado (código muerto)."""
         refactored_file = Path(__file__).parent.parent.parent.parent / 'refactored_views.py'
         
-        if not refactored_file.exists():
-            self.skipTest("Archivo refactored_views.py no encontrado")
-        
-        content = refactored_file.read_text(encoding='utf-8')
-        
-        # Verificar que usa 'details' en create_error_response
-        details_pattern = r"create_error_response\([^)]*details="
-        self.assertTrue(re.search(details_pattern, content),
-                       "refactored_views.py debe usar 'details' en create_error_response")
-        
-        # Verificar que NO usa 'errors'
-        errors_pattern = r"create_error_response\([^)]*errors="
-        self.assertFalse(re.search(errors_pattern, content),
-                        "refactored_views.py NO debe usar 'errors' en create_error_response")
+        # El archivo debe haber sido eliminado ya que no se usa
+        self.assertFalse(refactored_file.exists(),
+                        "refactored_views.py debe haber sido eliminado (código muerto)")
     
     def test_model_metrics_views_use_details(self):
         """Verifica que model_metrics_views.py usa 'details' y no 'errors'."""

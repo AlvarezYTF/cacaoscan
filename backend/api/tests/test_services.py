@@ -18,6 +18,7 @@ from api.services import (
     LoteService,
     ReportService
 )
+# ImageManagementService ahora está en api.services.image.management_service
 from api.services.base import (
     ServiceResult,
     ServiceError,
@@ -33,10 +34,10 @@ from api.models import (
     Finca,
     Lote,
     Notification,
-    ActivityLog,
-    LoginHistory,
-    ReporteGenerado
+    ActivityLog
 )
+from audit.models import LoginHistory
+from reports.models import ReporteGenerado
 
 
 class AuthenticationServiceTest(TestCase):

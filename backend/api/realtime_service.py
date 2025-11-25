@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django.conf import settings
 
-from .models import LoginHistory
+from audit.models import LoginHistory
 try:
     from notifications.models import Notification
 except ImportError:

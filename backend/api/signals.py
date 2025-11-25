@@ -80,7 +80,7 @@ if CacaoPrediction:
             
             # Enviar email de notificación si está habilitado
             try:
-                from .email_service import send_email_notification
+                from .services.email import send_email_notification
                 
                 email_context = {
                     'user_name': instance.image.user.get_full_name() or instance.image.user.username,
@@ -144,7 +144,7 @@ if TrainingJob:
             
             # Enviar email de notificación si está habilitado
             try:
-                from .email_service import send_email_notification
+                from .services.email import send_email_notification
                 
                 email_context = {
                     'user_name': instance.created_by.get_full_name() or instance.created_by.username,

@@ -187,6 +187,60 @@ DATABASES = {
     }
 }
 
+# Cache configuration
+# Try to import from cache_config, fallback to default if not available
+try:
+    from api.cache_config import CACHES
+except ImportError:
+    # Default cache configuration (fallback)
+    REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+    REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+    REDIS_DB = int(os.environ.get('REDIS_DB', 0))
+    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', None)
+    
+    if DEBUG:
+        # Use in-memory cache for development
+        CACHES = {
+            'default': {
+                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'LOCATION': 'unique-snowflake',
+                'TIMEOUT': 300,
+            },
+            'api_cache': {
+                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'LOCATION': 'api-cache',
+                'TIMEOUT': 600,
+            }
+        }
+    else:
+        # Use Redis for production
+        CACHES = {
+            'default': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}',
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                    'PASSWORD': REDIS_PASSWORD,
+                    'CONNECTION_POOL_KWARGS': {
+                        'max_connections': 50,
+                        'retry_on_timeout': True,
+                    },
+                },
+                'KEY_PREFIX': 'cacaoscan',
+                'TIMEOUT': 300,
+            },
+            'api_cache': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/2',
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                    'PASSWORD': REDIS_PASSWORD,
+                },
+                'KEY_PREFIX': 'cacaoscan_api',
+                'TIMEOUT': 600,
+            }
+        }
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {

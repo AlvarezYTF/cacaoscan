@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.conf import settings
 
-from .models import LoginHistory
+from audit.models import LoginHistory
 try:
     from audit.models import ActivityLog
 except ImportError:
