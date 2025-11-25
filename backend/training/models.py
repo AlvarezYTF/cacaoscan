@@ -135,3 +135,79 @@ class TrainingJob(models.Model):
         self.status = 'cancelled'
         self.completed_at = timezone.now()
         self.save(update_fields=['status', 'completed_at'])
+
+
+class ModelMetrics(models.Model):
+    """
+    Modelo para almacenar métricas detalladas de modelos de machine learning.
+    """
+    MODEL_TYPE_CHOICES = [
+        ('regression', 'Modelo de Regresión'),
+        ('classification', 'Modelo de Clasificación'),
+        ('segmentation', 'Modelo de Segmentación'),
+        ('incremental', 'Modelo Incremental'),
+    ]
+    
+    TARGET_CHOICES = [
+        ('alto', 'Altura'),
+        ('ancho', 'Ancho'),
+        ('grosor', 'Grosor'),
+        ('peso', 'Peso'),
+        ('calidad', 'Calidad'),
+        ('variedad', 'Variedad'),
+    ]
+    
+    METRIC_TYPE_CHOICES = [
+        ('training', 'Métricas de Entrenamiento'),
+        ('validation', 'Métricas de Validación'),
+        ('test', 'Métricas de Prueba'),
+        ('incremental', 'Métricas Incrementales'),
+    ]
+    
+    model_name = models.CharField(max_length=100)
+    model_type = models.CharField(max_length=20, choices=MODEL_TYPE_CHOICES)
+    target = models.CharField(max_length=20, choices=TARGET_CHOICES)
+    version = models.CharField(max_length=20)
+    
+    # training_job = models.ForeignKey('TrainingJob', ...) # Deshabilitado temporalmente
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='model_metrics')
+    
+    metric_type = models.CharField(max_length=20, choices=METRIC_TYPE_CHOICES)
+    
+    mae = models.FloatField()
+    mse = models.FloatField()
+    rmse = models.FloatField()
+    r2_score = models.FloatField()
+    mape = models.FloatField(null=True, blank=True)
+    
+    additional_metrics = models.JSONField(default=dict)
+    
+    dataset_size = models.PositiveIntegerField()
+    train_size = models.PositiveIntegerField()
+    validation_size = models.PositiveIntegerField()
+    test_size = models.PositiveIntegerField()
+    
+    epochs = models.PositiveIntegerField()
+    batch_size = models.PositiveIntegerField()
+    learning_rate = models.FloatField()
+    
+    model_params = models.JSONField(default=dict)
+    
+    training_time_seconds = models.PositiveIntegerField(null=True, blank=True)
+    inference_time_ms = models.FloatField(null=True, blank=True)
+    
+    stability_score = models.FloatField(null=True, blank=True)
+    knowledge_retention = models.FloatField(null=True, blank=True)
+    
+    notes = models.TextField(blank=True)
+    is_best_model = models.BooleanField(default=False)
+    is_production_model = models.BooleanField(default=False)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'api_modelmetrics'  # Mantener nombre de tabla para compatibilidad
+        verbose_name = 'Métricas de Modelo'
+        verbose_name_plural = 'Métricas de Modelos'
+        ordering = ['-created_at']

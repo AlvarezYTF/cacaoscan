@@ -14,7 +14,7 @@ from django.contrib.auth.models import User
 
 # Intentar importar, pero si falla, los tests se saltarán
 try:
-    from api.services.auth_service import AuthenticationService
+    from api.services.auth import LoginService
     AUTH_SERVICE_AVAILABLE = True
 except ImportError:
     AUTH_SERVICE_AVAILABLE = False
@@ -27,26 +27,26 @@ except ImportError:
 
 
 class TestAuthServiceRedundantElif(TestCase):
-    """Tests para verificar que se eliminó el elif redundante en AuthenticationService."""
+    """Tests para verificar que se eliminó el elif redundante en LoginService."""
     
     def setUp(self):
         """Configuración inicial."""
         if not AUTH_SERVICE_AVAILABLE:
-            self.skipTest("AuthenticationService no está disponible (versión antigua del código)")
+            self.skipTest("LoginService no está disponible (versión antigua del código)")
         
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
             password='testpass123'
         )
-        self.auth_service = AuthenticationService()
+        self.auth_service = LoginService()
     
     def test_authentication_service_no_redundant_code(self):
-        """Verifica que AuthenticationService no tiene código redundante."""
+        """Verifica que LoginService no tiene código redundante."""
         # Verificar que el servicio se puede instanciar correctamente
         # Si hay código redundante, esto podría causar problemas lógicos
         self.assertIsNotNone(self.auth_service)
-        self.assertIsInstance(self.auth_service, AuthenticationService)
+        self.assertIsInstance(self.auth_service, LoginService)
 
 
 class TestAuthModelsRedundantElif(TestCase):

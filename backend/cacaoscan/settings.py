@@ -55,7 +55,23 @@ AUTO_TRAIN_ENABLED=0
         f.write(default_env_content)
     print(f"✅ Archivo .env creado automáticamente en: {dotenv_path}")
 
-load_dotenv(dotenv_path)
+# Load .env file with explicit UTF-8 encoding to avoid decode errors
+# Try multiple encodings if UTF-8 fails
+try:
+    load_dotenv(dotenv_path, encoding='utf-8')
+except Exception:
+    try:
+        # Try without BOM
+        with open(dotenv_path, 'r', encoding='utf-8-sig') as f:
+            content = f.read()
+        # Write back with UTF-8 encoding
+        with open(dotenv_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        load_dotenv(dotenv_path, encoding='utf-8')
+    except Exception as e:
+        print("⚠️ Warning: Error loading .env file:", e)
+        print("Continuing with environment variables...")
+        print("💡 Tip: Recreate .env file with UTF-8 encoding if issues persist")
 
 
 # Suprimir warnings molestos
@@ -176,16 +192,125 @@ TEMPLATES = [
 WSGI_APPLICATION = 'cacaoscan.wsgi.application'
 
 # Database
+# Helper function to safely decode environment variables as UTF-8 strings
+def safe_env_get(key: str, default: str = '') -> str:
+    """Safely get and decode environment variable as UTF-8 string."""
+    value = os.environ.get(key, default)
+    if value is None:
+        return default
+    if isinstance(value, bytes):
+        # Try UTF-8 first, fallback to latin-1 if that fails
+        try:
+            value = value.decode('utf-8', errors='strict')
+        except (UnicodeDecodeError, AttributeError):
+            try:
+                value = value.decode('latin-1', errors='replace')
+            except Exception:
+                value = value.decode('utf-8', errors='replace')
+    elif not isinstance(value, str):
+        value = str(value)
+    # Ensure the value is a valid UTF-8 string
+    if isinstance(value, str):
+        # Re-encode and decode to ensure valid UTF-8
+        try:
+            value = value.encode('utf-8', errors='strict').decode('utf-8')
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            # If strict encoding fails, use replace to handle problematic characters
+            value = value.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+    return value
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'cacaoscan_db'),
-        'USER': os.environ.get('DB_USER', 'cacaoscan'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'NAME': safe_env_get('DB_NAME', 'cacaoscan_db'),
+        'USER': safe_env_get('DB_USER', 'cacaoscan'),
+        'PASSWORD': safe_env_get('DB_PASSWORD', ''),
+        'HOST': safe_env_get('DB_HOST', 'localhost'),
+        'PORT': safe_env_get('DB_PORT', '5432'),
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
     }
 }
+
+# Cache configuration
+# Try to import from cache_config, fallback to default if not available
+# Use importlib to avoid executing api/__init__.py which imports views
+import importlib.util
+import sys
+try:
+    # Import cache_config directly without triggering api/__init__.py
+    cache_config_path = BASE_DIR / 'api' / 'cache_config.py'
+    if cache_config_path.exists():
+        spec = importlib.util.spec_from_file_location("cache_config", str(cache_config_path))
+        cache_config = importlib.util.module_from_spec(spec)
+        sys.modules["cache_config"] = cache_config
+        spec.loader.exec_module(cache_config)
+        CACHES = cache_config.CACHES
+    else:
+        raise ImportError("cache_config.py not found")
+    
+    # Override cache configuration for DEBUG mode after import to avoid circular dependency
+    if DEBUG:
+        CACHES['default'] = {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+            'TIMEOUT': 300,
+        }
+        CACHES['sessions'] = {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-sessions',
+            'TIMEOUT': 86400,
+        }
+except (ImportError, AttributeError, FileNotFoundError) as e:
+    # Default cache configuration (fallback)
+    REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+    REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+    REDIS_DB = int(os.environ.get('REDIS_DB', 0))
+    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', None)
+    
+    if DEBUG:
+        # Use in-memory cache for development
+        CACHES = {
+            'default': {
+                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'LOCATION': 'unique-snowflake',
+                'TIMEOUT': 300,
+            },
+            'api_cache': {
+                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'LOCATION': 'api-cache',
+                'TIMEOUT': 600,
+            }
+        }
+    else:
+        # Use Redis for production
+        CACHES = {
+            'default': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}',
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                    'PASSWORD': REDIS_PASSWORD,
+                    'CONNECTION_POOL_KWARGS': {
+                        'max_connections': 50,
+                        'retry_on_timeout': True,
+                    },
+                },
+                'KEY_PREFIX': 'cacaoscan',
+                'TIMEOUT': 300,
+            },
+            'api_cache': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/2',
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                    'PASSWORD': REDIS_PASSWORD,
+                },
+                'KEY_PREFIX': 'cacaoscan_api',
+                'TIMEOUT': 600,
+            }
+        }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

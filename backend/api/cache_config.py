@@ -2,13 +2,15 @@
 Configuración de caché y Redis para optimización de performance.
 """
 import os
-from django.conf import settings
 
 # Configuración de Redis
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 REDIS_DB = int(os.getenv('REDIS_DB', 0))
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', None)
+
+# Get DEBUG from environment (defaults to False for production)
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 # Configuración de caché
 CACHES = {
@@ -56,7 +58,7 @@ CACHES = {
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'sessions'
 SESSION_COOKIE_AGE = 86400  # 24 horas
-SESSION_COOKIE_SECURE = not settings.DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 
@@ -106,8 +108,8 @@ CACHE_INVALIDATION_PATTERNS = {
 PERFORMANCE_MONITORING = {
     'slow_query_threshold': 1.0,  # segundos
     'cache_hit_ratio_threshold': 0.8,  # 80%
-    'enable_query_logging': not settings.DEBUG,
-    'enable_cache_logging': settings.DEBUG,
+    'enable_query_logging': not DEBUG,
+    'enable_cache_logging': DEBUG,
 }
 
 # Configuración de compresión
@@ -140,26 +142,7 @@ REDIS_CLUSTER_CONFIG = {
 }
 
 # Configuración de caché para desarrollo
-if settings.DEBUG:
-    # Usar caché en memoria para desarrollo
-    CACHES['default'] = {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
-        'TIMEOUT': 300,
-    }
-    
-    CACHES['sessions'] = {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-sessions',
-        'TIMEOUT': 86400,
-    }
-
-# Configuración de caché para testing
-if 'test' in settings.DATABASES['default']['NAME']:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
-        }
-    }
+# Esta lógica se manejará en settings.py para evitar dependencias circulares
+# El DEBUG check se hace usando variables de entorno aquí
 
 

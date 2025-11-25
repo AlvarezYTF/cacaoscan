@@ -1,0 +1,442 @@
+"""
+Statistics service for CacaoScan API.
+"""
+import logging
+from datetime import timedelta
+from typing import Dict, Any, List, Tuple
+from django.db.models import Q, Count, Avg, F, Case, When, IntegerField
+from django.db.models.functions import TruncDate
+from django.utils import timezone
+from django.contrib.auth import get_user_model
+
+from ..base import BaseService
+
+User = get_user_model()
+
+logger = logging.getLogger("cacaoscan.services.stats")
+
+
+class StatsService(BaseService):
+    """
+    Service for generating system statistics.
+    """
+    
+    def __init__(self):
+        super().__init__()
+        from ...utils.model_imports import get_models_safely
+        
+        models = get_models_safely({
+            'CacaoImage': 'images_app.models.CacaoImage',
+            'CacaoPrediction': 'images_app.models.CacaoPrediction',
+            'Finca': 'fincas_app.models.Finca'
+        })
+        self.CacaoImage = models['CacaoImage']
+        self.CacaoPrediction = models['CacaoPrediction']
+        self.Finca = models['Finca']
+    
+    def get_user_stats(self) -> Dict[str, Any]:
+        """
+        Get user statistics.
+        
+        Returns:
+            Dictionary with user statistics
+        """
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        staff_users = User.objects.filter(is_staff=True).count()
+        superusers = User.objects.filter(is_superuser=True).count()
+        
+        self.log_info(f"Usuarios - Total: {total_users}, Activos: {active_users}, Staff: {staff_users}, Superusers: {superusers}")
+        
+        analyst_users = User.objects.filter(groups__name='analyst').distinct().count()
+        farmer_users = User.objects.filter(
+            ~Q(is_superuser=True),
+            ~Q(is_staff=True),
+            ~Q(groups__name='analyst')
+        ).count()
+        
+        try:
+            verified_users = User.objects.filter(
+                auth_email_token__is_verified=True
+            ).count()
+        except Exception:
+            verified_users = User.objects.filter(is_active=True).count()
+        
+        today = timezone.now().date()
+        this_week = today - timedelta(days=7)
+        this_month = today - timedelta(days=30)
+        
+        users_this_week = User.objects.filter(date_joined__date__gte=this_week).count()
+        users_this_month = User.objects.filter(date_joined__date__gte=this_month).count()
+        
+        return {
+            'total': total_users,
+            'active': active_users,
+            'staff': staff_users,
+            'superusers': superusers,
+            'analysts': analyst_users,
+            'farmers': farmer_users,
+            'verified': verified_users,
+            'this_week': users_this_week,
+            'this_month': users_this_month
+        }
+    
+    def get_image_stats(self) -> Dict[str, Any]:
+        """
+        Get image statistics.
+        
+        Returns:
+            Dictionary with image statistics
+        """
+        if self.CacaoImage is None:
+            return {
+                'total': 0,
+                'processed': 0,
+                'unprocessed': 0,
+                'this_week': 0,
+                'this_month': 0,
+                'processing_rate': 0
+            }
+        
+        total_images = self.CacaoImage.objects.count()
+        processed_images = self.CacaoImage.objects.filter(processed=True).count()
+        unprocessed_images = total_images - processed_images
+        
+        self.log_info(f"Imágenes - Total: {total_images}, Procesadas: {processed_images}, Sin procesar: {unprocessed_images}")
+        
+        today = timezone.now().date()
+        this_week = today - timedelta(days=7)
+        this_month = today - timedelta(days=30)
+        
+        images_this_week = self.CacaoImage.objects.filter(created_at__date__gte=this_week).count()
+        images_this_month = self.CacaoImage.objects.filter(created_at__date__gte=this_month).count()
+        
+        processing_rate = round((processed_images / total_images * 100), 2) if total_images > 0 else 0
+        
+        return {
+            'total': total_images,
+            'processed': processed_images,
+            'unprocessed': unprocessed_images,
+            'this_week': images_this_week,
+            'this_month': images_this_month,
+            'processing_rate': processing_rate
+        }
+    
+    def get_prediction_stats(self) -> Dict[str, Any]:
+        """
+        Get prediction statistics.
+        
+        Returns:
+            Dictionary with prediction statistics
+        """
+        if self.CacaoPrediction is None:
+            return {
+                'total': 0,
+                'average_dimensions': {
+                    'alto_mm': 0,
+                    'ancho_mm': 0,
+                    'grosor_mm': 0,
+                    'peso_g': 0
+                },
+                'average_confidence': 0,
+                'average_processing_time_ms': 0
+            }
+        
+        total_predictions = self.CacaoPrediction.objects.count()
+        
+        # Calculate average_confidence using SQL aggregation
+        # average_confidence = (confidence_alto + confidence_ancho + confidence_grosor + confidence_peso) / 4
+        avg_confidence_expr = (
+            F('confidence_alto') + F('confidence_ancho') + 
+            F('confidence_grosor') + F('confidence_peso')
+        ) / 4
+        
+        avg_dimensions = self.CacaoPrediction.objects.aggregate(
+            avg_alto=Avg('alto_mm'),
+            avg_ancho=Avg('ancho_mm'),
+            avg_grosor=Avg('grosor_mm'),
+            avg_peso=Avg('peso_g'),
+            avg_processing_time=Avg('processing_time_ms'),
+            avg_confidence=Avg(avg_confidence_expr)
+        )
+        
+        avg_confidence = float(avg_dimensions.get('avg_confidence', 0) or 0)
+        
+        # Calculate quality distribution using SQL aggregations
+        # Annotate each prediction with its average_confidence
+        queryset = self.CacaoPrediction.objects.annotate(
+            avg_conf=avg_confidence_expr
+        )
+        
+        quality_distribution = {
+            'excelente': queryset.filter(avg_conf__gte=0.8).count(),
+            'buena': queryset.filter(avg_conf__gte=0.6, avg_conf__lt=0.8).count(),
+            'regular': queryset.filter(avg_conf__gte=0.4, avg_conf__lt=0.6).count(),
+            'baja': queryset.filter(avg_conf__lt=0.4).count()
+        }
+        
+        self.log_info(f"Distribución de calidad: {quality_distribution}")
+        
+        return {
+            'total': total_predictions,
+            'average_dimensions': {
+                'alto_mm': round(float(avg_dimensions.get('avg_alto', 0) or 0), 2),
+                'ancho_mm': round(float(avg_dimensions.get('avg_ancho', 0) or 0), 2),
+                'grosor_mm': round(float(avg_dimensions.get('avg_grosor', 0) or 0), 2),
+                'peso_g': round(float(avg_dimensions.get('avg_peso', 0) or 0), 2)
+            },
+            'average_confidence': round(float(avg_confidence), 3),
+            'average_processing_time_ms': round(float(avg_dimensions.get('avg_processing_time', 0) or 0), 0),
+            'quality_distribution': quality_distribution
+        }
+    
+    def get_activity_by_day(self, max_days: int = 30) -> Dict[str, Any]:
+        """
+        Get activity statistics by day.
+        
+        Args:
+            max_days: Maximum number of days to check
+            
+        Returns:
+            Dictionary with activity by day data
+        """
+        today = timezone.now().date()
+        
+        images_by_date = {}
+        if self.CacaoImage is not None:
+            images_by_date = dict(
+                self.CacaoImage.objects
+                .filter(created_at__date__gte=today - timedelta(days=max_days))
+                .annotate(date=TruncDate('created_at'))
+                .values('date')
+                .annotate(count=Count('id'))
+                .values_list('date', 'count')
+            )
+        
+        users_by_date = dict(
+            User.objects
+            .filter(date_joined__date__gte=today - timedelta(days=max_days))
+            .annotate(date=TruncDate('date_joined'))
+            .values('date')
+            .annotate(count=Count('id'))
+            .values_list('date', 'count')
+        )
+        
+        predictions_by_date = {}
+        if self.CacaoPrediction is not None:
+            predictions_by_date = dict(
+                self.CacaoPrediction.objects
+                .filter(created_at__date__gte=today - timedelta(days=max_days))
+                .annotate(date=TruncDate('created_at'))
+                .values('date')
+                .annotate(count=Count('id'))
+                .values_list('date', 'count')
+            )
+        
+        all_dates_with_activity = set()
+        all_dates_with_activity.update(images_by_date.keys())
+        all_dates_with_activity.update(users_by_date.keys())
+        all_dates_with_activity.update(predictions_by_date.keys())
+        
+        days_with_activity_count = len(all_dates_with_activity)
+        
+        if days_with_activity_count > 10:
+            days_to_show = max_days
+            self.log_info(f"Más de 10 días con actividad ({days_with_activity_count}), mostrando últimos {days_to_show} días")
+        else:
+            days_to_show = 7
+            self.log_info(f"{days_with_activity_count} días con actividad, mostrando últimos 7 días")
+        
+        activity_by_day = []
+        activity_labels = []
+        
+        for i in range(days_to_show - 1, -1, -1):
+            date = today - timedelta(days=i)
+            
+            images_count = images_by_date.get(date, 0)
+            users_count = users_by_date.get(date, 0)
+            predictions_count = predictions_by_date.get(date, 0)
+            
+            total_activity = images_count + users_count + predictions_count
+            activity_by_day.append(total_activity)
+            
+            if i == 0:
+                activity_labels.append('Hoy')
+            elif i == 1:
+                activity_labels.append('Ayer')
+            else:
+                if days_to_show > 14:
+                    activity_labels.append(date.strftime('%d/%m'))
+                else:
+                    day_names = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+                    day_name = day_names[date.weekday()]
+                    activity_labels.append(f"{day_name} {date.strftime('%d/%m')}")
+        
+        self.log_info(f"Actividad por día: {activity_by_day} ({len(activity_by_day)} días mostrados)")
+        
+        return {
+            'labels': activity_labels,
+            'data': activity_by_day
+        }
+    
+    def get_finca_stats(self) -> Dict[str, Any]:
+        """
+        Get finca statistics.
+        
+        Returns:
+            Dictionary with finca statistics
+        """
+        if self.Finca is None:
+            self.log_warning("Finca model no está disponible")
+            return {
+                'total': 0,
+                'this_week': 0,
+                'this_month': 0
+            }
+        
+        today = timezone.now().date()
+        this_week = today - timedelta(days=7)
+        this_month = today - timedelta(days=30)
+        
+        total_fincas = self.Finca.objects.count()
+        fincas_this_week = self.Finca.objects.filter(fecha_registro__date__gte=this_week).count()
+        fincas_this_month = self.Finca.objects.filter(fecha_registro__date__gte=this_month).count()
+        
+        self.log_info(f"Fincas - Total: {total_fincas}, Esta semana: {fincas_this_week}, Este mes: {fincas_this_month}")
+        
+        return {
+            'total': total_fincas,
+            'this_week': fincas_this_week,
+            'this_month': fincas_this_month
+        }
+    
+    def get_top_regions(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Get top regions by image count.
+        
+        Args:
+            limit: Maximum number of regions to return
+            
+        Returns:
+            List of region statistics
+        """
+        if self.CacaoImage is None:
+            return []
+        
+        return list(
+            self.CacaoImage.objects.values('region').annotate(
+                count=Count('id'),
+                processed_count=Count('id', filter=Q(processed=True))
+            ).order_by('-count')[:limit]
+        )
+    
+    def get_top_fincas(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Get top fincas by image count.
+        
+        Args:
+            limit: Maximum number of fincas to return
+            
+        Returns:
+            List of finca statistics
+        """
+        if self.CacaoImage is None:
+            return []
+        
+        return list(
+            self.CacaoImage.objects.values('finca').annotate(
+                count=Count('id'),
+                processed_count=Count('id', filter=Q(processed=True))
+            ).order_by('-count')[:limit]
+        )
+    
+    def get_all_stats(self) -> Dict[str, Any]:
+        """
+        Get all system statistics.
+        
+        Returns:
+            Dictionary with all statistics
+        """
+        try:
+            user_stats = self.get_user_stats()
+            image_stats = self.get_image_stats()
+            prediction_stats = self.get_prediction_stats()
+            activity_by_day = self.get_activity_by_day()
+            finca_stats = self.get_finca_stats()
+            top_regions = self.get_top_regions()
+            top_fincas = self.get_top_fincas()
+            
+            quality_distribution = prediction_stats.pop('quality_distribution', {
+                'excelente': 0,
+                'buena': 0,
+                'regular': 0,
+                'baja': 0
+            })
+            
+            stats = {
+                'users': user_stats,
+                'images': image_stats,
+                'fincas': finca_stats,
+                'predictions': prediction_stats,
+                'top_regions': top_regions,
+                'top_fincas': top_fincas,
+                'activity_by_day': activity_by_day,
+                'quality_distribution': quality_distribution,
+                'generated_at': timezone.now().isoformat()
+            }
+            
+            self.log_info(
+                f"Estadísticas generadas - Users: {stats['users']['total']}, "
+                f"Fincas: {stats['fincas']['total']}, "
+                f"Images: {stats['images']['total']}, "
+                f"Quality: {stats['predictions']['average_confidence']}"
+            )
+            
+            return stats
+        except Exception as e:
+            self.log_warning(f"Error obteniendo estadísticas del sistema: {e}")
+            return self.get_empty_stats()
+    
+    def get_empty_stats(self) -> Dict[str, Any]:
+        """
+        Get empty statistics structure.
+        
+        Returns:
+            Dictionary with empty statistics
+        """
+        return {
+            'users': {
+                'total': 0,
+                'active': 0,
+                'staff': 0,
+                'superusers': 0,
+                'analysts': 0,
+                'farmers': 0,
+                'verified': 0,
+                'this_week': 0,
+                'this_month': 0
+            },
+            'images': {
+                'total': 0,
+                'processed': 0,
+                'unprocessed': 0,
+                'this_week': 0,
+                'this_month': 0,
+                'processing_rate': 0
+            },
+            'predictions': {
+                'total': 0,
+                'average_dimensions': {
+                    'alto_mm': 0,
+                    'ancho_mm': 0,
+                    'grosor_mm': 0,
+                    'peso_g': 0
+                },
+                'average_confidence': 0,
+                'average_processing_time_ms': 0
+            },
+            'top_regions': [],
+            'top_fincas': [],
+            'generated_at': timezone.now().isoformat()
+        }
+

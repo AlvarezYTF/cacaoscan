@@ -5,23 +5,10 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-# Importar desde apps modulares
-try:
-    from auth_app.models import EmailVerificationToken, UserProfile
-except ImportError:
-    EmailVerificationToken = None
-    UserProfile = None
-
-try:
-    from images_app.models import CacaoImage, CacaoPrediction
-except ImportError:
-    CacaoImage = None
-    CacaoPrediction = None
-
-try:
-    from core.models import SystemSettings
-except ImportError:
-    SystemSettings = None
+# Import models directly from their apps to avoid circular dependencies
+from auth_app.models import EmailVerificationToken, UserProfile
+from images_app.models import CacaoImage, CacaoPrediction
+from core.models import SystemSettings
 
 
 # Configuración personalizada para User

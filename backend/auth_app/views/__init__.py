@@ -1,0 +1,48 @@
+"""
+Auth app views module.
+"""
+from .auth import (
+    LoginView,
+    RegisterView,
+    LogoutView,
+    UserProfileView,
+    RefreshTokenView,
+    ChangePasswordView,
+    EmailVerificationView,
+    ResendVerificationView,
+    PreRegisterView,
+    VerifyEmailPreRegistrationView,
+    ForgotPasswordView,
+    ResetPasswordView,
+    SendOtpView,
+    VerifyOtpView,
+    UserListView,
+    UserUpdateView,
+    UserDeleteView,
+    UserStatsView,
+    AdminStatsView,
+    UserDetailView,
+)
+
+__all__ = [
+    'LoginView',
+    'RegisterView',
+    'LogoutView',
+    'UserProfileView',
+    'RefreshTokenView',
+    'ChangePasswordView',
+    'EmailVerificationView',
+    'ResendVerificationView',
+    'PreRegisterView',
+    'VerifyEmailPreRegistrationView',
+    'ForgotPasswordView',
+    'ResetPasswordView',
+    'SendOtpView',
+    'VerifyOtpView',
+    'UserListView',
+    'UserUpdateView',
+    'UserDeleteView',
+    'UserStatsView',
+    'AdminStatsView',
+    'UserDetailView',
+]
