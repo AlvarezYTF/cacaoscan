@@ -56,11 +56,22 @@ AUTO_TRAIN_ENABLED=0
     print(f"✅ Archivo .env creado automáticamente en: {dotenv_path}")
 
 # Load .env file with explicit UTF-8 encoding to avoid decode errors
+# Try multiple encodings if UTF-8 fails
 try:
     load_dotenv(dotenv_path, encoding='utf-8')
-except Exception as e:
-    print(f"⚠️ Warning: Error loading .env file: {e}")
-    print(f"Continuing with environment variables...")
+except Exception:
+    try:
+        # Try without BOM
+        with open(dotenv_path, 'r', encoding='utf-8-sig') as f:
+            content = f.read()
+        # Write back with UTF-8 encoding
+        with open(dotenv_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        load_dotenv(dotenv_path, encoding='utf-8')
+    except Exception as e:
+        print("⚠️ Warning: Error loading .env file:", e)
+        print("Continuing with environment variables...")
+        print("💡 Tip: Recreate .env file with UTF-8 encoding if issues persist")
 
 
 # Suprimir warnings molestos
@@ -181,21 +192,41 @@ TEMPLATES = [
 WSGI_APPLICATION = 'cacaoscan.wsgi.application'
 
 # Database
-# Ensure all database credentials are properly encoded as UTF-8 strings
-db_password = os.environ.get('DB_PASSWORD', '')
-if db_password and isinstance(db_password, bytes):
-    db_password = db_password.decode('utf-8', errors='ignore')
-elif not isinstance(db_password, str):
-    db_password = str(db_password)
+# Helper function to safely decode environment variables as UTF-8 strings
+def safe_env_get(key: str, default: str = '') -> str:
+    """Safely get and decode environment variable as UTF-8 string."""
+    value = os.environ.get(key, default)
+    if value is None:
+        return default
+    if isinstance(value, bytes):
+        # Try UTF-8 first, fallback to latin-1 if that fails
+        try:
+            value = value.decode('utf-8', errors='strict')
+        except (UnicodeDecodeError, AttributeError):
+            try:
+                value = value.decode('latin-1', errors='replace')
+            except Exception:
+                value = value.decode('utf-8', errors='replace')
+    elif not isinstance(value, str):
+        value = str(value)
+    # Ensure the value is a valid UTF-8 string
+    if isinstance(value, str):
+        # Re-encode and decode to ensure valid UTF-8
+        try:
+            value = value.encode('utf-8', errors='strict').decode('utf-8')
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            # If strict encoding fails, use replace to handle problematic characters
+            value = value.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+    return value
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'cacaoscan_db'),
-        'USER': os.environ.get('DB_USER', 'cacaoscan'),
-        'PASSWORD': db_password,
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'NAME': safe_env_get('DB_NAME', 'cacaoscan_db'),
+        'USER': safe_env_get('DB_USER', 'cacaoscan'),
+        'PASSWORD': safe_env_get('DB_PASSWORD', ''),
+        'HOST': safe_env_get('DB_HOST', 'localhost'),
+        'PORT': safe_env_get('DB_PORT', '5432'),
         'OPTIONS': {
             'client_encoding': 'UTF8',
         },

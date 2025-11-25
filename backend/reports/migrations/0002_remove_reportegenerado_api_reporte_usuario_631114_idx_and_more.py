@@ -10,99 +10,119 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveIndex(
-            model_name='reportegenerado',
-            name='api_reporte_usuario_631114_idx',
+        # Remove indexes only if they exist
+        migrations.RunSQL(
+            sql="""
+                DROP INDEX IF EXISTS api_reporte_usuario_631114_idx;
+                DROP INDEX IF EXISTS api_reporte_tipo_re_ac3fa0_idx;
+                DROP INDEX IF EXISTS api_reporte_estado_c21744_idx;
+                DROP INDEX IF EXISTS api_reporte_formato_55d2b8_idx;
+                DROP INDEX IF EXISTS api_reporte_fecha_s_91879e_idx;
+            """,
+            reverse_sql=migrations.RunSQL.noop,
         ),
-        migrations.RemoveIndex(
-            model_name='reportegenerado',
-            name='api_reporte_tipo_re_ac3fa0_idx',
-        ),
-        migrations.RemoveIndex(
-            model_name='reportegenerado',
-            name='api_reporte_estado_c21744_idx',
-        ),
-        migrations.RemoveIndex(
-            model_name='reportegenerado',
-            name='api_reporte_formato_55d2b8_idx',
-        ),
-        migrations.RemoveIndex(
-            model_name='reportegenerado',
-            name='api_reporte_fecha_s_91879e_idx',
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='archivo',
-            field=models.FileField(blank=True, null=True, upload_to='reportes/%Y/%m/%d/'),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='descripcion',
-            field=models.TextField(blank=True, null=True),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='estado',
-            field=models.CharField(choices=[('generando', 'Generando'), ('completado', 'Completado'), ('fallido', 'Fallido'), ('expirado', 'Expirado')], default='generando', max_length=20),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='fecha_expiracion',
-            field=models.DateTimeField(blank=True, null=True),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='fecha_generacion',
-            field=models.DateTimeField(blank=True, null=True),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='fecha_solicitud',
-            field=models.DateTimeField(auto_now_add=True),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='filtros_aplicados',
-            field=models.JSONField(blank=True, default=dict),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='formato',
-            field=models.CharField(choices=[('pdf', 'PDF'), ('excel', 'Excel'), ('csv', 'CSV'), ('json', 'JSON')], max_length=10),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='mensaje_error',
-            field=models.TextField(blank=True, null=True),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='nombre_archivo',
-            field=models.CharField(blank=True, max_length=255, null=True),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='parametros',
-            field=models.JSONField(blank=True, default=dict),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='tamano_archivo',
-            field=models.PositiveIntegerField(blank=True, db_column='tamaño_archivo', null=True),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='tiempo_generacion',
-            field=models.DurationField(blank=True, null=True),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='tipo_reporte',
-            field=models.CharField(choices=[('calidad', 'Reporte de Calidad'), ('defectos', 'Reporte de Defectos'), ('rendimiento', 'Reporte de Rendimiento'), ('finca', 'Reporte de Finca'), ('lote', 'Reporte de Lote'), ('usuario', 'Reporte de Usuario'), ('auditoria', 'Reporte de Auditoría'), ('personalizado', 'Reporte Personalizado')], max_length=20),
-        ),
-        migrations.AlterField(
-            model_name='reportegenerado',
-            name='titulo',
-            field=models.CharField(max_length=200),
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.RemoveIndex(
+                    model_name='reportegenerado',
+                    name='api_reporte_usuario_631114_idx',
+                ),
+                migrations.RemoveIndex(
+                    model_name='reportegenerado',
+                    name='api_reporte_tipo_re_ac3fa0_idx',
+                ),
+                migrations.RemoveIndex(
+                    model_name='reportegenerado',
+                    name='api_reporte_estado_c21744_idx',
+                ),
+                migrations.RemoveIndex(
+                    model_name='reportegenerado',
+                    name='api_reporte_formato_55d2b8_idx',
+                ),
+                migrations.RemoveIndex(
+                    model_name='reportegenerado',
+                    name='api_reporte_fecha_s_91879e_idx',
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='archivo',
+                    field=models.FileField(blank=True, null=True, upload_to='reportes/%Y/%m/%d/'),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='descripcion',
+                    field=models.TextField(blank=True, null=True),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='estado',
+                    field=models.CharField(choices=[('generando', 'Generando'), ('completado', 'Completado'), ('fallido', 'Fallido'), ('expirado', 'Expirado')], default='generando', max_length=20),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='fecha_expiracion',
+                    field=models.DateTimeField(blank=True, null=True),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='fecha_generacion',
+                    field=models.DateTimeField(blank=True, null=True),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='fecha_solicitud',
+                    field=models.DateTimeField(auto_now_add=True),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='filtros_aplicados',
+                    field=models.JSONField(blank=True, default=dict),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='formato',
+                    field=models.CharField(choices=[('pdf', 'PDF'), ('excel', 'Excel'), ('csv', 'CSV'), ('json', 'JSON')], max_length=10),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='mensaje_error',
+                    field=models.TextField(blank=True, null=True),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='nombre_archivo',
+                    field=models.CharField(blank=True, max_length=255, null=True),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='parametros',
+                    field=models.JSONField(blank=True, default=dict),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='tamano_archivo',
+                    field=models.PositiveIntegerField(blank=True, db_column='tamaño_archivo', null=True),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='tiempo_generacion',
+                    field=models.DurationField(blank=True, null=True),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='tipo_reporte',
+                    field=models.CharField(choices=[('calidad', 'Reporte de Calidad'), ('defectos', 'Reporte de Defectos'), ('rendimiento', 'Reporte de Rendimiento'), ('finca', 'Reporte de Finca'), ('lote', 'Reporte de Lote'), ('usuario', 'Reporte de Usuario'), ('auditoria', 'Reporte de Auditoría'), ('personalizado', 'Reporte Personalizado')], max_length=20),
+                ),
+                migrations.AlterField(
+                    model_name='reportegenerado',
+                    name='titulo',
+                    field=models.CharField(max_length=200),
+                ),
+            ],
+            database_operations=[
+                # Table structure is already correct from migration 0001
+                # Only update Django's state, don't modify the database
+                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+            ],
         ),
     ]
