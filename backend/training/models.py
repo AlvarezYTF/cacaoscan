@@ -42,7 +42,7 @@ class TrainingJob(models.Model):
     
     # Resultados
     metrics = models.JSONField(default=dict, help_text="Métricas de entrenamiento")
-    model_path = models.CharField(max_length=500, blank=True, null=True, help_text="Ruta del modelo entrenado")
+    model_path = models.CharField(max_length=500, blank=True, default='', help_text="Ruta del modelo entrenado")
     logs = models.TextField(blank=True, help_text="Logs del entrenamiento")
     
     # Timestamps
@@ -169,7 +169,6 @@ class ModelMetrics(models.Model):
     target = models.CharField(max_length=20, choices=TARGET_CHOICES)
     version = models.CharField(max_length=20)
     
-    # training_job = models.ForeignKey('TrainingJob', ...) # Deshabilitado temporalmente
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='model_metrics')
     
     metric_type = models.CharField(max_length=20, choices=METRIC_TYPE_CHOICES)

@@ -192,7 +192,7 @@ class Command(BaseCommand):
         
         self.stdout.write(
             self.style.SUCCESS(
-                f"Iniciando entrenamiento de modelos de cacao"
+                "Iniciando entrenamiento de modelos de cacao"
             )
         )
         
@@ -302,7 +302,7 @@ class Command(BaseCommand):
             'max_grad_norm': options.get('max_grad_norm', 1.0),
             'use_mixed_precision': options.get('use_mixed_precision', False),
             'targets': self._parse_targets(options['targets']),
-            'warmup_epochs': options.get('warmup_epochs') if options.get('warmup_epochs') is not None else (10 if is_optimized_hybrid else 5)
+            'warmup_epochs': self._get_warmup_epochs(options, is_optimized_hybrid)
         }
         
         if options['test_mode']:
@@ -316,6 +316,14 @@ class Command(BaseCommand):
             )
         
         return config
+    
+    def _get_warmup_epochs(self, options: Dict, is_optimized_hybrid: bool) -> int:
+        """Get warmup epochs from options or use default based on model type."""
+        warmup_epochs = options.get('warmup_epochs')
+        if warmup_epochs is not None:
+            return warmup_epochs
+        
+        return 10 if is_optimized_hybrid else 5
     
     def _parse_targets(self, targets_str: str) -> List[str]:
         """Parsea la lista de targets."""
@@ -721,7 +729,7 @@ class Command(BaseCommand):
                         )
                     )
                     self.stdout.write(
-                        f"Para monitorear: celery -A cacaoscan inspect active"
+                        "Para monitorear: celery -A cacaoscan inspect active"
                     )
                 except Exception as e:
                     raise CommandError(f"Error esperando resultado de Celery: {e}")

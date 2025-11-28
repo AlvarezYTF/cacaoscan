@@ -17,11 +17,19 @@ const API_BASE_URL = getApiBaseUrlWithoutPath();
  * Configuración común para todas las peticiones
  * @returns {Object} Headers comunes
  */
-const getCommonHeaders = () => ({
-  'Content-Type': 'application/json'
-  // TODO: Agregar token de autenticación cuando esté implementado
-  // 'Authorization': `Bearer ${getAuthToken()}`
-});
+const getCommonHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json'
+  }
+  
+  // Agregar token de autenticación si está disponible
+  const token = localStorage.getItem('access_token')
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  
+  return headers
+}
 
 /**
  * Maneja respuestas HTTP de manera consistente (DRY)

@@ -51,7 +51,7 @@ class Command(BaseCommand):
             df = loader.load_dataset()
             self.stdout.write(f"   Total registros en CSV: {len(df)}")
             self.stdout.write(f"   Columnas: {list(df.columns)}")
-            self.stdout.write(f"\n   Primeros 5 registros:")
+            self.stdout.write("\n   Primeros 5 registros:")
             self.stdout.write(str(df.head()[['id', 'alto', 'ancho', 'grosor', 'peso']]))
             
             # 4. Validar imágenes
@@ -64,7 +64,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"   IDs faltantes (primeros 10): {missing_ids[:10]}")
             
             if len(valid_df) > 0:
-                self.stdout.write(f"\n   Primeras 5 imágenes válidas:")
+                self.stdout.write("\n   Primeras 5 imágenes válidas:")
                 self.stdout.write(str(valid_df.head()[['id', 'alto', 'ancho', 'grosor', 'peso', 'image_path']]))
                 
                 # Verificar que las rutas apuntan a raw
@@ -82,7 +82,7 @@ class Command(BaseCommand):
             self.stdout.write(f"   Total registros válidos: {len(valid_records)}")
             
             if valid_records:
-                self.stdout.write(f"\n   Ejemplo de registro válido:")
+                self.stdout.write("\n   Ejemplo de registro válido:")
                 sample = valid_records[0]
                 self.stdout.write(f"   ID: {sample['id']}")
                 self.stdout.write(f"   Alto: {sample['alto']}, Ancho: {sample['ancho']}, Grosor: {sample['grosor']}, Peso: {sample['peso']}")
@@ -94,7 +94,7 @@ class Command(BaseCommand):
             self.stdout.write("\n" + "=" * 60)
             self.stdout.write(self.style.SUCCESS("VERIFICACIÓN COMPLETADA"))
             self.stdout.write("=" * 60)
-            self.stdout.write(f"\nResumen:")
+            self.stdout.write("\nResumen:")
             self.stdout.write(f"  - Imágenes raw disponibles: {len(bmp_files)}")
             self.stdout.write(f"  - Registros en CSV: {len(df)}")
             self.stdout.write(f"  - Registros válidos (con imagen): {len(valid_df)}")

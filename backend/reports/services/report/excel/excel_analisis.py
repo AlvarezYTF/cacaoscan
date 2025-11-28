@@ -93,6 +93,11 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         Generates farm report in Excel.
         
         Args:
+            finca_id: ID de la finca
+            user: Usuario que solicita el reporte
+            filtros: Filtros a aplicar (reservado para uso futuro)
+        
+        Args:
             finca_id: Farm ID
             user: User requesting the report
             filtros: Filters to apply
@@ -100,6 +105,10 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         Returns:
             bytes: Excel file content
         """
+        # Suppress unused parameter warnings - reserved for future use
+        _ = user
+        _ = filtros
+        
         try:
             finca = Finca.objects.get(id=finca_id)
             self._create_workbook(f"Finca {finca.nombre}")

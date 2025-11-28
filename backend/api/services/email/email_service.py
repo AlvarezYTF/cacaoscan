@@ -282,7 +282,6 @@ class EmailService:
         try:
             filename = attachment.get('filename')
             content = attachment.get('content')
-            content_type = attachment.get('content_type', CONTENT_TYPE_OCTET_STREAM)
             
             if isinstance(content, str):
                 content = content.encode('utf-8')
@@ -579,7 +578,7 @@ def send_email_notification(
         logger.info(f"[DEBUG EMAIL] Contexto recibido: {list(context.keys())}")
 
         # === Enviar correo ===
-        logger.info(f"[DEBUG EMAIL] Abriendo conexin SMTP...")
+        logger.info("[DEBUG EMAIL] Abriendo conexión SMTP...")
         sent_count = email.send(fail_silently=False)
         logger.info(f"[DEBUG EMAIL] Email enviado. Contador: {sent_count}")
 

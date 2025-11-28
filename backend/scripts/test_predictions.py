@@ -39,7 +39,7 @@ def test_prediction():
         return
     
     print(f"\nImagen encontrada: {image_record['image_path']}")
-    print(f"Valores reales:")
+    print("Valores reales:")
     print(f"  ALTO: {image_record.get('alto', 'N/A')}")
     print(f"  ANCHO: {image_record.get('ancho', 'N/A')}")
     print(f"  GROSOR: {image_record.get('grosor', 'N/A')}")
@@ -80,7 +80,7 @@ def test_prediction():
     print("\nHaciendo predicción...")
     result = predictor.predict(image)
     
-    print(f"\nPredicciones desnormalizadas:")
+    print("\nPredicciones desnormalizadas:")
     print(f"  alto_mm: {result['alto_mm']:.2f}")
     print(f"  ancho_mm: {result['ancho_mm']:.2f}")
     print(f"  grosor_mm: {result['grosor_mm']:.2f}")

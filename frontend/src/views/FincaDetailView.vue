@@ -16,7 +16,7 @@
 
         <!-- Loading state -->
         <div v-if="loading" class="text-center py-5">
-          <div class="spinner-border text-primary" role="status">
+          <div class="spinner-border text-primary" aria-live="polite" aria-label="Cargando información">
             <span class="visually-hidden">Cargando...</span>
           </div>
           <p class="mt-3">Cargando información de la finca...</p>
@@ -361,7 +361,7 @@ const generateReport = async () => {
     })
     
     if (response.ok) {
-      const reporte = await response.json()
+      await response.json()
       await Swal.fire({
         title: 'Reporte Generado',
         text: 'El reporte se ha generado exitosamente',

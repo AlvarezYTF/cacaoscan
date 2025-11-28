@@ -70,7 +70,7 @@ class CacaoReportPDFGenerator:
         elements = []
         
         # Título principal
-        title = Paragraph(f"Reporte de Calidad de Cacao", self.styles['CustomTitle'])
+        title = Paragraph("Reporte de Calidad de Cacao", self.styles['CustomTitle'])
         elements.append(title)
         
         # Información del usuario y fecha

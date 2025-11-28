@@ -111,7 +111,7 @@
           </div>
 
           <div v-if="formulario.tipo_reporte === 'personalizado'" class="form-group mb-3">
-            <label class="form-label" id="custom-params-label">Parámetros Personalizados</label>
+            <div class="form-label" id="custom-params-label">Parámetros Personalizados</div>
             <div class="row" role="group" aria-labelledby="custom-params-label">
               <div class="col-md-4">
                 <div class="form-check">

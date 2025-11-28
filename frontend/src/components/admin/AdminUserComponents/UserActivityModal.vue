@@ -364,7 +364,7 @@ export default {
         link.download = `actividad_${props.user.username}_${new Date().toISOString().split('T')[0]}.xlsx`
         document.body.appendChild(link)
         link.click()
-        document.body.removeChild(link)
+        link.remove()
         window.URL.revokeObjectURL(url)
         
       } catch (error) {

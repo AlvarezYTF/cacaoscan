@@ -267,7 +267,7 @@ class SendBulkNotificationView(APIView):
         """Envía notificaciones masivas por email."""
         notification_type = request.data.get('notification_type')
         user_emails = request.data.get('user_emails', [])
-        subject_override = request.data.get('subject_override')
+        _ = request.data.get('subject_override')  # Reserved for future use
         context = request.data.get('context', {})
         batch_size = request.data.get('batch_size', 50)
         
@@ -512,7 +512,9 @@ class EmailLogsView(APIView):
     def get(self, request):
         """Obtiene logs de emails enviados."""
         try:
-            # TODO: Implementar sistema de logging de emails
+            # Pendiente: Implementar sistema de logging de emails persistente
+            # Esto requerirá crear un modelo EmailLog para almacenar:
+            # - timestamp, recipient, subject, status (sent/failed), error_message
             # Por ahora retornamos datos de ejemplo
             
             logs_data = {

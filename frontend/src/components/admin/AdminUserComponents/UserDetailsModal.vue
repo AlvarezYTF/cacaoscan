@@ -26,37 +26,37 @@
             </h4>
             <div class="info-grid">
               <div class="info-item">
-                <label>Nombre de Usuario</label>
+                <div class="info-label">Nombre de Usuario</div>
                 <span>{{ userDetails.username }}</span>
               </div>
               <div class="info-item">
-                <label>Email</label>
+                <div class="info-label">Email</div>
                 <span>{{ userDetails.email }}</span>
               </div>
               <div class="info-item">
-                <label>Nombre Completo</label>
+                <div class="info-label">Nombre Completo</div>
                 <span>{{ userDetails.first_name }} {{ userDetails.last_name }}</span>
               </div>
               <div class="info-item">
-                <label>Rol</label>
+                <div class="info-label">Rol</div>
                 <span class="badge" :class="getRoleBadgeClass(userDetails.role)">
                   {{ userDetails.role || 'Sin rol' }}
                 </span>
               </div>
               <div class="info-item">
-                <label>Teléfono</label>
+                <div class="info-label">Teléfono</div>
                 <span>{{ userDetails.phone || 'No especificado' }}</span>
               </div>
               <div class="info-item">
-                <label>Ubicación</label>
+                <div class="info-label">Ubicación</div>
                 <span>{{ userDetails.location || 'No especificada' }}</span>
               </div>
               <div class="info-item">
-                <label>Organización</label>
+                <div class="info-label">Organización</div>
                 <span>{{ userDetails.organization || 'No especificada' }}</span>
               </div>
               <div class="info-item">
-                <label>Estado</label>
+                <div class="info-label">Estado</div>
                 <span class="badge" :class="userDetails.is_active ? 'badge-success' : 'badge-danger'">
                   {{ userDetails.is_active ? 'Activo' : 'Inactivo' }}
                 </span>
@@ -96,25 +96,25 @@
             </h4>
             <div class="info-grid">
               <div class="info-item">
-                <label>Fecha de Registro</label>
+                <div class="info-label">Fecha de Registro</div>
                 <span>{{ formatDateTime(userDetails.date_joined) }}</span>
               </div>
               <div class="info-item">
-                <label>Último Login</label>
+                <div class="info-label">Último Login</div>
                 <span v-if="userDetails.last_login">
                   {{ formatDateTime(userDetails.last_login) }}
                 </span>
                 <span v-else class="text-muted">Nunca</span>
               </div>
               <div class="info-item">
-                <label>Última Actividad</label>
+                <div class="info-label">Última Actividad</div>
                 <span v-if="userDetails.last_activity">
                   {{ formatDateTime(userDetails.last_activity) }}
                 </span>
                 <span v-else class="text-muted">No disponible</span>
               </div>
               <div class="info-item">
-                <label>Estado de Conexión</label>
+                <div class="info-label">Estado de Conexión</div>
                 <span class="badge" :class="getConnectionStatusClass(userDetails)">
                   {{ getConnectionStatus(userDetails) }}
                 </span>
@@ -463,7 +463,8 @@ export default {
   gap: 5px;
 }
 
-.info-item label {
+.info-item label,
+.info-item .info-label {
   font-weight: 500;
   color: #7f8c8d;
   font-size: 0.9rem;

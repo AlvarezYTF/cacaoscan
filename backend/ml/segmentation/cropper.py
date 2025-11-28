@@ -215,7 +215,7 @@ class CacaoCropper:
         except Exception as e:
             logger.error(f"Error procesando imagen {image_path}: {e}")
             try:
-                logger.warning(f"Intentando fallback OpenCV despus de error en YOLO...")
+                logger.warning("Intentando fallback OpenCV después de error en YOLO...")
                 return self._process_with_opencv_fallback(image_path, image_id)
             except Exception as fallback_error:
                 logger.error(f"Fallback OpenCV tambin fall: {fallback_error}")

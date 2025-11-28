@@ -320,7 +320,7 @@ const handleSubmit = async () => {
   try {
     const { uid, token } = route.query
     
-    const result = await authApi.confirmPasswordReset({
+    await authApi.confirmPasswordReset({
       uid,
       token,
       newPassword: form.value.newPassword,

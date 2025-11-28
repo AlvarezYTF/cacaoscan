@@ -95,7 +95,7 @@ if CacaoPrediction:
                     'processing_time_ms': instance.processing_time_ms,
                     'analysis_date': instance.created_at.strftime('%d/%m/%Y %H:%M'),
                     'crop_url': getattr(instance, 'crop_url', ''),
-                    'defects_detected': []  # TODO: Implementar detección de defectos
+                    'defects_detected': []  # Pendiente: Implementar detección de defectos mediante ML (análisis de imagen para manchas, grietas, deformaciones, etc.)
                 }
                 
                 email_result = send_email_notification(

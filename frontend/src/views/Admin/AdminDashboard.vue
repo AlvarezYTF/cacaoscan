@@ -261,7 +261,11 @@ const kpiCards = computed(() => {
       variant: 'warning',
       trend: {
         data: [],
-        direction: qualityChange > 0 ? 'up' : qualityChange < 0 ? 'down' : 'stable'
+        direction: (() => {
+          if (qualityChange > 0) return 'up'
+          if (qualityChange < 0) return 'down'
+          return 'stable'
+        })()
       }
     }
   ]
@@ -428,20 +432,33 @@ const loadRecentUsers = async () => {
   }
 }
 
+const getActionDisplay = (activity) => {
+  // Check if display is already provided
+  if (activity.accion_display || activity.action_display) {
+    return activity.accion_display || activity.action_display
+  }
+  
+  // Map action to display text
+  const action = activity.accion || activity.action
+  const actionMap = {
+    'create': 'Crear',
+    'update': 'Actualizar',
+    'delete': 'Eliminar',
+    'view': 'Ver',
+    'login': 'Login',
+    'logout': 'Logout',
+    'read': 'Leer'
+  }
+  
+  return actionMap[action] || action || 'Desconocida'
+}
+
 const processActivityData = (activity) => {
   return {
     id: activity.id,
     usuario: activity.usuario || activity.user?.username || activity.username || 'Anónimo',
     accion: activity.accion || activity.action || 'unknown',
-    accion_display: activity.accion_display || activity.action_display || 
-      (activity.accion === 'create' ? 'Crear' :
-       activity.accion === 'update' ? 'Actualizar' :
-       activity.accion === 'delete' ? 'Eliminar' :
-       activity.accion === 'view' ? 'Ver' :
-       activity.accion === 'login' ? 'Login' :
-       activity.accion === 'logout' ? 'Logout' : 
-       activity.accion === 'read' ? 'Leer' :
-       activity.accion || 'Desconocida'),
+    accion_display: getActionDisplay(activity),
     modelo: activity.modelo || activity.model || activity.content_type || 'N/A',
     timestamp: activity.timestamp || activity.created_at || activity.date || new Date().toISOString(),
     descripcion: activity.descripcion || activity.description || '',

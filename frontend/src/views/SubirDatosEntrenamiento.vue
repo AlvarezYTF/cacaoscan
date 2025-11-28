@@ -436,8 +436,6 @@ import { useRouter } from 'vue-router'
 export default {
   name: 'SubirDatosEntrenamiento',
   setup() {
-    const router = useRouter()
-    
     // Estado reactivo
     const selectedFile = ref(null)
     const isDragging = ref(false)

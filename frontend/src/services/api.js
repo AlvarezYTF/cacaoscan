@@ -121,6 +121,208 @@ const processQueue = (error, token = null) => {
   failedRequestsQueue = []
 }
 
+// Helper functions for error handling
+const isConfigEndpoint = (url) => url?.includes('/config/')
+const isStatsEndpoint = (url) => url?.includes('/stats/')
+const isNonCriticalEndpoint = (url) => isConfigEndpoint(url) || isStatsEndpoint(url)
+
+const handleSilent500Error = (originalRequest, error) => {
+  if (error.response?.status === 500 && isNonCriticalEndpoint(originalRequest.url)) {
+    return {
+      data: {},
+      status: 200,
+      config: originalRequest
+    }
+  }
+  return null
+}
+
+const handleAuthEndpointError = (originalRequest) => {
+  const authEndpoints = ['/auth/login/', '/auth/register/', '/auth/refresh/']
+  const isAuthEndpoint = authEndpoints.some(endpoint => originalRequest.url.includes(endpoint))
+  
+  if (isAuthEndpoint && originalRequest.url.includes('/auth/refresh/')) {
+    console.error('🚫 Refresh token inválido o expirado, cerrando sesión.')
+    showSessionExpiredModal()
+    throw new Error('Refresh token expired')
+  }
+  
+  return isAuthEndpoint
+}
+
+const showSessionExpiredModal = () => {
+  if (typeof window !== 'undefined' && window.showSessionExpiredModal) {
+    window.showSessionExpiredModal()
+  } else {
+    localStorage.clear()
+    router.replace({ 
+      name: 'Login',
+      query: {
+        message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+        expired: 'true'
+      }
+    })
+  }
+}
+
+const handleNoRefreshToken = () => {
+  console.warn('⚠️ No hay refresh token disponible, mostrando modal...')
+  showSessionExpiredModal()
+}
+
+const createBaseAxiosInstance = () => {
+  return axios.create({
+    baseURL: api.defaults.baseURL,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+}
+
+const refreshTokenFlow = async (refreshToken) => {
+  const baseAxios = createBaseAxiosInstance()
+  const response = await baseAxios.post('/auth/refresh/', {
+    refresh: refreshToken,
+  })
+  return response.data
+}
+
+const saveTokens = (accessToken, refreshToken) => {
+  localStorage.setItem('access_token', accessToken)
+  if (refreshToken) {
+    localStorage.setItem('refresh_token', refreshToken)
+  }
+  api.defaults.headers.Authorization = 'Bearer ' + accessToken
+  
+  const authStore = getAuthStore()
+  authStore.setTokens({ access: accessToken, refresh: refreshToken })
+}
+
+const handleRefreshSuccess = async (newAccessToken, newRefreshToken, originalRequest) => {
+  saveTokens(newAccessToken, newRefreshToken)
+  console.log('🔄 Token JWT refrescado automáticamente')
+  processQueue(null, newAccessToken)
+  
+  originalRequest.headers.Authorization = 'Bearer ' + newAccessToken
+  return api(originalRequest)
+}
+
+const handleRefreshError = (refreshError) => {
+  console.error('❌ Error refrescando token:', refreshError)
+  processQueue(refreshError, null)
+  showSessionExpiredModal()
+  throw refreshError
+}
+
+const handle401Error = async (error, originalRequest) => {
+  if (error.response?.status !== 401 || originalRequest._retry) {
+    return null
+  }
+  
+  const isAuthEndpoint = handleAuthEndpointError(originalRequest)
+  if (isAuthEndpoint) {
+    throw error
+  }
+  
+  const refreshToken = localStorage.getItem('refresh_token')
+  if (!refreshToken) {
+    handleNoRefreshToken()
+    throw error
+  }
+  
+  if (isRefreshing) {
+    return new Promise((resolve, reject) => {
+      failedRequestsQueue.push({ resolve, reject })
+    }).then(token => {
+      originalRequest.headers.Authorization = 'Bearer ' + token
+      return api(originalRequest)
+    }).catch(err => {
+      throw err
+    })
+  }
+  
+  originalRequest._retry = true
+  isRefreshing = true
+  
+  try {
+    const { access: newAccessToken, refresh: newRefreshToken } = await refreshTokenFlow(refreshToken)
+    return await handleRefreshSuccess(newAccessToken, newRefreshToken, originalRequest)
+  } catch (refreshError) {
+    return handleRefreshError(refreshError)
+  } finally {
+    isRefreshing = false
+  }
+}
+
+const handle403Error = (error) => {
+  if (error.response?.status !== 403) {
+    return
+  }
+  
+  const errorMessage = error.response.data?.detail || 'No tienes permisos para realizar esta acción'
+  const isConfig = isConfigEndpoint(error.config?.url)
+  
+  if (!isConfig) {
+    console.warn('🚫 Acceso denegado:', errorMessage)
+  }
+  
+  if (errorMessage.includes('verificada')) {
+    router.push({
+      name: 'EmailVerification',
+      query: { message: errorMessage }
+    })
+  }
+}
+
+const handle429Error = (error) => {
+  if (error.response?.status !== 429) {
+    return
+  }
+  
+  const errorMessage = error.response.data?.detail || 'Demasiadas solicitudes. Intenta más tarde.'
+  if (typeof window !== 'undefined' && window.showNotification) {
+    window.showNotification({
+      type: 'warning',
+      title: 'Límite de solicitudes',
+      message: errorMessage,
+      duration: 5000
+    })
+  }
+}
+
+const handle500Error = (error, originalRequest) => {
+  if (error.response?.status < 500) {
+    return
+  }
+  
+  const isConfig = isConfigEndpoint(originalRequest?.url)
+  const isStats = isStatsEndpoint(originalRequest?.url)
+  
+  if (!isConfig && !isStats && typeof window !== 'undefined' && window.showNotification) {
+    window.showNotification({
+      type: 'error',
+      title: 'Error del servidor',
+      message: 'Ocurrió un error interno. Por favor intenta más tarde.',
+      duration: 8000
+    })
+  }
+}
+
+const handleNetworkError = (error) => {
+  if (error.response) {
+    return
+  }
+  
+  if (typeof window !== 'undefined' && window.showNotification) {
+    window.showNotification({
+      type: 'error',
+      title: 'Error de conexión',
+      message: 'No se pudo conectar al servidor. Verifica tu conexión a internet.',
+      duration: 8000
+    })
+  }
+}
+
 // Función para obtener el store de auth dinámicamente
 const getAuthStore = () => {
   // Importación dinámica para evitar dependencias circulares
@@ -220,227 +422,25 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // Calcular tiempo de error
+    // Handle silent 500 errors for non-critical endpoints
     if (originalRequest.metadata) {
-      const endTime = new Date()
-      const duration = endTime - originalRequest.metadata.startTime
-      
-      // Endpoints que pueden fallar normalmente (configuración, stats)
-      const isConfigEndpoint = originalRequest.url?.includes('/config/')
-      const isStatsEndpoint = originalRequest.url?.includes('/stats/')
-      
-      // Determinar si es un error esperado (500 o 403 en endpoints no críticos)
-      const isExpectedFailure = (isConfigEndpoint || isStatsEndpoint) && 
-                                 (error.response?.status === 403 || error.response?.status === 500)
-      
-      // Solo loggear errores críticos o no esperados - silenciado
-      
-      // Manejar errores 500 para endpoints no críticos silenciosamente
-      if (error.response?.status === 500) {
-        // No loggear ni mostrar notificación para endpoints de stats o config
-        if (isStatsEndpoint || isConfigEndpoint) {
-          return {
-            data: {},
-            status: 200,
-            config: originalRequest
-          }
-        }
+      const silentError = handleSilent500Error(originalRequest, error)
+      if (silentError) {
+        return silentError
       }
     }
 
-    // Manejar errores 401 (No autorizado) - JWT Refresh Token Flow
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      // Verificar si es un endpoint de auth que no requiere manejo especial
-      const authEndpoints = ['/auth/login/', '/auth/register/', '/auth/refresh/']
-      const isAuthEndpoint = authEndpoints.some(endpoint => 
-        originalRequest.url.includes(endpoint)
-      )
-
-      if (isAuthEndpoint) {
-        // Si falla en el refresh token, mostrar modal
-        if (originalRequest.url.includes('/auth/refresh/')) {
-          console.error('🚫 Refresh token inválido o expirado, cerrando sesión.')
-          if (typeof window !== 'undefined' && window.showSessionExpiredModal) {
-            window.showSessionExpiredModal()
-          } else {
-            localStorage.clear()
-            router.replace({ 
-              name: 'Login',
-              query: {
-                message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
-                expired: 'true'
-              }
-            })
-          }
-        }
-        throw error
-      }
-
-      const refreshToken = localStorage.getItem('refresh_token')
-
-      // Si no hay refresh token → mostrar modal
-      if (!refreshToken) {
-        console.warn('⚠️ No hay refresh token disponible, mostrando modal...')
-        if (typeof window !== 'undefined' && window.showSessionExpiredModal) {
-          window.showSessionExpiredModal()
-        } else {
-          localStorage.clear()
-          router.replace({ 
-            name: 'Login',
-            query: {
-              message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
-              expired: 'true'
-            }
-          })
-        }
-        throw error
-      }
-
-      // Si ya se está refrescando, agregar a la cola
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedRequestsQueue.push({ resolve, reject })
-        }).then(token => {
-          originalRequest.headers.Authorization = 'Bearer ' + token
-          return api(originalRequest)
-        }).catch(err => {
-          throw err
-        })
-      }
-
-      // Marcar que estamos refrescando
-      originalRequest._retry = true
-      isRefreshing = true
-
-      // Crear instancia base de axios sin interceptores para evitar loops
-      const baseAxios = axios.create({
-        baseURL: api.defaults.baseURL,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-
-      try {
-        // Intentar refrescar el token
-        const response = await baseAxios.post('/auth/refresh/', {
-          refresh: refreshToken,
-        })
-
-        const newAccessToken = response.data.access
-        const newRefreshToken = response.data.refresh
-
-        // Guardar los nuevos tokens
-        localStorage.setItem('access_token', newAccessToken)
-        if (newRefreshToken) {
-          localStorage.setItem('refresh_token', newRefreshToken)
-        }
-
-        // Actualizar header por defecto
-        api.defaults.headers.Authorization = 'Bearer ' + newAccessToken
-
-        // Actualizar el token en el store
-        const authStore = getAuthStore()
-        authStore.setTokens({ access: newAccessToken, refresh: newRefreshToken })
-
-        console.log('🔄 Token JWT refrescado automáticamente')
-
-        // Procesar la cola de peticiones fallidas
-        processQueue(null, newAccessToken)
-
-        // Reintentar la petición original con el nuevo token
-        originalRequest.headers.Authorization = 'Bearer ' + newAccessToken
-        return api(originalRequest)
-      } catch (refreshError) {
-        console.error('❌ Error refrescando token:', refreshError)
-        
-        // Procesar la cola con error
-        processQueue(refreshError, null)
-
-        // Si el refresh falla, mostrar modal de sesión expirada
-        if (typeof window !== 'undefined' && window.showSessionExpiredModal) {
-          window.showSessionExpiredModal()
-        } else {
-          // Fallback de redirección directa si no hay modal disponible
-          localStorage.clear()
-          router.replace({ 
-            name: 'Login',
-            query: {
-              message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
-              expired: 'true'
-            }
-          })
-        }
-        
-        throw refreshError
-      } finally {
-        isRefreshing = false
-      }
+    // Handle 401 errors (refresh token flow)
+    const refreshResult = await handle401Error(error, originalRequest)
+    if (refreshResult !== null) {
+      return refreshResult
     }
 
-    // Manejar errores 403 (Prohibido)
-    if (error.response?.status === 403) {
-      const errorMessage = error.response.data?.detail || 'No tienes permisos para realizar esta acción'
-      const isConfigEndpoint = originalRequest?.url?.includes('/config/')
-      
-      // Solo mostrar notificación para endpoints críticos
-      if (!isConfigEndpoint) {
-        console.warn('🚫 Acceso denegado:', errorMessage)
-      }
-      
-      // Si es falta de verificación, redirigir a página de verificación
-      if (errorMessage.includes('verificada')) {
-        router.push({
-          name: 'EmailVerification',
-          query: { message: errorMessage }
-        })
-      }
-    }
-
-    // Manejar errores 429 (Rate Limited)
-    if (error.response?.status === 429) {
-      const retryAfter = error.response.headers['retry-after']
-      const errorMessage = error.response.data?.detail || 'Demasiadas solicitudes. Intenta más tarde.'
-      
-      // Mostrar notificación específica para rate limiting
-      if (typeof window !== 'undefined' && window.showNotification) {
-        window.showNotification({
-          type: 'warning',
-          title: 'Límite de solicitudes',
-          message: errorMessage,
-          duration: 5000
-        })
-      }
-    }
-
-    // Manejar errores 500 (Error del servidor)
-    if (error.response?.status >= 500) {
-      const isConfigEndpoint = originalRequest?.url?.includes('/config/')
-      const isStatsEndpoint = originalRequest?.url?.includes('/stats/')
-      
-      // No mostrar notificación para endpoints de configuración o estadísticas
-      if (!isConfigEndpoint && !isStatsEndpoint) {
-        if (typeof window !== 'undefined' && window.showNotification) {
-          window.showNotification({
-            type: 'error',
-            title: 'Error del servidor',
-            message: 'Ocurrió un error interno. Por favor intenta más tarde.',
-            duration: 8000
-          })
-        }
-      }
-    }
-
-    // Manejar errores de red
-    if (!error.response) {
-      if (typeof window !== 'undefined' && window.showNotification) {
-        window.showNotification({
-          type: 'error',
-          title: 'Error de conexión',
-          message: 'No se pudo conectar al servidor. Verifica tu conexión a internet.',
-          duration: 8000
-        })
-      }
-    }
+    // Handle other error types
+    handle403Error(error)
+    handle429Error(error)
+    handle500Error(error, originalRequest)
+    handleNetworkError(error)
 
     throw error
   }

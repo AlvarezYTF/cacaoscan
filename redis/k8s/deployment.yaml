@@ -36,10 +36,11 @@ spec:
           requests:
             memory: "128Mi"
             cpu: "100m"
-            storage: "2Gi"
+            ephemeral-storage: "2Gi"
           limits:
             memory: "512Mi"
             cpu: "500m"
+            ephemeral-storage: "4Gi"
         livenessProbe:
           exec:
             command:

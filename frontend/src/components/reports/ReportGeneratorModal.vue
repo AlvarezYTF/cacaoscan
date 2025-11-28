@@ -160,7 +160,7 @@
 
             <!-- Opciones de personalización -->
             <div class="form-group">
-              <label class="form-label" id="personalization-options-label">Opciones de Personalización</label>
+              <div class="form-label" id="personalization-options-label">Opciones de Personalización</div>
               <div class="checkbox-grid" role="group" aria-labelledby="personalization-options-label">
                 <label class="checkbox-option">
                   <input 
@@ -258,9 +258,9 @@
                       id="include_lotes"
                       v-model="formData.parametros.include_lotes"
                     >
-                    <label for="include_lotes" class="toggle-label">
+                    <div class="toggle-label">
                       <span class="toggle-slider"></span>
-                    </label>
+                    </div>
                   </div>
                 </div>
               </div>

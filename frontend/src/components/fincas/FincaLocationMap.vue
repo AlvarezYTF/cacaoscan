@@ -43,10 +43,10 @@ const latitudNum = computed(() => {
   }
   
   // Convertir a número (puede venir como string desde el backend)
-  let num = typeof props.latitud === 'string' ? parseFloat(props.latitud) : Number(props.latitud)
+  let num = typeof props.latitud === 'string' ? Number.parseFloat(props.latitud) : Number(props.latitud)
   
   // Validar que sea un número válido y esté en el rango correcto
-  if (isNaN(num) || num < -90 || num > 90) {
+  if (Number.isNaN(num) || num < -90 || num > 90) {
     return null
   }
   

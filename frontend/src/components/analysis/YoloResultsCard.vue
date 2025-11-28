@@ -283,7 +283,7 @@ export default {
         link.download = image.name
         document.body.appendChild(link)
         link.click()
-        document.body.removeChild(link)
+        link.remove()
       })
     }
 

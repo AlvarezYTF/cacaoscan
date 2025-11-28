@@ -272,7 +272,7 @@ class PersonaRegistroSerializer(serializers.Serializer):
             # Si se especifica departamento, validar que coincida
             if departamento_id and municipio.departamento.id != departamento_id:
                 raise serializers.ValidationError({
-                    'municipio': f"El municipio no pertenece al departamento especificado."
+                    'municipio': "El municipio no pertenece al departamento especificado."
                 })
             data['municipio_obj'] = municipio
         else:

@@ -194,7 +194,15 @@ const uploadImages = async () => {
       uploadStatus.value = {
         type: 'success',
         title: '✅ Subida completada',
-        message: `Se subieron ${total_uploaded} imagen${total_uploaded !== 1 ? 'es' : ''} correctamente.${total_errors > 0 ? ` ${total_errors} imagen${total_errors !== 1 ? 'es' : ''} con errores.` : ''}`,
+        message: (() => {
+          const imagesText = total_uploaded !== 1 ? 'imágenes' : 'imagen'
+          const successMsg = `Se subieron ${total_uploaded} ${imagesText} correctamente.`
+          if (total_errors > 0) {
+            const errorsText = total_errors !== 1 ? 'imágenes' : 'imagen'
+            return `${successMsg} ${total_errors} ${errorsText} con errores.`
+          }
+          return successMsg
+        })(),
         errors: errors || []
       }
       

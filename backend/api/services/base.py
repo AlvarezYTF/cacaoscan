@@ -63,12 +63,16 @@ class BaseService:
         
         Args:
             user: Usuario a validar
-            permission: Permiso requerido
-            resource: Recurso específico (opcional)
+            permission: Permiso requerido (no usado en implementación base)
+            resource: Recurso específico (opcional, no usado en implementación base)
             
         Returns:
             True si tiene permisos, False en caso contrario
         """
+        # Suppress unused parameter warning - estos parámetros son parte de la interfaz
+        _ = permission
+        _ = resource
+        
         if user.is_superuser or user.is_staff:
             return True
         
@@ -241,15 +245,15 @@ class BaseService:
         """
         try:
             try:
-                from audit.models import ActivityLog
+                from audit.models import ActivityLog as activity_log_model
             except ImportError:
-                ActivityLog = None
+                activity_log_model = None
             
-            if ActivityLog is None:
+            if activity_log_model is None:
                 self.log_debug("Servicio de auditoría no disponible; se omite creación de log")
                 return
             
-            ActivityLog.objects.create(
+            activity_log_model.objects.create(
                 user=user,
                 action=action,
                 resource_type=resource_type,

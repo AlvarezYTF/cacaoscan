@@ -78,7 +78,7 @@ def check_and_fix_foreign_key():
                 # Verificar si apunta a la tabla correcta
                 if foreign_table != 'api_finca':
                     print(f"\n[WARN]  PROBLEMA: FK apunta a '{foreign_table}' pero debería apuntar a 'api_finca'")
-                    print(f"Corrigiendo foreign key...")
+                    print("Corrigiendo foreign key...")
                     
                     # Eliminar FK incorrecta
                     cursor.execute(f'ALTER TABLE fincas_app_lote DROP CONSTRAINT IF EXISTS "{constraint_name}"')

@@ -116,7 +116,7 @@ class RealtimeAuditMiddleware:
         
         return 'System'
     
-    def create_action_description(self, request, response):
+    def create_action_description(self, request, response=None):
         """Crear descripción de la acción."""
         method = request.method
         path = request.path

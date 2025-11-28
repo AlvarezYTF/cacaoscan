@@ -131,9 +131,9 @@ class Command(BaseCommand):
                     memory_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
                     self.stdout.write(f"🚀 Usando GPU: {device_name} ({memory_gb:.1f} GB)")
                 else:
-                    self.stdout.write(f"🖥️  Usando CPU (GPU no disponible)")
+                    self.stdout.write("🖥️  Usando CPU (GPU no disponible)")
             except ImportError:
-                self.stdout.write(f"⚠️  PyTorch no disponible, usando CPU")
+                self.stdout.write("⚠️  PyTorch no disponible, usando CPU")
         
         self.stdout.write(f"📸 Backend de segmentación: {seg_method}")
         
@@ -184,7 +184,8 @@ class Command(BaseCommand):
                         raise SegmentationError('Segmentación no devolvió ruta de imagen')
                     crop_path = Path(png_path_str)
                     if not crop_path.exists():
-                        raise Exception(f"Imagen segmentada no encontrada: {crop_path}")
+                        from ml.segmentation.processor import SegmentationError
+                        raise SegmentationError(f"Imagen segmentada no encontrada: {crop_path}")
                     
                     # Cargar imagen segmentada (PNG con alpha)
                     crop_image = Image.open(crop_path)
@@ -207,15 +208,18 @@ class Command(BaseCommand):
                     )
                     
                     if not crop_result.get('success', False):
-                        raise Exception(f"Segmentación falló: {crop_result.get('error', 'Error desconocido')}")
+                        from ml.segmentation.processor import SegmentationError
+                        raise SegmentationError(f"Segmentación falló: {crop_result.get('error', 'Error desconocido')}")
                     
                     crop_path_str = crop_result.get('crop_path')
                     if not crop_path_str:
-                        raise Exception("No se obtuvo ruta de imagen segmentada")
+                        from ml.segmentation.processor import SegmentationError
+                        raise SegmentationError("No se obtuvo ruta de imagen segmentada")
                     
                     crop_path = Path(crop_path_str)
                     if not crop_path.exists():
-                        raise Exception(f"Imagen segmentada no encontrada: {crop_path}")
+                        from ml.segmentation.processor import SegmentationError
+                        raise SegmentationError(f"Imagen segmentada no encontrada: {crop_path}")
                     
                     crop_image = Image.open(crop_path)
                     # El cropper ya guarda en cacao_images/crops/{id}.png, pero
@@ -224,7 +228,8 @@ class Command(BaseCommand):
                     confidence = crop_result.get('confidence', 0.0)
             
             if crop_image is None:
-                raise Exception("No se pudo segmentar la imagen")
+                from ml.segmentation.processor import SegmentationError
+                raise SegmentationError("No se pudo segmentar la imagen")
             
             # Medir píxeles del grano (sin fondo)
             crop_array = np.array(crop_image)
@@ -310,7 +315,7 @@ class Command(BaseCommand):
         with open(calibration_file, 'w', encoding='utf-8') as f:
             json.dump(calibration_dict, f, indent=2, ensure_ascii=False)
         
-        self.stdout.write(self.style.SUCCESS(f'\n✅ Calibración completada!'))
+        self.stdout.write(self.style.SUCCESS('\n✅ Calibración completada!'))
         self.stdout.write(f'   📊 Total registros en JSON: {len(calibration_data)}')
         self.stdout.write(f'   ✨ Nuevas procesadas: {processed_count}')
         self.stdout.write(f'   ⏭️  Saltadas/Reutilizadas: {skipped_count}')
@@ -327,7 +332,7 @@ class Command(BaseCommand):
         
         # Mostrar estadísticas
         stats = calibration_dict['statistics']
-        self.stdout.write(f'\n📈 Estadísticas de calibración:')
+        self.stdout.write('\n📈 Estadísticas de calibración:')
         if stats and 'scale_factors' in stats and stats.get('scale_factors', {}).get('mean', 0) > 0:
             self.stdout.write(f'   Factor escala promedio: {stats["scale_factors"]["mean"]:.6f} mm/píxel')
             self.stdout.write(f'   Factor escala std: {stats["scale_factors"]["std"]:.6f} mm/píxel')

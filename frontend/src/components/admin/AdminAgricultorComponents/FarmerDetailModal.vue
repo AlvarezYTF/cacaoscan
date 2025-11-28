@@ -342,7 +342,10 @@ export default {
     });
 
     const totalAnalisis = computed(() => {
-      // TODO: Obtener desde el backend cuando implemente el endpoint de análisis por agricultor
+      // Pendiente: Implementar endpoint GET /api/v1/agricultores/{id}/analisis/stats/
+      // Por ahora retornamos 0; cuando esté disponible, usar:
+      // const stats = await api.get(`/agricultores/${farmerId}/analisis/stats/`)
+      // return stats.data.total || 0
       return 0;
     });
 
@@ -403,12 +406,13 @@ export default {
 
     watch(() => props.farmer, async (newFarmer) => {
       if (newFarmer && newFarmer.id) {
-        // TODO: Load detailed analysis data from backend
         console.log('Loading details for farmer:', newFarmer);
         // Cargar las fincas del agricultor
         await loadFarmersFincas(newFarmer.id);
         // Cargar datos de persona
         await loadFarmerDetails(newFarmer.id);
+        // Pendiente: Cargar estadísticas detalladas de análisis del agricultor
+        // cuando esté disponible el endpoint: GET /api/v1/agricultores/{id}/analisis/detailed/
       }
     });
 

@@ -92,8 +92,8 @@ class RegistrationService(BaseService):
             models = get_models_safely({
                 'EmailVerificationToken': 'auth_app.models.EmailVerificationToken'
             })
-            EmailVerificationToken = models['EmailVerificationToken']
-            verification_token = EmailVerificationToken.create_for_user(user)
+            email_verification_token_model = models['EmailVerificationToken']
+            verification_token = email_verification_token_model.create_for_user(user)
             
             # Generate JWT tokens automatically
             refresh = RefreshToken.for_user(user)
@@ -203,8 +203,8 @@ class RegistrationService(BaseService):
             models = get_models_safely({
                 'EmailVerificationToken': 'auth_app.models.EmailVerificationToken'
             })
-            EmailVerificationToken = models['EmailVerificationToken']
-            verification_token = EmailVerificationToken.create_for_user(user)
+            email_verification_token_model = models['EmailVerificationToken']
+            verification_token = email_verification_token_model.create_for_user(user)
             
             # Send verification email
             email_result = self._send_verification_email(user, verification_token)
@@ -259,11 +259,13 @@ class RegistrationService(BaseService):
         
         Args:
             user_data: User data
-            request: Request object to get IP and user agent
+            request: Request object to get IP and user agent (no usado actualmente)
             
         Returns:
             ServiceResult with pending registration data
         """
+        # Suppress unused parameter warning - request reservado para uso futuro
+        _ = request
         try:
             from personas.models import PendingRegistration
             
@@ -415,7 +417,7 @@ class RegistrationService(BaseService):
                         persona_data['password'] = password
                         persona_serializer = PersonaRegistroSerializer(data=persona_data)
                         if persona_serializer.is_valid():
-                            persona = persona_serializer.save()
+                            _ = persona_serializer.save()  # Persona created but not used here
                         else:
                             self.log_warning(f"Error creando persona para usuario {user.email}: {persona_serializer.errors}")
                     except Exception as e:

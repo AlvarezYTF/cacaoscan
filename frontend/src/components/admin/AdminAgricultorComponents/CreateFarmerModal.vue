@@ -48,6 +48,7 @@
                     id="create-farmer-nombre"
                     v-model="form.firstName" 
                     type="text" 
+                    autocomplete="given-name"
                     required 
                     :disabled="isSubmitting" 
                     class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100" 
@@ -62,6 +63,7 @@
                     id="create-farmer-segundo-nombre"
                     v-model="form.segundoNombre" 
                     type="text" 
+                    autocomplete="additional-name"
                     :disabled="isSubmitting" 
                     class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                   />
@@ -72,6 +74,7 @@
                     id="create-farmer-apellido"
                     v-model="form.lastName" 
                     type="text" 
+                    autocomplete="family-name"
                     required 
                     :disabled="isSubmitting" 
                     class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" 
@@ -156,6 +159,7 @@
                     id="create-farmer-numero-documento"
                     v-model="form.numeroDocumento" 
                     type="text" 
+                    autocomplete="off"
                     required 
                     :disabled="isSubmitting" 
                     class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" 

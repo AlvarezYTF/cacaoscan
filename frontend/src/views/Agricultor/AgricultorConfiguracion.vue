@@ -434,7 +434,9 @@ const setPrimaryFinca = (id) => {
 const saveScanPreferences = async () => {
   isSavingScanPrefs.value = true
   try {
-    // TODO: Llamar al API PATCH /api/v1/agricultores/configuracion/
+    // Pendiente: Implementar endpoint PATCH /api/v1/agricultores/configuracion/
+    // Cuando esté disponible, usar:
+    // await api.patch('/agricultores/configuracion/', scanPreferences.value)
     console.log('Guardando preferencias de escaneo:', scanPreferences.value)
     await new Promise(resolve => setTimeout(resolve, 1000))
     alert('Preferencias de escaneo guardadas')
@@ -450,7 +452,9 @@ const saveScanPreferences = async () => {
 const saveNotifications = async () => {
   isSavingNotifs.value = true
   try {
-    // TODO: Llamar al API PATCH /api/v1/agricultores/notificaciones/
+    // Pendiente: Implementar endpoint PATCH /api/v1/agricultores/notificaciones/
+    // Cuando esté disponible, usar:
+    // await api.patch('/agricultores/notificaciones/', notifications.value)
     console.log('Guardando notificaciones:', notifications.value)
     await new Promise(resolve => setTimeout(resolve, 1000))
     alert('Preferencias de notificaciones guardadas')

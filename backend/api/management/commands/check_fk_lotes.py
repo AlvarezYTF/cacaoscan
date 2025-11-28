@@ -47,7 +47,7 @@ class Command(BaseCommand):
             self.stdout.write("=" * 60)
             
             # Información del modelo
-            self.stdout.write(f"\n📋 Información de modelos:")
+            self.stdout.write("\n📋 Información de modelos:")
             self.stdout.write(f"   Tabla Finca: {Finca._meta.db_table}")
             self.stdout.write(f"   Tabla Lote: {Lote._meta.db_table}")
             
@@ -149,7 +149,7 @@ class Command(BaseCommand):
                         issues_found = True
                         
                         if fix:
-                            self.stdout.write(f"🔧 Corrigiendo foreign key...")
+                            self.stdout.write("🔧 Corrigiendo foreign key...")
                             try:
                                 with transaction.atomic():
                                     # Eliminar FK incorrecta

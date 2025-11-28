@@ -41,8 +41,9 @@
         <div v-for="item in menuItems" :key="item.id">
           <div 
             @click="handleMenuClick(item)"
-            @keydown.enter="handleMenuClick(item)"
-            @keyup.enter="handleMenuClick(item)"
+            @keydown="handleKeyDown($event, item)"
+            @keyup="handleKeyUp($event, item)"
+            @keypress="handleKeyPress($event, item)"
             :class="[
               'flex items-center rounded-lg group transition-all duration-200 cursor-pointer',
               collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-3',
@@ -306,6 +307,27 @@ const handleLogoClick = () => {
 
 const handleMenuClick = (item) => {
   emit('menu-click', item)
+}
+
+const handleKeyDown = (event, item) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    handleMenuClick(item)
+  }
+}
+
+const handleKeyUp = (event, item) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    handleMenuClick(item)
+  }
+}
+
+const handleKeyPress = (event, item) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    handleMenuClick(item)
+  }
 }
 
 const handleLogout = () => {

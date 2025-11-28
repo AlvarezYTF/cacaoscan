@@ -66,7 +66,7 @@ class Command(BaseCommand):
                 raise CommandError(f'No se encontró imagen con ID={image_id} en el dataset')
             
             self.stdout.write(f"✅ Imagen encontrada: {image_record['image_path']}")
-            self.stdout.write(f"\n📊 Valores reales del dataset:")
+            self.stdout.write("\n📊 Valores reales del dataset:")
             self.stdout.write(f"  ALTO: {image_record.get('alto', 'N/A')}")
             self.stdout.write(f"  ANCHO: {image_record.get('ancho', 'N/A')}")
             self.stdout.write(f"  GROSOR: {image_record.get('grosor', 'N/A')}")
@@ -117,7 +117,7 @@ class Command(BaseCommand):
         try:
             result = predictor.predict(image)
             
-            self.stdout.write(f"\n📈 Predicciones desnormalizadas:")
+            self.stdout.write("\n📈 Predicciones desnormalizadas:")
             self.stdout.write(f"  alto_mm: {result['alto_mm']:.2f}")
             self.stdout.write(f"  ancho_mm: {result['ancho_mm']:.2f}")
             self.stdout.write(f"  grosor_mm: {result['grosor_mm']:.2f}")

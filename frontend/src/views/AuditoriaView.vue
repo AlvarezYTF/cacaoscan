@@ -463,11 +463,6 @@ export default {
       });
     };
 
-    const handlePeriodChange = (period) => {
-      selectedPeriod.value = period;
-      loadAuditData();
-    };
-
     const loadInitialData = async () => {
       try {
         loading.value = true;
@@ -618,12 +613,10 @@ export default {
             console.error('Error in real-time update:', error);
           }
         }, 30000);
-      } else {
+      } else if (realTimeInterval.value) {
         // Detener actualización en tiempo real
-        if (realTimeInterval.value) {
-          clearInterval(realTimeInterval.value);
-          realTimeInterval.value = null;
-        }
+        clearInterval(realTimeInterval.value);
+        realTimeInterval.value = null;
       }
     };
 
@@ -825,6 +818,7 @@ export default {
   background-color: #10b981;
   color: white;
   border-color: #10b981;
+  position: relative;
 }
 
 .btn-success:hover:not(:disabled) {
@@ -937,10 +931,6 @@ main {
 }
 
 /* Indicador de tiempo real */
-.btn-success {
-  position: relative;
-}
-
 .btn-success::after {
   content: '';
   position: absolute;

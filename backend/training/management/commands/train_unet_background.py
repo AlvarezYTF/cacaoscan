@@ -293,9 +293,9 @@ class Command(BaseCommand):
                 self.stdout.write(f"   Memoria GPU: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
                 # Aumentar batch size automáticamente si hay GPU
                 if batch_size < 16:
-                    self.stdout.write(f"   ⚠️  Considera usar --batch-size 16 o mayor para mejor uso de GPU")
+                    self.stdout.write("   ⚠️  Considera usar --batch-size 16 o mayor para mejor uso de GPU")
             else:
-                self.stdout.write(f"🖥️  Usando CPU (GPU no disponible)")
+                self.stdout.write("🖥️  Usando CPU (GPU no disponible)")
             
             # Crear modelo
             model = UNet().to(device)
@@ -338,11 +338,11 @@ class Command(BaseCommand):
             
             file_size_mb = model_path.stat().st_size / (1024 * 1024)
             self.stdout.write(self.style.SUCCESS(
-                f"\n✅ Modelo entrenado y guardado exitosamente!"
+                "\n✅ Modelo entrenado y guardado exitosamente!"
             ))
             self.stdout.write(f"   📁 Ubicación: {model_path}")
             self.stdout.write(f"   📦 Tamaño: {file_size_mb:.2f} MB")
-            self.stdout.write(f"\n💡 Ahora puedes usar '--segmentation-backend ai' para usar este modelo")
+            self.stdout.write("\n💡 Ahora puedes usar '--segmentation-backend ai' para usar este modelo")
             
         except Exception as e:
             logger.error(f"Error durante el entrenamiento: {e}", exc_info=True)
@@ -351,7 +351,7 @@ class Command(BaseCommand):
         finally:
             # Limpiar directorios temporales
             if temp_dir.exists():
-                self.stdout.write(f"🧹 Limpiando archivos temporales...")
+                self.stdout.write("🧹 Limpiando archivos temporales...")
                 shutil.rmtree(temp_dir, ignore_errors=True)
     
     def _generate_masks_parallel(self, images_dir: Path, masks_dir: Path, image_files: list):

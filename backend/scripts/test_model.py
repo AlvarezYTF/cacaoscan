@@ -79,7 +79,7 @@ def test_image(image_id=None, image_path=None):
         
         # Mostrar valores reales si están disponibles
         if image_record:
-            print(f"\n📊 Valores reales del dataset:")
+            print("\n📊 Valores reales del dataset:")
             print(f"   ALTO:   {image_record.get('alto', 'N/A')} mm")
             print(f"   ANCHO:  {image_record.get('ancho', 'N/A')} mm")
             print(f"   GROSOR: {image_record.get('grosor', 'N/A')} mm")
@@ -101,7 +101,7 @@ def test_image(image_id=None, image_path=None):
         return
     
     # Cargar imagen
-    print(f"\n🖼️  Cargando imagen...")
+        print("\n🖼️  Cargando imagen...")
     try:
         image = Image.open(image_path)
         if image.mode != 'RGB':
@@ -112,7 +112,7 @@ def test_image(image_id=None, image_path=None):
         return
     
     # Hacer predicción
-    print(f"\n🤖 Ejecutando predicción...")
+        print("\n🤖 Ejecutando predicción...")
     try:
         result = predictor.predict(image)
         
@@ -126,7 +126,7 @@ def test_image(image_id=None, image_path=None):
         
         # Mostrar confianzas si están disponibles
         if 'confidence_alto' in result:
-            print(f"\n📊 Confianzas:")
+            print("\n📊 Confianzas:")
             print(f"   ALTO:   {result['confidence_alto']:.2%}")
             print(f"   ANCHO:  {result['confidence_ancho']:.2%}")
             print(f"   GROSOR: {result['confidence_grosor']:.2%}")
@@ -134,7 +134,7 @@ def test_image(image_id=None, image_path=None):
         
         # Comparar con valores reales si están disponibles
         if image_record:
-            print(f"\n📊 Comparación con valores reales:")
+            print("\n📊 Comparación con valores reales:")
             targets = ['alto', 'ancho', 'grosor', 'peso']
             for target in targets:
                 real = image_record.get(target)

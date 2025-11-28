@@ -145,9 +145,13 @@ class CacaoReportPDFGenerator:
         
         Args:
             finca_id: ID de la finca
-            user: Usuario que solicita el reporte
-            filtros: Filtros a aplicar
+            user: Usuario que solicita el reporte (reservado para uso futuro)
+            filtros: Filtros a aplicar (reservado para uso futuro)
         """
+        # Suppress unused parameter warnings - reserved for future use
+        _ = user
+        _ = filtros
+        
         try:
             finca = Finca.objects.get(id=finca_id)
             buffer = io.BytesIO()
