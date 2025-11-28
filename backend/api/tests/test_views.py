@@ -194,12 +194,12 @@ class ImageViewsTest(APITestCase):
     def test_get_images_list(self):
         """Test de obtención de lista de imágenes."""
         # Crear imágenes
-        image1 = CacaoImage.objects.create(
+        _ = CacaoImage.objects.create(
             user=self.user,
             filename='image1.jpg',
             upload_status='completed'
         )
-        image2 = CacaoImage.objects.create(
+        _ = CacaoImage.objects.create(
             user=self.user,
             filename='image2.jpg',
             upload_status='completed'
@@ -320,12 +320,12 @@ class FincaViewsTest(APITestCase):
     def test_get_fincas_list(self):
         """Test de obtención de lista de fincas."""
         # Crear fincas
-        finca1 = Finca.objects.create(
+        _ = Finca.objects.create(
             nombre='Finca 1',
             propietario=self.user,
             area_total=Decimal('10.0')
         )
-        finca2 = Finca.objects.create(
+        _ = Finca.objects.create(
             nombre='Finca 2',
             propietario=self.user,
             area_total=Decimal('20.0')
@@ -474,12 +474,12 @@ class LoteViewsTest(APITestCase):
     def test_get_lotes_list(self):
         """Test de obtención de lista de lotes."""
         # Crear lotes
-        lote1 = Lote.objects.create(
+        _ = Lote.objects.create(
             finca=self.finca,
             nombre='Lote 1',
             area=Decimal('5.0')
         )
-        lote2 = Lote.objects.create(
+        _ = Lote.objects.create(
             finca=self.finca,
             nombre='Lote 2',
             area=Decimal('10.0')
@@ -604,12 +604,12 @@ class NotificationViewsTest(APITestCase):
     def test_get_notifications_list(self):
         """Test de obtención de lista de notificaciones."""
         # Crear notificaciones
-        notification1 = Notification.objects.create(
+        _ = Notification.objects.create(
             user=self.user,
             title='Notification 1',
             message='Message 1'
         )
-        notification2 = Notification.objects.create(
+        _ = Notification.objects.create(
             user=self.user,
             title='Notification 2',
             message='Message 2'
@@ -730,12 +730,12 @@ class ReportViewsTest(APITestCase):
     def test_get_reports_list(self):
         """Test de obtención de lista de reportes."""
         # Crear reportes
-        reporte1 = ReporteGenerado.objects.create(
+        _ = ReporteGenerado.objects.create(
             usuario=self.user,
             tipo_reporte='analisis_periodo',
             estado='completado'
         )
-        reporte2 = ReporteGenerado.objects.create(
+        _ = ReporteGenerado.objects.create(
             usuario=self.user,
             tipo_reporte='calidad_finca',
             estado='completado'

@@ -35,12 +35,12 @@ class ProfileService(BaseService):
             models = get_models_safely({
                 'UserProfile': 'auth_app.models.UserProfile'
             })
-            UserProfile = models['UserProfile']
+            user_profile_model = models['UserProfile']
             
             user_profile = None
             try:
                 user_profile = user.profile
-            except UserProfile.DoesNotExist:
+            except user_profile_model.DoesNotExist:
                 # If no profile exists, create empty one
                 user_profile = UserProfile.objects.create(user=user)
             
@@ -136,8 +136,8 @@ class ProfileService(BaseService):
                 models = get_models_safely({
                     'UserProfile': 'auth_app.models.UserProfile'
                 })
-                UserProfile = models['UserProfile']
-                profile, created = UserProfile.objects.get_or_create(user=user)
+                user_profile_model = models['UserProfile']
+                profile, _ = user_profile_model.objects.get_or_create(user=user)
                 for field, value in profile_data_dict.items():
                     setattr(profile, field, value)
                 profile.save()

@@ -99,14 +99,36 @@ const imagesLoading = ref(false)
 // Computed
 const farmerName = computed(() => authStore.userFullName || 'Usuario')
 
-const formattedStats = computed(() => ({
-  totalBatches: totalImages.value,
-  batchesChange: '+0%', // TODO: Calcular cambio porcentual
-  avgQuality: Math.round(averageConfidence.value * 100),
-  qualityChange: '+0%', // TODO: Calcular cambio porcentual
-  defectRate: Math.round((1 - averageConfidence.value) * 100 * 10) / 10,
-  defectChange: '+0%' // TODO: Calcular cambio porcentual
-}))
+// Función helper para calcular cambio porcentual
+const calculatePercentageChange = (current, previous) => {
+  if (!previous || previous === 0) return current > 0 ? '+100%' : '0%'
+  const change = ((current - previous) / previous) * 100
+  const sign = change >= 0 ? '+' : ''
+  return `${sign}${change.toFixed(1)}%`
+}
+
+const formattedStats = computed(() => {
+  // Pendiente: Obtener estadísticas del período anterior desde el backend
+  // Por ahora usamos valores estáticos; cuando esté disponible el endpoint:
+  // const stats = await api.get('/agricultores/stats/?period=current,previous')
+  const previousStats = {
+    batches: 0, // stats.previous.total_batches
+    quality: 0, // stats.previous.avg_quality
+    defects: 0  // stats.previous.defect_rate
+  }
+  
+  return {
+    totalBatches: totalImages.value,
+    batchesChange: calculatePercentageChange(totalImages.value, previousStats.batches),
+    avgQuality: Math.round(averageConfidence.value * 100),
+    qualityChange: calculatePercentageChange(Math.round(averageConfidence.value * 100), previousStats.quality),
+    defectRate: Math.round((1 - averageConfidence.value) * 100 * 10) / 10,
+    defectChange: calculatePercentageChange(
+      Math.round((1 - averageConfidence.value) * 100 * 10) / 10,
+      previousStats.defects
+    )
+  }
+})
 
 // Functions
 const loadRecentAnalyses = async () => {

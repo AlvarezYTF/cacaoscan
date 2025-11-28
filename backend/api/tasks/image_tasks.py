@@ -74,8 +74,8 @@ def process_batch_analysis_task(
         User = get_user_model()
         
         try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
+            user = user_model.objects.get(id=user_id)
+        except user_model.DoesNotExist:
             return {
                 'status': 'error',
                 'error': f'User {user_id} not found'
@@ -110,7 +110,7 @@ def process_batch_analysis_task(
         # Process images
         results = []
         total_images = len(images_data)
-        media_root = Path(settings.MEDIA_ROOT)
+        _ = Path(settings.MEDIA_ROOT)  # Reserved for future use
         
         for idx, image_data in enumerate(images_data):
             try:

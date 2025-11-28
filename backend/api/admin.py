@@ -31,7 +31,7 @@ class CustomUserAdmin(UserAdmin):
     def get_inline_instances(self, request, obj=None):
         """Mostrar inline solo si el objeto existe."""
         if not obj:
-            return list()
+            return []
         return super().get_inline_instances(request, obj)
 
 

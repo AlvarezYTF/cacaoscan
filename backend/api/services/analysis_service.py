@@ -156,10 +156,10 @@ class AnalysisService(BaseService):
             models = get_models_safely({
                 'CacaoPrediction': CACAO_PREDICTION_MODEL_PATH
             })
-            CacaoPrediction = models['CacaoPrediction']
+            cacao_prediction_model = models['CacaoPrediction']
             
             # Build queryset
-            queryset = CacaoPrediction.objects.filter(
+            queryset = cacao_prediction_model.objects.filter(
                 image__user=user
             ).select_related('image').order_by('-created_at')
             
@@ -225,10 +225,10 @@ class AnalysisService(BaseService):
             models = get_models_safely({
                 'CacaoPrediction': CACAO_PREDICTION_MODEL_PATH
             })
-            CacaoPrediction = models['CacaoPrediction']
+            cacao_prediction_model = models['CacaoPrediction']
             
             try:
-                prediction = CacaoPrediction.objects.select_related('image').get(
+                prediction = cacao_prediction_model.objects.select_related('image').get(
                     id=analysis_id,
                     image__user=user
                 )
@@ -286,10 +286,10 @@ class AnalysisService(BaseService):
             models = get_models_safely({
                 'CacaoPrediction': CACAO_PREDICTION_MODEL_PATH
             })
-            CacaoPrediction = models['CacaoPrediction']
+            cacao_prediction_model = models['CacaoPrediction']
             
             try:
-                prediction = CacaoPrediction.objects.select_related('image').get(
+                prediction = cacao_prediction_model.objects.select_related('image').get(
                     id=analysis_id,
                     image__user=user
                 )
@@ -346,10 +346,10 @@ class AnalysisService(BaseService):
             models = get_models_safely({
                 'CacaoPrediction': CACAO_PREDICTION_MODEL_PATH
             })
-            CacaoPrediction = models['CacaoPrediction']
+            cacao_prediction_model = models['CacaoPrediction']
             
             # Build base queryset
-            queryset = CacaoPrediction.objects.filter(image__user=user)
+            queryset = cacao_prediction_model.objects.filter(image__user=user)
             
             # Apply filters
             if filters:

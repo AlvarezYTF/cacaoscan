@@ -282,7 +282,6 @@ class EmailService:
         try:
             filename = attachment.get('filename')
             content = attachment.get('content')
-            content_type = attachment.get('content_type', CONTENT_TYPE_OCTET_STREAM)
             
             if isinstance(content, str):
                 content = content.encode('utf-8')

@@ -47,8 +47,8 @@ class PasswordService(BaseService):
                 models = get_models_safely({
                     'EmailVerificationToken': 'auth_app.models.EmailVerificationToken'
                 })
-                EmailVerificationToken = models['EmailVerificationToken']
-                reset_token = EmailVerificationToken.create_for_user(user)
+                email_verification_token_model = models['EmailVerificationToken']
+                reset_token = email_verification_token_model.create_for_user(user)
                 
                 # Send password reset email
                 try:
@@ -156,8 +156,8 @@ class PasswordService(BaseService):
             models = get_models_safely({
                 'EmailVerificationToken': 'auth_app.models.EmailVerificationToken'
             })
-            EmailVerificationToken = models['EmailVerificationToken']
-            token_obj = EmailVerificationToken.objects.filter(token=token).first()
+            email_verification_token_model = models['EmailVerificationToken']
+            token_obj = email_verification_token_model.objects.filter(token=token).first()
             
             if not token_obj:
                 return ServiceResult.validation_error(

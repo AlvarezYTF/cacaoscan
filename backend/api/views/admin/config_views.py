@@ -324,7 +324,7 @@ class SystemInfoView(APIView):
             }
             
             return Response(data, status=status.HTTP_200_OK)
-        except Exception as e:
+        except Exception:
             # Retornar datos mínimos incluso si hay error
             return Response({
                 'system': 'CacaoScan',

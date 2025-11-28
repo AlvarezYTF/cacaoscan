@@ -63,7 +63,7 @@ class SendOtpView(APIView):
             code = PendingEmailVerification.generate_code()
             
             # Crear o actualizar registro de verificación
-            verification, created = PendingEmailVerification.objects.update_or_create(
+            verification, _ = PendingEmailVerification.objects.update_or_create(
                 email=email,
                 defaults={'otp_code': code, 'temp_data': temp_data}
             )
@@ -177,10 +177,10 @@ class VerifyOtpView(APIView):
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            User = get_user_model()
+            user_model = get_user_model()
 
             # Si ya existe, idempotencia: borrar pending y confirmar
-            if User.objects.filter(email=email).exists():
+            if user_model.objects.filter(email=email).exists():
                 verification.delete()
                 return Response({
                     'success': True,
@@ -195,7 +195,7 @@ class VerifyOtpView(APIView):
 
             try:
                 with transaction.atomic():
-                    user = User.objects.create_user(
+                    user = user_model.objects.create_user(
                         username=email,
                         email=email,
                         password=password,
@@ -231,7 +231,7 @@ class VerifyOtpView(APIView):
                     try:
                         from users.signals import assign_default_role
                         assign_default_role(None, user, created=True)
-                    except (ImportError, Exception):
+                    except ImportError:
                         # Si no existe la función, continuar sin asignar rol
                         pass
 

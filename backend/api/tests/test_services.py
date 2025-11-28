@@ -249,7 +249,7 @@ class AnalysisServiceTest(TestCase):
     def test_get_analysis_history(self):
         """Test de obtención de historial de análisis."""
         # Crear predicciones
-        prediction1 = CacaoPrediction.objects.create(
+        _ = CacaoPrediction.objects.create(
             image=self.image,
             user=self.user,
             quality_score=Decimal('85.5'),
@@ -334,12 +334,12 @@ class ImageManagementServiceTest(TestCase):
     def test_get_user_images(self):
         """Test de obtención de imágenes del usuario."""
         # Crear imágenes
-        image1 = CacaoImage.objects.create(
+        _ = CacaoImage.objects.create(
             user=self.user,
             filename='image1.jpg',
             upload_status='completed'
         )
-        image2 = CacaoImage.objects.create(
+        _ = CacaoImage.objects.create(
             user=self.user,
             filename='image2.jpg',
             upload_status='completed'
@@ -440,12 +440,12 @@ class FincaServiceTest(TestCase):
     def test_get_user_fincas(self):
         """Test de obtención de fincas del usuario."""
         # Crear fincas
-        finca1 = Finca.objects.create(
+        _ = Finca.objects.create(
             nombre='Finca 1',
             propietario=self.user,
             area_total=Decimal('10.0')
         )
-        finca2 = Finca.objects.create(
+        _ = Finca.objects.create(
             nombre='Finca 2',
             propietario=self.user,
             area_total=Decimal('20.0')
@@ -581,12 +581,12 @@ class LoteServiceTest(TestCase):
     def test_get_finca_lotes(self):
         """Test de obtención de lotes de una finca."""
         # Crear lotes
-        lote1 = Lote.objects.create(
+        _ = Lote.objects.create(
             finca=self.finca,
             nombre='Lote 1',
             area=Decimal('5.0')
         )
-        lote2 = Lote.objects.create(
+        _ = Lote.objects.create(
             finca=self.finca,
             nombre='Lote 2',
             area=Decimal('10.0')
@@ -683,12 +683,12 @@ class ReportServiceTest(TestCase):
     def test_get_user_reports(self):
         """Test de obtención de reportes del usuario."""
         # Crear reportes
-        reporte1 = ReporteGenerado.objects.create(
+        _ = ReporteGenerado.objects.create(
             usuario=self.user,
             tipo_reporte='analisis_periodo',
             estado='completado'
         )
-        reporte2 = ReporteGenerado.objects.create(
+        _ = ReporteGenerado.objects.create(
             usuario=self.user,
             tipo_reporte='calidad_finca',
             estado='completado'
