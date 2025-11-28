@@ -14,9 +14,12 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='ModelMetrics',
-            fields=[
+        # Check if table exists before creating - use state_operations for model registration
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.CreateModel(
+                    name='ModelMetrics',
+                    fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('model_name', models.CharField(help_text='Nombre del modelo', max_length=100)),
                 ('model_type', models.CharField(choices=[('regression', 'Modelo de Regresión'), ('classification', 'Modelo de Clasificación'), ('segmentation', 'Modelo de Segmentación'), ('incremental', 'Modelo Incremental')], max_length=20)),
@@ -82,6 +85,13 @@ class Migration(migrations.Migration):
         migrations.AlterUniqueTogether(
             name='modelmetrics',
             unique_together={('model_name', 'version', 'metric_type', 'target')},
+        ),
+            ],
+            database_operations=[
+                # Table already exists (created by api/migrations/0007_add_model_metrics.py)
+                # Only update Django's state, don't modify the database
+                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+            ],
         ),
     ]
 

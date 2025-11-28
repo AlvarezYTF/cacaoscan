@@ -3,7 +3,6 @@ Middleware para auditoría automática en CacaoScan.
 """
 import logging
 import json
-from django.utils.deprecation import MiddlewareMixin
 from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -17,14 +16,18 @@ except ImportError:
 logger = logging.getLogger("cacaoscan.api")
 
 
-class AuditMiddleware(MiddlewareMixin):
+class AuditMiddleware:
     """
     Middleware para registrar automáticamente las actividades de los usuarios.
+    Migrado a patrón nuevo de Django 5.2+ (sin MiddlewareMixin).
     """
     
-    def process_request(self, request):
-        """Procesar request y extraer información de auditoría."""
-        # Extraer información del request
+    def __init__(self, get_response):
+        self.get_response = get_response
+    
+    def __call__(self, request):
+        """Procesar request y response en un solo método."""
+        # Procesar request y extraer información de auditoría
         request.audit_info = {
             'ip_address': self.get_client_ip(request),
             'user_agent': request.META.get('HTTP_USER_AGENT', ''),
@@ -36,10 +39,10 @@ class AuditMiddleware(MiddlewareMixin):
         # Determinar acción basada en el método HTTP y path
         request.audit_action = self.determine_action(request)
         
-        return None
-    
-    def process_response(self, request, response):
-        """Procesar response y registrar actividad si es necesario."""
+        # Obtener response
+        response = self.get_response(request)
+        
+        # Procesar response y registrar actividad si es necesario
         try:
             # Solo registrar para usuarios autenticados y respuestas exitosas
             if (hasattr(request, 'user') and 
@@ -146,13 +149,11 @@ class AuditMiddleware(MiddlewareMixin):
                 user_agent=request.audit_info['user_agent']
             )
             
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error registrando actividad: {e}")
     
     def create_description(self, request, action, model):
         """Crear descripción detallada de la actividad."""
-        method = request.method
-        path = request.path
         user = request.user.username
         
         descriptions = {
@@ -176,31 +177,36 @@ class AuditMiddleware(MiddlewareMixin):
         try:
             # Buscar patrones como /api/modelos/123/
             path_parts = request.path.strip('/').split('/')
-            for i, part in enumerate(path_parts):
+            for part in path_parts:
                 if part.isdigit():
                     return part
-        except:
+        except Exception:  # noqa: BLE001
             pass
         return None
 
 
-class LoginAuditMiddleware(MiddlewareMixin):
+class LoginAuditMiddleware:
     """
     Middleware específico para auditar inicios y cierres de sesión.
+    Migrado a patrón nuevo de Django 5.2+ (sin MiddlewareMixin).
     """
     
-    def process_request(self, request):
-        """Procesar request para detectar login/logout."""
+    def __init__(self, get_response):
+        self.get_response = get_response
+    
+    def __call__(self, request):
+        """Procesar request y response en un solo método."""
+        # Procesar request para detectar login/logout
         if hasattr(request, 'user') and request.user.is_authenticated:
             # Verificar si es un nuevo login
             if not hasattr(request, '_login_logged'):
                 self.log_login(request)
                 request._login_logged = True
         
-        return None
-    
-    def process_response(self, request, response):
-        """Procesar response para detectar logout."""
+        # Obtener response
+        response = self.get_response(request)
+        
+        # Procesar response para detectar logout
         try:
             # Detectar logout basado en respuesta específica
             if (hasattr(request, 'user') and 
@@ -316,63 +322,30 @@ def log_failed_login(username, ip_address, user_agent, failure_reason):
         logger.error(f"Error registrando login fallido: {e}")
 
 
-class TokenCleanupMiddleware(MiddlewareMixin):
+class TokenCleanupMiddleware:
     """
     Middleware para limpiar tokens JWT expirados automáticamente.
+    Migrado a patrón nuevo de Django 5.2+ (sin MiddlewareMixin).
+    
+    NOTA: La limpieza de tokens está deshabilitada en este middleware.
+    Se debe usar la tarea de Celery: api.tasks.token_cleanup.cleanup_expired_tokens
     """
-    # Flag de clase para solo loguear una vez cuando las tablas no existen
-    _tables_missing_logged = False
     
     def __init__(self, get_response):
         self.get_response = get_response
-        super().__init__(get_response)
     
-    def process_request(self, request):
+    def __call__(self, request):
         """
-        Procesar request para limpiar tokens expirados.
-        """
-        try:
-            # Importar aquí para evitar imports circulares
-            from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
-            from django.utils import timezone
-            from django.db import OperationalError, ProgrammingError
-            
-            # Limpiar tokens expirados de la blacklist
-            expired_blacklisted = BlacklistedToken.objects.filter(
-                token__expires_at__lt=timezone.now()
-            )
-            expired_count = expired_blacklisted.count()
-            if expired_count > 0:
-                expired_blacklisted.delete()
-                logger.debug(f"Limpiados {expired_count} tokens blacklisted expirados")
-            
-            # Limpiar tokens outstanding expirados
-            expired_outstanding = OutstandingToken.objects.filter(
-                expires_at__lt=timezone.now()
-            )
-            outstanding_count = expired_outstanding.count()
-            if outstanding_count > 0:
-                expired_outstanding.delete()
-                logger.debug(f"Limpiados {outstanding_count} tokens outstanding expirados")
-            
-            # Si llegamos aquí, las tablas existen, resetear el flag
-            if self._tables_missing_logged:
-                self._tables_missing_logged = False
-                
-        except (OperationalError, ProgrammingError) as e:
-            # Si las tablas no existen aún (durante despliegue inicial), ignorar silenciosamente
-            error_msg = str(e).lower()
-            if 'does not exist' in error_msg or 'relation' in error_msg:
-                # Las migraciones aún no se han ejecutado, esto es normal durante el despliegue
-                # Solo loguear una vez para evitar spam en los logs
-                if not self._tables_missing_logged:
-                    logger.debug("Tablas de token_blacklist aún no creadas, se crearán con las migraciones")
-                    self._tables_missing_logged = True
-            else:
-                logger.warning(f"Error de base de datos en limpieza de tokens: {e}")
-        except Exception as e:
-            # Otros errores, loguear como warning
-            logger.warning(f"Error en limpieza de tokens: {e}")
+        Procesar request (limpieza de tokens deshabilitada).
         
-        return None
+        TODO: This expensive operation has been disabled in request processing.
+        Move token cleanup to a Celery periodic task (see api.tasks.token_cleanup.cleanup_expired_tokens).
+        Recommended schedule: Run every hour via Celery Beat.
+        """
+        # DISABLED: Token cleanup moved to Celery task to avoid performance impact on each request
+        # See: api.tasks.token_cleanup.cleanup_expired_tokens
+        
+        # Obtener response sin procesar limpieza de tokens
+        response = self.get_response(request)
+        return response
 

@@ -5,21 +5,10 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-from .utils.model_imports import get_models_safely
-
-# Import models safely
-models = get_models_safely({
-    'EmailVerificationToken': 'auth_app.models.EmailVerificationToken',
-    'UserProfile': 'auth_app.models.UserProfile',
-    'CacaoImage': 'images_app.models.CacaoImage',
-    'CacaoPrediction': 'images_app.models.CacaoPrediction',
-    'SystemSettings': 'core.models.SystemSettings'
-})
-EmailVerificationToken = models['EmailVerificationToken']
-UserProfile = models['UserProfile']
-CacaoImage = models['CacaoImage']
-CacaoPrediction = models['CacaoPrediction']
-SystemSettings = models['SystemSettings']
+# Import models directly from their apps to avoid circular dependencies
+from auth_app.models import EmailVerificationToken, UserProfile
+from images_app.models import CacaoImage, CacaoPrediction
+from core.models import SystemSettings
 
 
 # Configuración personalizada para User

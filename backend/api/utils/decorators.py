@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import APIException
 
-from .response_helpers import create_error_response
+from core.utils import create_error_response
 
 logger = logging.getLogger("cacaoscan.api.decorators")
 
