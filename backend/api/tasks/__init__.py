@@ -8,6 +8,7 @@ from .training_tasks import (
     train_model_task,
     auto_train_model_task,
 )
+from .token_cleanup import cleanup_expired_tokens
 
 __all__ = [
     # Image tasks
@@ -19,5 +20,7 @@ __all__ = [
     # Training tasks
     'train_model_task',
     'auto_train_model_task',
+    # Token cleanup
+    'cleanup_expired_tokens',
 ]
 

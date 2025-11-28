@@ -12,9 +12,17 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = os.path.join(BASE_DIR, ".env")
 
-# Crear .env si no existe con valores por defecto
+# Crear .env si no existe con valores por defecto (solo en desarrollo)
 if not os.path.exists(dotenv_path):
-    default_env_content = """# ===========================
+    # Solo generar .env en modo desarrollo para evitar configuraciones inseguras en producción
+    is_development = os.environ.get('APP_ENV', '').lower() != 'production'
+    
+    if is_development:
+        # Generar SECRET_KEY segura usando Django
+        from django.core.management.utils import get_random_secret_key
+        secret_key = get_random_secret_key()
+        
+        default_env_content = f"""# ===========================
 # Configuración de Base de Datos PostgreSQL
 # ===========================
 DB_NAME=cacaoscan_db
@@ -26,8 +34,9 @@ DB_PORT=5432
 # ===========================
 # Configuración de Django
 # ===========================
-# IMPORTANTE: Genera tu propia clave secreta. Puedes usar un generador online.
-SECRET_KEY=django-insecure-m#z@j!v+e)d^u_r-f&q!w)t#b@s&y*p(k$l-!g@h_c^x@o
+# IMPORTANTE: Esta SECRET_KEY fue generada automáticamente. 
+# En producción, genera tu propia clave secreta segura.
+SECRET_KEY={secret_key}
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 
@@ -46,14 +55,20 @@ EMAIL_HOST_USER=tu-email@gmail.com
 EMAIL_HOST_PASSWORD=tu-app-password
 
 # ===========================
-# Configuración de CORS (Producción)
+# Configuración de CORS (Desarrollo)
 # ===========================
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 AUTO_TRAIN_ENABLED=0
 """
-    with open(dotenv_path, 'w', encoding='utf-8') as f:
-        f.write(default_env_content)
-    print(f"✅ Archivo .env creado automáticamente en: {dotenv_path}")
+        with open(dotenv_path, 'w', encoding='utf-8') as f:
+            f.write(default_env_content)
+        print(f"✅ Archivo .env creado automáticamente en: {dotenv_path}")
+    else:
+        # En producción, requerir que el .env exista y esté configurado correctamente
+        raise ValueError(
+            "Archivo .env no encontrado y APP_ENV=production. "
+            "Crea el archivo .env con las variables necesarias antes de iniciar la aplicación."
+        )
 
 # Load .env file with explicit UTF-8 encoding to avoid decode errors
 # Try multiple encodings if UTF-8 fails
@@ -75,7 +90,6 @@ except Exception:
 
 
 # Suprimir warnings molestos
-warnings.filterwarnings('ignore', message='pkg_resources is deprecated')
 warnings.filterwarnings('ignore', message='The parameter.*is deprecated')
 warnings.filterwarnings('ignore', message='Arguments other than a weight enum.*are deprecated')
 warnings.filterwarnings('ignore', message='Using a target size.*that is different to the input size')
@@ -83,27 +97,31 @@ warnings.filterwarnings('ignore', category=UserWarning, module='drf_yasg')
 warnings.filterwarnings('ignore', category=UserWarning, module='torchvision')
 warnings.filterwarnings('ignore', category=UserWarning, module='torch')
 
-# Optimizar pkg_resources para evitar escaneo excesivo
-# Esto reduce significativamente el uso de memoria con volmenes montados
-import pkg_resources
-import os
-
-# Limitar el escaneo de pkg_resources
-pkg_resources_cache_dir = os.environ.get('PKG_RESOURCES_CACHE_DIR', '/tmp/pkg_resources_cache')
-os.makedirs(pkg_resources_cache_dir, exist_ok=True)
-
 # Configurar PYTHONPATH para evitar escaneo innecesario
 if 'PYTHONPATH' not in os.environ:
     os.environ['PYTHONPATH'] = str(BASE_DIR)
+
+# Migrado de pkg_resources (deprecated) a importlib.metadata (Python 3.12+)
+# pkg_resources ya no se usa, eliminado para evitar warnings de deprecación
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError(
+        "SECRET_KEY environment variable is required. "
+        "Generate one with: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'"
+    )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+# Force DEBUG=False in production environments
+APP_ENV = os.environ.get('APP_ENV', '').lower()
+if APP_ENV == 'production':
+    DEBUG = False
+else:
+    DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 # ALLOWED_HOSTS configuration
 allowed_hosts_env = os.environ.get('ALLOWED_HOSTS', '')
@@ -114,8 +132,18 @@ if allowed_hosts_env:
         if host.strip()
     ]
 else:
-    # Development defaults
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    # Development defaults only if DEBUG is True
+    if DEBUG:
+        ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    else:
+        ALLOWED_HOSTS = []
+
+# Validate ALLOWED_HOSTS in production
+if not DEBUG and not ALLOWED_HOSTS:
+    raise ValueError(
+        "ALLOWED_HOSTS must be configured in production. "
+        "Set ALLOWED_HOSTS environment variable with comma-separated host names."
+    )
 
 # Application definition
 INSTALLED_APPS = [
@@ -227,8 +255,10 @@ DATABASES = {
         'PASSWORD': safe_env_get('DB_PASSWORD', ''),
         'HOST': safe_env_get('DB_HOST', 'localhost'),
         'PORT': safe_env_get('DB_PORT', '5432'),
+        'CONN_MAX_AGE': 600,  # Reuse database connections for 10 minutes
         'OPTIONS': {
             'client_encoding': 'UTF8',
+            'connect_timeout': 10,
         },
     }
 }
@@ -396,34 +426,32 @@ REST_FRAMEWORK = {
 }
 
 # CORS settings
-# Para desarrollo: permitir todas las conexiones desde cualquier IP
+# Never use CORS_ALLOW_ALL_ORIGINS in production - always use explicit CORS_ALLOWED_ORIGINS
 cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
 if cors_origins:
-    # Validar que cada origen tenga esquema (http:// o https://)
-    # Si el servicio frontend aún no está desplegado, fromService puede devolver solo el nombre
+    # Validate that each origin has scheme (http:// or https://)
     valid_origins = []
     for origin in cors_origins.split(','):
         origin = origin.strip()
         if not origin:
             continue
-        # Solo aceptar orígenes con esquema completo (http:// o https://)
+        # Only accept origins with full scheme (http:// or https://)
         if origin.startswith('http://') or origin.startswith('https://'):
-            # Validar que tenga un dominio válido (contenga un punto o sea localhost)
+            # Validate that it has a valid domain (contains a dot or is localhost)
             if '.' in origin.replace('://', '').split('/')[0] or 'localhost' in origin:
                 valid_origins.append(origin)
-        # Ignorar orígenes sin esquema (como nombres de servicios de Render)
-        # Estos se configurarán correctamente una vez que el servicio esté desplegado
     
     if valid_origins:
         CORS_ALLOWED_ORIGINS = valid_origins
         CORS_ALLOW_ALL_ORIGINS = False
     else:
-        # Si no hay orígenes válidos, usar allow all solo en desarrollo
-        # En producción, se configurará correctamente cuando el frontend esté desplegado
-        CORS_ALLOW_ALL_ORIGINS = DEBUG
+        # If no valid origins, default to empty list (no CORS allowed)
+        CORS_ALLOW_ALL_ORIGINS = False
         CORS_ALLOWED_ORIGINS = []
 else:
-    CORS_ALLOW_ALL_ORIGINS = DEBUG
+    # Default: no CORS allowed (empty list)
+    # In development, explicitly set CORS_ALLOWED_ORIGINS in .env if needed
+    CORS_ALLOW_ALL_ORIGINS = False
     CORS_ALLOWED_ORIGINS = []
 
 # Configuración adicional de CORS para desarrollo
@@ -449,6 +477,17 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
+
+# Security headers
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+if not DEBUG:
+    # HSTS settings (only in production)
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False').lower() == 'true'
 
 # Logging de CORS para debugging (solo en desarrollo)
 if DEBUG:

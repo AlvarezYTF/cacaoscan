@@ -2,7 +2,7 @@
 # Dockerfile Multistage para Backend Django de CacaoScan
 # ========================================
 
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 
 ARG APP_VERSION=v1.3.0
 
@@ -38,7 +38,7 @@ RUN python -m venv /opt/venv \
 # ========================================
 # Etapa 2: Runtime base
 # ========================================
-FROM python:3.11-slim AS runtime-base
+FROM python:3.13-slim AS runtime-base
 
 ARG APP_VERSION=v1.3.0
 

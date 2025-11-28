@@ -2,7 +2,6 @@
 Middleware para integrar auditoría con WebSockets en tiempo real.
 """
 import logging
-from django.utils.deprecation import MiddlewareMixin
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.conf import settings
@@ -17,23 +16,27 @@ from .realtime_service import realtime_service
 logger = logging.getLogger("cacaoscan.websockets")
 
 
-class RealtimeAuditMiddleware(MiddlewareMixin):
+class RealtimeAuditMiddleware:
     """
     Middleware para enviar eventos de auditoría en tiempo real.
+    Migrado a patrón nuevo de Django 5.2+ (sin MiddlewareMixin).
     """
     
-    def process_request(self, request):
-        """Procesar request y preparar datos de auditoría."""
-        # Almacenar información del request para usar en process_response
+    def __init__(self, get_response):
+        self.get_response = get_response
+    
+    def __call__(self, request):
+        """Procesar request y response en un solo método."""
+        # Procesar request y preparar datos de auditoría
         request._audit_start_time = timezone.now()
         request._audit_user = getattr(request, 'user', None)
         request._audit_ip = self.get_client_ip(request)
         request._audit_user_agent = request.META.get('HTTP_USER_AGENT', '')
         
-        return None
-    
-    def process_response(self, request, response):
-        """Procesar response y enviar evento de auditoría."""
+        # Obtener response
+        response = self.get_response(request)
+        
+        # Procesar response y enviar evento de auditoría
         try:
             # Solo procesar si hay usuario autenticado
             if not hasattr(request, 'user') or not request.user.is_authenticated:
@@ -117,7 +120,6 @@ class RealtimeAuditMiddleware(MiddlewareMixin):
         """Crear descripción de la acción."""
         method = request.method
         path = request.path
-        status_code = response.status_code
         
         if method == 'GET':
             return f"Visualización de {path}"
@@ -156,23 +158,27 @@ class RealtimeAuditMiddleware(MiddlewareMixin):
         return 0
 
 
-class RealtimeLoginMiddleware(MiddlewareMixin):
+class RealtimeLoginMiddleware:
     """
     Middleware para enviar eventos de login en tiempo real.
+    Migrado a patrón nuevo de Django 5.2+ (sin MiddlewareMixin).
     """
     
-    def process_request(self, request):
-        """Procesar request de login."""
-        # Detectar intentos de login
+    def __init__(self, get_response):
+        self.get_response = get_response
+    
+    def __call__(self, request):
+        """Procesar request y response en un solo método."""
+        # Procesar request de login
         if request.path in ['/api/auth/login/', '/api/auth/register/'] and request.method == 'POST':
             request._is_login_attempt = True
             request._login_ip = self.get_client_ip(request)
             request._login_user_agent = request.META.get('HTTP_USER_AGENT', '')
         
-        return None
-    
-    def process_response(self, request, response):
-        """Procesar response de login."""
+        # Obtener response
+        response = self.get_response(request)
+        
+        # Procesar response de login
         try:
             if hasattr(request, '_is_login_attempt') and request._is_login_attempt:
                 # Determinar si el login fue exitoso
