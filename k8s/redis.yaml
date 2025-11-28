@@ -52,6 +52,7 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+              ephemeral-storage: "4Gi"
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

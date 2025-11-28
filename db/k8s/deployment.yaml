@@ -59,6 +59,7 @@ spec:
             limits:
               memory: 2Gi
               cpu: "1"
+              ephemeral-storage: "20Gi"
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
