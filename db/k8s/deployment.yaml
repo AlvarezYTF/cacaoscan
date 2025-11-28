@@ -17,6 +17,7 @@ spec:
         app: db
         component: database
     spec:
+      automountServiceAccountToken: false
       securityContext:
         runAsUser: 999
         runAsGroup: 999
@@ -54,6 +55,7 @@ spec:
             requests:
               memory: 512Mi
               cpu: 500m
+              storage: 10Gi
             limits:
               memory: 2Gi
               cpu: "1"

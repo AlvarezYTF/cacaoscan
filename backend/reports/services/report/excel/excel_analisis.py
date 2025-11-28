@@ -29,6 +29,19 @@ from audit.models import LoginHistory
 
 logger = logging.getLogger("cacaoscan.services.report.excel.analisis")
 
+# Excel column constants
+EXCEL_COL_METRIC = 'Métrica'
+EXCEL_COL_VALUE = 'Valor'
+EXCEL_TOTAL_ANALISIS = 'Total de Análisis'
+EXCEL_AVG_CONFIDENCE = 'Confianza Promedio'
+EXCEL_AVG_ALTO = 'Alto Promedio'
+EXCEL_AVG_ANCHO = 'Ancho Promedio'
+EXCEL_AVG_GROSOR = 'Grosor Promedio'
+EXCEL_AVG_PESO = 'Peso Promedio'
+EXCEL_TOTAL_LOTES = 'Total de Lotes'
+EXCEL_LOTES_ACTIVOS = 'Lotes Activos'
+DATE_TIME_FORMAT = '%d/%m/%Y %H:%M'
+
 
 class ExcelAnalisisGenerator(ExcelBaseGenerator):
     """
@@ -270,13 +283,13 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         
         # Statistics data
         data = [
-            ['Métrica', 'Valor'],
+            [EXCEL_COL_METRIC, EXCEL_COL_VALUE],
             ['Total de Análisis', stats['total_analyses']],
-            ['Confianza Promedio', f"{stats['avg_confidence']}%"],
-            ['Alto Promedio', f"{stats['avg_dimensions']['alto']} mm"],
-            ['Ancho Promedio', f"{stats['avg_dimensions']['ancho']} mm"],
-            ['Grosor Promedio', f"{stats['avg_dimensions']['grosor']} mm"],
-            ['Peso Promedio', f"{stats['avg_weight']} g"],
+            [EXCEL_AVG_CONFIDENCE, f"{stats['avg_confidence']}%"],
+            [EXCEL_AVG_ALTO, f"{stats['avg_dimensions']['alto']} mm"],
+            [EXCEL_AVG_ANCHO, f"{stats['avg_dimensions']['ancho']} mm"],
+            [EXCEL_AVG_GROSOR, f"{stats['avg_dimensions']['grosor']} mm"],
+            [EXCEL_AVG_PESO, f"{stats['avg_weight']} g"],
         ]
         
         # Create table
@@ -333,7 +346,7 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
                 analysis.image.user.username,
                 analysis.image.finca or 'N/A',
                 analysis.image.region or 'N/A',
-                analysis.created_at.strftime('%d/%m/%Y %H:%M'),
+                analysis.created_at.strftime(DATE_TIME_FORMAT),
                 round(float(analysis.alto_mm), 2),
                 round(float(analysis.ancho_mm), 2),
                 round(float(analysis.grosor_mm), 2),
@@ -416,7 +429,7 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         summary_ws.merge_cells('A1:D1')
         
         # Report information
-        summary_ws['A3'] = f"Generado el: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
+        summary_ws['A3'] = f"Generado el: {timezone.now().strftime(DATE_TIME_FORMAT)}"
         summary_ws['A3'].font = Font(size=10, italic=True)
         
         summary_ws['A4'] = f"Usuario: {user.get_full_name() or user.username}"
@@ -428,11 +441,11 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         
         key_metrics = [
             ['Total de Análisis', stats['total_analyses']],
-            ['Confianza Promedio', f"{stats['avg_confidence']}%"],
-            ['Alto Promedio', f"{stats['avg_dimensions']['alto']} mm"],
-            ['Ancho Promedio', f"{stats['avg_dimensions']['ancho']} mm"],
-            ['Grosor Promedio', f"{stats['avg_dimensions']['grosor']} mm"],
-            ['Peso Promedio', f"{stats['avg_weight']} g"],
+            [EXCEL_AVG_CONFIDENCE, f"{stats['avg_confidence']}%"],
+            [EXCEL_AVG_ALTO, f"{stats['avg_dimensions']['alto']} mm"],
+            [EXCEL_AVG_ANCHO, f"{stats['avg_dimensions']['ancho']} mm"],
+            [EXCEL_AVG_GROSOR, f"{stats['avg_dimensions']['grosor']} mm"],
+            [EXCEL_AVG_PESO, f"{stats['avg_weight']} g"],
         ]
         
         for row_num, (metric, value) in enumerate(key_metrics, 8):
@@ -477,9 +490,9 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             ['Ubicación', finca.ubicacion_completa],
             ['Hectáreas', f"{finca.hectareas} ha"],
             ['Agricultor', finca.agricultor.get_full_name() or finca.agricultor.username],
-            ['Total de Lotes', str(finca.total_lotes)],
-            ['Lotes Activos', str(finca.lotes_activos)],
-            ['Total de Análisis', str(finca.total_analisis)],
+            [EXCEL_TOTAL_LOTES, str(finca.total_lotes)],
+            [EXCEL_LOTES_ACTIVOS, str(finca.lotes_activos)],
+            [EXCEL_TOTAL_ANALISIS, str(finca.total_analisis)],
             ['Calidad Promedio', f"{finca.calidad_promedio}%"],
         ]
         
@@ -528,9 +541,9 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         
         # Statistics data
         data = [
-            ['Métrica', 'Valor'],
-            ['Total de Lotes', str(stats['total_lotes'])],
-            ['Lotes Activos', str(stats['lotes_activos'])],
+            [EXCEL_COL_METRIC, EXCEL_COL_VALUE],
+            [EXCEL_TOTAL_LOTES, str(stats['total_lotes'])],
+            [EXCEL_LOTES_ACTIVOS, str(stats['lotes_activos'])],
             ['Área Total', f"{stats['total_area']:.2f} ha"],
             ['Variedades', str(len(stats['variedades']))],
         ]
@@ -687,7 +700,7 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         
         # Statistics data
         data = [
-            ['Métrica', 'Valor'],
+            [EXCEL_COL_METRIC, EXCEL_COL_VALUE],
             ['Total de Actividades', str(stats['total_activities'])],
             ['Actividades Hoy', str(stats['activities_today'])],
         ]
@@ -742,7 +755,7 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         
         # Statistics data
         data = [
-            ['Métrica', 'Valor'],
+            [EXCEL_COL_METRIC, EXCEL_COL_VALUE],
             ['Total de Logins', str(stats['total_logins'])],
             ['Logins Exitosos', str(stats['successful_logins'])],
             ['Logins Fallidos', str(stats['failed_logins'])],
@@ -809,7 +822,7 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         
         for row_num, activity in enumerate(queryset, 4):
             data = [
-                activity.timestamp.strftime('%d/%m/%Y %H:%M'),
+                activity.timestamp.strftime(DATE_TIME_FORMAT),
                 activity.usuario.username if activity.usuario else 'Anónimo',
                 activity.get_accion_display(),
                 activity.modelo,
@@ -868,7 +881,7 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         for row_num, login in enumerate(queryset, 4):
             duration = login.session_duration_formatted if hasattr(login, 'session_duration_formatted') else 'N/A'
             data = [
-                login.login_time.strftime('%d/%m/%Y %H:%M'),
+                login.login_time.strftime(DATE_TIME_FORMAT),
                 login.usuario.username,
                 login.ip_address,
                 'Sí' if login.success else 'No',
@@ -902,19 +915,19 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         
         if parametros.get('include_dimensions', True):
             custom_metrics.extend([
-                ['Alto Promedio', f"{stats['avg_dimensions']['alto']} mm"],
-                ['Ancho Promedio', f"{stats['avg_dimensions']['ancho']} mm"],
-                ['Grosor Promedio', f"{stats['avg_dimensions']['grosor']} mm"],
+                [EXCEL_AVG_ALTO, f"{stats['avg_dimensions']['alto']} mm"],
+                [EXCEL_AVG_ANCHO, f"{stats['avg_dimensions']['ancho']} mm"],
+                [EXCEL_AVG_GROSOR, f"{stats['avg_dimensions']['grosor']} mm"],
             ])
         
         if parametros.get('include_weight', True):
-            custom_metrics.append(['Peso Promedio', f"{stats['avg_weight']} g"])
+            custom_metrics.append([EXCEL_AVG_PESO, f"{stats['avg_weight']} g"])
         
         if parametros.get('include_confidence', True):
-            custom_metrics.append(['Confianza Promedio', f"{stats['avg_confidence']}%"])
+            custom_metrics.append([EXCEL_AVG_CONFIDENCE, f"{stats['avg_confidence']}%"])
         
         # Create custom table
-        data = [['Métrica', 'Valor']] + custom_metrics
+        data = [[EXCEL_COL_METRIC, EXCEL_COL_VALUE]] + custom_metrics
         
         for row_num, row_data in enumerate(data, 10):
             for col_num, cell_value in enumerate(row_data, 1):
@@ -958,13 +971,13 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         
         if parametros.get('include_lotes', True):
             custom_metrics.extend([
-                ['Total de Lotes', str(finca.total_lotes)],
-                ['Lotes Activos', str(finca.lotes_activos)],
+                [EXCEL_TOTAL_LOTES, str(finca.total_lotes)],
+                [EXCEL_LOTES_ACTIVOS, str(finca.lotes_activos)],
             ])
         
         if parametros.get('include_quality', True):
             custom_metrics.extend([
-                ['Total de Análisis', str(finca.total_analisis)],
+                [EXCEL_TOTAL_ANALISIS, str(finca.total_analisis)],
                 ['Calidad Promedio', f"{finca.calidad_promedio}%"],
             ])
         
@@ -1017,7 +1030,7 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             custom_metrics.append(['Tipos de Acción', str(len(stats['activities_by_action']))])
         
         # Create custom table
-        data = [['Métrica', 'Valor']] + custom_metrics
+        data = [[EXCEL_COL_METRIC, EXCEL_COL_VALUE]] + custom_metrics
         
         for row_num, row_data in enumerate(data, 10):
             for col_num, cell_value in enumerate(row_data, 1):

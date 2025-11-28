@@ -117,7 +117,7 @@ export function formatLoteData(loteData) {
   }
 
   if (formatted.area_hectareas) {
-    formatted.area_hectareas = parseFloat(formatted.area_hectareas)
+    formatted.area_hectareas = Number.parseFloat(formatted.area_hectareas)
   }
 
   if (formatted.activa === undefined) {

@@ -26,6 +26,9 @@ from ...serializers import (
 
 logger = logging.getLogger("cacaoscan.api")
 
+# Error message constants
+ERROR_INTERNAL_SERVER = 'Error interno del servidor'
+
 
 class NotificationListCreateView(PaginationMixin, APIView):
     """
@@ -92,7 +95,7 @@ class NotificationListCreateView(PaginationMixin, APIView):
         except Exception as e:
             logger.error(f"Error listando notificaciones para usuario {request.user.username}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -129,7 +132,7 @@ class NotificationDetailView(APIView):
         except Exception as e:
             logger.error(f"Error obteniendo detalles de notificación {notification_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -172,7 +175,7 @@ class NotificationMarkReadView(APIView):
         except Exception as e:
             logger.error(f"Error marcando notificación {notification_id} como leída: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -207,7 +210,7 @@ class NotificationMarkAllReadView(APIView):
         except Exception as e:
             logger.error(f"Error marcando todas las notificaciones como leídas: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -240,7 +243,7 @@ class NotificationUnreadCountView(APIView):
         except Exception as e:
             logger.error(f"Error obteniendo contador de notificaciones no leídas: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -293,7 +296,7 @@ class NotificationStatsView(APIView):
         except Exception as e:
             logger.error(f"Error obteniendo estadísticas de notificaciones: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -351,7 +354,7 @@ class NotificationCreateView(AdminPermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error creando notificación: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

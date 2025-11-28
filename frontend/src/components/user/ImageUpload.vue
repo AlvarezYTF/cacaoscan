@@ -14,7 +14,7 @@
     <form @submit.prevent="handleSubmit" class="space-y-6">
       <!-- Image Upload Area -->
       <div class="space-y-4">
-        <label class="block text-sm font-medium text-gray-700">
+        <label for="image-upload-file" class="block text-sm font-medium text-gray-700">
           Imagen del Grano
           <span class="text-red-500">*</span>
         </label>
@@ -105,6 +105,7 @@
 
         <!-- File Input -->
         <input
+          id="image-upload-file"
           ref="fileInput"
           type="file"
           accept="image/jpeg,image/jpg,image/png,image/bmp,image/tiff"
@@ -390,7 +391,7 @@ export default {
       const sizes = ['Bytes', 'KB', 'MB', 'GB'];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
       
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+      return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
     // Función para mapear respuesta de API al formato esperado por PredictionResults

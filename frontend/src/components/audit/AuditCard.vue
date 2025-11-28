@@ -187,9 +187,9 @@ export default {
       // Parse duration string (e.g., "1:23:45")
       const parts = durationString.split(':')
       if (parts.length === 3) {
-        const hours = parseInt(parts[0])
-        const minutes = parseInt(parts[1])
-        const seconds = parseInt(parts[2])
+        const hours = Number.parseInt(parts[0])
+        const minutes = Number.parseInt(parts[1])
+        const seconds = Number.parseInt(parts[2])
         
         if (hours > 0) {
           return `${hours}h ${minutes}m`

@@ -232,10 +232,10 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
     
     // Verificar que el área total de lotes no excede el área de la finca
     cy.get('[data-cy="finca-area"]').then(($fincaArea) => {
-      const fincaArea = parseFloat($fincaArea.text())
+      const fincaArea = Number.parseFloat($fincaArea.text())
       
       cy.get('[data-cy="total-area-lotes"]').then(($lotesArea) => {
-        const lotesArea = parseFloat($lotesArea.text())
+        const lotesArea = Number.parseFloat($lotesArea.text())
         
         expect(lotesArea).to.be.at.most(fincaArea)
       })

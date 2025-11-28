@@ -66,10 +66,11 @@
       
       <!-- Selector de elementos por página (opcional) -->
       <div v-if="showItemsPerPage" class="flex items-center space-x-2">
-        <label class="text-xs sm:text-sm text-gray-700">Mostrar:</label>
+        <label for="pagination-items-per-page" class="text-xs sm:text-sm text-gray-700">Mostrar:</label>
         <select 
+          id="pagination-items-per-page"
           :value="itemsPerPage"
-          @change="$emit('items-per-page-change', parseInt($event.target.value))"
+          @change="$emit('items-per-page-change', Number.parseInt($event.target.value))"
           class="text-xs sm:text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-500"
         >
           <option value="5">5</option>

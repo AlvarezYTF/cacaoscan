@@ -16,8 +16,8 @@
         <div class="filters-section">
           <div class="filters-row">
             <div class="filter-group">
-              <label>Acción</label>
-              <select v-model="filters.action" @change="loadActivities">
+              <label for="activity-filter-action">Acción</label>
+              <select id="activity-filter-action" v-model="filters.action" @change="loadActivities">
                 <option value="">Todas las acciones</option>
                 <option value="login">Login</option>
                 <option value="logout">Logout</option>
@@ -32,8 +32,8 @@
             </div>
             
             <div class="filter-group">
-              <label>Modelo</label>
-              <select v-model="filters.model" @change="loadActivities">
+              <label for="activity-filter-model">Modelo</label>
+              <select id="activity-filter-model" v-model="filters.model" @change="loadActivities">
                 <option value="">Todos los modelos</option>
                 <option value="User">Usuario</option>
                 <option value="Finca">Finca</option>
@@ -46,8 +46,8 @@
             </div>
             
             <div class="filter-group">
-              <label>Período</label>
-              <select v-model="filters.period" @change="loadActivities">
+              <label for="activity-filter-period">Período</label>
+              <select id="activity-filter-period" v-model="filters.period" @change="loadActivities">
                 <option value="7">Últimos 7 días</option>
                 <option value="30">Últimos 30 días</option>
                 <option value="90">Últimos 90 días</option>
@@ -321,7 +321,7 @@ export default {
     }
 
     const getStartDate = () => {
-      const days = parseInt(filters.period)
+      const days = Number.parseInt(filters.period)
       const date = new Date()
       date.setDate(date.getDate() - days)
       return date.toISOString().split('T')[0]

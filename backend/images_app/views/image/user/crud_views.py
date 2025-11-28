@@ -32,6 +32,10 @@ CacaoPrediction = models['CacaoPrediction']
 
 logger = logging.getLogger("cacaoscan.api.images")
 
+# Error message constants
+ERROR_IMAGE_NOT_FOUND = 'Imagen no encontrada'
+ERROR_INTERNAL_SERVER = 'Error interno del servidor'
+
 
 class ImageDetailView(APIView, ImagePermissionMixin):
     """
@@ -73,7 +77,7 @@ class ImageDetailView(APIView, ImagePermissionMixin):
             ).prefetch_related('prediction').get(id=image_id)
         except CacaoImage.DoesNotExist:
             return Response({
-                'error': 'Imagen no encontrada',
+                'error': ERROR_IMAGE_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         
@@ -139,7 +143,7 @@ class ImageUpdateView(APIView, ImagePermissionMixin):
                 ).prefetch_related('prediction').get(id=image_id)
             except CacaoImage.DoesNotExist:
                 return Response({
-                    'error': 'Imagen no encontrada',
+                    'error': ERROR_IMAGE_NOT_FOUND,
                     'status': 'error'
                 }, status=status.HTTP_404_NOT_FOUND)
             
@@ -187,7 +191,7 @@ class ImageUpdateView(APIView, ImagePermissionMixin):
         except Exception as e:
             logger.error(f"Error actualizando imagen {image_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                    'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -235,7 +239,7 @@ class ImageDeleteView(APIView, ImagePermissionMixin):
                 ).prefetch_related('prediction').get(id=image_id)
             except CacaoImage.DoesNotExist:
                 return Response({
-                    'error': 'Imagen no encontrada',
+                    'error': ERROR_IMAGE_NOT_FOUND,
                     'status': 'error'
                 }, status=status.HTTP_404_NOT_FOUND)
             
@@ -289,7 +293,7 @@ class ImageDeleteView(APIView, ImagePermissionMixin):
         except Exception as e:
             logger.error(f"Error eliminando imagen {image_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                    'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -335,7 +339,7 @@ class ImageDownloadView(APIView, ImagePermissionMixin):
                 ).prefetch_related('prediction').get(id=image_id)
             except CacaoImage.DoesNotExist:
                 return Response({
-                    'error': 'Imagen no encontrada',
+                    'error': ERROR_IMAGE_NOT_FOUND,
                     'status': 'error'
                 }, status=status.HTTP_404_NOT_FOUND)
             
@@ -420,7 +424,7 @@ class ImageDownloadView(APIView, ImagePermissionMixin):
         except Exception as e:
             logger.error(f"Error descargando imagen {image_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                    'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

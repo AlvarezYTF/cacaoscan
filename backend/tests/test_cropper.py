@@ -104,7 +104,7 @@ class TestCacaoCropper:
             result = self.cropper.process_image(Path("test.bmp"), 1)
         
         assert result['success'] == True
-        assert result['confidence'] == 0.8
+        assert abs(result['confidence'] - 0.8) < 0.01
         assert result['area'] == 5000
         mock_save.assert_called_once()
     

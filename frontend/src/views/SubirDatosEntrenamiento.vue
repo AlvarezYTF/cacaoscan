@@ -57,7 +57,7 @@
               <form @submit.prevent="handleSubmit" class="space-y-6">
                 <!-- Image Upload -->
                 <div class="space-y-4">
-                  <label class="block text-sm font-medium text-gray-700">
+                  <label for="training-upload-file" class="block text-sm font-medium text-gray-700">
                     Imagen del Grano
                     <span class="text-red-500">*</span>
                   </label>
@@ -120,6 +120,7 @@
                   </div>
                   
                   <input 
+                    id="training-upload-file"
                     ref="fileInput"
                     type="file"
                     accept="image/*"
@@ -135,11 +136,12 @@
                   <div class="grid grid-cols-2 gap-4">
                     <!-- ID -->
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                      <label for="training-grain-id" class="block text-sm font-medium text-gray-700 mb-1">
                         ID de la Muestra
                         <span class="text-red-500">*</span>
                       </label>
                       <input 
+                        id="training-grain-id"
                         v-model="grainData.id"
                         type="number"
                         min="1"
@@ -151,11 +153,12 @@
                     
                     <!-- Peso -->
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                      <label for="training-grain-peso" class="block text-sm font-medium text-gray-700 mb-1">
                         Peso (g)
                         <span class="text-red-500">*</span>
                       </label>
                       <input 
+                        id="training-grain-peso"
                         v-model="grainData.peso"
                         type="number"
                         step="0.01"
@@ -169,11 +172,12 @@
                     
                     <!-- Alto -->
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                      <label for="training-grain-alto" class="block text-sm font-medium text-gray-700 mb-1">
                         Alto (mm)
                         <span class="text-red-500">*</span>
                       </label>
                       <input 
+                        id="training-grain-alto"
                         v-model="grainData.alto"
                         type="number"
                         step="0.1"
@@ -187,11 +191,12 @@
                     
                     <!-- Ancho -->
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                      <label for="training-grain-ancho" class="block text-sm font-medium text-gray-700 mb-1">
                         Ancho (mm)
                         <span class="text-red-500">*</span>
                       </label>
                       <input 
+                        id="training-grain-ancho"
                         v-model="grainData.ancho"
                         type="number"
                         step="0.1"
@@ -205,11 +210,12 @@
                     
                     <!-- Grosor -->
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                      <label for="training-grain-grosor" class="block text-sm font-medium text-gray-700 mb-1">
                         Grosor (mm)
                         <span class="text-red-500">*</span>
                       </label>
                       <input 
+                        id="training-grain-grosor"
                         v-model="grainData.grosor"
                         type="number"
                         step="0.1"
@@ -229,10 +235,11 @@
                   
                   <div class="grid grid-cols-1 gap-4">
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                      <label for="training-batch-number" class="block text-sm font-medium text-gray-700 mb-1">
                         Número de Lote
                       </label>
                       <input 
+                        id="training-batch-number"
                         v-model="additionalInfo.batch_number"
                         type="text"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -241,10 +248,11 @@
                     </div>
                     
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                      <label for="training-origin" class="block text-sm font-medium text-gray-700 mb-1">
                         Origen
                       </label>
                       <input 
+                        id="training-origin"
                         v-model="additionalInfo.origin"
                         type="text"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -253,10 +261,11 @@
                     </div>
                     
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                      <label for="training-notes" class="block text-sm font-medium text-gray-700 mb-1">
                         Notas
                       </label>
                       <textarea 
+                        id="training-notes"
                         v-model="additionalInfo.notes"
                         rows="3"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -523,7 +532,7 @@ export default {
       const k = 1024
       const sizes = ['Bytes', 'KB', 'MB', 'GB']
       const i = Math.floor(Math.log(bytes) / Math.log(k))
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+      return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
     }
     
     const formatRelativeTime = (timestamp) => {

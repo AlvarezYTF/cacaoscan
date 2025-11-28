@@ -281,14 +281,15 @@ try:
         raise ImportError("cache_config.py not found")
     
     # Override cache configuration for DEBUG mode after import to avoid circular dependency
+    LOCMEM_CACHE_BACKEND = 'django.core.cache.backends.locmem.LocMemCache'
     if DEBUG:
         CACHES['default'] = {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'BACKEND': LOCMEM_CACHE_BACKEND,
             'LOCATION': 'unique-snowflake',
             'TIMEOUT': 300,
         }
         CACHES['sessions'] = {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'BACKEND': LOCMEM_CACHE_BACKEND,
             'LOCATION': 'unique-sessions',
             'TIMEOUT': 86400,
         }
@@ -299,16 +300,17 @@ except (ImportError, AttributeError, FileNotFoundError) as e:
     REDIS_DB = int(os.environ.get('REDIS_DB', 0))
     REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', None)
     
+    LOCMEM_CACHE_BACKEND = 'django.core.cache.backends.locmem.LocMemCache'
     if DEBUG:
         # Use in-memory cache for development
         CACHES = {
             'default': {
-                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'BACKEND': LOCMEM_CACHE_BACKEND,
                 'LOCATION': 'unique-snowflake',
                 'TIMEOUT': 300,
             },
             'api_cache': {
-                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'BACKEND': LOCMEM_CACHE_BACKEND,
                 'LOCATION': 'api-cache',
                 'TIMEOUT': 600,
             }

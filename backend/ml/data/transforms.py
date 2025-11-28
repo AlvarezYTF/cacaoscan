@@ -8,6 +8,9 @@ from torchvision import transforms as T
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 
+# Error message constants
+ERROR_IMAGE_CANNOT_BE_NONE = "image cannot be None"
+
 # ======================================================
 #  MODELO: U-Net ligero para segmentacin de fondo
 # ======================================================
@@ -114,12 +117,12 @@ def train_background_ai(image_dir="ml/data/dataset/images", mask_dir="ml/data/da
     ])
 
     dataset = CacaoDataset(image_dir, mask_dir, transform, auto_generate=True)
-    loader = DataLoader(dataset, batch_size=4, shuffle=True)
+    loader = DataLoader(dataset, batch_size=4, shuffle=True, num_workers=0)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = UNet().to(device)
     criterion = nn.BCELoss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-4)
 
     for epoch in range(epochs):
         for imgs, masks in loader:
@@ -191,7 +194,7 @@ def remove_background_ai(image_path: str) -> Image.Image:
     alpha = _clean_components(alpha)
     
     # RECORTE TIGHT: encontrar bounding box del grano
-    ys, xs = np.where(alpha > 0)
+    ys, xs = np.nonzero(alpha > 0)
     if len(xs) == 0 or len(ys) == 0:
         # Si no hay píxeles válidos, devolver imagen completa con máscara
         rgba = np.dstack([img_array, alpha])
@@ -383,7 +386,7 @@ def resize_with_padding(
     Acepta imagen GRAY/RGB/RGBA.
     """
     if image is None:
-        raise ValueError("image cannot be None")
+        raise ValueError(ERROR_IMAGE_CANNOT_BE_NONE)
 
     h, w = image.shape[:2]
     th, tw = target_size
@@ -421,7 +424,7 @@ def resize_with_padding(
 def normalize_image(image: np.ndarray) -> np.ndarray:
     """Normaliza una imagen a rango [0, 1] en float32."""
     if image is None:
-        raise ValueError("image cannot be None")
+        raise ValueError(ERROR_IMAGE_CANNOT_BE_NONE)
     img = image.astype(np.float32)
     if img.max() > 1.0:
         img = img / 255.0
@@ -431,7 +434,7 @@ def normalize_image(image: np.ndarray) -> np.ndarray:
 def denormalize_image(image: np.ndarray) -> np.ndarray:
     """Desnormaliza una imagen de [0, 1] a uint8 [0, 255]."""
     if image is None:
-        raise ValueError("image cannot be None")
+        raise ValueError(ERROR_IMAGE_CANNOT_BE_NONE)
     img = np.clip(image, 0.0, 1.0)
     return (img * 255.0).astype(np.uint8)
 
@@ -571,7 +574,7 @@ def create_transparent_crop(image_rgb: np.ndarray, mask: np.ndarray, padding: in
             # Si el objeto es pequeo pero el bbox es grande, ajustar el bbox al objeto
             else:
                 # Recalcular bbox basado solo en los pxeles del objeto
-                coords = np.where(final_mask > 128)
+                coords = np.nonzero(final_mask > 128)
                 if len(coords[0]) > 0:
                     y_min, y_max = coords[0].min(), coords[0].max()
                     x_min, x_max = coords[1].min(), coords[1].max()
@@ -585,7 +588,6 @@ def create_transparent_crop(image_rgb: np.ndarray, mask: np.ndarray, padding: in
         crop_alpha = final_mask[y:y+h, x:x+w].copy()
 
         # NO suavizar - mantener bordes precisos sin halos
-        crop_alpha = crop_alpha
 
         # Crear RGBA con transparencia exacta
         rgba = np.zeros((h, w, 4), dtype=np.uint8)

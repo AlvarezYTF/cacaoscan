@@ -92,7 +92,7 @@ export default {
     },
     getTotalArea() {
       return this.allFincas.reduce((total, finca) => {
-        return total + parseFloat(finca.hectareas || 0);
+        return total + Number.parseFloat(finca.hectareas || 0);
       }, 0).toFixed(1);
     }
   }

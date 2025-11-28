@@ -300,7 +300,7 @@ class Command(BaseCommand):
             # Crear modelo
             model = UNet().to(device)
             criterion = nn.BCELoss()
-            optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+            optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
             
             # Entrenar
             self.stdout.write("\n📊 Progreso del entrenamiento:")

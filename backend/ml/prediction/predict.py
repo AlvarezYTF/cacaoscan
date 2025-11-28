@@ -456,7 +456,7 @@ class CacaoPredictor:
         mask = (alpha > 128).astype(np.float32)
         object_area = int(np.sum(mask > 0))
         
-        y_coords, x_coords = np.where(mask > 0)
+        y_coords, x_coords = np.nonzero(mask > 0)
         if len(x_coords) > 0:
             width_visible = int(x_coords.max() - x_coords.min() + 1)
             height_visible = int(y_coords.max() - y_coords.min() + 1)
@@ -557,7 +557,7 @@ class CacaoPredictor:
         model_predictions = self._denormalize_predictions(normalized_predictions)
         logger.info(f"📊 Predicción Híbrida (desnormalizada): {model_predictions}")
         
-        confidences = {target: 0.90 for target in TARGETS} 
+        confidences = dict.fromkeys(TARGETS, 0.90) 
         return model_predictions, confidences
 
     def predict(self, image: Image.Image) -> Dict[str, Any]:

@@ -32,6 +32,9 @@ from .metrics import (
 
 logger = get_ml_logger("cacaoscan.ml.regression.train_improved")
 
+# Separator constants
+SEPARATOR_LINE = "=========================================="
+
 
 def validate_targets_normalization(
     targets: Dict[str, np.ndarray],
@@ -146,7 +149,7 @@ def train_multi_head_model_improved(
                 logger.warning("Targets pueden no estar correctamente normalizados")
         else:
             logger.warning("No se pudieron extraer targets del dataset para validación")
-    logger.info("==========================================")
+    logger.info(SEPARATOR_LINE)
     
     # Optimizador mejorado con learning rate más conservador
     # REDUCIDO a 1e-5 por defecto para estabilidad con Uncertainty Loss
@@ -234,6 +237,7 @@ def train_multi_head_model_improved(
                     {'params': model.parameters(), 'lr': model_lr},
                     {'params': criterion.parameters(), 'lr': sigma_lr}
                 ],
+                lr=learning_rate,
                 weight_decay=config.get('weight_decay', 1e-4),
                 betas=(0.9, 0.999),
                 eps=1e-8
@@ -523,7 +527,7 @@ def train_multi_head_model_improved(
                     f"⚠️ EXPLOSIÓN EN LA RED DETECTADA: Rango extremo [{out_min:.2f}, {out_max:.2f}]. "
                     f"Esto indica problemas de inicialización o gradientes explosivos."
                 )
-    logger.info("==========================================")
+    logger.info(SEPARATOR_LINE)
     
     for epoch in range(epochs):
         epoch_start_time = time.time()
@@ -772,7 +776,7 @@ def train_multi_head_model_improved(
                     )
             logger.info(f"R² Promedio: {avg_r2:.4f}")
             logger.info(f"Tiempo total: {time.time() - start_time_total:.2f}s")
-            logger.info("==========================================")
+            logger.info(SEPARATOR_LINE)
         
         # Early stopping inteligente o básico
         r2_scores = {target: metrics_per_target.get(target, {}).get('r2', 0.0) for target in TARGETS}

@@ -239,11 +239,11 @@ api.interceptors.response.use(
       if (error.response?.status === 500) {
         // No loggear ni mostrar notificación para endpoints de stats o config
         if (isStatsEndpoint || isConfigEndpoint) {
-          return Promise.resolve({
+          return {
             data: {},
             status: 200,
             config: originalRequest
-          })
+          }
         }
       }
     }
@@ -273,7 +273,7 @@ api.interceptors.response.use(
             })
           }
         }
-        return Promise.reject(error)
+        throw error
       }
 
       const refreshToken = localStorage.getItem('refresh_token')
@@ -293,7 +293,7 @@ api.interceptors.response.use(
             }
           })
         }
-        return Promise.reject(error)
+        throw error
       }
 
       // Si ya se está refrescando, agregar a la cola
@@ -304,7 +304,7 @@ api.interceptors.response.use(
           originalRequest.headers.Authorization = 'Bearer ' + token
           return api(originalRequest)
         }).catch(err => {
-          return Promise.reject(err)
+          throw err
         })
       }
 
@@ -371,7 +371,7 @@ api.interceptors.response.use(
           })
         }
         
-        return Promise.reject(refreshError)
+        throw refreshError
       } finally {
         isRefreshing = false
       }
@@ -442,7 +442,7 @@ api.interceptors.response.use(
       }
     }
 
-    return Promise.reject(error)
+    throw error
   }
 )
 

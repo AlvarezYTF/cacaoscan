@@ -92,10 +92,10 @@ export const usePredictionStore = defineStore('prediction', {
       
       const { width, height, thickness } = state.currentPrediction;
       return {
-        width: parseFloat(width).toFixed(2),
-        height: parseFloat(height).toFixed(2),
-        thickness: parseFloat(thickness).toFixed(2),
-        formatted: `${parseFloat(width).toFixed(2)} × ${parseFloat(height).toFixed(2)} × ${parseFloat(thickness).toFixed(2)} mm`
+        width: Number.parseFloat(width).toFixed(2),
+        height: Number.parseFloat(height).toFixed(2),
+        thickness: Number.parseFloat(thickness).toFixed(2),
+        formatted: `${Number.parseFloat(width).toFixed(2)} × ${Number.parseFloat(height).toFixed(2)} × ${Number.parseFloat(thickness).toFixed(2)} mm`
       };
     },
     
@@ -105,8 +105,8 @@ export const usePredictionStore = defineStore('prediction', {
       
       const weight = state.currentPrediction.predicted_weight;
       return {
-        value: parseFloat(weight).toFixed(3),
-        formatted: `${parseFloat(weight).toFixed(3)} g`
+        value: Number.parseFloat(weight).toFixed(3),
+        formatted: `${Number.parseFloat(weight).toFixed(3)} g`
       };
     },
     
@@ -137,7 +137,7 @@ export const usePredictionStore = defineStore('prediction', {
       
       return {
         total: predictions.length,
-        avgWeight: parseFloat(avgWeight).toFixed(3),
+        avgWeight: Number.parseFloat(avgWeight).toFixed(3),
         avgConfidence: Math.round(avgConfidence * 100),
         highConfidenceCount
       };
@@ -446,11 +446,11 @@ export const usePredictionStore = defineStore('prediction', {
         id: prediction.id,
         fecha: prediction.created_at,
         dimensiones: {
-          ancho: `${parseFloat(prediction.width).toFixed(2)} mm`,
-          alto: `${parseFloat(prediction.height).toFixed(2)} mm`,
-          grosor: `${parseFloat(prediction.thickness).toFixed(2)} mm`
+          ancho: `${Number.parseFloat(prediction.width).toFixed(2)} mm`,
+          alto: `${Number.parseFloat(prediction.height).toFixed(2)} mm`,
+          grosor: `${Number.parseFloat(prediction.thickness).toFixed(2)} mm`
         },
-        peso_predicho: `${parseFloat(prediction.predicted_weight).toFixed(3)} g`,
+        peso_predicho: `${Number.parseFloat(prediction.predicted_weight).toFixed(3)} g`,
         confianza: {
           nivel: prediction.confidence_level,
           score: prediction.confidence_score ? `${Math.round(prediction.confidence_score * 100)}%` : 'N/A'
@@ -477,7 +477,7 @@ export const usePredictionStore = defineStore('prediction', {
       // Calcular tiempo promedio de procesamiento
       const validTimes = this.predictions
         .map(p => p.processing_time)
-        .filter(time => time && !isNaN(time));
+        .filter(time => time && !Number.isNaN(time));
       
       if (validTimes.length > 0) {
         this.stats.avgProcessingTime = validTimes.reduce((sum, time) => sum + time, 0) / validTimes.length;

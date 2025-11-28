@@ -40,6 +40,10 @@ from reports.models import ReporteGenerado
 
 logger = logging.getLogger("cacaoscan.services.report.pdf")
 
+# PDF column constants
+PDF_COL_METRIC = 'Métrica'
+PDF_COL_VALUE = 'Valor'
+
 
 class CacaoReportPDFGenerator:
     """
@@ -298,7 +302,7 @@ class CacaoReportPDFGenerator:
         
         # Tabla de estadísticas
         data = [
-            ['Métrica', 'Valor'],
+            [PDF_COL_METRIC, PDF_COL_VALUE],
             ['Total de Análisis', str(stats['total_analyses'])],
             ['Confianza Promedio', f"{stats['avg_confidence']}%"],
             ['Alto Promedio', f"{stats['avg_dimensions']['alto']} mm"],
@@ -488,7 +492,7 @@ class CacaoReportPDFGenerator:
         story.append(Spacer(1, 10))
         
         data = [
-            ['Métrica', 'Valor'],
+            [PDF_COL_METRIC, PDF_COL_VALUE],
             ['Total de Lotes', str(stats['total_lotes'])],
             ['Lotes Activos', str(stats['lotes_activos'])],
             ['Área Total', f"{stats['total_area']:.2f} ha"],
@@ -608,7 +612,7 @@ class CacaoReportPDFGenerator:
         story.append(Spacer(1, 10))
         
         data = [
-            ['Métrica', 'Valor'],
+            [PDF_COL_METRIC, PDF_COL_VALUE],
             ['Total de Actividades', str(stats['total_activities'])],
             ['Actividades Hoy', str(stats['activities_today'])],
         ]
@@ -655,7 +659,7 @@ class CacaoReportPDFGenerator:
         story.append(Spacer(1, 10))
         
         data = [
-            ['Métrica', 'Valor'],
+            [PDF_COL_METRIC, PDF_COL_VALUE],
             ['Total de Logins', str(stats['total_logins'])],
             ['Logins Exitosos', str(stats['successful_logins'])],
             ['Logins Fallidos', str(stats['failed_logins'])],

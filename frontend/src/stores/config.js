@@ -142,14 +142,14 @@ export const useConfigStore = defineStore('config', {
         this.lastUpdate = new Date()
         console.log('✅ Configuración del sistema cargada:', this.brandName)
         
-        return true
+        return { success: true, loaded: true }
       } catch (error) {
         // Solo registrar errores inesperados (no 403 o 500)
         if (error.response?.status !== 403 && error.response?.status !== 500) {
           console.error('Error inesperado cargando configuración:', error)
         }
         // Usar valores por defecto en caso de error
-        return true
+        return { success: false, loaded: false, error: error.message }
       } finally {
         this.loading = false
       }

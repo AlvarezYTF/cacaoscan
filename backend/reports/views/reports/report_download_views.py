@@ -91,7 +91,7 @@ class ReporteDownloadView(APIView):
             elif reporte.formato == 'csv':
                 response['Content-Type'] = 'text/csv'
             elif reporte.formato == 'json':
-                response['Content-Type'] = 'application/json'
+                response['Content-Type'] = CONTENT_TYPE_JSON
             
             logger.info(f"Reporte {reporte_id} descargado por usuario {request.user.username}")
             

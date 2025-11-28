@@ -185,6 +185,9 @@ def root_view(request):
     """
     return HttpResponse(html_content, content_type='text/html')
 
+# URL prefix constants
+API_V1_PREFIX = 'api/v1/'
+
 urlpatterns = [
     path('', root_view, name='root'),
     path('health/', health_check, name='health-check'),
@@ -197,7 +200,7 @@ urlpatterns = [
 try:
     urlpatterns += [
         # API de personas (incluida en v1 con prefijo personas/)
-        path('api/v1/personas/', include('personas.urls')),
+        path(f'{API_V1_PREFIX}personas/', include('personas.urls')),
     ]
 except Exception:
     pass
@@ -205,7 +208,7 @@ except Exception:
 try:
     urlpatterns += [
         # API de catálogos (incluida en v1 para consistencia)
-        path('api/v1/', include('catalogos.urls')),
+        path(API_V1_PREFIX, include('catalogos.urls')),
     ]
 except Exception:
     pass
@@ -213,7 +216,7 @@ except Exception:
 try:
     urlpatterns += [
         # API de imágenes (debe ir antes de api.urls para evitar conflictos)
-        path('api/v1/', include('images_app.urls')),
+        path(API_V1_PREFIX, include('images_app.urls')),
     ]
 except Exception:
     pass
@@ -221,7 +224,7 @@ except Exception:
 try:
     urlpatterns += [
         # API principal de CacaoScan (debe ir después de rutas específicas)
-        path('api/v1/', include('api.urls')),
+        path(API_V1_PREFIX, include('api.urls')),
     ]
 except Exception:
     pass

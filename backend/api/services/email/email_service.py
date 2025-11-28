@@ -24,6 +24,9 @@ from datetime import datetime, timedelta
 
 logger = logging.getLogger("cacaoscan.services.email")
 
+# Content type constants
+CONTENT_TYPE_OCTET_STREAM = 'application/octet-stream'
+
 
 class EmailService:
     """
@@ -161,7 +164,7 @@ class EmailService:
                 for attachment in attachments:
                     filename = attachment.get('filename')
                     content = attachment.get('content')
-                    content_type = attachment.get('content_type', 'application/octet-stream')
+                    content_type = attachment.get('content_type', CONTENT_TYPE_OCTET_STREAM)
                     if isinstance(content, str):
                         content = content.encode('utf-8')
                     email.attach(filename, content, content_type)
@@ -279,7 +282,7 @@ class EmailService:
         try:
             filename = attachment.get('filename')
             content = attachment.get('content')
-            content_type = attachment.get('content_type', 'application/octet-stream')
+            content_type = attachment.get('content_type', CONTENT_TYPE_OCTET_STREAM)
             
             if isinstance(content, str):
                 content = content.encode('utf-8')
@@ -301,7 +304,7 @@ class EmailService:
         try:
             filename = attachment.get('filename')
             content = attachment.get('content')
-            content_type = attachment.get('content_type', 'application/octet-stream')
+            content_type = attachment.get('content_type', CONTENT_TYPE_OCTET_STREAM)
             
             if isinstance(content, str):
                 content = content.encode('utf-8')

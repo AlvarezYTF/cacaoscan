@@ -262,7 +262,7 @@ class HybridTrainer:
             try:
                 corr, _ = pearsonr(all_targets[target], all_predictions[target])
                 pearson_corrs[target] = float(corr)
-            except:
+            except Exception:
                 pearson_corrs[target] = 0.0
         
         # Get sigmas

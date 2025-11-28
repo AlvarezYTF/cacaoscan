@@ -87,8 +87,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               <!-- Filtro por tipo de reporte -->
               <div class="form-group">
-                <label class="form-label">Tipo de Reporte</label>
-                <select v-model="filters.tipo_reporte" class="form-select">
+                <label for="report-filter-tipo" class="form-label">Tipo de Reporte</label>
+                <select id="report-filter-tipo" v-model="filters.tipo_reporte" class="form-select">
                   <option value="">Todos los tipos</option>
                   <option value="calidad">Reporte de Calidad</option>
                   <option value="finca">Reporte de Finca</option>
@@ -101,8 +101,8 @@
 
               <!-- Filtro por formato -->
               <div class="form-group">
-                <label class="form-label">Formato</label>
-                <select v-model="filters.formato" class="form-select">
+                <label for="report-filter-formato" class="form-label">Formato</label>
+                <select id="report-filter-formato" v-model="filters.formato" class="form-select">
                   <option value="">Todos los formatos</option>
                   <option value="pdf">PDF</option>
                   <option value="excel">Excel</option>
@@ -113,8 +113,8 @@
 
               <!-- Filtro por estado -->
               <div class="form-group">
-                <label class="form-label">Estado</label>
-                <select v-model="filters.estado" class="form-select">
+                <label for="report-filter-estado" class="form-label">Estado</label>
+                <select id="report-filter-estado" v-model="filters.estado" class="form-select">
                   <option value="">Todos los estados</option>
                   <option value="pendiente">Pendiente</option>
                   <option value="procesando">Procesando</option>
@@ -125,8 +125,8 @@
 
               <!-- Filtro por usuario -->
               <div class="form-group">
-                <label class="form-label">Usuario</label>
-                <select v-model="filters.usuario_id" class="form-select">
+                <label for="report-filter-usuario" class="form-label">Usuario</label>
+                <select id="report-filter-usuario" v-model="filters.usuario_id" class="form-select">
                   <option value="">Todos los usuarios</option>
                   <option v-for="user in users" :key="user.id" :value="user.id">
                     {{ user.first_name }} {{ user.last_name }}
@@ -136,8 +136,9 @@
 
               <!-- Filtro por fecha desde -->
               <div class="form-group">
-                <label class="form-label">Fecha Desde</label>
+                <label for="report-filter-fecha-desde" class="form-label">Fecha Desde</label>
                 <input
+                  id="report-filter-fecha-desde"
                   type="date"
                   v-model="filters.fecha_desde"
                   class="form-input"
@@ -146,8 +147,9 @@
 
               <!-- Filtro por fecha hasta -->
               <div class="form-group">
-                <label class="form-label">Fecha Hasta</label>
+                <label for="report-filter-fecha-hasta" class="form-label">Fecha Hasta</label>
                 <input
+                  id="report-filter-fecha-hasta"
                   type="date"
                   v-model="filters.fecha_hasta"
                   class="form-input"
@@ -156,8 +158,8 @@
 
               <!-- Filtro por finca -->
               <div class="form-group">
-                <label class="form-label">Finca</label>
-                <select v-model="filters.finca_id" class="form-select">
+                <label for="report-filter-finca" class="form-label">Finca</label>
+                <select id="report-filter-finca" v-model="filters.finca_id" class="form-select">
                   <option value="">Todas las fincas</option>
                   <option v-for="finca in fincas" :key="finca.id" :value="finca.id">
                     {{ finca.nombre }}
@@ -167,8 +169,8 @@
 
               <!-- Filtro por lote -->
               <div class="form-group">
-                <label class="form-label">Lote</label>
-                <select v-model="filters.lote_id" class="form-select">
+                <label for="report-filter-lote" class="form-label">Lote</label>
+                <select id="report-filter-lote" v-model="filters.lote_id" class="form-select">
                   <option value="">Todos los lotes</option>
                   <option v-for="lote in lotes" :key="lote.id" :value="lote.id">
                     {{ lote.identificador }} - {{ lote.variedad }}
@@ -441,7 +443,7 @@ export default {
         reports = reports.filter(r => r.estado === filters.value.estado);
       }
       if (filters.value.usuario_id) {
-        reports = reports.filter(r => r.usuario_id === parseInt(filters.value.usuario_id));
+        reports = reports.filter(r => r.usuario_id === Number.parseInt(filters.value.usuario_id));
       }
       if (filters.value.fecha_desde) {
         reports = reports.filter(r => new Date(r.fecha_solicitud) >= new Date(filters.value.fecha_desde));
@@ -450,10 +452,10 @@ export default {
         reports = reports.filter(r => new Date(r.fecha_solicitud) <= new Date(filters.value.fecha_hasta));
       }
       if (filters.value.finca_id) {
-        reports = reports.filter(r => r.parametros?.finca_id === parseInt(filters.value.finca_id));
+        reports = reports.filter(r => r.parametros?.finca_id === Number.parseInt(filters.value.finca_id));
       }
       if (filters.value.lote_id) {
-        reports = reports.filter(r => r.parametros?.lote_id === parseInt(filters.value.lote_id));
+        reports = reports.filter(r => r.parametros?.lote_id === Number.parseInt(filters.value.lote_id));
       }
 
       return reports;

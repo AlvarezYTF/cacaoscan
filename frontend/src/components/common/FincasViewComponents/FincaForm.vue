@@ -46,10 +46,11 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="finca-form-nombre" class="block text-sm font-semibold text-gray-700 mb-2">
                   Nombre de la Finca *
                 </label>
                 <input
+                  id="finca-form-nombre"
                   v-model="formData.nombre"
                   name="nombre"
                   type="text"
@@ -67,10 +68,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="finca-form-hectareas" class="block text-sm font-semibold text-gray-700 mb-2">
                   Hectáreas *
                 </label>
                 <input
+                  id="finca-form-hectareas"
                   v-model="formData.hectareas"
                   name="hectareas"
                   type="number"
@@ -104,10 +106,11 @@
             </div>
             <div class="space-y-6">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="finca-form-ubicacion" class="block text-sm font-semibold text-gray-700 mb-2">
                   Dirección/Ubicación *
                 </label>
                 <input
+                  id="finca-form-ubicacion"
                   v-model="formData.ubicacion"
                   name="ubicacion"
                   type="text"
@@ -126,10 +129,11 @@
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  <label for="finca-form-departamento" class="block text-sm font-semibold text-gray-700 mb-2">
                     Departamento *
                   </label>
                   <select
+                    id="finca-form-departamento"
                     v-model="formData.departamento"
                     name="departamento"
                     required
@@ -151,10 +155,11 @@
                 </div>
 
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  <label for="finca-form-municipio" class="block text-sm font-semibold text-gray-700 mb-2">
                     Municipio *
                   </label>
                   <select
+                    id="finca-form-municipio"
                     v-model="formData.municipio"
                     name="municipio"
                     required
@@ -189,10 +194,11 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="finca-form-latitud" class="block text-sm font-semibold text-gray-700 mb-2">
                   Latitud
                 </label>
                 <input
+                  id="finca-form-latitud"
                   v-model="formData.coordenadas_lat"
                   name="coordenadas_lat"
                   type="number"
@@ -212,10 +218,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="finca-form-longitud" class="block text-sm font-semibold text-gray-700 mb-2">
                   Longitud
                 </label>
                 <input
+                  id="finca-form-longitud"
                   v-model="formData.coordenadas_lng"
                   name="coordenadas_lng"
                   type="number"
@@ -249,10 +256,11 @@
 
             <!-- Descripción -->
             <div class="mb-6">
-              <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <label for="finca-form-descripcion" class="block text-sm font-semibold text-gray-700 mb-2">
                 Descripción (Opcional)
               </label>
               <textarea
+                id="finca-form-descripcion"
                 v-model="formData.descripcion"
               name="descripcion"
                 rows="3"

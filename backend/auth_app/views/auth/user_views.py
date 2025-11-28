@@ -25,6 +25,9 @@ User = get_user_model()
 
 logger = logging.getLogger("cacaoscan.api.auth.users")
 
+# Error message constants
+ERROR_USER_NOT_FOUND = 'Usuario no encontrado'
+
 
 class UserListView(PaginationMixin, AdminPermissionMixin, APIView):
     """
@@ -188,7 +191,7 @@ class UserUpdateView(AdminPermissionMixin, APIView):
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({
-                'error': 'Usuario no encontrado',
+                'error': ERROR_USER_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         
@@ -289,7 +292,7 @@ class UserDeleteView(AdminPermissionMixin, APIView):
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({
-                'error': 'Usuario no encontrado',
+                'error': ERROR_USER_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         
@@ -516,7 +519,7 @@ class UserDetailView(AdminPermissionMixin, APIView):
                 ).get(id=user_id)
             except User.DoesNotExist:
                 return Response({
-                    'error': 'Usuario no encontrado',
+                    'error': ERROR_USER_NOT_FOUND,
                     'status': 'error'
                 }, status=status.HTTP_404_NOT_FOUND)
             

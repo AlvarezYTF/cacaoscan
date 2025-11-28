@@ -4,6 +4,9 @@ from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
 
+# SQL constant for no-op migrations
+NOOP_SQL = "SELECT 1;"
+
 
 class Migration(migrations.Migration):
 
@@ -77,7 +80,7 @@ class Migration(migrations.Migration):
             database_operations=[
                 # Table structure is already correct from api migrations
                 # Only update Django's state, don't modify the database
-                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+                migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
             ],
         ),
         # ModelMetrics field alterations - only update state, don't touch database
@@ -208,7 +211,7 @@ class Migration(migrations.Migration):
             database_operations=[
                 # Table structure is already correct from api migrations
                 # Only update Django's state, don't modify the database
-                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+                migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
             ],
         ),
         migrations.AddField(

@@ -92,8 +92,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               <!-- Filtro por tipo de auditoría -->
               <div class="form-group">
-                <label class="form-label">Tipo de Auditoría</label>
-                <select v-model="filters.auditType" class="form-select" @change="handleAuditTypeChange">
+                <label for="audit-filter-type" class="form-label">Tipo de Auditoría</label>
+                <select id="audit-filter-type" v-model="filters.auditType" class="form-select" @change="handleAuditTypeChange">
                   <option value="activity">Logs de Actividad</option>
                   <option value="login">Historial de Logins</option>
                   <option value="both">Ambos</option>
@@ -102,8 +102,9 @@
 
               <!-- Filtro por usuario -->
               <div class="form-group">
-                <label class="form-label">Usuario</label>
+                <label for="audit-filter-usuario" class="form-label">Usuario</label>
                 <input
+                  id="audit-filter-usuario"
                   type="text"
                   v-model="filters.usuario"
                   placeholder="Nombre de usuario"
@@ -113,8 +114,8 @@
 
               <!-- Filtro por acción (solo para activity logs) -->
               <div v-if="filters.auditType === 'activity' || filters.auditType === 'both'" class="form-group">
-                <label class="form-label">Acción</label>
-                <select v-model="filters.accion" class="form-select">
+                <label for="audit-filter-accion" class="form-label">Acción</label>
+                <select id="audit-filter-accion" v-model="filters.accion" class="form-select">
                   <option value="">Todas las acciones</option>
                   <option value="login">Inicio de Sesión</option>
                   <option value="logout">Cierre de Sesión</option>
@@ -133,8 +134,9 @@
 
               <!-- Filtro por modelo (solo para activity logs) -->
               <div v-if="filters.auditType === 'activity' || filters.auditType === 'both'" class="form-group">
-                <label class="form-label">Modelo</label>
+                <label for="audit-filter-modelo" class="form-label">Modelo</label>
                 <input
+                  id="audit-filter-modelo"
                   type="text"
                   v-model="filters.modelo"
                   placeholder="Ej: CacaoImage, Finca"
@@ -144,8 +146,9 @@
 
               <!-- Filtro por IP -->
               <div class="form-group">
-                <label class="form-label">Dirección IP</label>
+                <label for="audit-filter-ip" class="form-label">Dirección IP</label>
                 <input
+                  id="audit-filter-ip"
                   type="text"
                   v-model="filters.ip_address"
                   placeholder="192.168.1.1"
@@ -155,8 +158,8 @@
 
               <!-- Filtro por éxito (solo para login history) -->
               <div v-if="filters.auditType === 'login' || filters.auditType === 'both'" class="form-group">
-                <label class="form-label">Estado del Login</label>
-                <select v-model="filters.success" class="form-select">
+                <label for="audit-filter-success" class="form-label">Estado del Login</label>
+                <select id="audit-filter-success" v-model="filters.success" class="form-select">
                   <option value="">Todos</option>
                   <option value="true">Exitosos</option>
                   <option value="false">Fallidos</option>
@@ -165,8 +168,9 @@
 
               <!-- Filtro por fecha desde -->
               <div class="form-group">
-                <label class="form-label">Fecha Desde</label>
+                <label for="audit-filter-fecha-desde" class="form-label">Fecha Desde</label>
                 <input
+                  id="audit-filter-fecha-desde"
                   type="date"
                   v-model="filters.fecha_desde"
                   class="form-input"
@@ -175,8 +179,9 @@
 
               <!-- Filtro por fecha hasta -->
               <div class="form-group">
-                <label class="form-label">Fecha Hasta</label>
+                <label for="audit-filter-fecha-hasta" class="form-label">Fecha Hasta</label>
                 <input
+                  id="audit-filter-fecha-hasta"
                   type="date"
                   v-model="filters.fecha_hasta"
                   class="form-input"

@@ -185,14 +185,16 @@ class PersonaRegistroSerializer(serializers.Serializer):
         if not value:
             return value
         
+        # Normalize to date object if needed
+        fecha_normalizada = value.date() if hasattr(value, 'date') else value
         hoy = timezone.now().date()
         
         # Validar que no sea futura
-        if value > hoy:
+        if fecha_normalizada > hoy:
             raise serializers.ValidationError("La fecha de nacimiento no puede ser futura.")
         
         # Calcular edad
-        edad = hoy.year - value.year - ((hoy.month, hoy.day) < (value.month, value.day))
+        edad = hoy.year - fecha_normalizada.year - ((hoy.month, hoy.day) < (fecha_normalizada.month, fecha_normalizada.day))
         
         # Validar edad mínima de 14 años
         if edad < 14:
@@ -202,7 +204,7 @@ class PersonaRegistroSerializer(serializers.Serializer):
         if edad > 120:
             raise serializers.ValidationError("La fecha de nacimiento no es válida.")
         
-        return value
+        return fecha_normalizada
     
     def validate_primer_nombre(self, value):
         """Validar que el primer nombre solo contenga letras y espacios."""
@@ -480,12 +482,14 @@ class PersonaActualizacionSerializer(serializers.Serializer):
         if not value:
             return value
         
+        # Normalize to date object if needed
+        fecha_normalizada = value.date() if hasattr(value, 'date') else value
         hoy = timezone.now().date()
         
-        if value > hoy:
+        if fecha_normalizada > hoy:
             raise serializers.ValidationError("La fecha de nacimiento no puede ser futura.")
         
-        edad = hoy.year - value.year - ((hoy.month, hoy.day) < (value.month, value.day))
+        edad = hoy.year - fecha_normalizada.year - ((hoy.month, hoy.day) < (fecha_normalizada.month, fecha_normalizada.day))
         
         if edad < 14:
             raise serializers.ValidationError("El usuario debe tener al menos 14 años.")
@@ -493,7 +497,7 @@ class PersonaActualizacionSerializer(serializers.Serializer):
         if edad > 120:
             raise serializers.ValidationError("La fecha de nacimiento no es válida.")
         
-        return value
+        return fecha_normalizada
     
     def validate_primer_nombre(self, value):
         """Validar primer nombre."""

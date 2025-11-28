@@ -13,7 +13,7 @@ from ..utils.model_imports import get_model_safely
 logger = logging.getLogger("cacaoscan.api.tasks.training")
 
 # Import TrainingJob safely
-TrainingJob = get_model_safely('TrainingJob', 'training.models.TrainingJob')
+TrainingJob = get_model_safely('training.models.TrainingJob')
 
 
 @shared_task(bind=True, name='api.tasks.train_model')

@@ -23,6 +23,10 @@ from django.contrib.auth.models import User
 
 logger = logging.getLogger("cacaoscan.services.lotes")
 
+# Error message constants
+ERROR_FINCA_NOT_FOUND = "Finca not found"
+ERROR_LOTE_NOT_FOUND = "Lote not found"
+
 
 class LoteService(BaseService):
     """
@@ -61,7 +65,7 @@ class LoteService(BaseService):
                 else:
                     finca = Finca.objects.select_related('agricultor').get(id=lote_data['finca'], agricultor=user)
             except Finca.DoesNotExist:
-                return ServiceResult.not_found_error("Finca not found")
+                return ServiceResult.not_found_error(ERROR_FINCA_NOT_FOUND)
             
             # Validate unique identifier in the finca
             if Lote.objects.filter(finca=finca, identificador=lote_data['identificador']).exists():
@@ -153,7 +157,7 @@ class LoteService(BaseService):
                 else:
                     finca = Finca.objects.select_related('agricultor').get(id=finca_id, agricultor=user)
             except Finca.DoesNotExist:
-                return ServiceResult.not_found_error("Finca not found")
+                return ServiceResult.not_found_error(ERROR_FINCA_NOT_FOUND)
             
             # Build optimized queryset
             queryset = Lote.objects.filter(finca=finca).select_related(
@@ -223,7 +227,7 @@ class LoteService(BaseService):
                         id=lote_id, finca__agricultor=user
                     )
             except Lote.DoesNotExist:
-                return ServiceResult.not_found_error("Lote not found")
+                return ServiceResult.not_found_error(ERROR_LOTE_NOT_FOUND)
             
             lote_data = self._serialize_lote(lote)
             lote_data.update({
@@ -273,7 +277,7 @@ class LoteService(BaseService):
                 else:
                     lote = Lote.objects.select_related('finca', 'finca__agricultor').get(id=lote_id, finca__agricultor=user)
             except Lote.DoesNotExist:
-                return ServiceResult.not_found_error("Lote not found")
+                return ServiceResult.not_found_error(ERROR_LOTE_NOT_FOUND)
             
             # Validate unique identifier if changing
             if 'identificador' in lote_data and lote_data['identificador'] != lote.identificador:
@@ -344,7 +348,7 @@ class LoteService(BaseService):
                 else:
                     lote = Lote.objects.select_related('finca', 'finca__agricultor').get(id=lote_id, finca__agricultor=user)
             except Lote.DoesNotExist:
-                return ServiceResult.not_found_error("Lote not found")
+                return ServiceResult.not_found_error(ERROR_LOTE_NOT_FOUND)
             
             # Create audit log before deleting
             self.create_audit_log(
@@ -448,7 +452,7 @@ class LoteService(BaseService):
                 else:
                     finca = Finca.objects.select_related('agricultor').get(id=finca_id, agricultor=user)
             except Finca.DoesNotExist:
-                return ServiceResult.not_found_error("Finca not found")
+                return ServiceResult.not_found_error(ERROR_FINCA_NOT_FOUND)
             
             # Get lote statistics
             lotes_stats = finca.lotes.aggregate(

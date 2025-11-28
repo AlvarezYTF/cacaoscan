@@ -43,8 +43,9 @@
             <div class="bg-white rounded-xl border border-gray-200 p-4">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Nombre *</label>
+                  <label for="create-farmer-nombre" class="block text-sm font-semibold text-gray-700 mb-2">Nombre *</label>
                   <input 
+                    id="create-farmer-nombre"
                     v-model="form.firstName" 
                     type="text" 
                     required 
@@ -56,8 +57,9 @@
                   <p v-if="errors.firstName" class="text-red-600 text-xs mt-1">{{ errors.firstName }}</p>
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Segundo Nombre</label>
+                  <label for="create-farmer-segundo-nombre" class="block text-sm font-semibold text-gray-700 mb-2">Segundo Nombre</label>
                   <input 
+                    id="create-farmer-segundo-nombre"
                     v-model="form.segundoNombre" 
                     type="text" 
                     :disabled="isSubmitting" 
@@ -65,8 +67,9 @@
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Apellido *</label>
+                  <label for="create-farmer-apellido" class="block text-sm font-semibold text-gray-700 mb-2">Apellido *</label>
                   <input 
+                    id="create-farmer-apellido"
                     v-model="form.lastName" 
                     type="text" 
                     required 
@@ -78,8 +81,9 @@
                   <p v-if="errors.lastName" class="text-red-600 text-xs mt-1">{{ errors.lastName }}</p>
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Segundo Apellido</label>
+                  <label for="create-farmer-segundo-apellido" class="block text-sm font-semibold text-gray-700 mb-2">Segundo Apellido</label>
                   <input 
+                    id="create-farmer-segundo-apellido"
                     v-model="form.segundoApellido" 
                     type="text" 
                     :disabled="isSubmitting" 
@@ -87,8 +91,9 @@
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
+                  <label for="create-farmer-telefono" class="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
                   <input 
+                    id="create-farmer-telefono"
                     v-model="form.phoneNumber" 
                     type="tel" 
                     :disabled="isSubmitting" 
@@ -99,8 +104,9 @@
                   <p v-if="errors.phoneNumber" class="text-red-600 text-xs mt-1">{{ errors.phoneNumber }}</p>
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Género *</label>
+                  <label for="create-farmer-genero" class="block text-sm font-semibold text-gray-700 mb-2">Género *</label>
                   <select 
+                    id="create-farmer-genero"
                     v-model="form.genero" 
                     required 
                     :disabled="isSubmitting || isLoadingCatalogos" 
@@ -112,8 +118,9 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                  <label for="create-farmer-fecha-nacimiento" class="block text-sm font-semibold text-gray-700 mb-2">Fecha de Nacimiento</label>
                   <input 
+                    id="create-farmer-fecha-nacimiento"
                     v-model="form.fechaNacimiento" 
                     type="date" 
                     :disabled="isSubmitting" 
@@ -130,8 +137,9 @@
             <div class="bg-white rounded-xl border border-gray-200 p-4">
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Tipo Documento *</label>
+                  <label for="create-farmer-tipo-documento" class="block text-sm font-semibold text-gray-700 mb-2">Tipo Documento *</label>
                   <select 
+                    id="create-farmer-tipo-documento"
                     v-model="form.tipoDocumento" 
                     required 
                     :disabled="isSubmitting || isLoadingCatalogos" 
@@ -143,8 +151,9 @@
                   </select>
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Número de Documento *</label>
+                  <label for="create-farmer-numero-documento" class="block text-sm font-semibold text-gray-700 mb-2">Número de Documento *</label>
                   <input 
+                    id="create-farmer-numero-documento"
                     v-model="form.numeroDocumento" 
                     type="text" 
                     required 
@@ -162,8 +171,9 @@
             <div class="bg-white rounded-xl border border-gray-200 p-4">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Departamento *</label>
+                  <label for="create-farmer-departamento" class="block text-sm font-semibold text-gray-700 mb-2">Departamento *</label>
                   <select 
+                    id="create-farmer-departamento"
                     v-model="form.departamento" 
                     @change="onDepartamentoChange" 
                     required 
@@ -176,8 +186,9 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Municipio *</label>
+                  <label for="create-farmer-municipio" class="block text-sm font-semibold text-gray-700 mb-2">Municipio *</label>
                   <select 
+                    id="create-farmer-municipio"
                     v-model="form.municipio" 
                     :required="!!form.departamento" 
                     :disabled="isSubmitting || !form.departamento || municipios.length === 0" 
@@ -190,8 +201,9 @@
                   </select>
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Dirección</label>
+                  <label for="create-farmer-direccion" class="block text-sm font-semibold text-gray-700 mb-2">Dirección</label>
                   <input 
+                    id="create-farmer-direccion"
                     v-model="form.direccion" 
                     type="text" 
                     :disabled="isSubmitting" 
@@ -206,10 +218,12 @@
             <div class="bg-white rounded-xl border border-gray-200 p-4">
               <div class="space-y-4">
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+                  <label for="create-farmer-email" class="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
                   <input 
+                    id="create-farmer-email"
                     v-model="form.email" 
                     type="email" 
+                    autocomplete="email"
                     required 
                     :disabled="isSubmitting" 
                     class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" 
@@ -219,9 +233,10 @@
                   <p v-if="errors.email" class="text-red-600 text-xs mt-1">{{ errors.email }}</p>
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Contraseña *</label>
+                  <label for="create-farmer-password" class="block text-sm font-semibold text-gray-700 mb-2">Contraseña *</label>
                   <div class="relative">
                     <input 
+                      id="create-farmer-password"
                       v-model="form.password" 
                       :type="showPassword ? 'text' : 'password'" 
                       autocomplete="new-password" 
@@ -284,9 +299,10 @@
                   </Transition>
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Confirmar Contraseña *</label>
+                  <label for="create-farmer-confirm-password" class="block text-sm font-semibold text-gray-700 mb-2">Confirmar Contraseña *</label>
                   <div class="relative">
                     <input 
+                      id="create-farmer-confirm-password"
                       v-model="form.confirmPassword" 
                       :type="showPassword ? 'text' : 'password'" 
                       autocomplete="new-password" 
@@ -627,7 +643,7 @@ const handleSubmit = async () => {
     Swal.fire({
       icon: 'error',
       title: 'Error al crear el agricultor',
-      html: errorMessage.replace(/\n/g, '<br>'),
+      html: errorMessage.replaceAll('\n', '<br>'),
       confirmButtonColor: '#ef4444'
     })
   } finally {

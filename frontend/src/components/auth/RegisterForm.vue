@@ -660,7 +660,7 @@ const validateForm = () => {
     errors.numeroDocumento = 'El documento debe tener entre 6 y 11 dígitos'
   }
 
-  const cleanPhone = form.value.phoneNumber.replace(/[\s\-\(\)]/g, '')
+  const cleanPhone = form.value.phoneNumber.replaceAll(/[\s\-\(\)]/g, '')
   if (cleanPhone && !isValidPhone(form.value.phoneNumber)) {
     errors.phoneNumber = 'El teléfono debe tener entre 7 y 15 dígitos'
   }

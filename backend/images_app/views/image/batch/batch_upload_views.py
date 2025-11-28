@@ -31,6 +31,9 @@ Finca = models['Finca']
 
 logger = logging.getLogger("cacaoscan.api")
 
+# Default value constants
+DEFAULT_NOT_SPECIFIED = 'No especificado'
+
 
 class BatchAnalysisView(AdminPermissionMixin, APIView):
     """
@@ -236,9 +239,9 @@ class BatchAnalysisView(AdminPermissionMixin, APIView):
                 finca = Finca.objects.create(
                     nombre=farm_name,
                     agricultor=request.user,  # Always assign current user
-                    ubicacion=origin_place if origin_place else 'No especificado',
-                    municipio=origin_place if origin_place else 'No especificado',
-                    departamento=origin if origin else 'No especificado',
+                    ubicacion=origin_place if origin_place else DEFAULT_NOT_SPECIFIED,
+                    municipio=origin_place if origin_place else DEFAULT_NOT_SPECIFIED,
+                    departamento=origin if origin else DEFAULT_NOT_SPECIFIED,
                     hectareas=1.0,  # Default value
                     activa=True
                 )

@@ -149,13 +149,13 @@ const formatValue = (value) => {
     return '0'
   }
   if (typeof value === 'number') {
-    if (isNaN(value)) {
+    if (Number.isNaN(value)) {
       return '0'
     }
     return value.toLocaleString('es-ES')
   }
-  const numValue = parseFloat(value)
-  if (!isNaN(numValue)) {
+  const numValue = Number.parseFloat(value)
+  if (!Number.isNaN(numValue)) {
     return numValue.toLocaleString('es-ES')
   }
   return value || '0'

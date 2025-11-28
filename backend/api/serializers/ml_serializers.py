@@ -11,6 +11,9 @@ models = get_models_safely({
 })
 TrainingJob = models['TrainingJob']
 
+# Field source constants
+CREATED_BY_USERNAME_SOURCE = 'created_by.username'
+
 
 class ModelsStatusSerializer(serializers.Serializer):
     """
@@ -41,7 +44,7 @@ class TrainingJobSerializer(serializers.ModelSerializer):
     """Serializer for training jobs."""
     duration_formatted = serializers.ReadOnlyField()
     is_active = serializers.ReadOnlyField()
-    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    created_by_username = serializers.CharField(source=CREATED_BY_USERNAME_SOURCE, read_only=True)
     
     class Meta:
         model = TrainingJob
@@ -104,7 +107,7 @@ class TrainingJobStatusSerializer(serializers.ModelSerializer):
     """Simplified serializer for job status."""
     duration_formatted = serializers.ReadOnlyField()
     is_active = serializers.ReadOnlyField()
-    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    created_by_username = serializers.CharField(source=CREATED_BY_USERNAME_SOURCE, read_only=True)
     
     class Meta:
         model = TrainingJob
@@ -140,7 +143,7 @@ class ModelMetricsSerializer(serializers.ModelSerializer):
     dataset_summary = serializers.ReadOnlyField()
     model_summary = serializers.ReadOnlyField()
     comparison_with_previous = serializers.SerializerMethodField()
-    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    created_by_username = serializers.CharField(source=CREATED_BY_USERNAME_SOURCE, read_only=True)
     
     class Meta:
         model = ModelMetrics
@@ -170,7 +173,7 @@ class ModelMetricsListSerializer(serializers.ModelSerializer):
     """Simplified serializer for model metrics listing."""
     accuracy_percentage = serializers.ReadOnlyField()
     training_time_formatted = serializers.ReadOnlyField()
-    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    created_by_username = serializers.CharField(source=CREATED_BY_USERNAME_SOURCE, read_only=True)
     
     class Meta:
         model = ModelMetrics

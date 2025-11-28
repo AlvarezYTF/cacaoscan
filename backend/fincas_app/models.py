@@ -5,6 +5,9 @@ from django.db import models
 from django.contrib.auth.models import User
 from core.models import TimeStampedModel
 
+# Date format constants
+DATE_FORMAT_DMY = '%d/%m/%Y'
+
 
 class Finca(TimeStampedModel):
     """
@@ -112,7 +115,7 @@ class Finca(TimeStampedModel):
             'total_analisis': self.total_analisis,
             'calidad_promedio': self.calidad_promedio,
             'hectareas': float(self.hectareas),
-            'fecha_registro': self.fecha_registro.strftime('%d/%m/%Y'),
+            'fecha_registro': self.fecha_registro.strftime(DATE_FORMAT_DMY),
             'activa': self.activa
         }
 
@@ -258,8 +261,8 @@ class Lote(TimeStampedModel):
             'edad_meses': self.edad_meses,
             'estado': self.estado,
             'activo': self.activo,
-            'fecha_plantacion': self.fecha_plantacion.strftime('%d/%m/%Y'),
-            'fecha_cosecha': self.fecha_cosecha.strftime('%d/%m/%Y') if self.fecha_cosecha else None,
+            'fecha_plantacion': self.fecha_plantacion.strftime(DATE_FORMAT_DMY),
+            'fecha_cosecha': self.fecha_cosecha.strftime(DATE_FORMAT_DMY) if self.fecha_cosecha else None,
         }
 
 

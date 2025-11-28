@@ -28,6 +28,10 @@ TrainingJob = get_model_safely('training.models.TrainingJob')
 
 logger = logging.getLogger("cacaoscan.api.ml.training")
 
+# Error message constants
+ERROR_TRAINING_JOB_MODEL_UNAVAILABLE = 'Modelo TrainingJob no disponible'
+ERROR_INTERNAL_SERVER = 'Error interno del servidor'
+
 
 class TrainingJobListView(PaginationMixin, AdminPermissionMixin, APIView):
     """
@@ -67,7 +71,7 @@ class TrainingJobListView(PaginationMixin, AdminPermissionMixin, APIView):
             
             if TrainingJob is None:
                 return Response({
-                    'error': 'Modelo TrainingJob no disponible',
+                    'error': ERROR_TRAINING_JOB_MODEL_UNAVAILABLE,
                     'status': 'error'
                 }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
             
@@ -109,7 +113,7 @@ class TrainingJobListView(PaginationMixin, AdminPermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error obteniendo lista de trabajos de entrenamiento: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -157,7 +161,7 @@ class TrainingJobCreateView(AdminPermissionMixin, APIView):
             
             if TrainingJob is None:
                 return Response({
-                    'error': 'Modelo TrainingJob no disponible',
+                    'error': ERROR_TRAINING_JOB_MODEL_UNAVAILABLE,
                     'status': 'error'
                 }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
             
@@ -218,7 +222,7 @@ class TrainingJobCreateView(AdminPermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error creando trabajo de entrenamiento: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -249,7 +253,7 @@ class TrainingJobStatusView(AdminPermissionMixin, APIView):
         try:
             if TrainingJob is None:
                 return Response({
-                    'error': 'Modelo TrainingJob no disponible',
+                    'error': ERROR_TRAINING_JOB_MODEL_UNAVAILABLE,
                     'status': 'error'
                 }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
             
@@ -288,7 +292,7 @@ class TrainingJobStatusView(AdminPermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error obteniendo estado del trabajo {job_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     

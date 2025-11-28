@@ -22,7 +22,7 @@ export function useFormValidation() {
    */
   const isValidPhone = (phone) => {
     if (!phone) return true // Opcional
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '')
+    const cleanPhone = phone.replaceAll(/[\s\-\(\)]/g, '')
     return /^\+?\d{7,15}$/.test(cleanPhone)
   }
 

@@ -41,10 +41,11 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="create-finca-nombre" class="block text-sm font-semibold text-gray-700 mb-2">
                   Nombre de la Finca *
                 </label>
                 <input
+                  id="create-finca-nombre"
                   v-model="form.nombre"
                   type="text"
                   required
@@ -54,10 +55,11 @@
               </div>
 
               <div v-if="auth.user?.role === 'admin'" class="col-span-1 md:col-span-2">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="create-finca-agricultor" class="block text-sm font-semibold text-gray-700 mb-2">
                   Agricultor asignado *
                 </label>
                 <select
+                  id="create-finca-agricultor"
                   v-model="form.agricultor"
                   required
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"

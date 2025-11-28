@@ -32,6 +32,11 @@ from api.serializers import (
 
 logger = logging.getLogger("cacaoscan.api")
 
+# Error message constants
+ERROR_INTERNAL_SERVER = 'Error interno del servidor'
+ERROR_INVALID_INPUT = 'Datos de entrada inválidos'
+ERROR_LOTE_NOT_FOUND = 'Lote no encontrado'
+
 
 class LotePermissionMixin(AdminPermissionMixin):
     """
@@ -134,7 +139,7 @@ class LoteListCreateView(PaginationMixin, LotePermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error listando lotes para usuario {request.user.username}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -204,7 +209,7 @@ class LoteListCreateView(PaginationMixin, LotePermissionMixin, APIView):
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response({
-                    'error': 'Datos de entrada inválidos',
+                    'error': ERROR_INVALID_INPUT,
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -212,7 +217,7 @@ class LoteListCreateView(PaginationMixin, LotePermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error creando lote para usuario {request.user.username}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -244,13 +249,13 @@ class LoteDetailView(LotePermissionMixin, APIView):
             
         except Lote.DoesNotExist:
             return Response({
-                'error': 'Lote no encontrado',
+                'error': ERROR_LOTE_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error obteniendo detalles de lote {lote_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -308,20 +313,20 @@ class LoteUpdateView(LotePermissionMixin, APIView):
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response({
-                    'error': 'Datos de entrada inválidos',
+                    'error': ERROR_INVALID_INPUT,
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Lote.DoesNotExist:
             return Response({
-                'error': 'Lote no encontrado',
+                'error': ERROR_LOTE_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error actualizando lote {lote_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -347,20 +352,20 @@ class LoteUpdateView(LotePermissionMixin, APIView):
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response({
-                    'error': 'Datos de entrada inválidos',
+                    'error': ERROR_INVALID_INPUT,
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Lote.DoesNotExist:
             return Response({
-                'error': 'Lote no encontrado',
+                'error': ERROR_LOTE_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error actualizando lote {lote_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -404,13 +409,13 @@ class LoteDeleteView(LotePermissionMixin, APIView):
             
         except Lote.DoesNotExist:
             return Response({
-                'error': 'Lote no encontrado',
+                'error': ERROR_LOTE_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error eliminando lote {lote_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -451,13 +456,13 @@ class LoteStatsView(LotePermissionMixin, APIView):
             
         except Lote.DoesNotExist:
             return Response({
-                'error': 'Lote no encontrado',
+                'error': ERROR_LOTE_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error obteniendo estadísticas de lote {lote_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -509,7 +514,7 @@ class LotesPorFincaView(LotePermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error obteniendo lotes de finca {finca_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

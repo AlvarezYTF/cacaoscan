@@ -17,6 +17,7 @@ spec:
         app: frontend
         component: web
     spec:
+      automountServiceAccountToken: false
       securityContext:
         runAsUser: 101
         runAsGroup: 101
@@ -42,6 +43,7 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
+              storage: 100Mi
             limits:
               cpu: 300m
               memory: 256Mi

@@ -3,6 +3,10 @@ Configuración de caché y Redis para optimización de performance.
 """
 import os
 
+# Redis cache backend constants
+REDIS_CACHE_BACKEND = 'django_redis.cache.RedisCache'
+REDIS_CLIENT_CLASS = 'django_redis.client.DefaultClient'
+
 # Configuración de Redis
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
@@ -15,10 +19,10 @@ DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 # Configuración de caché
 CACHES = {
     'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
+        'BACKEND': REDIS_CACHE_BACKEND,
         'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}',
         'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CLIENT_CLASS': REDIS_CLIENT_CLASS,
             'PASSWORD': REDIS_PASSWORD,
             'CONNECTION_POOL_KWARGS': {
                 'max_connections': 50,
@@ -32,20 +36,20 @@ CACHES = {
         'VERSION': 1,
     },
     'sessions': {
-        'BACKEND': 'django_redis.cache.RedisCache',
+        'BACKEND': REDIS_CACHE_BACKEND,
         'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
         'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CLIENT_CLASS': REDIS_CLIENT_CLASS,
             'PASSWORD': REDIS_PASSWORD,
         },
         'KEY_PREFIX': 'cacaoscan_sessions',
         'TIMEOUT': 86400,  # 24 horas
     },
     'api_cache': {
-        'BACKEND': 'django_redis.cache.RedisCache',
+        'BACKEND': REDIS_CACHE_BACKEND,
         'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/2',
         'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CLIENT_CLASS': REDIS_CLIENT_CLASS,
             'PASSWORD': REDIS_PASSWORD,
             'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
         },

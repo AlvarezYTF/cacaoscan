@@ -25,6 +25,9 @@ from ..mixins import PaginationMixin
 TrainingJob = get_model_safely('training.models.TrainingJob')
 logger = logging.getLogger("cacaoscan.api")
 
+# Error message constants
+ERROR_METRICS_NOT_FOUND = "Métricas de modelo no encontradas"
+
 
 class ModelMetricsListView(PaginationMixin, APIView):
     """
@@ -203,7 +206,7 @@ class ModelMetricsDetailView(APIView):
             
         except ModelMetrics.DoesNotExist:
             return create_error_response(
-                message="Métricas de modelo no encontradas",
+                message=ERROR_METRICS_NOT_FOUND,
                 status_code=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
@@ -355,7 +358,7 @@ class ModelMetricsUpdateView(APIView):
                 
         except ModelMetrics.DoesNotExist:
             return create_error_response(
-                message="Métricas de modelo no encontradas",
+                message=ERROR_METRICS_NOT_FOUND,
                 status_code=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
@@ -412,7 +415,7 @@ class ModelMetricsDeleteView(APIView):
             
         except ModelMetrics.DoesNotExist:
             return create_error_response(
-                message="Métricas de modelo no encontradas",
+                message=ERROR_METRICS_NOT_FOUND,
                 status_code=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:

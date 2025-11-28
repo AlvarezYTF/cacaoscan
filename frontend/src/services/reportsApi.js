@@ -28,7 +28,7 @@ const reportsApi = {
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
         if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1].replace(/['"]/g, '')
+          filename = filenameMatch[1].replaceAll(/['"]/g, '')
         }
       }
       

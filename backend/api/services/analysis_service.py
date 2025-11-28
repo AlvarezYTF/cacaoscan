@@ -14,6 +14,9 @@ from training.services import PredictionService
 
 logger = logging.getLogger("cacaoscan.services.analysis")
 
+# Model path constants
+CACAO_PREDICTION_MODEL_PATH = 'images_app.models.CacaoPrediction'
+
 
 class AnalysisService(BaseService):
     """
@@ -151,7 +154,7 @@ class AnalysisService(BaseService):
             from django.db.models import Avg
             
             models = get_models_safely({
-                'CacaoPrediction': 'images_app.models.CacaoPrediction'
+                'CacaoPrediction': CACAO_PREDICTION_MODEL_PATH
             })
             CacaoPrediction = models['CacaoPrediction']
             
@@ -220,7 +223,7 @@ class AnalysisService(BaseService):
             from ...utils.model_imports import get_models_safely
             
             models = get_models_safely({
-                'CacaoPrediction': 'images_app.models.CacaoPrediction'
+                'CacaoPrediction': CACAO_PREDICTION_MODEL_PATH
             })
             CacaoPrediction = models['CacaoPrediction']
             
@@ -281,7 +284,7 @@ class AnalysisService(BaseService):
             from ...utils.model_imports import get_models_safely
             
             models = get_models_safely({
-                'CacaoPrediction': 'images_app.models.CacaoPrediction'
+                'CacaoPrediction': CACAO_PREDICTION_MODEL_PATH
             })
             CacaoPrediction = models['CacaoPrediction']
             
@@ -341,7 +344,7 @@ class AnalysisService(BaseService):
             from django.db.models import Avg, Min, Max
             
             models = get_models_safely({
-                'CacaoPrediction': 'images_app.models.CacaoPrediction'
+                'CacaoPrediction': CACAO_PREDICTION_MODEL_PATH
             })
             CacaoPrediction = models['CacaoPrediction']
             

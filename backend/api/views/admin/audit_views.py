@@ -22,6 +22,10 @@ from ...serializers import ErrorResponseSerializer
 
 logger = logging.getLogger("cacaoscan.api")
 
+# Error message constants
+ERROR_INVALID_DATE_FORMAT = 'Formato de fecha inválido. Use YYYY-MM-DD'
+ERROR_INTERNAL_SERVER = 'Error interno del servidor'
+
 
 class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
     """
@@ -94,7 +98,7 @@ class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
                     queryset = queryset.filter(timestamp__date__gte=fecha_desde)
                 except ValueError:
                     return Response({
-                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
+                        'error': ERROR_INVALID_DATE_FORMAT,
                         'status': 'error'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -105,7 +109,7 @@ class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
                     queryset = queryset.filter(timestamp__date__lte=fecha_hasta)
                 except ValueError:
                     return Response({
-                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
+                        'error': ERROR_INVALID_DATE_FORMAT,
                         'status': 'error'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -135,7 +139,7 @@ class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error listando logs de actividad: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -195,7 +199,7 @@ class LoginHistoryListView(PaginationMixin, AdminPermissionMixin, APIView):
                     queryset = queryset.filter(login_time__date__gte=fecha_desde)
                 except ValueError:
                     return Response({
-                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
+                        'error': ERROR_INVALID_DATE_FORMAT,
                         'status': 'error'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -206,7 +210,7 @@ class LoginHistoryListView(PaginationMixin, AdminPermissionMixin, APIView):
                     queryset = queryset.filter(login_time__date__lte=fecha_hasta)
                 except ValueError:
                     return Response({
-                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
+                        'error': ERROR_INVALID_DATE_FORMAT,
                         'status': 'error'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -234,7 +238,7 @@ class LoginHistoryListView(PaginationMixin, AdminPermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error listando historial de logins: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -338,7 +342,7 @@ class AuditStatsView(AdminPermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error obteniendo estadísticas de auditoría: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

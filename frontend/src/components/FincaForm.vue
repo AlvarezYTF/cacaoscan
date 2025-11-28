@@ -46,10 +46,11 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="finca-nombre" class="block text-sm font-semibold text-gray-700 mb-2">
                   Nombre de la Finca *
                 </label>
                 <input
+                  id="finca-nombre"
                   v-model="formData.nombre"
                   name="nombre"
                   type="text"
@@ -67,10 +68,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="finca-hectareas" class="block text-sm font-semibold text-gray-700 mb-2">
                   Hectáreas *
                 </label>
                 <input
+                  id="finca-hectareas"
                   v-model="formData.hectareas"
                   name="hectareas"
                   type="number"
@@ -91,10 +93,11 @@
 
               <!-- Select de agricultor (solo para admin en modo creación) -->
               <div v-if="isAdmin && !isEditing" class="md:col-span-2">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="finca-agricultor" class="block text-sm font-semibold text-gray-700 mb-2">
                   Agricultor asignado *
                 </label>
                 <select
+                  id="finca-agricultor"
                   v-model="formData.agricultor"
                   name="agricultor"
                   required
@@ -129,10 +132,11 @@
             </div>
             <div class="space-y-6">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="finca-ubicacion" class="block text-sm font-semibold text-gray-700 mb-2">
                   Dirección/Ubicación *
                 </label>
                 <input
+                  id="finca-ubicacion"
                   v-model="formData.ubicacion"
                   name="ubicacion"
                   type="text"
@@ -151,10 +155,11 @@
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  <label for="finca-departamento" class="block text-sm font-semibold text-gray-700 mb-2">
                     Departamento *
                   </label>
                   <select
+                    id="finca-departamento"
                     v-model="formData.departamento"
                     name="departamento"
                     required
@@ -176,10 +181,11 @@
                 </div>
 
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  <label for="finca-municipio" class="block text-sm font-semibold text-gray-700 mb-2">
                     Municipio *
                   </label>
                   <select
+                    id="finca-municipio"
                     v-model="formData.municipio"
                     name="municipio"
                     required
@@ -214,10 +220,11 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="finca-latitud" class="block text-sm font-semibold text-gray-700 mb-2">
                   Latitud
                 </label>
                 <input
+                  id="finca-latitud"
                   v-model="formData.coordenadas_lat"
                   name="coordenadas_lat"
                   type="number"
@@ -237,10 +244,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="finca-longitud" class="block text-sm font-semibold text-gray-700 mb-2">
                   Longitud
                 </label>
                 <input
+                  id="finca-longitud"
                   v-model="formData.coordenadas_lng"
                   name="coordenadas_lng"
                   type="number"
@@ -274,10 +282,11 @@
 
             <!-- Descripción -->
             <div class="mb-6">
-              <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <label for="finca-descripcion" class="block text-sm font-semibold text-gray-700 mb-2">
                 Descripción (Opcional)
               </label>
               <textarea
+                id="finca-descripcion"
                 v-model="formData.descripcion"
               name="descripcion"
                 rows="3"

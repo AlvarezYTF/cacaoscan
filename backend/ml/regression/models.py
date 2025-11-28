@@ -19,6 +19,11 @@ from ..utils.logs import get_ml_logger
 
 logger = get_ml_logger("cacaoscan.ml.regression")
 
+# Model name constants
+CONVNEXT_TINY_MODEL_NAME = 'convnext_tiny.in12k_ft_in1k'
+CONVNEXT_LOADING_MSG = "✔ Cargando ConvNeXt Tiny con pesos ImageNet-12k preentrenados"
+CONVNEXT_WARNING_MSG = "⚠ ConvNeXt Tiny se inicializará con pesos aleatorios (pretrained=False)"
+
 
 class ResNet18Regression(nn.Module):
     """
@@ -130,15 +135,15 @@ class ConvNeXtTinyRegression(nn.Module):
         # Cargar ConvNeXt Tiny pre-entrenado con pesos ImageNet-12k
         # FORZAR uso de pesos ImageNet-12k para mejor rendimiento
         if pretrained:
-            backbone_name = 'convnext_tiny.in12k_ft_in1k'  # Usar pesos ImageNet-12k
+            backbone_name = CONVNEXT_TINY_MODEL_NAME  # Usar pesos ImageNet-12k
             logger.info("=" * 60)
-            logger.info("✔ Cargando ConvNeXt Tiny con pesos ImageNet-12k preentrenados")
+            logger.info(CONVNEXT_LOADING_MSG)
             logger.info(f"  Modelo: {backbone_name}")
             logger.info("=" * 60)
         else:
             backbone_name = 'convnext_tiny'
             logger.warning("=" * 60)
-            logger.warning("⚠ ConvNeXt Tiny se inicializará con pesos aleatorios (pretrained=False)")
+            logger.warning(CONVNEXT_WARNING_MSG)
             logger.warning("=" * 60)
         
         logger.info(f"Creando backbone timm: {backbone_name}, pretrained={pretrained}")
@@ -230,15 +235,15 @@ class MultiHeadRegression(nn.Module):
             
             # FORZAR uso de pesos ImageNet-12k para mejor rendimiento
             if pretrained:
-                backbone_name = 'convnext_tiny.in12k_ft_in1k'  # Usar pesos ImageNet-12k
+                backbone_name = CONVNEXT_TINY_MODEL_NAME  # Usar pesos ImageNet-12k
                 logger.info("=" * 60)
-                logger.info("✔ Cargando ConvNeXt Tiny con pesos ImageNet-12k preentrenados")
+                logger.info(CONVNEXT_LOADING_MSG)
                 logger.info(f"  Modelo: {backbone_name}")
                 logger.info("=" * 60)
             else:
                 backbone_name = 'convnext_tiny'
                 logger.warning("=" * 60)
-                logger.warning("⚠ ConvNeXt Tiny se inicializará con pesos aleatorios (pretrained=False)")
+                logger.warning(CONVNEXT_WARNING_MSG)
                 logger.warning("=" * 60)
             
             logger.info(f"Creando backbone timm: {backbone_name}, pretrained={pretrained}")
@@ -400,15 +405,15 @@ class HybridCacaoRegression(nn.Module):
         # Backbone 2: ConvNeXt Tiny con pesos ImageNet-12k preentrenados
         # FORZAR uso de pesos ImageNet-12k para mejor rendimiento
         if pretrained:
-            backbone_name = 'convnext_tiny.in12k_ft_in1k'  # Usar pesos ImageNet-12k
+            backbone_name = CONVNEXT_TINY_MODEL_NAME  # Usar pesos ImageNet-12k
             logger.info("=" * 60)
-            logger.info("✔ Cargando ConvNeXt Tiny con pesos ImageNet-12k preentrenados")
+            logger.info(CONVNEXT_LOADING_MSG)
             logger.info(f"  Modelo: {backbone_name}")
             logger.info("=" * 60)
         else:
             backbone_name = 'convnext_tiny'
             logger.warning("=" * 60)
-            logger.warning("⚠ ConvNeXt Tiny se inicializará con pesos aleatorios (pretrained=False)")
+            logger.warning(CONVNEXT_WARNING_MSG)
             logger.warning("  Esto resultará en R² muy negativos en epoch 1")
             logger.warning("=" * 60)
         
@@ -671,7 +676,7 @@ def create_model(
         else:
             logger.info("=" * 60)
             logger.info("✔ Creando modelo híbrido con pretrained=True")
-            logger.info("  ConvNeXt usará pesos ImageNet-12k (convnext_tiny.in12k_ft_in1k)")
+            logger.info(f"  ConvNeXt usará pesos ImageNet-12k ({CONVNEXT_TINY_MODEL_NAME})")
             logger.info("=" * 60)
         
         logger.info(f"Creando HybridCacaoRegression con pretrained={pretrained}, num_pixel_features={num_pixel_feat}")

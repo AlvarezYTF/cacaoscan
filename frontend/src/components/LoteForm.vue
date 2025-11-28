@@ -24,10 +24,11 @@
             <h3 class="text-lg font-medium text-gray-900 mb-4">Información Básica</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-finca" class="block text-sm font-medium text-gray-700 mb-1">
                   Finca *
                 </label>
                 <select
+                  id="lote-finca"
                   v-model="formData.finca"
                   required
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -42,10 +43,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-identificador" class="block text-sm font-medium text-gray-700 mb-1">
                   Identificador *
                 </label>
                 <input
+                  id="lote-identificador"
                   v-model="formData.identificador"
                   type="text"
                   required
@@ -58,10 +60,11 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-variedad" class="block text-sm font-medium text-gray-700 mb-1">
                   Variedad *
                 </label>
                 <select
+                  id="lote-variedad"
                   v-model="formData.variedad"
                   required
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -76,10 +79,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-area" class="block text-sm font-medium text-gray-700 mb-1">
                   Área (hectáreas) *
                 </label>
                 <input
+                  id="lote-area"
                   v-model="formData.area_hectareas"
                   type="number"
                   step="0.01"
@@ -98,10 +102,11 @@
             <h3 class="text-lg font-medium text-gray-900 mb-4">Fechas</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-fecha-plantacion" class="block text-sm font-medium text-gray-700 mb-1">
                   Fecha de Plantación *
                 </label>
                 <input
+                  id="lote-fecha-plantacion"
                   v-model="formData.fecha_plantacion"
                   type="date"
                   required
@@ -112,10 +117,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-fecha-cosecha" class="block text-sm font-medium text-gray-700 mb-1">
                   Fecha de Cosecha
                 </label>
                 <input
+                  id="lote-fecha-cosecha"
                   v-model="formData.fecha_cosecha"
                   type="date"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -128,10 +134,11 @@
 
           <!-- Estado -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="lote-estado" class="block text-sm font-medium text-gray-700 mb-1">
               Estado del Lote *
             </label>
             <select
+              id="lote-estado"
               v-model="formData.estado"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -150,10 +157,11 @@
             <h3 class="text-lg font-medium text-gray-900 mb-4">Coordenadas GPS (Opcional)</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-latitud" class="block text-sm font-medium text-gray-700 mb-1">
                   Latitud
                 </label>
                 <input
+                  id="lote-latitud"
                   v-model="formData.coordenadas_lat"
                   type="number"
                   step="any"
@@ -166,10 +174,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-longitud" class="block text-sm font-medium text-gray-700 mb-1">
                   Longitud
                 </label>
                 <input
+                  id="lote-longitud"
                   v-model="formData.coordenadas_lng"
                   type="number"
                   step="any"
@@ -185,10 +194,11 @@
 
           <!-- Descripción -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="lote-descripcion" class="block text-sm font-medium text-gray-700 mb-1">
               Descripción (Opcional)
             </label>
             <textarea
+              id="lote-descripcion"
               v-model="formData.descripcion"
               rows="3"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"

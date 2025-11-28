@@ -24,7 +24,7 @@
                 </button>
               </div>
               <div class="mt-4 relative">
-                <img :src="image.fullSizeUrl" class="w-full max-h-[70vh] object-contain" :alt="'Imagen analizada'" />
+                <img :src="image.fullSizeUrl" class="w-full max-h-[70vh] object-contain" :alt="'Analizada'" />
                 <!-- Defect markers would go here -->
               </div>
               <div class="mt-4">

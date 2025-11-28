@@ -181,7 +181,7 @@ def _remove_background_opencv(image_path: str) -> Image.Image:
     alpha = _guided_refine(rgb, alpha)
 
     # 5) Recorte tight con padding
-    ys, xs = np.where(alpha > 0)
+    ys, xs = np.nonzero(alpha > 0)
     if len(xs) == 0 or len(ys) == 0:
         rgba = np.dstack([rgb, clean])
         return Image.fromarray(rgba, "RGBA")

@@ -26,6 +26,11 @@ from api.serializers import (
 
 logger = logging.getLogger("cacaoscan.api")
 
+# Error message constants
+ERROR_INTERNAL_SERVER = 'Error interno del servidor'
+ERROR_INVALID_INPUT = 'Datos de entrada inválidos'
+ERROR_FINCA_NOT_FOUND = 'Finca no encontrada'
+
 
 class FincaPermissionMixin(AdminPermissionMixin):
     """
@@ -141,7 +146,7 @@ class FincaListCreateView(PaginationMixin, FincaPermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error listando fincas para usuario {request.user.username}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -205,7 +210,7 @@ class FincaListCreateView(PaginationMixin, FincaPermissionMixin, APIView):
             else:
                 logger.error(f"Errores de validación: {serializer.errors}")
                 return Response({
-                    'error': 'Datos de entrada inválidos',
+                    'error': ERROR_INVALID_INPUT,
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -215,7 +220,7 @@ class FincaListCreateView(PaginationMixin, FincaPermissionMixin, APIView):
             logger.error(f"Traceback completo: {traceback.format_exc()}")
             import traceback
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'error_detail': str(e),
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -248,13 +253,13 @@ class FincaDetailView(FincaPermissionMixin, APIView):
             
         except Finca.DoesNotExist:
             return Response({
-                'error': 'Finca no encontrada',
+                'error': ERROR_FINCA_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error obteniendo detalles de finca {finca_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -307,20 +312,20 @@ class FincaUpdateView(FincaPermissionMixin, APIView):
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response({
-                    'error': 'Datos de entrada inválidos',
+                    'error': ERROR_INVALID_INPUT,
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Finca.DoesNotExist:
             return Response({
-                'error': 'Finca no encontrada',
+                'error': ERROR_FINCA_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error actualizando finca {finca_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -341,20 +346,20 @@ class FincaUpdateView(FincaPermissionMixin, APIView):
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response({
-                    'error': 'Datos de entrada inválidos',
+                    'error': ERROR_INVALID_INPUT,
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Finca.DoesNotExist:
             return Response({
-                'error': 'Finca no encontrada',
+                'error': ERROR_FINCA_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error actualizando finca {finca_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -407,13 +412,13 @@ class FincaDeleteView(FincaPermissionMixin, APIView):
             
         except Finca.DoesNotExist:
             return Response({
-                'error': 'Finca no encontrada',
+                'error': ERROR_FINCA_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error desactivando finca {finca_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -449,7 +454,7 @@ class FincaActivateView(FincaPermissionMixin, APIView):
                 finca = Finca.objects.get(id=finca_id)
             except Finca.DoesNotExist:
                 return Response({
-                    'error': 'Finca no encontrada',
+                    'error': ERROR_FINCA_NOT_FOUND,
                     'status': 'error'
                 }, status=status.HTTP_404_NOT_FOUND)
             
@@ -473,7 +478,7 @@ class FincaActivateView(FincaPermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error reactivando finca {finca_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -513,13 +518,13 @@ class FincaStatsView(FincaPermissionMixin, APIView):
             
         except Finca.DoesNotExist:
             return Response({
-                'error': 'Finca no encontrada',
+                'error': ERROR_FINCA_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error obteniendo estadísticas de finca {finca_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

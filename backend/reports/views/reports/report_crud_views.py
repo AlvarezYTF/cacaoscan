@@ -21,6 +21,9 @@ from api.serializers import ErrorResponseSerializer
 
 logger = logging.getLogger("cacaoscan.api")
 
+# Error message constants
+ERROR_INTERNAL_SERVER = 'Error interno del servidor'
+
 
 class ExcelRenderer(BaseRenderer):
     """
@@ -122,7 +125,7 @@ class ReporteListCreateView(PaginationMixin, APIView):
         except Exception as e:
             logger.error(f"Error listando reportes: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -208,7 +211,7 @@ class ReporteListCreateView(PaginationMixin, APIView):
         except Exception as e:
             logger.error(f"Error creando reporte: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -316,7 +319,7 @@ class ReporteDetailView(APIView):
         except Exception as e:
             logger.error(f"Error obteniendo detalles de reporte {reporte_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -364,7 +367,7 @@ class ReporteDeleteView(APIView):
         except Exception as e:
             logger.error(f"Error eliminando reporte {reporte_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

@@ -23,6 +23,9 @@ from django.contrib.auth.models import User
 
 logger = logging.getLogger("cacaoscan.services.image.management")
 
+# Error message constants
+ERROR_IMAGE_NOT_FOUND = "Imagen no encontrada"
+
 
 class ImageManagementService(BaseService):
     """
@@ -198,7 +201,7 @@ class ImageManagementService(BaseService):
                     'lote__finca__agricultor'
                 ).prefetch_related('prediction').get(id=image_id, user=user)
             except CacaoImage.DoesNotExist:
-                return ServiceResult.not_found_error("Imagen no encontrada")
+                return ServiceResult.not_found_error(ERROR_IMAGE_NOT_FOUND)
             
             # Obtener predicciones asociadas
             predictions = image.predictions.all().order_by('-created_at')
@@ -264,7 +267,7 @@ class ImageManagementService(BaseService):
                     'lote__finca__agricultor'
                 ).prefetch_related('prediction').get(id=image_id, user=user)
             except CacaoImage.DoesNotExist:
-                return ServiceResult.not_found_error("Imagen no encontrada")
+                return ServiceResult.not_found_error(ERROR_IMAGE_NOT_FOUND)
             
             # Actualizar metadatos
             old_metadata = image.metadata.copy() if image.metadata else {}
@@ -322,7 +325,7 @@ class ImageManagementService(BaseService):
                     'lote__finca__agricultor'
                 ).prefetch_related('prediction').get(id=image_id, user=user)
             except CacaoImage.DoesNotExist:
-                return ServiceResult.not_found_error("Imagen no encontrada")
+                return ServiceResult.not_found_error(ERROR_IMAGE_NOT_FOUND)
             
             # Obtener información para el log
             predictions_count = image.predictions.count()

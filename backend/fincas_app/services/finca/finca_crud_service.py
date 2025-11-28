@@ -19,6 +19,9 @@ Finca = models['Finca']
 
 logger = logging.getLogger("cacaoscan.services.fincas.crud")
 
+# Error message constants
+ERROR_FINCA_NOT_FOUND = "Finca no encontrada"
+
 
 class FincaCRUDService(BaseService):
     """
@@ -181,7 +184,7 @@ class FincaCRUDService(BaseService):
                         id=finca_id, agricultor=user
                     )
             except Finca.DoesNotExist:
-                return ServiceResult.not_found_error("Finca no encontrada")
+                return ServiceResult.not_found_error(ERROR_FINCA_NOT_FOUND)
             
             # Get lote statistics using LoteService
             lotes_stats_result = self.lote_service.get_finca_lotes_stats(finca_id, user)
@@ -235,7 +238,7 @@ class FincaCRUDService(BaseService):
                 else:
                     finca = Finca.objects.select_related('agricultor').get(id=finca_id, agricultor=user)
             except Finca.DoesNotExist:
-                return ServiceResult.not_found_error("Finca no encontrada")
+                return ServiceResult.not_found_error(ERROR_FINCA_NOT_FOUND)
             
             # Validate using validation service
             validation_result = self.validation_service.validate_finca_data(finca_data, is_create=False)
@@ -307,7 +310,7 @@ class FincaCRUDService(BaseService):
                 else:
                     finca = Finca.objects.select_related('agricultor').get(id=finca_id, agricultor=user)
             except Finca.DoesNotExist:
-                return ServiceResult.not_found_error("Finca no encontrada")
+                return ServiceResult.not_found_error(ERROR_FINCA_NOT_FOUND)
             
             # Verify if it has associated lotes using LoteService
             lotes_count = self.lote_service.count_finca_lotes(finca_id)

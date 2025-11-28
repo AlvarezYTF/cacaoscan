@@ -96,7 +96,7 @@ class YOLOSegmentationInference:
                         timestamp = train_dir.name.split("_")[-2:]  # Obtener fecha y hora
                         timestamp_str = "_".join(timestamp)
                         best_models.append((timestamp_str, best_model))
-                    except:
+                    except Exception:
                         best_models.append((train_dir.name, best_model))
         
         if best_models:

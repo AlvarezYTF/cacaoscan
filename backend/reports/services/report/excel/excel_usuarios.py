@@ -114,7 +114,7 @@ class ExcelUsuariosGenerator(ExcelBaseGenerator):
                         try:
                             if cell.value:
                                 max_length = max(max_length, len(str(cell.value)))
-                        except:
+                        except Exception:
                             pass
                     adjusted_width = min(max_length + 2, 50)  # Maximum 50 characters
                     self.ws.column_dimensions[col[0].column_letter].width = adjusted_width

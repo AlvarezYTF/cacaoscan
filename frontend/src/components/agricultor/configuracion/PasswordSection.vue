@@ -12,7 +12,7 @@
     <form @submit.prevent="handleSave" class="space-y-5">
       <!-- Contraseña actual -->
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+        <label for="password-current" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
           <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
@@ -20,8 +20,10 @@
         </label>
         <div class="relative">
           <input 
+            id="password-current"
             :type="showCurrentPassword ? 'text' : 'password'" 
-            v-model="localPasswordForm.currentPassword" 
+            v-model="localPasswordForm.currentPassword"
+            autocomplete="current-password" 
             @blur="validateField('currentPassword')"
             placeholder="••••••••" 
             class="w-full px-4 py-3 pr-12 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 transition-all duration-200"
@@ -44,7 +46,7 @@
 
       <!-- Nueva contraseña -->
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+        <label for="password-new" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
           <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -53,8 +55,10 @@
         </label>
         <div class="relative">
           <input 
+            id="password-new"
             :type="showNewPassword ? 'text' : 'password'" 
-            v-model="localPasswordForm.newPassword" 
+            v-model="localPasswordForm.newPassword"
+            autocomplete="new-password" 
             @blur="validateField('newPassword')"
             @input="validateField('newPassword')"
             placeholder="••••••••" 
@@ -109,15 +113,17 @@
 
       <!-- Confirmar nueva contraseña -->
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+        <label for="password-confirm" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
           <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           Confirmar nueva contraseña *
         </label>
         <input 
+          id="password-confirm"
           :type="showNewPassword ? 'text' : 'password'" 
-          v-model="localPasswordForm.confirmPassword" 
+          v-model="localPasswordForm.confirmPassword"
+          autocomplete="new-password" 
           @blur="validateField('confirmPassword')"
           @input="validateField('confirmPassword')"
           placeholder="••••••••" 

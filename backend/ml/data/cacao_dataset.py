@@ -95,7 +95,7 @@ class CacaoDataset(Dataset):
         self.records = []
         self.record_ids = []
         self.image_paths = []
-        self.targets = {target: [] for target in self.TARGETS}
+        self.target_values = {target: [] for target in self.TARGETS}
         self.pixel_features_raw = []
         
         missing_calibration = []
@@ -180,13 +180,13 @@ class CacaoDataset(Dataset):
             self.image_paths.append(crop_path)
             
             for target in self.TARGETS:
-                self.targets[target].append(float(record[target]))
+                self.target_values[target].append(float(record[target]))
             
             self.pixel_features_raw.append(pixel_feature_vector)
         
         # Convert to numpy arrays
         for target in self.TARGETS:
-            self.targets[target] = np.array(self.targets[target], dtype=np.float32)
+            self.target_values[target] = np.array(self.target_values[target], dtype=np.float32)
         
         self.pixel_features_raw = np.array(self.pixel_features_raw, dtype=np.float32)
         
@@ -229,7 +229,7 @@ class CacaoDataset(Dataset):
             len(self.image_paths),
             len(self.pixel_features)
         ]
-        lengths.extend([len(self.targets[target]) for target in self.TARGETS])
+        lengths.extend([len(self.target_values[target]) for target in self.TARGETS])
         
         if len(set(lengths)) > 1:
             raise ValueError(f"Inconsistent data lengths: {lengths}")
@@ -287,10 +287,10 @@ class CacaoDataset(Dataset):
         
         # Get targets in order: [alto, ancho, grosor, peso]
         target_vector = torch.tensor([
-            self.targets["alto"][idx],
-            self.targets["ancho"][idx],
-            self.targets["grosor"][idx],
-            self.targets["peso"][idx]
+            self.target_values["alto"][idx],
+            self.target_values["ancho"][idx],
+            self.target_values["grosor"][idx],
+            self.target_values["peso"][idx]
         ], dtype=torch.float32)
         
         return image_tensor, pixel_feature_vector, target_vector

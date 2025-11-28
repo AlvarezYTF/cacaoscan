@@ -160,8 +160,8 @@
 
             <!-- Opciones de personalización -->
             <div class="form-group">
-              <label class="form-label">Opciones de Personalización</label>
-              <div class="checkbox-grid">
+              <label class="form-label" id="personalization-options-label">Opciones de Personalización</label>
+              <div class="checkbox-grid" role="group" aria-labelledby="personalization-options-label">
                 <label class="checkbox-option">
                   <input 
                     type="checkbox" 

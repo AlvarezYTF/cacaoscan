@@ -14,6 +14,9 @@ from audit.models import LoginHistory
 
 logger = logging.getLogger("cacaoscan.services.auth.registration")
 
+# Error message constants
+ERROR_EMAIL_ALREADY_REGISTERED = "Este email ya está registrado"
+
 
 class RegistrationService(BaseService):
     """
@@ -63,7 +66,7 @@ class RegistrationService(BaseService):
             # Validate unique email
             if User.objects.filter(email=user_data['email']).exists():
                 return ServiceResult.validation_error(
-                    "Este email ya está registrado",
+                    ERROR_EMAIL_ALREADY_REGISTERED,
                     details={"field": "email"}
                 )
             
@@ -181,7 +184,7 @@ class RegistrationService(BaseService):
             # Validate unique email
             if User.objects.filter(email=user_data['email']).exists():
                 return ServiceResult.validation_error(
-                    "Este email ya está registrado",
+                    ERROR_EMAIL_ALREADY_REGISTERED,
                     details={"field": "email"}
                 )
             
@@ -290,7 +293,7 @@ class RegistrationService(BaseService):
             # Validate unique email
             if User.objects.filter(email=email).exists():
                 return ServiceResult.validation_error(
-                    "Este email ya está registrado",
+                    ERROR_EMAIL_ALREADY_REGISTERED,
                     details={"field": "email"}
                 )
             

@@ -18,6 +18,17 @@ from api.serializers import ErrorResponseSerializer
 
 logger = logging.getLogger("cacaoscan.reports")
 
+# Filter label constants
+FILTER_DATE_FROM = 'Fecha desde'
+FILTER_DATE_TO = 'Fecha hasta'
+FILTER_REGION = 'Región'
+
+# Content type constants
+CONTENT_TYPE_PDF = 'application/pdf'
+
+# Error message constants
+ERROR_REPORT_GENERATION = 'Error interno del servidor al generar el reporte'
+
 
 class GenerateQualityReportView(APIView):
     """
@@ -64,15 +75,15 @@ class GenerateQualityReportView(APIView):
             filters = {}
             if 'date_from' in request.data and request.data['date_from']:
                 images_queryset = images_queryset.filter(created_at__date__gte=request.data['date_from'])
-                filters['Fecha desde'] = request.data['date_from']
+                filters[FILTER_DATE_FROM] = request.data['date_from']
             
             if 'date_to' in request.data and request.data['date_to']:
                 images_queryset = images_queryset.filter(created_at__date__lte=request.data['date_to'])
-                filters['Fecha hasta'] = request.data['date_to']
+                filters[FILTER_DATE_TO] = request.data['date_to']
             
             if 'region' in request.data and request.data['region']:
                 images_queryset = images_queryset.filter(region__icontains=request.data['region'])
-                filters['Región'] = request.data['region']
+                filters[FILTER_REGION] = request.data['region']
             
             if 'finca' in request.data and request.data['finca']:
                 images_queryset = images_queryset.filter(finca__icontains=request.data['finca'])
@@ -101,13 +112,13 @@ class GenerateQualityReportView(APIView):
                 pdf_buffer,
                 as_attachment=True,
                 filename=filename,
-                content_type='application/pdf'
+                content_type=CONTENT_TYPE_PDF
             )
             
         except Exception as e:
             logger.error(f"Error generando reporte de calidad para usuario {request.user.username}: {e}")
             return Response({
-                'error': 'Error interno del servidor al generar el reporte',
+                'error': ERROR_REPORT_GENERATION,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -156,15 +167,15 @@ class GenerateDefectsReportView(APIView):
             filters = {}
             if 'date_from' in request.data and request.data['date_from']:
                 images_queryset = images_queryset.filter(created_at__date__gte=request.data['date_from'])
-                filters['Fecha desde'] = request.data['date_from']
+                filters[FILTER_DATE_FROM] = request.data['date_from']
             
             if 'date_to' in request.data and request.data['date_to']:
                 images_queryset = images_queryset.filter(created_at__date__lte=request.data['date_to'])
-                filters['Fecha hasta'] = request.data['date_to']
+                filters[FILTER_DATE_TO] = request.data['date_to']
             
             if 'region' in request.data and request.data['region']:
                 images_queryset = images_queryset.filter(region__icontains=request.data['region'])
-                filters['Región'] = request.data['region']
+                filters[FILTER_REGION] = request.data['region']
             
             if 'finca' in request.data and request.data['finca']:
                 images_queryset = images_queryset.filter(finca__icontains=request.data['finca'])
@@ -185,13 +196,13 @@ class GenerateDefectsReportView(APIView):
                 pdf_buffer,
                 as_attachment=True,
                 filename=filename,
-                content_type='application/pdf'
+                content_type=CONTENT_TYPE_PDF
             )
             
         except Exception as e:
             logger.error(f"Error generando reporte de defectos para usuario {request.user.username}: {e}")
             return Response({
-                'error': 'Error interno del servidor al generar el reporte',
+                'error': ERROR_REPORT_GENERATION,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -236,15 +247,15 @@ class GeneratePerformanceReportView(APIView):
             filters = {}
             if 'date_from' in request.data and request.data['date_from']:
                 images_queryset = images_queryset.filter(created_at__date__gte=request.data['date_from'])
-                filters['Fecha desde'] = request.data['date_from']
+                filters[FILTER_DATE_FROM] = request.data['date_from']
             
             if 'date_to' in request.data and request.data['date_to']:
                 images_queryset = images_queryset.filter(created_at__date__lte=request.data['date_to'])
-                filters['Fecha hasta'] = request.data['date_to']
+                filters[FILTER_DATE_TO] = request.data['date_to']
             
             if 'region' in request.data and request.data['region']:
                 images_queryset = images_queryset.filter(region__icontains=request.data['region'])
-                filters['Región'] = request.data['region']
+                filters[FILTER_REGION] = request.data['region']
             
             if 'finca' in request.data and request.data['finca']:
                 images_queryset = images_queryset.filter(finca__icontains=request.data['finca'])
@@ -265,13 +276,13 @@ class GeneratePerformanceReportView(APIView):
                 pdf_buffer,
                 as_attachment=True,
                 filename=filename,
-                content_type='application/pdf'
+                content_type=CONTENT_TYPE_PDF
             )
             
         except Exception as e:
             logger.error(f"Error generando reporte de rendimiento para usuario {request.user.username}: {e}")
             return Response({
-                'error': 'Error interno del servidor al generar el reporte',
+                'error': ERROR_REPORT_GENERATION,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

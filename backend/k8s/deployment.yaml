@@ -17,6 +17,7 @@ spec:
         app: backend
         component: api
     spec:
+      automountServiceAccountToken: false
       containers:
       - name: backend
         image: cacaoscan-backend:latest
@@ -100,6 +101,7 @@ spec:
           requests:
             memory: "512Mi"
             cpu: "500m"
+            storage: "6Gi"
           limits:
             memory: "2Gi"
             cpu: "2000m"
@@ -121,7 +123,9 @@ spec:
           failureThreshold: 3
       volumes:
       - name: staticfiles
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: 1Gi
       - name: media
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: 5Gi
 

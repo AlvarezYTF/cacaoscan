@@ -135,8 +135,8 @@ class TestCacaoDatasetLoader:
             
             assert len(records) == 2
             assert records[0]['id'] == 1
-            assert records[0]['alto'] == 10.5
+            assert records[0]['alto'] == pytest.approx(10.5, abs=0.01)
             assert records[0]['raw_image_path'] is not None
-            assert records[0]['timestamp'] == 1234567890.0
+            assert records[0]['timestamp'] == pytest.approx(1234567890.0, abs=0.1)
 
 

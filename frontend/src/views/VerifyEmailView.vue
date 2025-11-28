@@ -135,7 +135,7 @@ const isCodeValid = computed(() => {
 // Métodos
 const onOtpInput = (event) => {
   // Solo permitir números
-  const value = event.target.value.replace(/[^0-9]/g, '')
+  const value = event.target.value.replaceAll(/[^0-9]/g, '')
   otpCode.value = value
 }
 

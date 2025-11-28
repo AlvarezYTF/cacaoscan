@@ -236,7 +236,7 @@ class Command(BaseCommand):
             
             grain_area_pixels = int(np.sum(mask > 0))
             
-            y_coords, x_coords = np.where(mask > 0)
+            y_coords, x_coords = np.nonzero(mask > 0)
             if len(x_coords) > 0:
                 width_pixels = int(x_coords.max() - x_coords.min() + 1)
                 height_pixels = int(y_coords.max() - y_coords.min() + 1)

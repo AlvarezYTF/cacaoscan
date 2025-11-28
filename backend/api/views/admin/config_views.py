@@ -12,6 +12,11 @@ except ImportError:
 from ...serializers import SystemSettingsSerializer
 from ..mixins import AdminPermissionMixin
 
+# Default configuration constants
+DEFAULT_CONTACT_EMAIL = 'contacto@cacaoscan.com'
+DEFAULT_SYSTEM_SLOGAN = 'La mejor plataforma para el control de calidad del cacao'
+LOGGER_NAME = "cacaoscan.api"
+
 
 class SystemSettingsView(AdminPermissionMixin, APIView):
     """
@@ -87,22 +92,22 @@ class SystemGeneralConfigView(AdminPermissionMixin, APIView):
             if not settings:
                 return Response({
                     'nombre_sistema': 'CacaoScan',
-                    'email_contacto': 'contacto@cacaoscan.com',
-                    'lema': 'La mejor plataforma para el control de calidad del cacao',
+                    'email_contacto': DEFAULT_CONTACT_EMAIL,
+                    'lema': DEFAULT_SYSTEM_SLOGAN,
                     'logo_url': None
                 }, status=status.HTTP_200_OK)
             
             data = {
                 'nombre_sistema': settings.nombre_sistema or 'CacaoScan',
-                'email_contacto': settings.email_contacto or 'contacto@cacaoscan.com',
-                'lema': settings.lema or 'La mejor plataforma para el control de calidad del cacao',
+                'email_contacto': settings.email_contacto or DEFAULT_CONTACT_EMAIL,
+                'lema': settings.lema or DEFAULT_SYSTEM_SLOGAN,
                 'logo_url': request.build_absolute_uri(settings.logo.url) if settings.logo else None
             }
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
             # Retornar valores por defecto en caso de error
             import logging
-            logger = logging.getLogger("cacaoscan.api")
+            logger = logging.getLogger(LOGGER_NAME)
             logger.warning(f"Error cargando configuración general: {e}")
             
             return Response({
@@ -180,7 +185,7 @@ class SystemSecurityConfigView(AdminPermissionMixin, APIView):
         except Exception as e:
             # Retornar valores por defecto en caso de error
             import logging
-            logger = logging.getLogger("cacaoscan.api")
+            logger = logging.getLogger(LOGGER_NAME)
             logger.warning(f"Error cargando configuración de seguridad: {e}")
             
             return Response({
@@ -251,7 +256,7 @@ class SystemMLConfigView(AdminPermissionMixin, APIView):
         except Exception as e:
             # Retornar valores por defecto en caso de error
             import logging
-            logger = logging.getLogger("cacaoscan.api")
+            logger = logging.getLogger(LOGGER_NAME)
             logger.warning(f"Error cargando configuración ML: {e}")
             
             return Response({

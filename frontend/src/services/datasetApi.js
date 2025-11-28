@@ -462,7 +462,7 @@ export const formatFileSize = (bytes) => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
 /**
@@ -472,8 +472,8 @@ export const formatFileSize = (bytes) => {
  * @returns {string} Número formateado
  */
 export const formatNumber = (value, decimals = 2) => {
-  if (value === null || value === undefined || isNaN(value)) return 'N/A';
-  return parseFloat(value).toFixed(decimals);
+  if (value === null || value === undefined || Number.isNaN(value)) return 'N/A';
+  return Number.parseFloat(value).toFixed(decimals);
 };
 
 /**

@@ -12,6 +12,9 @@ from api.services.base import BaseService, ServiceResult, ValidationServiceError
 
 logger = logging.getLogger("cacaoscan.services.ml")
 
+# Success message constants
+MSG_PREDICTOR_OBTAINED = "Predictor obtained successfully"
+
 
 class ModelLoadState(Enum):
     """Enum for model loading states."""
@@ -94,7 +97,7 @@ class MLService(BaseService):
                 if self._load_state == ModelLoadState.LOADED:
                     return ServiceResult.success(
                         data=self._predictor_instance,
-                        message="Predictor obtained successfully (already loaded)"
+                        message=f"{MSG_PREDICTOR_OBTAINED} (already loaded)"
                     )
                 elif self._load_state == ModelLoadState.LOADING:
                     # Wait for loading to complete
@@ -107,7 +110,7 @@ class MLService(BaseService):
                         self._load_state = ModelLoadState.LOADED
                         return ServiceResult.success(
                             data=predictor,
-                            message="Predictor obtained successfully"
+                            message=MSG_PREDICTOR_OBTAINED
                         )
             
             # Need to load models
@@ -116,7 +119,7 @@ class MLService(BaseService):
                 if not force_reload and self._load_state == ModelLoadState.LOADED:
                     return ServiceResult.success(
                         data=self._predictor_instance,
-                        message="Predictor obtained successfully (loaded by another thread)"
+                        message=f"{MSG_PREDICTOR_OBTAINED} (loaded by another thread)"
                     )
                 
                 # Set loading state
@@ -136,7 +139,7 @@ class MLService(BaseService):
                         self.log_info("Models already loaded in predictor instance")
                         return ServiceResult.success(
                             data=predictor,
-                            message="Predictor obtained successfully"
+                            message=MSG_PREDICTOR_OBTAINED
                         )
                     
                     # Models not loaded, load them explicitly

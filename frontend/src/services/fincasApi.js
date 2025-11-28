@@ -235,13 +235,13 @@ export function formatFincaData(fincaData) {
 
   // Convertir hectáreas a número
   if (formatted.hectareas !== '' && formatted.hectareas !== null && formatted.hectareas !== undefined) {
-    formatted.hectareas = parseFloat(formatted.hectareas)
+    formatted.hectareas = Number.parseFloat(formatted.hectareas)
   }
 
   // Convertir coordenadas a número si se proporcionan (no vacías)
   if (formatted.coordenadas_lat !== '' && formatted.coordenadas_lat !== null && formatted.coordenadas_lat !== undefined) {
-    const lat = parseFloat(formatted.coordenadas_lat)
-    if (!isNaN(lat)) {
+    const lat = Number.parseFloat(formatted.coordenadas_lat)
+    if (!Number.isNaN(lat)) {
       formatted.coordenadas_lat = lat
     } else {
       formatted.coordenadas_lat = null
@@ -251,8 +251,8 @@ export function formatFincaData(fincaData) {
   }
   
   if (formatted.coordenadas_lng !== '' && formatted.coordenadas_lng !== null && formatted.coordenadas_lng !== undefined) {
-    const lng = parseFloat(formatted.coordenadas_lng)
-    if (!isNaN(lng)) {
+    const lng = Number.parseFloat(formatted.coordenadas_lng)
+    if (!Number.isNaN(lng)) {
       formatted.coordenadas_lng = lng
     } else {
       formatted.coordenadas_lng = null

@@ -249,14 +249,14 @@ class Command(BaseCommand):
         if is_optimized_hybrid:
             # Aplicar valores optimizados solo si el usuario no los especificó explícitamente
             optimized_epochs = options['epochs'] if options['epochs'] != 50 else 100
-            optimized_lr = options['learning_rate'] if options['learning_rate'] != 1e-4 else 5e-5
+            optimized_lr = options['learning_rate'] if not (abs(options['learning_rate'] - 1e-4) < 1e-6) else 5e-5
             optimized_patience = options['early_stopping_patience'] if options['early_stopping_patience'] != 15 else 25
-            optimized_dropout = options['dropout_rate'] if options['dropout_rate'] != 0.25 else 0.3
+            optimized_dropout = options['dropout_rate'] if not (abs(options['dropout_rate'] - 0.25) < 1e-6) else 0.3
             optimized_loss = options.get('loss_type', 'huber') if 'loss_type' in options else 'huber'
             optimized_scheduler = options.get('scheduler_type', 'cosine_warmup') if 'scheduler_type' in options else 'cosine_warmup'
             
             # Mostrar mensaje informativo
-            if optimized_epochs == 100 or optimized_lr == 5e-5 or optimized_patience == 25:
+            if optimized_epochs == 100 or abs(optimized_lr - 5e-5) < 1e-6 or optimized_patience == 25:
                 self.stdout.write(
                     self.style.SUCCESS(
                         "✅ Configuración optimizada detectada (--hybrid --use-pixel-features)\n"

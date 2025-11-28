@@ -367,8 +367,8 @@ export default {
     // Métodos de formateo
     const formatNumber = (value) => {
       if (value === null || value === undefined) return 'N/A';
-      const num = parseFloat(value);
-      return isNaN(num) ? 'N/A' : num.toFixed(2);
+      const num = Number.parseFloat(value);
+      return Number.isNaN(num) ? 'N/A' : num.toFixed(2);
     };
 
     const formatDate = (dateString) => {

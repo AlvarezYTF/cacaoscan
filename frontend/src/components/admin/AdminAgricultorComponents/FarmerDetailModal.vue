@@ -335,7 +335,7 @@ export default {
       }
       
       const total = fincasList.value.reduce((sum, finca) => {
-        return sum + parseFloat(finca.hectareas || 0);
+        return sum + Number.parseFloat(finca.hectareas || 0);
       }, 0);
       
       return total.toFixed(1);
