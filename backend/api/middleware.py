@@ -330,49 +330,57 @@ class TokenCleanupMiddleware(MiddlewareMixin):
     def process_request(self, request):
         """
         Procesar request para limpiar tokens expirados.
+        
+        TODO: This expensive operation has been disabled in request processing.
+        Move token cleanup to a Celery periodic task (see api.tasks.token_cleanup.cleanup_expired_tokens).
+        Recommended schedule: Run every hour via Celery Beat.
         """
-        try:
-            # Importar aquí para evitar imports circulares
-            from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
-            from django.utils import timezone
-            from django.db import OperationalError, ProgrammingError
-            
-            # Limpiar tokens expirados de la blacklist
-            expired_blacklisted = BlacklistedToken.objects.filter(
-                token__expires_at__lt=timezone.now()
-            )
-            expired_count = expired_blacklisted.count()
-            if expired_count > 0:
-                expired_blacklisted.delete()
-                logger.debug(f"Limpiados {expired_count} tokens blacklisted expirados")
-            
-            # Limpiar tokens outstanding expirados
-            expired_outstanding = OutstandingToken.objects.filter(
-                expires_at__lt=timezone.now()
-            )
-            outstanding_count = expired_outstanding.count()
-            if outstanding_count > 0:
-                expired_outstanding.delete()
-                logger.debug(f"Limpiados {outstanding_count} tokens outstanding expirados")
-            
-            # Si llegamos aquí, las tablas existen, resetear el flag
-            if self._tables_missing_logged:
-                self._tables_missing_logged = False
-                
-        except (OperationalError, ProgrammingError) as e:
-            # Si las tablas no existen aún (durante despliegue inicial), ignorar silenciosamente
-            error_msg = str(e).lower()
-            if 'does not exist' in error_msg or 'relation' in error_msg:
-                # Las migraciones aún no se han ejecutado, esto es normal durante el despliegue
-                # Solo loguear una vez para evitar spam en los logs
-                if not self._tables_missing_logged:
-                    logger.debug("Tablas de token_blacklist aún no creadas, se crearán con las migraciones")
-                    self._tables_missing_logged = True
-            else:
-                logger.warning(f"Error de base de datos en limpieza de tokens: {e}")
-        except Exception as e:
-            # Otros errores, loguear como warning
-            logger.warning(f"Error en limpieza de tokens: {e}")
+        # DISABLED: Token cleanup moved to Celery task to avoid performance impact on each request
+        # See: api.tasks.token_cleanup.cleanup_expired_tokens
+        # 
+        # Original implementation (commented out):
+        # try:
+        #     # Importar aquí para evitar imports circulares
+        #     from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+        #     from django.utils import timezone
+        #     from django.db import OperationalError, ProgrammingError
+        #     
+        #     # Limpiar tokens expirados de la blacklist
+        #     expired_blacklisted = BlacklistedToken.objects.filter(
+        #         token__expires_at__lt=timezone.now()
+        #     )
+        #     expired_count = expired_blacklisted.count()
+        #     if expired_count > 0:
+        #         expired_blacklisted.delete()
+        #         logger.debug(f"Limpiados {expired_count} tokens blacklisted expirados")
+        #     
+        #     # Limpiar tokens outstanding expirados
+        #     expired_outstanding = OutstandingToken.objects.filter(
+        #         expires_at__lt=timezone.now()
+        #     )
+        #     outstanding_count = expired_outstanding.count()
+        #     if outstanding_count > 0:
+        #         expired_outstanding.delete()
+        #         logger.debug(f"Limpiados {outstanding_count} tokens outstanding expirados")
+        #     
+        #     # Si llegamos aquí, las tablas existen, resetear el flag
+        #     if self._tables_missing_logged:
+        #         self._tables_missing_logged = False
+        #         
+        # except (OperationalError, ProgrammingError) as e:
+        #     # Si las tablas no existen aún (durante despliegue inicial), ignorar silenciosamente
+        #     error_msg = str(e).lower()
+        #     if 'does not exist' in error_msg or 'relation' in error_msg:
+        #         # Las migraciones aún no se han ejecutado, esto es normal durante el despliegue
+        #         # Solo loguear una vez para evitar spam en los logs
+        #         if not self._tables_missing_logged:
+        #             logger.debug("Tablas de token_blacklist aún no creadas, se crearán con las migraciones")
+        #             self._tables_missing_logged = True
+        #     else:
+        #         logger.warning(f"Error de base de datos en limpieza de tokens: {e}")
+        # except Exception as e:
+        #     # Otros errores, loguear como warning
+        #     logger.warning(f"Error en limpieza de tokens: {e}")
         
         return None
 
