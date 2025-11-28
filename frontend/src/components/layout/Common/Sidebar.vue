@@ -41,6 +41,8 @@
         <div v-for="item in menuItems" :key="item.id">
           <div 
             @click="handleMenuClick(item)"
+            @keydown.enter="handleMenuClick(item)"
+            @keyup.enter="handleMenuClick(item)"
             :class="[
               'flex items-center rounded-lg group transition-all duration-200 cursor-pointer',
               collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-3',
@@ -48,7 +50,6 @@
             ]"
             role="button"
             tabindex="0"
-            @keyup.enter="handleMenuClick(item)"
           >
             <svg 
               :class="['transition-colors duration-200', collapsed ? 'w-5 h-5' : 'w-5 h-5', getIconClass(item)]"

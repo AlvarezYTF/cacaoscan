@@ -643,7 +643,7 @@ const handleSubmit = async () => {
     Swal.fire({
       icon: 'error',
       title: 'Error al crear el agricultor',
-      html: errorMessage.replace(/\n/g, '<br>'),
+      html: errorMessage.replaceAll('\n', '<br>'),
       confirmButtonColor: '#ef4444'
     })
   } finally {

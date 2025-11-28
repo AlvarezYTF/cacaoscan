@@ -596,6 +596,7 @@ def train_multi_head_model(
                     {'params': model.parameters(), 'lr': model_lr},
                     {'params': criterion.parameters(), 'lr': sigma_lr}
                 ],
+                lr=learning_rate,
                 weight_decay=config.get('weight_decay', 1e-4),
                 betas=(0.9, 0.999),
                 eps=1e-8

@@ -224,7 +224,7 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
     cy.intercept('GET', '/api/reportes/', {
       statusCode: 200,
       body: {
-        results: Array(25).fill().map((_, i) => ({
+        results: new Array(25).fill().map((_, i) => ({
           id: i + 1,
           nombre: `Reporte ${i + 1}`,
           tipo: 'analisis-periodo',

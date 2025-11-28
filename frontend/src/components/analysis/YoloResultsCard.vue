@@ -103,7 +103,7 @@
           <div class="relative">
             <img 
               :src="originalImage" 
-              :alt="`Imagen original del grano ${result.id || ''}`"
+              :alt="`Original del grano ${result.id || ''}`"
               class="w-full h-48 object-cover rounded-lg"
             />
             <div v-if="result.detection_info?.bbox_pixels" class="absolute inset-0">

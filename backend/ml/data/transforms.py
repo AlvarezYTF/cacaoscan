@@ -114,12 +114,12 @@ def train_background_ai(image_dir="ml/data/dataset/images", mask_dir="ml/data/da
     ])
 
     dataset = CacaoDataset(image_dir, mask_dir, transform, auto_generate=True)
-    loader = DataLoader(dataset, batch_size=4, shuffle=True)
+    loader = DataLoader(dataset, batch_size=4, shuffle=True, num_workers=0)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = UNet().to(device)
     criterion = nn.BCELoss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-4)
 
     for epoch in range(epochs):
         for imgs, masks in loader:

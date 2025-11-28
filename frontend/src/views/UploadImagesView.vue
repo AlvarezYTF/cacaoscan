@@ -101,7 +101,7 @@
         >
           <img
             :src="img.image_url || img.image"
-            :alt="`Imagen ${img.id}`"
+            :alt="`${img.id}`"
             class="w-full h-48 object-cover"
             @error="handleImageError"
           />

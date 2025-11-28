@@ -557,7 +557,7 @@ class CacaoPredictor:
         model_predictions = self._denormalize_predictions(normalized_predictions)
         logger.info(f"📊 Predicción Híbrida (desnormalizada): {model_predictions}")
         
-        confidences = {target: 0.90 for target in TARGETS} 
+        confidences = dict.fromkeys(TARGETS, 0.90) 
         return model_predictions, confidences
 
     def predict(self, image: Image.Image) -> Dict[str, Any]:

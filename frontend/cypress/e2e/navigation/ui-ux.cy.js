@@ -212,7 +212,7 @@ describe('Navegación - UI y UX', () => {
     cy.intercept('GET', '/api/fincas/', {
       statusCode: 200,
       body: {
-        results: Array(25).fill().map((_, i) => ({
+        results: new Array(25).fill().map((_, i) => ({
           id: i + 1,
           nombre: `Finca ${i + 1}`,
           ubicacion: 'Test Location'

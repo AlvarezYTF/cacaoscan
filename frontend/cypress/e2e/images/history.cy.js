@@ -166,7 +166,7 @@ describe('Gestión de Imágenes - Historial y Detalles', () => {
     cy.intercept('GET', '/api/images/', {
       statusCode: 200,
       body: {
-        results: Array(25).fill().map((_, i) => ({
+        results: new Array(25).fill().map((_, i) => ({
           id: i + 1,
           filename: `imagen-${i + 1}.jpg`,
           uploaded_at: '2024-01-15T10:30:00Z'

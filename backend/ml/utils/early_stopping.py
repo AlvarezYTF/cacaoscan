@@ -49,7 +49,7 @@ class IntelligentEarlyStopping:
         self.counter = 0
         
         # Track consecutive epochs with low R²
-        self.low_r2_count: Dict[str, int] = {target: 0 for target in self.TARGETS}
+        self.low_r2_count: Dict[str, int] = dict.fromkeys(self.TARGETS, 0)
         
         # Track consecutive epochs with increasing val_loss
         self.val_loss_increase_count = 0
@@ -186,7 +186,7 @@ class IntelligentEarlyStopping:
         self.best_val_loss = float('inf')
         self.best_epoch = 0
         self.counter = 0
-        self.low_r2_count = {target: 0 for target in self.TARGETS}
+        self.low_r2_count = dict.fromkeys(self.TARGETS, 0)
         self.val_loss_increase_count = 0
         self.last_val_loss = float('inf')
         logger.info("Early stopping state reset")

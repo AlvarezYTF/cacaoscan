@@ -54,7 +54,7 @@
       >
         <img 
           :src="getImageUrl(image)" 
-          :alt="image.name || 'Imagen'"
+          :alt="image.name || ''"
           class="w-full h-32 object-cover"
         />
         <button

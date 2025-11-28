@@ -707,7 +707,7 @@ const handleCreateFinca = async () => {
     Swal.fire({
       icon: 'error',
       title: 'Error',
-      html: errorMessage.replace(/\n/g, '<br>'),
+      html: errorMessage.replaceAll('\n', '<br>'),
       confirmButtonColor: '#ef4444'
     })
   } finally {
@@ -793,7 +793,7 @@ const handleUpdate = async () => {
     Swal.fire({
       icon: 'error',
       title: 'Error',
-      html: errorMessage.replace(/\n/g, '<br>'),
+      html: errorMessage.replaceAll('\n', '<br>'),
       confirmButtonColor: '#ef4444'
     })
   } finally {
