@@ -43,6 +43,7 @@
             @click="handleMenuClick(item)"
             @keydown="handleKeyDown($event, item)"
             @keyup="handleKeyUp($event, item)"
+            @keypress="handleKeyPress($event, item)"
             :class="[
               'flex items-center rounded-lg group transition-all duration-200 cursor-pointer',
               collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-3',
@@ -316,6 +317,13 @@ const handleKeyDown = (event, item) => {
 }
 
 const handleKeyUp = (event, item) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    handleMenuClick(item)
+  }
+}
+
+const handleKeyPress = (event, item) => {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
     handleMenuClick(item)

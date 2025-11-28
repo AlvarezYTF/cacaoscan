@@ -66,6 +66,126 @@ class MLService(BaseService):
         self._initialized = True
         self._load_lock = threading.Lock()
     
+    def _import_predictor_modules(self):
+        """Import predictor modules, returning error result if import fails."""
+        try:
+            from ml.prediction.predict import get_predictor as _get_predictor, load_artifacts
+            return _get_predictor, load_artifacts, None
+        except ImportError:
+            error = ServiceResult.error(
+                ValidationServiceError(
+                    "ML prediction module not available",
+                    details={"module": "ml.prediction.predict"}
+                )
+            )
+            return None, None, error
+    
+    def _handle_already_loaded_predictor(self):
+        """Handle case when predictor is already loaded."""
+        return ServiceResult.success(
+            data=self._predictor_instance,
+            message=f"{MSG_PREDICTOR_OBTAINED} (already loaded)"
+        )
+    
+    def _handle_loading_state(self, get_predictor):
+        """Handle case when models are currently loading."""
+        self.log_info("Models are currently loading, waiting...")
+        predictor = get_predictor()
+        if predictor.models_loaded:
+            self._predictor_instance = predictor
+            self._load_state = ModelLoadState.LOADED
+            return ServiceResult.success(
+                data=predictor,
+                message=MSG_PREDICTOR_OBTAINED
+            )
+        return None
+    
+    def _load_models_with_lock(self, get_predictor, load_artifacts, force_reload):
+        """Load models while holding the load lock."""
+        with self._load_lock:
+            if not force_reload and self._load_state == ModelLoadState.LOADED:
+                return ServiceResult.success(
+                    data=self._predictor_instance,
+                    message=f"{MSG_PREDICTOR_OBTAINED} (loaded by another thread)"
+                )
+            
+            return self._perform_model_loading(get_predictor, load_artifacts)
+    
+    def _perform_model_loading(self, get_predictor, load_artifacts):
+        """Perform the actual model loading logic."""
+        self._load_state = ModelLoadState.LOADING
+        self._load_error = None
+        
+        try:
+            self.log_info("Loading ML models (first time or forced reload)...")
+            predictor = get_predictor()
+            
+            if predictor.models_loaded:
+                return self._complete_loading(predictor, "Models already loaded in predictor instance")
+            
+            return self._load_artifacts_and_verify(get_predictor, load_artifacts)
+            
+        except Exception as e:
+            return self._handle_loading_error(e)
+    
+    def _complete_loading(self, predictor, log_message):
+        """Complete the loading process and return success."""
+        self._predictor_instance = predictor
+        self._load_state = ModelLoadState.LOADED
+        self.log_info(log_message)
+        return ServiceResult.success(
+            data=predictor,
+            message=MSG_PREDICTOR_OBTAINED
+        )
+    
+    def _load_artifacts_and_verify(self, get_predictor, load_artifacts):
+        """Load artifacts and verify they loaded correctly."""
+        self.log_info("Models not loaded, loading artifacts...")
+        success = load_artifacts()
+        
+        if not success:
+            return self._create_artifacts_error()
+        
+        predictor = get_predictor()
+        if not predictor.models_loaded:
+            return self._create_verification_error()
+        
+        return self._complete_loading(predictor, "ML models loaded successfully")
+    
+    def _create_artifacts_error(self):
+        """Create error result for failed artifact loading."""
+        self._load_state = ModelLoadState.ERROR
+        self._load_error = "Failed to load artifacts"
+        return ServiceResult.error(
+            ValidationServiceError(
+                "Models not available. Run automatic initialization first.",
+                details={
+                    "suggestion": "POST /api/v1/auto-initialize/ to initialize the system",
+                    "or": "POST /api/v1/models/load/ to load models manually"
+                }
+            )
+        )
+    
+    def _create_verification_error(self):
+        """Create error result for verification failure."""
+        self._load_state = ModelLoadState.ERROR
+        self._load_error = "Models failed to load after load_artifacts()"
+        return ServiceResult.error(
+            ValidationServiceError("Error loading models after load_artifacts()")
+        )
+    
+    def _handle_loading_error(self, error):
+        """Handle errors during model loading."""
+        self._load_state = ModelLoadState.ERROR
+        self._load_error = str(error)
+        self.log_error(f"Error loading models: {str(error)}")
+        return ServiceResult.error(
+            ValidationServiceError(
+                "Internal error loading models",
+                details={"original_error": str(error)}
+            )
+        )
+    
     def get_predictor(self, force_reload: bool = False) -> ServiceResult:
         """
         Gets the ML predictor instance with lazy loading.
@@ -81,114 +201,20 @@ class MLService(BaseService):
             ServiceResult with predictor instance
         """
         try:
-            # Import here to avoid circular dependencies
-            try:
-                from ml.prediction.predict import get_predictor as _get_predictor, load_artifacts
-            except ImportError:
-                return ServiceResult.error(
-                    ValidationServiceError(
-                        "ML prediction module not available",
-                        details={"module": "ml.prediction.predict"}
-                    )
-                )
+            get_predictor, load_artifacts, import_error = self._import_predictor_modules()
+            if import_error:
+                return import_error
             
-            # Check if we already have a loaded predictor
             if not force_reload and self._predictor_instance is not None:
                 if self._load_state == ModelLoadState.LOADED:
-                    return ServiceResult.success(
-                        data=self._predictor_instance,
-                        message=f"{MSG_PREDICTOR_OBTAINED} (already loaded)"
-                    )
-                elif self._load_state == ModelLoadState.LOADING:
-                    # Wait for loading to complete
-                    self.log_info("Models are currently loading, waiting...")
-                    # In a real scenario, you might want to wait with a timeout
-                    # For now, we'll try to get the predictor anyway
-                    predictor = _get_predictor()
-                    if predictor.models_loaded:
-                        self._predictor_instance = predictor
-                        self._load_state = ModelLoadState.LOADED
-                        return ServiceResult.success(
-                            data=predictor,
-                            message=MSG_PREDICTOR_OBTAINED
-                        )
+                    return self._handle_already_loaded_predictor()
+                
+                if self._load_state == ModelLoadState.LOADING:
+                    result = self._handle_loading_state(get_predictor)
+                    if result:
+                        return result
             
-            # Need to load models
-            with self._load_lock:
-                # Double-check after acquiring lock
-                if not force_reload and self._load_state == ModelLoadState.LOADED:
-                    return ServiceResult.success(
-                        data=self._predictor_instance,
-                        message=f"{MSG_PREDICTOR_OBTAINED} (loaded by another thread)"
-                    )
-                
-                # Set loading state
-                self._load_state = ModelLoadState.LOADING
-                self._load_error = None
-                
-                try:
-                    self.log_info("Loading ML models (first time or forced reload)...")
-                    
-                    # Get predictor instance (this may trigger auto-load, but we'll ensure it's loaded)
-                    predictor = _get_predictor()
-                    
-                    # Check if models are already loaded
-                    if predictor.models_loaded:
-                        self._predictor_instance = predictor
-                        self._load_state = ModelLoadState.LOADED
-                        self.log_info("Models already loaded in predictor instance")
-                        return ServiceResult.success(
-                            data=predictor,
-                            message=MSG_PREDICTOR_OBTAINED
-                        )
-                    
-                    # Models not loaded, load them explicitly
-                    self.log_info("Models not loaded, loading artifacts...")
-                    success = load_artifacts()
-                    
-                    if not success:
-                        self._load_state = ModelLoadState.ERROR
-                        self._load_error = "Failed to load artifacts"
-                        return ServiceResult.error(
-                            ValidationServiceError(
-                                "Models not available. Run automatic initialization first.",
-                                details={
-                                    "suggestion": "POST /api/v1/auto-initialize/ to initialize the system",
-                                    "or": "POST /api/v1/models/load/ to load models manually"
-                                }
-                            )
-                        )
-                    
-                    # Get predictor again after loading
-                    predictor = _get_predictor()
-                    
-                    if not predictor.models_loaded:
-                        self._load_state = ModelLoadState.ERROR
-                        self._load_error = "Models failed to load after load_artifacts()"
-                        return ServiceResult.error(
-                            ValidationServiceError("Error loading models after load_artifacts()")
-                        )
-                    
-                    # Success
-                    self._predictor_instance = predictor
-                    self._load_state = ModelLoadState.LOADED
-                    self.log_info("ML models loaded successfully")
-                    
-                    return ServiceResult.success(
-                        data=predictor,
-                        message="Predictor obtained successfully"
-                    )
-                    
-                except Exception as e:
-                    self._load_state = ModelLoadState.ERROR
-                    self._load_error = str(e)
-                    self.log_error(f"Error loading models: {str(e)}")
-                    return ServiceResult.error(
-                        ValidationServiceError(
-                            "Internal error loading models",
-                            details={"original_error": str(e)}
-                        )
-                    )
+            return self._load_models_with_lock(get_predictor, load_artifacts, force_reload)
         
         except Exception as e:
             self.log_error(f"Error getting predictor: {str(e)}")

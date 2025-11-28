@@ -126,7 +126,7 @@ class AuditMiddleware:
         else:
             return 'Unknown'
     
-    def log_activity(self, request, response):
+    def log_activity(self, request, response=None):
         """Registrar la actividad del usuario."""
         try:
             action = request.audit_action

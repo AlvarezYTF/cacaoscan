@@ -18,7 +18,7 @@
           disabled ? 'opacity-50 cursor-not-allowed' : ''
         ]"
         role="switch"
-        :aria-checked="modelValue"
+        :aria-checked="modelValue ? 'true' : 'false'"
         :disabled="disabled"
         @click="toggle"
       >

@@ -73,7 +73,7 @@ def log_processing_stats(
     success_rate = (successful_items / processed_items * 100) if processed_items > 0 else 0
     avg_time = processing_time / processed_items if processed_items > 0 else 0
     
-    logger.info(f"Procesamiento completado:")
+    logger.info("Procesamiento completado:")
     logger.info(f"  Total items: {total_items}")
     logger.info(f"  Procesados: {processed_items}")
     logger.info(f"  Exitosos: {successful_items}")

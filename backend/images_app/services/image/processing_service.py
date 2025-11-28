@@ -94,7 +94,7 @@ class ImageProcessingService(BaseService):
             # Validate file size (8MB maximum for analysis)
             if image_file.size > self.max_analysis_size:
                 return ServiceResult.validation_error(
-                    f"Image too large. Maximum allowed: 8MB",
+                    "Image too large. Maximum allowed: 8MB",
                     details={"field": "file_size", "max_size": self.max_analysis_size, "actual_size": image_file.size}
                 )
             
@@ -193,7 +193,7 @@ class ImageProcessingService(BaseService):
                     message="Image segmented successfully"
                 )
             else:
-                self.log_warning(f"Could not segment image: empty return")
+                self.log_warning("Could not segment image: empty return")
                 return ServiceResult.error(
                     ValidationServiceError("Segmentation returned empty result")
                 )

@@ -88,14 +88,14 @@ class Command(BaseCommand):
         
         # Mostrar valores reales si están disponibles
         if image_record:
-            self.stdout.write(f"\n📊 Valores reales del dataset:")
+            self.stdout.write("\n📊 Valores reales del dataset:")
             self.stdout.write(f"   ALTO:   {image_record.get('alto', 'N/A')} mm")
             self.stdout.write(f"   ANCHO:  {image_record.get('ancho', 'N/A')} mm")
             self.stdout.write(f"   GROSOR: {image_record.get('grosor', 'N/A')} mm")
             self.stdout.write(f"   PESO:   {image_record.get('peso', 'N/A')} g")
         
         # Cargar imagen
-        self.stdout.write(f"\n🖼️  Cargando imagen...")
+        self.stdout.write("\n🖼️  Cargando imagen...")
         try:
             image = Image.open(final_image_path)
             if image.mode != 'RGB':
@@ -107,7 +107,7 @@ class Command(BaseCommand):
             raise CommandError(f'Error al cargar imagen: {str(e)}')
         
         # Hacer predicción
-        self.stdout.write(f"\n🤖 Ejecutando predicción...")
+        self.stdout.write("\n🤖 Ejecutando predicción...")
         try:
             result = predictor.predict(image)
             
@@ -121,7 +121,7 @@ class Command(BaseCommand):
             
             # Mostrar confianzas si están disponibles
             if 'confidences' in result:
-                self.stdout.write(f"\n📊 Confianzas:")
+                self.stdout.write("\n📊 Confianzas:")
                 confidences = result['confidences']
                 self.stdout.write(f"   ALTO:   {confidences.get('alto', 0):.2%}")
                 self.stdout.write(f"   ANCHO:  {confidences.get('ancho', 0):.2%}")
@@ -130,7 +130,7 @@ class Command(BaseCommand):
             
             # Comparar con valores reales si están disponibles
             if image_record:
-                self.stdout.write(f"\n📊 Comparación con valores reales:")
+                self.stdout.write("\n📊 Comparación con valores reales:")
                 targets = ['alto', 'ancho', 'grosor', 'peso']
                 for target in targets:
                     real = image_record.get(target)

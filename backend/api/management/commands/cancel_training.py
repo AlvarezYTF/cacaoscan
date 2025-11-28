@@ -104,7 +104,7 @@ class Command(BaseCommand):
                     if hasattr(job, 'progress_percentage') and job.progress_percentage is not None:
                         self.stdout.write(f"  Progreso: {job.progress_percentage:.1f}%")
                     self.stdout.write(f"  Iniciado: {job.created_at}")
-                    self.stdout.write(f"\n  Para cancelar:")
+                    self.stdout.write("\n  Para cancelar:")
                     self.stdout.write(f"    python manage.py cancel_training {job.job_id}")
             
             if pending_jobs.exists():
@@ -113,7 +113,7 @@ class Command(BaseCommand):
                     self.stdout.write(f"\nJob ID: {job.job_id}")
                     self.stdout.write(f"  Tipo: {job.get_job_type_display() if hasattr(job, 'get_job_type_display') else job.job_type}")
                     self.stdout.write(f"  Creado: {job.created_at}")
-                    self.stdout.write(f"\n  Para cancelar:")
+                    self.stdout.write("\n  Para cancelar:")
                     self.stdout.write(f"    python manage.py cancel_training {job.job_id}")
                     
         except Exception as e:

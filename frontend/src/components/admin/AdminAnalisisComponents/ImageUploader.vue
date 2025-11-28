@@ -54,7 +54,7 @@
       >
         <img 
           :src="getImageUrl(image)" 
-          :alt="image.name ? image.name.replace(/^image\s*/i, '') : ''"
+          :alt="image.name ? image.name.replace(/\bimage\b\s*/gi, '').trim() || 'Archivo subido' : 'Archivo subido'"
           class="w-full h-32 object-cover"
         />
         <button

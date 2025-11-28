@@ -259,11 +259,13 @@ class RegistrationService(BaseService):
         
         Args:
             user_data: User data
-            request: Request object to get IP and user agent
+            request: Request object to get IP and user agent (no usado actualmente)
             
         Returns:
             ServiceResult with pending registration data
         """
+        # Suppress unused parameter warning - request reservado para uso futuro
+        _ = request
         try:
             from personas.models import PendingRegistration
             

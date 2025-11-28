@@ -105,7 +105,7 @@ class VerificationService(BaseService):
             except User.DoesNotExist:
                 # For security, don't reveal if email exists
                 return ServiceResult.success(
-                    message=f"Si el email existe, se enviará un nuevo token de verificación"
+                    message="Si el email existe, se enviará un nuevo token de verificación"
                 )
             
             # Create new verification token

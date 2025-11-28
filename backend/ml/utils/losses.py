@@ -58,7 +58,7 @@ class UncertaintyWeightedLoss(nn.Module):
             f"UncertaintyWeightedLoss initialized with initial_sigma={initial_sigma}"
         )
         logger.info(
-            f"Uncertainty-based loss formula: L_total = Σ [ (1 / (2 * σ_i²)) * L_i + log σ_i ]"
+            "Uncertainty-based loss formula: L_total = Σ [ (1 / (2 * σ_i²)) * L_i + log σ_i ]"
         )
         logger.info(f"Learnable sigmas for targets: {self.TARGETS}")
         logger.info(f"Initial log_sigmas (4 parámetros independientes): {self.log_sigmas.data.cpu().numpy()}")

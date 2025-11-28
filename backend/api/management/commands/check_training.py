@@ -105,7 +105,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  Duración: {hours}h {minutes}m")
         self.stdout.write(f"  Iniciado: {job.created_at}")
         if show_cancel:
-            self.stdout.write(f"\n  Para cancelar:")
+            self.stdout.write("\n  Para cancelar:")
             self.stdout.write(f"   python manage.py cancel_training {job.job_id}")
 
     def _display_job_details(self, job):
@@ -125,7 +125,7 @@ class Command(BaseCommand):
         if hasattr(job, 'created_by') and job.created_by:
             self.stdout.write(f"  Creado por: {job.created_by.username}")
         if hasattr(job, 'logs') and job.logs:
-            self.stdout.write(f"\n  Últimas líneas del log:")
+            self.stdout.write("\n  Últimas líneas del log:")
             log_lines = job.logs.split('\n')[-5:]
             for line in log_lines:
                 self.stdout.write(f"    {line}")

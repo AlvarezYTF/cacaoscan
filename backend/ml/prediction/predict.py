@@ -144,7 +144,7 @@ class CacaoPredictor:
                 logger.warning(f"⚠️ Error cargando calibración de píxeles: {e}")
                 self.pixel_calibration = None
         else:
-            logger.warning(f"⚠️ No se encontró 'pixel_calibration.json'. La extracción de features de píxeles puede fallar o ser imprecisa.")
+            logger.warning("⚠️ No se encontró 'pixel_calibration.json'. La extracción de features de píxeles puede fallar o ser imprecisa.")
             self.pixel_calibration = None
     
     def _setup_directories(self) -> None:
@@ -394,7 +394,7 @@ class CacaoPredictor:
                 # Fallback por si la ruta no es la esperada
                 crop_url = crop_path.as_posix().split("/app")[-1] # /media/cacao_images/...
             
-            logger.info(f"Segmentación completada (cascada U-Net/rembg/OpenCV)")
+            logger.info("Segmentación completada (cascada U-Net/rembg/OpenCV)")
             
             return crop_image, crop_url, seg_confidence
             

@@ -511,7 +511,7 @@ class YOLOTrainingManager:
             with open(info_path, 'w') as f:
                 json.dump(training_info, f, indent=2, default=str)
             
-            logger.info(f"Entrenamiento completado exitosamente")
+            logger.info("Entrenamiento completado exitosamente")
             logger.info(f"Mejor modelo guardado en: {training_info['best_model_path']}")
             
             return training_info
@@ -558,7 +558,7 @@ class YOLOTrainingManager:
                 'mask_mAP50-95': results.seg.map if hasattr(results, 'seg') else 0
             }
             
-            logger.info(f"Métricas de validación:")
+            logger.info("Métricas de validación:")
             logger.info(f"  mAP50: {metrics['mAP50']:.3f}")
             logger.info(f"  mAP50-95: {metrics['mAP50-95']:.3f}")
             logger.info(f"  Precision: {metrics['precision']:.3f}")
