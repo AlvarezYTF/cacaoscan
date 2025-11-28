@@ -12,9 +12,17 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = os.path.join(BASE_DIR, ".env")
 
-# Crear .env si no existe con valores por defecto
+# Crear .env si no existe con valores por defecto (solo en desarrollo)
 if not os.path.exists(dotenv_path):
-    default_env_content = """# ===========================
+    # Solo generar .env en modo desarrollo para evitar configuraciones inseguras en producción
+    is_development = os.environ.get('APP_ENV', '').lower() != 'production'
+    
+    if is_development:
+        # Generar SECRET_KEY segura usando Django
+        from django.core.management.utils import get_random_secret_key
+        secret_key = get_random_secret_key()
+        
+        default_env_content = f"""# ===========================
 # Configuración de Base de Datos PostgreSQL
 # ===========================
 DB_NAME=cacaoscan_db
@@ -26,8 +34,9 @@ DB_PORT=5432
 # ===========================
 # Configuración de Django
 # ===========================
-# IMPORTANTE: Genera tu propia clave secreta. Puedes usar un generador online.
-SECRET_KEY=django-insecure-m#z@j!v+e)d^u_r-f&q!w)t#b@s&y*p(k$l-!g@h_c^x@o
+# IMPORTANTE: Esta SECRET_KEY fue generada automáticamente. 
+# En producción, genera tu propia clave secreta segura.
+SECRET_KEY={secret_key}
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 
@@ -46,14 +55,20 @@ EMAIL_HOST_USER=tu-email@gmail.com
 EMAIL_HOST_PASSWORD=tu-app-password
 
 # ===========================
-# Configuración de CORS (Producción)
+# Configuración de CORS (Desarrollo)
 # ===========================
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 AUTO_TRAIN_ENABLED=0
 """
-    with open(dotenv_path, 'w', encoding='utf-8') as f:
-        f.write(default_env_content)
-    print(f"✅ Archivo .env creado automáticamente en: {dotenv_path}")
+        with open(dotenv_path, 'w', encoding='utf-8') as f:
+            f.write(default_env_content)
+        print(f"✅ Archivo .env creado automáticamente en: {dotenv_path}")
+    else:
+        # En producción, requerir que el .env exista y esté configurado correctamente
+        raise ValueError(
+            "Archivo .env no encontrado y APP_ENV=production. "
+            "Crea el archivo .env con las variables necesarias antes de iniciar la aplicación."
+        )
 
 # Load .env file with explicit UTF-8 encoding to avoid decode errors
 # Try multiple encodings if UTF-8 fails
@@ -75,7 +90,6 @@ except Exception:
 
 
 # Suprimir warnings molestos
-warnings.filterwarnings('ignore', message='pkg_resources is deprecated')
 warnings.filterwarnings('ignore', message='The parameter.*is deprecated')
 warnings.filterwarnings('ignore', message='Arguments other than a weight enum.*are deprecated')
 warnings.filterwarnings('ignore', message='Using a target size.*that is different to the input size')
@@ -83,18 +97,12 @@ warnings.filterwarnings('ignore', category=UserWarning, module='drf_yasg')
 warnings.filterwarnings('ignore', category=UserWarning, module='torchvision')
 warnings.filterwarnings('ignore', category=UserWarning, module='torch')
 
-# Optimizar pkg_resources para evitar escaneo excesivo
-# Esto reduce significativamente el uso de memoria con volmenes montados
-import pkg_resources
-import os
-
-# Limitar el escaneo de pkg_resources
-pkg_resources_cache_dir = os.environ.get('PKG_RESOURCES_CACHE_DIR', '/tmp/pkg_resources_cache')
-os.makedirs(pkg_resources_cache_dir, exist_ok=True)
-
 # Configurar PYTHONPATH para evitar escaneo innecesario
 if 'PYTHONPATH' not in os.environ:
     os.environ['PYTHONPATH'] = str(BASE_DIR)
+
+# Migrado de pkg_resources (deprecated) a importlib.metadata (Python 3.12+)
+# pkg_resources ya no se usa, eliminado para evitar warnings de deprecación
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
