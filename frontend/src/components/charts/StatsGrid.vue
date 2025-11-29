@@ -205,32 +205,32 @@ export default {
 
 /* Variantes de tarjetas */
 .stat-card.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1f4e79 0%, #31235d 100%);
   color: #ffffff;
   border: none;
 }
 
 .stat-card.success {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, #0d5c3d 0%, #0b3f2b 100%);
   color: #ffffff;
   border: none;
 }
 
 .stat-card.warning {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  color: #1f2937;
+  background: linear-gradient(135deg, #8a4b00 0%, #5c3200 100%);
+  color: #ffffff;
   border: none;
 }
 
 .stat-card.danger {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  background: linear-gradient(135deg, #8b1f1f 0%, #5a1212 100%);
   color: #ffffff;
   border: none;
 }
 
 .stat-card.info {
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-  color: #1f2937;
+  background: linear-gradient(135deg, #145057 0%, #0b3744 100%);
+  color: #ffffff;
   border: none;
 }
 
@@ -243,23 +243,16 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  color: #ffffff;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #1f2937;
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .stat-card.primary .stat-icon,
 .stat-card.success .stat-icon,
-.stat-card.danger .stat-icon {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.stat-card.warning .stat-icon {
-  background: rgba(31, 41, 55, 0.2);
-  color: #1f2937;
-}
-
+.stat-card.danger .stat-icon,
+.stat-card.warning .stat-icon,
 .stat-card.info .stat-icon {
-  background: rgba(31, 41, 55, 0.15);
+  background: rgba(255, 255, 255, 0.85);
   color: #1f2937;
 }
 
@@ -284,12 +277,10 @@ export default {
 
 .stat-card.primary .stat-number,
 .stat-card.success .stat-number,
-.stat-card.danger .stat-number {
+.stat-card.danger .stat-number,
+.stat-card.warning .stat-number,
+.stat-card.info .stat-number {
   color: #ffffff;
-}
-
-.stat-card.warning .stat-number {
-  color: #1f2937;
 }
 
 .stat-suffix {
@@ -300,12 +291,10 @@ export default {
 
 .stat-card.primary .stat-suffix,
 .stat-card.success .stat-suffix,
-.stat-card.danger .stat-suffix {
+.stat-card.danger .stat-suffix,
+.stat-card.warning .stat-suffix,
+.stat-card.info .stat-suffix {
   color: rgba(255, 255, 255, 0.95);
-}
-
-.stat-card.warning .stat-suffix {
-  color: #1f2937;
 }
 
 .stat-label {
@@ -317,12 +306,10 @@ export default {
 
 .stat-card.primary .stat-label,
 .stat-card.success .stat-label,
-.stat-card.danger .stat-label {
+.stat-card.danger .stat-label,
+.stat-card.warning .stat-label,
+.stat-card.info .stat-label {
   color: rgba(255, 255, 255, 0.95);
-}
-
-.stat-card.warning .stat-label {
-  color: #1f2937;
 }
 
 .stat-change {
@@ -348,12 +335,10 @@ export default {
 
 .stat-card.primary .stat-change,
 .stat-card.success .stat-change,
-.stat-card.danger .stat-change {
+.stat-card.danger .stat-change,
+.stat-card.warning .stat-change,
+.stat-card.info .stat-change {
   color: rgba(255, 255, 255, 0.95);
-}
-
-.stat-card.warning .stat-change {
-  color: #1f2937;
 }
 
 .change-period {
@@ -369,12 +354,10 @@ export default {
 
 .stat-card.primary .stat-description,
 .stat-card.success .stat-description,
-.stat-card.danger .stat-description {
+.stat-card.danger .stat-description,
+.stat-card.warning .stat-description,
+.stat-card.info .stat-description {
   color: rgba(255, 255, 255, 0.9);
-}
-
-.stat-card.warning .stat-description {
-  color: #374151;
 }
 
 .stat-trend {

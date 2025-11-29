@@ -406,6 +406,7 @@ export default {
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   overflow: hidden;
+  transition: all 0.3s ease;
 }
 
 .chart-header {
@@ -473,11 +474,6 @@ export default {
   .chart-body {
     padding: 15px;
   }
-}
-
-/* Animaciones */
-.chart-container {
-  transition: all 0.3s ease;
 }
 
 .chart-container:hover {

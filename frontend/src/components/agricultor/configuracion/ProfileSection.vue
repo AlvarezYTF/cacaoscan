@@ -234,13 +234,12 @@
         <label for="profile-direccion" class="block text-sm font-semibold text-gray-700 mb-2">
           Dirección
         </label>
-        <!-- NOSONAR: street-address is valid per HTML spec (MDN) -->
         <input 
           id="profile-direccion"
           name="direccion"
           type="text"
           v-model="form.direccion"
-          autocomplete="street-address"
+          autocomplete="address-line1"
           placeholder="Calle 10 #5-20" 
           :disabled="isLoading"
           class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 disabled:bg-gray-100 transition-all"

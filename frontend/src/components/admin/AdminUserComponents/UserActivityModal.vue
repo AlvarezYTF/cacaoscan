@@ -783,7 +783,7 @@ export default {
 }
 
 .page-link:hover {
-  color: #2980b9;
+  color: #1f4e79;
   background-color: #e9ecef;
   border-color: #dee2e6;
 }
@@ -814,12 +814,12 @@ export default {
 }
 
 .btn-secondary {
-  background-color: #95a5a6;
-  color: white;
+  background-color: #566366;
+  color: #ffffff;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #7f8c8d;
+  background-color: #4a5457;
 }
 
 .btn-outline-secondary {
@@ -840,8 +840,8 @@ export default {
 }
 
 .btn-outline-primary:hover:not(:disabled) {
-  background-color: #3498db;
-  color: white;
+  background-color: #1f4e79;
+  color: #ffffff;
 }
 
 @media (max-width: 768px) {

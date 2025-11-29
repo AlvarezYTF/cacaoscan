@@ -35,7 +35,7 @@ class Command(BaseCommand):
         
         # Solo permitir letras, números, guiones bajos y guiones
         # Debe comenzar con letra o guion bajo
-        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', identifier):
+        if not re.match(r'^[a-zA-Z_]\w*$', identifier):
             raise ValueError(f'Identificador SQL inválido: {identifier}. Solo se permiten letras, números y guiones bajos, y debe comenzar con letra o guion bajo.')
         
         return identifier

@@ -423,12 +423,12 @@ onBeforeUnmount(() => {
 }
 
 .status-indicator.ready {
-  background: rgba(16, 185, 129, 1);
+  background: #065f46;
   color: #ffffff;
 }
 
 .status-indicator.error {
-  background: rgba(239, 68, 68, 1);
+  background: #b91c1c;
   color: #ffffff;
 }
 
@@ -537,7 +537,7 @@ onBeforeUnmount(() => {
 }
 
 .action-button.save {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
   color: #ffffff;
   box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.4);
 }

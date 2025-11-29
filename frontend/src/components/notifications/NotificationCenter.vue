@@ -244,7 +244,6 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
 import Swal from 'sweetalert2'
 
@@ -625,9 +624,9 @@ export default {
 }
 
 .filter-tab.active {
-  background-color: #3498db;
-  color: white;
-  border-color: #3498db;
+  background-color: #1f4e79;
+  color: #ffffff;
+  border-color: #1f4e79;
 }
 
 .filter-options select {
@@ -862,8 +861,8 @@ export default {
 }
 
 .btn-outline-primary:hover:not(:disabled) {
-  background-color: #3498db;
-  color: white;
+  background-color: #1f4e79;
+  color: #ffffff;
 }
 
 .btn-outline-secondary {

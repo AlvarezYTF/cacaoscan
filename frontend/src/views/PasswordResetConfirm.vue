@@ -86,7 +86,7 @@
                   name="new-password"
                   :type="showPassword ? 'text' : buildPasswordType()"
                   v-model="form.newPassword"
-                  autocomplete="new-password"
+                  :autocomplete="showPassword ? 'off' : 'new-password'"
                   required
                   :disabled="isLoading"
                   class="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm disabled:bg-gray-100"
@@ -134,7 +134,7 @@
                   name="confirm-new-password"
                   :type="showPassword ? 'text' : buildPasswordType()"
                   v-model="form.confirmPassword"
-                  autocomplete="new-password"
+                  :autocomplete="showPassword ? 'off' : 'new-password'"
                   required
                   :disabled="isLoading"
                   class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm disabled:bg-gray-100"

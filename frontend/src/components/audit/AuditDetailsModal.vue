@@ -358,8 +358,8 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #1f4e79 0%, #31235d 100%);
+  color: #f8fafc;
 }
 
 .header-content {
@@ -392,9 +392,9 @@ export default {
 }
 
 .close-btn {
-  background: rgba(255, 255, 255, 0.2);
+  background: #0f172a;
   border: none;
-  color: white;
+  color: #f8fafc;
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
@@ -584,14 +584,14 @@ export default {
 }
 
 .btn-primary {
-  background-color: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
+  background-color: #1f4e79;
+  color: #ffffff;
+  border-color: #1f4e79;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
-  border-color: #2563eb;
+  background-color: #1a3d5b;
+  border-color: #1a3d5b;
 }
 
 /* Responsive */

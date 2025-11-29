@@ -1,6 +1,6 @@
-projectKey=academica-asistencia
+projectKey=cacao-scan
 serverUrl=https://sonarqube.dataguaviare.com.co
 serverVersion=25.11.0.114957
-dashboardUrl=https://sonarqube.dataguaviare.com.co/dashboard?id=academica-asistencia
-ceTaskId=3cfc5598-2e08-4062-a7b3-716ae6259e97
-ceTaskUrl=https://sonarqube.dataguaviare.com.co/api/ce/task?id=3cfc5598-2e08-4062-a7b3-716ae6259e97
+dashboardUrl=https://sonarqube.dataguaviare.com.co/dashboard?id=cacao-scan
+ceTaskId=e6f2f441-5459-4606-bd48-745b17121308
+ceTaskUrl=https://sonarqube.dataguaviare.com.co/api/ce/task?id=e6f2f441-5459-4606-bd48-745b17121308

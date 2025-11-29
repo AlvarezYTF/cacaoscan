@@ -171,9 +171,9 @@ const goToPage = (page) => {
 }
 
 .page-item.active .page-link {
-  background-color: #007bff;
-  border-color: #007bff;
-  color: white;
+  background-color: #1f4e79;
+  border-color: #1f4e79;
+  color: #ffffff;
 }
 
 .page-item.disabled .page-link {

@@ -149,6 +149,7 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
+  animation: fadeInUp 0.6s ease-out;
 }
 
 .dashboard-widget:hover {
@@ -337,8 +338,8 @@ export default {
 }
 
 .retry-btn {
-  background: #ef4444;
-  color: white;
+  background: #9b1c1c;
+  color: #ffffff;
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -348,7 +349,7 @@ export default {
 }
 
 .retry-btn:hover {
-  background: #dc2626;
+  background: #7c1515;
 }
 
 /* Footer */
@@ -401,11 +402,6 @@ export default {
 
 .widget-error .widget-content {
   opacity: 0.6;
-}
-
-/* Animaciones */
-.dashboard-widget {
-  animation: fadeInUp 0.6s ease-out;
 }
 
 @keyframes fadeInUp {

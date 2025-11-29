@@ -93,16 +93,16 @@ export default {
   justify-content: center;
   margin-right: 1.25rem;
   font-size: 1.5rem;
-  color: white;
-  background-color: #27ae60;
+  color: #ffffff;
+  background-color: #1f7a3b;
 }
 
 .stat-icon.quality {
-  background-color: #f39c12;
+  background-color: #8a4b00;
 }
 
 .stat-icon.warning {
-  background-color: #e74c3c;
+  background-color: #b71c1c;
 }
 
 .stat-content h3 {

@@ -181,7 +181,7 @@ export default {
 }
 
 .btn-warning {
-  background-color: #d97706;
+  background-color: #8a4b00;
   color: #ffffff;
 }
 

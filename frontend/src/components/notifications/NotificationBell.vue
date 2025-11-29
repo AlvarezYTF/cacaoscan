@@ -104,7 +104,6 @@
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
 
 export default {
@@ -386,8 +385,8 @@ export default {
   position: absolute;
   top: 2px;
   right: 2px;
-  background-color: #e74c3c;
-  color: white;
+  background-color: #c0392b;
+  color: #ffffff;
   font-size: 0.7rem;
   font-weight: bold;
   padding: 2px 6px;
@@ -603,12 +602,12 @@ export default {
 }
 
 .btn-primary {
-  background-color: #3498db;
-  color: white;
+  background-color: #1f4e79;
+  color: #ffffff;
 }
 
 .btn-primary:hover {
-  background-color: #2980b9;
+  background-color: #1a3d5b;
 }
 
 .btn-outline-primary {
@@ -618,8 +617,8 @@ export default {
 }
 
 .btn-outline-primary:hover {
-  background-color: #3498db;
-  color: white;
+  background-color: #1f4e79;
+  color: #ffffff;
 }
 
 .btn-outline-secondary {

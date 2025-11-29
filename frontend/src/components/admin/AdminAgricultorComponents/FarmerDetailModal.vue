@@ -303,7 +303,6 @@
 
 <script>
 import { ref, computed, watch } from 'vue';
-import Swal from 'sweetalert2';
 import { getFincas } from '@/services/fincasApi';
 import authApi from '@/services/authApi';
 

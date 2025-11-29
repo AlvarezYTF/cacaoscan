@@ -299,7 +299,7 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 1rem;
-  color: #6b7280;
+  color: #374151;
 }
 
 .card-login .card-icon {

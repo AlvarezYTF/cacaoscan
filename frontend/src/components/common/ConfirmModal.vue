@@ -259,47 +259,47 @@ export default {
 }
 
 .btn-danger {
-  background-color: #ef4444;
+  background-color: #9b1c1c;
   color: #ffffff;
-  border-color: #ef4444;
+  border-color: #9b1c1c;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background-color: #dc2626;
-  border-color: #dc2626;
+  background-color: #7c1515;
+  border-color: #7c1515;
 }
 
 .btn-primary {
-  background-color: #3b82f6;
+  background-color: #1f4e79;
   color: #ffffff;
-  border-color: #3b82f6;
+  border-color: #1f4e79;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
-  border-color: #2563eb;
+  background-color: #1a3d5b;
+  border-color: #1a3d5b;
 }
 
 .btn-success {
-  background-color: #10b981;
+  background-color: #046c4e;
   color: #ffffff;
-  border-color: #10b981;
+  border-color: #046c4e;
 }
 
 .btn-success:hover:not(:disabled) {
-  background-color: #059669;
-  border-color: #059669;
+  background-color: #03503a;
+  border-color: #03503a;
 }
 
 .btn-warning {
-  background-color: #d97706;
+  background-color: #8a4b00;
   color: #ffffff;
-  border-color: #d97706;
+  border-color: #8a4b00;
 }
 
 .btn-warning:hover:not(:disabled) {
-  background-color: #d97706;
-  border-color: #d97706;
+  background-color: #6c3a00;
+  border-color: #6c3a00;
 }
 
 /* Responsive */
