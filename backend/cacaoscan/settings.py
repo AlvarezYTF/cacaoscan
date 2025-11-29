@@ -3,11 +3,21 @@ Django settings for cacaoscan project.
 """
 
 import os
+import sys
 import warnings
-from warnings import SecurityWarning
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
+
+# SecurityWarning fue agregado en Python 3.13
+# Para compatibilidad con Python 3.12, crear una clase dummy si no existe
+try:
+    from warnings import SecurityWarning
+except ImportError:
+    # Python < 3.13: crear SecurityWarning como subclase de Warning
+    class SecurityWarning(Warning):
+        """Advertencia de seguridad (compatible con Python 3.12)."""
+        pass
 
 # Cargar variables de entorno desde .env
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -596,6 +606,49 @@ REDOC_SETTINGS = {
 }
 
 # Logging configuration
+# Crear directorio de logs si no existe (necesario para tests y desarrollo)
+LOGS_DIR = BASE_DIR / 'logs'
+try:
+    LOGS_DIR.mkdir(exist_ok=True)
+except (OSError, PermissionError) as e:
+    # Si no se puede crear el directorio (permisos, etc.), usar solo console handler
+    import warnings
+    warnings.warn(f"No se pudo crear el directorio de logs: {e}. Usando solo console handler.")
+    LOGS_DIR = None
+
+# Determinar si estamos en modo test
+IS_TESTING = (
+    'test' in sys.argv or 
+    'pytest' in sys.modules or 
+    os.environ.get('DJANGO_TEST_MODE') == '1' or
+    'pytest' in str(sys.modules.get('__main__', {}))
+)
+
+# Configurar handlers según disponibilidad
+handlers_config = {
+    'console': {
+        'level': 'DEBUG',
+        'class': 'logging.StreamHandler',
+        'formatter': 'simple',
+    },
+}
+
+# Solo agregar file handler si el directorio de logs está disponible y NO estamos en modo test
+# En modo test, usar solo console para evitar ResourceWarnings y problemas con archivos
+if LOGS_DIR and LOGS_DIR.exists() and not IS_TESTING:
+    handlers_config['file'] = {
+        'level': 'INFO',
+        'class': 'logging.FileHandler',
+        'filename': str(LOGS_DIR / 'django.log'),
+        'formatter': 'verbose',
+    }
+    root_handlers = ['console', 'file']
+    django_handlers = ['console', 'file']
+else:
+    # En modo test o si no hay directorio de logs, usar solo console
+    root_handlers = ['console']
+    django_handlers = ['console']
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -609,60 +662,48 @@ LOGGING = {
             'style': '{',
         },
     },
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': str(BASE_DIR / 'logs' / 'django.log'),
-            'formatter': 'verbose',
-        },
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-    },
+    'handlers': handlers_config,
     'root': {
-        'handlers': ['console', 'file'],
+        'handlers': root_handlers,
         'level': 'INFO',
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'],
+            'handlers': django_handlers,
             'level': 'INFO',
             'propagate': False,
         },
         'cacaoscan.api': {
-            'handlers': ['console', 'file'],
+            'handlers': django_handlers,
             'level': 'DEBUG',
             'propagate': False,
         },
         'cacaoscan.ml': {
-            'handlers': ['console', 'file'],
+            'handlers': django_handlers,
             'level': 'DEBUG',
             'propagate': False,
         },
         # Suprimir warnings de pkg_resources
         'pkg_resources': {
-            'handlers': ['file'],
+            'handlers': root_handlers,
             'level': 'ERROR',
             'propagate': False,
         },
         # Suprimir warnings de drf_yasg
         'drf_yasg': {
-            'handlers': ['file'],
+            'handlers': root_handlers,
             'level': 'ERROR',
             'propagate': False,
         },
         # Suprimir warnings de torchvision
         'torchvision': {
-            'handlers': ['file'],
+            'handlers': root_handlers,
             'level': 'ERROR',
             'propagate': False,
         },
         # Suprimir warnings de torch
         'torch': {
-            'handlers': ['file'],
+            'handlers': root_handlers,
             'level': 'ERROR',
             'propagate': False,
         },

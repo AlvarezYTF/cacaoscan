@@ -150,7 +150,7 @@ class AnalysisService(BaseService):
             ServiceResult with paginated history
         """
         try:
-            from ...utils.model_imports import get_models_safely
+            from api.utils.model_imports import get_models_safely
             from django.db.models import Avg
             
             models = get_models_safely({
@@ -220,7 +220,7 @@ class AnalysisService(BaseService):
             ServiceResult with analysis details
         """
         try:
-            from ...utils.model_imports import get_models_safely
+            from api.utils.model_imports import get_models_safely
             
             models = get_models_safely({
                 'CacaoPrediction': CACAO_PREDICTION_MODEL_PATH
@@ -232,7 +232,7 @@ class AnalysisService(BaseService):
                     id=analysis_id,
                     image__user=user
                 )
-            except CacaoPrediction.DoesNotExist:
+            except cacao_prediction_model.DoesNotExist:
                 return ServiceResult.not_found_error("Analysis not found")
             
             analysis_data = {
@@ -281,7 +281,7 @@ class AnalysisService(BaseService):
             ServiceResult with deletion result
         """
         try:
-            from ...utils.model_imports import get_models_safely
+            from api.utils.model_imports import get_models_safely
             
             models = get_models_safely({
                 'CacaoPrediction': CACAO_PREDICTION_MODEL_PATH
@@ -293,7 +293,7 @@ class AnalysisService(BaseService):
                     id=analysis_id,
                     image__user=user
                 )
-            except CacaoPrediction.DoesNotExist:
+            except cacao_prediction_model.DoesNotExist:
                 return ServiceResult.not_found_error("Analysis not found")
             
             # Create audit log before deleting
@@ -380,7 +380,7 @@ class AnalysisService(BaseService):
             ServiceResult with statistics
         """
         try:
-            from ...utils.model_imports import get_models_safely
+            from api.utils.model_imports import get_models_safely
             from django.db.models import Avg
             
             models = get_models_safely({
