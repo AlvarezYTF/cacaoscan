@@ -110,7 +110,7 @@ class AuthenticationServiceTest(TestCase):
             'email': 'new@example.com',
             'first_name': 'New',
             'last_name': 'User',
-            'password': TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            'password': TEST_USER_PASSWORD  # NOSONAR(S2068)
         }
         
         result = self.service.register_user(user_data)
@@ -131,7 +131,7 @@ class AuthenticationServiceTest(TestCase):
             'email': 'test@example.com',  # Email ya existe
             'first_name': 'Test',
             'last_name': 'User2',
-            'password': TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            'password': TEST_USER_PASSWORD  # NOSONAR(S2068)
         }
         
         result = self.service.register_user(user_data)
@@ -148,7 +148,7 @@ class AuthenticationServiceTest(TestCase):
             'email': 'invalid-email',
             'first_name': '',
             'last_name': '',
-            'password': TEST_WEAK_PASSWORD  # NOSONAR: Test credential from constants
+            'password': TEST_WEAK_PASSWORD  # NOSONAR(S2068)
         }
         
         result = self.service.register_user(user_data)

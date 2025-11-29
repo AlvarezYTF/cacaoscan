@@ -479,14 +479,12 @@ class HybridTrainer:
                 # Try to load with weights_only=True (safest method, PyTorch 2.1+)
                 # SECURITY: weights_only=True prevents arbitrary code execution (S6985)
                 checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=True)
-            except TypeError:
-                # Fallback for older PyTorch versions
-                # Checkpoints are from trusted source (same trainer), structure is validated
-                logger.warning(
-                    f"PyTorch version does not support weights_only=True. "
-                    f"Loading checkpoint with fallback method from {checkpoint_path}"
-                )
-                checkpoint = torch.load(checkpoint_path, map_location=self.device)  # nosec B301
+            except TypeError as exc:
+                raise RuntimeError(
+                    "La versión de PyTorch instalada no soporta weights_only=True. "
+                    "Actualiza a PyTorch 2.1 o superior para cargar checkpoints de forma segura "
+                    f"(archivo: {checkpoint_path})."
+                ) from exc
             
             # Validate checkpoint structure to ensure it's a valid checkpoint from our trainer
             # This helps detect if a checkpoint was tampered with

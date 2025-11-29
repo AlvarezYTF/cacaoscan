@@ -1308,7 +1308,13 @@ class CacaoTrainingPipeline:
                 model_type=self.config['model_type'], num_outputs=1, pretrained=False,
                 multi_head=False, hybrid=False
             )
-            checkpoint = torch.load(model_path, map_location=self.device)
+            try:
+                checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)
+            except TypeError as exc:
+                raise CommandError(
+                    "La versión de PyTorch instalada no soporta weights_only=True. "
+                    "Actualiza a PyTorch 2.1 o superior para cargar checkpoints de forma segura."
+                ) from exc
             model.load_state_dict(checkpoint['model_state_dict'])
             
             # Crear un DataLoader especfico para este target
@@ -1372,7 +1378,13 @@ class CacaoTrainingPipeline:
                  return {}
 
         # Cargar checkpoint para detectar pixel_feature_dim
-        checkpoint = torch.load(model_path, map_location=self.device)
+        try:
+            checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)
+        except TypeError as exc:
+            raise CommandError(
+                "La versión de PyTorch instalada no soporta weights_only=True. "
+                "Actualiza a PyTorch 2.1 o superior para cargar checkpoints de forma segura."
+            ) from exc
         
         # Determinar pixel_feature_dim de la misma manera que en entrenamiento
         pixel_feature_dim = None

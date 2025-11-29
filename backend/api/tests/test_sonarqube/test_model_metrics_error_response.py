@@ -20,7 +20,7 @@ class TestModelMetricsViewsErrorResponse(APITestCase):
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_USER_PASSWORD  # NOSONAR - test credential from constants
         )
         self.client.force_authenticate(user=self.user)
     

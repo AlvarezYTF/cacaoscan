@@ -204,7 +204,7 @@ class FincaAPITest(APITestCase):
         other_user = User.objects.create_user(
             username=TEST_OTHER_USER_USERNAME,
             email=TEST_OTHER_USER_EMAIL,
-            password=TEST_OTHER_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_OTHER_USER_PASSWORD  # NOSONAR(S2068)
         )
         Finca.objects.create(
             nombre='Otra Finca',
@@ -238,7 +238,7 @@ class FincaAPITest(APITestCase):
         other_user = User.objects.create_user(
             username=TEST_OTHER_USER_USERNAME,
             email=TEST_OTHER_USER_EMAIL,
-            password=TEST_OTHER_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_OTHER_USER_PASSWORD  # NOSONAR(S2068)
         )
         Finca.objects.create(
             nombre='Otra Finca',

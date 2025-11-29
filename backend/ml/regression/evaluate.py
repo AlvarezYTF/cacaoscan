@@ -14,13 +14,23 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.metrics import mean_absolute_percentage_error
 
 from ..utils.logs import get_ml_logger
-from ..utils.paths import get_regressors_artifacts_dir, get_artifacts_dir
+from ..utils.paths import (
+    get_regressors_artifacts_dir,
+    get_artifacts_dir,
+    ensure_dir_exists,
+)
 from ..utils.io import save_json
 from .models import TARGETS, TARGET_NAMES
 from .scalers import load_scalers
 
 
 logger = get_ml_logger("cacaoscan.ml.regression")
+
+TargetArrayDict = Dict[str, np.ndarray]
+TargetListDict = Dict[str, List[float]]
+TargetMetricsDict = Dict[str, Dict[str, float]]
+BatchTargets = Union[Dict[str, torch.Tensor], torch.Tensor]
+BatchData = Union[Tuple[torch.Tensor, ...], List[torch.Tensor]]
 
 
 class RegressionEvaluator:
@@ -151,120 +161,172 @@ class RegressionEvaluator:
         denormalize: bool = True
     ) -> Dict[str, Dict[str, float]]:
         """
-        Evalúa un modelo multi-head.
-        
-        Args:
-            denormalize: Si desnormalizar las predicciones
-            
-        Returns:
-            Diccionario con métricas por target
+        Evalúa un modelo multi-head y devuelve métricas por target.
         """
         logger.info("Evaluando modelo multi-head/híbrido")
         
         self.model.eval()
-        all_predictions = {target: [] for target in TARGETS}
-        all_targets = {target: [] for target in TARGETS}
-        
-        # Determinar si el modelo es híbrido (basado en el tipo de modelo)
         is_hybrid = "Hybrid" in type(self.model).__name__
         
+        raw_predictions, raw_targets = self._collect_multi_head_batches(is_hybrid)
+        all_predictions = self._batch_lists_to_arrays(raw_predictions)
+        all_targets = self._batch_lists_to_arrays(raw_targets)
+        
+        if denormalize and self.scalers is not None:
+            all_predictions, all_targets = self._denormalize_multi_head_results(
+                all_predictions,
+                all_targets
+            )
+        
+        results = self._compute_multi_head_metrics(all_predictions, all_targets)
+        
+        self.predictions = all_predictions
+        self.targets = all_targets
+        self.results = results
+        
+        return results
+    def _collect_multi_head_batches(
+        self,
+        is_hybrid: bool,
+    ) -> Tuple[TargetListDict, TargetListDict]:
+        predictions: TargetListDict = {target: [] for target in TARGETS}
+        targets: TargetListDict = {target: [] for target in TARGETS}
+        
         with torch.no_grad():
-            # --- INICIO DE CORRECCIÓN ---
-            # El loader puede devolver 2 o 3 items
             for batch_data in self.test_loader:
-                images, targets_dict, pixel_features = None, None, None
-                
-                # Desempaquetar datos basado en si es híbrido o no
-                if len(batch_data) == 3:
-                    images, targets_dict, pixel_features = batch_data
-                    if is_hybrid:
-                        pixel_features = pixel_features.to(self.device)
-                elif len(batch_data) == 2:
-                     images, targets_dict = batch_data
-                else:
-                    logger.error(f"Batch de datos inesperado. Se esperaban 2 o 3 tensores, se obtuvieron {len(batch_data)}")
+                unpacked = self._unpack_multi_head_batch(batch_data)
+                if unpacked is None:
                     continue
                 
-                images = images.to(self.device)
-                
-                # Forward pass
-                if is_hybrid and pixel_features is not None:
-                    outputs = self.model(images, pixel_features)
-                else:
-                    outputs = self.model(images)
-                # --- FIN DE CORRECCIÓN ---
-                
-                # Manejar targets: puede ser tensor 2D [batch_size, 4] o diccionario
-                if isinstance(targets_dict, dict):
-                    # Si es diccionario, usar directamente
-                    targets_by_key = targets_dict
-                else:
-                    # Si es tensor 2D, extraer columnas según el orden: [alto, ancho, grosor, peso]
-                    # targets_dict tiene forma [batch_size, 4]
-                    targets_by_key = {
-                        'alto': targets_dict[:, 0],
-                        'ancho': targets_dict[:, 1],
-                        'grosor': targets_dict[:, 2],
-                        'peso': targets_dict[:, 3]
-                    }
+                images, targets_data, pixel_features = unpacked
+                outputs = self._forward_multi_head(images, pixel_features, is_hybrid)
+                targets_by_key = self._normalize_targets_dict(targets_data)
                 
                 for target in TARGETS:
-                    # Obtener predicciones y targets
-                    predictions_batch = outputs[target].cpu().numpy().flatten()
-                    targets_batch = targets_by_key[target].cpu().numpy().flatten()
-                    
-                    all_predictions[target].extend(predictions_batch)
-                    all_targets[target].extend(targets_batch)
+                    predictions[target].extend(
+                        outputs[target].detach().cpu().numpy().flatten()
+                    )
+                    targets[target].extend(
+                        targets_by_key[target].detach().cpu().numpy().flatten()
+                    )
         
-        # Convertir a arrays numpy
-        for target in TARGETS:
-            all_predictions[target] = np.array(all_predictions[target])
-            all_targets[target] = np.array(all_targets[target])
-        
-        # Desnormalizar si se especifica
-        if denormalize and self.scalers is not None:
-            try:
-                # Usar .transform(dict) y .inverse_transform(dict)
-                
-                # Preparar dict para desnormalización
-                pred_dict_norm = {t: all_predictions[t] for t in TARGETS}
-                targ_dict_norm = {t: all_targets[t] for t in TARGETS}
+        return predictions, targets
 
-                denorm_pred = self.scalers.inverse_transform(pred_dict_norm)
-                denorm_targets = self.scalers.inverse_transform(targ_dict_norm)
-                
-                all_predictions = denorm_pred
-                all_targets = denorm_targets
-                
-                logger.info("Predicciones desnormalizadas para modelo multi-head")
-            except Exception as e:
-                logger.warning(f"Error desnormalizando modelo multi-head: {e}", exc_info=True)
+    def _unpack_multi_head_batch(
+        self,
+        batch_data: BatchData,
+    ) -> Optional[Tuple[torch.Tensor, BatchTargets, Optional[torch.Tensor]]]:
+        if not isinstance(batch_data, (list, tuple)):
+            logger.error("Batch de datos inesperado (tipo inválido)")
+            return None
         
-        # Calcular métricas para cada target
-        results = {}
+        batch_len = len(batch_data)
+        if batch_len == 3:
+            images, targets_dict, pixel_features = batch_data
+            pixel_tensor = pixel_features.to(self.device) if pixel_features is not None else None
+        elif batch_len == 2:
+            images, targets_dict = batch_data
+            pixel_tensor = None
+        else:
+            logger.error(
+                "Batch de datos inesperado. Se esperaban 2 o 3 tensores, "
+                f"se obtuvieron {batch_len}"
+            )
+            return None
+        
+        return images.to(self.device), targets_dict, pixel_tensor
+
+    def _forward_multi_head(
+        self,
+        images: torch.Tensor,
+        pixel_features: Optional[torch.Tensor],
+        is_hybrid: bool,
+    ) -> Dict[str, torch.Tensor]:
+        if is_hybrid and pixel_features is not None:
+            return self.model(images, pixel_features)
+        return self.model(images)
+
+    def _normalize_targets_dict(
+        self,
+        targets_data: BatchTargets,
+    ) -> Dict[str, torch.Tensor]:
+        if isinstance(targets_data, dict):
+            return {
+                target: targets_data[target].to(self.device)
+                for target in TARGETS
+            }
+        
+        if targets_data.ndim != 2 or targets_data.shape[1] < len(TARGETS):
+            raise ValueError(
+                "El tensor de targets debe tener forma [batch_size, 4] con todos los objetivos."
+            )
+        
+        return {
+            target: targets_data[:, idx].to(self.device)
+            for idx, target in enumerate(TARGETS)
+        }
+
+    def _batch_lists_to_arrays(
+        self,
+        batch_dict: TargetListDict,
+    ) -> TargetArrayDict:
+        return {
+            target: np.array(values, dtype=np.float32) if values else np.array([], dtype=np.float32)
+            for target, values in batch_dict.items()
+        }
+
+    def _denormalize_multi_head_results(
+        self,
+        predictions: TargetArrayDict,
+        targets: TargetArrayDict,
+    ) -> Tuple[TargetArrayDict, TargetArrayDict]:
+        try:
+            denorm_pred = self.scalers.inverse_transform(predictions)
+            denorm_targets = self.scalers.inverse_transform(targets)
+            logger.info("Predicciones desnormalizadas para modelo multi-head")
+            return denorm_pred, denorm_targets
+        except Exception as exc:
+            logger.warning(
+                f"Error desnormalizando modelo multi-head: {exc}",
+                exc_info=True
+            )
+            return predictions, targets
+
+    def _compute_multi_head_metrics(
+        self,
+        predictions: TargetArrayDict,
+        targets: TargetArrayDict,
+    ) -> TargetMetricsDict:
+        results: TargetMetricsDict = {}
+        
         for target in TARGETS:
-            predictions = all_predictions[target]
-            targets = all_targets[target]
+            target_preds = predictions[target]
+            target_values = targets[target]
             
-            # Asegurarse de que no estén vacíos
-            if len(targets) == 0 or len(predictions) == 0:
+            if target_preds.size == 0 or target_values.size == 0:
                 logger.warning(f"No hay datos para evaluar el target {target}")
                 continue
-
-            mae = mean_absolute_error(targets, predictions)
-            mse = mean_squared_error(targets, predictions)
-            rmse = np.sqrt(mse)
-            r2 = r2_score(targets, predictions)
             
-            # Calcular MAPE de forma segura (evitar división por cero)
-            non_zero_mask = targets != 0
+            mae = mean_absolute_error(target_values, target_preds)
+            mse = mean_squared_error(target_values, target_preds)
+            rmse = np.sqrt(mse)
+            r2 = r2_score(target_values, target_preds)
+            
+            non_zero_mask = target_values != 0
             if np.any(non_zero_mask):
-                mape = mean_absolute_percentage_error(targets[non_zero_mask], predictions[non_zero_mask]) * 100
-                relative_error = np.mean(np.abs((targets[non_zero_mask] - predictions[non_zero_mask]) / targets[non_zero_mask])) * 100
+                mape = mean_absolute_percentage_error(
+                    target_values[non_zero_mask],
+                    target_preds[non_zero_mask]
+                ) * 100
+                relative_error = np.mean(
+                    np.abs(
+                        (target_values[non_zero_mask] - target_preds[non_zero_mask]) /
+                        target_values[non_zero_mask]
+                    )
+                ) * 100
             else:
                 mape = 0.0
                 relative_error = 0.0
-
             
             results[target] = {
                 'mae': float(mae),
@@ -273,15 +335,12 @@ class RegressionEvaluator:
                 'r2': float(r2),
                 'mape': float(mape),
                 'relative_error': float(relative_error),
-                'n_samples': len(predictions)
+                'n_samples': int(target_preds.size)
             }
             
-            logger.info(f"{target}: MAE={mae:.4f}, RMSE={rmse:.4f}, R²={r2:.4f}")
-        
-        # Guardar predicciones y targets
-        self.predictions = all_predictions
-        self.targets = all_targets
-        self.results = results
+            logger.info(
+                f"{target}: MAE={mae:.4f}, RMSE={rmse:.4f}, R²={r2:.4f}"
+            )
         
         return results
     
@@ -508,38 +567,14 @@ def load_model_for_evaluation(
     # If weights_only is not available, fall back to loading state_dict only
     try:
         # Try to load with weights_only=True (safest method, PyTorch 2.1+)
-        checkpoint = torch.load(model_path, map_location=device, weights_only=True)  # NOSONAR: weights_only=True prevents code execution
-    except TypeError:
-        # Fallback for older PyTorch versions: load state_dict only
-        # This is safer than loading the full model object
-        logger.warning(
-            f"PyTorch version does not support weights_only=True. "
-            f"Attempting to load state_dict only from {model_path}"
-        )
-        try:
-            # Try to load as state_dict directly
-            checkpoint = torch.load(model_path, map_location=device)  # nosec B301
-            # If checkpoint is a dict with model_state_dict, use it
-            if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
-                checkpoint = checkpoint['model_state_dict']
-            # If checkpoint is already a state_dict, use it directly
-            elif isinstance(checkpoint, dict) and all(isinstance(k, str) for k in checkpoint.keys()):
-                # Likely a state_dict (all keys are strings)
-                pass
-            else:
-                # If checkpoint is the full model, extract state_dict
-                if hasattr(checkpoint, 'state_dict'):
-                    checkpoint = checkpoint.state_dict()
-                else:
-                    raise RuntimeError(
-                        f"Cannot safely load model from {model_path}. "
-                        "Checkpoint format not recognized. Expected state_dict or dict with 'model_state_dict'."
-                    )
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to load model from {model_path}: {e}. "
-                "Consider upgrading to PyTorch 2.1+ for safer model loading."
-            ) from e
+        # weights_only evita ejecución de código arbitrario en los checkpoints
+        checkpoint = torch.load(model_path, map_location=device, weights_only=True)  # NOSONAR
+    except TypeError as exc:
+        raise RuntimeError(
+            "La versión de PyTorch instalada no soporta weights_only=True. "
+            "Actualiza a PyTorch 2.1 o superior para permitir una carga segura "
+            f"de modelos (archivo: {model_path})."
+        ) from exc
     
     # Load state_dict into model
     if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:

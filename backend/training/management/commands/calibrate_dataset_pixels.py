@@ -81,16 +81,8 @@ class Command(BaseCommand):
             help="Backend para quitar fondo: 'ai' (U-Net/rembg) o 'opencv' (GrabCut)"
         )
 
-    def handle(self, *args, **options):
-        self.stdout.write(self.style.SUCCESS('🔧 Iniciando calibración del dataset basada en píxeles...'))
-        
-        output_dir = Path(options['output-dir'])
-        calibration_file = Path(options['calibration_file'])
-        # Usar directamente la carpeta de crops (cacao_images/crops/{id}.png)
-        processed_images_dir = get_crops_dir()
-        ensure_dir_exists(output_dir)
-        
-        # Preparar registros existentes si el archivo ya existe
+    def _load_existing_records(self, calibration_file):
+        """Load existing calibration records from file."""
         existing_records = {}
         if calibration_file.exists():
             try:
@@ -101,28 +93,21 @@ class Command(BaseCommand):
                 self.stdout.write(f'📚 Cargados {len(existing_records)} registros de calibración existentes')
             except Exception as e:
                 logger.warning(f'No se pudo cargar calibración existente: {e}')
-        
-        # Cargar dataset
-        try:
-            dataset_loader = CacaoDatasetLoader()
-            df = dataset_loader.load_dataset()
-            valid_df, _ = dataset_loader.validate_images_exist(df)
-            total_valid_images = len(valid_df)
-            self.stdout.write(f'📊 Dataset cargado: {total_valid_images} imágenes válidas')
-        except Exception as e:
-            raise CommandError(f'Error cargando dataset: {e}')
-        
-        calibration_data = []
-        processed_count = 0
-        skipped_count = 0
-        error_count = 0
-        
-        # --- USAR EL BACKEND DE SEGMENTACIÓN ---
-        seg_method = options['segmentation_backend']
+        return existing_records
+    
+    def _load_dataset(self):
+        """Load and validate dataset."""
+        dataset_loader = CacaoDatasetLoader()
+        df = dataset_loader.load_dataset()
+        valid_df, _ = dataset_loader.validate_images_exist(df)
+        self.stdout.write(f'📊 Dataset cargado: {len(valid_df)} imágenes válidas')
+        return dataset_loader, valid_df
+    
+    def _setup_segmentation_method(self, seg_method):
+        """Setup and display segmentation method info."""
         if seg_method == 'auto':
-            seg_method = 'ai' # 'auto' debe usar la cascada 'ai' (U-Net -> rembg)
+            seg_method = 'ai'
         
-        # Detectar y mostrar dispositivo (GPU/CPU) si se usa AI
         if seg_method == 'ai':
             try:
                 import torch
@@ -136,171 +121,190 @@ class Command(BaseCommand):
                 self.stdout.write("⚠️  PyTorch no disponible, usando CPU")
         
         self.stdout.write(f"📸 Backend de segmentación: {seg_method}")
-        
-        for idx, row in valid_df.iterrows():
-            if max_images and processed_count >= max_images:
-                break
-
-            image_id = int(row['id'])
-            record_info = valid_records_map.get(image_id)
-            if not record_info:
-                self.stdout.write(self.style.ERROR(f'  ❌ Registro {image_id} no encontrado en dataset_loader.get_valid_records()'))
-                error_count += 1
-                continue
-
-            image_path = Path(record_info['raw_image_path'])
-            if not image_path.exists():
-                self.stdout.write(self.style.WARNING(f'  [WARN] Imagen no encontrada: {image_path.name}'))
-                error_count += 1
-                continue
-            
-            # Verificar si ya está procesada (en carpeta de crops por ID)
-            processed_png_path = get_crop_image_path(image_id)
-            if options['skip_existing'] and processed_png_path.exists():
-                existing_record = existing_records.get(image_id)
-                if existing_record:
-                    calibration_data.append(existing_record)
-                    skipped_count += 1
-
-                    existing_processed_path = existing_records[image_id].get('processed_image_path')
-                    if existing_processed_path and not processed_png_path.exists():
-                        existing_processed_path = Path(existing_processed_path)
-                        if existing_processed_path.exists():
-                            ensure_dir_exists(processed_png_path.parent)
-                            try:
-                                shutil.copy2(existing_processed_path, processed_png_path)
-                            except Exception:
-                                pass
-                    continue
-
-                with Image.open(image_path) as original_image:
-                    original_pixels_total = original_image.width * original_image.height
-
-                confidence = 0.0
-                try:
-                    png_path_str = segment_and_crop_cacao_bean(str(image_path), method=seg_method)
-                    if not png_path_str:
-                        raise SegmentationError('Segmentación no devolvió ruta de imagen')
-                    crop_path = Path(png_path_str)
-                    if not crop_path.exists():
-                        from ml.segmentation.processor import SegmentationError
-                        raise SegmentationError(f"Imagen segmentada no encontrada: {crop_path}")
-                    
-                    # Cargar imagen segmentada (PNG con alpha)
-                    crop_image = Image.open(crop_path)
-                    # Guardar/actualizar PNG en carpeta de crops con nombre por ID
-                    processed_png_path = get_crop_image_path(image_id)
+        return seg_method
+    
+    def _handle_existing_image(self, image_id, existing_records, processed_png_path):
+        """Handle case when image is already processed."""
+        existing_record = existing_records.get(image_id)
+        if existing_record:
+            existing_processed_path = existing_record.get('processed_image_path')
+            if existing_processed_path and not processed_png_path.exists():
+                existing_processed_path = Path(existing_processed_path)
+                if existing_processed_path.exists():
                     ensure_dir_exists(processed_png_path.parent)
-                    crop_image.save(processed_png_path)
-                    confidence = 0.95  # Alta confianza si segment_and_crop_cacao_bean funcionó
-                    
-                except Exception as seg_error:
-                    # Fallback: usar cropper directamente si segment_and_crop_cacao_bean falla
-                    self.stdout.write(self.style.WARNING(f'  [WARN] Fallback a cropper para {image_id}: {seg_error}'))
-                    
-                    from ml.segmentation.cropper import create_cacao_cropper
-                    cropper = create_cacao_cropper()
-                    crop_result = cropper.process_image(
-                        image_path,
-                        image_id=image_id,
-                        force_process=True
-                    )
-                    
-                    if not crop_result.get('success', False):
-                        from ml.segmentation.processor import SegmentationError
-                        raise SegmentationError(f"Segmentación falló: {crop_result.get('error', 'Error desconocido')}")
-                    
-                    crop_path_str = crop_result.get('crop_path')
-                    if not crop_path_str:
-                        from ml.segmentation.processor import SegmentationError
-                        raise SegmentationError("No se obtuvo ruta de imagen segmentada")
-                    
-                    crop_path = Path(crop_path_str)
-                    if not crop_path.exists():
-                        from ml.segmentation.processor import SegmentationError
-                        raise SegmentationError(f"Imagen segmentada no encontrada: {crop_path}")
-                    
-                    crop_image = Image.open(crop_path)
-                    # El cropper ya guarda en cacao_images/crops/{id}.png, pero
-                    # aseguramos processed_png_path apuntando allí
-                    processed_png_path = get_crop_image_path(image_id)
-                    confidence = crop_result.get('confidence', 0.0)
-            
-            if crop_image is None:
-                from ml.segmentation.processor import SegmentationError
-                raise SegmentationError("No se pudo segmentar la imagen")
-            
-            # Medir píxeles del grano (sin fondo)
-            crop_array = np.array(crop_image)
-            if crop_array.shape[2] == 4:  # RGBA
-                alpha = crop_array[:, :, 3]
-                mask = (alpha > 128).astype(np.uint8)
-            else:
-                mask = np.ones(crop_array.shape[:2], dtype=np.uint8) * 255
-            
-            grain_area_pixels = int(np.sum(mask > 0))
-            
-            y_coords, x_coords = np.nonzero(mask > 0)
-            if len(x_coords) > 0:
-                width_pixels = int(x_coords.max() - x_coords.min() + 1)
-                height_pixels = int(y_coords.max() - y_coords.min() + 1)
-            else:
-                width_pixels = crop_image.width
-                height_pixels = crop_image.height
-            
-            # Datos reales del CSV
-            alto_real = float(row['alto'])
-            ancho_real = float(row['ancho'])
-            grosor_real = float(row['grosor'])
-            peso_real = float(row['peso'])
-            
-            # Calcular factores de escala (píxeles → mm)
-            scale_factor_alto = alto_real / height_pixels if height_pixels > 0 else 0
-            scale_factor_ancho = ancho_real / width_pixels if width_pixels > 0 else 0
-            scale_factor_promedio = (scale_factor_alto + scale_factor_ancho) / 2 if (height_pixels > 0 and width_pixels > 0) else 0
-            
-            background_pixels = original_pixels_total - grain_area_pixels
-            background_ratio = background_pixels / original_pixels_total if original_pixels_total > 0 else 0
-            
-            # Crear registro de calibración
-            calibration_record = {
-                'id': image_id,
-                'filename': image_path.name,
-                'original_image_path': str(image_path),
-                'processed_image_path': str(processed_png_path),
-                'real_dimensions': {
-                    'alto_mm': alto_real,
-                    'ancho_mm': ancho_real,
-                    'grosor_mm': grosor_real,
-                    'peso_g': peso_real
-                },
-                'pixel_measurements': {
-                    'grain_area_pixels': grain_area_pixels,
-                    'width_pixels': width_pixels,
-                    'height_pixels': height_pixels,
-                    'bbox_area_pixels': width_pixels * height_pixels,
-                    'aspect_ratio': width_pixels / height_pixels if height_pixels > 0 else 0
-                },
-                'background_info': {
-                    'original_total_pixels': original_pixels_total,
-                    'background_pixels': background_pixels,
-                    'background_ratio': float(background_ratio)
-                },
-                'scale_factors': {
-                    'alto_mm_per_pixel': float(scale_factor_alto),
-                    'ancho_mm_per_pixel': float(scale_factor_ancho),
-                    'average_mm_per_pixel': float(scale_factor_promedio)
-                },
-                'segmentation_confidence': float(confidence)
-            }
-            
-            calibration_data.append(calibration_record)
-            processed_count += 1
-            
-            if processed_count % 10 == 0:
-                self.stdout.write(f'  ✅ Procesadas: {processed_count} imágenes...')
+                    try:
+                        shutil.copy2(existing_processed_path, processed_png_path)
+                    except Exception:
+                        pass
+            return existing_record
+        return None
+    
+    def _segment_image_primary(self, image_path, seg_method, image_id):
+        """Primary segmentation method using segment_and_crop_cacao_bean."""
+        png_path_str = segment_and_crop_cacao_bean(str(image_path), method=seg_method)
+        if not png_path_str:
+            raise SegmentationError('Segmentación no devolvió ruta de imagen')
         
-        # Guardar archivo de calibración
+        crop_path = Path(png_path_str)
+        if not crop_path.exists():
+            raise SegmentationError(f"Imagen segmentada no encontrada: {crop_path}")
+        
+        crop_image = Image.open(crop_path)
+        processed_png_path = get_crop_image_path(image_id)
+        ensure_dir_exists(processed_png_path.parent)
+        crop_image.save(processed_png_path)
+        
+        return crop_image, processed_png_path, 0.95
+    
+    def _segment_image_fallback(self, image_path, image_id):
+        """Fallback segmentation method using cropper."""
+        from ml.segmentation.cropper import create_cacao_cropper
+        cropper = create_cacao_cropper()
+        crop_result = cropper.process_image(
+            image_path,
+            image_id=image_id,
+            force_process=True
+        )
+        
+        if not crop_result.get('success', False):
+            raise SegmentationError(f"Segmentación falló: {crop_result.get('error', 'Error desconocido')}")
+        
+        crop_path_str = crop_result.get('crop_path')
+        if not crop_path_str:
+            raise SegmentationError("No se obtuvo ruta de imagen segmentada")
+        
+        crop_path = Path(crop_path_str)
+        if not crop_path.exists():
+            raise SegmentationError(f"Imagen segmentada no encontrada: {crop_path}")
+        
+        crop_image = Image.open(crop_path)
+        processed_png_path = get_crop_image_path(image_id)
+        confidence = crop_result.get('confidence', 0.0)
+        
+        return crop_image, processed_png_path, confidence
+    
+    def _segment_image(self, image_path, seg_method, image_id):
+        """Segment image using primary or fallback method."""
+        try:
+            return self._segment_image_primary(image_path, seg_method, image_id)
+        except Exception as seg_error:
+            self.stdout.write(self.style.WARNING(f'  [WARN] Fallback a cropper para {image_id}: {seg_error}'))
+            return self._segment_image_fallback(image_path, image_id)
+    
+    def _measure_pixels(self, crop_image, original_pixels_total):
+        """Measure pixel dimensions from segmented image."""
+        crop_array = np.array(crop_image)
+        if crop_array.shape[2] == 4:  # RGBA
+            alpha = crop_array[:, :, 3]
+            mask = (alpha > 128).astype(np.uint8)
+        else:
+            mask = np.ones(crop_array.shape[:2], dtype=np.uint8) * 255
+        
+        grain_area_pixels = int(np.sum(mask > 0))
+        
+        y_coords, x_coords = np.nonzero(mask > 0)
+        if len(x_coords) > 0:
+            width_pixels = int(x_coords.max() - x_coords.min() + 1)
+            height_pixels = int(y_coords.max() - y_coords.min() + 1)
+        else:
+            width_pixels = crop_image.width
+            height_pixels = crop_image.height
+        
+        background_pixels = original_pixels_total - grain_area_pixels
+        background_ratio = background_pixels / original_pixels_total if original_pixels_total > 0 else 0
+        
+        return {
+            'grain_area_pixels': grain_area_pixels,
+            'width_pixels': width_pixels,
+            'height_pixels': height_pixels,
+            'background_pixels': background_pixels,
+            'background_ratio': background_ratio
+        }
+    
+    def _calculate_scale_factors(self, pixel_measurements, real_dimensions):
+        """Calculate scale factors from pixels to millimeters."""
+        height_pixels = pixel_measurements['height_pixels']
+        width_pixels = pixel_measurements['width_pixels']
+        alto_real = real_dimensions['alto']
+        ancho_real = real_dimensions['ancho']
+        
+        scale_factor_alto = alto_real / height_pixels if height_pixels > 0 else 0
+        scale_factor_ancho = ancho_real / width_pixels if width_pixels > 0 else 0
+        scale_factor_promedio = (scale_factor_alto + scale_factor_ancho) / 2 if (height_pixels > 0 and width_pixels > 0) else 0
+        
+        return {
+            'alto_mm_per_pixel': float(scale_factor_alto),
+            'ancho_mm_per_pixel': float(scale_factor_ancho),
+            'average_mm_per_pixel': float(scale_factor_promedio)
+        }
+    
+    def _create_calibration_record(self, image_id, image_path, processed_png_path, pixel_measurements, 
+                                   real_dimensions, scale_factors, original_pixels_total, confidence):
+        """Create calibration record dictionary."""
+        return {
+            'id': image_id,
+            'filename': image_path.name,
+            'original_image_path': str(image_path),
+            'processed_image_path': str(processed_png_path),
+            'real_dimensions': {
+                'alto_mm': real_dimensions['alto'],
+                'ancho_mm': real_dimensions['ancho'],
+                'grosor_mm': real_dimensions['grosor'],
+                'peso_g': real_dimensions['peso']
+            },
+            'pixel_measurements': {
+                'grain_area_pixels': pixel_measurements['grain_area_pixels'],
+                'width_pixels': pixel_measurements['width_pixels'],
+                'height_pixels': pixel_measurements['height_pixels'],
+                'bbox_area_pixels': pixel_measurements['width_pixels'] * pixel_measurements['height_pixels'],
+                'aspect_ratio': pixel_measurements['width_pixels'] / pixel_measurements['height_pixels'] if pixel_measurements['height_pixels'] > 0 else 0
+            },
+            'background_info': {
+                'original_total_pixels': original_pixels_total,
+                'background_pixels': pixel_measurements['background_pixels'],
+                'background_ratio': float(pixel_measurements['background_ratio'])
+            },
+            'scale_factors': scale_factors,
+            'segmentation_confidence': float(confidence)
+        }
+    
+    def _process_single_image(self, image_id, image_path, row, seg_method, existing_records, options):
+        """Process a single image and return calibration record."""
+        processed_png_path = get_crop_image_path(image_id)
+        
+        if options['skip_existing'] and processed_png_path.exists():
+            existing_record = self._handle_existing_image(image_id, existing_records, processed_png_path)
+            if existing_record:
+                return existing_record, True
+        
+        with Image.open(image_path) as original_image:
+            original_pixels_total = original_image.width * original_image.height
+        
+        crop_image, processed_png_path, confidence = self._segment_image(image_path, seg_method, image_id)
+        
+        if crop_image is None:
+            raise SegmentationError("No se pudo segmentar la imagen")
+        
+        pixel_measurements = self._measure_pixels(crop_image, original_pixels_total)
+        
+        real_dimensions = {
+            'alto': float(row['alto']),
+            'ancho': float(row['ancho']),
+            'grosor': float(row['grosor']),
+            'peso': float(row['peso'])
+        }
+        
+        scale_factors = self._calculate_scale_factors(pixel_measurements, real_dimensions)
+        
+        calibration_record = self._create_calibration_record(
+            image_id, image_path, processed_png_path, pixel_measurements,
+            real_dimensions, scale_factors, original_pixels_total, confidence
+        )
+        
+        return calibration_record, False
+    
+    def _save_calibration_file(self, calibration_file, calibration_data, processed_count, skipped_count, error_count):
+        """Save calibration data to JSON file."""
         calibration_dict = {
             'total_images': len(calibration_data),
             'processed_count': processed_count,
@@ -314,6 +318,11 @@ class Command(BaseCommand):
         with open(calibration_file, 'w', encoding='utf-8') as f:
             json.dump(calibration_dict, f, indent=2, ensure_ascii=False)
         
+        return calibration_dict
+    
+    def _print_summary(self, calibration_data, processed_count, skipped_count, error_count, 
+                       calibration_file, processed_images_dir, valid_df, max_images):
+        """Print calibration summary and statistics."""
         self.stdout.write(self.style.SUCCESS('\n✅ Calibración completada!'))
         self.stdout.write(f'   📊 Total registros en JSON: {len(calibration_data)}')
         self.stdout.write(f'   ✨ Nuevas procesadas: {processed_count}')
@@ -329,8 +338,7 @@ class Command(BaseCommand):
                 f'⚠️ Calibración interrumpida ({handled}/{expected}). Relanza con --skip-existing para continuar.'
             ))
         
-        # Mostrar estadísticas
-        stats = calibration_dict['statistics']
+        stats = self._calculate_calibration_statistics(calibration_data)
         self.stdout.write('\n📈 Estadísticas de calibración:')
         if stats and 'scale_factors' in stats and stats.get('scale_factors', {}).get('mean', 0) > 0:
             self.stdout.write(f'   Factor escala promedio: {stats["scale_factors"]["mean"]:.6f} mm/píxel')
@@ -339,76 +347,184 @@ class Command(BaseCommand):
         else:
             self.stdout.write('   Sin estadísticas (no se procesaron imágenes en esta ejecución o los datos son inválidos).')
     
-    def _calculate_calibration_statistics(self, calibration_data):
-        """Calcula estadísticas agregadas de la calibración."""
-        if not calibration_data:
-            return {}
+    def _validate_image_record(self, image_id, record_info, image_path):
+        """Validate image record and path."""
+        if not record_info:
+            self.stdout.write(self.style.ERROR(f'  ❌ Registro {image_id} no encontrado'))
+            return False
+        if not image_path.exists():
+            self.stdout.write(self.style.WARNING(f'  [WARN] Imagen no encontrada: {image_path.name}'))
+            return False
+        return True
+    
+    def _process_single_image_record(self, image_id, image_path, row, seg_method, existing_records, options):
+        """Process single image record and return result."""
+        try:
+            calibration_record, was_skipped = self._process_single_image(
+                image_id, image_path, row, seg_method, existing_records, options
+            )
+            return calibration_record, was_skipped, False
+        except Exception as e:
+            logger.error(f'Error procesando imagen {image_id}: {e}')
+            return None, False, True
+    
+    def _handle_processed_image(self, calibration_record, was_skipped, processed_count):
+        """Handle successfully processed image."""
+        if was_skipped:
+            return 0, 1, 0
         
-        # Factores de escala
+        new_count = processed_count + 1
+        if new_count % 10 == 0:
+            self.stdout.write(f'  ✅ Procesadas: {new_count} imágenes...')
+        return new_count, 0, 0
+    
+    def _process_single_row(self, row, valid_records_map, seg_method, existing_records, options):
+        """Process a single row from dataframe."""
+        image_id = int(row['id'])
+        record_info = valid_records_map.get(image_id)
+        if not record_info:
+            self.stdout.write(self.style.ERROR(f'  ❌ Registro {image_id} no encontrado'))
+            return None, None, True
+        
+        image_path = Path(record_info['raw_image_path'])
+        if not image_path.exists():
+            self.stdout.write(self.style.WARNING(f'  [WARN] Imagen no encontrada: {image_path.name}'))
+            return None, None, True
+        
+        calibration_record, was_skipped, had_error = self._process_single_image_record(
+            image_id, image_path, row, seg_method, existing_records, options
+        )
+        
+        if had_error:
+            return None, None, True
+        
+        return calibration_record, was_skipped, False
+    
+    def _process_images_loop(self, valid_df, valid_records_map, seg_method, existing_records, options, max_images):
+        """Process all images in the loop."""
+        calibration_data = []
+        processed_count = 0
+        skipped_count = 0
+        error_count = 0
+        
+        for idx, row in valid_df.iterrows():
+            if max_images and processed_count >= max_images:
+                break
+
+            calibration_record, was_skipped, had_error = self._process_single_row(
+                row, valid_records_map, seg_method, existing_records, options
+            )
+            
+            if had_error:
+                error_count += 1
+                continue
+            
+            calibration_data.append(calibration_record)
+            processed_count, skipped_inc, _ = self._handle_processed_image(
+                calibration_record, was_skipped, processed_count
+            )
+            skipped_count += skipped_inc
+        
+        return calibration_data, processed_count, skipped_count, error_count
+    
+    def handle(self, *args, **options):
+        """Main handler for calibration command."""
+        self.stdout.write(self.style.SUCCESS('🔧 Iniciando calibración del dataset basada en píxeles...'))
+        
+        output_dir = Path(options['output-dir'])
+        calibration_file = Path(options['calibration_file'])
+        processed_images_dir = get_crops_dir()
+        ensure_dir_exists(output_dir)
+        
+        existing_records = self._load_existing_records(calibration_file)
+        
+        try:
+            dataset_loader, valid_df = self._load_dataset()
+        except Exception as e:
+            raise CommandError(f'Error cargando dataset: {e}')
+        
+        max_images = options.get('max_images')
+        
+        try:
+            valid_records = dataset_loader.get_valid_records()
+            valid_records_map = {record['id']: record for record in valid_records}
+        except Exception as e:
+            raise CommandError(f'Error obteniendo registros válidos: {e}')
+        
+        seg_method = self._setup_segmentation_method(options['segmentation_backend'])
+        
+        calibration_data, processed_count, skipped_count, error_count = self._process_images_loop(
+            valid_df, valid_records_map, seg_method, existing_records, options, max_images
+        )
+        
+        self._save_calibration_file(
+            calibration_file, calibration_data, processed_count, skipped_count, error_count
+        )
+        
+        self._print_summary(
+            calibration_data, processed_count, skipped_count, error_count,
+            calibration_file, processed_images_dir, valid_df, max_images
+        )
+    
+    def _calculate_basic_stats(self, values, use_int_min_max=False):
+        """Calculate basic statistics for a list of values."""
+        if not values:
+            return {'mean': 0, 'std': 0, 'min': 0, 'max': 0}
+        
+        min_func = int if use_int_min_max else float
+        return {
+            'mean': float(np.mean(values)),
+            'std': float(np.std(values)),
+            'min': min_func(np.min(values)),
+            'max': min_func(np.max(values))
+        }
+    
+    def _calculate_scale_factor_stats(self, calibration_data):
+        """Calculate statistics for scale factors."""
         scale_factors = [
             record['scale_factors']['average_mm_per_pixel']
             for record in calibration_data
             if 'scale_factors' in record and record['scale_factors']['average_mm_per_pixel'] > 0
         ]
         
-        # Dimensiones en píxeles
+        if not scale_factors:
+            return {'mean': 0, 'std': 0, 'min': 0, 'max': 0, 'median': 0}
+        
+        stats = self._calculate_basic_stats(scale_factors)
+        stats['median'] = float(np.median(scale_factors))
+        return stats
+    
+    def _calculate_pixel_dimension_stats(self, calibration_data):
+        """Calculate statistics for pixel dimensions."""
         pixel_heights = [r['pixel_measurements']['height_pixels'] for r in calibration_data if 'pixel_measurements' in r]
         pixel_widths = [r['pixel_measurements']['width_pixels'] for r in calibration_data if 'pixel_measurements' in r]
         pixel_areas = [r['pixel_measurements']['grain_area_pixels'] for r in calibration_data if 'pixel_measurements' in r]
         
-        # Dimensiones reales
+        return {
+            'height': self._calculate_basic_stats(pixel_heights, use_int_min_max=True),
+            'width': self._calculate_basic_stats(pixel_widths, use_int_min_max=True),
+            'area': self._calculate_basic_stats(pixel_areas, use_int_min_max=True)
+        }
+    
+    def _calculate_real_dimension_stats(self, calibration_data):
+        """Calculate statistics for real dimensions."""
         real_heights = [r['real_dimensions']['alto_mm'] for r in calibration_data if 'real_dimensions' in r]
         real_widths = [r['real_dimensions']['ancho_mm'] for r in calibration_data if 'real_dimensions' in r]
         real_weights = [r['real_dimensions']['peso_g'] for r in calibration_data if 'real_dimensions' in r]
         
-        stats = {
-            'scale_factors': {
-                'mean': float(np.mean(scale_factors)) if scale_factors else 0,
-                'std': float(np.std(scale_factors)) if scale_factors else 0,
-                'min': float(np.min(scale_factors)) if scale_factors else 0,
-                'max': float(np.max(scale_factors)) if scale_factors else 0,
-                'median': float(np.median(scale_factors)) if scale_factors else 0
-            },
-            'pixel_dimensions': {
-                'height': {
-                    'mean': float(np.mean(pixel_heights)) if pixel_heights else 0,
-                    'std': float(np.std(pixel_heights)) if pixel_heights else 0,
-                    'min': int(np.min(pixel_heights)) if pixel_heights else 0,
-                    'max': int(np.max(pixel_heights)) if pixel_heights else 0
-                },
-                'width': {
-                    'mean': float(np.mean(pixel_widths)) if pixel_widths else 0,
-                    'std': float(np.std(pixel_widths)) if pixel_widths else 0,
-                    'min': int(np.min(pixel_widths)) if pixel_widths else 0,
-                    'max': int(np.max(pixel_widths)) if pixel_widths else 0
-                },
-                'area': {
-                    'mean': float(np.mean(pixel_areas)) if pixel_areas else 0,
-                    'std': float(np.std(pixel_areas)) if pixel_areas else 0,
-                    'min': int(np.min(pixel_areas)) if pixel_areas else 0,
-                    'max': int(np.max(pixel_areas)) if pixel_areas else 0
-                }
-            },
-            'real_dimensions': {
-                'alto': {
-                    'mean': float(np.mean(real_heights)) if real_heights else 0,
-                    'std': float(np.std(real_heights)) if real_heights else 0,
-                    'min': float(np.min(real_heights)) if real_heights else 0,
-                    'max': float(np.max(real_heights)) if real_heights else 0
-                },
-                'ancho': {
-                    'mean': float(np.mean(real_widths)) if real_widths else 0,
-                    'std': float(np.std(real_widths)) if real_widths else 0,
-                    'min': float(np.min(real_widths)) if real_widths else 0,
-                    'max': float(np.max(real_widths)) if real_widths else 0
-                },
-                'peso': {
-                    'mean': float(np.mean(real_weights)) if real_weights else 0,
-                    'std': float(np.std(real_weights)) if real_weights else 0,
-                    'min': float(np.min(real_weights)) if real_weights else 0,
-                    'max': float(np.max(real_weights)) if real_weights else 0
-                }
-            }
+        return {
+            'alto': self._calculate_basic_stats(real_heights),
+            'ancho': self._calculate_basic_stats(real_widths),
+            'peso': self._calculate_basic_stats(real_weights)
         }
+    
+    def _calculate_calibration_statistics(self, calibration_data):
+        """Calcula estadísticas agregadas de la calibración."""
+        if not calibration_data:
+            return {}
         
-        return stats
+        return {
+            'scale_factors': self._calculate_scale_factor_stats(calibration_data),
+            'pixel_dimensions': self._calculate_pixel_dimension_stats(calibration_data),
+            'real_dimensions': self._calculate_real_dimension_stats(calibration_data)
+        }

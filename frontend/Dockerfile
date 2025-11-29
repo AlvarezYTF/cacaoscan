@@ -14,7 +14,7 @@ COPY pnpm-lock.yaml ./
 # Instalar pnpm y dependencias
 # S6505: Use --ignore-scripts to prevent execution of arbitrary shell scripts
 # during package installation (e.g., postinstall hooks from malicious packages).
-RUN npm install -g pnpm && \
+RUN npm install -g pnpm --ignore-scripts && \
     pnpm install --frozen-lockfile --ignore-scripts || pnpm install --ignore-scripts
 
 # Copiar únicamente los archivos necesarios para el build (evita copiar

@@ -10,7 +10,7 @@ import signal
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from pathlib import Path
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Dict, Union, NamedTuple, Mapping, Callable, cast
 
 # Asegurar que el path del proyecto esté configurado para ml
 import sys
@@ -24,6 +24,31 @@ from ml.utils.paths import get_raw_images_dir, get_regressors_artifacts_dir
 
 logger = get_ml_logger("cacaoscan.ml.commands")
 
+TrainingOptionValue = Union[bool, int, float, str, None]
+TrainingOptions = Dict[str, TrainingOptionValue]
+TrainingConfigValue = Union[bool, int, float, str, List[str]]
+TrainingConfig = Dict[str, TrainingConfigValue]
+MetricValues = Mapping[str, float]
+TargetMetrics = Mapping[str, MetricValues]
+ResultPayload = Mapping[str, object]
+METRIC_TARGETS: tuple[str, ...] = ('alto', 'ancho', 'grosor', 'peso')
+
+
+class TrainingFlags(NamedTuple):
+    use_hybrid: bool
+    use_hybrid_v2: bool
+    train_separate_dimensions: bool
+    base_pixel_features: bool
+    is_optimized_hybrid: bool
+
+
+class HyperParams(NamedTuple):
+    epochs: int
+    learning_rate: float
+    patience: int
+    dropout: float
+    loss: str
+    scheduler: str
 
 class Command(BaseCommand):
     help = 'Entrena modelos de regresión para dimensiones y peso de granos de cacao'
@@ -219,109 +244,131 @@ class Command(BaseCommand):
             logger.error(f"Error fatal durante el entrenamiento: {e}\n{traceback.format_exc()}")
             raise CommandError(f"Error durante el entrenamiento: {e}")
     
-    def _create_config(self, options: dict) -> dict:
+    def _create_config(self, options: TrainingOptions) -> TrainingConfig:
         """Crea la configuración del entrenamiento."""
-        
-        use_hybrid = options.get('hybrid', False) or options.get('model_type') == 'hybrid'
-        use_hybrid_v2 = options.get('hybrid_v2', False)
-        train_separate_dimensions = options.get('train_separate_dimensions', False)
-        use_pixel_features = options.get('use_pixel_features', True)
-        
-        # Detectar si se está usando la configuración optimizada (--hybrid --use-pixel-features)
-        is_optimized_hybrid = use_hybrid and use_pixel_features and not use_hybrid_v2
-        
+        flags = self._resolve_training_flags(options)
+        num_workers = self._determine_num_workers(int(options['num_workers']))
+        hyperparams = self._resolve_hyperparams(options, flags)
+        base_config = self._build_base_config(options, flags, num_workers, hyperparams)
+        return self._apply_test_mode(base_config, bool(options.get('test_mode')))
+
+    def _resolve_training_flags(self, options: TrainingOptions) -> TrainingFlags:
+        use_hybrid = bool(options.get('hybrid')) or options.get('model_type') == 'hybrid'
+        use_hybrid_v2 = bool(options.get('hybrid_v2'))
+        train_separate_dimensions = bool(options.get('train_separate_dimensions'))
+        base_pixel_features = bool(options.get('use_pixel_features', True))
+        is_optimized_hybrid = use_hybrid and base_pixel_features and not use_hybrid_v2
+        return TrainingFlags(
+            use_hybrid=use_hybrid,
+            use_hybrid_v2=use_hybrid_v2,
+            train_separate_dimensions=train_separate_dimensions,
+            base_pixel_features=base_pixel_features,
+            is_optimized_hybrid=is_optimized_hybrid
+        )
+
+    def _determine_num_workers(self, requested_workers: int) -> int:
         is_windows = platform.system() == 'Windows'
-        num_workers = options['num_workers']
-        if is_windows and num_workers > 0:
-            logger.warning("Windows detectado: Se usará --num-workers 0 para evitar problemas de multiprocessing.")
-            num_workers = 0
+        if is_windows and requested_workers > 0:
+            logger.warning("Windows detectado: Forzando num_workers=0 para evitar fallos de multiprocessing.")
+            return 0
+        if requested_workers != 0:
+            logger.warning("Forzando num_workers=0 para evitar errores de shared memory en DataLoader.")
+            return 0
+        return requested_workers
 
-        # En contenedores Docker es frecuente quedarse sin memoria compartida (shm)
-        # al usar múltiples workers del DataLoader. Forzamos 0 workers salvo que
-        # el usuario lo haya fijado explícitamente en 0.
-        if num_workers != 0:
-            logger.warning(
-                "Forzando num_workers=0 para evitar errores de shared memory en DataLoader."
+    def _resolve_hyperparams(self, options: TrainingOptions, flags: TrainingFlags) -> HyperParams:
+        base = HyperParams(
+            epochs=int(options['epochs']),
+            learning_rate=float(options['learning_rate']),
+            patience=int(options['early_stopping_patience']),
+            dropout=float(options['dropout_rate']),
+            loss=str(options.get('loss_type', 'smooth_l1')),
+            scheduler=str(options.get('scheduler_type', 'cosine_warmup'))
+        )
+        if not flags.is_optimized_hybrid:
+            return base
+
+        optimized = HyperParams(
+            epochs=base.epochs if base.epochs != 50 else 100,
+            learning_rate=base.learning_rate if abs(base.learning_rate - 1e-4) >= 1e-6 else 5e-5,
+            patience=base.patience if base.patience != 15 else 25,
+            dropout=base.dropout if abs(base.dropout - 0.25) >= 1e-6 else 0.3,
+            loss='huber',
+            scheduler='cosine_warmup'
+        )
+        self._notify_optimized_settings(base, optimized)
+        return optimized
+
+    def _notify_optimized_settings(self, base: HyperParams, optimized: HyperParams) -> None:
+        if base == optimized:
+            return
+        self.stdout.write(
+            self.style.SUCCESS(
+                "✅ Configuración optimizada detectada (--hybrid --use-pixel-features)\n"
+                "   Aplicando valores optimizados automáticamente:\n"
+                f"   - Épocas: {optimized.epochs}\n"
+                f"   - Learning Rate: {optimized.learning_rate}\n"
+                f"   - Early Stopping Patience: {optimized.patience}\n"
+                f"   - Dropout: {optimized.dropout}\n"
+                f"   - Loss: {optimized.loss}\n"
+                f"   - Scheduler: {optimized.scheduler}"
             )
-            num_workers = 0
+        )
 
-        # Si se usa --hybrid --use-pixel-features, aplicar configuración optimizada automáticamente
-        if is_optimized_hybrid:
-            # Aplicar valores optimizados solo si el usuario no los especificó explícitamente
-            optimized_epochs = options['epochs'] if options['epochs'] != 50 else 100
-            optimized_lr = options['learning_rate'] if abs(options['learning_rate'] - 1e-4) >= 1e-6 else 5e-5
-            optimized_patience = options['early_stopping_patience'] if options['early_stopping_patience'] != 15 else 25
-            optimized_dropout = options['dropout_rate'] if abs(options['dropout_rate'] - 0.25) >= 1e-6 else 0.3
-            optimized_loss = options.get('loss_type', 'huber') if 'loss_type' in options else 'huber'
-            optimized_scheduler = options.get('scheduler_type', 'cosine_warmup') if 'scheduler_type' in options else 'cosine_warmup'
-            
-            # Mostrar mensaje informativo
-            if optimized_epochs == 100 or abs(optimized_lr - 5e-5) < 1e-6 or optimized_patience == 25:
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        "✅ Configuración optimizada detectada (--hybrid --use-pixel-features)\n"
-                        "   Aplicando valores optimizados automáticamente:\n"
-                        f"   - Épocas: {optimized_epochs}\n"
-                        f"   - Learning Rate: {optimized_lr}\n"
-                        f"   - Early Stopping Patience: {optimized_patience}\n"
-                        f"   - Dropout: {optimized_dropout}\n"
-                        f"   - Loss: {optimized_loss}\n"
-                        f"   - Scheduler: {optimized_scheduler}"
-                    )
-                )
-        else:
-            # Valores normales si no es configuración optimizada
-            optimized_epochs = options['epochs']
-            optimized_lr = options['learning_rate']
-            optimized_patience = options['early_stopping_patience']
-            optimized_dropout = options['dropout_rate']
-            optimized_loss = options.get('loss_type', 'smooth_l1')
-            optimized_scheduler = options.get('scheduler_type', 'cosine_warmup')
-
-        config = {
-            'multi_head': options['multihead'] or use_hybrid or use_hybrid_v2,
-            'model_type': 'hybrid' if (use_hybrid or use_hybrid_v2) else options['model_type'],
-            'hybrid': use_hybrid,
-            'hybrid_v2': use_hybrid_v2,
-            'use_pixel_features': use_pixel_features and (use_hybrid or use_hybrid_v2 or train_separate_dimensions),
-            'train_separate_dimensions': train_separate_dimensions,  # Nuevo flag
-            'epochs': optimized_epochs,
-            'batch_size': options['batch_size'],
-            'img_size': options['img_size'],
-            'learning_rate': optimized_lr,
+    def _build_base_config(
+        self,
+        options: TrainingOptions,
+        flags: TrainingFlags,
+        num_workers: int,
+        hyperparams: HyperParams
+    ) -> TrainingConfig:
+        use_pixel_features = flags.base_pixel_features and (
+            flags.use_hybrid or flags.use_hybrid_v2 or flags.train_separate_dimensions
+        )
+        return {
+            'multi_head': bool(options.get('multihead')) or flags.use_hybrid or flags.use_hybrid_v2,
+            'model_type': 'hybrid' if (flags.use_hybrid or flags.use_hybrid_v2) else options.get('model_type'),
+            'hybrid': flags.use_hybrid,
+            'hybrid_v2': flags.use_hybrid_v2,
+            'use_pixel_features': use_pixel_features,
+            'train_separate_dimensions': flags.train_separate_dimensions,
+            'epochs': hyperparams.epochs,
+            'batch_size': int(options['batch_size']),
+            'img_size': int(options['img_size']),
+            'learning_rate': hyperparams.learning_rate,
             'num_workers': num_workers,
-            'early_stopping_patience': optimized_patience,
-            'dropout_rate': optimized_dropout,
-            'use_raw_images': options.get('use_raw_images', False),
-            'segmentation_backend': options.get('segmentation_backend', 'auto'), # <-- AÑADIR
+            'early_stopping_patience': hyperparams.patience,
+            'dropout_rate': hyperparams.dropout,
+            'use_raw_images': bool(options.get('use_raw_images', False)),
+            'segmentation_backend': options.get('segmentation_backend', 'auto'),
             'pretrained': True,
             'weight_decay': 1e-4,
-            'min_lr': 1e-7,  # Reducido para mejor fine-tuning
-            'loss_type': optimized_loss,
-            'scheduler_type': optimized_scheduler,
-            'max_grad_norm': options.get('max_grad_norm', 1.0),
-            'use_mixed_precision': options.get('use_mixed_precision', False),
-            'targets': self._parse_targets(options['targets']),
-            'warmup_epochs': self._get_warmup_epochs(options, is_optimized_hybrid)
+            'min_lr': 1e-7,
+            'loss_type': hyperparams.loss,
+            'scheduler_type': hyperparams.scheduler,
+            'max_grad_norm': float(options.get('max_grad_norm', 1.0)),
+            'use_mixed_precision': bool(options.get('use_mixed_precision', False)),
+            'targets': self._parse_targets(str(options['targets'])),
+            'warmup_epochs': self._get_warmup_epochs(options, flags.is_optimized_hybrid)
         }
-        
-        if options['test_mode']:
-            config.update({
-                'epochs': min(config['epochs'], 5),
-                'batch_size': min(config['batch_size'], 16),
-                'early_stopping_patience': 3
-            })
-            self.stdout.write(
-                self.style.WARNING("Modo de prueba activado - configuración reducida")
-            )
-        
-        return config
+
+    def _apply_test_mode(self, config: TrainingConfig, enabled: bool) -> TrainingConfig:
+        if not enabled:
+            return config
+        reduced_config: TrainingConfig = dict(config)
+        reduced_config.update({
+            'epochs': min(config['epochs'], 5),
+            'batch_size': min(config['batch_size'], 16),
+            'early_stopping_patience': 3
+        })
+        self.stdout.write(self.style.WARNING("Modo de prueba activado - configuración reducida"))
+        return reduced_config
     
-    def _get_warmup_epochs(self, options: Dict, is_optimized_hybrid: bool) -> int:
+    def _get_warmup_epochs(self, options: TrainingOptions, is_optimized_hybrid: bool) -> int:
         """Get warmup epochs from options or use default based on model type."""
         warmup_epochs = options.get('warmup_epochs')
         if warmup_epochs is not None:
-            return warmup_epochs
+            return int(warmup_epochs)
         
         return 10 if is_optimized_hybrid else 5
     
@@ -339,7 +386,7 @@ class Command(BaseCommand):
         
         return targets
     
-    def _validate_config(self, config: dict) -> None:
+    def _validate_config(self, config: TrainingConfig) -> None:
         """Valida la configuración."""
         raw_dir = get_raw_images_dir()
         if not raw_dir.exists():
@@ -391,7 +438,7 @@ class Command(BaseCommand):
         if config['learning_rate'] <= 0:
             raise CommandError("Learning rate debe ser > 0")
     
-    def _display_config(self, config: dict) -> None:
+    def _display_config(self, config: TrainingConfig) -> None:
         """Muestra la configuración del entrenamiento."""
         self.stdout.write("\n" + "="*50)
         self.stdout.write("CONFIGURACIÓN DE ENTRENAMIENTO")
@@ -464,7 +511,7 @@ class Command(BaseCommand):
         except Exception as e:
             raise CommandError(f"Error validando datos: {e}")
     
-    def _display_results(self, results: dict, start_time: float) -> None:
+    def _display_results(self, results: ResultPayload, start_time: float) -> None:
         """Muestra los resultados del entrenamiento."""
         total_time = time.time() - start_time
         
@@ -474,46 +521,73 @@ class Command(BaseCommand):
         
         self.stdout.write(f"Tiempo total: {total_time:.2f} segundos")
         
-        if 'evaluation_results' in results:
-            eval_results = results['evaluation_results']
-            self.stdout.write("\nMétricas de evaluación:")
-            
-            if (results['config']['multi_head'] or results['config']['hybrid']) and 'multihead' in eval_results:
-                multihead_results = eval_results['multihead']
-                for target in ['alto', 'ancho', 'grosor', 'peso']:
-                    if target in multihead_results:
-                        metrics = multihead_results[target]
-                        self.stdout.write(
-                            f"  {target.upper()}: "
-                            f"MAE={metrics['mae']:.4f}, "
-                            f"RMSE={metrics['rmse']:.4f}, "
-                            f"R²={metrics['r2']:.4f}"
-                        )
-            else:
-                for target in ['alto', 'ancho', 'grosor', 'peso']:
-                    if target in eval_results:
-                        metrics = eval_results[target]
-                        self.stdout.write(
-                            f"  {target.upper()}: "
-                            f"MAE={metrics['mae']:.4f}, "
-                            f"RMSE={metrics['rmse']:.4f}, "
-                            f"R²={metrics['r2']:.4f}"
-                        )
-        
-        artifacts_dir = get_regressors_artifacts_dir()
-        self.stdout.write(f"\nModelos guardados en: {artifacts_dir}")
-        
-        if artifacts_dir.exists():
-            model_files = list(artifacts_dir.glob("*.pt"))
-            scaler_files = list(artifacts_dir.glob("*.pkl"))
-            
-            self.stdout.write(f"Archivos de modelo: {len(model_files)}")
-            self.stdout.write(f"Archivos de escaladores: {len(scaler_files)}")
+        self._print_evaluation_results(results)
+        self._print_artifact_summary()
         
         self.stdout.write("="*50)
         self.stdout.write(
             self.style.SUCCESS("¡Entrenamiento completado exitosamente!")
         )
+
+    def _print_evaluation_results(self, results: ResultPayload) -> None:
+        eval_results = results.get('evaluation_results')
+        if not isinstance(eval_results, Mapping):
+            return
+
+        self.stdout.write("\nMétricas de evaluación:")
+        config = results.get('config')
+        multihead_metrics = eval_results.get('multihead')
+
+        if self._should_use_multihead_metrics(config, multihead_metrics):
+            self._print_target_metrics(cast(TargetMetrics, multihead_metrics))
+            return
+
+        self._print_target_metrics(cast(TargetMetrics, eval_results))
+
+    def _should_use_multihead_metrics(
+        self,
+        config: object,
+        multihead_metrics: object
+    ) -> bool:
+        if not isinstance(config, Mapping):
+            return False
+
+        uses_multihead = bool(config.get('multi_head')) or bool(config.get('hybrid'))
+        return uses_multihead and isinstance(multihead_metrics, Mapping)
+
+    def _print_target_metrics(self, metrics_source: TargetMetrics) -> None:
+        for target in METRIC_TARGETS:
+            metrics = metrics_source.get(target)
+            if isinstance(metrics, Mapping):
+                self._print_single_target_metrics(target, metrics)
+
+    def _print_single_target_metrics(self, target: str, metrics: MetricValues) -> None:
+        mae = metrics.get('mae')
+        rmse = metrics.get('rmse')
+        r2_score = metrics.get('r2')
+
+        if mae is None or rmse is None or r2_score is None:
+            return
+
+        self.stdout.write(
+            f"  {target.upper()}: "
+            f"MAE={mae:.4f}, "
+            f"RMSE={rmse:.4f}, "
+            f"R²={r2_score:.4f}"
+        )
+
+    def _print_artifact_summary(self) -> None:
+        artifacts_dir = get_regressors_artifacts_dir()
+        self.stdout.write(f"\nModelos guardados en: {artifacts_dir}")
+
+        if not artifacts_dir.exists():
+            return
+
+        model_files = list(artifacts_dir.glob("*.pt"))
+        scaler_files = list(artifacts_dir.glob("*.pkl"))
+
+        self.stdout.write(f"Archivos de modelo: {len(model_files)}")
+        self.stdout.write(f"Archivos de escaladores: {len(scaler_files)}")
     
     def _display_results_v2(self, results: dict, start_time: float) -> None:
         """Muestra los resultados del entrenamiento v2."""
@@ -553,206 +627,213 @@ class Command(BaseCommand):
         """Ejecuta el entrenamiento usando Celery, iniciando servicios si es necesario."""
         try:
             from api.tasks import auto_train_model_task
-            from celery import current_app
-            import time as time_module
-            
-            self.stdout.write(
-                self.style.SUCCESS(
-                    "Iniciando entrenamiento con Celery (asíncrono)..."
-                )
-            )
-            
-            # Verificar y configurar Redis/Celery
-            celery_process = None
-            redis_started = False
-            
-            # Verificar si Redis está disponible
-            try:
-                if not self._check_redis_available():
-                    self.stdout.write(
-                        self.style.WARNING(
-                            "Redis no está disponible. Intentando iniciarlo..."
-                        )
-                    )
-                    redis_started = self._start_redis()
-                    if not redis_started:
-                        self.stdout.write(
-                            self.style.WARNING(
-                                "\n[ERROR] No se pudo iniciar Redis automáticamente."
-                            )
-                        )
-                        self.stdout.write(
-                            self.style.WARNING(
-                                "Ejecutando entrenamiento directo (sin Celery)..."
-                            )
-                        )
-                        # Cambiar a modo directo
-                        pipeline = CacaoTrainingPipeline(config)
-                        results = pipeline.run_pipeline(config['multi_head'])
-                        self._display_results(results, time_module.time())
-                        return
-                    
-                    # Esperar a que Redis esté listo
-                    self.stdout.write("Esperando a que Redis esté listo...")
-                    time_module.sleep(2)
-                    
-                    # Verificar nuevamente que Redis está disponible
-                    max_retries = 10
-                    for _ in range(max_retries):
-                        if self._check_redis_available():
-                            self.stdout.write(
-                                self.style.SUCCESS("Redis está disponible")
-                            )
-                            break
-                        time_module.sleep(1)
-                    else:
-                        self.stdout.write(
-                            self.style.WARNING(
-                                "\n[ERROR] Redis no está disponible después de intentar iniciarlo."
-                            )
-                        )
-                        self.stdout.write(
-                            self.style.WARNING(
-                                "Ejecutando entrenamiento directo (sin Celery)..."
-                            )
-                        )
-                        # Cambiar a modo directo
-                        pipeline = CacaoTrainingPipeline(config)
-                        results = pipeline.run_pipeline(config['multi_head'])
-                        self._display_results(results, time_module.time())
-                        return
-                
-                # Verificar si el worker de Celery está corriendo
-                if not self._check_celery_worker_running():
-                    self.stdout.write(
-                        self.style.WARNING(
-                            "Worker de Celery no está corriendo. Iniciándolo..."
-                        )
-                    )
-                    celery_process = self._start_celery_worker()
-                    if not celery_process:
-                        raise CommandError(
-                            "No se pudo iniciar el worker de Celery."
-                        )
-                    # Esperar a que el worker esté listo
-                    self.stdout.write("Esperando a que el worker de Celery esté listo...")
-                    import time as time_module
-                    time_module.sleep(5)  # Dar más tiempo al worker para iniciar
-                    
-                    # Verificar que el worker está corriendo
-                    max_retries = 10
-                    for _ in range(max_retries):
-                        if self._check_celery_worker_running():
-                            self.stdout.write(
-                                self.style.SUCCESS("Worker de Celery está corriendo")
-                            )
-                            break
-                        time_module.sleep(1)
-                    else:
-                        self.stdout.write(
-                            self.style.WARNING(
-                                "Worker de Celery iniciado pero aún no responde. "
-                                "Continuando..."
-                            )
-                        )
-                
-                # Preparar configuración para Celery
-                celery_config = {
-                    'epochs': config.get('epochs', 50),
-                    'batch_size': config.get('batch_size', 32),
-                    'learning_rate': config.get('learning_rate', 1e-5),  # REDUCIDO de 1e-4 a 1e-5
-                    'multi_head': config.get('multi_head', False),
-                    'model_type': config.get('model_type', 'resnet18'),
-                    'img_size': config.get('img_size', 224),
-                    'early_stopping_patience': config.get('early_stopping_patience', 10),
-                    'save_best_only': True
-                }
-                
-                # Verificar que Redis está disponible antes de enviar tarea
-                if not self._check_redis_available():
-                    self.stdout.write(
-                        self.style.WARNING(
-                            "\n[ERROR] Redis no está disponible. Cambiando a entrenamiento directo..."
-                        )
-                    )
-                    # Cambiar a modo directo
-                    pipeline = CacaoTrainingPipeline(config)
-                    results = pipeline.run_pipeline(config['multi_head'])
-                    self._display_results(results, time_module.time())
-                    return
-                
-                # Enviar tarea a Celery con configuración personalizada
-                task_result = auto_train_model_task.delay(force=False, config=celery_config)
-                
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"Tarea enviada a Celery. Task ID: {task_result.id}"
-                    )
-                )
-                self.stdout.write(
-                    "Puedes monitorear el progreso con: "
-                    f"celery -A cacaoscan inspect task {task_result.id}"
-                )
-                self.stdout.write(
-                    "\nEsperando resultado... (presiona Ctrl+C para salir sin esperar)"
-                )
-                
-                # Esperar resultado (bloqueante)
-                try:
-                    result = task_result.get(timeout=None)
-                    
-                    if result.get('status') == 'completed':
-                        self.stdout.write(
-                            self.style.SUCCESS(
-                                f"Entrenamiento completado: {result.get('message', 'OK')}"
-                            )
-                        )
-                    elif result.get('status') == 'skipped':
-                        self.stdout.write(
-                            self.style.WARNING(
-                                f"Entrenamiento omitido: {result.get('message', '')}"
-                            )
-                        )
-                    else:
-                        self.stdout.write(
-                            self.style.ERROR(
-                                f"Entrenamiento falló: {result.get('message', 'Error desconocido')}"
-                            )
-                        )
-                        if 'error' in result:
-                            self.stdout.write(f"Error: {result['error']}")
-                            
-                except KeyboardInterrupt:
-                    self.stdout.write(
-                        self.style.WARNING(
-                            "\nSaliendo... La tarea seguirá ejecutándose en Celery."
-                        )
-                    )
-                    self.stdout.write(
-                        "Para monitorear: celery -A cacaoscan inspect active"
-                    )
-                except Exception as e:
-                    raise CommandError(f"Error esperando resultado de Celery: {e}")
-                finally:
-                    # Limpiar procesos iniciados si es necesario
-                    if celery_process:
-                        self.stdout.write(
-                            self.style.WARNING(
-                                "\nCerrando worker de Celery iniciado automáticamente..."
-                            )
-                        )
-                        self._stop_celery_worker(celery_process)
-            except CommandError:
-                raise
-            except Exception as e:
-                raise CommandError(f"Error configurando Celery: {e}")
-                    
+            from celery import current_app  # noqa: F401  # Garantiza que Celery esté instalado
         except ImportError:
             raise CommandError(
                 "Celery no está disponible. Instala con: pip install celery"
             )
-        except Exception as e:
-            raise CommandError(f"Error ejecutando con Celery: {e}")
+        except Exception as exc:
+            raise CommandError(f"Error ejecutando con Celery: {exc}")
+        
+        self.stdout.write(
+            self.style.SUCCESS(
+                "Iniciando entrenamiento con Celery (asíncrono)..."
+            )
+        )
+        
+        celery_process: Optional[subprocess.Popen] = None
+        try:
+            if not self._prepare_redis_for_celery(config):
+                return
+            
+            celery_process = self._ensure_celery_worker_ready()
+            
+            celery_config = self._build_celery_task_config(config)
+            
+            if not self._check_redis_available():
+                self._fallback_to_direct_training(
+                    config,
+                    "\n[ERROR] Redis no está disponible. Cambiando a entrenamiento directo..."
+                )
+                return
+            
+            task_result = auto_train_model_task.delay(
+                force=False,
+                config=celery_config
+            )
+            
+            self._print_task_submission(task_result.id)
+            self._wait_for_task_result(task_result)
+        except CommandError:
+            raise
+        except Exception as exc:
+            raise CommandError(f"Error configurando Celery: {exc}")
+        finally:
+            if celery_process:
+                self.stdout.write(
+                    self.style.WARNING(
+                        "\nCerrando worker de Celery iniciado automáticamente..."
+                    )
+                )
+                self._stop_celery_worker(celery_process)
+
+    def _prepare_redis_for_celery(self, config: dict) -> bool:
+        """Garantiza que Redis esté disponible para Celery."""
+        if self._check_redis_available():
+            return True
+        
+        self.stdout.write(
+            self.style.WARNING(
+                "Redis no está disponible. Intentando iniciarlo..."
+            )
+        )
+        
+        if not self._start_redis():
+            self._fallback_to_direct_training(
+                config,
+                "\n[ERROR] No se pudo iniciar Redis automáticamente."
+            )
+            return False
+        
+        self.stdout.write("Esperando a que Redis esté listo...")
+        time.sleep(2)
+        
+        if self._wait_for_condition(self._check_redis_available, 10, 1.0):
+            self.stdout.write(self.style.SUCCESS("Redis está disponible"))
+            return True
+        
+        self._fallback_to_direct_training(
+            config,
+            "\n[ERROR] Redis no está disponible después de intentar iniciarlo."
+        )
+        return False
+
+    def _ensure_celery_worker_ready(self) -> Optional[subprocess.Popen]:
+        """Inicia un worker de Celery si no existe y espera a que esté listo."""
+        if self._check_celery_worker_running():
+            return None
+        
+        self.stdout.write(
+            self.style.WARNING(
+                "Worker de Celery no está corriendo. Iniciándolo..."
+            )
+        )
+        
+        process = self._start_celery_worker()
+        if not process:
+            raise CommandError("No se pudo iniciar el worker de Celery.")
+        
+        self.stdout.write("Esperando a que el worker de Celery esté listo...")
+        time.sleep(5)
+        
+        if self._wait_for_condition(self._check_celery_worker_running, 10, 1.0):
+            self.stdout.write(
+                self.style.SUCCESS("Worker de Celery está corriendo")
+            )
+        else:
+            self.stdout.write(
+                self.style.WARNING(
+                    "Worker de Celery iniciado pero aún no responde. Continuando..."
+                )
+            )
+        
+        return process
+
+    def _build_celery_task_config(self, config: Mapping[str, object]) -> Dict[str, object]:
+        """Construye la configuración que recibirá la tarea de Celery."""
+        return {
+            'epochs': config.get('epochs', 50),
+            'batch_size': config.get('batch_size', 32),
+            'learning_rate': config.get('learning_rate', 1e-5),
+            'multi_head': config.get('multi_head', False),
+            'model_type': config.get('model_type', 'resnet18'),
+            'img_size': config.get('img_size', 224),
+            'early_stopping_patience': config.get('early_stopping_patience', 10),
+            'save_best_only': True
+        }
+
+    def _print_task_submission(self, task_id: str) -> None:
+        """Informa que la tarea fue enviada a Celery."""
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Tarea enviada a Celery. Task ID: {task_id}"
+            )
+        )
+        self.stdout.write(
+            "Puedes monitorear el progreso con: "
+            f"celery -A cacaoscan inspect task {task_id}"
+        )
+        self.stdout.write(
+            "\nEsperando resultado... (presiona Ctrl+C para salir sin esperar)"
+        )
+
+    def _wait_for_task_result(self, task_result) -> None:
+        """Espera el resultado de la tarea Celery y muestra el estado."""
+        try:
+            result = task_result.get(timeout=None)
+            status = result.get('status')
+            message = result.get('message', '')
+            
+            if status == 'completed':
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"Entrenamiento completado: {message or 'OK'}"
+                    )
+                )
+            elif status == 'skipped':
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Entrenamiento omitido: {message}"
+                    )
+                )
+            else:
+                self.stdout.write(
+                    self.style.ERROR(
+                        f"Entrenamiento falló: {message or 'Error desconocido'}"
+                    )
+                )
+                if 'error' in result:
+                    self.stdout.write(f"Error: {result['error']}")
+        except KeyboardInterrupt:
+            self.stdout.write(
+                self.style.WARNING(
+                    "\nSaliendo... La tarea seguirá ejecutándose en Celery."
+                )
+            )
+            self.stdout.write(
+                "Para monitorear: celery -A cacaoscan inspect active"
+            )
+        except Exception as exc:
+            raise CommandError(f"Error esperando resultado de Celery: {exc}")
+
+    def _fallback_to_direct_training(self, config: dict, reason: str) -> None:
+        """Ejecuta el entrenamiento directo cuando Celery/Redis no están disponibles."""
+        self.stdout.write(self.style.WARNING(reason))
+        self.stdout.write(
+            self.style.WARNING(
+                "Ejecutando entrenamiento directo (sin Celery)..."
+            )
+        )
+        self._run_direct_training(config)
+
+    def _run_direct_training(self, config: dict) -> None:
+        """Ejecuta el pipeline de entrenamiento directamente."""
+        pipeline = CacaoTrainingPipeline(config)
+        results = pipeline.run_pipeline(config['multi_head'])
+        self._display_results(results, time.time())
+
+    def _wait_for_condition(
+        self,
+        condition: Callable[[], bool],
+        retries: int,
+        delay_seconds: float
+    ) -> bool:
+        """Espera hasta que se cumpla una condición o se agoten los reintentos."""
+        for _ in range(retries):
+            if condition():
+                return True
+            time.sleep(delay_seconds)
+        return False
     
     def _check_redis_available(self) -> bool:
         """Verifica si Redis está disponible."""
@@ -773,124 +854,143 @@ class Command(BaseCommand):
     def _start_redis(self) -> bool:
         """Intenta iniciar Redis."""
         try:
-            # Intentar usar Docker si está disponible
-            try:
-                # Verificar si el contenedor ya existe
-                check_result = subprocess.run(
-                    ['docker', 'ps', '-a', '--filter', 'name=redis-cacaoscan', '--format', '{{.Names}}'],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                
-                if check_result.returncode == 0 and 'redis-cacaoscan' in check_result.stdout:
-                    # Contenedor existe, intentar iniciarlo
-                    self.stdout.write("Iniciando contenedor Redis existente...")
-                    subprocess.run(
-                        ['docker', 'start', 'redis-cacaoscan'],
-                        capture_output=True,
-                        timeout=5
-                    )
-                    import time as time_module
-                    time_module.sleep(2)
-                    if self._check_redis_available():
-                        self.stdout.write(
-                            self.style.SUCCESS("Redis iniciado desde contenedor existente")
-                        )
-                        return True
-                
-                # Intentar crear nuevo contenedor
-                result = subprocess.run(
-                    ['docker', 'ps'],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                if result.returncode == 0:
-                    # Docker está disponible, intentar iniciar Redis en Docker
-                    self.stdout.write("Intentando iniciar Redis con Docker...")
-                    subprocess.run(
-                        ['docker', 'run', '-d', '-p', '6379:6379', '--name', 'redis-cacaoscan', 'redis'],
-                        capture_output=True,
-                        timeout=10
-                    )
-                    import time as time_module
-                    time_module.sleep(3)  # Esperar más tiempo
-                    if self._check_redis_available():
-                        self.stdout.write(
-                            self.style.SUCCESS("Redis iniciado con Docker")
-                        )
-                        return True
-            except (subprocess.TimeoutExpired, FileNotFoundError):
-                pass
-            
-            # Intentar iniciar redis-server directamente
-            if platform.system() == 'Windows':
-                redis_paths = [
-                    'redis-server.exe',
-                    r'C:\Program Files\Redis\redis-server.exe',
-                    r'C:\redis\redis-server.exe',
-                ]
-                # Intentar como servicio de Windows
-                try:
-                    result = subprocess.run(
-                        ['sc', 'query', 'Redis'],
-                        capture_output=True,
-                        timeout=2
-                    )
-                    if result.returncode == 0:
-                        # Servicio existe, intentar iniciarlo
-                        self.stdout.write("Intentando iniciar servicio Redis de Windows...")
-                        subprocess.run(
-                            ['sc', 'start', 'Redis'],
-                            capture_output=True,
-                            timeout=5
-                        )
-                        import time as time_module
-                        time_module.sleep(2)
-                        if self._check_redis_available():
-                            self.stdout.write(
-                                self.style.SUCCESS("Redis iniciado como servicio de Windows")
-                            )
-                            return True
-                except (subprocess.TimeoutExpired, FileNotFoundError):
-                    pass
-            else:
-                redis_paths = ['redis-server', '/usr/local/bin/redis-server', '/usr/bin/redis-server']
-            
-            for redis_path in redis_paths:
-                try:
-                    # En Windows, ejecutar en segundo plano sin mostrar ventana
-                    if platform.system() == 'Windows':
-                        subprocess.Popen(
-                            [redis_path],
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL,
-                            creationflags=subprocess.CREATE_NO_WINDOW
-                        )
-                    else:
-                        subprocess.Popen(
-                            [redis_path],
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL,
-                            start_new_session=True
-                        )
-                    import time as time_module
-                    time_module.sleep(3)  # Esperar más tiempo
-                    if self._check_redis_available():
-                        self.stdout.write(
-                            self.style.SUCCESS(f"Redis iniciado: {redis_path}")
-                        )
-                        return True
-                except OSError:
-                    continue
-            
-            return False
+            if self._start_redis_via_docker():
+                return True
+
+            is_windows = platform.system() == 'Windows'
+            if is_windows and self._start_redis_windows_service():
+                return True
+
+            redis_paths = self._collect_redis_paths(is_windows)
+            return self._start_redis_from_paths(redis_paths, is_windows)
         except OSError as e:
             self.stdout.write(
                 self.style.ERROR(f"No se pudo iniciar Redis: {e}")
             )
             return False
+
+    def _start_redis_via_docker(self) -> bool:
+        try:
+            if self._start_existing_docker_container():
+                return True
+            return self._run_new_docker_container()
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return False
+
+    def _start_existing_docker_container(self) -> bool:
+        check_result = subprocess.run(
+            ['docker', 'ps', '-a', '--filter', 'name=redis-cacaoscan', '--format', '{{.Names}}'],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        if check_result.returncode != 0 or 'redis-cacaoscan' not in check_result.stdout:
+            return False
+
+        self.stdout.write("Iniciando contenedor Redis existente...")
+        subprocess.run(
+            ['docker', 'start', 'redis-cacaoscan'],
+            capture_output=True,
+            timeout=5
+        )
+        time.sleep(2)
+
+        if self._check_redis_available():
+            self.stdout.write(
+                self.style.SUCCESS("Redis iniciado desde contenedor existente")
+            )
+            return True
+        return False
+
+    def _run_new_docker_container(self) -> bool:
+        result = subprocess.run(
+            ['docker', 'ps'],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        if result.returncode != 0:
+            return False
+
+        self.stdout.write("Intentando iniciar Redis con Docker...")
+        subprocess.run(
+            ['docker', 'run', '-d', '-p', '6379:6379', '--name', 'redis-cacaoscan', 'redis'],
+            capture_output=True,
+            timeout=10
+        )
+        time.sleep(3)
+
+        if self._check_redis_available():
+            self.stdout.write(
+                self.style.SUCCESS("Redis iniciado con Docker")
+            )
+            return True
+        return False
+
+    def _start_redis_windows_service(self) -> bool:
+        try:
+            result = subprocess.run(
+                ['sc', 'query', 'Redis'],
+                capture_output=True,
+                timeout=2
+            )
+            if result.returncode != 0:
+                return False
+
+            self.stdout.write("Intentando iniciar servicio Redis de Windows...")
+            subprocess.run(
+                ['sc', 'start', 'Redis'],
+                capture_output=True,
+                timeout=5
+            )
+            time.sleep(2)
+            if self._check_redis_available():
+                self.stdout.write(
+                    self.style.SUCCESS("Redis iniciado como servicio de Windows")
+                )
+                return True
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return False
+        return False
+
+    def _collect_redis_paths(self, is_windows: bool) -> List[str]:
+        if is_windows:
+            return [
+                'redis-server.exe',
+                r'C:\Program Files\Redis\redis-server.exe',
+                r'C:\redis\redis-server.exe',
+            ]
+        return ['redis-server', '/usr/local/bin/redis-server', '/usr/bin/redis-server']
+
+    def _start_redis_from_paths(self, redis_paths: List[str], is_windows: bool) -> bool:
+        for redis_path in redis_paths:
+            if self._launch_redis_process(redis_path, is_windows):
+                return True
+        return False
+
+    def _launch_redis_process(self, redis_path: str, is_windows: bool) -> bool:
+        try:
+            kwargs: Dict[str, object] = {
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL,
+            }
+            if is_windows:
+                kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+            else:
+                kwargs['start_new_session'] = True
+
+            subprocess.Popen([redis_path], **kwargs)
+            time.sleep(3)
+            if self._check_redis_available():
+                self.stdout.write(
+                    self.style.SUCCESS(f"Redis iniciado: {redis_path}")
+                )
+                return True
+        except OSError:
+            return False
+        return False
     
     def _check_celery_worker_running(self) -> bool:
         """Verifica si hay un worker de Celery corriendo."""
@@ -921,12 +1021,15 @@ class Command(BaseCommand):
                     creationflags=subprocess.CREATE_NO_WINDOW
                 )
             else:
-                subprocess.Popen(
+                process = subprocess.Popen(
                     celery_cmd,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     start_new_session=True
                 )
+            
+            setattr(process, 'cacaoscan_role', 'celery-worker')
+            setattr(process, 'cacaoscan_cmd', tuple(str(arg) for arg in celery_cmd))
             
             self.stdout.write(
                 self.style.SUCCESS(
@@ -973,6 +1076,28 @@ class Command(BaseCommand):
             logger.debug(f"Error verificando modelos: {e}")
             return False
     
+    def _is_celery_worker_process(self, process: subprocess.Popen) -> bool:
+        """Checks that the process matches the Celery worker we spawned."""
+        if process is None:
+            return False
+        
+        role = getattr(process, 'cacaoscan_role', None)
+        if role == 'celery-worker':
+            return True
+        
+        args = getattr(process, 'args', None)
+        if not args:
+            return False
+        
+        if isinstance(args, str):
+            normalized = args.lower()
+            return 'celery' in normalized and 'worker' in normalized
+        
+        normalized_args = [str(arg).lower() for arg in args]
+        has_celery = any('celery' in arg for arg in normalized_args)
+        has_worker = any('worker' in arg for arg in normalized_args)
+        return has_celery and has_worker
+    
     def _stop_celery_worker(self, process: subprocess.Popen) -> None:
         """
         Detiene el worker de Celery iniciado automáticamente.
@@ -981,91 +1106,110 @@ class Command(BaseCommand):
         This function validates that we only signal processes we started.
         """
         try:
-            # S4828: Validate process before signaling to avoid signaling unrelated processes
-            if process is None:
-                logger.debug("Process is None, cannot stop")
+            if not self._can_attempt_stop(process):
                 return
-            
-            # Check if process is still running
-            if process.poll() is not None:
-                # Process already terminated
-                logger.debug("Process already terminated")
+
+            process_pid = self._extract_process_pid(process)
+            if process_pid is None:
                 return
-            
-            # Validate PID is valid and belongs to our process
-            try:
-                process_pid = process.pid
-                if process_pid is None or process_pid <= 0:
-                    logger.warning("Invalid process PID, cannot send signal")
-                    return
-                
-                # Verify process is still alive by checking if PID exists
-                # This prevents signaling a process that was replaced by another process with same PID
-                if platform.system() != 'Windows':
-                    import os
-                    try:
-                        # Check if process exists (sends signal 0 which doesn't kill but checks existence)
-                        os.kill(process_pid, 0)
-                    except ProcessLookupError:
-                        # Process doesn't exist anymore
-                        logger.debug("Process no longer exists")
-                        return
-                    except PermissionError:
-                        # Process exists but we don't have permission (shouldn't happen for our own process)
-                        logger.warning("Permission denied when checking process, aborting signal")
-                        return
-            except (AttributeError, OSError) as e:
-                logger.debug(f"Error validating process: {e}")
+
+            if not self._ensure_process_exists(process_pid):
                 return
-            
-            # Graceful shutdown with signal handling
-            if platform.system() == 'Windows':
-                # Windows doesn't support SIGTERM, use terminate() instead
-                # terminate() is safe because we validated the process above
-                process.terminate()
+
+            system = platform.system()
+            if system == 'Windows':
+                self._terminate_windows_process(process)
             else:
-                # Unix-like systems: send SIGTERM to process group
-                # S4828: Additional validation before signaling process group
-                import os
-                try:
-                    # Get process group ID - this will raise OSError if process doesn't exist
-                    pgid = os.getpgid(process_pid)
-                    
-                    # Validate PGID is positive and matches expected range
-                    # PGID should be positive and typically matches PID for processes we start
-                    if pgid <= 0:
-                        logger.warning(f"Invalid process group ID: {pgid}, cannot send signal")
-                        return
-                    
-                    # Additional safety: verify PGID belongs to our process or its children
-                    # In most cases, pgid should equal process_pid for processes we start with start_new_session=True
-                    # But we allow it to be different if it's a valid process group
-                    # The key validation is that we checked the process exists above
-                    
-                    # Send SIGTERM to process group (safe because we validated process exists)
-                    os.killpg(pgid, signal.SIGTERM)
-                    logger.debug(f"Sent SIGTERM to process group {pgid} (process {process_pid})")
-                except ProcessLookupError:
-                    # Process group doesn't exist (process already terminated)
-                    logger.debug("Process group no longer exists, process may have terminated")
+                if not self._terminate_unix_process(process_pid):
                     return
-                except OSError as e:
-                    # Process may have already terminated or permission denied
-                    logger.debug(f"Process group signal failed (may already be terminated): {e}")
-                    return
-            
-            # Wait for graceful shutdown with timeout
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                # Force kill if graceful shutdown times out
-                # Only kill if process is still running (validated above)
-                if process.poll() is None:
-                    logger.warning("Graceful shutdown timed out, force killing process")
-                    process.kill()
-                    process.wait()
+
+            self._wait_for_process_shutdown(process)
+        except CommandError:
+            raise
         except Exception as e:
             self.stdout.write(
                 self.style.WARNING(f"Error deteniendo worker: {e}")
             )
+
+    def _can_attempt_stop(self, process: Optional[subprocess.Popen]) -> bool:
+        if process is None:
+            logger.debug("Process is None, cannot stop")
+            return False
+
+        if not self._is_celery_worker_process(process):
+            raise CommandError(
+                "Signal aborted: process is not a Celery worker started by this command."
+            )
+
+        if process.poll() is not None:
+            logger.debug("Process already terminated")
+            return False
+
+        return True
+
+    def _extract_process_pid(self, process: subprocess.Popen) -> Optional[int]:
+        try:
+            process_pid = process.pid
+        except AttributeError as exc:
+            logger.debug(f"Process missing PID attribute: {exc}")
+            return None
+
+        if process_pid is None or process_pid <= 0:
+            logger.warning("Invalid process PID, cannot send signal")
+            return None
+
+        return int(process_pid)
+
+    def _ensure_process_exists(self, process_pid: int) -> bool:
+        if platform.system() == 'Windows':
+            return True
+
+        import os
+        try:
+            os.kill(process_pid, 0)
+            return True
+        except ProcessLookupError:
+            logger.debug("Process no longer exists")
+            return False
+        except PermissionError:
+            logger.warning("Permission denied when checking process, aborting signal")
+            return False
+        except OSError as exc:
+            logger.debug(f"Error validating process existence: {exc}")
+            return False
+
+    def _terminate_windows_process(self, process: subprocess.Popen) -> None:
+        process.terminate()
+
+    def _terminate_unix_process(self, process_pid: int) -> bool:
+        import os
+        try:
+            pgid = os.getpgid(process_pid)
+        except OSError as exc:
+            logger.debug(f"Failed to obtain process group: {exc}")
+            return False
+
+        if pgid <= 0:
+            logger.warning(f"Invalid process group ID: {pgid}, cannot send signal")
+            return False
+
+        try:
+            os.killpg(pgid, signal.SIGTERM)
+            logger.debug(f"Sent SIGTERM to process group {pgid} (process {process_pid})")
+            return True
+        except ProcessLookupError:
+            logger.debug("Process group no longer exists, process may have terminated")
+            return False
+        except OSError as exc:
+            logger.debug(f"Process group signal failed (may already be terminated): {exc}")
+            return False
+
+    def _wait_for_process_shutdown(self, process: subprocess.Popen) -> None:
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            if process.poll() is None:
+                logger.warning("Graceful shutdown timed out, force killing process")
+                process.kill()
+                process.wait()
 

@@ -50,14 +50,14 @@ class AuthenticationViewsTest(APITestCase):
             'email': 'test@example.com',
             'first_name': 'Test',
             'last_name': 'User',
-            'password': TEST_USER_PASSWORD,  # NOSONAR: Test credential from constants
-            'password_confirm': TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            'password': TEST_USER_PASSWORD,  # NOSONAR - Test credential from constants
+            'password_confirm': TEST_USER_PASSWORD  # NOSONAR - Test credential from constants
         }
         
         self.existing_user = User.objects.create_user(
             username='existinguser',
             email='existing@example.com',
-            password=TEST_EXISTING_USER_PASSWORD,  # NOSONAR: Test credential from constants
+            password=TEST_EXISTING_USER_PASSWORD,  # NOSONAR - Test credential from constants
             first_name='Existing',
             last_name='User'
         )
@@ -86,7 +86,7 @@ class AuthenticationViewsTest(APITestCase):
         """Test de login exitoso."""
         login_data = {
             'username': 'existing@example.com',
-            'password': TEST_EXISTING_USER_PASSWORD  # NOSONAR: Test credential from constants
+            'password': TEST_EXISTING_USER_PASSWORD  # NOSONAR - Test credential from constants
         }
         
         response = self.client.post(self.login_url, login_data)
@@ -101,7 +101,7 @@ class AuthenticationViewsTest(APITestCase):
         """Test de login con credenciales inválidas."""
         login_data = {
             'username': 'existing@example.com',
-            'password': TEST_INVALID_PASSWORD  # NOSONAR: Test credential from constants
+            'password': TEST_INVALID_PASSWORD  # NOSONAR - Test credential from constants
         }
         
         response = self.client.post(self.login_url, login_data)
@@ -170,7 +170,7 @@ class ImageViewsTest(APITestCase):
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_USER_PASSWORD  # NOSONAR - Test credential from constants
         )
         
         self.images_url = reverse('images-list')
@@ -259,7 +259,7 @@ class ImageViewsTest(APITestCase):
         other_user = User.objects.create_user(
             username='otheruser',
             email='other@example.com',
-            password=TEST_OTHER_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_OTHER_USER_PASSWORD  # NOSONAR - Test credential from constants
         )
         image = CacaoImage.objects.create(
             user=other_user,
@@ -281,7 +281,7 @@ class FincaViewsTest(APITestCase):
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_USER_PASSWORD  # NOSONAR - Test credential from constants
         )
         
         self.fincas_url = reverse('fincas-list')
@@ -427,7 +427,7 @@ class LoteViewsTest(APITestCase):
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_USER_PASSWORD  # NOSONAR - Test credential from constants
         )
         
         self.finca = Finca.objects.create(
@@ -580,7 +580,7 @@ class NotificationViewsTest(APITestCase):
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_USER_PASSWORD  # NOSONAR - Test credential from constants
         )
         
         self.notifications_url = reverse('notifications-list')
@@ -704,7 +704,7 @@ class ReportViewsTest(APITestCase):
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_USER_PASSWORD  # NOSONAR - Test credential from constants
         )
         
         self.reports_url = reverse('reportes-list')

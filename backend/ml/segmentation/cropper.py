@@ -324,6 +324,27 @@ class CacaoCropper:
         
         return source_time > target_time
     
+    def _update_stats_from_result(
+        self,
+        stats: Dict[str, Any],
+        record: Dict[str, Any],
+        result: Dict[str, Any]
+    ) -> None:
+        """Updates statistics based on processing result."""
+        stats['processed'] += 1
+        
+        if result['success']:
+            if result.get('skipped', False):
+                stats['skipped'] += 1
+            else:
+                stats['successful'] += 1
+        else:
+            stats['failed'] += 1
+            stats['errors'].append({
+                'id': record['id'],
+                'error': result.get('error', 'Error desconocido')
+            })
+    
     def process_batch(
         self,
         image_records: list,
@@ -364,19 +385,7 @@ class CacaoCropper:
                     record['id']
                 )
                 
-                stats['processed'] += 1
-                
-                if result['success']:
-                    if result.get('skipped', False):
-                        stats['skipped'] += 1
-                    else:
-                        stats['successful'] += 1
-                else:
-                    stats['failed'] += 1
-                    stats['errors'].append({
-                        'id': record['id'],
-                        'error': result.get('error', 'Error desconocido')
-                    })
+                self._update_stats_from_result(stats, record, result)
                 
                 if progress_callback:
                     progress_callback(i + 1, total_images, result)

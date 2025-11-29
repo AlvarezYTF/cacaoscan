@@ -564,14 +564,12 @@ class IncrementalModelManager:
                 # Try to load with weights_only=True (safest method, PyTorch 2.1+)
                 # SECURITY: weights_only=True prevents arbitrary code execution (S6985)
                 checkpoint = torch.load(model_path, map_location=device, weights_only=True)
-            except TypeError:
-                # Fallback for older PyTorch versions
-                # Checkpoints are from trusted source (same manager), structure is validated
-                logger.warning(
-                    f"PyTorch version does not support weights_only=True. "
-                    f"Loading checkpoint with fallback method from {model_path}"
-                )
-                checkpoint = torch.load(model_path, map_location=device)  # nosec B301
+            except TypeError as exc:
+                raise RuntimeError(
+                    "La versión instalada de PyTorch no soporta weights_only=True. "
+                    "Actualiza al menos a PyTorch 2.1 para cargar checkpoints de forma segura "
+                    f"(archivo: {model_path})."
+                ) from exc
             
             # Validate checkpoint structure to ensure it's a valid checkpoint from our manager
             # This helps detect if a checkpoint was tampered with

@@ -507,49 +507,97 @@ class ImprovedCacaoDataset(Dataset):
         Returns:
             Diccionario con resultados de validación
         """
-        calibration_records = calibration_data.get("calibration_records", [])
-        calib_by_id = {rec["id"]: rec for rec in calibration_records}
+        calib_by_id = self._build_calibration_map(calibration_data)
         
         matches = 0
-        mismatches = []
+        mismatches: List[Dict[str, Union[int, float, str]]] = []
         
         for idx, img_path in enumerate(self.image_paths):
-            # Extraer ID de la ruta
-            try:
-                image_id = int(img_path.stem)
-            except ValueError:
-                logger.warning(f"No se pudo extraer ID de {img_path}")
+            image_id = self._extract_image_id(img_path)
+            if image_id is None or image_id not in calib_by_id:
                 continue
             
-            if image_id in calib_by_id:
-                calib_rec = calib_by_id[image_id]
-                real_dims = calib_rec.get("real_dimensions", {})
-                
-                # Comparar targets
-                for target in self.TARGET_ORDER:
-                    target_key = f"{target}_mm" if target != "peso" else f"{target}_g"
-                    if target_key in real_dims:
-                        calib_value = real_dims[target_key]
-                        dataset_value = self.targets[target][idx]
-                        
-                        # Permitir pequeña diferencia por redondeo
-                        if abs(calib_value - dataset_value) > 0.1:
-                            mismatches.append({
-                                "id": image_id,
-                                "target": target,
-                                "calibration": calib_value,
-                                "dataset": dataset_value,
-                                "diff": abs(calib_value - dataset_value)
-                            })
-                        else:
-                            matches += 1
+            record_matches, record_mismatches = self._compare_targets_with_calibration(
+                sample_index=idx,
+                image_id=image_id,
+                calibration_record=calib_by_id[image_id]
+            )
+            matches += record_matches
+            mismatches.extend(record_mismatches)
         
+        total_comparisons = matches + len(mismatches)
+        match_rate = matches / total_comparisons if total_comparisons > 0 else 0.0
         return {
             "total_matches": matches,
             "total_mismatches": len(mismatches),
             "mismatches": mismatches[:10],  # Primeros 10
-            "match_rate": matches / (matches + len(mismatches)) if (matches + len(mismatches)) > 0 else 0.0
+            "match_rate": match_rate
         }
+
+    def _build_calibration_map(self, calibration_data: Dict[str, Any]) -> Dict[int, Dict[str, Any]]:
+        """Index calibration records by ID for quick lookup."""
+        records = calibration_data.get("calibration_records", [])
+        calibration_map: Dict[int, Dict[str, Any]] = {}
+        for record in records:
+            try:
+                record_id = int(record["id"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            calibration_map[record_id] = record
+        return calibration_map
+
+    def _extract_image_id(self, img_path: Path) -> Optional[int]:
+        """Extract the numeric ID from an image path."""
+        try:
+            return int(img_path.stem)
+        except ValueError:
+            logger.warning(f"No se pudo extraer ID de {img_path}")
+            return None
+
+    def _compare_targets_with_calibration(
+        self,
+        *,
+        sample_index: int,
+        image_id: int,
+        calibration_record: Dict[str, Any]
+    ) -> Tuple[int, List[Dict[str, Union[int, float, str]]]]:
+        """Compare dataset targets against calibration data."""
+        matches = 0
+        mismatches: List[Dict[str, Union[int, float, str]]] = []
+        real_dims = self._as_mapping(calibration_record.get("real_dimensions"))
+        
+        for target in self.TARGET_ORDER:
+            target_key = self._calibration_key_for_target(target)
+            if target_key not in real_dims:
+                continue
+            
+            calib_value = float(real_dims[target_key])
+            dataset_value = float(self.targets[target][sample_index])
+            diff = abs(calib_value - dataset_value)
+            if diff > 0.1:
+                mismatches.append({
+                    "id": image_id,
+                    "target": target,
+                    "calibration": calib_value,
+                    "dataset": dataset_value,
+                    "diff": diff
+                })
+            else:
+                matches += 1
+        
+        return matches, mismatches
+
+    @staticmethod
+    def _calibration_key_for_target(target: str) -> str:
+        """Return the calibration dictionary key for a dataset target."""
+        return f"{target}_g" if target == "peso" else f"{target}_mm"
+
+    @staticmethod
+    def _as_mapping(value: Optional[Any]) -> Dict[str, Any]:
+        """Return a dictionary representation for nested calibration sections."""
+        if isinstance(value, dict):
+            return value
+        return {}
 
 
 def create_improved_dataloader(

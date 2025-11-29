@@ -488,6 +488,448 @@ def train_single_model(
     return history
 
 
+def _create_loss_function(loss_type: str) -> nn.Module:
+    """Create loss function based on type."""
+    if loss_type == 'mse':
+        return nn.MSELoss()
+    if loss_type == 'huber':
+        return nn.HuberLoss(delta=1.0)
+    return nn.SmoothL1Loss()
+
+
+def _validate_learning_rate(learning_rate: float) -> float:
+    """Validate and adjust learning rate if too high."""
+    if learning_rate > 5e-4:
+        logger.warning(f"Learning rate {learning_rate} puede ser muy alto. Reduciendo a 5e-4")
+        return 5e-4
+    return learning_rate
+
+
+def _create_optimizer_with_loss_params(model: nn.Module, criterion: nn.Module, learning_rate: float, config: Dict):
+    """Create optimizer including loss parameters if applicable."""
+    if criterion is not None and hasattr(criterion, 'parameters'):
+        loss_params = list(criterion.parameters())
+        if len(loss_params) > 0:
+            model_lr = learning_rate
+            sigma_lr = learning_rate * 100.0
+            
+            optimizer = optim.AdamW(
+                [
+                    {'params': model.parameters(), 'lr': model_lr},
+                    {'params': criterion.parameters(), 'lr': sigma_lr}
+                ],
+                lr=learning_rate,
+                weight_decay=config.get('weight_decay', 1e-4),
+                betas=(0.9, 0.999),
+                eps=1e-8
+            )
+            logger.info("✔ Optimizador incluye parámetros del modelo Y de la loss")
+            logger.info(f"  Learning Rate del modelo: {model_lr:.2e}")
+            logger.info(f"  Learning Rate de los sigmas: {sigma_lr:.2e} (100x más alto)")
+            logger.info(f"  Parámetros del modelo: {sum(p.numel() for p in model.parameters())}")
+            logger.info(f"  Parámetros de la loss: {sum(p.numel() for p in loss_params)}")
+            return optimizer
+    
+    optimizer = optim.AdamW(
+        model.parameters(),
+        lr=learning_rate,
+        weight_decay=config.get('weight_decay', 1e-4),
+        betas=(0.9, 0.999),
+        eps=1e-8
+    )
+    return optimizer
+
+
+def _create_scheduler(optimizer: optim.Optimizer, scheduler_type: str, epochs: int, config: Dict):
+    """Create learning rate scheduler."""
+    if scheduler_type == 'reduce_on_plateau':
+        return optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode='min',
+            factor=0.5,
+            patience=5,
+            verbose=True,
+            min_lr=config.get('min_lr', 1e-7)
+        )
+    if scheduler_type == 'cosine':
+        return optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=epochs,
+            eta_min=config.get('min_lr', 1e-6)
+        )
+    
+    return optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer,
+        T_0=max(1, epochs // 4),
+        T_mult=2,
+        eta_min=config.get('min_lr', 1e-7)
+    )
+
+
+def _split_targets(batch_targets: Any, device: torch.device) -> Dict[str, torch.Tensor]:
+    """Normalize targets format to dict."""
+    if isinstance(batch_targets, dict):
+        return {k: v.to(device) for k, v in batch_targets.items()}
+    
+    if isinstance(batch_targets, torch.Tensor):
+        if batch_targets.ndim == 1:
+            batch_targets = batch_targets.unsqueeze(0)
+        if batch_targets.ndim > 2:
+            batch_targets = batch_targets.view(-1, batch_targets.shape[-1])
+        
+        if batch_targets.shape[-1] < len(TARGETS):
+            raise ValueError(
+                f"Se esperaban al menos {len(TARGETS)} columnas para targets tensor, "
+                f"se obtuvo shape={batch_targets.shape}"
+            )
+        
+        batch_targets = batch_targets.to(device)
+        return {
+            "alto": batch_targets[:, 0],
+            "ancho": batch_targets[:, 1],
+            "grosor": batch_targets[:, 2],
+            "peso": batch_targets[:, 3],
+        }
+    
+    raise TypeError(f"Formato de targets no soportado: {type(batch_targets)}")
+
+
+def _split_outputs(batch_outputs: Any) -> Dict[str, torch.Tensor]:
+    """Normalize model outputs format to dict."""
+    if isinstance(batch_outputs, dict):
+        return batch_outputs
+    
+    if isinstance(batch_outputs, torch.Tensor):
+        out = batch_outputs
+        if out.ndim > 2:
+            out = out.view(out.shape[0], -1)
+        if out.shape[1] < len(TARGETS):
+            raise ValueError(
+                f"Se esperaban al menos {len(TARGETS)} columnas en outputs tensor, "
+                f"se obtuvo shape={out.shape}"
+            )
+        return {
+            "alto": out[:, 0],
+            "ancho": out[:, 1],
+            "grosor": out[:, 2],
+            "peso": out[:, 3],
+        }
+    
+    raise TypeError(f"Formato de outputs no soportado: {type(batch_outputs)}")
+
+
+def _prepare_batch_data(batch_data, use_pixel_features, device, non_blocking=False):
+    """Prepare batch data for model input."""
+    if use_pixel_features:
+        if len(batch_data) != 3:
+            logger.error(f"Error: Se esperaban 3 tensores (img, targets, pixels), se obtuvieron {len(batch_data)}")
+            return None, None
+        images, targets_batch, pixel_features = batch_data
+        images = images.to(device, non_blocking=non_blocking)
+        pixel_features = pixel_features.to(device, non_blocking=non_blocking)
+        inputs = (images, pixel_features)
+        return inputs, targets_batch
+    
+    if len(batch_data) != 2:
+        logger.error(f"Error: Se esperaban 2 tensores (img, targets), se obtuvieron {len(batch_data)}")
+        return None, None
+    images, targets_batch = batch_data
+    images = images.to(device, non_blocking=non_blocking)
+    inputs = (images,)
+    return inputs, targets_batch
+
+
+def _compute_loss(outputs_dict, targets_dict, criterion):
+    """Compute loss for all targets."""
+    loss = 0.0
+    for target in TARGETS:
+        target_values = targets_dict[target]
+        target_loss = criterion(outputs_dict[target].squeeze(), target_values.squeeze())
+        loss += target_loss
+    return loss
+
+
+def _train_one_epoch(model, train_loader, optimizer, criterion, device, use_pixel_features, config):
+    """Train model for one epoch."""
+    model.train()
+    train_loss = 0.0
+    
+    for batch_data in train_loader:
+        inputs, targets_batch = _prepare_batch_data(batch_data, use_pixel_features, device, non_blocking=True)
+        if inputs is None:
+            continue
+        
+        optimizer.zero_grad()
+        outputs = model(*inputs)
+        outputs_dict = _split_outputs(outputs)
+        targets_dict = _split_targets(targets_batch, device)
+        
+        loss = _compute_loss(outputs_dict, targets_dict, criterion)
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), config.get('max_grad_norm', 1.0))
+        optimizer.step()
+        train_loss += loss.item()
+    
+    return train_loss / (len(train_loader) + 1e-6)
+
+
+def _validate_one_epoch(model, val_loader, criterion, device, use_pixel_features):
+    """Validate model for one epoch."""
+    model.eval()
+    val_loss = 0.0
+    val_metrics_epoch = {target: {'preds': [], 'targets': []} for target in TARGETS}
+    
+    with torch.no_grad():
+        for batch_data in val_loader:
+            inputs, targets_batch = _prepare_batch_data(batch_data, use_pixel_features, device)
+            if inputs is None:
+                continue
+            
+            outputs = model(*inputs)
+            outputs_dict = _split_outputs(outputs)
+            targets_dict = _split_targets(targets_batch, device)
+            
+            batch_loss = _compute_loss(outputs_dict, targets_dict, criterion)
+            val_loss += batch_loss.item()
+            
+            for target in TARGETS:
+                target_values = targets_dict[target]
+                val_metrics_epoch[target]['preds'].extend(
+                    outputs_dict[target].cpu().numpy().flatten()
+                )
+                val_metrics_epoch[target]['targets'].extend(
+                    target_values.cpu().numpy().flatten()
+                )
+    
+    avg_val_loss = val_loss / (len(val_loader) + 1e-6)
+    return avg_val_loss, val_metrics_epoch
+
+
+def _compute_validation_metrics(val_metrics_epoch, scalers):
+    """Compute validation metrics from predictions and targets."""
+    from .metrics import (
+        denormalize_and_calculate_metrics,
+        validate_predictions_targets_alignment
+    )
+    
+    pred_dict_norm = {t: np.array(val_metrics_epoch[t]['preds']) for t in TARGETS}
+    targ_dict_norm = {t: np.array(val_metrics_epoch[t]['targets']) for t in TARGETS}
+    
+    if not validate_predictions_targets_alignment(pred_dict_norm, targ_dict_norm):
+        logger.error("Problema de alineación entre predicciones y targets")
+    
+    metrics_per_target, avg_r2 = denormalize_and_calculate_metrics(
+        predictions_norm=pred_dict_norm,
+        targets_norm=targ_dict_norm,
+        scalers=scalers,
+        target_names=TARGETS,
+        verbose=False
+    )
+    
+    return metrics_per_target, avg_r2
+
+
+def _update_history_with_metrics(metrics_per_target, avg_r2, history):
+    """Update history dictionary with computed metrics."""
+    for target in TARGETS:
+        if target in metrics_per_target:
+            m = metrics_per_target[target]
+            history[f'val_mae_{target}'].append(m['mae'])
+            history[f'val_rmse_{target}'].append(m['rmse'])
+            history[f'val_r2_{target}'].append(m['r2'])
+        else:
+            logger.warning(f"No se calcularon métricas para {target}")
+            history[f'val_mae_{target}'].append(0.0)
+            history[f'val_rmse_{target}'].append(0.0)
+            history[f'val_r2_{target}'].append(0.0)
+    
+    history['val_r2_avg'].append(avg_r2)
+
+
+def _build_metrics_log_string(epoch, config, metrics_per_target, avg_r2):
+    """Build log string with metrics information."""
+    log_str = f"Epoch {epoch+1}/{config['epochs']}"
+    
+    for target in TARGETS:
+        if target in metrics_per_target:
+            r2 = metrics_per_target[target]['r2']
+            log_str += f", {target} R²: {r2:.4f}"
+        else:
+            log_str += f", {target} R²: 0.0000"
+    
+    log_str += f" | Avg R²: {avg_r2:.4f}"
+    return log_str
+
+
+def _log_detailed_metrics_if_needed(epoch, metrics_per_target, avg_r2):
+    """Log detailed metrics every 5 epochs or if R² is very negative."""
+    should_log = (epoch + 1) % 5 == 0 or any(
+        metrics_per_target.get(t, {}).get('r2', 0) < -100
+        for t in TARGETS
+    )
+    
+    if not should_log:
+        return
+    
+    logger.info("=== Métricas detalladas por componente ===")
+    for target in TARGETS:
+        if target in metrics_per_target:
+            m = metrics_per_target[target]
+            logger.info(
+                f"{target.upper()}: MAE={m['mae']:.4f}, "
+                f"RMSE={m['rmse']:.4f}, R²={m['r2']:.4f}, "
+                f"n={m['n_samples']}"
+            )
+    logger.info(f"R² Promedio: {avg_r2:.4f}")
+    logger.info("==========================================")
+
+
+def _calculate_and_log_metrics(val_metrics_epoch, scalers, history, epoch, config):
+    """Calculate validation metrics and update history."""
+    metrics_per_target, avg_r2 = _compute_validation_metrics(val_metrics_epoch, scalers)
+    _update_history_with_metrics(metrics_per_target, avg_r2, history)
+    
+    log_str = _build_metrics_log_string(epoch, config, metrics_per_target, avg_r2)
+    logger.info(log_str)
+    
+    _log_detailed_metrics_if_needed(epoch, metrics_per_target, avg_r2)
+    
+    return metrics_per_target, avg_r2
+
+
+def _update_scheduler(scheduler, avg_val_loss, optimizer):
+    """Update learning rate scheduler."""
+    if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
+        scheduler.step(avg_val_loss)
+        return optimizer.param_groups[0]['lr']
+    scheduler.step()
+    return scheduler.get_last_lr()[0] if hasattr(scheduler, 'get_last_lr') else optimizer.param_groups[0]['lr']
+
+
+def _check_early_stopping(avg_val_loss, best_val_loss, patience_counter, improvement_threshold):
+    """Check if early stopping should be triggered. Returns (is_best, new_patience_counter, new_best_val_loss)."""
+    if avg_val_loss < best_val_loss - improvement_threshold:
+        return True, 0, avg_val_loss
+    return False, patience_counter + 1, best_val_loss
+
+
+def _save_model_file(model, is_hybrid, best_val_loss, history, config):
+    """Save trained model to file."""
+    artifacts_dir = get_regressors_artifacts_dir()
+    model_name = "hybrid.pt" if is_hybrid else "multihead.pt"
+    model_path = artifacts_dir / model_name
+    
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'model_info': {
+            'model_type': 'HybridCacaoRegression' if is_hybrid else 'MultiHeadRegression',
+            'config': config,
+            'best_val_loss': best_val_loss,
+            'training_history': history,
+            'timestamp': datetime.now().isoformat()
+        }
+    }, model_path)
+    
+    logger.info(f"Modelo {model_name} guardado en {model_path}")
+    return model_path
+
+
+def _save_metrics_to_db(model_name, is_hybrid, use_pixel_features, history, config, dataset_info, training_job):
+    """Save metrics to database."""
+    if not DJANGO_LOADED:
+        return
+    
+    try:
+        user = User.objects.filter(is_superuser=True).first() or User.objects.first()
+        train_size = dataset_info.get('train_size', 0) if dataset_info else 0
+        val_size = dataset_info.get('val_size', 0) if dataset_info else 0
+        test_size = dataset_info.get('test_size', 0) if dataset_info else 0
+        
+        for target in TARGETS:
+            ModelMetrics.objects.create(
+                model_name="hybrid_regression" if is_hybrid else "multihead_regression",
+                model_type='regression',
+                target=target,
+                version=f"v{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                training_job=training_job,
+                created_by=user,
+                metric_type='validation',
+                mae=history[f'val_mae_{target}'][-1],
+                mse=history['val_loss'][-1],
+                rmse=history[f'val_rmse_{target}'][-1],
+                r2_score=history[f'val_r2_{target}'][-1],
+                dataset_size=int(train_size + val_size + test_size),
+                train_size=int(train_size),
+                validation_size=int(val_size),
+                epochs=int(len(history['train_loss'])),
+                batch_size=int(config.get('batch_size', 32)),
+                learning_rate=float(config.get('learning_rate', 1e-4)),
+                model_params={
+                    'model_type': config.get('model_type', 'hybrid'),
+                    'hybrid': is_hybrid,
+                    'use_pixel_features': use_pixel_features,
+                    'dropout_rate': config.get('dropout_rate', 0.2),
+                },
+                notes=f"Modelo {'Híbrido' if is_hybrid else 'Multi-head'} para {target}."
+            )
+        logger.info(f"[OK] Métricas del modelo {model_name} guardadas en DB")
+    except Exception as e:
+        logger.error(f"[ERROR] Error guardando métricas del modelo {model_name}: {e}")
+
+
+def _try_use_improved_training(use_improved, model, train_loader, val_loader, scalers, config, device, training_job, dataset_info, save_metrics, use_uncertainty_loss):
+    """Try to use improved training loop if available."""
+    if not use_improved:
+        return None
+    
+    try:
+        from .train_improved import train_multi_head_model_improved
+        logger.info("Usando training loop mejorado")
+        return train_multi_head_model_improved(
+            model=model,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            scalers=scalers,
+            config=config,
+            device=device,
+            training_job=training_job,
+            dataset_info=dataset_info,
+            save_metrics=save_metrics,
+            use_uncertainty_loss=use_uncertainty_loss
+        )
+    except ImportError:
+        logger.warning("Training loop mejorado no disponible, usando versión estándar")
+        return None
+
+
+def _detect_model_type(config):
+    """Detect if model is hybrid and if pixel features should be used."""
+    is_hybrid = config.get('hybrid', False) or config.get('model_type') == 'hybrid'
+    use_pixel_features = config.get('use_pixel_features', False) and is_hybrid
+    return is_hybrid, use_pixel_features
+
+
+def _initialize_training_components(model, config):
+    """Initialize optimizer, scheduler, and loss function."""
+    learning_rate = _validate_learning_rate(config.get('learning_rate', 1e-4))
+    loss_type = config.get('loss_type', 'smooth_l1')
+    criterion = _create_loss_function(loss_type)
+    optimizer = _create_optimizer_with_loss_params(model, criterion, learning_rate, config)
+    scheduler = _create_scheduler(optimizer, config.get('scheduler_type', 'reduce_on_plateau'), config.get('epochs', 50), config)
+    return learning_rate, loss_type, criterion, optimizer, scheduler
+
+
+def _initialize_history():
+    """Initialize training history dictionary."""
+    return {
+        'train_loss': [], 'val_loss': [], 'learning_rate': [],
+        **{f'val_mae_{t}': [] for t in TARGETS},
+        **{f'val_rmse_{t}': [] for t in TARGETS},
+        **{f'val_r2_{t}': [] for t in TARGETS},
+        'val_r2_avg': [],
+    }
+
+
 def train_multi_head_model(
     model: nn.Module,
     train_loader: DataLoader,
@@ -514,415 +956,53 @@ def train_multi_head_model(
     Args:
         use_uncertainty_loss: Si usar UncertaintyWeightedLoss. Si None, se detecta automáticamente.
     """
-    # Intentar usar training loop mejorado si está disponible
-    if use_improved:
-        try:
-            from .train_improved import train_multi_head_model_improved
-            logger.info("Usando training loop mejorado")
-            return train_multi_head_model_improved(
-                model=model,
-                train_loader=train_loader,
-                val_loader=val_loader,
-                scalers=scalers,
-                config=config,
-                device=device,
-                training_job=training_job,
-                dataset_info=dataset_info,
-                save_metrics=save_metrics,
-                use_uncertainty_loss=use_uncertainty_loss
-            )
-        except ImportError:
-            logger.warning("Training loop mejorado no disponible, usando versión estándar")
+    result = _try_use_improved_training(
+        use_improved, model, train_loader, val_loader, scalers, config,
+        device, training_job, dataset_info, save_metrics, use_uncertainty_loss
+    )
+    if result is not None:
+        return result
     
-    # Versión estándar (código original)
-    is_hybrid = config.get('hybrid', False) or config.get('model_type') == 'hybrid'
-    use_pixel_features = config.get('use_pixel_features', False) and is_hybrid
+    is_hybrid, use_pixel_features = _detect_model_type(config)
     
     if is_hybrid:
         logger.info(f"Entrenando modelo HÍBRIDO (use_pixel_features={use_pixel_features})")
     else:
         logger.info("Entrenando modelo MULTI-HEAD")
-
+    
     model = model.to(device)
     
-    # Optimizador mejorado con learning rate más conservador
-    learning_rate = config.get('learning_rate', 1e-4)
-    # Si el learning rate es muy alto, reducirlo
-    if learning_rate > 5e-4:
-        logger.warning(f"Learning rate {learning_rate} puede ser muy alto. Reduciendo a 5e-4")
-        learning_rate = 5e-4
+    learning_rate, loss_type, criterion, optimizer, scheduler = _initialize_training_components(model, config)
     
-    # CRÍTICO: Verificar si la loss tiene parámetros aprendibles (ej. UncertaintyWeightedLoss)
-    # Si los tiene, incluirlos en el optimizador
-    criterion = None
-    use_uncertainty_loss = False
-    try:
-        from ..utils.losses import UncertaintyWeightedLoss
-        # Intentar detectar si se está usando UncertaintyWeightedLoss
-        # Nota: En esta versión estándar, no se crea la loss aquí, pero verificamos si está en config
-        if config.get('use_uncertainty_loss', False):
-            use_uncertainty_loss = True
-            logger.info("UncertaintyWeightedLoss detectado en config, pero no se crea aquí (usar train_improved)")
-    except ImportError:
-        pass
-    
-    # Crear loss function (estándar, sin parámetros aprendibles)
-    loss_type = config.get('loss_type', 'smooth_l1')
-    if loss_type == 'mse':
-        criterion = nn.MSELoss()
-    elif loss_type == 'huber':
-        criterion = nn.HuberLoss(delta=1.0)
-    else:  # 'smooth_l1' (default)
-        criterion = nn.SmoothL1Loss()
-    
-    # CRÍTICO: Incluir parámetros del modelo Y de la loss (si tiene parámetros aprendibles)
-    # Si la loss tiene parámetros (ej. log_sigmas en UncertaintyWeightedLoss), incluirlos
-    # IMPORTANTE: Los sigmas necesitan un LR más alto (100x) para actualizarse correctamente
-    if criterion is not None and hasattr(criterion, 'parameters'):
-        # Verificar si realmente tiene parámetros aprendibles
-        loss_params = list(criterion.parameters())
-        if len(loss_params) > 0:
-            # Definir Learning Rates separados para modelo y sigmas
-            # El modelo usa el LR bajo y estable
-            model_lr = learning_rate
-            
-            # Los sigmas necesitan un LR 100 veces más alto para moverse y balancear las tareas
-            # Esto es crítico: con LR bajo, los sigmas no se actualizan (Δ+0.0%)
-            sigma_lr = learning_rate * 100.0  # 100x más alto (ej. 1e-5 * 100 = 1e-3)
-            
-            # Usar grupos de parámetros con LR separados
-            optimizer = optim.AdamW(
-                [
-                    {'params': model.parameters(), 'lr': model_lr},
-                    {'params': criterion.parameters(), 'lr': sigma_lr}
-                ],
-                lr=learning_rate,
-                weight_decay=config.get('weight_decay', 1e-4),
-                betas=(0.9, 0.999),
-                eps=1e-8
-            )
-            logger.info("✔ Optimizador incluye parámetros del modelo Y de la loss")
-            logger.info(f"  Learning Rate del modelo: {model_lr:.2e}")
-            logger.info(f"  Learning Rate de los sigmas: {sigma_lr:.2e} (100x más alto)")
-            logger.info(f"  Parámetros del modelo: {sum(p.numel() for p in model.parameters())}")
-            logger.info(f"  Parámetros de la loss: {sum(p.numel() for p in loss_params)}")
-        else:
-            # Solo parámetros del modelo (loss estándar sin parámetros aprendibles)
-            optimizer = optim.AdamW(
-                model.parameters(),
-                lr=learning_rate,
-                weight_decay=config.get('weight_decay', 1e-4),
-                betas=(0.9, 0.999),
-                eps=1e-8
-            )
-    else:
-        # Solo parámetros del modelo (loss estándar sin parámetros aprendibles)
-        optimizer = optim.AdamW(
-            model.parameters(),
-            lr=learning_rate,
-            weight_decay=config.get('weight_decay', 1e-4),
-            betas=(0.9, 0.999),
-            eps=1e-8
-        )
-    
-    # Scheduler mejorado: ReduceLROnPlateau es más robusto para regresión
-    scheduler_type = config.get('scheduler_type', 'reduce_on_plateau')
-    
-    if scheduler_type == 'reduce_on_plateau':
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode='min',
-            factor=0.5,
-            patience=5,
-            verbose=True,
-            min_lr=config.get('min_lr', 1e-7)
-        )
-    elif scheduler_type == 'cosine':
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(
-            optimizer,
-            T_max=config.get('epochs', 50),
-            eta_min=config.get('min_lr', 1e-6)
-        )
-    else:
-        # Default: CosineAnnealingWarmRestarts
-        scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer,
-            T_0=max(1, config.get('epochs', 50) // 4),
-            T_mult=2,
-            eta_min=config.get('min_lr', 1e-7)
-        )
-    
-    # Loss function mejorada: SmoothL1Loss es más robusta que MSE
-    # NOTA: Si se usa UncertaintyWeightedLoss, debe crearse ANTES del optimizador
-    # En esta versión estándar, usamos loss estándar (sin parámetros aprendibles)
-    loss_type = config.get('loss_type', 'smooth_l1')
-    if loss_type == 'mse':
-        criterion = nn.MSELoss()
-    elif loss_type == 'huber':
-        criterion = nn.HuberLoss(delta=1.0)
-    else:  # 'smooth_l1' (default)
-        criterion = nn.SmoothL1Loss()
-    
-    logger.info(f"Optimizador: AdamW (lr={learning_rate:.2e}), Loss: {loss_type}, Scheduler: {scheduler_type}")
+    logger.info(f"Optimizador: AdamW (lr={learning_rate:.2e}), Loss: {loss_type}, Scheduler: {config.get('scheduler_type', 'reduce_on_plateau')}")
     logger.info("NOTA: Para usar UncertaintyWeightedLoss, usar train_improved.py en lugar de esta versión estándar")
     
-    history = {
-        'train_loss': [], 'val_loss': [], 'learning_rate': [],
-        **{f'val_mae_{t}': [] for t in TARGETS},
-        **{f'val_rmse_{t}': [] for t in TARGETS},
-        **{f'val_r2_{t}': [] for t in TARGETS},
-        'val_r2_avg': [],  # R² promedio sobre todos los targets
-    }
+    history = _initialize_history()
     
     best_val_loss = float('inf')
     patience_counter = 0
     best_model_state = None
-
-    def _split_targets(batch_targets: Any, device: torch.device) -> Dict[str, torch.Tensor]:
-        """
-        Normaliza el formato de targets por batch a un dict por clave en TARGETS.
-        Soporta:
-        - Dict[str, Tensor]
-        - Tensor 1D o 2D donde el último dim tiene al menos 4 valores en el orden:
-          [alto, ancho, grosor, peso, ...]
-        """
-        if isinstance(batch_targets, dict):
-            return {k: v.to(device) for k, v in batch_targets.items()}
-
-        if isinstance(batch_targets, torch.Tensor):
-            # Asegurar dimensión de batch
-            if batch_targets.ndim == 1:
-                batch_targets = batch_targets.unsqueeze(0)
-
-            # Aplanar todo menos la última dimensión
-            if batch_targets.ndim > 2:
-                batch_targets = batch_targets.view(-1, batch_targets.shape[-1])
-
-            if batch_targets.shape[-1] < len(TARGETS):
-                raise ValueError(
-                    f"Se esperaban al menos {len(TARGETS)} columnas para targets tensor, "
-                    f"se obtuvo shape={batch_targets.shape}"
-                )
-
-            batch_targets = batch_targets.to(device)
-            return {
-                "alto": batch_targets[:, 0],
-                "ancho": batch_targets[:, 1],
-                "grosor": batch_targets[:, 2],
-                "peso": batch_targets[:, 3],
-            }
-
-        raise TypeError(f"Formato de targets no soportado: {type(batch_targets)}")
-
-    def _split_outputs(batch_outputs: Any) -> Dict[str, torch.Tensor]:
-        """
-        Normaliza la salida del modelo a un dict por TARGET.
-        Soporta:
-        - Dict[str, Tensor] (ya en formato esperado)
-        - Tensor [B, C, ...] con C>=4; se usan las 4 primeras columnas como
-          [alto, ancho, grosor, peso].
-        """
-        if isinstance(batch_outputs, dict):
-            return batch_outputs
-
-        if isinstance(batch_outputs, torch.Tensor):
-            out = batch_outputs
-            # Aplanar todas las dimensiones excepto batch
-            if out.ndim > 2:
-                out = out.view(out.shape[0], -1)
-            if out.shape[1] < len(TARGETS):
-                raise ValueError(
-                    f"Se esperaban al menos {len(TARGETS)} columnas en outputs tensor, "
-                    f"se obtuvo shape={out.shape}"
-                )
-            return {
-                "alto": out[:, 0],
-                "ancho": out[:, 1],
-                "grosor": out[:, 2],
-                "peso": out[:, 3],
-            }
-
-        raise TypeError(f"Formato de outputs no soportado: {type(batch_outputs)}")
+    improvement_threshold = config.get('improvement_threshold', 1e-4)
     
     for epoch in range(config['epochs']):
-        # --- Entrenamiento ---
-        model.train()
-        train_loss = 0.0
+        avg_train_loss = _train_one_epoch(model, train_loader, optimizer, criterion, device, use_pixel_features, config)
+        avg_val_loss, val_metrics_epoch = _validate_one_epoch(model, val_loader, criterion, device, use_pixel_features)
         
-        for batch_data in train_loader:
-            
-            # --- MANEJO DE MODELO HÍBRIDO ---
-            if use_pixel_features:
-                if len(batch_data) != 3:
-                    logger.error(f"Error: Se esperaban 3 tensores (img, targets, pixels), se obtuvieron {len(batch_data)}")
-                    continue
-                images, targets_batch, pixel_features = batch_data
-                images = images.to(device, non_blocking=True)
-                pixel_features = pixel_features.to(device, non_blocking=True)
-                inputs = (images, pixel_features)
-            else:
-                if len(batch_data) != 2:
-                    logger.error(f"Error: Se esperaban 2 tensores (img, targets), se obtuvieron {len(batch_data)}")
-                    continue
-                images, targets_batch = batch_data
-                images = images.to(device, non_blocking=True)
-                inputs = (images,)
-            
-            optimizer.zero_grad()
-            
-            outputs = model(*inputs)
-            outputs_dict = _split_outputs(outputs)
-            loss = 0.0
-            targets_dict = _split_targets(targets_batch, device)
-
-            for target in TARGETS:
-                target_values = targets_dict[target]
-                # Asegurar que ambos tengan la misma forma (ej. [B] o [B, 1])
-                target_loss = criterion(outputs_dict[target].squeeze(), target_values.squeeze())
-                loss += target_loss
-            
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), config.get('max_grad_norm', 1.0))
-            optimizer.step()
-            train_loss += loss.item()
-        
-        avg_train_loss = train_loss / (len(train_loader) + 1e-6)
-        
-        # --- Validación ---
-        model.eval()
-        val_loss = 0.0
-        val_metrics_epoch = {target: {'preds': [], 'targets': []} for target in TARGETS}
-        
-        with torch.no_grad():
-            for batch_data in val_loader:
-                
-                # --- MANEJO DE MODELO HÍBRIDO ---
-                if use_pixel_features:
-                    if len(batch_data) != 3: continue # Ignorar batch corrupto
-                    images, targets_batch, pixel_features = batch_data
-                    images = images.to(device)
-                    pixel_features = pixel_features.to(device)
-                    inputs = (images, pixel_features)
-                else:
-                    if len(batch_data) != 2: continue # Ignorar batch corrupto
-                    images, targets_batch = batch_data
-                    images = images.to(device)
-                    inputs = (images,)
-                
-                outputs = model(*inputs)
-                outputs_dict = _split_outputs(outputs)
-                batch_loss = 0.0
-                targets_dict = _split_targets(targets_batch, device)
-
-                for target in TARGETS:
-                    target_values = targets_dict[target]
-                    target_loss = criterion(outputs_dict[target].squeeze(), target_values.squeeze())
-                    batch_loss += target_loss
-                    
-                    val_metrics_epoch[target]['preds'].extend(
-                        outputs_dict[target].cpu().numpy().flatten()
-                    )
-                    val_metrics_epoch[target]['targets'].extend(
-                        target_values.cpu().numpy().flatten()
-                    )
-                
-                val_loss += batch_loss.item()
-        
-        avg_val_loss = val_loss / (len(val_loader) + 1e-6)
-        
-        # Actualizar scheduler (diferente para ReduceLROnPlateau)
-        if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
-            scheduler.step(avg_val_loss)
-            current_lr = optimizer.param_groups[0]['lr']
-        else:
-            scheduler.step()
-            current_lr = scheduler.get_last_lr()[0] if hasattr(scheduler, 'get_last_lr') else optimizer.param_groups[0]['lr']
-        
-        # Calcular métricas de validación
-        log_str = (
-            f"Epoch {epoch+1}/{config['epochs']} - "
-            f"Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}"
-        )
+        current_lr = _update_scheduler(scheduler, avg_val_loss, optimizer)
         
         history['train_loss'].append(avg_train_loss)
         history['val_loss'].append(avg_val_loss)
         history['learning_rate'].append(current_lr)
-
-        # CRÍTICO: Desnormalizar predicciones y targets antes de calcular métricas
-        # Usar función robusta de métricas
-        from .metrics import (
-            denormalize_and_calculate_metrics,
-            validate_predictions_targets_alignment
+        
+        logger.info(f"Epoch {epoch+1}/{config['epochs']} - Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}")
+        _calculate_and_log_metrics(val_metrics_epoch, scalers, history, epoch, config)
+        
+        is_best, patience_counter, best_val_loss = _check_early_stopping(
+            avg_val_loss, best_val_loss, patience_counter, improvement_threshold
         )
         
-        # Preparar diccionarios de predicciones y targets normalizados
-        pred_dict_norm = {t: np.array(val_metrics_epoch[t]['preds']) for t in TARGETS}
-        targ_dict_norm = {t: np.array(val_metrics_epoch[t]['targets']) for t in TARGETS}
-        
-        # Validar alineación
-        if not validate_predictions_targets_alignment(pred_dict_norm, targ_dict_norm):
-            logger.error("Problema de alineación entre predicciones y targets")
-        
-        # Desnormalizar y calcular métricas usando función robusta
-        metrics_per_target, avg_r2 = denormalize_and_calculate_metrics(
-            predictions_norm=pred_dict_norm,
-            targets_norm=targ_dict_norm,
-            scalers=scalers,
-            target_names=TARGETS,
-            verbose=False  # No verbose aquí, lo haremos después
-        )
-        
-        # Guardar métricas en history y construir log string
-        for target in TARGETS:
-            if target in metrics_per_target:
-                mae = metrics_per_target[target]['mae']
-                rmse = metrics_per_target[target]['rmse']
-                r2 = metrics_per_target[target]['r2']
-                
-                history[f'val_mae_{target}'].append(mae)
-                history[f'val_rmse_{target}'].append(rmse)
-                history[f'val_r2_{target}'].append(r2)
-                log_str += f", {target} R²: {r2:.4f}"
-            else:
-                logger.warning(f"No se calcularon métricas para {target}")
-                history[f'val_mae_{target}'].append(0.0)
-                history[f'val_rmse_{target}'].append(0.0)
-                history[f'val_r2_{target}'].append(0.0)
-                log_str += f", {target} R²: 0.0000"
-        
-        # Agregar R² promedio al log y al historial
-        log_str += f" | Avg R²: {avg_r2:.4f}"
-        history['val_r2_avg'].append(avg_r2)
-
-        logger.info(log_str)
-        
-        # Log detallado por componente (cada 5 épocas o si R² es muy negativo)
-        if (epoch + 1) % 5 == 0 or any(
-            metrics_per_target.get(t, {}).get('r2', 0) < -100
-            for t in TARGETS
-        ):
-            logger.info("=== Métricas detalladas por componente ===")
-            for target in TARGETS:
-                if target in metrics_per_target:
-                    m = metrics_per_target[target]
-                    logger.info(
-                        f"{target.upper()}: MAE={m['mae']:.4f}, "
-                        f"RMSE={m['rmse']:.4f}, R²={m['r2']:.4f}, "
-                        f"n={m['n_samples']}"
-                    )
-            logger.info(f"R² Promedio: {avg_r2:.4f}")
-            logger.info("==========================================")
-        
-        # Early stopping
-        improvement_threshold = config.get('improvement_threshold', 1e-4)
-        if avg_val_loss < best_val_loss - (improvement_threshold):
-            best_val_loss = avg_val_loss
-            patience_counter = 0
+        if is_best:
             best_model_state = model.state_dict().copy()
-        else:
-            patience_counter += 1
-        
-        # Nota: scheduler.step() ya se llamó arriba (antes de early stopping)
         
         if patience_counter >= config.get('early_stopping_patience', 10):
             logger.info(f"Early stopping en época {epoch+1}")
@@ -932,67 +1012,10 @@ def train_multi_head_model(
         model.load_state_dict(best_model_state)
         logger.info(f"Mejor modelo cargado (Val Loss: {best_val_loss:.4f})")
     
-    # --- Guardar modelo (Híbrido o Multi-head) ---
-    artifacts_dir = get_regressors_artifacts_dir()
-    model_name = "hybrid.pt" if is_hybrid else "multihead.pt"
-    model_path = artifacts_dir / model_name
+    _save_model_file(model, is_hybrid, best_val_loss, history, config)
     
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'model_info': {
-            'model_type': 'HybridCacaoRegression' if is_hybrid else 'MultiHeadRegression',
-            'config': config,
-            'best_val_loss': best_val_loss,
-            'training_history': history,
-            'timestamp': datetime.now().isoformat()
-        }
-    }, model_path)
-    
-    logger.info(f"Modelo {model_name} guardado en {model_path}")
-    
-    # --- Guardar métricas en DB (si está cargado) ---
     if save_metrics and DJANGO_LOADED:
-        try:
-            user = User.objects.filter(is_superuser=True).first() or User.objects.first()
-            train_size = dataset_info.get('train_size', 0) if dataset_info else 0
-            val_size = dataset_info.get('val_size', 0) if dataset_info else 0
-            test_size = dataset_info.get('test_size', 0) if dataset_info else 0
-
-            for target in TARGETS:
-                ModelMetrics.objects.create(
-                    model_name="hybrid_regression" if is_hybrid else "multihead_regression",
-                    model_type='regression',
-                    target=target,
-                    version=f"v{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                    training_job=training_job,
-                    created_by=user,
-                    metric_type='validation',
-                    
-                    mae=history[f'val_mae_{target}'][-1],
-                    mse=history['val_loss'][-1], # Pérdida general
-                    rmse=history[f'val_rmse_{target}'][-1],
-                    r2_score=history[f'val_r2_{target}'][-1],
-                    
-                    dataset_size=int(train_size + val_size + test_size),
-                    train_size=int(train_size),
-                    validation_size=int(val_size),
-                    
-                    epochs=int(len(history['train_loss'])),
-                    batch_size=int(config.get('batch_size', 32)),
-                    learning_rate=float(config.get('learning_rate', 1e-4)),
-                    
-                    model_params={
-                        'model_type': config.get('model_type', 'hybrid'),
-                        'hybrid': is_hybrid,
-                        'use_pixel_features': use_pixel_features,
-                        'dropout_rate': config.get('dropout_rate', 0.2),
-                    },
-                    notes=f"Modelo {'Híbrido' if is_hybrid else 'Multi-head'} para {target}."
-                )
-            logger.info(f"[OK] Métricas del modelo {model_name} guardadas en DB")
-            
-        except Exception as e:
-            logger.error(f"[ERROR] Error guardando métricas del modelo {model_name}: {e}")
+        _save_metrics_to_db("hybrid.pt" if is_hybrid else "multihead.pt", is_hybrid, use_pixel_features, history, config, dataset_info, training_job)
     
     return history
 

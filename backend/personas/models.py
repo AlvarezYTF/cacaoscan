@@ -124,55 +124,71 @@ class Persona(models.Model):
             models.Index(fields=['user']),
         ]
     
+    def _validate_document_number(self, errors):
+        """Validate document number."""
+        if not self.numero_documento:
+            return
+        
+        if not self.numero_documento.isdigit():
+            errors['numero_documento'] = 'El número de documento solo puede contener números.'
+        elif len(self.numero_documento) < 6 or len(self.numero_documento) > 11:
+            errors['numero_documento'] = 'El número de documento debe tener entre 6 y 11 dígitos.'
+    
+    def _validate_phone(self, errors):
+        """Validate phone number."""
+        if not self.telefono:
+            return
+        
+        cleaned_phone = re.sub(r'[\s\-\(\)]', '', self.telefono)
+        if cleaned_phone.startswith('+'):
+            cleaned_phone = cleaned_phone[1:]
+        
+        if not cleaned_phone.isdigit():
+            errors['telefono'] = 'El teléfono solo puede contener números.'
+        elif len(cleaned_phone) < 7 or len(cleaned_phone) > 15:
+            errors['telefono'] = 'El teléfono debe tener entre 7 y 15 dígitos.'
+    
+    def _validate_birth_date(self, errors):
+        """Validate birth date."""
+        if not self.fecha_nacimiento:
+            return
+        
+        hoy = timezone.now().date()
+        if self.fecha_nacimiento > hoy:
+            errors['fecha_nacimiento'] = 'La fecha de nacimiento no puede ser futura.'
+            return
+        
+        edad = hoy.year - self.fecha_nacimiento.year - \
+               ((hoy.month, hoy.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day))
+        
+        if edad < 14:
+            errors['fecha_nacimiento'] = 'La persona debe tener al menos 14 años.'
+        if edad > 120:
+            errors['fecha_nacimiento'] = 'La fecha de nacimiento no es válida.'
+    
+    def _validate_names(self, errors):
+        """Validate name fields."""
+        if self.primer_nombre and not all(char.isalpha() or char.isspace() for char in self.primer_nombre):
+            errors['primer_nombre'] = 'El primer nombre solo puede contener letras.'
+        
+        if self.primer_apellido and not all(char.isalpha() or char.isspace() for char in self.primer_apellido):
+            errors['primer_apellido'] = 'El primer apellido solo puede contener letras.'
+    
+    def _validate_municipality_department(self, errors):
+        """Validate municipality belongs to department."""
+        if self.municipio and self.departamento:
+            if self.municipio.departamento != self.departamento:
+                errors['municipio'] = 'El municipio no pertenece al departamento seleccionado.'
+    
     def clean(self):
         """Validaciones personalizadas a nivel de modelo."""
         errors = {}
         
-        # Validar número de documento
-        if self.numero_documento:
-            # Solo números
-            if not self.numero_documento.isdigit():
-                errors['numero_documento'] = 'El número de documento solo puede contener números.'
-            # Longitud entre 6 y 11 dígitos
-            elif len(self.numero_documento) < 6 or len(self.numero_documento) > 11:
-                errors['numero_documento'] = 'El número de documento debe tener entre 6 y 11 dígitos.'
-        
-        # Validar teléfono
-        if self.telefono:
-            cleaned_phone = re.sub(r'[\s\-\(\)]', '', self.telefono)
-            if cleaned_phone.startswith('+'):
-                cleaned_phone = cleaned_phone[1:]
-            if not cleaned_phone.isdigit():
-                errors['telefono'] = 'El teléfono solo puede contener números.'
-            elif len(cleaned_phone) < 7 or len(cleaned_phone) > 15:
-                errors['telefono'] = 'El teléfono debe tener entre 7 y 15 dígitos.'
-        
-        # Validar fecha de nacimiento
-        if self.fecha_nacimiento:
-            hoy = timezone.now().date()
-            if self.fecha_nacimiento > hoy:
-                errors['fecha_nacimiento'] = 'La fecha de nacimiento no puede ser futura.'
-            else:
-                edad = hoy.year - self.fecha_nacimiento.year - \
-                       ((hoy.month, hoy.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day))
-                if edad < 14:
-                    errors['fecha_nacimiento'] = 'La persona debe tener al menos 14 años.'
-                if edad > 120:
-                    errors['fecha_nacimiento'] = 'La fecha de nacimiento no es válida.'
-        
-        # Validar nombres (solo letras y espacios)
-        if self.primer_nombre:
-            if not all(char.isalpha() or char.isspace() for char in self.primer_nombre):
-                errors['primer_nombre'] = 'El primer nombre solo puede contener letras.'
-        
-        if self.primer_apellido:
-            if not all(char.isalpha() or char.isspace() for char in self.primer_apellido):
-                errors['primer_apellido'] = 'El primer apellido solo puede contener letras.'
-        
-        # Validar que el municipio pertenezca al departamento
-        if self.municipio and self.departamento:
-            if self.municipio.departamento != self.departamento:
-                errors['municipio'] = 'El municipio no pertenece al departamento seleccionado.'
+        self._validate_document_number(errors)
+        self._validate_phone(errors)
+        self._validate_birth_date(errors)
+        self._validate_names(errors)
+        self._validate_municipality_department(errors)
         
         if errors:
             raise ValidationError(errors)

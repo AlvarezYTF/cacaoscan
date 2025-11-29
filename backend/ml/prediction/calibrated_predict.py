@@ -81,79 +81,14 @@ class CalibratedCacaoPredictor:
             logger.info("Cargando artefactos...")
             start_time = time.time()
             
-            # 1. Cargar YOLO cropper
-            self.yolo_cropper = create_cacao_cropper(
-                confidence_threshold=self.confidence_threshold,
-                crop_size=512,
-                padding=10,
-                save_masks=False,
-                overwrite=False
-            )
-            
-            # 2. Verificar si existen los modelos y escaladores
-            scalers_path = get_regressors_artifacts_dir()
-            models_exist = all(
-                (get_regressors_artifacts_dir() / f"{target}.pt").exists() 
-                for target in TARGETS
-            )
-            scalers_exist = scalers_path.exists()
-            
-            if not models_exist or not scalers_exist:
-                import os
-                auto_train_enabled = os.getenv("AUTO_TRAIN_ENABLED", "0").lower() in ("1", "true", "yes")
-                if auto_train_enabled:
-                    logger.warning("Modelos o escaladores no encontrados. Iniciando entrenamiento automtico...")
-                    if not self._auto_train_models():
-                        logger.error("Error en entrenamiento automtico")
-                        return False
-                else:
-                    logger.warning("Modelos/escaladores no encontrados y AUTO_TRAIN_ENABLED=0. Omitiendo autoentrenamiento.")
-                    return False
-            
-            # 3. Cargar escaladores
-            try:
-                self.scalers = load_scalers()
-                logger.info("Escaladores cargados exitosamente")
-            except Exception as e:
-                logger.error(f"Error cargando escaladores: {e}")
+            self._initialize_yolo_cropper()
+            if not self._ensure_regression_assets_exist():
                 return False
-            
-            # 4. Cargar modelos de regresión
-            for target in TARGETS:
-                try:
-                    model_path = get_regressors_artifacts_dir() / f"{target}.pt"
-                    model = create_model(
-                        model_type="resnet18",
-                        num_outputs=1,
-                        pretrained=False,
-                        dropout_rate=0.2
-                    )
-                    
-                    # Cargar pesos del modelo
-                    # S6985: Use weights_only=True to prevent arbitrary code execution from untrusted model files.
-                    # This ensures only model weights are loaded, not arbitrary Python objects or code.
-                    checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)
-                    model.load_state_dict(checkpoint['model_state_dict'])
-                    model.to(self.device)
-                    model.eval()
-                    
-                    self.regression_models[target] = model
-                    logger.info(f"Modelo {target} cargado exitosamente")
-                    
-                except Exception as e:
-                    logger.error(f"Error cargando modelo {target}: {e}")
-                    return False
-            
-            # 5. Cargar calibración si está habilitada
-            if self.use_calibration and self.calibration_manager:
-                try:
-                    calibration_params = self.calibration_manager.load_calibration()
-                    if calibration_params:
-                        logger.info(f"Calibración cargada: {calibration_params.pixels_per_mm:.3f} pixels/mm")
-                    else:
-                        logger.warning("No se encontró calibración previa. Se usarán medidas en píxeles.")
-                except Exception as e:
-                    logger.warning(f"Error cargando calibración: {e}")
+            if not self._load_scalers_safe():
+                return False
+            if not self._load_regression_models():
+                return False
+            self._load_calibration_if_needed()
             
             self.models_loaded = True
             load_time = time.time() - start_time
@@ -183,6 +118,84 @@ class CalibratedCacaoPredictor:
         except Exception as e:
             logger.error(f"Error en entrenamiento automático: {e}")
             return False
+
+    def _initialize_yolo_cropper(self) -> None:
+        """Inicializa el recortador YOLO."""
+        self.yolo_cropper = create_cacao_cropper(
+            confidence_threshold=self.confidence_threshold,
+            crop_size=512,
+            padding=10,
+            save_masks=False,
+            overwrite=False
+        )
+
+    def _ensure_regression_assets_exist(self) -> bool:
+        """Verifica la existencia de modelos y escaladores necesarios."""
+        models_exist = all(
+            (get_regressors_artifacts_dir() / f"{target}.pt").exists()
+            for target in TARGETS
+        )
+        scalers_exist = get_regressors_artifacts_dir().exists()
+        if models_exist and scalers_exist:
+            return True
+        
+        import os
+        auto_train_enabled = os.getenv("AUTO_TRAIN_ENABLED", "0").lower() in ("1", "true", "yes")
+        if auto_train_enabled:
+            logger.warning("Modelos o escaladores no encontrados. Iniciando entrenamiento automático...")
+            return self._auto_train_models()
+        
+        logger.warning("Modelos/escaladores no encontrados y AUTO_TRAIN_ENABLED=0. Omitiendo autoentrenamiento.")
+        return False
+
+    def _load_scalers_safe(self) -> bool:
+        """Carga los escaladores y gestiona errores."""
+        try:
+            self.scalers = load_scalers()
+            logger.info("Escaladores cargados exitosamente")
+            return True
+        except Exception as exc:
+            logger.error(f"Error cargando escaladores: {exc}")
+            return False
+
+    def _load_regression_models(self) -> bool:
+        """Carga los modelos de regresión individuales."""
+        for target in TARGETS:
+            try:
+                model_path = get_regressors_artifacts_dir() / f"{target}.pt"
+                model = create_model(
+                    model_type="resnet18",
+                    num_outputs=1,
+                    pretrained=False,
+                    dropout_rate=0.2
+                )
+                checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)
+                state_dict = checkpoint.get('model_state_dict')
+                if not state_dict:
+                    raise ValueError(f"Checkpoint {model_path} no contiene 'model_state_dict'")
+                model.load_state_dict(state_dict)
+                model.to(self.device)
+                model.eval()
+                
+                self.regression_models[target] = model
+                logger.info(f"Modelo {target} cargado exitosamente")
+            except Exception as exc:
+                logger.error(f"Error cargando modelo {target}: {exc}")
+                return False
+        return True
+
+    def _load_calibration_if_needed(self) -> None:
+        """Carga parámetros de calibración si está disponible."""
+        if not self.use_calibration or not self.calibration_manager:
+            return
+        try:
+            calibration_params = self.calibration_manager.load_calibration()
+            if calibration_params:
+                logger.info(f"Calibración cargada: {calibration_params.pixels_per_mm:.3f} pixels/mm")
+            else:
+                logger.warning("No se encontró calibración previa. Se usarán medidas en píxeles.")
+        except Exception as exc:
+            logger.warning(f"Error cargando calibración: {exc}")
     
     def _preprocess_image(self, image: Image.Image) -> torch.Tensor:
         """Preprocesa la imagen para el modelo de regresión."""

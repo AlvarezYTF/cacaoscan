@@ -62,48 +62,21 @@ class IntelligentEarlyStopping:
             f"val_loss_increase_epochs={val_loss_increase_epochs}"
         )
     
-    def __call__(
-        self,
-        epoch: int,
-        val_loss: float,
-        r2_scores: Dict[str, float],
-        optimizer: Optional[object] = None
-    ) -> Tuple[bool, bool, bool, bool]:
-        """
-        Check if training should stop or take action.
-        
-        Args:
-            epoch: Current epoch
-            val_loss: Validation loss
-            r2_scores: R² scores per target
-            optimizer: Optimizer instance (for LR reduction)
-            
-        Returns:
-            Tuple of (should_stop, is_best, should_reduce_lr, should_rollback)
-        """
-        should_reduce_lr = False
-        should_rollback = False
-        
-        # Check minimum improvement (1%)
-        # Handle initial case when best_val_loss is inf
+    def _check_improvement(self, val_loss: float) -> bool:
+        """Check if current loss is better than best loss."""
         if self.best_val_loss == float('inf'):
-            # First epoch: any finite loss is considered best
-            is_best = True
-            min_delta = 0.0
-        else:
-            # Calculate min_delta based on absolute value to handle negative losses
-            min_delta = abs(self.best_val_loss * self.min_delta_percent)
-            
-            # For negative losses: less negative (closer to zero) is better
-            # For positive losses: smaller is better
-            if self.best_val_loss < 0:
-                # Negative loss: we want val_loss > best_val_loss (less negative)
-                is_best = val_loss > self.best_val_loss + min_delta
-            else:
-                # Positive loss: we want val_loss < best_val_loss (smaller)
-                is_best = val_loss < self.best_val_loss - min_delta
+            return True
         
-        # Check for low R² (consecutive epochs)
+        min_delta = abs(self.best_val_loss * self.min_delta_percent)
+        
+        if self.best_val_loss < 0:
+            return val_loss > self.best_val_loss + min_delta
+        return val_loss < self.best_val_loss - min_delta
+    
+    def _check_low_r2(self, r2_scores: Dict[str, float]) -> bool:
+        """Check for low R² scores and update counters."""
+        should_reduce_lr = False
+        
         for target in self.TARGETS:
             r2 = r2_scores.get(target, -float('inf'))
             if r2 < self.r2_threshold:
@@ -118,26 +91,33 @@ class IntelligentEarlyStopping:
             else:
                 self.low_r2_count[target] = 0
         
-        # Check for increasing val_loss (worsening)
-        # Skip check on first epoch (last_val_loss is inf)
-        if self.last_val_loss != float('inf'):
-            # For negative losses: more negative (worse) means val_loss < last_val_loss
-            # For positive losses: larger (worse) means val_loss > last_val_loss
-            if (self.last_val_loss < 0 and val_loss < self.last_val_loss) or \
-               (self.last_val_loss >= 0 and val_loss > self.last_val_loss):
-                self.val_loss_increase_count += 1
-                if self.val_loss_increase_count >= self.val_loss_increase_epochs:
-                    should_rollback = True
-                    logger.warning(
-                        f"Val loss worsened for {self.val_loss_increase_count} consecutive epochs. "
-                        f"Triggering rollback to best checkpoint."
-                    )
-            else:
-                self.val_loss_increase_count = 0
+        return should_reduce_lr
+    
+    def _check_val_loss_increase(self, val_loss: float) -> bool:
+        """Check if validation loss is increasing."""
+        if self.last_val_loss == float('inf'):
+            return False
         
-        self.last_val_loss = val_loss
+        is_worsening = (
+            (self.last_val_loss < 0 and val_loss < self.last_val_loss) or
+            (self.last_val_loss >= 0 and val_loss > self.last_val_loss)
+        )
         
-        # Update best model
+        if is_worsening:
+            self.val_loss_increase_count += 1
+            if self.val_loss_increase_count >= self.val_loss_increase_epochs:
+                logger.warning(
+                    f"Val loss worsened for {self.val_loss_increase_count} consecutive epochs. "
+                    f"Triggering rollback to best checkpoint."
+                )
+                return True
+        else:
+            self.val_loss_increase_count = 0
+        
+        return False
+    
+    def _update_best_model(self, epoch: int, val_loss: float, is_best: bool) -> None:
+        """Update best model state."""
         if is_best:
             old_best = self.best_val_loss
             self.best_val_loss = val_loss
@@ -160,16 +140,44 @@ class IntelligentEarlyStopping:
             logger.debug(
                 f"Epoch {epoch}: No improvement (counter={self.counter}/{self.patience})"
             )
+    
+    def _reduce_learning_rate(self, optimizer: object) -> None:
+        """Reduce learning rate by half."""
+        current_lr = optimizer.param_groups[0]['lr']
+        new_lr = current_lr * 0.5
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = new_lr
+        logger.info(f"LR reduced from {current_lr:.2e} to {new_lr:.2e}")
+    
+    def __call__(
+        self,
+        epoch: int,
+        val_loss: float,
+        r2_scores: Dict[str, float],
+        optimizer: Optional[object] = None
+    ) -> Tuple[bool, bool, bool, bool]:
+        """
+        Check if training should stop or take action.
         
-        # Reduce LR if needed
+        Args:
+            epoch: Current epoch
+            val_loss: Validation loss
+            r2_scores: R² scores per target
+            optimizer: Optimizer instance (for LR reduction)
+            
+        Returns:
+            Tuple of (should_stop, is_best, should_reduce_lr, should_rollback)
+        """
+        is_best = self._check_improvement(val_loss)
+        should_reduce_lr = self._check_low_r2(r2_scores)
+        should_rollback = self._check_val_loss_increase(val_loss)
+        
+        self.last_val_loss = val_loss
+        self._update_best_model(epoch, val_loss, is_best)
+        
         if should_reduce_lr and optimizer is not None:
-            current_lr = optimizer.param_groups[0]['lr']
-            new_lr = current_lr * 0.5
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = new_lr
-            logger.info(f"LR reduced from {current_lr:.2e} to {new_lr:.2e}")
+            self._reduce_learning_rate(optimizer)
         
-        # Check if should stop
         should_stop = self.counter >= self.patience
         
         if should_stop:

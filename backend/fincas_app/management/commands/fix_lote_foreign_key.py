@@ -3,6 +3,7 @@ Comando de Django para corregir la foreign key de fincas_app_lote.
 Ejecutar con: python manage.py fix_lote_foreign_key
 """
 import re
+from psycopg2 import sql
 from django.core.management.base import BaseCommand
 from django.db import connection
 
@@ -40,20 +41,6 @@ class Command(BaseCommand):
         
         return identifier
     
-    def _quote_sql_identifier(self, identifier: str) -> str:
-        """
-        Escapa un identificador SQL usando la función segura de Django.
-        
-        Args:
-            identifier: Nombre del objeto SQL validado
-            
-        Returns:
-            Identificador escapado de manera segura
-        """
-        validated = self._validate_sql_identifier(identifier)
-        # Use Django's quote_name for safe SQL identifier escaping
-        return connection.ops.quote_name(validated)
-
     def _find_foreign_keys(self, cursor):
         """Busca todas las foreign keys en fincas_app_lote."""
         cursor.execute("""
@@ -86,12 +73,13 @@ class Command(BaseCommand):
     def _drop_incorrect_foreign_key(self, cursor, constraint_name: str) -> bool:
         """Elimina una foreign key incorrecta."""
         try:
-            # Validate and escape constraint name using Django's safe method
-            safe_constraint_name = self._quote_sql_identifier(constraint_name)
-            safe_table_name = connection.ops.quote_name('fincas_app_lote')
-            # Build query using string concatenation with validated and escaped identifiers
-            # This is safe because both identifiers are validated and escaped using Django's quote_name
-            query = 'ALTER TABLE ' + safe_table_name + ' DROP CONSTRAINT IF EXISTS ' + safe_constraint_name
+            validated_constraint = self._validate_sql_identifier(constraint_name)
+            query = sql.SQL(
+                'ALTER TABLE {table} DROP CONSTRAINT IF EXISTS {constraint}'
+            ).format(
+                table=sql.Identifier('fincas_app_lote'),
+                constraint=sql.Identifier(validated_constraint),
+            )
             cursor.execute(query)
             return True
         except ValueError as e:
@@ -104,10 +92,7 @@ class Command(BaseCommand):
     def _create_correct_foreign_key(self, cursor, new_constraint_name: str) -> bool:
         """Crea una foreign key correcta."""
         try:
-            # Validate and escape constraint name using Django's safe method
-            safe_constraint_name = self._quote_sql_identifier(new_constraint_name)
-            safe_table_name = connection.ops.quote_name('fincas_app_lote')
-            safe_ref_table_name = connection.ops.quote_name('api_finca')
+            validated_constraint = self._validate_sql_identifier(new_constraint_name)
             
             cursor.execute("""
                 SELECT constraint_name 
@@ -115,22 +100,24 @@ class Command(BaseCommand):
                 WHERE constraint_type = 'FOREIGN KEY'
                     AND table_name = 'fincas_app_lote'
                     AND constraint_name = %s;
-            """, [new_constraint_name])
+            """, [validated_constraint])
             
             if cursor.fetchone():
                 self.stdout.write(self.style.WARNING(f'  [WARN]  FK correcta ya existe: {new_constraint_name}'))
                 return False
             
-            # Build query using string concatenation with validated and escaped identifiers
-            # This is safe because all identifiers are validated and escaped using Django's quote_name
-            safe_column_name = connection.ops.quote_name('finca_id')
-            safe_ref_column_name = connection.ops.quote_name('id')
-            query = (
-                'ALTER TABLE ' + safe_table_name + ' '
-                'ADD CONSTRAINT ' + safe_constraint_name + ' '
-                'FOREIGN KEY (' + safe_column_name + ') '
-                'REFERENCES ' + safe_ref_table_name + '(' + safe_ref_column_name + ') '
+            query = sql.SQL(
+                'ALTER TABLE {table} '
+                'ADD CONSTRAINT {constraint} '
+                'FOREIGN KEY ({column}) '
+                'REFERENCES {ref_table}({ref_column}) '
                 'ON DELETE CASCADE'
+            ).format(
+                table=sql.Identifier('fincas_app_lote'),
+                constraint=sql.Identifier(validated_constraint),
+                column=sql.Identifier('finca_id'),
+                ref_table=sql.Identifier('api_finca'),
+                ref_column=sql.Identifier('id'),
             )
             cursor.execute(query)
             return True

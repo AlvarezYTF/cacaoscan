@@ -7,6 +7,7 @@ import torch.nn as nn
 from torchvision import transforms as T
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
+from typing import Tuple
 
 # Error message constants
 ERROR_IMAGE_CANNOT_BE_NONE = "image cannot be None"
@@ -502,98 +503,130 @@ def create_transparent_crop(image_rgb: np.ndarray, mask: np.ndarray, padding: in
     if image_rgb is None or mask is None:
         raise ValueError("image_rgb y mask no pueden ser None")
 
-    # Asegurar tamaos
-    if mask.shape[:2] != image_rgb.shape[:2]:
-        mask = cv2.resize(mask, (image_rgb.shape[1], image_rgb.shape[0]), interpolation=cv2.INTER_LINEAR)
-
-    # Normalizar mscara
-    if mask.max() <= 1.0:
-        mask = (mask * 255).astype(np.uint8)
-    else:
-        mask = np.clip(mask, 0, 255).astype(np.uint8)
-
-    # REFINAMIENTO PRECISO DE LA MSCARA CON OPENCV
+    mask = _align_mask_to_image(mask, image_rgb)
     mask_refined = _refine_mask_opencv_precise(image_rgb, mask)
-
-    # 1 Deteccin de contornos y seleccin del grano ms grande
     contours, _ = cv2.findContours(mask_refined, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
-        # Si no hay contornos, devolver imagen completa con mscara original
-        rgba = np.dstack([image_rgb, mask_refined])
-        return rgba
+        return np.dstack([image_rgb, mask_refined])
 
     largest_contour = max(contours, key=cv2.contourArea)
-    x, y, w, h = cv2.boundingRect(largest_contour)
+    x, y, w, h = _compute_padded_bbox(largest_contour, padding, image_rgb.shape)
+    final_mask = _render_primary_mask(mask_refined, largest_contour)
+    
+    if not crop_only:
+        return _create_refined_rgba(image_rgb, final_mask, x, y, w, h)
+    
+    adjusted_bbox = _validate_and_adjust_crop_bbox(
+        image_rgb=image_rgb,
+        final_mask=final_mask,
+        bbox=(x, y, w, h),
+        padding=padding
+    )
+    x_adj, y_adj, w_adj, h_adj = adjusted_bbox
+    return _create_rgba_from_crop(image_rgb, final_mask, x_adj, y_adj, w_adj, h_adj)
 
-    # 2 Aplicar padding mnimo (solo para no cortar bordes del grano)
+
+def _align_mask_to_image(mask: np.ndarray, image_rgb: np.ndarray) -> np.ndarray:
+    """Resize and normalize mask values to align with the image shape."""
+    if mask.shape[:2] != image_rgb.shape[:2]:
+        mask = cv2.resize(mask, (image_rgb.shape[1], image_rgb.shape[0]), interpolation=cv2.INTER_LINEAR)
+    if mask.max() <= 1.0:
+        return (mask * 255).astype(np.uint8)
+    return np.clip(mask, 0, 255).astype(np.uint8)
+
+
+def _compute_padded_bbox(contour: np.ndarray, padding: int, image_shape: Tuple[int, int, int]) -> Tuple[int, int, int, int]:
+    """Compute the padded bounding box for the main contour."""
+    x, y, w, h = cv2.boundingRect(contour)
+    height, width = image_shape[:2]
     x = max(0, x - padding)
     y = max(0, y - padding)
-    w = min(image_rgb.shape[1] - x, w + 2 * padding)
-    h = min(image_rgb.shape[0] - y, h + 2 * padding)
+    w = min(width - x, w + 2 * padding)
+    h = min(height - y, h + 2 * padding)
+    return x, y, w, h
 
-    # 3 Crear mscara final del contorno ms grande
+
+def _render_primary_mask(mask_refined: np.ndarray, contour: np.ndarray) -> np.ndarray:
+    """Render a filled mask for the selected contour."""
     final_mask = np.zeros(mask_refined.shape, dtype=np.uint8)
-    cv2.drawContours(final_mask, [largest_contour], -1, 255, thickness=-1)
+    cv2.drawContours(final_mask, [contour], -1, 255, thickness=-1)
+    return final_mask
+
+
+def _create_refined_rgba(
+    image_rgb: np.ndarray,
+    final_mask: np.ndarray,
+    x: int,
+    y: int,
+    w: int,
+    h: int
+) -> np.ndarray:
+    """Generate RGBA crop with additional refinement."""
+    region_rgb = image_rgb[y:y+h, x:x+w].copy()
+    region_mask = final_mask[y:y+h, x:x+w].copy()
+    region_mask_refined = _refine_mask_opencv_precise(region_rgb, region_mask)
+    return _stack_rgba(region_rgb, region_mask_refined)
+
+
+def _validate_and_adjust_crop_bbox(
+    *,
+    image_rgb: np.ndarray,
+    final_mask: np.ndarray,
+    bbox: Tuple[int, int, int, int],
+    padding: int
+) -> Tuple[int, int, int, int]:
+    """Validate crop ratios and adjust the bounding box if needed."""
+    _, _, w, h = bbox
+    original_area = image_rgb.shape[0] * image_rgb.shape[1]
+    crop_area = w * h
+    if crop_area <= 0:
+        return bbox
     
-    # Si no crop_only, aplicar refinamiento adicional en la regin del crop
-    if not crop_only:
-        # Recortar regin para procesamiento ms preciso
-        region_rgb = image_rgb[y:y+h, x:x+w].copy()
-        region_mask = final_mask[y:y+h, x:x+w].copy()
-        
-        # Refinar mscara en la regin recortada (ms preciso)
-        region_mask_refined = _refine_mask_opencv_precise(region_rgb, region_mask)
-        
-        # NO suavizar - mantener bordes precisos sin halos
-        region_mask_final = region_mask_refined
-        
-        # Crear RGBA con transparencia exacta
-        rgba = np.zeros((h, w, 4), dtype=np.uint8)
-        rgba[:, :, :3] = region_rgb
-        rgba[:, :, 3] = region_mask_final
-        
-        return rgba
-    else:
-        # Si crop_only, solo recortar sin refinamiento adicional
-        # VALIDACIN: Verificar que el crop no sea casi toda la imagen
-        original_area = image_rgb.shape[0] * image_rgb.shape[1]
-        crop_area = w * h
-        crop_ratio = crop_area / original_area
-        
-        # Si el crop ocupa ms del 80% de la imagen, algo est mal - rechazar
-        if crop_ratio > 0.80:
-            # Calcular el rea real del objeto (pxeles con mscara > 0)
-            object_area = np.sum(final_mask > 128)
-            object_ratio = object_area / original_area
-            
-            # Si el objeto tambin ocupa ms del 80%, rechazar completamente
-            if object_ratio > 0.80:
-                raise ValueError(
-                    f"El objeto detectado ocupa ms del 80% de la imagen ({object_ratio:.1%}). "
-                    f"Esto sugiere que no se detect correctamente el grano o la segmentacin fall. "
-                    f"rea objeto: {object_area}px, rea imagen: {original_area}px"
-                )
-            # Si el objeto es pequeo pero el bbox es grande, ajustar el bbox al objeto
-            else:
-                # Recalcular bbox basado solo en los pxeles del objeto
-                coords = np.nonzero(final_mask > 128)
-                if len(coords[0]) > 0:
-                    y_min, y_max = coords[0].min(), coords[0].max()
-                    x_min, x_max = coords[1].min(), coords[1].max()
-                    # Aplicar padding mnimo
-                    x = max(0, x_min - padding)
-                    y = max(0, y_min - padding)
-                    w = min(image_rgb.shape[1] - x, (x_max - x_min) + 2 * padding)
-                    h = min(image_rgb.shape[0] - y, (y_max - y_min) + 2 * padding)
-        
-        crop_rgb = image_rgb[y:y+h, x:x+w].copy()
-        crop_alpha = final_mask[y:y+h, x:x+w].copy()
+    crop_ratio = crop_area / original_area
+    if crop_ratio <= 0.80:
+        return bbox
+    
+    object_area = np.sum(final_mask > 128)
+    object_ratio = object_area / original_area
+    if object_ratio > 0.80:
+        raise ValueError(
+            f"El objeto detectado ocupa ms del 80% de la imagen ({object_ratio:.1%}). "
+            f"Esto sugiere que no se detect correctamente el grano o la segmentacin fall. "
+            f"rea objeto: {object_area}px, rea imagen: {original_area}px"
+        )
+    
+    coords = np.nonzero(final_mask > 128)
+    if coords[0].size == 0:
+        return bbox
+    
+    y_min, y_max = coords[0].min(), coords[0].max()
+    x_min, x_max = coords[1].min(), coords[1].max()
+    width = image_rgb.shape[1]
+    height = image_rgb.shape[0]
+    x_new = max(0, x_min - padding)
+    y_new = max(0, y_min - padding)
+    w_new = min(width - x_new, (x_max - x_min) + 2 * padding)
+    h_new = min(height - y_new, (y_max - y_min) + 2 * padding)
+    return x_new, y_new, w_new, h_new
 
-        # NO suavizar - mantener bordes precisos sin halos
 
-        # Crear RGBA con transparencia exacta
-        rgba = np.zeros((h, w, 4), dtype=np.uint8)
-        rgba[:, :, :3] = crop_rgb
-        rgba[:, :, 3] = crop_alpha
+def _create_rgba_from_crop(
+    image_rgb: np.ndarray,
+    final_mask: np.ndarray,
+    x: int,
+    y: int,
+    w: int,
+    h: int
+) -> np.ndarray:
+    """Build RGBA tensor from the adjusted crop."""
+    crop_rgb = image_rgb[y:y+h, x:x+w].copy()
+    crop_alpha = final_mask[y:y+h, x:x+w].copy()
+    return _stack_rgba(crop_rgb, crop_alpha)
 
-        return rgba
+
+def _stack_rgba(rgb: np.ndarray, alpha: np.ndarray) -> np.ndarray:
+    """Stack RGB data with an alpha channel."""
+    rgba = np.zeros((rgb.shape[0], rgb.shape[1], 4), dtype=np.uint8)
+    rgba[:, :, :3] = rgb
+    rgba[:, :, 3] = alpha
+    return rgba

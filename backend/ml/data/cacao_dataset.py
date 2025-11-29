@@ -45,180 +45,258 @@ class CacaoDataset(Dataset):
     ):
         """
         Initialize the dataset.
-        
-        Args:
-            csv_path: Path to CSV file (default: auto-detect)
-            calibration_file: Path to pixel_calibration.json (default: auto-detect)
-            crops_dir: Directory with crop images (default: auto-detect)
-            transform: Image transformations
-            pixel_scaler: Scaler for pixel features (optional, will fit if None)
-            validate: Whether to validate data consistency
         """
-        # Auto-detect paths
-        if csv_path is None:
-            dataset_loader = CacaoDatasetLoader()
-            csv_path = dataset_loader.csv_path
-        
-        if calibration_file is None:
-            calibration_file = get_datasets_dir() / "pixel_calibration.json"
-        
-        if crops_dir is None:
-            crops_dir = get_crops_dir()
-        
-        self.csv_path = Path(csv_path)
-        self.calibration_file = Path(calibration_file)
-        self.crops_dir = Path(crops_dir)
+        paths = self._resolve_paths(csv_path, calibration_file, crops_dir)
+        self.csv_path = paths["csv"]
+        self.calibration_file = paths["calibration"]
+        self.crops_dir = paths["crops"]
         self.transform = transform
-        
-        # Load CSV
-        dataset_loader = CacaoDatasetLoader(csv_path=str(csv_path))
-        valid_records = dataset_loader.get_valid_records()
-        
+
+        valid_records = self._load_valid_records(self.csv_path)
+        calibration_by_id = self._load_calibration_records(self.calibration_file)
+
+        dataset_data = self._build_dataset_records(
+            valid_records,
+            calibration_by_id,
+            self.crops_dir
+        )
+
+        self.records = dataset_data["records"]
+        self.record_ids = dataset_data["record_ids"]
+        self.image_paths = dataset_data["image_paths"]
+        self.target_values = dataset_data["target_values"]
+        self.pixel_features_raw = dataset_data["pixel_features"]
+
+        self._log_missing_data(
+            dataset_data["missing_calibration"],
+            dataset_data["missing_images"]
+        )
+
+        self._validate_min_records(
+            len(self.records),
+            len(dataset_data["missing_calibration"]),
+            len(dataset_data["missing_images"])
+        )
+
+        self.pixel_scaler = pixel_scaler or StandardScaler()
+        self._fit_pixel_scaler(pixel_scaler)
+
+        self.pixel_features = self.pixel_scaler.transform(self.pixel_features_raw)
+
+        if validate:
+            self._validate_consistency()
+
+    def _resolve_paths(
+        self,
+        csv_path: Optional[Path],
+        calibration_file: Optional[Path],
+        crops_dir: Optional[Path]
+    ) -> Dict[str, Path]:
+        dataset_loader = CacaoDatasetLoader() if csv_path is None else None
+        resolved_csv = Path(
+            csv_path or dataset_loader.csv_path  # type: ignore[arg-type]
+        )
+        resolved_calibration = Path(
+            calibration_file or (get_datasets_dir() / "pixel_calibration.json")
+        )
+        resolved_crops = Path(crops_dir or get_crops_dir())
+
+        return {
+            "csv": resolved_csv,
+            "calibration": resolved_calibration,
+            "crops": resolved_crops
+        }
+
+    def _load_valid_records(self, csv_path: Path) -> List[Dict]:
+        loader = CacaoDatasetLoader(csv_path=str(csv_path))
+        valid_records = loader.get_valid_records()
+
         if not valid_records:
             raise ValueError("No valid records found in CSV")
-        
-        logger.info(f"Loaded {len(valid_records)} valid records from CSV")
-        
-        # Load pixel calibration
-        if not self.calibration_file.exists():
-            raise FileNotFoundError(f"Pixel calibration file not found: {self.calibration_file}")
-        
-        with open(self.calibration_file, 'r') as f:
-            calibration_data = json.load(f)
-        
+
+        logger.info("Loaded %s valid records from CSV", len(valid_records))
+        return valid_records
+
+    def _load_calibration_records(self, calibration_file: Path) -> Dict[int, Dict]:
+        if not calibration_file.exists():
+            raise FileNotFoundError(
+                f"Pixel calibration file not found: {calibration_file}"
+            )
+
+        with open(calibration_file, 'r', encoding='utf-8') as file:
+            calibration_data = json.load(file)
+
         calibration_records = calibration_data.get("calibration_records", [])
         calibration_by_id = {rec["id"]: rec for rec in calibration_records}
         
-        logger.info(f"Loaded {len(calibration_by_id)} calibration records")
-        
-        # Build dataset
-        self.records = []
-        self.record_ids = []
-        self.image_paths = []
-        self.target_values = {target: [] for target in self.TARGETS}
-        self.pixel_features_raw = []
-        
-        missing_calibration = []
-        missing_images = []
-        
+        logger.info("Loaded %s calibration records", len(calibration_by_id))
+        return calibration_by_id
+
+    def _build_dataset_records(
+        self,
+        valid_records: List[Dict],
+        calibration_by_id: Dict[int, Dict],
+        crops_dir: Path
+    ) -> Dict[str, object]:
+        records: List[Dict] = []
+        record_ids: List[int] = []
+        image_paths: List[Path] = []
+        target_values = {target: [] for target in self.TARGETS}
+        pixel_features: List[np.ndarray] = []
+        missing_calibration: List[int] = []
+        missing_images: List[Tuple[int, Path]] = []
+
         for record in valid_records:
-            record_id = record["id"]
-            crop_path = Path(record.get("crop_image_path", ""))
-            
-            # Validate image exists
+            crop_path = self._resolve_crop_path(record, crops_dir)
+
             if not crop_path.exists():
-                missing_images.append((record_id, crop_path))
+                missing_images.append((record["id"], crop_path))
                 continue
-            
-            # Validate calibration exists
-            if record_id not in calibration_by_id:
-                missing_calibration.append(record_id)
+
+            calibration_entry = calibration_by_id.get(record["id"])
+            if calibration_entry is None:
+                missing_calibration.append(record["id"])
                 continue
-            
-            calib_record = calibration_by_id[record_id]
-            
-            # Extract pixel features
-            pixel_meas = calib_record.get("pixel_measurements", {})
-            scale_factors = calib_record.get("scale_factors", {})
-            bg_info = calib_record.get("background_info", {})
-            
-            # Calculate pixel features
-            avg_mm_per_pixel = float(scale_factors.get("average_mm_per_pixel", 0.0))
-            width_pixels = float(pixel_meas.get("width_pixels", 0.0))
-            height_pixels = float(pixel_meas.get("height_pixels", 0.0))
-            grain_area_pixels = float(pixel_meas.get("grain_area_pixels", 0.0))
-            bbox_area_pixels = float(pixel_meas.get("bbox_area_pixels", 0.0))
-            aspect_ratio = float(pixel_meas.get("aspect_ratio", 0.0))
-            background_ratio = float(bg_info.get("background_ratio", 0.0))
-            
-            # Calculate derived features
-            area_mm2 = grain_area_pixels * (avg_mm_per_pixel ** 2)
-            width_mm = width_pixels * avg_mm_per_pixel
-            height_mm = height_pixels * avg_mm_per_pixel
-            perimeter_mm = 2 * (width_pixels + height_pixels) * avg_mm_per_pixel
-            bbox_ratio = grain_area_pixels / bbox_area_pixels if bbox_area_pixels > 0 else 0.0
-            
-            # New features for grosor and peso
-            # compactness = (perimeter²) / (4π·area)
-            compactness = (perimeter_mm ** 2) / (4 * np.pi * area_mm2) if area_mm2 > 0 else 0.0
-            
-            # roundness = 4π·area / perimeter²
-            roundness = (4 * np.pi * area_mm2) / (perimeter_mm ** 2) if perimeter_mm > 0 else 0.0
-            
-            # Build pixel feature vector (10 features)
-            # Order: area_mm2, width_mm, height_mm, perimeter_mm, aspect_ratio, bbox_ratio, 
-            #        background_ratio, avg_mm_per_pixel, compactness, roundness
-            pixel_feature_vector = np.array([
-                area_mm2,
-                width_mm,
-                height_mm,
-                perimeter_mm,
-                aspect_ratio,
-                bbox_ratio,
-                background_ratio,
-                avg_mm_per_pixel,
-                compactness,
-                roundness
-            ], dtype=np.float32)
-            
-            # Log first record to verify features
-            if len(self.records) == 0:
-                logger.info(
-                    f"First record pixel features (10 dims): "
-                    f"area_mm2={area_mm2:.2f}, perimeter_mm={perimeter_mm:.2f}, "
-                    f"compactness={compactness:.2f}, roundness={roundness:.2f}"
-                )
-            
-            # Validate pixel features
-            if not np.all(np.isfinite(pixel_feature_vector)):
-                logger.warning(f"Invalid pixel features for ID {record_id}")
-                continue
-            
-            # Store data
-            self.records.append(record)
-            self.record_ids.append(record_id)
-            self.image_paths.append(crop_path)
-            
-            for target in self.TARGETS:
-                self.target_values[target].append(float(record[target]))
-            
-            self.pixel_features_raw.append(pixel_feature_vector)
-        
-        # Convert to numpy arrays
-        for target in self.TARGETS:
-            self.target_values[target] = np.array(self.target_values[target], dtype=np.float32)
-        
-        self.pixel_features_raw = np.array(self.pixel_features_raw, dtype=np.float32)
-        
-        # Log validation results
-        if missing_calibration:
-            logger.warning(f"Missing calibration for {len(missing_calibration)} records. First 5: {missing_calibration[:5]}")
-        
-        if missing_images:
-            logger.warning(f"Missing images for {len(missing_images)} records. First 5: {missing_images[:5]}")
-        
-        if len(self.records) < 10:
-            raise ValueError(
-                f"Not enough valid records: {len(self.records)}. "
-                f"Missing calibration: {len(missing_calibration)}, Missing images: {len(missing_images)}"
+
+            feature_vector = self._build_pixel_feature_vector(
+                calibration_entry
             )
+
+            if not np.all(np.isfinite(feature_vector)):
+                logger.warning("Invalid pixel features for ID %s", record["id"])
+                continue
+
+            self._append_record_data(
+                record,
+                crop_path,
+                feature_vector,
+                records,
+                record_ids,
+                image_paths,
+                target_values,
+                pixel_features
+            )
+
+        return {
+            "records": records,
+            "record_ids": record_ids,
+            "image_paths": image_paths,
+            "target_values": {
+                target: np.array(values, dtype=np.float32)
+                for target, values in target_values.items()
+            },
+            "pixel_features": np.array(pixel_features, dtype=np.float32),
+            "missing_calibration": missing_calibration,
+            "missing_images": missing_images
+        }
+
+    @staticmethod
+    def _resolve_crop_path(record: Dict, crops_dir: Path) -> Path:
+        crop_path = Path(record.get("crop_image_path", ""))
+        if not crop_path.is_absolute():
+            return crops_dir / crop_path
+        return crop_path
+
+    def _build_pixel_feature_vector(self, calibration_entry: Dict) -> np.ndarray:
+        pixel_meas = calibration_entry.get("pixel_measurements", {})
+        scale_factors = calibration_entry.get("scale_factors", {})
+        bg_info = calibration_entry.get("background_info", {})
         
-        logger.info(f"Dataset initialized with {len(self.records)} valid records")
-        
-        # Fit pixel scaler if provided (StandardScaler as per requirements)
-        if pixel_scaler is None:
-            self.pixel_scaler = StandardScaler()
+        avg_mm_per_pixel = float(scale_factors.get("average_mm_per_pixel", 0.0))
+        width_pixels = float(pixel_meas.get("width_pixels", 0.0))
+        height_pixels = float(pixel_meas.get("height_pixels", 0.0))
+        grain_area_pixels = float(pixel_meas.get("grain_area_pixels", 0.0))
+        bbox_area_pixels = float(pixel_meas.get("bbox_area_pixels", 0.0))
+        aspect_ratio = float(pixel_meas.get("aspect_ratio", 0.0))
+        background_ratio = float(bg_info.get("background_ratio", 0.0))
+
+        area_mm2 = grain_area_pixels * (avg_mm_per_pixel ** 2)
+        width_mm = width_pixels * avg_mm_per_pixel
+        height_mm = height_pixels * avg_mm_per_pixel
+        perimeter_mm = 2 * (width_pixels + height_pixels) * avg_mm_per_pixel
+        bbox_ratio = (grain_area_pixels / bbox_area_pixels) if bbox_area_pixels > 0 else 0.0
+
+        compactness = ((perimeter_mm ** 2) / (4 * np.pi * area_mm2)) if area_mm2 > 0 else 0.0
+        roundness = ((4 * np.pi * area_mm2) / (perimeter_mm ** 2)) if perimeter_mm > 0 else 0.0
+
+        return np.array([
+            area_mm2,
+            width_mm,
+            height_mm,
+            perimeter_mm,
+            aspect_ratio,
+            bbox_ratio,
+            background_ratio,
+            avg_mm_per_pixel,
+            compactness,
+            roundness
+        ], dtype=np.float32)
+
+    def _append_record_data(
+        self,
+        record: Dict,
+        crop_path: Path,
+        pixel_feature_vector: np.ndarray,
+        records: List[Dict],
+        record_ids: List[int],
+        image_paths: List[Path],
+        target_values: Dict[str, List[float]],
+        pixel_features: List[np.ndarray]
+    ) -> None:
+        if not records:
+            logger.info(
+                "First record pixel features (10 dims): "
+                "area_mm2=%.2f, perimeter_mm=%.2f, compactness=%.2f, roundness=%.2f",
+                pixel_feature_vector[0],
+                pixel_feature_vector[3],
+                pixel_feature_vector[8],
+                pixel_feature_vector[9]
+            )
+
+        records.append(record)
+        record_ids.append(record["id"])
+        image_paths.append(crop_path)
+
+        for target in self.TARGETS:
+            target_values[target].append(float(record[target]))
+
+        pixel_features.append(pixel_feature_vector)
+
+    def _log_missing_data(
+        self,
+        missing_calibration: List[int],
+        missing_images: List[Tuple[int, Path]]
+    ) -> None:
+        if missing_calibration:
+            logger.warning(
+                "Missing calibration for %s records. First 5: %s",
+                len(missing_calibration),
+                missing_calibration[:5]
+            )
+
+        if missing_images:
+            logger.warning(
+                "Missing images for %s records. First 5: %s",
+                len(missing_images),
+                missing_images[:5]
+            )
+
+    @staticmethod
+    def _validate_min_records(
+        record_count: int,
+        missing_calibration_count: int,
+        missing_images_count: int
+    ) -> None:
+        if record_count < 10:
+            raise ValueError(
+                "Not enough valid records: %s. Missing calibration: %s, Missing images: %s"
+                % (record_count, missing_calibration_count, missing_images_count)
+            )
+
+    def _fit_pixel_scaler(self, provided_scaler: Optional[StandardScaler]) -> None:
+        if provided_scaler is None:
             self.pixel_scaler.fit(self.pixel_features_raw)
             logger.info("Pixel features scaler fitted (StandardScaler)")
-        else:
-            self.pixel_scaler = pixel_scaler
-        
-        # Transform pixel features
-        self.pixel_features = self.pixel_scaler.transform(self.pixel_features_raw)
-        
-        # Validate final consistency
-        if validate:
-            self._validate_consistency()
     
     def _validate_consistency(self) -> None:
         """Validate data consistency."""
@@ -295,7 +373,7 @@ class CacaoDataset(Dataset):
         
         return image_tensor, pixel_feature_vector, target_vector
     
-    def get_pixel_scaler(self) -> RobustScaler:
+    def get_pixel_scaler(self) -> StandardScaler:
         """Get the pixel features scaler."""
         return self.pixel_scaler
 

@@ -78,9 +78,9 @@ COPY --from=builder /opt/venv /opt/venv
 # SECURITY: Copy only necessary application directories and files
 # .dockerignore provides additional protection, but explicit copying is safer
 # This prevents accidentally copying credentials, local configs, or other sensitive data
-COPY manage.py ./
-COPY runtime.txt* ./
-COPY pytest.ini* ./
+COPY ["manage.py", "/app/manage.py"]
+COPY ["runtime.txt", "/app/runtime.txt"]
+COPY ["pytest.ini", "/app/pytest.ini"]
 # Copy Django project configuration
 COPY cacaoscan/ ./cacaoscan/
 # Copy all Django applications

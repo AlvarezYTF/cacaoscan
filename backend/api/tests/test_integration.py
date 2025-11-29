@@ -41,7 +41,7 @@ class CacaoImageAPITestCase(APITestCase):
         self.user = User.objects.create_user(
             username=TEST_USER_USERNAME,
             email=TEST_USER_EMAIL,
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_USER_PASSWORD  # NOSONAR(S2068)
         )
         
         # Crear token de autenticación
@@ -182,7 +182,7 @@ class FincaAPITestCase(APITestCase):
         self.user = User.objects.create_user(
             username=TEST_USER_USERNAME,
             email=TEST_USER_EMAIL,
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_USER_PASSWORD  # NOSONAR(S2068)
         )
         
         self.token = Token.objects.create(user=self.user)
@@ -266,7 +266,7 @@ class NotificationAPITestCase(APITestCase):
         self.user = User.objects.create_user(
             username=TEST_USER_USERNAME,
             email=TEST_USER_EMAIL,
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_USER_PASSWORD  # NOSONAR(S2068)
         )
         
         self.token = Token.objects.create(user=self.user)
@@ -345,7 +345,7 @@ class ReportAPITestCase(APITestCase):
         self.user = User.objects.create_user(
             username=TEST_USER_USERNAME,
             email=TEST_USER_EMAIL,
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_USER_PASSWORD  # NOSONAR(S2068)
         )
         
         self.token = Token.objects.create(user=self.user)
@@ -432,7 +432,7 @@ class IntegrationWorkflowTestCase(TransactionTestCase):
         self.user = User.objects.create_user(
             username=TEST_USER_USERNAME,
             email=TEST_USER_EMAIL,
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_USER_PASSWORD  # NOSONAR(S2068)
         )
         
         self.token = Token.objects.create(user=self.user)

@@ -94,123 +94,125 @@ def _build_add_constraint_query(table_name: str, constraint_name: str,
     return query
 
 
-def check_and_fix_foreign_key():
-    """Verificar y corregir la foreign key de lotes."""
-    print("=" * 60)
-    print("Verificando foreign key de fincas_app_lote")
-    print("=" * 60)
+def _check_existing_foreign_keys(cursor):
+    """Check existing foreign keys for fincas_app_lote."""
+    cursor.execute("""
+        SELECT 
+            tc.constraint_name,
+            tc.table_name,
+            kcu.column_name,
+            ccu.table_name AS foreign_table_name,
+            ccu.column_name AS foreign_column_name
+        FROM information_schema.table_constraints AS tc
+        JOIN information_schema.key_column_usage AS kcu
+            ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+        JOIN information_schema.constraint_column_usage AS ccu
+            ON ccu.constraint_name = tc.constraint_name
+            AND ccu.table_schema = tc.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+            AND tc.table_name = 'fincas_app_lote'
+            AND kcu.column_name = 'finca_id';
+    """)
+    return cursor.fetchall()
+
+
+def _table_exists(cursor, table_name):
+    """Check if a table exists in the database."""
+    safe_table_name = _validate_identifier(table_name)
+    query = "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '" + safe_table_name + "'"
+    cursor.execute(query)
+    return cursor.fetchone() is not None
+
+
+def _create_missing_foreign_key(cursor):
+    """Create missing foreign key constraint."""
+    print("\n[WARN]  No se encontró foreign key en fincas_app_lote.finca_id")
+    print("Creando foreign key...")
     
-    # Información del modelo
-    print(f"\nTabla Finca: {Finca._meta.db_table}")
-    print(f"Tabla Lote: {Lote._meta.db_table}")
+    if not _table_exists(cursor, 'api_finca'):
+        print("[ERROR] La tabla api_finca no existe")
+        return False
     
-    with connection.cursor() as cursor:
-        # Verificar foreign keys actuales
-        cursor.execute("""
-            SELECT 
-                tc.constraint_name,
-                tc.table_name,
-                kcu.column_name,
-                ccu.table_name AS foreign_table_name,
-                ccu.column_name AS foreign_column_name
-            FROM information_schema.table_constraints AS tc
-            JOIN information_schema.key_column_usage AS kcu
-                ON tc.constraint_name = kcu.constraint_name
-                AND tc.table_schema = kcu.table_schema
-            JOIN information_schema.constraint_column_usage AS ccu
-                ON ccu.constraint_name = tc.constraint_name
-                AND ccu.table_schema = tc.table_schema
-            WHERE tc.constraint_type = 'FOREIGN KEY'
-                AND tc.table_name = 'fincas_app_lote'
-                AND kcu.column_name = 'finca_id';
-        """)
+    constraint_name = 'fincas_app_lote_finca_id_api_finca_fk'
+    query = _build_add_constraint_query(
+        table_name='fincas_app_lote',
+        constraint_name=constraint_name,
+        column_name='finca_id',
+        ref_table='api_finca',
+        ref_column='id'
+    )
+    cursor.execute(query)
+    print(f"✅ Foreign key creada: {constraint_name}")
+    return True
+
+
+def _validate_fk_identifiers(constraint_name, table_name, column_name, foreign_table, foreign_column):
+    """Validate all foreign key identifiers."""
+    try:
+        _validate_identifier(constraint_name)
+        _validate_identifier(table_name)
+        _validate_identifier(column_name)
+        _validate_identifier(foreign_table)
+        _validate_identifier(foreign_column)
+        return True
+    except ValueError as e:
+        print(f"[ERROR] Identificador inválido encontrado en la base de datos: {e}")
+        return False
+
+
+def _fix_incorrect_foreign_key(cursor, constraint_name, foreign_table):
+    """Fix foreign key pointing to wrong table."""
+    print(f"\n[WARN]  PROBLEMA: FK apunta a '{foreign_table}' pero debería apuntar a 'api_finca'")
+    print("Corrigiendo foreign key...")
+    
+    drop_query = _build_drop_constraint_query(
+        table_name='fincas_app_lote',
+        constraint_name=constraint_name
+    )
+    cursor.execute(drop_query)
+    print(f"✅ Eliminada FK incorrecta: {constraint_name}")
+    
+    new_constraint_name = constraint_name.replace(foreign_table, 'api_finca')
+    try:
+        _validate_identifier(new_constraint_name)
+    except ValueError as e:
+        print(f"[ERROR] Nombre de constraint generado inválido: {e}")
+        return
+    
+    add_query = _build_add_constraint_query(
+        table_name='fincas_app_lote',
+        constraint_name=new_constraint_name,
+        column_name='finca_id',
+        ref_table='api_finca',
+        ref_column='id'
+    )
+    cursor.execute(add_query)
+    print(f"✅ Creada FK correcta: {new_constraint_name}")
+
+
+def _process_existing_foreign_keys(cursor, fks):
+    """Process existing foreign keys."""
+    print(f"\n📋 Foreign keys encontradas: {len(fks)}")
+    for fk in fks:
+        constraint_name, table_name, column_name, foreign_table, foreign_column = fk
+        print(f"  - {constraint_name}: {table_name}.{column_name} -> {foreign_table}.{foreign_column}")
         
-        fks = cursor.fetchall()
+        if not _validate_fk_identifiers(constraint_name, table_name, column_name, foreign_table, foreign_column):
+            continue
         
-        if not fks:
-            print("\n[WARN]  No se encontró foreign key en fincas_app_lote.finca_id")
-            print("Creando foreign key...")
-            
-            # Verificar si la tabla api_finca existe
-            cursor.execute("""
-                SELECT 1 FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'api_finca'
-            """)
-            
-            if cursor.fetchone():
-                constraint_name = 'fincas_app_lote_finca_id_api_finca_fk'
-                # Build safe DDL query using validated identifiers
-                query = _build_add_constraint_query(
-                    table_name='fincas_app_lote',
-                    constraint_name=constraint_name,
-                    column_name='finca_id',
-                    ref_table='api_finca',
-                    ref_column='id'
-                )
-                cursor.execute(query)
-                print(f"✅ Foreign key creada: {constraint_name}")
-            else:
-                print("[ERROR] La tabla api_finca no existe")
-                return
+        if foreign_table != 'api_finca':
+            _fix_incorrect_foreign_key(cursor, constraint_name, foreign_table)
         else:
-            print(f"\n📋 Foreign keys encontradas: {len(fks)}")
-            for fk in fks:
-                constraint_name, table_name, column_name, foreign_table, foreign_column = fk
-                print(f"  - {constraint_name}: {table_name}.{column_name} -> {foreign_table}.{foreign_column}")
-                
-                # Validate all identifiers from database before using them
-                try:
-                    _validate_identifier(constraint_name)
-                    _validate_identifier(table_name)
-                    _validate_identifier(column_name)
-                    _validate_identifier(foreign_table)
-                    _validate_identifier(foreign_column)
-                except ValueError as e:
-                    print(f"[ERROR] Identificador inválido encontrado en la base de datos: {e}")
-                    continue
-                
-                # Verificar si apunta a la tabla correcta
-                if foreign_table != 'api_finca':
-                    print(f"\n[WARN]  PROBLEMA: FK apunta a '{foreign_table}' pero debería apuntar a 'api_finca'")
-                    print("Corrigiendo foreign key...")
-                    
-                    # Eliminar FK incorrecta - Build safe DDL query using validated identifiers
-                    drop_query = _build_drop_constraint_query(
-                        table_name='fincas_app_lote',
-                        constraint_name=constraint_name
-                    )
-                    cursor.execute(drop_query)
-                    print(f"✅ Eliminada FK incorrecta: {constraint_name}")
-                    
-                    # Crear FK correcta - Build new constraint name safely
-                    new_constraint_name = constraint_name.replace(foreign_table, 'api_finca')
-                    # Validate the new constraint name before using it
-                    try:
-                        _validate_identifier(new_constraint_name)
-                    except ValueError as e:
-                        print(f"[ERROR] Nombre de constraint generado inválido: {e}")
-                        continue
-                    
-                    # Build safe DDL query using validated identifiers
-                    add_query = _build_add_constraint_query(
-                        table_name='fincas_app_lote',
-                        constraint_name=new_constraint_name,
-                        column_name='finca_id',
-                        ref_table='api_finca',
-                        ref_column='id'
-                    )
-                    cursor.execute(add_query)
-                    print(f"✅ Creada FK correcta: {new_constraint_name}")
-                else:
-                    print(f"✅ FK correcta: apunta a {foreign_table}")
-    
-    # Verificar consistencia de datos
+            print(f"✅ FK correcta: apunta a {foreign_table}")
+
+
+def _check_data_consistency():
+    """Check data consistency between Finca and Lote."""
     print("\n" + "=" * 60)
     print("Verificando consistencia de datos")
     print("=" * 60)
     
-    # Contar fincas
     total_fincas = Finca.objects.count()
     print(f"\nTotal de fincas en BD: {total_fincas}")
     
@@ -220,7 +222,6 @@ def check_and_fix_foreign_key():
         for f in fincas_list:
             print(f"  - ID: {f['id']}, Nombre: {f['nombre']}")
     
-    # Verificar lotes huérfanos
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT l.id, l.finca_id, f.id as finca_exists
@@ -239,6 +240,27 @@ def check_and_fix_foreign_key():
                 print(f"  - Lote ID: {lote[0]}, finca_id: {lote[1]}")
         else:
             print("\n✅ No se encontraron lotes huérfanos")
+
+
+def check_and_fix_foreign_key():
+    """Verificar y corregir la foreign key de lotes."""
+    print("=" * 60)
+    print("Verificando foreign key de fincas_app_lote")
+    print("=" * 60)
+    
+    print(f"\nTabla Finca: {Finca._meta.db_table}")
+    print(f"Tabla Lote: {Lote._meta.db_table}")
+    
+    with connection.cursor() as cursor:
+        fks = _check_existing_foreign_keys(cursor)
+        
+        if not fks:
+            if not _create_missing_foreign_key(cursor):
+                return
+        else:
+            _process_existing_foreign_keys(cursor, fks)
+    
+    _check_data_consistency()
     
     print("\n" + "=" * 60)
     print("Verificación completada")

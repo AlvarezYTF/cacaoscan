@@ -6,9 +6,9 @@ from pathlib import Path
 from PIL import Image
 import io
 try:
-    import cv2.ximgproc as ximgproc  # Opcional: guidedFilter
+    import cv2.ximgproc as ximgproc  # type: ignore[import-untyped] # Opcional: guidedFilter
     _HAS_XIMGPROC = True
-except Exception:
+except ImportError:
     _HAS_XIMGPROC = False
 import cv2
 import numpy as np
@@ -228,6 +228,48 @@ def save_processed_png(pil_png: Image.Image, out_name: str) -> Path:
     return out_path
 
 
+def _process_with_opencv(image_path: str, filename: str) -> Image.Image:
+    """Process image using OpenCV directly."""
+    logger.debug("Segmentación solicitada con backend OpenCV (modo directo)")
+    try:
+        return _remove_background_opencv(image_path)
+    except Exception as e_opencv:
+        logger.error(f"OpenCV directo falló para {filename}: {e_opencv}")
+        raise FileNotFoundError(f"No se pudo procesar la imagen {filename} con OpenCV: {e_opencv}")
+
+
+def _process_with_priority_chain(image_path: str, filename: str) -> Image.Image:
+    """Process image using priority chain: AI -> rembg -> OpenCV."""
+    try:
+        logger.debug("Prioridad 1: Intentando U-Net (remove_background_ai)...")
+        return remove_background_ai(image_path)
+    except Exception as e_ai:
+        logger.warning(f"U-Net (Prioridad 1) falló: {e_ai}. Intentando rembg...")
+        return _try_rembg_then_opencv(image_path, filename)
+
+
+def _try_rembg_then_opencv(image_path: str, filename: str) -> Image.Image:
+    """Try rembg, fallback to OpenCV if it fails."""
+    try:
+        if _HAS_REMBG:
+            logger.debug("Prioridad 2: Intentando rembg...")
+            return _remove_background_rembg(image_path)
+        raise RuntimeError("rembg no disponible, saltando a OpenCV")
+    except Exception as e_rembg:
+        logger.warning(f"rembg (Prioridad 2) falló: {e_rembg}. Usando OpenCV como último recurso...")
+        return _try_opencv_fallback(image_path, filename)
+
+
+def _try_opencv_fallback(image_path: str, filename: str) -> Image.Image:
+    """Try OpenCV as final fallback."""
+    try:
+        logger.debug("Prioridad 3: Intentando OpenCV...")
+        return _remove_background_opencv(image_path)
+    except Exception as e_opencv:
+        logger.error(f"Todos los métodos de segmentación fallaron para {filename}: {e_opencv}")
+        raise FileNotFoundError(f"No se pudo procesar la imagen {filename} con ningún método.")
+
+
 def segment_and_crop_cacao_bean(image_path: str, method: str = "ai") -> str:
     """
     Segmenta (elimina fondo) y recorta una imagen de cacao.
@@ -247,39 +289,12 @@ def segment_and_crop_cacao_bean(image_path: str, method: str = "ai") -> str:
     filename = os.path.basename(image_path)
     logger.info(f"Iniciando eliminación de fondo para: {filename}")
 
-    processed: Image.Image
     method = (method or "ai").lower()
-
     if method == "opencv":
-        logger.debug("Segmentación solicitada con backend OpenCV (modo directo)")
-        try:
-            processed = _remove_background_opencv(image_path)
-        except Exception as e_opencv:
-            logger.error(f"OpenCV directo falló para {filename}: {e_opencv}")
-            raise FileNotFoundError(f"No se pudo procesar la imagen {filename} con OpenCV: {e_opencv}")
+        processed = _process_with_opencv(image_path, filename)
     else:
-        # Cadena prioritaria AI -> rembg -> OpenCV
-        try:
-            logger.debug("Prioridad 1: Intentando U-Net (remove_background_ai)...")
-            processed = remove_background_ai(image_path)
-        except Exception as e_ai:
-            logger.warning(f"U-Net (Prioridad 1) falló: {e_ai}. Intentando rembg...")
-            try:
-                if _HAS_REMBG:
-                    logger.debug("Prioridad 2: Intentando rembg...")
-                    processed = _remove_background_rembg(image_path)
-                else:
-                    raise RuntimeError("rembg no disponible, saltando a OpenCV")
-            except Exception as e_rembg:
-                logger.warning(f"rembg (Prioridad 2) falló: {e_rembg}. Usando OpenCV como último recurso...")
-                try:
-                    logger.debug("Prioridad 3: Intentando OpenCV...")
-                    processed = _remove_background_opencv(image_path)
-                except Exception as e_opencv:
-                    logger.error(f"Todos los métodos de segmentación fallaron para {filename}: {e_opencv}")
-                    raise FileNotFoundError(f"No se pudo procesar la imagen {filename} con ningún método.")
+        processed = _process_with_priority_chain(image_path, filename)
     
-    # Guardar en processed/YYYY/MM/DD
     output_filename = f"cacao_{uuid.uuid4().hex}.png"
     out_path = save_processed_png(processed, output_filename)
 

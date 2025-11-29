@@ -80,7 +80,9 @@ class TestIncrementalViewsErrorResponse(APITestCase):
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            # Credential fija de pruebas definida en constantes
+            # NOSONAR
+            password=TEST_USER_PASSWORD
         )
         self.client.force_authenticate(user=self.user)
     

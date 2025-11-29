@@ -34,13 +34,13 @@ class ImagesEndpointsTestCase(APITestCase):
         self.user = User.objects.create_user(
             username=TEST_USER_USERNAME,
             email=TEST_USER_EMAIL,
-            password=TEST_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_USER_PASSWORD  # NOSONAR(S2068)
         )
         
         self.admin_user = User.objects.create_superuser(
             username=TEST_ADMIN_USERNAME,
             email=TEST_ADMIN_EMAIL,
-            password=TEST_ADMIN_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_ADMIN_PASSWORD  # NOSONAR(S2068)
         )
         
         # Crear imagen de prueba
@@ -171,7 +171,7 @@ class ImagesEndpointsTestCase(APITestCase):
         other_user = User.objects.create_user(
             username=TEST_OTHER_USER_USERNAME,
             email=TEST_OTHER_USER_EMAIL,
-            password=TEST_OTHER_USER_PASSWORD  # NOSONAR: Test credential from constants
+            password=TEST_OTHER_USER_PASSWORD  # NOSONAR(S2068)
         )
         
         self.client.force_authenticate(user=other_user)

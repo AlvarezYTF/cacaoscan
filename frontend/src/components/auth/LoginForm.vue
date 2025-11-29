@@ -349,34 +349,180 @@ const validateForm = () => {
   return Object.keys(errors.value).length === 0
 }
 
-// Validadores
+// Validators
 // Maximum input length to prevent ReDoS attacks
 const MAX_EMAIL_LENGTH = 254 // RFC 5321 limit
 const MAX_USERNAME_LENGTH = 30
 
-const isValidEmail = (email) => {
-  // Limit input length first to prevent ReDoS attacks
-  if (!email || email.length > MAX_EMAIL_LENGTH) {
+/**
+ * @typedef {{ localPart: string, domain: string }} EmailParts
+ */
+
+const isAlphaNumericCode = (code) => {
+  return (code >= 48 && code <= 57) || // 0-9
+    (code >= 65 && code <= 90) || // A-Z
+    (code >= 97 && code <= 122) // a-z
+}
+
+// Character code ranges for fast validation without regex backtracking
+const isValidLocalPartChar = (char) => {
+  const code = char.codePointAt(0)
+  if (code === undefined) {
     return false
   }
-  
-  // Simple email validation with length limit already enforced
-  // The length check prevents ReDoS by ensuring the regex never processes
-  // inputs longer than 254 characters (RFC 5321 limit)
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return re.test(email)
+  return code >= 33 && code <= 126 && char !== ' ' && char !== '@'
+}
+
+const isValidUsernameChar = (char) => {
+  const code = char.codePointAt(0)
+  if (code === undefined) {
+    return false
+  }
+  return isAlphaNumericCode(code) || char === '_' || char === '-'
+}
+
+const hasValidEmailLength = (emailValue) => {
+  return typeof emailValue === 'string' &&
+    emailValue.length >= 3 &&
+    emailValue.length <= MAX_EMAIL_LENGTH
+}
+
+/**
+ * @param {string} email
+ * @returns {EmailParts | null}
+ */
+const splitEmailParts = (email) => {
+  const atIndex = email.indexOf('@')
+  if (atIndex <= 0 || atIndex === email.length - 1) {
+    return null
+  }
+
+  return {
+    localPart: email.slice(0, atIndex),
+    domain: email.slice(atIndex + 1)
+  }
+}
+
+const isValidLocalPartSection = (localPart) => {
+  if (localPart.length === 0 || localPart.length > 64) {
+    return false
+  }
+
+  for (const char of localPart) {
+    if (!isValidLocalPartChar(char)) {
+      return false
+    }
+  }
+
+  return true
+}
+
+const isValidDomainSection = (domain) => {
+  if (domain.length === 0 || domain.length > 253) {
+    return false
+  }
+
+  const domainParts = domain.split('.')
+  if (domainParts.length < 2) {
+    return false
+  }
+
+  for (let idx = 0; idx < domainParts.length; idx += 1) {
+    const part = domainParts[idx]
+    if (!isValidDomainPart(part, idx === domainParts.length - 1)) {
+      return false
+    }
+  }
+
+  return true
+}
+
+const hasValidDomainPartLength = (length, isTLD) => {
+  if (length === 0) {
+    return false
+  }
+
+  if (isTLD) {
+    return length >= 2
+  }
+
+  return true
+}
+
+const isValidTLDPart = (part) => {
+  for (const char of part) {
+    const code = char.codePointAt(0)
+    if (code === undefined || !isAlphaNumericCode(code)) {
+      return false
+    }
+  }
+
+  return true
+}
+
+const isValidSubdomainPart = (part) => {
+  const lastIndex = part.length - 1
+
+  for (let idx = 0; idx < part.length; idx += 1) {
+    const char = part[idx]
+    const code = char.codePointAt(0)
+    if (code === undefined) {
+      return false
+    }
+
+    if (!isAlphaNumericCode(code) && char !== '-') {
+      return false
+    }
+
+    if (char === '-' && (idx === 0 || idx === lastIndex)) {
+      return false
+    }
+  }
+
+  return true
+}
+
+const isValidDomainPart = (part, isTLD) => {
+  if (!hasValidDomainPartLength(part.length, isTLD)) {
+    return false
+  }
+
+  if (isTLD) {
+    return isValidTLDPart(part)
+  }
+
+  return isValidSubdomainPart(part)
+}
+
+const isValidEmail = (email) => {
+  if (!hasValidEmailLength(email)) {
+    return false
+  }
+
+  const emailParts = splitEmailParts(email)
+  if (!emailParts) {
+    return false
+  }
+
+  if (!isValidLocalPartSection(emailParts.localPart)) {
+    return false
+  }
+
+  return isValidDomainSection(emailParts.domain)
 }
 
 const isValidUsername = (username) => {
-  // Limit input length first to prevent ReDoS
-  if (!username || username.length > MAX_USERNAME_LENGTH || username.length < 3) {
+  if (typeof username !== 'string') {
     return false
   }
-  
-  // Username alfanumérico, guiones y guiones bajos, 3-30 caracteres
-  // Using explicit character class with bounded quantifier (already validated length)
-  const re = /^[a-zA-Z0-9_-]+$/
-  return re.test(username)
+
+  if (username.length < 3 || username.length > MAX_USERNAME_LENGTH) {
+    return false
+  }
+
+  return Array.from(username).every((char) => {
+    return isValidUsernameChar(char)
+  })
 }
 
 // Manejar envío del formulario
@@ -469,3 +615,4 @@ onMounted(() => {
   animation: fade-in 0.6s ease-out;
 }
 </style>
+
