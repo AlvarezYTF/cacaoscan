@@ -431,7 +431,6 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 
 export default {
   name: 'SubirDatosEntrenamiento',

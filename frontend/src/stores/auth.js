@@ -162,7 +162,8 @@ export const useAuthStore = defineStore('auth', () => {
       
     } catch (error) {
       console.error('❌ Error inicializando autenticación:', error)
-      // Si hay error, limpiar todo
+      // Si hay error durante la inicialización, limpiar todo el estado
+      // para evitar datos inconsistentes o tokens inválidos en el store
       clearAll()
     }
   }
@@ -349,7 +350,8 @@ export const useAuthStore = defineStore('auth', () => {
       throw new Error('Respuesta inválida del servidor')
     } catch (err) {
       console.error('❌ Error refrescando token:', err)
-      // Si el refresh token expiró, limpiar todo
+      // Si el refresh token expiró o fue rechazado, limpiar todo el estado
+      // y forzar logout para que el usuario se autentique nuevamente
       if (err.response?.status === 401 || err.response?.status === 403) {
         await logout(false)
       }
@@ -506,7 +508,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Limpiar todo el estado
+  /**
+   * Limpia todo el estado de autenticación del store.
+   * Elimina tokens, datos de usuario, errores y flags de carga.
+   * Útil para resetear el estado después de logout o errores de autenticación.
+   */
   const clearAll = () => {
     clearTokens()
     clearUser()

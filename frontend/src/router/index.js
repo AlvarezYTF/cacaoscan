@@ -534,7 +534,9 @@ router.beforeEach(async (to, from) => {
         try {
           await authStore.getCurrentUser()
         } catch (error) {
-          // Limpiar todo y redirigir
+          // Error al obtener usuario: limpiar estado y redirigir al login
+          // Esto previene estados inconsistentes cuando el token es inválido
+          console.error('Error obteniendo usuario en guard:', error)
           authStore.clearAll()
           return {
             name: 'Login',

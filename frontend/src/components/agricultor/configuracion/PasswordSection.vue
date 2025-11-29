@@ -284,6 +284,9 @@ const validateField = (fieldName) => {
         errors.value.confirmPassword = 'Las contraseñas no coinciden'
       }
       break
+    default:
+      // Campo no reconocido - no hay validación específica
+      break
   }
 }
 

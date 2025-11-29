@@ -36,7 +36,8 @@ export const requireAuth = async (to, from, next) => {
       await authStore.getCurrentUser()
     } catch (error) {
       console.warn('❌ Token inválido o expirado:', error)
-      // Limpiar todo y redirigir
+      // Limpiar estado de autenticación y redirigir al login
+      // Esto asegura que el usuario no tenga datos inconsistentes en el store
       authStore.clearAll()
       next({
         name: 'Login',

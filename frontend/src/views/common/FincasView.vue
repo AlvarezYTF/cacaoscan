@@ -92,7 +92,6 @@ import FincaList from '@/components/common/FincasViewComponents/FincaList.vue'
 import FincaDetailModal from '@/components/common/FincasViewComponents/FincaDetailModal.vue'
 
 // 5. Services
-import fincasApi from '@/services/fincasApi'
 
 // 6. Libraries
 import Swal from 'sweetalert2'
@@ -247,10 +246,11 @@ const confirmDelete = async (finca) => {
         showConfirmButton: false
       })
     } catch (error) {
+      console.error('Error desactivando finca:', error)
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo desactivar la finca. Intenta nuevamente.',
+        text: error.message || 'No se pudo desactivar la finca. Intenta nuevamente.',
         timer: 4000
       })
     }
@@ -281,10 +281,11 @@ const confirmActivate = async (finca) => {
         showConfirmButton: false
       })
     } catch (error) {
+      console.error('Error activando finca:', error)
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo activar la finca. Intenta nuevamente.',
+        text: error.message || 'No se pudo activar la finca. Intenta nuevamente.',
         timer: 4000
       })
     }
@@ -325,7 +326,8 @@ const handleLogout = async () => {
   try {
     await authStore.logout()
   } catch (error) {
-    // Error durante logout - silenciar
+    console.error('Error durante logout:', error)
+    // Continuar con logout aunque haya error
   }
 }
 

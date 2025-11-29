@@ -302,8 +302,15 @@
 <script setup>
 import LegalLayout from '@/components/legal/LegalLayout.vue'
 
-// Vista de términos y condiciones con contenido estático y navegación interna
-// No requiere llamadas al backend - todo el contenido está en el frontend
+/**
+ * Vista de Términos y Condiciones
+ * 
+ * Esta vista muestra los términos y condiciones de uso de la plataforma CacaoScan.
+ * El contenido es completamente estático y se renderiza en el frontend, por lo que
+ * no requiere llamadas al backend. Incluye navegación interna mediante anclas HTML.
+ * 
+ * @component LegalTermsView
+ */
 </script>
 
 <style scoped>
