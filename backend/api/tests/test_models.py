@@ -450,7 +450,7 @@ class LoteModelTest(TestCase):
             nombre='Lote Test'
         )
         
-        expected_str = f"Lote Test - Finca Test"
+        expected_str = "Lote Test - Finca Test"
         self.assertEqual(str(lote), expected_str)
 
 

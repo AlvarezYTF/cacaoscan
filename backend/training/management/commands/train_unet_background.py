@@ -61,11 +61,11 @@ def _generate_single_mask(args):
         if rect[2] <= 0 or rect[3] <= 0:
             return False, f"Rectángulo inválido: {jpg_path.name}"
         
-        bgdModel = np.zeros((1, 65), np.float64)
-        fgdModel = np.zeros((1, 65), np.float64)
+        bgd_model = np.zeros((1, 65), np.float64)
+        fgd_model = np.zeros((1, 65), np.float64)
         
         # Reducir iteraciones para ser más rápido (3 en lugar de 5)
-        cv2.grabCut(img, mask, rect, bgdModel, fgdModel, 3, cv2.GC_INIT_WITH_RECT)
+        cv2.grabCut(img, mask, rect, bgd_model, fgd_model, 3, cv2.GC_INIT_WITH_RECT)
         
         # Verificar timeout (más de 30 segundos es sospechoso)
         elapsed = time.time() - start_time

@@ -63,7 +63,7 @@ class SendOtpView(APIView):
             code = PendingEmailVerification.generate_code()
             
             # Crear o actualizar registro de verificación
-            verification, _ = PendingEmailVerification.objects.update_or_create(
+            _, _ = PendingEmailVerification.objects.update_or_create(
                 email=email,
                 defaults={'otp_code': code, 'temp_data': temp_data}
             )

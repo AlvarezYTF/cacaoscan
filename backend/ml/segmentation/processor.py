@@ -35,7 +35,7 @@ class SegmentationError(Exception):
 
 def _deshadow_alpha(rgb: np.ndarray, alpha: np.ndarray, max_dist: int = 35) -> np.ndarray:
     """Elimina sombras adyacentes al objeto sin perder borde real."""
-    h, w = alpha.shape
+    _, _ = alpha.shape
     bg_mask = alpha == 0
     if not np.any(bg_mask):
         return alpha

@@ -320,16 +320,6 @@ class ReportGenerationService(BaseService):
         except Lote.DoesNotExist:
             return {'error': 'Lote no encontrado'}
         
-        # Get predictions from images associated with the lote
-        predictions = CacaoPrediction.objects.filter(
-            image__user=user,
-            created_at__gte=fecha_inicio,
-            created_at__lte=fecha_fin
-        ).filter(
-            Q(image__metadata__lote_id=lote_id) | 
-            Q(image__metadata__lote=lote_id)
-        )
-        
         # Generate base report
         base_report = self._generate_general_analysis_report(user, fecha_inicio, fecha_fin)
         

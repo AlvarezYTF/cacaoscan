@@ -151,8 +151,8 @@ const handleAuthEndpointError = (originalRequest) => {
 }
 
 const showSessionExpiredModal = () => {
-  if (typeof window !== 'undefined' && window.showSessionExpiredModal) {
-    window.showSessionExpiredModal()
+  if (typeof globalThis !== 'undefined' && globalThis.showSessionExpiredModal) {
+    globalThis.showSessionExpiredModal()
   } else {
     localStorage.clear()
     router.replace({ 
@@ -280,8 +280,8 @@ const handle429Error = (error) => {
   }
   
   const errorMessage = error.response.data?.detail || 'Demasiadas solicitudes. Intenta más tarde.'
-  if (typeof window !== 'undefined' && window.showNotification) {
-    window.showNotification({
+  if (typeof globalThis !== 'undefined' && globalThis.showNotification) {
+    globalThis.showNotification({
       type: 'warning',
       title: 'Límite de solicitudes',
       message: errorMessage,
@@ -298,8 +298,8 @@ const handle500Error = (error, originalRequest) => {
   const isConfig = isConfigEndpoint(originalRequest?.url)
   const isStats = isStatsEndpoint(originalRequest?.url)
   
-  if (!isConfig && !isStats && typeof window !== 'undefined' && window.showNotification) {
-    window.showNotification({
+  if (!isConfig && !isStats && typeof globalThis !== 'undefined' && globalThis.showNotification) {
+    globalThis.showNotification({
       type: 'error',
       title: 'Error del servidor',
       message: 'Ocurrió un error interno. Por favor intenta más tarde.',
@@ -313,8 +313,8 @@ const handleNetworkError = (error) => {
     return
   }
   
-  if (typeof window !== 'undefined' && window.showNotification) {
-    window.showNotification({
+  if (typeof globalThis !== 'undefined' && globalThis.showNotification) {
+    globalThis.showNotification({
       type: 'error',
       title: 'Error de conexión',
       message: 'No se pudo conectar al servidor. Verifica tu conexión a internet.',
@@ -523,7 +523,7 @@ export async function predictImage(formData) {
     }
 
     // Emitir evento de loading
-    window.dispatchEvent(new CustomEvent('api-loading-start', {
+    globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
       detail: { type: 'prediction', message: 'Analizando imagen de cacao...' }
     }))
 
@@ -565,7 +565,7 @@ export async function predictImage(formData) {
 
   } finally {
     // Emitir evento de fin de loading
-    window.dispatchEvent(new CustomEvent('api-loading-end'))
+    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 

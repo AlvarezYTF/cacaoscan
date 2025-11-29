@@ -108,7 +108,6 @@ export default {
       const isDark = props.theme === 'dark'
       const textColor = isDark ? '#ffffff' : '#333333'
       const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-      const backgroundColor = isDark ? '#2c3e50' : '#ffffff'
 
       return {
         responsive: props.responsive,
@@ -309,7 +308,7 @@ export default {
       await renderChart()
       
       // Observador de cambios de tamaño
-      if (window.ResizeObserver) {
+      if (globalThis.ResizeObserver) {
         resizeObserver = new ResizeObserver(() => {
           handleResize()
         })
@@ -319,8 +318,8 @@ export default {
       }
 
       // Listeners para cambios de orientación
-      window.addEventListener('orientationchange', handleResize)
-      window.addEventListener('resize', handleResize)
+      globalThis.addEventListener('orientationchange', handleResize)
+      globalThis.addEventListener('resize', handleResize)
     })
 
     onUnmounted(() => {
@@ -330,8 +329,8 @@ export default {
       if (resizeObserver) {
         resizeObserver.disconnect()
       }
-      window.removeEventListener('orientationchange', handleResize)
-      window.removeEventListener('resize', handleResize)
+      globalThis.removeEventListener('orientationchange', handleResize)
+      globalThis.removeEventListener('resize', handleResize)
     })
 
     // Watchers
@@ -362,9 +361,9 @@ export default {
     const addData = (data, label) => {
       if (chartInstance) {
         chartInstance.data.labels.push(label)
-        chartInstance.data.datasets.forEach((dataset, index) => {
+        for (const [index, dataset] of chartInstance.data.datasets.entries()) {
           dataset.data.push(data[index] || 0)
-        })
+        }
         chartInstance.update()
       }
     }
@@ -372,9 +371,9 @@ export default {
     const removeData = (index) => {
       if (chartInstance) {
         chartInstance.data.labels.splice(index, 1)
-        chartInstance.data.datasets.forEach(dataset => {
+        for (const dataset of chartInstance.data.datasets) {
           dataset.data.splice(index, 1)
-        })
+        }
         chartInstance.update()
       }
     }

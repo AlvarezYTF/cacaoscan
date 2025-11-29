@@ -251,7 +251,6 @@ import Swal from 'sweetalert2'
 export default {
   name: 'NotificationCenter',
   setup() {
-    const authStore = useAuthStore()
     const notificationStore = useNotificationStore()
 
     // Reactive data
@@ -383,12 +382,12 @@ export default {
         await notificationStore.markAllAsRead()
         
         // Update local state
-        notifications.value.forEach(notification => {
+        for (const notification of notifications.value) {
           if (!notification.leida) {
             notification.leida = true
             notification.fecha_lectura = new Date().toISOString()
           }
-        })
+        }
         
         Swal.fire({
           icon: 'success',

@@ -901,7 +901,7 @@ export default {
 
 .btn-primary {
   background-color: #3b82f6;
-  color: white;
+  color: #ffffff;
   border-color: #3b82f6;
 }
 
@@ -923,7 +923,7 @@ export default {
 
 .btn-danger {
   background-color: #ef4444;
-  color: white;
+  color: #ffffff;
   border-color: #ef4444;
 }
 

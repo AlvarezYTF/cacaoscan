@@ -336,7 +336,7 @@ const validateForm = () => {
   
   if (!validation.isValid) {
     errors.value = {}
-    validation.errors.forEach(error => {
+    for (const error of validation.errors) {
       // Mapear errores a campos específicos
       if (error.includes('finca')) errors.value.finca = error
       else if (error.includes('identificador')) errors.value.identificador = error
@@ -378,13 +378,13 @@ const handleSubmit = async () => {
       const serverErrors = error.response.data
       errors.value = {}
       
-      Object.keys(serverErrors).forEach(field => {
+      for (const field of Object.keys(serverErrors)) {
         if (Array.isArray(serverErrors[field])) {
           errors.value[field] = serverErrors[field][0]
         } else {
           errors.value[field] = serverErrors[field]
         }
-      })
+      }
     }
   } finally {
     loading.value = false

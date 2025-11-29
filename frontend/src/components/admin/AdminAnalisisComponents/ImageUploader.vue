@@ -54,7 +54,7 @@
       >
         <img 
           :src="getImageUrl(image)" 
-          :alt="image.name ? image.name.replace(/\bimage\b\s*/gi, '').trim() || 'Archivo subido' : 'Archivo subido'"
+          :alt="getImageAlt(image)"
           class="w-full h-32 object-cover"
         />
         <button
@@ -122,6 +122,14 @@ const getImageUrl = (file) => {
   return file.url || file
 }
 
+const getImageAlt = (file) => {
+  if (!file || !file.name) {
+    return 'Archivo subido'
+  }
+  const altText = file.name.replace(/\bimage\b\s*/gi, '').trim()
+  return altText || 'Archivo subido'
+}
+
 const validateFile = (file) => {
   const validTypes = ['image/jpeg', 'image/png', 'image/jpg']
   const maxSize = props.maxFileSize * 1024 * 1024
@@ -165,12 +173,12 @@ const processFiles = (files) => {
   let hasError = false
   const validFiles = []
 
-  files.forEach(file => {
+  for (const file of files) {
     const validationError = validateFile(file)
     if (validationError) {
       error.value = validationError
       hasError = true
-      return
+      continue
     }
     validFiles.push(file)
   })

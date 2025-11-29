@@ -297,10 +297,10 @@ export default {
       required: true,
       validator(value) {
         return value && 
-               typeof value.width !== 'undefined' && 
-               typeof value.height !== 'undefined' && 
-               typeof value.thickness !== 'undefined' && 
-               typeof value.predicted_weight !== 'undefined';
+               value.width !== undefined && 
+               value.height !== undefined && 
+               value.thickness !== undefined && 
+               value.predicted_weight !== undefined;
       }
     }
   },
@@ -435,7 +435,7 @@ export default {
       a.download = `analisis_cacao_${props.predictionData.id}.json`;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      a.remove();
       URL.revokeObjectURL(url);
     };
 
@@ -444,7 +444,7 @@ export default {
         navigator.share({
           title: 'Análisis de Grano de Cacao',
           text: `Resultados: ${formatDimensions()}, Peso: ${formatWeight()}`,
-          url: window.location.href
+          url: globalThis.location.href
         });
       } else {
         // Fallback: copiar al portapapeles

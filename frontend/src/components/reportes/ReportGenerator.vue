@@ -112,7 +112,7 @@
 
           <div v-if="formulario.tipo_reporte === 'personalizado'" class="form-group mb-3">
             <div class="form-label" id="custom-params-label">Parámetros Personalizados</div>
-            <div class="row" role="group" aria-labelledby="custom-params-label">
+            <fieldset class="row" aria-labelledby="custom-params-label">
               <div class="col-md-4">
                 <div class="form-check">
                   <input
@@ -152,7 +152,7 @@
                   </label>
                 </div>
               </div>
-            </div>
+            </fieldset>
           </div>
 
           <!-- Botones -->
@@ -426,7 +426,7 @@ export default {
 
 .btn-secondary {
   background-color: #6b7280;
-  color: white;
+  color: #ffffff;
 }
 
 .btn-secondary:hover:not(:disabled) {

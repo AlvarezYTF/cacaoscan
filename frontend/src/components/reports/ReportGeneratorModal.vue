@@ -161,7 +161,7 @@
             <!-- Opciones de personalización -->
             <div class="form-group">
               <div class="form-label" id="personalization-options-label">Opciones de Personalización</div>
-              <div class="checkbox-grid" role="group" aria-labelledby="personalization-options-label">
+              <fieldset class="checkbox-grid" aria-labelledby="personalization-options-label">
                 <label class="checkbox-option">
                   <input 
                     type="checkbox" 
@@ -209,7 +209,7 @@
                     <div class="checkbox-desc">Añade un resumen de alto nivel</div>
                   </div>
                 </label>
-              </div>
+              </fieldset>
             </div>
           </div>
 
@@ -974,17 +974,17 @@ export default {
         }
 
         // Clean empty values
-        Object.keys(reportData.parametros).forEach(key => {
+        for (const key of Object.keys(reportData.parametros)) {
           if (reportData.parametros[key] === '' || reportData.parametros[key] === null) {
             delete reportData.parametros[key]
           }
-        })
+        }
 
-        Object.keys(reportData.filtros).forEach(key => {
+        for (const key of Object.keys(reportData.filtros)) {
           if (reportData.filtros[key] === '' || reportData.filtros[key] === null) {
             delete reportData.filtros[key]
           }
-        })
+        }
 
         const response = await reportsStore.createReport(reportData)
 
@@ -1193,8 +1193,8 @@ export default {
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  background: #e5e7eb;
-  color: #6b7280;
+  background: #d1d5db;
+  color: #374151;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1216,7 +1216,7 @@ export default {
 
 .step-label {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #374151;
   text-align: center;
   font-weight: 500;
 }
@@ -1258,7 +1258,7 @@ export default {
 
 .step-header p {
   margin: 0;
-  color: #6b7280;
+  color: #374151;
   font-size: 0.875rem;
 }
 

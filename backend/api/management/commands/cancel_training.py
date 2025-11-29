@@ -92,31 +92,46 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING("No hay trabajos en ejecución o pendientes"))
                 return
             
-            self.stdout.write("=" * 60)
-            self.stdout.write("JOBS DISPONIBLES PARA CANCELAR:")
-            self.stdout.write("=" * 60)
-            
-            if running_jobs.exists():
-                self.stdout.write(f"\n🚀 Jobs EN EJECUCIÓN: {running_jobs.count()}")
-                for job in running_jobs:
-                    self.stdout.write(f"\nJob ID: {job.job_id}")
-                    self.stdout.write(f"  Tipo: {job.get_job_type_display() if hasattr(job, 'get_job_type_display') else job.job_type}")
-                    if hasattr(job, 'progress_percentage') and job.progress_percentage is not None:
-                        self.stdout.write(f"  Progreso: {job.progress_percentage:.1f}%")
-                    self.stdout.write(f"  Iniciado: {job.created_at}")
-                    self.stdout.write("\n  Para cancelar:")
-                    self.stdout.write(f"    python manage.py cancel_training {job.job_id}")
-            
-            if pending_jobs.exists():
-                self.stdout.write(f"\n⏳ Jobs PENDIENTES: {pending_jobs.count()}")
-                for job in pending_jobs:
-                    self.stdout.write(f"\nJob ID: {job.job_id}")
-                    self.stdout.write(f"  Tipo: {job.get_job_type_display() if hasattr(job, 'get_job_type_display') else job.job_type}")
-                    self.stdout.write(f"  Creado: {job.created_at}")
-                    self.stdout.write("\n  Para cancelar:")
-                    self.stdout.write(f"    python manage.py cancel_training {job.job_id}")
+            self._print_jobs_header()
+            self._list_jobs_by_status(running_jobs, "🚀 Jobs EN EJECUCIÓN", is_running=True)
+            self._list_jobs_by_status(pending_jobs, "⏳ Jobs PENDIENTES", is_running=False)
                     
         except Exception as e:
             logger.error(f"Error listing running jobs: {e}", exc_info=True)
             raise CommandError(f'Error al listar trabajos: {str(e)}')
+
+    def _print_jobs_header(self):
+        """Print the header for jobs listing."""
+        self.stdout.write("=" * 60)
+        self.stdout.write("JOBS DISPONIBLES PARA CANCELAR:")
+        self.stdout.write("=" * 60)
+
+    def _get_job_type_display(self, job):
+        """Get the display name for job type."""
+        if hasattr(job, 'get_job_type_display'):
+            return job.get_job_type_display()
+        return job.job_type
+
+    def _print_job_details(self, job, is_running):
+        """Print details for a single job."""
+        self.stdout.write(f"\nJob ID: {job.job_id}")
+        self.stdout.write(f"  Tipo: {self._get_job_type_display(job)}")
+        
+        if is_running and hasattr(job, 'progress_percentage') and job.progress_percentage is not None:
+            self.stdout.write(f"  Progreso: {job.progress_percentage:.1f}%")
+            self.stdout.write(f"  Iniciado: {job.created_at}")
+        else:
+            self.stdout.write(f"  Creado: {job.created_at}")
+        
+        self.stdout.write("\n  Para cancelar:")
+        self.stdout.write(f"    python manage.py cancel_training {job.job_id}")
+
+    def _list_jobs_by_status(self, jobs, header, is_running):
+        """List jobs with a specific status."""
+        if not jobs.exists():
+            return
+        
+        self.stdout.write(f"\n{header}: {jobs.count()}")
+        for job in jobs:
+            self._print_job_details(job, is_running)
 

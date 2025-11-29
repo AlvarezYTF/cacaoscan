@@ -270,7 +270,12 @@ class ResetPasswordView(APIView):
             validate_password_strength(new_password)
             validate_passwords_match(new_password, confirm_password)
         except serializers.ValidationError as e:
-            error_message = str(e) if isinstance(e, str) else (e.detail.get('confirm_password', [str(e)])[0] if hasattr(e, 'detail') else str(e))
+            if isinstance(e, str):
+                error_message = str(e)
+            elif hasattr(e, 'detail'):
+                error_message = e.detail.get('confirm_password', [str(e)])[0]
+            else:
+                error_message = str(e)
             return Response({"success": False, "message": error_message}, status=400)
 
         # Validar token

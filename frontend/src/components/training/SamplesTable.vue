@@ -175,9 +175,9 @@ export default {
       const diffDays = Math.floor(diffMs / 86400000);
       
       if (diffMins < 1) return 'Hace un momento';
-      if (diffMins < 60) return `Hace ${diffMins} minuto${diffMins !== 1 ? 's' : ''}`;
-      if (diffHours < 24) return `Hace ${diffHours} hora${diffHours !== 1 ? 's' : ''}`;
-      if (diffDays < 7) return `Hace ${diffDays} día${diffDays !== 1 ? 's' : ''}`;
+      if (diffMins < 60) return `Hace ${diffMins} minuto${diffMins === 1 ? '' : 's'}`;
+      if (diffHours < 24) return `Hace ${diffHours} hora${diffHours === 1 ? '' : 's'}`;
+      if (diffDays < 7) return `Hace ${diffDays} día${diffDays === 1 ? '' : 's'}`;
       
       return date.toLocaleDateString('es-ES');
     };

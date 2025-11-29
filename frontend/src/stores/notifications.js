@@ -36,9 +36,8 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     getRecentNotifications: (state) => (limit = 5) => {
-      return state.notifications
-        .sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion))
-        .slice(0, limit)
+      const sorted = [...state.notifications].sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion))
+      return sorted.slice(0, limit)
     },
 
     getNotificationsByDate: (state) => (date) => {
@@ -310,7 +309,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
         // Crear URL para descarga
         const blob = new Blob([response.data])
-        const url = window.URL.createObjectURL(blob)
+        const url = globalThis.URL.createObjectURL(blob)
         
         // Crear enlace temporal para descarga
         const link = document.createElement('a')
@@ -332,8 +331,8 @@ export const useNotificationsStore = defineStore('notifications', {
         link.click()
         
         // Limpiar
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
+        link.remove()
+        globalThis.URL.revokeObjectURL(url)
 
         return true
       } catch (error) {

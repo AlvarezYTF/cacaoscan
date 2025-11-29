@@ -153,7 +153,6 @@ def train_hybrid_v2(config: Dict) -> Dict:
     test_dataset_norm = NormalizedDataset(test_dataset, test_targets_normalized, test_indices)
     
     # Store original targets for denormalization later
-    test_targets_original = test_targets
     
     # Save scalers
     target_scaler.save()

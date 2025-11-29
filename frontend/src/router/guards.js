@@ -36,7 +36,8 @@ export const requireAuth = async (to, from, next) => {
       await authStore.getCurrentUser()
     } catch (error) {
       console.warn('❌ Token inválido o expirado:', error)
-      // Limpiar todo y redirigir
+      // Limpiar estado de autenticación y redirigir al login
+      // Esto asegura que el usuario no tenga datos inconsistentes en el store
       authStore.clearAll()
       next({
         name: 'Login',
@@ -368,11 +369,25 @@ export const checkTokenValidity = async (to, from, next) => {
       await authStore.getCurrentUser()
       next()
     } catch (error) {
-      console.warn('Token inválido, limpiando sesión y redirigiendo al login')
+      console.warn('Token inválido, limpiando sesión y redirigiendo al login:', error)
       authStore.clearAll()
       
       // Evitar loops de redirección
-      if (to.name !== 'Login') {
+      if (to.name === 'Login') {
+        next()
+        return
+      }
+      
+      next({
+        name: 'Login',
+        replace: true
+      })
+    }
+  } else {
+    // Si no hay token, redirigir al login si no está ya ahí
+    if (to.name === 'Login') {
+      next()
+    } else {
         next({
           name: 'Login',
           replace: true,

@@ -208,7 +208,9 @@ const startCamera = async () => {
 const stopCamera = () => {
   if (stream.value) {
     const tracks = stream.value.getTracks()
-    tracks.forEach(track => track.stop())
+    for (const track of tracks) {
+      track.stop()
+    }
     stream.value = null
   }
   isCameraReady.value = false
@@ -421,13 +423,13 @@ onBeforeUnmount(() => {
 }
 
 .status-indicator.ready {
-  background: rgba(16, 185, 129, 0.9);
-  color: white;
+  background: rgba(16, 185, 129, 1);
+  color: #ffffff;
 }
 
 .status-indicator.error {
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
+  background: rgba(239, 68, 68, 1);
+  color: #ffffff;
 }
 
 .status-icon {
@@ -536,7 +538,7 @@ onBeforeUnmount(() => {
 
 .action-button.save {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
+  color: #ffffff;
   box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.4);
 }
 

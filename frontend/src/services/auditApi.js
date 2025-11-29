@@ -291,7 +291,7 @@ export async function generateAuditReport(params) {
     // Si es blob (PDF), crear URL de descarga
     if (params.formato === 'pdf') {
       const blob = new Blob([response.data], { type: 'application/pdf' })
-      const url = window.URL.createObjectURL(blob)
+      const url = globalThis.URL.createObjectURL(blob)
       
       return {
         success: true,

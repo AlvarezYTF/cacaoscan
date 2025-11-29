@@ -104,7 +104,7 @@ class CacaoReportPDFGenerator:
         buffer.seek(0)
         return buffer
     
-    def generate_defects_report(self, images_queryset, user, filters=None):
+    def generate_defects_report(self, images_queryset, user, filters=None):  # noqa: ARG002
         """
         Generar reporte de defectos de cacao.
         """
@@ -153,7 +153,7 @@ class CacaoReportPDFGenerator:
         buffer.seek(0)
         return buffer
     
-    def generate_performance_report(self, images_queryset, user, filters=None):
+    def generate_performance_report(self, images_queryset, user, filters=None):  # noqa: ARG002
         """
         Generar reporte de rendimiento por período.
         """
@@ -343,7 +343,6 @@ class CacaoReportPDFGenerator:
         
         today = timezone.now().date()
         week_ago = today - timedelta(days=7)
-        month_ago = today - timedelta(days=30)
         
         daily_stats = images_queryset.filter(
             created_at__date__gte=week_ago

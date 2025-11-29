@@ -210,7 +210,7 @@ class CacaoDatasetLoader:
         Obtiene la lista de registros válidos con rutas de imágenes.
         """
         df = self.load_dataset()
-        valid_df, missing_ids = self.validate_images_exist(df)
+        valid_df, _ = self.validate_images_exist(df)
         
         valid_records = []
         
@@ -243,7 +243,7 @@ class CacaoDatasetLoader:
         """
         try:
             df = self.load_dataset()
-            valid_df, missing_ids = self.validate_images_exist(df)
+            valid_df, _ = self.validate_images_exist(df)
             
             stats = {
                 'total_records': len(df),
@@ -289,13 +289,13 @@ class CacaoDatasetLoader:
         Obtiene datos para un target específico con registros válidos.
         """
         df = self.load_dataset()
-        valid_df, missing_ids = self.validate_images_exist(df)
+        valid_df, _ = self.validate_images_exist(df)
         filtered_df = self.filter_by_target(valid_df, target)
         
         records = []
         target_values = []
         
-        for _, row in valid_df.iterrows():
+        for _, row in filtered_df.iterrows():
             # Construir ruta absoluta
             image_path = MEDIA_ROOT / row['image_path']
             records.append({

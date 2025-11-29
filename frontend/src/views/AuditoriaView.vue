@@ -670,18 +670,18 @@ export default {
     onMounted(() => {
       loadInitialData();
       checkScreenSize();
-      window.addEventListener('resize', checkScreenSize);
+      globalThis.addEventListener('resize', checkScreenSize);
     });
 
     onUnmounted(() => {
       if (realTimeInterval.value) {
         clearInterval(realTimeInterval.value);
       }
-      window.removeEventListener('resize', checkScreenSize);
+      globalThis.removeEventListener('resize', checkScreenSize);
     });
 
     const checkScreenSize = () => {
-      if (window.innerWidth <= 768) {
+      if (globalThis.innerWidth <= 768) {
         sidebarCollapsed.value = true;
         localStorage.setItem('sidebarCollapsed', 'true');
       }
@@ -794,7 +794,7 @@ export default {
 
 .btn-primary {
   background-color: #3b82f6;
-  color: white;
+  color: #ffffff;
   border-color: #3b82f6;
 }
 
@@ -816,7 +816,7 @@ export default {
 
 .btn-success {
   background-color: #10b981;
-  color: white;
+  color: #ffffff;
   border-color: #10b981;
   position: relative;
 }

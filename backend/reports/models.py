@@ -44,12 +44,12 @@ class ReporteGenerado(models.Model):
     tipo_reporte = models.CharField(max_length=20, choices=TIPO_REPORTE_CHOICES)
     formato = models.CharField(max_length=10, choices=FORMATO_CHOICES)
     titulo = models.CharField(max_length=200)
-    descripcion = models.TextField(blank=True, null=True)
+    descripcion = models.TextField(blank=True)
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='generando')
     
     archivo = models.FileField(upload_to='reportes/%Y/%m/%d/', null=True, blank=True)
-    nombre_archivo = models.CharField(max_length=255, null=True, blank=True)
-    tamano_archivo = models.PositiveIntegerField(null=True, blank=True, db_column='tamaño_archivo')
+    nombre_archivo = models.CharField(max_length=255, blank=True)
+    tamano_archivo = models.PositiveIntegerField(blank=True, db_column='tamaño_archivo')
     
     parametros = models.JSONField(default=dict, blank=True)
     filtros_aplicados = models.JSONField(default=dict, blank=True)
@@ -59,7 +59,7 @@ class ReporteGenerado(models.Model):
     fecha_expiracion = models.DateTimeField(null=True, blank=True)
     tiempo_generacion = models.DurationField(null=True, blank=True)
     
-    mensaje_error = models.TextField(null=True, blank=True)
+    mensaje_error = models.TextField(blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

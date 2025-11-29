@@ -195,10 +195,10 @@ const uploadImages = async () => {
         type: 'success',
         title: '✅ Subida completada',
         message: (() => {
-          const imagesText = total_uploaded !== 1 ? 'imágenes' : 'imagen'
+          const imagesText = total_uploaded === 1 ? 'imagen' : 'imágenes'
           const successMsg = `Se subieron ${total_uploaded} ${imagesText} correctamente.`
           if (total_errors > 0) {
-            const errorsText = total_errors !== 1 ? 'imágenes' : 'imagen'
+            const errorsText = total_errors === 1 ? 'imagen' : 'imágenes'
             return `${successMsg} ${total_errors} ${errorsText} con errores.`
           }
           return successMsg

@@ -343,8 +343,15 @@
 <script setup>
 import LegalLayout from '@/components/legal/LegalLayout.vue'
 
-// Vista de política de privacidad con contenido estático y navegación interna
-// No requiere llamadas al backend - todo el contenido está en el frontend
+/**
+ * Vista de Política de Privacidad
+ * 
+ * Esta vista muestra la política de privacidad de la plataforma CacaoScan.
+ * El contenido es completamente estático y se renderiza en el frontend, por lo que
+ * no requiere llamadas al backend. Incluye navegación interna mediante anclas HTML.
+ * 
+ * @component PrivacyPolicyView
+ */
 </script>
 
 <style scoped>

@@ -73,10 +73,9 @@ class TestSonarQubeFixesInCode(TestCase):
         lines = content.split('\n')
         for i, line in enumerate(lines):
             if 'elif' in line and i > 0:
-                prev_line = lines[i-1].strip()
                 # Verificación básica: si hay un if y elif con la misma condición, es redundante
                 # Esta es una verificación simplificada
-                pass  # Por ahora solo verificamos que el archivo existe y es válido
+                # Por ahora solo verificamos que el archivo existe y es válido
         
         # Verificación simple: el archivo debe ser válido Python
         self.assertIn('class', content, "auth_service.py debe contener clases")

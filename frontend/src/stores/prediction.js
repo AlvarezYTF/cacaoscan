@@ -398,7 +398,11 @@ export const usePredictionStore = defineStore('prediction', {
       };
     },
     
-    // Reiniciar todo el estado
+    /**
+     * Reinicia todo el estado de predicción al estado inicial.
+     * Limpia la predicción actual, imagen y flags de carga.
+     * Útil para resetear el store antes de una nueva predicción.
+     */
     resetState() {
       this.currentPrediction = null;
       this.currentImage = null;

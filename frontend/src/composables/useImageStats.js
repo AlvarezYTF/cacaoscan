@@ -68,7 +68,7 @@ export function useImageStats() {
       })
       
       // Agregar otros filtros si existen
-      Object.keys(filters).forEach(key => {
+      for (const key of Object.keys(filters)) {
         if (key !== 'page_size' && filters[key] !== undefined && filters[key] !== null) {
           params.append(key, filters[key].toString())
         }
@@ -139,7 +139,7 @@ export function useImageStats() {
       // Crear blob y descargar
       const blob = new Blob([response.data], { type: 'application/pdf' })
       const link = document.createElement('a')
-      link.href = window.URL.createObjectURL(blob)
+      link.href = globalThis.URL.createObjectURL(blob)
       link.download = `reporte_${reportType}_${new Date().toISOString().split('T')[0]}.pdf`
       link.click()
       

@@ -104,8 +104,9 @@ export const useAnalysisStore = defineStore('analysis', {
           },
         });
 
-        // NOTA: Ya no llamamos a /scan/measure/ porque el batch endpoint ya hace todo el procesamiento
-        // Esto evita errores duplicados y mejora el rendimiento
+        // El endpoint /api/v1/images/batch/upload/ procesa automáticamente las imágenes
+        // incluyendo mediciones, por lo que no es necesario llamar a /scan/measure/ por separado.
+        // Esto evita procesamiento duplicado y mejora el rendimiento del sistema.
 
         return response.data;
 

@@ -111,7 +111,6 @@ export default {
   name: 'NotificationBell',
   setup() {
     const router = useRouter()
-    const authStore = useAuthStore()
     const notificationStore = useNotificationStore()
 
     // Reactive data
@@ -155,12 +154,12 @@ export default {
         await notificationStore.markAllAsRead()
         
         // Update local state
-        recentNotifications.value.forEach(notification => {
+        for (const notification of recentNotifications.value) {
           if (!notification.leida) {
             notification.leida = true
             notification.fecha_lectura = new Date().toISOString()
           }
-        })
+        }
         
       } catch (error) {
         console.error('Error marking all notifications as read:', error)

@@ -46,7 +46,7 @@ export async function predictImage(formData) {
     }
 
     // Emitir evento de loading
-    window.dispatchEvent(new CustomEvent('api-loading-start', {
+    globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
       detail: { type: 'prediction', message: 'Analizando imagen de cacao...' }
     }))
 
@@ -84,7 +84,7 @@ export async function predictImage(formData) {
     }
   } finally {
     // Emitir evento de fin de loading
-    window.dispatchEvent(new CustomEvent('api-loading-end'))
+    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 
@@ -118,7 +118,7 @@ export async function predictImageYolo(formData) {
     }
 
     // Emitir evento de loading
-    window.dispatchEvent(new CustomEvent('api-loading-start', {
+    globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
       detail: { type: 'yolo-prediction', message: 'Analizando imagen con YOLOv8...' }
     }))
 
@@ -156,7 +156,7 @@ export async function predictImageYolo(formData) {
     }
   } finally {
     // Emitir evento de fin de loading
-    window.dispatchEvent(new CustomEvent('api-loading-end'))
+    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 
@@ -199,7 +199,7 @@ export async function predictImageSmart(formData, options = {}) {
     }
 
     // Emitir evento de loading
-    window.dispatchEvent(new CustomEvent('api-loading-start', {
+    globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
       detail: { type: 'smart-prediction', message: 'Analizando imagen con recorte inteligente...' }
     }))
 
@@ -238,7 +238,7 @@ export async function predictImageSmart(formData, options = {}) {
     }
   } finally {
     // Emitir evento de fin de loading
-    window.dispatchEvent(new CustomEvent('api-loading-end'))
+    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 
@@ -458,7 +458,7 @@ export async function downloadImage(imageId, type = 'original') {
 
     // Crear URL de descarga
     const blob = new Blob([response.data])
-    const url = window.URL.createObjectURL(blob)
+    const url = globalThis.URL.createObjectURL(blob)
     
     // Extraer nombre del archivo de headers o usar default
     const contentDisposition = response.headers['content-disposition']
@@ -479,8 +479,8 @@ export async function downloadImage(imageId, type = 'original') {
     link.click()
     
     // Limpiar
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
+    link.remove()
+    globalThis.URL.revokeObjectURL(url)
 
     console.log('✅ Descarga completada')
 
@@ -519,7 +519,7 @@ export async function exportResults(options = {}) {
 
     // Crear URL de descarga
     const blob = new Blob([response.data])
-    const url = window.URL.createObjectURL(blob)
+    const url = globalThis.URL.createObjectURL(blob)
     
     // Determinar nombre del archivo
     const format = options.format || 'csv'
@@ -534,8 +534,8 @@ export async function exportResults(options = {}) {
     link.click()
     
     // Limpiar
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
+    link.remove()
+    globalThis.URL.revokeObjectURL(url)
 
     console.log('✅ Exportación completada')
 

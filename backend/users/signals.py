@@ -29,7 +29,7 @@ def assign_default_role(sender, instance, created, **kwargs):
     if created and not instance.is_staff and not instance.is_superuser:
         try:
             # Crear el grupo 'farmer' si no existe
-            farmer_group, created_group = Group.objects.get_or_create(name='farmer')
+            farmer_group, _ = Group.objects.get_or_create(name='farmer')
             
             # Agregar el usuario al grupo farmer
             instance.groups.add(farmer_group)

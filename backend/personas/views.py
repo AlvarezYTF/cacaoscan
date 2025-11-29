@@ -43,8 +43,8 @@ class PersonaRegistroView(APIView):
 
             # Prevenir si ya existe usuario
             from django.contrib.auth import get_user_model
-            User = get_user_model()
-            if User.objects.filter(email=email).exists():
+            user_model = get_user_model()
+            if user_model.objects.filter(email=email).exists():
                 return Response({'detail': 'El email ya está registrado.'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Si el usuario es admin, crear directamente sin verificación

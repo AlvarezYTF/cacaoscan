@@ -41,7 +41,7 @@ describe('Carga de Imágenes - Upload', () => {
 
   it('debe validar tipos de archivo permitidos', () => {
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
-    const disallowedTypes = ['text/plain', 'application/pdf', 'video/mp4']
+    // const disallowedTypes = ['text/plain', 'application/pdf', 'video/mp4']  // Reserved for future use
     
     // Test archivos permitidos
     allowedTypes.forEach(type => {

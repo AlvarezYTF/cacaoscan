@@ -111,9 +111,8 @@ def validate_latitude(lat: Optional[float]) -> Optional[float]:
     Raises:
         serializers.ValidationError: If latitude is out of valid range
     """
-    if lat is not None:
-        if lat < -90 or lat > 90:
-            raise serializers.ValidationError("La latitud debe estar entre -90 y 90 grados.")
+    if lat is not None and (lat < -90 or lat > 90):
+        raise serializers.ValidationError("La latitud debe estar entre -90 y 90 grados.")
     return lat
 
 
@@ -130,9 +129,8 @@ def validate_longitude(lng: Optional[float]) -> Optional[float]:
     Raises:
         serializers.ValidationError: If longitude is out of valid range
     """
-    if lng is not None:
-        if lng < -180 or lng > 180:
-            raise serializers.ValidationError("La longitud debe estar entre -180 y 180 grados.")
+    if lng is not None and (lng < -180 or lng > 180):
+        raise serializers.ValidationError("La longitud debe estar entre -180 y 180 grados.")
     return lng
 
 

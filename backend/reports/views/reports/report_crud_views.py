@@ -224,7 +224,7 @@ class ReporteListCreateView(PaginationMixin, APIView):
             # Generate according to type and format
             if reporte.formato == 'pdf':
                 from reports.services import CacaoReportPDFGenerator
-                generator = CacaoReportPDFGenerator()
+                CacaoReportPDFGenerator()
                 raise ValueError("Generación de PDF no implementada aún")
             elif reporte.formato == 'excel':
                 excel_service = ExcelAnalisisGenerator()
@@ -251,7 +251,6 @@ class ReporteListCreateView(PaginationMixin, APIView):
                 raise ValueError(f"Formato no soportado: {reporte.formato}")
             
             # Create file
-            filename = f"{reporte.titulo}_{reporte.id}.{reporte.formato}"
             file_content = ContentFile(content)
             
             # Calculate generation time

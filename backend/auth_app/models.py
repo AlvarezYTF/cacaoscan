@@ -85,14 +85,14 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='auth_profile')
     
     # Información de contacto
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True)
     
     # Información geográfica
-    region = models.CharField(max_length=100, blank=True, null=True)
-    municipality = models.CharField(max_length=100, blank=True, null=True)
+    region = models.CharField(max_length=100, blank=True)
+    municipality = models.CharField(max_length=100, blank=True)
     
     # Información de la finca
-    farm_name = models.CharField(max_length=200, blank=True, null=True)
+    farm_name = models.CharField(max_length=200, blank=True)
     years_experience = models.PositiveIntegerField(blank=True, null=True)
     farm_size_hectares = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     

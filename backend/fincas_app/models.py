@@ -30,7 +30,7 @@ class Finca(TimeStampedModel):
     )
     
     # Información adicional
-    descripcion = models.TextField(blank=True, null=True, help_text="Descripción adicional de la finca")
+    descripcion = models.TextField(blank=True, help_text="Descripción adicional de la finca")
     coordenadas_lat = models.DecimalField(
         max_digits=10, 
         decimal_places=7, 
@@ -164,7 +164,7 @@ class Lote(TimeStampedModel):
     )
     
     # Información adicional
-    descripcion = models.TextField(blank=True, null=True, help_text="Descripción adicional del lote")
+    descripcion = models.TextField(blank=True, help_text="Descripción adicional del lote")
     coordenadas_lat = models.DecimalField(
         max_digits=10, 
         decimal_places=7, 

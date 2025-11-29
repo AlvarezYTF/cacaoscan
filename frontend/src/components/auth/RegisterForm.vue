@@ -660,7 +660,7 @@ const validateForm = () => {
     errors.numeroDocumento = 'El documento debe tener entre 6 y 11 dígitos'
   }
 
-  const cleanPhone = form.value.phoneNumber.replaceAll(/[\s\-\(\)]/g, '')
+  const cleanPhone = form.value.phoneNumber.replaceAll(/[\s\-()]/g, '')
   if (cleanPhone && !isValidPhone(form.value.phoneNumber)) {
     errors.phoneNumber = 'El teléfono debe tener entre 7 y 15 dígitos'
   }
@@ -731,7 +731,7 @@ const handleSubmit = async () => {
     return
   }
 
-  window.dispatchEvent(new CustomEvent('api-loading-start', {
+  globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
     detail: { type: 'register', message: 'Creando tu cuenta...' }
   }))
 
@@ -827,7 +827,7 @@ const handleSubmit = async () => {
     setStatusMessage(errorMessage, 'error')
   } finally {
     isLoading.value = false
-    window.dispatchEvent(new CustomEvent('api-loading-end'))
+    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 

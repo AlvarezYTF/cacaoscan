@@ -129,7 +129,7 @@ class YOLOTrainingManager:
         # Cargar dataset
         loader = CacaoDatasetLoader()
         df = loader.load_dataset()
-        valid_df, missing_ids = loader.validate_images_exist(df)
+        valid_df, _ = loader.validate_images_exist(df)
         
         if len(valid_df) < self.dataset_size:
             logger.warning(f"Solo {len(valid_df)} imágenes disponibles, solicitadas {self.dataset_size}")
@@ -175,7 +175,6 @@ class YOLOTrainingManager:
                 
                 if prediction and prediction.get('mask') is not None:
                     mask = prediction['mask']
-                    bbox = prediction.get('bbox', [])
                     
                     # Redimensionar máscara al tamaño de la imagen si es necesario
                     image = cv2.imread(str(image_path))
@@ -428,7 +427,7 @@ class YOLOTrainingManager:
     def train_model(
         self,
         model_name: str = "yolov8s-seg",
-        resume: bool = False,
+        resume: bool = False,  # noqa: ARG002
         pretrained: bool = True
     ) -> Dict[str, Any]:
         """

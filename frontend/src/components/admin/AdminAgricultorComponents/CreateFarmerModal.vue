@@ -89,6 +89,7 @@
                     id="create-farmer-segundo-apellido"
                     v-model="form.segundoApellido" 
                     type="text" 
+                    autocomplete="family-name"
                     :disabled="isSubmitting" 
                     class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                   />
@@ -99,6 +100,7 @@
                     id="create-farmer-telefono"
                     v-model="form.phoneNumber" 
                     type="tel" 
+                    autocomplete="tel"
                     :disabled="isSubmitting" 
                     class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                     :class="errors.phoneNumber ? 'border-red-500' : 'border-gray-300'" 
@@ -126,6 +128,7 @@
                     id="create-farmer-fecha-nacimiento"
                     v-model="form.fechaNacimiento" 
                     type="date" 
+                    autocomplete="bday"
                     :disabled="isSubmitting" 
                     :max="maxBirthdate" 
                     :min="minBirthdate" 
@@ -210,6 +213,7 @@
                     id="create-farmer-direccion"
                     v-model="form.direccion" 
                     type="text" 
+                    autocomplete="street-address"
                     :disabled="isSubmitting" 
                     class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                     placeholder="Calle 10 #5-20" 
@@ -613,7 +617,7 @@ const handleSubmit = async () => {
         'direccion': 'direccion'
       }
       
-      Object.keys(data).forEach(key => {
+      for (const key of Object.keys(data)) {
         if (key === 'message' || key === 'error' || key === 'detail' || key === 'non_field_errors') {
           return
         }
@@ -626,7 +630,7 @@ const handleSubmit = async () => {
         } else if (typeof errorValue === 'string') {
           errors[frontendField] = errorValue
         }
-      })
+      }
       
       if (data.detail) {
         errorMessage = data.detail

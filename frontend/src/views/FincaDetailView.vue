@@ -321,7 +321,8 @@ const loadLotesRecientes = async () => {
     const response = await api.get(`/api/v1/fincas/${route.params.id}/lotes/`)
     lotesRecientes.value = response.data.results?.slice(0, 5) || []
   } catch (err) {
-    // Ignorar errores de lotes - no es crítico para mostrar la finca
+    console.error('Error cargando lotes recientes:', err)
+    lotesRecientes.value = []
   }
 }
 
@@ -374,9 +375,10 @@ const generateReport = async () => {
       throw new Error('Error generando reporte')
     }
   } catch (err) {
+    console.error('Error generando reporte:', err)
     await Swal.fire({
       title: 'Error',
-      text: 'No se pudo generar el reporte',
+      text: err.message || 'No se pudo generar el reporte',
       icon: 'error'
     })
   }
@@ -386,7 +388,7 @@ const viewOnMap = () => {
   const lat = finca.value.coordenadas_lat
   const lng = finca.value.coordenadas_lng
   const url = `https://www.google.com/maps?q=${lat},${lng}`
-  window.open(url, '_blank')
+  globalThis.open(url, '_blank')
 }
 
 const formatDate = (dateString) => {

@@ -22,7 +22,7 @@ export function useFormValidation() {
    */
   const isValidPhone = (phone) => {
     if (!phone) return true // Opcional
-    const cleanPhone = phone.replaceAll(/[\s\-\(\)]/g, '')
+    const cleanPhone = phone.replaceAll(/[\s\-()]/g, '')
     return /^\+?\d{7,15}$/.test(cleanPhone)
   }
 
@@ -72,7 +72,9 @@ export function useFormValidation() {
    * Limpia todos los errores
    */
   const clearErrors = () => {
-    Object.keys(errors).forEach(key => delete errors[key])
+    for (const key of Object.keys(errors)) {
+      delete errors[key]
+    }
   }
 
   /**

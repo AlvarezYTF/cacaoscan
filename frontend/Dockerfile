@@ -43,9 +43,8 @@ COPY start-nginx.sh /start-nginx.sh
 RUN touch /usr/share/nginx/html/config.js && \
     chown 101:101 /usr/share/nginx/html/config.js && \
     chmod 666 /usr/share/nginx/html/config.js && \
-    echo "// Runtime API configuration will be injected here" > /usr/share/nginx/html/config.js
-
-RUN chmod +x /start-nginx.sh
+    echo "// Runtime API configuration will be injected here" > /usr/share/nginx/html/config.js && \
+    chmod +x /start-nginx.sh
 
 USER 101
 

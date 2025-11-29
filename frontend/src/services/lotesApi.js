@@ -67,7 +67,7 @@ export async function getLoteStats(loteId) {
 export function validateLoteData(loteData) {
   const errors = []
 
-  if (!loteData.finca || !loteData.finca.id) {
+  if (!loteData.finca?.id) {
     errors.push('La finca es requerida')
   }
 

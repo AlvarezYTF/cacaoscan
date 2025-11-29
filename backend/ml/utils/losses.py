@@ -103,14 +103,14 @@ class UncertaintyWeightedLoss(nn.Module):
             log_sigmas_flat = self.log_sigmas
         
         # Para cada target i (usar min para evitar index out of bounds)
-        B, C = predictions.shape
+        _, C = predictions.shape
         C = min(predictions.shape[1], targets.shape[1], len(log_sigmas_flat))
         
         for i in range(C):
             pi = predictions[:, i]
             ti = targets[:, i]
             
-            Li = base_loss_fn(pi, ti)  # [batch]
+            li = base_loss_fn(pi, ti)  # [batch]
             
             # Obtener el log_sigma INDEPENDIENTE para esta tarea específica
             log_sigma_i = log_sigmas_flat[i]
@@ -124,9 +124,9 @@ class UncertaintyWeightedLoss(nn.Module):
             sigma_sq = sigma_i ** 2
             # Evitar división por cero (aunque sigma_i > 0 por construcción)
             epsilon = 1e-8
-            Li_weighted = (1.0 / (2.0 * sigma_sq + epsilon)) * Li + log_sigma_i  # [batch]
+            li_weighted = (1.0 / (2.0 * sigma_sq + epsilon)) * li + log_sigma_i  # [batch]
             
-            total_loss = total_loss + Li_weighted  # [batch]
+            total_loss = total_loss + li_weighted  # [batch]
         
         # Promediar sobre el batch para obtener escalar
         total_loss = total_loss.mean()

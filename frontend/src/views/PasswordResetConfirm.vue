@@ -264,7 +264,7 @@ const passwordChecks = computed(() => {
 })
 
 const isPasswordValid = computed(() => {
-  return Object.values(passwordChecks.value).every(check => check)
+  return Object.values(passwordChecks.value).every(Boolean)
 })
 
 const isFormValid = computed(() => {

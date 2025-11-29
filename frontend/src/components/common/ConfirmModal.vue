@@ -260,7 +260,7 @@ export default {
 
 .btn-danger {
   background-color: #ef4444;
-  color: white;
+  color: #ffffff;
   border-color: #ef4444;
 }
 
@@ -271,7 +271,7 @@ export default {
 
 .btn-primary {
   background-color: #3b82f6;
-  color: white;
+  color: #ffffff;
   border-color: #3b82f6;
 }
 
@@ -282,7 +282,7 @@ export default {
 
 .btn-success {
   background-color: #10b981;
-  color: white;
+  color: #ffffff;
   border-color: #10b981;
 }
 
@@ -292,9 +292,9 @@ export default {
 }
 
 .btn-warning {
-  background-color: #f59e0b;
-  color: white;
-  border-color: #f59e0b;
+  background-color: #d97706;
+  color: #ffffff;
+  border-color: #d97706;
 }
 
 .btn-warning:hover:not(:disabled) {

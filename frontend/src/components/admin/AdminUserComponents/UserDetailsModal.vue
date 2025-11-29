@@ -673,17 +673,17 @@ export default {
 }
 
 .btn-secondary {
-  background-color: #95a5a6;
-  color: white;
+  background-color: #6b7280;
+  color: #ffffff;
 }
 
 .btn-secondary:hover {
-  background-color: #7f8c8d;
+  background-color: #4b5563;
 }
 
 .btn-primary {
-  background-color: #3498db;
-  color: white;
+  background-color: #2563eb;
+  color: #ffffff;
 }
 
 .btn-primary:hover {

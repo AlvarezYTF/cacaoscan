@@ -234,7 +234,7 @@ class IncrementalDataManager:
         
         # Si no tenemos suficientes muestras, añadir aleatoriamente
         if len(sampled_records) < max_samples:
-            remaining_indices = set(range(len(records))) - set(i for record in sampled_records for i in range(len(records)) if records[i] == record)
+            remaining_indices = {i for i in range(len(records))} - {i for record in sampled_records for i in range(len(records)) if records[i] == record}
             additional_needed = max_samples - len(sampled_records)
             additional_indices = np.random.choice(list(remaining_indices), 
                                                 min(additional_needed, len(remaining_indices)), 
@@ -777,7 +777,7 @@ class IncrementalTrainer:
             logger.warning(f"No se pudo computar información de Fisher: {e}")
     
     def _train_incremental_model(self, model: nn.Module, train_loader: DataLoader, 
-                                val_loader: DataLoader, target: str) -> Tuple[nn.Module, Dict]:
+                                val_loader: DataLoader, target: str) -> Tuple[nn.Module, Dict]:  # noqa: ARG002
         """Entrena el modelo con estrategias incrementales."""
         model.train()
         

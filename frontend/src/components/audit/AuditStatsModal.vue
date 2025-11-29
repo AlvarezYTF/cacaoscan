@@ -321,7 +321,7 @@ export default {
       }
 
       const blob = new Blob([JSON.stringify(statsData, null, 2)], { type: 'application/json' })
-      const url = window.URL.createObjectURL(blob)
+      const url = globalThis.URL.createObjectURL(blob)
       
       const link = document.createElement('a')
       link.href = url
@@ -329,8 +329,8 @@ export default {
       document.body.appendChild(link)
       link.click()
       
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+      link.remove()
+      globalThis.URL.revokeObjectURL(url)
     },
 
     closeModal() {

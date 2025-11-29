@@ -278,7 +278,7 @@ const handleSubmit = async () => {
   }
 
   // Emitir evento de loading
-  window.dispatchEvent(new CustomEvent('api-loading-start', {
+  globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
     detail: { type: 'login', message: 'Verificando credenciales...' }
   }))
 
@@ -299,7 +299,7 @@ const handleSubmit = async () => {
     setStatusMessage('Error inesperado al iniciar sesión', 'error')
   } finally {
     // Emitir evento de fin de loading
-    window.dispatchEvent(new CustomEvent('api-loading-end'))
+    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 

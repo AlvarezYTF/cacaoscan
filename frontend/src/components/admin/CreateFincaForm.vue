@@ -124,7 +124,13 @@ onMounted(async () => {
       const res = await getAgricultores()
       // El endpoint devuelve axios response; tomamos los resultados (paginados o no)
       const data = res.data
-      agricultores.value = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : data?.results || [])
+      if (Array.isArray(data?.results)) {
+        agricultores.value = data.results
+      } else if (Array.isArray(data)) {
+        agricultores.value = data
+      } else {
+        agricultores.value = data?.results || []
+      }
       console.debug('[Fincas] Agricultores cargados:', agricultores.value.length)
     } catch (e) {
       console.error('[Fincas] Error cargando agricultores:', e)

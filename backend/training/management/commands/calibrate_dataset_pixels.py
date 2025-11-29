@@ -106,7 +106,7 @@ class Command(BaseCommand):
         try:
             dataset_loader = CacaoDatasetLoader()
             df = dataset_loader.load_dataset()
-            valid_df, missing_ids = dataset_loader.validate_images_exist(df)
+            valid_df, _ = dataset_loader.validate_images_exist(df)
             total_valid_images = len(valid_df)
             self.stdout.write(f'📊 Dataset cargado: {total_valid_images} imágenes válidas')
         except Exception as e:
@@ -149,7 +149,6 @@ class Command(BaseCommand):
                 continue
 
             image_path = Path(record_info['raw_image_path'])
-            image_filename = image_path.name
             if not image_path.exists():
                 self.stdout.write(self.style.WARNING(f'  [WARN] Imagen no encontrada: {image_path.name}'))
                 error_count += 1

@@ -960,7 +960,7 @@ def train_multi_head_model(
 
             for target in TARGETS:
                 ModelMetrics.objects.create(
-                    model_name=f"hybrid_regression" if is_hybrid else "multihead_regression",
+                    model_name="hybrid_regression" if is_hybrid else "multihead_regression",
                     model_type='regression',
                     target=target,
                     version=f"v{datetime.now().strftime('%Y%m%d_%H%M%S')}",

@@ -57,8 +57,8 @@ export function useWebSocket() {
       return import.meta.env.VITE_WS_URL
     }
     // Usar runtime injection si está disponible
-    if (typeof window !== 'undefined' && window.__API_BASE_URL__) {
-      const apiUrl = window.__API_BASE_URL__.replace(/\/api\/v1\/?$/, '')
+    if (typeof globalThis !== 'undefined' && globalThis.__API_BASE_URL__) {
+      const apiUrl = globalThis.__API_BASE_URL__.replace(/\/api\/v1\/?$/, '')
       return apiUrl.replace(/^https?/, 'ws') + '/ws'
     }
     // Usar build-time variable
@@ -480,7 +480,7 @@ export function useWebSocket() {
   
   const emit = (event, data) => {
     if (listeners.has(event)) {
-      listeners.get(event).forEach(callback => {
+      for (const callback of listeners.get(event)) {
         try {
           callback(data)
         } catch (error) {

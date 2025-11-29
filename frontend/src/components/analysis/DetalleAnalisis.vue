@@ -221,8 +221,6 @@ export default {
     const pieChart = ref(null);
     const barChart = ref(null);
     
-    let pieChartInstance = null;
-    let barChartInstance = null;
 
     // Datos para el gráfico de pastel
     const pieData = [
@@ -242,7 +240,7 @@ export default {
     const createPieChart = () => {
       if (pieChart.value) {
         const ctx = pieChart.value.getContext('2d');
-        pieChartInstance = new Chart(ctx, {
+        new Chart(ctx, {
           type: 'pie',
           data: {
             labels: pieData.map(item => item.name),
@@ -280,7 +278,7 @@ export default {
     const createBarChart = () => {
       if (barChart.value) {
         const ctx = barChart.value.getContext('2d');
-        barChartInstance = new Chart(ctx, {
+        new Chart(ctx, {
           type: 'bar',
           data: {
             labels: barData.map(item => item.name),

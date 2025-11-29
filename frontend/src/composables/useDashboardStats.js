@@ -262,14 +262,14 @@ export function useDashboardStats() {
       const blob = await dashboardStatsService.exportDashboardData(format, period)
       
       // Crear enlace de descarga
-      const url = window.URL.createObjectURL(blob)
+      const url = globalThis.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
       link.download = `dashboard-data-${period}-days.${format}`
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+      link.remove()
+      globalThis.URL.revokeObjectURL(url)
     } catch (err) {
       console.error('Error exporting data:', err)
       throw err

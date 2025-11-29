@@ -58,7 +58,7 @@ class TestScalerDiagnostics:
             scaler = scalers.scalers[target]
             denorm_values = scaler.inverse_transform(test_normalized)
             
-            min_val, max_val = target_limits[target]
+            _, max_val = target_limits[target]
             
             # Verificar que los valores desnormalizados están en rangos razonables
             # (con un margen porque estamos probando ±3 desviaciones estándar)

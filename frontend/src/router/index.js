@@ -534,7 +534,9 @@ router.beforeEach(async (to, from) => {
         try {
           await authStore.getCurrentUser()
         } catch (error) {
-          // Limpiar todo y redirigir
+          // Error al obtener usuario: limpiar estado y redirigir al login
+          // Esto previene estados inconsistentes cuando el token es inválido
+          console.error('Error obteniendo usuario en guard:', error)
           authStore.clearAll()
           return {
             name: 'Login',
@@ -559,31 +561,10 @@ router.beforeEach(async (to, from) => {
       const requiredRole = to.meta.requiresRole
       if (requiredRole) {
         const userRole = authStore.userRole?.toLowerCase().trim()
-        const normalizedRequiredRole = String(requiredRole).toLowerCase().trim()
+        const roleString = typeof requiredRole === 'string' ? requiredRole : String(requiredRole)
+        const normalizedRequiredRole = roleString.toLowerCase().trim()
 
-        // Función para normalizar roles del usuario
-        const normalizeUserRole = (role) => {
-          if (!role) return null
-          const normalized = String(role).toLowerCase().trim()
-
-          // Mapear variantes comunes de roles
-          switch (normalized) {
-            case 'administrador':
-            case 'administrator':
-            case 'admin':
-              return 'admin'
-            case 'analista':
-            case 'analyst':
-              return 'analyst'
-            case 'agricultor':
-            case 'farmer':
-              return 'farmer'
-            default:
-              return normalized
-          }
-        }
-
-        const normalizedUserRole = normalizeUserRole(userRole)
+        const normalizedUserRole = normalizeRole(userRole)
 
         // Verificar si el usuario tiene el rol requerido
         if (normalizedUserRole !== normalizedRequiredRole) {
@@ -613,7 +594,7 @@ router.beforeEach(async (to, from) => {
       isNavigating = false
       navigationTimeout = null
       // Emit loading end event
-      window.dispatchEvent(new CustomEvent('route-loading-end'))
+      globalThis.dispatchEvent(new CustomEvent('route-loading-end'))
     }, 100)
   }
 })
@@ -662,7 +643,7 @@ const getRedirectPathByRole = (role) => {
 router.afterEach((to, from) => {
   // Scroll al top en cambios de ruta
   if (to.path !== from.path) {
-    window.scrollTo(0, 0)
+    globalThis.scrollTo(0, 0)
   }
 
 })

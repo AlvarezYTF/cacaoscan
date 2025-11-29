@@ -175,15 +175,11 @@ class RegressionEvaluator:
                 images, targets_dict, pixel_features = None, None, None
                 
                 # Desempaquetar datos basado en si es híbrido o no
-                if is_hybrid and len(batch_data) == 3:
+                if len(batch_data) == 3:
                     images, targets_dict, pixel_features = batch_data
-                    pixel_features = pixel_features.to(self.device)
-                elif not is_hybrid and len(batch_data) == 2:
-                    images, targets_dict = batch_data
-                elif len(batch_data) == 3: # Asumir híbrido si da 3
-                    images, targets_dict, pixel_features = batch_data
-                    pixel_features = pixel_features.to(self.device)
-                elif len(batch_data) == 2: # Asumir no híbrido si da 2
+                    if is_hybrid:
+                        pixel_features = pixel_features.to(self.device)
+                elif len(batch_data) == 2:
                      images, targets_dict = batch_data
                 else:
                     logger.error(f"Batch de datos inesperado. Se esperaban 2 o 3 tensores, se obtuvieron {len(batch_data)}")
@@ -315,7 +311,7 @@ class RegressionEvaluator:
         
         # Crear figura
         n_targets = len(self.results)
-        fig, axes = plt.subplots(2, 2, figsize=figsize)
+        _, axes = plt.subplots(2, 2, figsize=figsize)
         axes = axes.flatten()
         
         for idx, (target, metrics) in enumerate(self.results.items()):
@@ -387,7 +383,7 @@ class RegressionEvaluator:
         
         # Crear figura
         n_targets = len(self.results)
-        fig, axes = plt.subplots(2, 2, figsize=figsize)
+        _, axes = plt.subplots(2, 2, figsize=figsize)
         axes = axes.flatten()
         
         for idx, (target, metrics) in enumerate(self.results.items()):
