@@ -212,8 +212,8 @@
                   <input 
                     id="create-farmer-direccion"
                     type="text"
-                    autocomplete="street-address"
                     v-model="form.direccion" 
+                    autocomplete="street-address"
                     placeholder="Calle 10 #5-20" 
                     :disabled="isSubmitting" 
                     class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" 
@@ -246,8 +246,8 @@
                     <input 
                       id="create-farmer-password"
                       :type="showPassword ? 'text' : 'password'"
-                      autocomplete="new-password"
                       v-model="form.password" 
+                      autocomplete="new-password"
                       placeholder="••••••••••••"
                       required 
                       :disabled="isSubmitting"
@@ -311,8 +311,8 @@
                   <div class="relative">
                     <input 
                       id="create-farmer-confirm-password"
+                      :type="showPassword ? 'text' : 'password'"
                       v-model="form.confirmPassword" 
-                      :type="showPassword ? 'text' : 'password'" 
                       autocomplete="new-password"
                       required 
                       :disabled="isSubmitting" 
@@ -408,141 +408,141 @@ import Swal from 'sweetalert2'
 const buildErrorMessages = () => {
   // Build "La contraseña es requerida" using character codes
   const msg1 = [
-    String.fromCharCode(76), // L
-    String.fromCharCode(97), // a
-    String.fromCharCode(32), // space
-    String.fromCharCode(99), // c
-    String.fromCharCode(111), // o
-    String.fromCharCode(110), // n
-    String.fromCharCode(116), // t
-    String.fromCharCode(114), // r
-    String.fromCharCode(97), // a
-    String.fromCharCode(115), // s
-    String.fromCharCode(101), // e
-    String.fromCharCode(241), // ñ
-    String.fromCharCode(97), // a
-    String.fromCharCode(32), // space
-    String.fromCharCode(101), // e
-    String.fromCharCode(115), // s
-    String.fromCharCode(32), // space
-    String.fromCharCode(114), // r
-    String.fromCharCode(101), // e
-    String.fromCharCode(113), // q
-    String.fromCharCode(117), // u
-    String.fromCharCode(101), // e
-    String.fromCharCode(114), // r
-    String.fromCharCode(105), // i
-    String.fromCharCode(100), // d
-    String.fromCharCode(97)  // a
+    String.fromCodePoint(76), // L
+    String.fromCodePoint(97), // a
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(99), // c
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(110), // n
+    String.fromCodePoint(116), // t
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(97), // a
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(241), // ñ
+    String.fromCodePoint(97), // a
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(113), // q
+    String.fromCodePoint(117), // u
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(105), // i
+    String.fromCodePoint(100), // d
+    String.fromCodePoint(97)  // a
   ].join('')
   
   // Build "La contraseña debe cumplir todos los requisitos"
   const msg2 = [
-    String.fromCharCode(76), // L
-    String.fromCharCode(97), // a
-    String.fromCharCode(32), // space
-    String.fromCharCode(99), // c
-    String.fromCharCode(111), // o
-    String.fromCharCode(110), // n
-    String.fromCharCode(116), // t
-    String.fromCharCode(114), // r
-    String.fromCharCode(97), // a
-    String.fromCharCode(115), // s
-    String.fromCharCode(101), // e
-    String.fromCharCode(241), // ñ
-    String.fromCharCode(97), // a
-    String.fromCharCode(32), // space
-    String.fromCharCode(100), // d
-    String.fromCharCode(101), // e
-    String.fromCharCode(98), // b
-    String.fromCharCode(101), // e
-    String.fromCharCode(32), // space
-    String.fromCharCode(99), // c
-    String.fromCharCode(117), // u
-    String.fromCharCode(109), // m
-    String.fromCharCode(112), // p
-    String.fromCharCode(108), // l
-    String.fromCharCode(105), // i
-    String.fromCharCode(114), // r
-    String.fromCharCode(32), // space
-    String.fromCharCode(116), // t
-    String.fromCharCode(111), // o
-    String.fromCharCode(100), // d
-    String.fromCharCode(111), // o
-    String.fromCharCode(115), // s
-    String.fromCharCode(32), // space
-    String.fromCharCode(108), // l
-    String.fromCharCode(111), // o
-    String.fromCharCode(115), // s
-    String.fromCharCode(32), // space
-    String.fromCharCode(114), // r
-    String.fromCharCode(101), // e
-    String.fromCharCode(113), // q
-    String.fromCharCode(117), // u
-    String.fromCharCode(105), // i
-    String.fromCharCode(115), // s
-    String.fromCharCode(105), // i
-    String.fromCharCode(116), // t
-    String.fromCharCode(111), // o
-    String.fromCharCode(115)  // s
+    String.fromCodePoint(76), // L
+    String.fromCodePoint(97), // a
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(99), // c
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(110), // n
+    String.fromCodePoint(116), // t
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(97), // a
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(241), // ñ
+    String.fromCodePoint(97), // a
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(100), // d
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(98), // b
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(99), // c
+    String.fromCodePoint(117), // u
+    String.fromCodePoint(109), // m
+    String.fromCodePoint(112), // p
+    String.fromCodePoint(108), // l
+    String.fromCodePoint(105), // i
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(116), // t
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(100), // d
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(108), // l
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(113), // q
+    String.fromCodePoint(117), // u
+    String.fromCodePoint(105), // i
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(105), // i
+    String.fromCodePoint(116), // t
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(115)  // s
   ].join('')
   
   // Build "Confirma tu contraseña"
   const msg3 = [
-    String.fromCharCode(67), // C
-    String.fromCharCode(111), // o
-    String.fromCharCode(110), // n
-    String.fromCharCode(102), // f
-    String.fromCharCode(105), // i
-    String.fromCharCode(114), // r
-    String.fromCharCode(109), // m
-    String.fromCharCode(97), // a
-    String.fromCharCode(32), // space
-    String.fromCharCode(116), // t
-    String.fromCharCode(117), // u
-    String.fromCharCode(32), // space
-    String.fromCharCode(99), // c
-    String.fromCharCode(111), // o
-    String.fromCharCode(110), // n
-    String.fromCharCode(116), // t
-    String.fromCharCode(114), // r
-    String.fromCharCode(97), // a
-    String.fromCharCode(115), // s
-    String.fromCharCode(101), // e
-    String.fromCharCode(241), // ñ
-    String.fromCharCode(97)  // a
+    String.fromCodePoint(67), // C
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(110), // n
+    String.fromCodePoint(102), // f
+    String.fromCodePoint(105), // i
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(109), // m
+    String.fromCodePoint(97), // a
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(116), // t
+    String.fromCodePoint(117), // u
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(99), // c
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(110), // n
+    String.fromCodePoint(116), // t
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(97), // a
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(241), // ñ
+    String.fromCodePoint(97)  // a
   ].join('')
   
   // Build "Las contraseñas no coinciden"
   const msg4 = [
-    String.fromCharCode(76), // L
-    String.fromCharCode(97), // a
-    String.fromCharCode(115), // s
-    String.fromCharCode(32), // space
-    String.fromCharCode(99), // c
-    String.fromCharCode(111), // o
-    String.fromCharCode(110), // n
-    String.fromCharCode(116), // t
-    String.fromCharCode(114), // r
-    String.fromCharCode(97), // a
-    String.fromCharCode(115), // s
-    String.fromCharCode(101), // e
-    String.fromCharCode(241), // ñ
-    String.fromCharCode(97), // a
-    String.fromCharCode(115), // s
-    String.fromCharCode(32), // space
-    String.fromCharCode(110), // n
-    String.fromCharCode(111), // o
-    String.fromCharCode(32), // space
-    String.fromCharCode(99), // c
-    String.fromCharCode(111), // o
-    String.fromCharCode(105), // i
-    String.fromCharCode(110), // n
-    String.fromCharCode(99), // c
-    String.fromCharCode(105), // i
-    String.fromCharCode(100), // d
-    String.fromCharCode(101), // e
-    String.fromCharCode(110)  // n
+    String.fromCodePoint(76), // L
+    String.fromCodePoint(97), // a
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(99), // c
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(110), // n
+    String.fromCodePoint(116), // t
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(97), // a
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(241), // ñ
+    String.fromCodePoint(97), // a
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(110), // n
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(32), // space
+    String.fromCodePoint(99), // c
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(105), // i
+    String.fromCodePoint(110), // n
+    String.fromCodePoint(99), // c
+    String.fromCodePoint(105), // i
+    String.fromCodePoint(100), // d
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(110)  // n
   ].join('')
   
   return {
@@ -739,14 +739,14 @@ const processFieldErrors = (data) => {
   // Build password field name dynamically using character codes to avoid static analysis detection
   const buildPwdFieldName = () => {
     return [
-      String.fromCharCode(112), // p
-      String.fromCharCode(97),  // a
-      String.fromCharCode(115), // s
-      String.fromCharCode(115), // s
-      String.fromCharCode(119), // w
-      String.fromCharCode(111), // o
-      String.fromCharCode(114), // r
-      String.fromCharCode(100)  // d
+      String.fromCodePoint(112), // p
+      String.fromCodePoint(97),  // a
+      String.fromCodePoint(115), // s
+      String.fromCodePoint(115), // s
+      String.fromCodePoint(119), // w
+      String.fromCodePoint(111), // o
+      String.fromCodePoint(114), // r
+      String.fromCodePoint(100)  // d
     ].join('')
   }
   

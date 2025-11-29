@@ -216,9 +216,9 @@
               <label for="edit-farmer-direccion" class="block text-sm font-semibold text-gray-700 mb-2">Dirección</label>
               <input 
                 id="edit-farmer-direccion"
-                v-model="personaForm.direccion" 
                 type="text"
-                autocomplete="street-address" 
+                v-model="personaForm.direccion" 
+                autocomplete="street-address"
                 class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
                 placeholder="Calle 10 #5-20" 
               />

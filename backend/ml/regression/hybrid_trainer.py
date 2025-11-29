@@ -358,17 +358,17 @@ class HybridTrainer:
             if is_best_loss:
                 self.best_val_loss = val_loss
                 self.best_epoch_loss = epoch + 1
-                self._save_checkpoint(epoch + 1, "best_loss.pt", is_best=True)
+                self._save_checkpoint(epoch + 1, "best_loss.pt")
                 logger.info(f"New best loss model saved (val_loss={val_loss:.4f})")
             
             if avg_r2 > self.best_avg_r2:
                 self.best_avg_r2 = avg_r2
                 self.best_epoch_r2 = epoch + 1
-                self._save_checkpoint(epoch + 1, "best_avg_r2.pt", is_best=True)
+                self._save_checkpoint(epoch + 1, "best_avg_r2.pt")
                 logger.info(f"New best R² model saved (avg_r2={avg_r2:.4f})")
             
             # Save last epoch
-            self._save_checkpoint(epoch + 1, "last_epoch.pt", is_best=False)
+            self._save_checkpoint(epoch + 1, "last_epoch.pt")
             
             # Rollback if needed
             if should_rollback and self.rollback_checkpoint is not None:
@@ -394,8 +394,7 @@ class HybridTrainer:
     def _save_checkpoint(
         self,
         epoch: int,
-        filename: str,
-        is_best: bool = False  # noqa: ARG002
+        filename: str
     ) -> None:
         """
         Save model checkpoint.
@@ -429,6 +428,33 @@ class HybridTrainer:
         torch.save(checkpoint, checkpoint_path)
         logger.debug(f"Saved checkpoint: {checkpoint_path}")
     
+    def _validate_checkpoint_structure(self, checkpoint: dict, required_keys: list) -> None:
+        """Validate checkpoint structure and content."""
+        if not all(key in checkpoint for key in required_keys):
+            raise ValueError(f"Invalid checkpoint structure. Missing required keys: {required_keys}")
+        
+        for key in required_keys:
+            if not isinstance(checkpoint[key], dict):
+                raise ValueError(f"Invalid checkpoint: {key} is not a dictionary")
+            if checkpoint[key] and not all(isinstance(k, str) for k in checkpoint[key].keys()):
+                raise ValueError(f"Invalid checkpoint: {key} has non-string keys")
+            for subkey, value in checkpoint[key].items():
+                if not isinstance(value, torch.Tensor):
+                    raise ValueError(f"Invalid checkpoint: {key}[{subkey}] is not a tensor")
+    
+    def _load_state_dicts(self, checkpoint: dict) -> None:
+        """Load all state dicts from checkpoint."""
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        self.criterion.load_state_dict(checkpoint['criterion_state_dict'])
+        
+        if self.scaler is not None and 'scaler_state_dict' in checkpoint:
+            if isinstance(checkpoint['scaler_state_dict'], dict):
+                self.scaler.load_state_dict(checkpoint['scaler_state_dict'])
+            else:
+                logger.warning("Invalid scaler_state_dict in checkpoint, skipping")
+    
     def _load_checkpoint(self, checkpoint_path: Path) -> None:
         """
         Load checkpoint for rollback.
@@ -437,59 +463,39 @@ class HybridTrainer:
         Checkpoints should only be loaded from trusted sources (same training system).
         The checkpoint structure is validated after loading to detect tampering.
         
-        WARNING: torch.load() can execute arbitrary code if the checkpoint is malicious.
-        This is safe here because:
-        1. Checkpoints are created by our own _save_checkpoint() method
-        2. Checkpoints are stored in controlled directories (save_dir)
-        3. Checkpoint structure is validated after loading
-        4. Only state_dicts (dictionaries of tensors) are loaded, not arbitrary objects
+        SECURITY: Uses weights_only=True to prevent arbitrary code execution (S6985).
+        This ensures only model weights and state_dicts are loaded, not arbitrary Python objects.
         """
         if not checkpoint_path.exists():
             logger.warning(f"Checkpoint not found: {checkpoint_path}")
             return
         
-        # Security: Load checkpoint and validate structure
-        # Checkpoints are created by this same trainer, so they come from a trusted source
-        # We validate the structure to ensure it matches our expected format
         try:
-            # Load checkpoint - these are created by our own _save_checkpoint method
-            # which only saves state_dicts and metadata, not arbitrary Python objects
-            # NOSONAR: S6985 - Checkpoints are from trusted source (same trainer), structure is validated
-            checkpoint = torch.load(checkpoint_path, map_location=self.device)  # nosec B301
+            # SECURITY: Use weights_only=True to prevent arbitrary code execution (S6985)
+            # This is the safest way to load PyTorch checkpoints (available in PyTorch 2.1+)
+            # Checkpoints are created by our own _save_checkpoint method which only saves
+            # state_dicts (dictionaries of tensors), not arbitrary Python objects
+            try:
+                # Try to load with weights_only=True (safest method, PyTorch 2.1+)
+                # SECURITY: weights_only=True prevents arbitrary code execution (S6985)
+                checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=True)
+            except TypeError:
+                # Fallback for older PyTorch versions
+                # Checkpoints are from trusted source (same trainer), structure is validated
+                logger.warning(
+                    f"PyTorch version does not support weights_only=True. "
+                    f"Loading checkpoint with fallback method from {checkpoint_path}"
+                )
+                checkpoint = torch.load(checkpoint_path, map_location=self.device)  # nosec B301
             
             # Validate checkpoint structure to ensure it's a valid checkpoint from our trainer
             # This helps detect if a checkpoint was tampered with
             required_keys = ['model_state_dict', 'optimizer_state_dict', 
                            'scheduler_state_dict', 'criterion_state_dict']
-            if not all(key in checkpoint for key in required_keys):
-                raise ValueError(f"Invalid checkpoint structure. Missing required keys: {required_keys}")
+            self._validate_checkpoint_structure(checkpoint, required_keys)
+            self._load_state_dicts(checkpoint)
             
-            # Validate that values are state_dicts (dictionaries with string keys)
-            # State dicts should only contain tensors, not executable code
-            for key in required_keys:
-                if not isinstance(checkpoint[key], dict):
-                    raise ValueError(f"Invalid checkpoint: {key} is not a dictionary")
-                # State dicts should have string keys (layer names)
-                if checkpoint[key] and not all(isinstance(k, str) for k in checkpoint[key].keys()):
-                    raise ValueError(f"Invalid checkpoint: {key} has non-string keys")
-                # Validate that values are tensors (not arbitrary objects)
-                for subkey, value in checkpoint[key].items():
-                    if not isinstance(value, torch.Tensor):
-                        raise ValueError(f"Invalid checkpoint: {key}[{subkey}] is not a tensor")
-            
-            # Load state dicts
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            self.criterion.load_state_dict(checkpoint['criterion_state_dict'])
-            
-            if self.scaler is not None and 'scaler_state_dict' in checkpoint:
-                if isinstance(checkpoint['scaler_state_dict'], dict):
-                    self.scaler.load_state_dict(checkpoint['scaler_state_dict'])
-                else:
-                    logger.warning("Invalid scaler_state_dict in checkpoint, skipping")
-            
-            logger.info(f"Loaded checkpoint from {checkpoint_path}")
+            logger.info(f"Loaded checkpoint safely from {checkpoint_path}")
         except Exception as e:
             logger.error(f"Error loading checkpoint from {checkpoint_path}: {e}")
             raise

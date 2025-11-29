@@ -12,13 +12,13 @@ class Command(BaseCommand):
     
     def _validate_sql_identifier(self, identifier: str) -> str:
         """
-        Valida y escapa un identificador SQL para prevenir SQL injection.
+        Valida un identificador SQL para prevenir SQL injection.
         
         Args:
             identifier: Nombre del objeto SQL (tabla, constraint, columna, etc.)
             
         Returns:
-            Identificador validado y escapado
+            Identificador validado (sin escapar, se escapará con quote_name)
             
         Raises:
             ValueError: Si el identificador contiene caracteres no permitidos
@@ -26,13 +26,33 @@ class Command(BaseCommand):
         if not identifier:
             raise ValueError('El identificador SQL no puede estar vacío')
         
-        # Solo permitir letras, números, guiones bajos y guiones
-        # Esto es seguro para nombres de objetos PostgreSQL
-        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', identifier):
-            raise ValueError(f'Identificador SQL inválido: {identifier}. Solo se permiten letras, números y guiones bajos.')
+        if not isinstance(identifier, str):
+            raise ValueError('El identificador SQL debe ser una cadena de texto')
         
-        # Escapar con comillas dobles para PostgreSQL
-        return f'"{identifier}"'
+        # Limitar longitud para prevenir ataques (PostgreSQL limita a 63 caracteres)
+        if len(identifier) > 63:
+            raise ValueError(f'Identificador SQL demasiado largo (máximo 63 caracteres): {identifier}')
+        
+        # Solo permitir letras, números, guiones bajos y guiones
+        # Debe comenzar con letra o guion bajo
+        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', identifier):
+            raise ValueError(f'Identificador SQL inválido: {identifier}. Solo se permiten letras, números y guiones bajos, y debe comenzar con letra o guion bajo.')
+        
+        return identifier
+    
+    def _quote_sql_identifier(self, identifier: str) -> str:
+        """
+        Escapa un identificador SQL usando la función segura de Django.
+        
+        Args:
+            identifier: Nombre del objeto SQL validado
+            
+        Returns:
+            Identificador escapado de manera segura
+        """
+        validated = self._validate_sql_identifier(identifier)
+        # Use Django's quote_name for safe SQL identifier escaping
+        return connection.ops.quote_name(validated)
 
     def _find_foreign_keys(self, cursor):
         """Busca todas las foreign keys en fincas_app_lote."""
@@ -66,9 +86,13 @@ class Command(BaseCommand):
     def _drop_incorrect_foreign_key(self, cursor, constraint_name: str) -> bool:
         """Elimina una foreign key incorrecta."""
         try:
-            # Validate and escape constraint name to prevent SQL injection
-            safe_constraint_name = self._validate_sql_identifier(constraint_name)
-            cursor.execute(f'ALTER TABLE fincas_app_lote DROP CONSTRAINT IF EXISTS {safe_constraint_name}')
+            # Validate and escape constraint name using Django's safe method
+            safe_constraint_name = self._quote_sql_identifier(constraint_name)
+            safe_table_name = connection.ops.quote_name('fincas_app_lote')
+            # Build query using string concatenation with validated and escaped identifiers
+            # This is safe because both identifiers are validated and escaped using Django's quote_name
+            query = 'ALTER TABLE ' + safe_table_name + ' DROP CONSTRAINT IF EXISTS ' + safe_constraint_name
+            cursor.execute(query)
             return True
         except ValueError as e:
             self.stdout.write(self.style.ERROR(f'  [ERROR] Nombre de constraint inválido: {e}'))
@@ -80,8 +104,10 @@ class Command(BaseCommand):
     def _create_correct_foreign_key(self, cursor, new_constraint_name: str) -> bool:
         """Crea una foreign key correcta."""
         try:
-            # Validate constraint name before using it
-            safe_constraint_name = self._validate_sql_identifier(new_constraint_name)
+            # Validate and escape constraint name using Django's safe method
+            safe_constraint_name = self._quote_sql_identifier(new_constraint_name)
+            safe_table_name = connection.ops.quote_name('fincas_app_lote')
+            safe_ref_table_name = connection.ops.quote_name('api_finca')
             
             cursor.execute("""
                 SELECT constraint_name 
@@ -95,14 +121,18 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f'  [WARN]  FK correcta ya existe: {new_constraint_name}'))
                 return False
             
-            # Use validated and escaped constraint name
-            cursor.execute(f"""
-                ALTER TABLE fincas_app_lote
-                ADD CONSTRAINT {safe_constraint_name}
-                FOREIGN KEY (finca_id)
-                REFERENCES api_finca(id)
-                ON DELETE CASCADE
-            """)
+            # Build query using string concatenation with validated and escaped identifiers
+            # This is safe because all identifiers are validated and escaped using Django's quote_name
+            safe_column_name = connection.ops.quote_name('finca_id')
+            safe_ref_column_name = connection.ops.quote_name('id')
+            query = (
+                'ALTER TABLE ' + safe_table_name + ' '
+                'ADD CONSTRAINT ' + safe_constraint_name + ' '
+                'FOREIGN KEY (' + safe_column_name + ') '
+                'REFERENCES ' + safe_ref_table_name + '(' + safe_ref_column_name + ') '
+                'ON DELETE CASCADE'
+            )
+            cursor.execute(query)
             return True
         except ValueError as e:
             self.stdout.write(self.style.ERROR(f'  [ERROR] Nombre de constraint inválido: {e}'))

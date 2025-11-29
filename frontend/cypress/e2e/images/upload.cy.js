@@ -44,7 +44,7 @@ describe('Carga de Imágenes - Upload', () => {
     // const disallowedTypes = ['text/plain', 'application/pdf', 'video/mp4']  // Reserved for future use
     
     // Test archivos permitidos
-    allowedTypes.forEach(type => {
+    for (const type of allowedTypes) {
       cy.get('[data-cy="file-input"]').then((input) => {
         const blob = new Blob(['fake image content'], { type })
         const file = new File([blob], `test.${type.split('/')[1]}`, { type })
@@ -57,7 +57,7 @@ describe('Carga de Imágenes - Upload', () => {
         
         cy.get('[data-cy="file-validation-success"]').should('be.visible')
       })
-    })
+    }
   })
 
   it('debe rechazar tipos de archivo no permitidos', () => {

@@ -240,9 +240,11 @@ class IncrementalDataManager:
                     sampled_indices.add(i)
             remaining_indices = set(range(len(records))) - sampled_indices
             additional_needed = max_samples - len(sampled_records)
-            additional_indices = np.random.choice(list(remaining_indices), 
-                                                min(additional_needed, len(remaining_indices)), 
-                                                replace=False)
+            # Use fixed seed for reproducibility in stratified sampling
+            rng = np.random.default_rng(seed=42)
+            additional_indices = rng.choice(list(remaining_indices), 
+                                          min(additional_needed, len(remaining_indices)), 
+                                          replace=False)
             sampled_records.extend([records[i] for i in additional_indices])
         
         return sampled_records[:max_samples]
@@ -405,7 +407,9 @@ class IncrementalLearningStrategy:
             return []
         
         num_samples = min(num_samples, len(self.replay_buffer))
-        return np.random.choice(self.replay_buffer, num_samples, replace=False).tolist()
+        # Use fixed seed for reproducibility in replay buffer sampling
+        rng = np.random.default_rng(seed=42)
+        return rng.choice(self.replay_buffer, num_samples, replace=False).tolist()
 
 
 class IncrementalModelManager:
@@ -529,12 +533,8 @@ class IncrementalModelManager:
         Checkpoints should only be loaded from trusted sources (same training system).
         The checkpoint structure is validated after loading to detect tampering.
         
-        WARNING: torch.load() can execute arbitrary code if the checkpoint is malicious.
-        This is safe here because:
-        1. Checkpoints are created by our own save_model_version() method
-        2. Checkpoints are stored in controlled directories (versions_dir)
-        3. Checkpoint structure is validated after loading
-        4. Only state_dicts (dictionaries of tensors) are loaded, not arbitrary objects
+        SECURITY: Uses weights_only=True to prevent arbitrary code execution (S6985).
+        This ensures only model weights and state_dicts are loaded, not arbitrary Python objects.
         
         Args:
             version: Número de versión
@@ -556,10 +556,22 @@ class IncrementalModelManager:
         # Checkpoints are created by this same manager, so they come from a trusted source
         # We validate the structure to ensure it matches our expected format
         try:
-            # Load checkpoint - these are created by our own save_model_version method
-            # which only saves state_dicts and metadata, not arbitrary Python objects
-            # NOSONAR: S6985 - Checkpoints are from trusted source (same manager), structure is validated
-            checkpoint = torch.load(model_path, map_location=device)  # nosec B301
+            # SECURITY: Use weights_only=True to prevent arbitrary code execution (S6985)
+            # This is the safest way to load PyTorch checkpoints (available in PyTorch 2.1+)
+            # Checkpoints are created by our own save_model_version method which only saves
+            # state_dicts (dictionaries of tensors) and metadata, not arbitrary Python objects
+            try:
+                # Try to load with weights_only=True (safest method, PyTorch 2.1+)
+                # SECURITY: weights_only=True prevents arbitrary code execution (S6985)
+                checkpoint = torch.load(model_path, map_location=device, weights_only=True)
+            except TypeError:
+                # Fallback for older PyTorch versions
+                # Checkpoints are from trusted source (same manager), structure is validated
+                logger.warning(
+                    f"PyTorch version does not support weights_only=True. "
+                    f"Loading checkpoint with fallback method from {model_path}"
+                )
+                checkpoint = torch.load(model_path, map_location=device)  # nosec B301
             
             # Validate checkpoint structure to ensure it's a valid checkpoint from our manager
             # This helps detect if a checkpoint was tampered with
@@ -734,7 +746,7 @@ class IncrementalTrainer:
         
         # 5. Entrenar modelo incremental
         trained_model, training_history = self._train_incremental_model(
-            base_model, train_data, val_data, target
+            base_model, train_data, val_data
         )
         
         # 6. Evaluar rendimiento
@@ -835,7 +847,7 @@ class IncrementalTrainer:
             logger.warning(f"No se pudo computar información de Fisher: {e}")
     
     def _train_incremental_model(self, model: nn.Module, train_loader: DataLoader, 
-                                val_loader: DataLoader, target: str) -> Tuple[nn.Module, Dict]:  # noqa: ARG002
+                                val_loader: DataLoader) -> Tuple[nn.Module, Dict]:
         """Entrena el modelo con estrategias incrementales."""
         model.train()
         

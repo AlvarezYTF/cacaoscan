@@ -74,10 +74,30 @@ WORKDIR /app
 
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy application code
-# NOTE: .dockerignore ensures sensitive files (env files, secrets, keys, etc.) are excluded
+# Copy application code explicitly to prevent copying sensitive data
+# SECURITY: Copy only necessary application directories and files
+# .dockerignore provides additional protection, but explicit copying is safer
 # This prevents accidentally copying credentials, local configs, or other sensitive data
-COPY . .
+COPY manage.py ./
+COPY runtime.txt* ./
+COPY pytest.ini* ./
+# Copy Django project configuration
+COPY cacaoscan/ ./cacaoscan/
+# Copy all Django applications
+COPY api/ ./api/
+COPY audit/ ./audit/
+COPY auth_app/ ./auth_app/
+COPY catalogos/ ./catalogos/
+COPY core/ ./core/
+COPY fincas_app/ ./fincas_app/
+COPY images_app/ ./images_app/
+COPY legal/ ./legal/
+COPY ml/ ./ml/
+COPY notifications/ ./notifications/
+COPY personas/ ./personas/
+COPY reports/ ./reports/
+COPY training/ ./training/
+COPY users/ ./users/
 
 # Crear directorios necesarios para la aplicación
 RUN mkdir -p staticfiles logs \

@@ -16,9 +16,9 @@ Cypress.Commands.add('login', (userType = 'admin') => {
         }
       }).then((response) => {
         expect(response.status).to.eq(200)
-        window.localStorage.setItem('auth_token', response.body.access)
-        window.localStorage.setItem('refresh_token', response.body.refresh)
-        window.localStorage.setItem('user_data', JSON.stringify(response.body.user))
+        globalThis.localStorage.setItem('auth_token', response.body.access)
+        globalThis.localStorage.setItem('refresh_token', response.body.refresh)
+        globalThis.localStorage.setItem('user_data', JSON.stringify(response.body.user))
       })
     })
   })
@@ -101,9 +101,9 @@ Cypress.Commands.add('checkNavigationForRole', (role) => {
     farmer: ['/agricultor-dashboard', '/nuevo-analisis', '/mis-fincas']
   }
   
-  expectedRoutes[role].forEach(route => {
+  for (const route of expectedRoutes[role]) {
     cy.get(`[href="${route}"]`).should('be.visible')
-  })
+  }
 })
 
 // Comando para verificar que no se puede acceder a rutas sin permisos
@@ -126,7 +126,7 @@ Cypress.Commands.add('cleanupTestData', () => {
     method: 'DELETE',
     url: '/api/test/cleanup/',
     headers: {
-      'Authorization': `Bearer ${window.localStorage.getItem('auth_token')}`
+      'Authorization': `Bearer ${globalThis.localStorage.getItem('auth_token')}`
     }
   })
 })

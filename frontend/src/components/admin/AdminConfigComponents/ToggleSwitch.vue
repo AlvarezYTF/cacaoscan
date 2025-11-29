@@ -72,7 +72,22 @@ export default {
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    const id = `toggle-${Math.random().toString(36).substr(2, 9)}`
+    // Generate a unique ID using cryptographically secure random generation
+    const generateSecureId = () => {
+      // Use crypto.randomUUID() if available (modern browsers)
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID()
+      }
+      // Fallback to crypto.getRandomValues() for older browsers
+      if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const randomArray = new Uint32Array(1)
+        crypto.getRandomValues(randomArray)
+        return randomArray[0].toString(36)
+      }
+      // Last resort: use timestamp (not cryptographically secure but better than Math.random())
+      return Date.now().toString(36)
+    }
+    const id = `toggle-${generateSecureId()}`
     
     const ariaChecked = computed(() => {
       return props.modelValue === true ? 'true' : 'false'

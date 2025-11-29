@@ -107,11 +107,27 @@ const error = ref('')
 const images = ref([...props.modelValue])
 
 // Helper function to generate unique keys for images
+// Uses cryptographically secure random generation to avoid security warnings
+const generateSecureId = () => {
+  // Use crypto.randomUUID() if available (modern browsers)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  // Fallback to crypto.getRandomValues() for older browsers
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const randomArray = new Uint32Array(4)
+    crypto.getRandomValues(randomArray)
+    return Array.from(randomArray, val => val.toString(36)).join('-')
+  }
+  // Last resort: use timestamp + counter (not cryptographically secure but better than Math.random)
+  return `id-${Date.now()}-${performance.now()}`
+}
+
 const getImageKey = (file) => {
   if (file instanceof File) {
     return `${file.name}-${file.size}-${file.lastModified}`
   }
-  return file.id || file.url || file.name || String(Math.random())
+  return file.id || file.url || file.name || generateSecureId()
 }
 
 // Functions

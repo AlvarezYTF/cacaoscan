@@ -7,8 +7,9 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copiar archivos de dependencias
-COPY package*.json ./
-COPY pnpm-lock.yaml* ./
+# Use specific file names instead of glob patterns to prevent copying sensitive files
+COPY package.json ./
+COPY pnpm-lock.yaml ./
 
 # Instalar pnpm y dependencias
 # S6505: Use --ignore-scripts to prevent execution of arbitrary shell scripts

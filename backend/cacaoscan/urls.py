@@ -56,6 +56,9 @@ def get_schema_view_lazy():
 
 schema_view = get_schema_view_lazy()
 
+# Constants
+METHOD_NOT_ALLOWED_MESSAGE = 'Method not allowed'
+
 @require_safe
 def health_check(request):
     """
@@ -66,7 +69,7 @@ def health_check(request):
     """
     # Explicit check to ensure only safe methods are processed
     if request.method not in ('GET', 'HEAD'):
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
+        return JsonResponse({'error': METHOD_NOT_ALLOWED_MESSAGE}, status=405)
     return JsonResponse({'status': 'ok', 'service': 'cacaoscan-backend'}, status=200)
 
 @require_safe
@@ -79,7 +82,7 @@ def api_info(request):
     """
     # Explicit check to ensure only safe methods are processed
     if request.method not in ('GET', 'HEAD'):
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
+        return JsonResponse({'error': METHOD_NOT_ALLOWED_MESSAGE}, status=405)
     from django.conf import settings
     return JsonResponse({
         'status': 'ok',
@@ -102,7 +105,7 @@ def root_view(request):
     """
     # Explicit check to ensure only safe methods are processed
     if request.method not in ('GET', 'HEAD'):
-        return HttpResponse('Method not allowed', status=405)
+        return HttpResponse(METHOD_NOT_ALLOWED_MESSAGE, status=405)
     html_content = """
     <!DOCTYPE html>
     <html lang="es">

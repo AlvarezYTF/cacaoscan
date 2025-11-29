@@ -4,6 +4,7 @@ Django settings for cacaoscan project.
 
 import os
 import warnings
+from warnings import SecurityWarning
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
@@ -429,39 +430,84 @@ REST_FRAMEWORK = {
 
 # CORS settings
 # Never use CORS_ALLOW_ALL_ORIGINS in production - always use explicit CORS_ALLOWED_ORIGINS
+# SECURITY: HTTP is insecure for sensitive data transmission (S5332)
+# Only allow HTTP in development for localhost/127.0.0.1
+# In production, enforce HTTPS for all origins
+HTTPS_SCHEME = 'https://'
+HTTP_SCHEME = 'http://'
+
+# Helper function to check if origin is localhost (safe for HTTP in development only)
+def _is_localhost_origin(origin: str) -> bool:
+    """Check if origin is localhost or 127.0.0.1 (safe for HTTP only in development)."""
+    origin_lower = origin.lower()
+    return 'localhost' in origin_lower or '127.0.0.1' in origin_lower
+
+# Helper function to validate and filter CORS origins
+def _validate_cors_origin(origin: str, is_debug: bool):
+    """
+    Validate CORS origin and enforce HTTPS security.
+    
+    Args:
+        origin: CORS origin to validate
+        is_debug: Whether running in DEBUG mode
+        
+    Returns:
+        Tuple of (is_valid, reason) where is_valid indicates if origin should be allowed
+    """
+    origin = origin.strip()
+    if not origin:
+        return False, "Empty origin"
+    
+    # Only accept origins with full scheme (http:// or https://)
+    # NOSONAR: HTTP_SCHEME is only used for validation - HTTP is rejected in production
+    if not (origin.startswith(HTTP_SCHEME) or origin.startswith(HTTPS_SCHEME)):
+        return False, "Origin must include scheme (http:// or https://)"
+    
+    # Validate that it has a valid domain (contains a dot or is localhost)
+    domain = origin.replace('://', '').split('/')[0]
+    if '.' not in domain and not _is_localhost_origin(origin):
+        return False, "Invalid domain format"
+    
+    # SECURITY: S5332 - Using HTTP is insecure for sensitive data transmission
+    # In production, enforce HTTPS for all origins (no exceptions)
+    if not is_debug:
+        # NOSONAR: This check rejects HTTP in production - only HTTPS is allowed
+        if origin.startswith(HTTP_SCHEME):
+            return False, "HTTP is not allowed in production. Use HTTPS instead (S5332)."
+        # Production: only allow HTTPS
+        return True, "Valid HTTPS origin for production"
+    
+    # Development: allow HTTP only for localhost/127.0.0.1
+    # SECURITY: Even in development, HTTP should only be used for localhost
+    # NOSONAR: HTTP for localhost in development is safe and necessary for local development
+    if origin.startswith(HTTP_SCHEME):
+        if not _is_localhost_origin(origin):
+            return False, "HTTP is only allowed for localhost/127.0.0.1 in development. Use HTTPS for other origins (S5332)."
+        # HTTP for localhost in development is safe - no warning needed
+        # This is necessary for local development environments without SSL certificates
+        return True, "Valid HTTP origin for localhost in development"
+    
+    # Development: HTTPS is always allowed
+    return True, "Valid HTTPS origin for development"
+
 cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
 if cors_origins:
     # Validate that each origin has scheme (http:// or https://)
     valid_origins = []
-    http_origins = []  # Track HTTP-only origins for security warnings
     for origin in cors_origins.split(','):
         origin = origin.strip()
         if not origin:
             continue
-        # Only accept origins with full scheme (http:// or https://)
-        if origin.startswith('http://') or origin.startswith('https://'):
-            # Validate that it has a valid domain (contains a dot or is localhost)
-            if '.' in origin.replace('://', '').split('/')[0] or 'localhost' in origin:
-                # In production, enforce HTTPS for all origins (except localhost for testing).
-                # S5332: Using HTTP is insecure for sensitive data transmission (S5332).
-                if not DEBUG and origin.startswith('http://') and 'localhost' not in origin and '127.0.0.1' not in origin:
-                    # Production: reject non-HTTPS origins
-                    warnings.warn(
-                        f"CORS origin '{origin}' uses insecure HTTP in production. "
-                        "Use HTTPS instead. This origin has been rejected for security.",
-                        SecurityWarning
-                    )
-                    continue
-                
-                # Development: warn about HTTP but still allow for localhost/testing
-                if origin.startswith('http://') and not DEBUG:
-                    warnings.warn(
-                        f"CORS origin '{origin}' uses insecure HTTP. "
-                        "Consider using HTTPS for sensitive data (S5332).",
-                        SecurityWarning
-                    )
-                
-                valid_origins.append(origin)
+        
+        is_valid, reason = _validate_cors_origin(origin, DEBUG)
+        if is_valid:
+            valid_origins.append(origin)
+        else:
+            # Log warning for rejected origins
+            warnings.warn(
+                f"CORS origin '{origin}' rejected: {reason}",
+                SecurityWarning
+            )
     
     if valid_origins:
         CORS_ALLOWED_ORIGINS = valid_origins
@@ -649,7 +695,35 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 )
 SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
 EMAIL_SUBJECT_PREFIX = os.environ.get('EMAIL_SUBJECT_PREFIX', '[CacaoScan] ')
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+# FRONTEND_URL: Use HTTPS in production, HTTP only allowed for localhost in development
+# SECURITY: HTTP is insecure for sensitive data transmission (S5332)
+frontend_url_env = os.environ.get('FRONTEND_URL', '')
+if frontend_url_env:
+    # Validate and enforce HTTPS in production
+    # Use string literal to avoid referencing HTTP_SCHEME constant (defined later in CORS section)
+    # NOSONAR: This check rejects HTTP in production - only HTTPS is allowed for FRONTEND_URL
+    if not DEBUG and frontend_url_env.startswith('http://') and 'localhost' not in frontend_url_env and '127.0.0.1' not in frontend_url_env:
+        warnings.warn(
+            f"FRONTEND_URL '{frontend_url_env}' uses insecure HTTP in production. "
+            "Use HTTPS instead (S5332).",
+            SecurityWarning
+        )
+        # In production, reject HTTP and require HTTPS
+        raise ValueError(
+            f"FRONTEND_URL must use HTTPS in production. "
+            f"Current value: {frontend_url_env}. "
+            "Set FRONTEND_URL to an HTTPS URL (S5332)."
+        )
+    FRONTEND_URL = frontend_url_env
+else:
+    # Default: HTTP only for localhost in development
+    FRONTEND_URL = 'http://localhost:5173' if DEBUG else ''
+    if not DEBUG and not FRONTEND_URL:
+        warnings.warn(
+            "FRONTEND_URL is not set in production. "
+            "Set FRONTEND_URL to an HTTPS URL (S5332).",
+            SecurityWarning
+        )
 ADMINS = [
     ('Admin CacaoScan', os.environ.get('ADMIN_EMAIL', 'admin@cacaoscan.com')),
 ]

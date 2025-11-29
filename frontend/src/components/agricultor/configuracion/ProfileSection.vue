@@ -237,8 +237,8 @@
           <input 
           id="profile-direccion"
           type="text"
-          autocomplete="street-address"
           v-model="form.direccion"
+          autocomplete="street-address"
           placeholder="Calle 10 #5-20" 
           :disabled="isLoading"
           class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 disabled:bg-gray-100 transition-all"

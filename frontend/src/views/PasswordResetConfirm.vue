@@ -83,8 +83,8 @@
               <div class="mt-1 relative">
                 <input
                   id="password"
-                  v-model="form.newPassword"
                   :type="showPassword ? 'text' : buildPasswordType()"
+                  v-model="form.newPassword"
                   autocomplete="new-password"
                   required
                   :disabled="isLoading"
@@ -130,8 +130,8 @@
               <div class="mt-1">
                 <input
                   id="confirmPassword"
-                  v-model="form.confirmPassword"
                   :type="showPassword ? 'text' : buildPasswordType()"
+                  v-model="form.confirmPassword"
                   autocomplete="new-password"
                   required
                   :disabled="isLoading"

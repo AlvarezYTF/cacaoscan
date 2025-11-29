@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Tuple
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 import logging
 
 from ..utils.paths import get_regressors_artifacts_dir, ensure_dir_exists
@@ -43,16 +43,14 @@ class CacaoScalers:
         
         logger.info(f"CacaoScalers initialized with LOG_TARGETS: {self.LOG_TARGETS}")
     
-    def _create_scaler(self) -> StandardScaler:
+    def _create_scaler(self) -> Union[StandardScaler, MinMaxScaler, RobustScaler]:
         """Crea un escalador según el tipo especificado."""
         if self.scaler_type == "standard":
             return StandardScaler()
         elif self.scaler_type == "minmax":
-            from sklearn.preprocessing import MinMaxScaler
-            return MinMaxScaler()  # type: ignore[return-value]
+            return MinMaxScaler()
         elif self.scaler_type == "robust":
-            from sklearn.preprocessing import RobustScaler
-            return RobustScaler()  # type: ignore[return-value]
+            return RobustScaler()
         else:
             raise ValueError(f"Tipo de escalador '{self.scaler_type}' no soportado")
     

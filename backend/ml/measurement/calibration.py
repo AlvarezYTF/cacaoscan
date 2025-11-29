@@ -394,7 +394,6 @@ class CalibrationManager:
     
     def _calibrate_with_manual_points(
         self,
-        image: np.ndarray,  # noqa: ARG002
         manual_points: Optional[List[Tuple[int, int]]] = None
     ) -> CalibrationResult:
         """Calibra usando puntos manuales."""

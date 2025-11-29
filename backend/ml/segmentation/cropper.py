@@ -121,7 +121,7 @@ class CacaoCropper:
                 min_area=50
             )
             if not is_valid:
-                logger.warning(f"Validación de crop falló, pero continuando...")
+                logger.warning("Validación de crop falló, pero continuando...")
         except Exception as e:
             logger.warning(f"Error en validación de crop: {e}, continuando...")
         
