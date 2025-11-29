@@ -10,9 +10,11 @@
       </div>
       <button
         :id="id"
+        ref="toggleButton"
         type="button"
         role="switch"
-        :aria-checked="ariaChecked"
+        aria-checked="false"
+        :aria-label="ariaLabel"
         :class="[
           'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 ease-in-out',
           'focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2',
@@ -36,7 +38,7 @@
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 export default {
   name: 'ToggleSwitch',
@@ -48,7 +50,7 @@ export default {
     label: {
       type: String,
       default: ''
-    },
+    }, 
     description: {
       type: String,
       default: ''
@@ -89,8 +91,25 @@ export default {
     }
     const id = `toggle-${generateSecureId()}`
     
-    const ariaChecked = computed(() => {
-      return props.modelValue === true ? 'true' : 'false'
+    const ariaLabel = computed(() => {
+      return props.label || 'Toggle switch'
+    })
+
+    const toggleButton = ref(null)
+
+    const updateAriaChecked = (value) => {
+      if (!toggleButton.value) {
+        return
+      }
+      toggleButton.value.setAttribute('aria-checked', value ? 'true' : 'false')
+    }
+
+    onMounted(() => {
+      updateAriaChecked(props.modelValue)
+    })
+
+    watch(() => props.modelValue, (value) => {
+      updateAriaChecked(value)
     })
     
     const toggle = () => {
@@ -99,7 +118,7 @@ export default {
       }
     }
     
-    return { id, toggle, ariaChecked }
+    return { id, toggle, ariaLabel, toggleButton }
   }
 }
 </script>

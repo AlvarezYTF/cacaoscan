@@ -39,16 +39,16 @@
       
       <div class="images-grid">
         <div 
-          v-for="image in filteredImages" 
-          :key="image.id" 
+          v-for="entry in filteredImages" 
+          :key="entry.id" 
           class="image-card"
-          @click="viewImageDetails(image)"
+          @click="viewImageDetails(entry)"
         >
           <div class="image-preview">
             <img 
-              v-if="image.image_url" 
-              :src="image.image_url" 
-              :alt="`Granos de cacao ${image.id}`"
+              v-if="entry.image_url" 
+              :src="entry.image_url" 
+              :alt="`Lote de cacao #${entry.id}`"
               @error="handleImageError"
             />
             <div v-else class="no-image">
@@ -57,22 +57,22 @@
           </div>
           
           <div class="image-info">
-            <div class="image-id">#{{ image.id }}</div>
+            <div class="image-id">#{{ entry.id }}</div>
             <div class="image-meta">
-              <span class="finca">{{ image.finca || 'Sin finca' }}</span>
-              <span class="region">{{ image.region || 'Sin región' }}</span>
+              <span class="finca">{{ entry.finca || 'Sin finca' }}</span>
+              <span class="region">{{ entry.region || 'Sin región' }}</span>
             </div>
             
-            <div v-if="image.prediction" class="prediction-data">
+            <div v-if="entry.prediction" class="prediction-data">
               <div class="dimensions">
                 <span class="dimension">
-                  <strong>{{ image.prediction.alto_mm.toFixed(1) }}</strong>mm alto
+                  <strong>{{ entry.prediction.alto_mm.toFixed(1) }}</strong>mm alto
                 </span>
                 <span class="dimension">
-                  <strong>{{ image.prediction.ancho_mm.toFixed(1) }}</strong>mm ancho
+                  <strong>{{ entry.prediction.ancho_mm.toFixed(1) }}</strong>mm ancho
                 </span>
                 <span class="dimension">
-                  <strong>{{ image.prediction.peso_g.toFixed(1) }}</strong>g peso
+                  <strong>{{ entry.prediction.peso_g.toFixed(1) }}</strong>g peso
                 </span>
               </div>
               
@@ -80,12 +80,12 @@
                 <div class="confidence-bar">
                   <div 
                     class="confidence-fill" 
-                    :style="{ width: `${image.prediction.average_confidence * 100}%` }"
-                    :class="getConfidenceClass(image.prediction.average_confidence)"
+                    :style="{ width: `${entry.prediction.average_confidence * 100}%` }"
+                    :class="getConfidenceClass(entry.prediction.average_confidence)"
                   ></div>
                 </div>
                 <span class="confidence-text">
-                  {{ Math.round(image.prediction.average_confidence * 100) }}% confianza
+                  {{ Math.round(entry.prediction.average_confidence * 100) }}% confianza
                 </span>
               </div>
             </div>
@@ -95,20 +95,20 @@
             </div>
             
             <div class="image-date">
-              {{ formatDate(image.created_at) }}
+              {{ formatDate(entry.created_at) }}
             </div>
           </div>
           
           <div class="image-actions">
             <button 
-              @click.stop="downloadImage(image)" 
+              @click.stop="downloadImage(entry)" 
               class="btn btn-sm btn-secondary"
               title="Descargar imagen"
             >
               ⬇️
             </button>
             <button 
-              @click.stop="viewImageDetails(image)" 
+              @click.stop="viewImageDetails(entry)" 
               class="btn btn-sm btn-primary"
               title="Ver detalles"
             >
@@ -528,12 +528,12 @@ export default {
 }
 
 .btn-primary {
-  background: #007bff;
+  background: #0d47a1;
   color: #ffffff;
 }
 
 .btn-primary:hover {
-  background: #0056b3;
+  background: #002171;
 }
 
 .btn-secondary {

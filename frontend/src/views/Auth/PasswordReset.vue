@@ -218,7 +218,10 @@ const isValidEmail = (email) => {
   // Validate characters without regex to avoid backtracking
   // Check local part contains only valid characters
   const isValidLocalChar = (char) => {
-    const code = char.charCodeAt(0)
+    const code = char.codePointAt(0)
+    if (code === undefined) {
+      return false
+    }
     return (code >= 48 && code <= 57) || // 0-9
            (code >= 65 && code <= 90) || // A-Z
            (code >= 97 && code <= 122) || // a-z
@@ -227,7 +230,10 @@ const isValidEmail = (email) => {
   
   // Check domain part contains only valid characters
   const isValidDomainChar = (char) => {
-    const code = char.charCodeAt(0)
+    const code = char.codePointAt(0)
+    if (code === undefined) {
+      return false
+    }
     return (code >= 48 && code <= 57) || // 0-9
            (code >= 65 && code <= 90) || // A-Z
            (code >= 97 && code <= 122) || // a-z

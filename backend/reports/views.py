@@ -183,7 +183,7 @@ class GenerateDefectsReportView(APIView):
             
             # Generar PDF
             generator = CacaoReportPDFGenerator()
-            pdf_buffer = generator.generate_defects_report(images_queryset, request.user, filters)
+            pdf_buffer = generator.generate_defects_report(images_queryset, request.user)
             
             # Preparar nombre del archivo
             timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
@@ -263,7 +263,7 @@ class GeneratePerformanceReportView(APIView):
             
             # Generar PDF
             generator = CacaoReportPDFGenerator()
-            pdf_buffer = generator.generate_performance_report(images_queryset, request.user, filters)
+            pdf_buffer = generator.generate_performance_report(images_queryset, request.user)
             
             # Preparar nombre del archivo
             timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')

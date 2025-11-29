@@ -325,7 +325,8 @@
             <div class="relative">
               <input 
                 id="password" 
-                :type="showPassword ? 'text' : buildPasswordType()"
+                name="password"
+                :type="showPassword ? 'text' : 'password'"
                 v-model="form.password" 
                 autocomplete="new-password" 
                 required 
@@ -408,7 +409,8 @@
             <div class="relative">
               <input 
                 id="confirmPassword" 
-                :type="showPassword ? 'text' : buildPasswordType()"
+                name="confirmPassword"
+                :type="showPassword ? 'text' : 'password'"
                 v-model="form.confirmPassword" 
                 autocomplete="new-password" 
                 required 

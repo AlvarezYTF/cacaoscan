@@ -1,0 +1,36 @@
+name: SonarQube Scan on Develop
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  sonar-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install SonarScanner
+        run: |
+          sudo apt-get update
+          sudo apt-get install unzip
+          wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006.zip
+          unzip sonar-scanner-cli-5.0.1.3006.zip
+          mv sonar-scanner-5.0.1.3006 sonar-scanner
+
+      - name: Run SonarScanner
+        run: |
+          ./sonar-scanner/bin/sonar-scanner \
+            -Dsonar.projectKey=cacao-scan \
+            -Dsonar.sources=. \
+            -Dsonar.host.url=https://sonarqube.dataguaviare.com.co \
+            -Dsonar.token=${{ secrets.SONARQUBE_TOKEN }}

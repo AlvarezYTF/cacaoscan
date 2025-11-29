@@ -216,8 +216,8 @@
               <label for="edit-farmer-direccion" class="block text-sm font-semibold text-gray-700 mb-2">Dirección</label>
               <input 
                 id="edit-farmer-direccion"
-                type="text"
                 v-model="personaForm.direccion" 
+                type="text"
                 autocomplete="street-address"
                 class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500" 
                 placeholder="Calle 10 #5-20" 
@@ -623,8 +623,24 @@ watch(() => props.farmer, async (newFarmer) => {
       if (personaForm.departamento) {
         await onDepartamentoChange()
       }
-    } catch (e) {
+    } catch (error) {
+      const statusCode = error?.response?.status
+      const errorData = error?.response?.data
+      const errorMessage = errorData?.message || errorData?.detail || error?.message || 'Error al cargar los datos de la persona'
+      
+      if (statusCode === 404) {
+        // 404 is expected - persona doesn't exist yet and will be created on save
       console.warn('Persona no encontrada para el usuario, se podrá crear al guardar')
+      } else {
+        // Handle unexpected errors by showing notification to user
+        console.error('Error al cargar datos de persona:', errorMessage, error)
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMessage,
+          confirmButtonColor: '#10b981'
+        })
+      }
     }
   }
 }, { immediate: true })

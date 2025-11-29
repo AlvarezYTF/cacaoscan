@@ -234,8 +234,10 @@
         <label for="profile-direccion" class="block text-sm font-semibold text-gray-700 mb-2">
           Dirección
         </label>
-          <input 
+        <!-- NOSONAR: street-address is valid per HTML spec (MDN) -->
+        <input 
           id="profile-direccion"
+          name="direccion"
           type="text"
           v-model="form.direccion"
           autocomplete="street-address"

@@ -39,7 +39,8 @@ class UncertaintyWeightedLoss(nn.Module):
         
         # Inicializar cada sigma con una pequeña variación aleatoria
         # Esto ayuda a que el optimizador pueda diferenciarlos desde el inicio
-        rng = np.random.default_rng()
+        # Use fixed seed for reproducibility in parameter initialization
+        rng = np.random.default_rng(seed=42)
         initial_values = torch.tensor([
             initial_log_sigma + rng.uniform(-0.05, 0.05)  # ±5% variación
             for _ in range(num_targets)

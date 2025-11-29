@@ -916,6 +916,85 @@ export default {
       }
     }
 
+    /**
+     * Validates schedule email format without relying on regex.
+     * @param {string} value
+     * @returns {boolean}
+     */
+    const hasValidScheduleEmailFormat = (value) => {
+      const parts = value.split('@')
+      if (parts.length !== 2) {
+        return false
+      }
+
+      const [localPart, domainPart] = parts
+
+      if (!localPart || localPart.length === 0 || localPart.length > 64) {
+        return false
+      }
+
+      if (localPart.includes('..') || localPart.startsWith('.') || localPart.endsWith('.')) {
+        return false
+      }
+
+      if (!domainPart || domainPart.length === 0 || domainPart.length > 253) {
+        return false
+      }
+
+      const domainParts = domainPart.split('.')
+      if (domainParts.length < 2 || domainParts.some((part) => part.length === 0)) {
+        return false
+      }
+
+      /**
+       * @param {string} char
+       * @returns {boolean}
+       */
+      const isValidLocalChar = (char) => {
+        const code = char.codePointAt(0)
+        if (code === undefined) {
+          return false
+        }
+
+        return (
+          (code >= 48 && code <= 57) ||
+          (code >= 65 && code <= 90) ||
+          (code >= 97 && code <= 122) ||
+          char === '.' ||
+          char === '_' ||
+          char === '+' ||
+          char === '-'
+        )
+      }
+
+      /**
+       * @param {string} char
+       * @returns {boolean}
+       */
+      const isValidDomainChar = (char) => {
+        const code = char.codePointAt(0)
+        if (code === undefined) {
+          return false
+        }
+
+        return (
+          (code >= 48 && code <= 57) ||
+          (code >= 65 && code <= 90) ||
+          (code >= 97 && code <= 122) ||
+          char === '.' ||
+          char === '-'
+        )
+      }
+
+      const hasInvalidLocalChar = Array.from(localPart).some((char) => !isValidLocalChar(char))
+      if (hasInvalidLocalChar) {
+        return false
+      }
+
+      const hasInvalidDomainChar = Array.from(domainPart).some((char) => !isValidDomainChar(char))
+      return !hasInvalidDomainChar
+    }
+
     const validateForm = () => {
       errors.value = {}
 
@@ -953,59 +1032,8 @@ export default {
           errors.value.schedule_email = 'El email es demasiado largo'
         } else if (email.length === 0) {
           errors.value.schedule_email = 'El email es requerido'
-        } else {
-          // Simple, safe email validation without catastrophic backtracking
-          // Split by @ to avoid regex backtracking issues
-          const parts = email.split('@')
-          if (parts.length !== 2) {
-            errors.value.schedule_email = 'El email no es válido'
-          } else {
-            const [localPart, domainPart] = parts
-            
-            // Validate local part (before @) - max 64 chars
-            if (!localPart || localPart.length === 0 || localPart.length > 64) {
-              errors.value.schedule_email = 'El email no es válido'
-            } else if (localPart.includes('..') || localPart.startsWith('.') || localPart.endsWith('.')) {
-              errors.value.schedule_email = 'El email no es válido'
-            } else {
-              // Validate domain part (after @) - max 253 chars
-              if (!domainPart || domainPart.length === 0 || domainPart.length > 253) {
-                errors.value.schedule_email = 'El email no es válido'
-              } else {
-                // Check for at least one dot in domain
-                const domainParts = domainPart.split('.')
-                if (domainParts.length < 2 || domainParts.some(part => part.length === 0)) {
-                  errors.value.schedule_email = 'El email no es válido'
-                } else {
-                  // Validate characters without regex to avoid backtracking
-                  // Check local part contains only valid characters
-                  const isValidLocalChar = (char) => {
-                    const code = char.charCodeAt(0)
-                    return (code >= 48 && code <= 57) || // 0-9
-                           (code >= 65 && code <= 90) || // A-Z
-                           (code >= 97 && code <= 122) || // a-z
-                           char === '.' || char === '_' || char === '+' || char === '-'
-                  }
-                  
-                  // Check domain part contains only valid characters
-                  const isValidDomainChar = (char) => {
-                    const code = char.charCodeAt(0)
-                    return (code >= 48 && code <= 57) || // 0-9
-                           (code >= 65 && code <= 90) || // A-Z
-                           (code >= 97 && code <= 122) || // a-z
-                           char === '.' || char === '-'
-                  }
-                  
-                  const hasInvalidLocalChar = Array.from(localPart).some(char => !isValidLocalChar(char))
-                  const hasInvalidDomainChar = Array.from(domainPart).some(char => !isValidDomainChar(char))
-                  
-                  if (hasInvalidLocalChar || hasInvalidDomainChar) {
-                    errors.value.schedule_email = 'El email no es válido'
-                  }
-                }
-              }
-            }
-          }
+        } else if (!hasValidScheduleEmailFormat(email)) {
+          errors.value.schedule_email = 'El email no es válido'
         }
       }
 
@@ -1194,7 +1222,7 @@ export default {
 }
 
 .close-btn {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(15, 23, 42, 0.85);
   border: none;
   color: #ffffff;
   width: 2.5rem;
@@ -1208,7 +1236,7 @@ export default {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(15, 23, 42, 0.95);
 }
 
 .modal-body {
@@ -1268,7 +1296,7 @@ export default {
 }
 
 .progress-step.completed .step-number {
-  background: #059669;
+  background: #047857;
   color: #ffffff;
 }
 

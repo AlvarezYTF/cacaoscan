@@ -274,7 +274,7 @@ class CalibrationManager:
             elif method == CalibrationMethod.RULER_DETECTION:
                 return self._calibrate_with_rulers(image, reference_object)
             elif method == CalibrationMethod.MANUAL_POINTS:
-                return self._calibrate_with_manual_points(image, manual_points)
+                return self._calibrate_with_manual_points(manual_points)
             elif method == CalibrationMethod.AUTO_REFERENCE:
                 return self._calibrate_auto_reference(image)
             else:

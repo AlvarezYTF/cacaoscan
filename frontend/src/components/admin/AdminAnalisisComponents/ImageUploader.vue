@@ -45,23 +45,23 @@
       />
     </div>
 
-    <!-- Image Previews -->
+    <!-- Previews -->
     <div v-if="images.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
       <div 
-        v-for="image in images" 
-        :key="getImageKey(image)"
+        v-for="(file, index) in images" 
+        :key="getImageKey(file)"
         class="relative group overflow-hidden border-2 border-gray-200 hover:border-green-300 rounded-2xl transition-all duration-300 hover:shadow-lg"
       >
         <img 
-          :src="getImageUrl(image)" 
-          :alt="getImageAlt(image)"
+          :src="getImageUrl(file)" 
+          :alt="file.name ? `Vista previa: ${file.name.replaceAll(/\.[^/.]+$/, '')}` : `Vista previa ${index + 1}`"
           class="w-full h-32 object-cover"
         />
         <button
-          @click.stop="removeImage(image)"
+          @click.stop="removeImage(file)"
           type="button"
           class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-          :aria-label="`Eliminar imagen ${image.name}`"
+          :aria-label="`Eliminar ${file.name || 'archivo'}`"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -136,61 +136,6 @@ const getImageUrl = (file) => {
     return URL.createObjectURL(file)
   }
   return file.url || file
-}
-
-const getImageAlt = (file) => {
-  if (!file || !file.name) {
-    return 'Archivo subido'
-  }
-  // Remove file extension first
-  let altText = file.name.replace(/\.[^/.]+$/, '')
-  
-  // Convert to lowercase for checking
-  const lowerText = altText.toLowerCase().trim()
-  
-  // Redundant words that should not appear in alt text
-  const redundantWords = ['image', 'imagen', 'imagenes', 'picture', 'pic']
-  
-  // If filename is just a redundant word, return default
-  if (redundantWords.includes(lowerText)) {
-    return 'Archivo subido'
-  }
-  
-  // Remove all redundant words from the text (case-insensitive, word boundaries)
-  let cleanedText = altText
-  for (const word of redundantWords) {
-    // Remove word boundaries (case-insensitive) - ensures 'image' is removed even if standalone
-    const wordBoundaryPattern = String.raw`\b${word}\b`
-    const regex = new RegExp(wordBoundaryPattern, 'gi')
-    cleanedText = cleanedText.replace(regex, '')
-    // Also handle cases where word might be at start/end without boundary
-    const startPattern = new RegExp(String.raw`^${word}\s+`, 'gi')
-    const endPattern = new RegExp(String.raw`\s+${word}$`, 'gi')
-    cleanedText = cleanedText.replace(startPattern, '').replace(endPattern, '')
-  }
-  
-  // Clean up multiple spaces and trim
-  // Use replaceAll with string pattern for linter compliance
-  while (cleanedText.includes('  ')) {
-    cleanedText = cleanedText.replaceAll('  ', ' ')
-  }
-  cleanedText = cleanedText.trim()
-  
-  // Final check: ensure no redundant words remain (case-insensitive)
-  const cleanedLower = cleanedText.toLowerCase()
-  for (const word of redundantWords) {
-    if (cleanedLower.includes(word)) {
-      // If any redundant word is still present, return default
-      return 'Archivo subido'
-    }
-  }
-  
-  // Return default if empty
-  if (!cleanedText) {
-    return 'Archivo subido'
-  }
-  
-  return cleanedText
 }
 
 const validateFile = (file) => {
