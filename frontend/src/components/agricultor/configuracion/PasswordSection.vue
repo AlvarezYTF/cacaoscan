@@ -287,18 +287,26 @@ const validateField = (fieldName) => {
   }
 }
 
-// Validar todo el formulario antes de enviar
+/**
+ * Valida todo el formulario antes de enviar.
+ * Reinicia todos los errores y valida cada campo del formulario.
+ * 
+ * @returns {boolean} true si el formulario es válido (no hay errores), false en caso contrario
+ */
 const validateForm = () => {
+  // Reset all errors before validation
   errors.value = {
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   }
   
+  // Validate each field
   validateField('currentPassword')
   validateField('newPassword')
   validateField('confirmPassword')
   
+  // Return true if no errors exist
   return Object.values(errors.value).every(error => !error)
 }
 
