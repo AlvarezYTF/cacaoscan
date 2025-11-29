@@ -12,7 +12,42 @@ export function useFormValidation() {
    * @returns {boolean}
    */
   const isValidEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    // Avoid complex/ambiguous regexes that can exhibit catastrophic
+    // backtracking. Implement simple, bounded checks instead.
+    if (!email) return false
+    // Overall length limits per RFC-like guidance
+    if (email.length > 320) return false
+
+    const parts = email.split('@')
+    if (parts.length !== 2) return false
+
+    const [local, domain] = parts
+
+    // Length checks for local and domain parts
+    if (local.length === 0 || local.length > 64) return false
+    if (domain.length === 0 || domain.length > 255) return false
+
+    // No whitespace allowed
+    if (/\s/.test(local) || /\s/.test(domain)) return false
+
+    // Domain must contain at least one dot and consist of valid labels
+    if (domain.indexOf('.') === -1) return false
+    const labels = domain.split('.')
+    for (const label of labels) {
+      if (label.length === 0 || label.length > 63) return false
+      // Allow only letters, digits and hyphen in each label; no leading/trailing hyphen
+      if (!/^[A-Za-z0-9-]+$/.test(label)) return false
+      if (label.startsWith('-') || label.endsWith('-')) return false
+    }
+
+    // Local part: allow common unquoted atoms (letters, digits and a small set of symbols)
+    // Keep regex simple (no nested quantifiers) and bounded by local length check above.
+    if (!/^[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~.]+$/.test(local)) return false
+
+    // Reject consecutive dots in local or domain
+    if (local.includes('..') || domain.includes('..')) return false
+
+    return true
   }
 
   /**

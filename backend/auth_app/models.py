@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 import uuid
 import logging
-import random
+import secrets
 
 logger = logging.getLogger("cacaoscan.auth")
 
@@ -172,6 +172,8 @@ class PendingEmailVerification(models.Model):
     @staticmethod
     def generate_code():
         """Generar un código OTP aleatorio de 6 dígitos."""
-        return str(random.randint(100000, 999999))
+        # Use the `secrets` module for cryptographically secure random numbers
+        # to generate OTP codes. This avoids predictable or weak PRNGs.
+        return str(secrets.randbelow(900000) + 100000)
 
 

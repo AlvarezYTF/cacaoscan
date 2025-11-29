@@ -74,6 +74,9 @@ WORKDIR /app
 
 COPY --from=builder /opt/venv /opt/venv
 
+# Copy application code
+# NOTE: .dockerignore ensures sensitive files (env files, secrets, keys, etc.) are excluded
+# This prevents accidentally copying credentials, local configs, or other sensitive data
 COPY . .
 
 # Crear directorios necesarios para la aplicación
@@ -86,12 +89,17 @@ RUN mkdir -p staticfiles logs \
     media/cacao_images/crops_runtime \
     media/cacao_images/processed \
     media/cacao_images/masks \
-    media/cacao_images/converted_jpg
+    media/cacao_images/converted_jpg \
+    && chown -R appuser:appgroup /app /opt/venv
 
 # Script de inicio - convertir finales de línea Windows (CRLF) a Unix (LF)
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && \
-    chmod +x /docker-entrypoint.sh
+    chmod +x /docker-entrypoint.sh && \
+    chown appuser:appgroup /docker-entrypoint.sh
+
+# Change to non-privileged user before running the application
+USER appuser
 
 # Render inyecta PORT automáticamente (puede ser 10000 u otro)
 # Exponemos múltiples puertos comunes que Render puede usar

@@ -26,12 +26,12 @@ class TestCacaoScalers:
         self.scalers = CacaoScalers()
         
         # Datos de prueba
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         self.test_data = {
-            'alto': np.random.normal(10, 2, 100),
-            'ancho': np.random.normal(8, 1.5, 100),
-            'grosor': np.random.normal(6, 1, 100),
-            'peso': np.random.normal(2.5, 0.5, 100)
+            'alto': rng.normal(10, 2, 100),
+            'ancho': rng.normal(8, 1.5, 100),
+            'grosor': rng.normal(6, 1, 100),
+            'peso': rng.normal(2.5, 0.5, 100)
         }
     
     def test_init(self):
@@ -204,12 +204,12 @@ class TestScalerUtilities:
     
     def setup_method(self):
         """Configuración antes de cada test."""
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         self.test_data = {
-            'alto': np.random.normal(10, 2, 100),
-            'ancho': np.random.normal(8, 1.5, 100),
-            'grosor': np.random.normal(6, 1, 100),
-            'peso': np.random.normal(2.5, 0.5, 100)
+            'alto': rng.normal(10, 2, 100),
+            'ancho': rng.normal(8, 1.5, 100),
+            'grosor': rng.normal(6, 1, 100),
+            'peso': rng.normal(2.5, 0.5, 100)
         }
     
     def test_create_scalers_from_data(self):
@@ -261,19 +261,19 @@ class TestScalerIntegration:
     def test_full_workflow(self):
         """Test de flujo completo de escaladores."""
         # Datos de entrenamiento y test
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         train_data = {
-            'alto': np.random.normal(10, 2, 1000),
-            'ancho': np.random.normal(8, 1.5, 1000),
-            'grosor': np.random.normal(6, 1, 1000),
-            'peso': np.random.normal(2.5, 0.5, 1000)
+            'alto': rng.normal(10, 2, 1000),
+            'ancho': rng.normal(8, 1.5, 1000),
+            'grosor': rng.normal(6, 1, 1000),
+            'peso': rng.normal(2.5, 0.5, 1000)
         }
         
         test_data = {
-            'alto': np.random.normal(10, 2, 100),
-            'ancho': np.random.normal(8, 1.5, 100),
-            'grosor': np.random.normal(6, 1, 100),
-            'peso': np.random.normal(2.5, 0.5, 100)
+            'alto': rng.normal(10, 2, 100),
+            'ancho': rng.normal(8, 1.5, 100),
+            'grosor': rng.normal(6, 1, 100),
+            'peso': rng.normal(2.5, 0.5, 100)
         }
         
         # Crear y ajustar escaladores
@@ -305,12 +305,12 @@ class TestScalerIntegration:
     
     def test_different_scaler_types(self):
         """Test con diferentes tipos de escaladores."""
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         data = {
-            'alto': np.random.normal(10, 2, 100),
-            'ancho': np.random.normal(8, 1.5, 100),
-            'grosor': np.random.normal(6, 1, 100),
-            'peso': np.random.normal(2.5, 0.5, 100)
+            'alto': rng.normal(10, 2, 100),
+            'ancho': rng.normal(8, 1.5, 100),
+            'grosor': rng.normal(6, 1, 100),
+            'peso': rng.normal(2.5, 0.5, 100)
         }
         
         scaler_types = ["standard", "minmax", "robust"]

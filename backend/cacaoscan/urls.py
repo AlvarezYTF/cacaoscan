@@ -7,6 +7,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.http import JsonResponse, HttpResponse
+from django.views.decorators.http import require_safe, require_http_methods
 
 # Swagger schema view - cargado de forma lazy para evitar problemas de memoria con pkg_resources
 def get_schema_view_lazy():
@@ -38,24 +39,47 @@ def get_schema_view_lazy():
             def without_ui(cache_timeout):
                 def view(request, format=None):
                     return JsonResponse({'error': 'Swagger not available'}, status=503)
-                return view
+                # Only allow safe methods for diagnostic/schema endpoints to avoid
+                # accidental state changes if a client attempts to use unsafe
+                # HTTP methods against this fallback view.
+                return require_http_methods(["GET", "HEAD"])(view)
             
             @staticmethod
             def with_ui(ui, cache_timeout):
                 def view(request):
                     return JsonResponse({'error': 'Swagger UI not available'}, status=503)
-                return view
+                # Ensure only safe methods are permitted on this diagnostic UI
+                # fallback to mitigate CSRF/unsafe-method risks (S3752).
+                return require_http_methods(["GET", "HEAD"])(view)
         
         return DummySchemaView()
 
 schema_view = get_schema_view_lazy()
 
+@require_safe
 def health_check(request):
-    """Endpoint simple para health check."""
+    """
+    Endpoint simple para health check. Solo permite métodos seguros (GET, HEAD).
+    
+    Esta vista solo acepta métodos HTTP seguros que no modifican datos,
+    por lo que no requiere protección CSRF adicional.
+    """
+    # Explicit check to ensure only safe methods are processed
+    if request.method not in ('GET', 'HEAD'):
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
     return JsonResponse({'status': 'ok', 'service': 'cacaoscan-backend'}, status=200)
 
+@require_safe
 def api_info(request):
-    """Endpoint de información del API para diagnóstico."""
+    """
+    Endpoint de información del API para diagnóstico. Solo permite métodos seguros (GET, HEAD).
+    
+    Esta vista solo acepta métodos HTTP seguros que no modifican datos,
+    por lo que no requiere protección CSRF adicional.
+    """
+    # Explicit check to ensure only safe methods are processed
+    if request.method not in ('GET', 'HEAD'):
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
     from django.conf import settings
     return JsonResponse({
         'status': 'ok',
@@ -68,8 +92,17 @@ def api_info(request):
         'request_host': request.META.get('HTTP_HOST', 'No host header'),
     }, status=200)
 
+@require_safe
 def root_view(request):
-    """Vista informativa para la ruta raíz."""
+    """
+    Vista informativa para la ruta raíz. Solo permite métodos seguros (GET, HEAD).
+    
+    Esta vista solo acepta métodos HTTP seguros que no modifican datos,
+    por lo que no requiere protección CSRF adicional.
+    """
+    # Explicit check to ensure only safe methods are processed
+    if request.method not in ('GET', 'HEAD'):
+        return HttpResponse('Method not allowed', status=405)
     html_content = """
     <!DOCTYPE html>
     <html lang="es">

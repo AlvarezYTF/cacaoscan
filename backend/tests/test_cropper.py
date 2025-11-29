@@ -89,14 +89,15 @@ class TestCacaoCropper:
         self.mock_yolo.validate_prediction_quality.return_value = True
         
         # Mock de imagen
-        mock_image = np.random.randint(0, 255, (300, 300, 3), dtype=np.uint8)
+        rng = np.random.default_rng(42)
+        mock_image = rng.integers(0, 255, (300, 300, 3), dtype=np.uint8)
         mock_imread.return_value = mock_image
         
         # Mock de transforms
-        mock_transparent_crop = np.random.randint(0, 255, (150, 150, 4), dtype=np.uint8)
+        mock_transparent_crop = rng.integers(0, 255, (150, 150, 4), dtype=np.uint8)
         mock_crop.return_value = mock_transparent_crop
         
-        mock_square_crop = np.random.randint(0, 255, (512, 512, 4), dtype=np.uint8)
+        mock_square_crop = rng.integers(0, 255, (512, 512, 4), dtype=np.uint8)
         mock_resize.return_value = mock_square_crop
         
         # Mock de archivos

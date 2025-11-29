@@ -260,14 +260,32 @@ const validateForm = () => {
 }
 
 // Validadores
+// Maximum input length to prevent ReDoS attacks
+const MAX_EMAIL_LENGTH = 254 // RFC 5321 limit
+const MAX_USERNAME_LENGTH = 30
+
 const isValidEmail = (email) => {
+  // Limit input length first to prevent ReDoS attacks
+  if (!email || email.length > MAX_EMAIL_LENGTH) {
+    return false
+  }
+  
+  // Simple email validation with length limit already enforced
+  // The length check prevents ReDoS by ensuring the regex never processes
+  // inputs longer than 254 characters (RFC 5321 limit)
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return re.test(email)
 }
 
 const isValidUsername = (username) => {
+  // Limit input length first to prevent ReDoS
+  if (!username || username.length > MAX_USERNAME_LENGTH || username.length < 3) {
+    return false
+  }
+  
   // Username alfanumérico, guiones y guiones bajos, 3-30 caracteres
-  const re = /^[a-zA-Z0-9_-]{3,30}$/
+  // Using explicit character class with bounded quantifier (already validated length)
+  const re = /^[a-zA-Z0-9_-]+$/
   return re.test(username)
 }
 

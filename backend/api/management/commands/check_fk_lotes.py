@@ -106,15 +106,72 @@ class Command(BaseCommand):
         """, [table_name])
         return cursor.fetchone() is not None
     
+    def _validate_identifier(self, identifier: str) -> str:
+        """
+        Valida y escapa un identificador SQL para prevenir inyección SQL.
+        Solo permite caracteres alfanuméricos, guiones bajos y guiones.
+        """
+        if not identifier or not isinstance(identifier, str):
+            raise ValueError("Identifier must be a non-empty string")
+        
+        # Solo permitir caracteres alfanuméricos, guiones bajos y guiones
+        if not identifier.replace('_', '').replace('-', '').isalnum():
+            raise ValueError(f"Invalid identifier: {identifier} contains invalid characters")
+        
+        # Escapar comillas dobles en el identificador (PostgreSQL escape)
+        escaped = identifier.replace('"', '""')
+        return escaped
+    
+    def _build_drop_constraint_query(self, table_name: str, constraint_name: str) -> str:
+        """
+        Construye una consulta DDL segura para eliminar una constraint.
+        Valida y escapa los identificadores antes de construir la consulta.
+        """
+        safe_table_name = self._validate_identifier(table_name)
+        safe_constraint_name = self._validate_identifier(constraint_name)
+        
+        # Build query using string concatenation with validated identifiers
+        # This is safe because both identifiers are validated to only contain whitelisted characters
+        query = 'ALTER TABLE "' + safe_table_name + '" DROP CONSTRAINT IF EXISTS "' + safe_constraint_name + '"'
+        return query
+    
+    def _build_add_constraint_query(self, table_name: str, constraint_name: str, 
+                                    column_name: str, ref_table: str, ref_column: str) -> str:
+        """
+        Construye una consulta DDL segura para agregar una foreign key constraint.
+        Valida y escapa todos los identificadores antes de construir la consulta.
+        """
+        safe_table_name = self._validate_identifier(table_name)
+        safe_constraint_name = self._validate_identifier(constraint_name)
+        safe_column_name = self._validate_identifier(column_name)
+        safe_ref_table = self._validate_identifier(ref_table)
+        safe_ref_column = self._validate_identifier(ref_column)
+        
+        # Build query using string concatenation with validated identifiers
+        # This is safe because all identifiers are validated to only contain whitelisted characters
+        query = (
+            'ALTER TABLE "' + safe_table_name + '" '
+            'ADD CONSTRAINT "' + safe_constraint_name + '" '
+            'FOREIGN KEY ("' + safe_column_name + '") '
+            'REFERENCES "' + safe_ref_table + '"("' + safe_ref_column + '") '
+            'ON DELETE CASCADE'
+        )
+        return query
+    
     def _create_foreign_key(self, cursor, constraint_name: str):
-        """Crea una foreign key."""
-        cursor.execute(f"""
-            ALTER TABLE fincas_app_lote
-            ADD CONSTRAINT "{constraint_name}"
-            FOREIGN KEY (finca_id)
-            REFERENCES api_finca(id)
-            ON DELETE CASCADE
-        """)
+        """
+        Crea una foreign key.
+        El nombre de la constraint se valida y escapa antes de usarse en la consulta DDL.
+        """
+        # Build safe DDL query using validated identifiers
+        query = self._build_add_constraint_query(
+            table_name='fincas_app_lote',
+            constraint_name=constraint_name,
+            column_name='finca_id',
+            ref_table='api_finca',
+            ref_column='id'
+        )
+        cursor.execute(query)
     
     def _handle_missing_foreign_key(self, cursor, fix: bool) -> bool:
         """Maneja el caso cuando no se encuentra foreign key."""
@@ -142,11 +199,20 @@ class Command(BaseCommand):
         """Corrige una foreign key incorrecta."""
         self.stdout.write("🔧 Corrigiendo foreign key...")
         with transaction.atomic():
-            cursor.execute(f'ALTER TABLE fincas_app_lote DROP CONSTRAINT IF EXISTS "{constraint_name}"')
+            # Build safe DDL query using validated identifiers
+            drop_query = self._build_drop_constraint_query(
+                table_name='fincas_app_lote',
+                constraint_name=constraint_name
+            )
+            cursor.execute(drop_query)
             self.stdout.write(self.style.SUCCESS(f"✅ Eliminada FK incorrecta: {constraint_name}"))
             logger.info(f"FK dropped: {constraint_name}")
             
+            # Build new constraint name safely
             new_constraint_name = constraint_name.replace(foreign_table, 'api_finca')
+            # Validate the new constraint name before using it
+            self._validate_identifier(new_constraint_name)
+            
             self._create_foreign_key(cursor, new_constraint_name)
             self.stdout.write(self.style.SUCCESS(f"✅ Creada FK correcta: {new_constraint_name}"))
             logger.info(f"FK created: {new_constraint_name}")

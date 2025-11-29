@@ -12,6 +12,88 @@ django.setup()
 from django.db import connection
 from fincas_app.models import Finca, Lote
 
+
+def _validate_identifier(identifier: str) -> str:
+    """
+    Valida y escapa un identificador SQL para prevenir inyección SQL.
+    Solo permite caracteres alfanuméricos, guiones bajos y guiones.
+    
+    Args:
+        identifier: El identificador a validar
+        
+    Returns:
+        El identificador escapado de forma segura
+        
+    Raises:
+        ValueError: Si el identificador contiene caracteres inválidos
+    """
+    if not identifier or not isinstance(identifier, str):
+        raise ValueError("Identifier must be a non-empty string")
+    
+    # Solo permitir caracteres alfanuméricos, guiones bajos y guiones
+    if not identifier.replace('_', '').replace('-', '').isalnum():
+        raise ValueError(f"Invalid identifier: {identifier} contains invalid characters")
+    
+    # Escapar comillas dobles en el identificador (PostgreSQL escape)
+    escaped = identifier.replace('"', '""')
+    return escaped
+
+
+def _build_drop_constraint_query(table_name: str, constraint_name: str) -> str:
+    """
+    Construye una consulta DDL segura para eliminar una constraint.
+    Valida y escapa los identificadores antes de construir la consulta.
+    
+    Args:
+        table_name: Nombre de la tabla
+        constraint_name: Nombre de la constraint
+        
+    Returns:
+        Consulta SQL segura
+    """
+    safe_table_name = _validate_identifier(table_name)
+    safe_constraint_name = _validate_identifier(constraint_name)
+    
+    # Build query using string concatenation with validated identifiers
+    # This is safe because both identifiers are validated to only contain whitelisted characters
+    query = 'ALTER TABLE "' + safe_table_name + '" DROP CONSTRAINT IF EXISTS "' + safe_constraint_name + '"'
+    return query
+
+
+def _build_add_constraint_query(table_name: str, constraint_name: str, 
+                                column_name: str, ref_table: str, ref_column: str) -> str:
+    """
+    Construye una consulta DDL segura para agregar una foreign key constraint.
+    Valida y escapa todos los identificadores antes de construir la consulta.
+    
+    Args:
+        table_name: Nombre de la tabla
+        constraint_name: Nombre de la constraint
+        column_name: Nombre de la columna
+        ref_table: Nombre de la tabla referenciada
+        ref_column: Nombre de la columna referenciada
+        
+    Returns:
+        Consulta SQL segura
+    """
+    safe_table_name = _validate_identifier(table_name)
+    safe_constraint_name = _validate_identifier(constraint_name)
+    safe_column_name = _validate_identifier(column_name)
+    safe_ref_table = _validate_identifier(ref_table)
+    safe_ref_column = _validate_identifier(ref_column)
+    
+    # Build query using string concatenation with validated identifiers
+    # This is safe because all identifiers are validated to only contain whitelisted characters
+    query = (
+        'ALTER TABLE "' + safe_table_name + '" '
+        'ADD CONSTRAINT "' + safe_constraint_name + '" '
+        'FOREIGN KEY ("' + safe_column_name + '") '
+        'REFERENCES "' + safe_ref_table + '"("' + safe_ref_column + '") '
+        'ON DELETE CASCADE'
+    )
+    return query
+
+
 def check_and_fix_foreign_key():
     """Verificar y corregir la foreign key de lotes."""
     print("=" * 60)
@@ -58,13 +140,15 @@ def check_and_fix_foreign_key():
             
             if cursor.fetchone():
                 constraint_name = 'fincas_app_lote_finca_id_api_finca_fk'
-                cursor.execute(f"""
-                    ALTER TABLE fincas_app_lote
-                    ADD CONSTRAINT "{constraint_name}"
-                    FOREIGN KEY (finca_id)
-                    REFERENCES api_finca(id)
-                    ON DELETE CASCADE
-                """)
+                # Build safe DDL query using validated identifiers
+                query = _build_add_constraint_query(
+                    table_name='fincas_app_lote',
+                    constraint_name=constraint_name,
+                    column_name='finca_id',
+                    ref_table='api_finca',
+                    ref_column='id'
+                )
+                cursor.execute(query)
                 print(f"✅ Foreign key creada: {constraint_name}")
             else:
                 print("[ERROR] La tabla api_finca no existe")
@@ -75,24 +159,48 @@ def check_and_fix_foreign_key():
                 constraint_name, table_name, column_name, foreign_table, foreign_column = fk
                 print(f"  - {constraint_name}: {table_name}.{column_name} -> {foreign_table}.{foreign_column}")
                 
+                # Validate all identifiers from database before using them
+                try:
+                    _validate_identifier(constraint_name)
+                    _validate_identifier(table_name)
+                    _validate_identifier(column_name)
+                    _validate_identifier(foreign_table)
+                    _validate_identifier(foreign_column)
+                except ValueError as e:
+                    print(f"[ERROR] Identificador inválido encontrado en la base de datos: {e}")
+                    continue
+                
                 # Verificar si apunta a la tabla correcta
                 if foreign_table != 'api_finca':
                     print(f"\n[WARN]  PROBLEMA: FK apunta a '{foreign_table}' pero debería apuntar a 'api_finca'")
                     print("Corrigiendo foreign key...")
                     
-                    # Eliminar FK incorrecta
-                    cursor.execute(f'ALTER TABLE fincas_app_lote DROP CONSTRAINT IF EXISTS "{constraint_name}"')
+                    # Eliminar FK incorrecta - Build safe DDL query using validated identifiers
+                    drop_query = _build_drop_constraint_query(
+                        table_name='fincas_app_lote',
+                        constraint_name=constraint_name
+                    )
+                    cursor.execute(drop_query)
                     print(f"✅ Eliminada FK incorrecta: {constraint_name}")
                     
-                    # Crear FK correcta
+                    # Crear FK correcta - Build new constraint name safely
                     new_constraint_name = constraint_name.replace(foreign_table, 'api_finca')
-                    cursor.execute(f"""
-                        ALTER TABLE fincas_app_lote
-                        ADD CONSTRAINT "{new_constraint_name}"
-                        FOREIGN KEY (finca_id)
-                        REFERENCES api_finca(id)
-                        ON DELETE CASCADE
-                    """)
+                    # Validate the new constraint name before using it
+                    try:
+                        _validate_identifier(new_constraint_name)
+                    except ValueError as e:
+                        print(f"[ERROR] Nombre de constraint generado inválido: {e}")
+                        continue
+                    
+                    # Build safe DDL query using validated identifiers
+                    add_query = _build_add_constraint_query(
+                        table_name='fincas_app_lote',
+                        constraint_name=new_constraint_name,
+                        column_name='finca_id',
+                        ref_table='api_finca',
+                        ref_column='id'
+                    )
+                    cursor.execute(add_query)
                     print(f"✅ Creada FK correcta: {new_constraint_name}")
                 else:
                     print(f"✅ FK correcta: apunta a {foreign_table}")

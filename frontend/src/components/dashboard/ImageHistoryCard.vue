@@ -48,7 +48,7 @@
             <img 
               v-if="image.image_url" 
               :src="image.image_url" 
-              :alt="`Granos de cacao del análisis ${image.id}`"
+              :alt="`Granos de cacao ${image.id}`"
               @error="handleImageError"
             />
             <div v-else class="no-image">

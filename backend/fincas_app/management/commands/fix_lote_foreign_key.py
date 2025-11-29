@@ -2,12 +2,37 @@
 Comando de Django para corregir la foreign key de fincas_app_lote.
 Ejecutar con: python manage.py fix_lote_foreign_key
 """
+import re
 from django.core.management.base import BaseCommand
 from django.db import connection
 
 
 class Command(BaseCommand):
     help = 'Corrige la foreign key de fincas_app_lote para que apunte a api_finca en lugar de fincas_app_finca'
+    
+    def _validate_sql_identifier(self, identifier: str) -> str:
+        """
+        Valida y escapa un identificador SQL para prevenir SQL injection.
+        
+        Args:
+            identifier: Nombre del objeto SQL (tabla, constraint, columna, etc.)
+            
+        Returns:
+            Identificador validado y escapado
+            
+        Raises:
+            ValueError: Si el identificador contiene caracteres no permitidos
+        """
+        if not identifier:
+            raise ValueError('El identificador SQL no puede estar vacío')
+        
+        # Solo permitir letras, números, guiones bajos y guiones
+        # Esto es seguro para nombres de objetos PostgreSQL
+        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', identifier):
+            raise ValueError(f'Identificador SQL inválido: {identifier}. Solo se permiten letras, números y guiones bajos.')
+        
+        # Escapar con comillas dobles para PostgreSQL
+        return f'"{identifier}"'
 
     def _find_foreign_keys(self, cursor):
         """Busca todas las foreign keys en fincas_app_lote."""
@@ -41,8 +66,13 @@ class Command(BaseCommand):
     def _drop_incorrect_foreign_key(self, cursor, constraint_name: str) -> bool:
         """Elimina una foreign key incorrecta."""
         try:
-            cursor.execute(f'ALTER TABLE fincas_app_lote DROP CONSTRAINT IF EXISTS "{constraint_name}"')
+            # Validate and escape constraint name to prevent SQL injection
+            safe_constraint_name = self._validate_sql_identifier(constraint_name)
+            cursor.execute(f'ALTER TABLE fincas_app_lote DROP CONSTRAINT IF EXISTS {safe_constraint_name}')
             return True
+        except ValueError as e:
+            self.stdout.write(self.style.ERROR(f'  [ERROR] Nombre de constraint inválido: {e}'))
+            return False
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'  [ERROR] Error eliminando FK: {e}'))
             return False
@@ -50,6 +80,9 @@ class Command(BaseCommand):
     def _create_correct_foreign_key(self, cursor, new_constraint_name: str) -> bool:
         """Crea una foreign key correcta."""
         try:
+            # Validate constraint name before using it
+            safe_constraint_name = self._validate_sql_identifier(new_constraint_name)
+            
             cursor.execute("""
                 SELECT constraint_name 
                 FROM information_schema.table_constraints
@@ -62,14 +95,18 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f'  [WARN]  FK correcta ya existe: {new_constraint_name}'))
                 return False
             
+            # Use validated and escaped constraint name
             cursor.execute(f"""
                 ALTER TABLE fincas_app_lote
-                ADD CONSTRAINT "{new_constraint_name}"
+                ADD CONSTRAINT {safe_constraint_name}
                 FOREIGN KEY (finca_id)
                 REFERENCES api_finca(id)
                 ON DELETE CASCADE
             """)
             return True
+        except ValueError as e:
+            self.stdout.write(self.style.ERROR(f'  [ERROR] Nombre de constraint inválido: {e}'))
+            return False
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'  [ERROR] Error creando FK: {e}'))
             return False

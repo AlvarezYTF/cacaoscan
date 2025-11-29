@@ -41,6 +41,7 @@ from reports.models import ReporteGenerado
 from api.tests.test_constants import (
     TEST_USER_PASSWORD,
     TEST_OTHER_USER_PASSWORD,
+    TEST_WEAK_PASSWORD,
     TEST_USER_USERNAME,
     TEST_USER_EMAIL,
     TEST_USER_FIRST_NAME,
@@ -147,7 +148,7 @@ class AuthenticationServiceTest(TestCase):
             'email': 'invalid-email',
             'first_name': '',
             'last_name': '',
-            'password': 'weak'  # NOSONAR: Intentionally weak password for validation test
+            'password': TEST_WEAK_PASSWORD  # NOSONAR: Test credential from constants
         }
         
         result = self.service.register_user(user_data)

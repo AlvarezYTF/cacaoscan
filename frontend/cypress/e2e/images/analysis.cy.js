@@ -57,7 +57,9 @@ describe('Análisis de Imágenes - Procesamiento', () => {
     
     // Verificar valores específicos
     cy.get('[data-cy="quality-grade"]').should('be.visible')
-    cy.get('[data-cy="maturity-percentage"]').should('match', /\d+%/)
+    // Use an anchored, bounded regex on the element text to avoid super-linear
+    // backtracking on pathological inputs. Limit to 1-3 digits (0-999%).
+    cy.get('[data-cy="maturity-percentage"]').invoke('text').should('match', /^\d{1,3}%$/)
     cy.get('[data-cy="defects-list"]').should('be.visible')
   })
 

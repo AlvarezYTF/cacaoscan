@@ -174,8 +174,71 @@ const validateForm = () => {
 }
 
 const isValidEmail = (email) => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return re.test(email)
+  if (!email || typeof email !== 'string') {
+    return false
+  }
+  
+  const trimmedEmail = email.trim()
+  
+  // Limit email length to prevent DoS attacks (RFC 5321 max length)
+  if (trimmedEmail.length === 0 || trimmedEmail.length > 254) {
+    return false
+  }
+  
+  // Simple, safe email validation without catastrophic backtracking
+  // Split by @ to avoid regex backtracking issues
+  const parts = trimmedEmail.split('@')
+  if (parts.length !== 2) {
+    return false
+  }
+  
+  const [localPart, domainPart] = parts
+  
+  // Validate local part (before @) - max 64 chars (RFC 5321)
+  if (!localPart || localPart.length === 0 || localPart.length > 64) {
+    return false
+  }
+  
+  // Check for invalid patterns in local part
+  if (localPart.includes('..') || localPart.startsWith('.') || localPart.endsWith('.')) {
+    return false
+  }
+  
+  // Validate domain part (after @) - max 253 chars (RFC 5321)
+  if (!domainPart || domainPart.length === 0 || domainPart.length > 253) {
+    return false
+  }
+  
+  // Check for at least one dot in domain
+  const domainParts = domainPart.split('.')
+  if (domainParts.length < 2 || domainParts.some(part => part.length === 0)) {
+    return false
+  }
+  
+  // Validate characters without regex to avoid backtracking
+  // Check local part contains only valid characters
+  const isValidLocalChar = (char) => {
+    const code = char.charCodeAt(0)
+    return (code >= 48 && code <= 57) || // 0-9
+           (code >= 65 && code <= 90) || // A-Z
+           (code >= 97 && code <= 122) || // a-z
+           char === '.' || char === '_' || char === '+' || char === '-'
+  }
+  
+  // Check domain part contains only valid characters
+  const isValidDomainChar = (char) => {
+    const code = char.charCodeAt(0)
+    return (code >= 48 && code <= 57) || // 0-9
+           (code >= 65 && code <= 90) || // A-Z
+           (code >= 97 && code <= 122) || // a-z
+           char === '.' || char === '-'
+  }
+  
+  // Check if all characters are valid
+  const hasInvalidLocalChar = Array.from(localPart).some(char => !isValidLocalChar(char))
+  const hasInvalidDomainChar = Array.from(domainPart).some(char => !isValidDomainChar(char))
+  
+  return !hasInvalidLocalChar && !hasInvalidDomainChar
 }
 
 // Funciones

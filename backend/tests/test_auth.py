@@ -46,8 +46,8 @@ class AuthenticationTestCase(APITestCase):
             'email': 'test@example.com',
             'first_name': 'Test',
             'last_name': 'User',
-            'password': TEST_USER_PASSWORD,  # NOSONAR: Test credential from test_constants
-            'password_confirm': TEST_USER_PASSWORD  # NOSONAR: Test credential from test_constants
+            'password': TEST_USER_PASSWORD,  # noqa: S106  # NOSONAR: Test credential from test_constants
+            'password_confirm': TEST_USER_PASSWORD  # noqa: S106  # NOSONAR: Test credential from test_constants
         }
         
         # Usuario existente para tests de login
@@ -95,7 +95,7 @@ class AuthenticationTestCase(APITestCase):
         
         # Contraseñas que no coinciden
         invalid_data = self.user_data.copy()
-        invalid_data['password_confirm'] = TEST_DIFFERENT_PASSWORD  # NOSONAR: Test credential from constants
+        invalid_data['password_confirm'] = TEST_DIFFERENT_PASSWORD  # noqa: S106  # NOSONAR: Test credential from constants
         
         response = self.client.post(self.register_url, invalid_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -103,8 +103,8 @@ class AuthenticationTestCase(APITestCase):
         
         # Contraseña débil
         invalid_data = self.user_data.copy()
-        invalid_data['password'] = TEST_WEAK_PASSWORD  # NOSONAR: Test credential from constants
-        invalid_data['password_confirm'] = TEST_WEAK_PASSWORD  # NOSONAR: Test credential from constants
+        invalid_data['password'] = TEST_WEAK_PASSWORD  # noqa: S106  # NOSONAR: Test credential from constants
+        invalid_data['password_confirm'] = TEST_WEAK_PASSWORD  # noqa: S106  # NOSONAR: Test credential from constants
         
         response = self.client.post(self.register_url, invalid_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -114,7 +114,7 @@ class AuthenticationTestCase(APITestCase):
         """Test de login exitoso."""
         login_data = {
             'username': 'existing@example.com',
-            'password': TEST_EXISTING_USER_PASSWORD  # NOSONAR: Test credential from constants
+            'password': TEST_EXISTING_USER_PASSWORD  # noqa: S106  # NOSONAR: Test credential from constants
         }
         
         response = self.client.post(self.login_url, login_data)
@@ -129,7 +129,7 @@ class AuthenticationTestCase(APITestCase):
         """Test de login con credenciales inválidas."""
         login_data = {
             'username': 'existing@example.com',
-            'password': TEST_INVALID_PASSWORD  # NOSONAR: Test credential from constants
+            'password': TEST_INVALID_PASSWORD  # noqa: S106  # NOSONAR: Test credential from constants
         }
         
         response = self.client.post(self.login_url, login_data)

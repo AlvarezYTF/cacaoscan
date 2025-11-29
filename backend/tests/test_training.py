@@ -4,12 +4,12 @@ import requests
 # Load credentials from environment variables for security
 # These should be set in a .env file or environment, not hardcoded
 ADMIN_USERNAME = os.getenv('TEST_ADMIN_USERNAME', 'admin_training')
-ADMIN_PASSWORD = os.getenv('TEST_ADMIN_PASSWORD', '')  # NOSONAR: S2068 - credentials from environment
+ADMIN_PASSWORD = os.getenv('TEST_ADMIN_PASSWORD', '')  # noqa: S106  # NOSONAR: S2068 - credentials from environment
 
 # 1. Login
 login_response = requests.post(
     'http://127.0.0.1:8000/api/v1/auth/login/',
-    json={'username': ADMIN_USERNAME, 'password': ADMIN_PASSWORD}  # NOSONAR: S2068
+    json={'username': ADMIN_USERNAME, 'password': ADMIN_PASSWORD}  # noqa: S106  # NOSONAR: S2068
 )
 
 print("Login response:", login_response.json())

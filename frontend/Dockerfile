@@ -14,8 +14,13 @@ COPY pnpm-lock.yaml* ./
 RUN npm install -g pnpm && \
     pnpm install --frozen-lockfile || pnpm install
 
-# Copiar código fuente
-COPY . .
+# Copiar únicamente los archivos necesarios para el build (evita copiar
+# todo el contexto y posibles ficheros sensibles). `.dockerignore` ya
+# excluye archivos/dirs sensibles, pero ser explícitos aquí reduce riesgo.
+# Solo copiar archivos de configuración necesarios para el build, no archivos de test o desarrollo
+COPY index.html vite.config.js tailwind.config.js ./
+COPY public/ ./public/
+COPY src/ ./src/
 
 # Construir aplicación para producción
 # Usar variable de entorno para la URL de la API (se inyecta desde docker-compose)
@@ -38,11 +43,12 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY start-nginx.sh /start-nginx.sh
 
-# Crear archivo config.js con permisos de escritura para el usuario 101 (nginx)
-# Este archivo será actualizado en runtime por start-nginx.sh
+# Crear archivo config.js, propiedad de UID 101 (nginx). No otorgar permisos
+# de escritura a 'others' to avoid loosening filesystem permissions.
+# start-nginx.sh runs as user 101 and will update this file at runtime.
 RUN touch /usr/share/nginx/html/config.js && \
     chown 101:101 /usr/share/nginx/html/config.js && \
-    chmod 666 /usr/share/nginx/html/config.js && \
+    chmod 644 /usr/share/nginx/html/config.js && \
     echo "// Runtime API configuration will be injected here" > /usr/share/nginx/html/config.js && \
     chmod +x /start-nginx.sh
 
