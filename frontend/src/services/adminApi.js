@@ -30,7 +30,7 @@ const makeRequest = async (url, options = {}) => {
     
     const headers = {
       'Content-Type': 'application/json',
-      ...(options.headers || {})
+      ...options.headers
     };
     
     if (token) {
@@ -127,7 +127,7 @@ const TRAINING_PRESETS = {
  */
 const DATA_FILTERS = {
   QUALITY_LEVELS: {
-    ALL: { min_quality_score: 0.0, label: 'Todos los datos' },
+    ALL: { min_quality_score: 0, label: 'Todos los datos' },
     HIGH: { min_quality_score: 0.8, label: 'Solo alta calidad (>80%)' },
     MEDIUM: { min_quality_score: 0.6, label: 'Calidad media y alta (>60%)' },
     EXCLUDE_POOR: { exclude_poor_quality: true, label: 'Excluir calidad pobre' }
@@ -429,7 +429,7 @@ const getExperiments = async (filters = {}) => {
     }
     
     const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(filters)) {
       if (value !== undefined && value !== null && value !== '') {
         params.append(key, value);
       }
@@ -508,10 +508,10 @@ const estimateTrainingTime = (modelType, config, datasetSize) => {
   // Factores base por tipo de modelo (estimaciones aproximadas)
   const timeFactors = {
     regression: 0.1, // 0.1 segundos por época por 1000 muestras
-    vision: 2.0      // 2 segundos por época por 1000 muestras
+    vision: 2      // 2 segundos por época por 1000 muestras
   };
   
-  const factor = timeFactors[modelType] || 1.0;
+  const factor = timeFactors[modelType] || 1;
   const epochsPerBatch = Math.ceil(datasetSize / config.batch_size);
   const estimatedSecondsPerEpoch = (epochsPerBatch * factor * datasetSize) / 1000;
   const totalSeconds = estimatedSecondsPerEpoch * config.epochs;
@@ -629,7 +629,7 @@ const startMLTraining = async (config = {}) => {
         scheduler_type: 'cosine_warmup',
         warmup_epochs: 10,
         loss_type: 'huber',
-        max_grad_norm: 1.0,
+        max_grad_norm: 1,
         use_advanced_augmentation: true,
         validate_crops_quality: true,
         regenerate_bad_crops: true,

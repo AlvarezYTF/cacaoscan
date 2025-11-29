@@ -297,10 +297,10 @@ export default {
       required: true,
       validator(value) {
         return value && 
-               typeof value.width !== 'undefined' && 
-               typeof value.height !== 'undefined' && 
-               typeof value.thickness !== 'undefined' && 
-               typeof value.predicted_weight !== 'undefined';
+               value.width !== undefined && 
+               value.height !== undefined && 
+               value.thickness !== undefined && 
+               value.predicted_weight !== undefined;
       }
     }
   },

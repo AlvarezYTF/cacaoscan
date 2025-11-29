@@ -480,7 +480,7 @@ export function useWebSocket() {
   
   const emit = (event, data) => {
     if (listeners.has(event)) {
-      listeners.get(event).forEach(callback => {
+      for (const callback of listeners.get(event)) {
         try {
           callback(data)
         } catch (error) {

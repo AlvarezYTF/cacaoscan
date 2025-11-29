@@ -368,11 +368,25 @@ export const checkTokenValidity = async (to, from, next) => {
       await authStore.getCurrentUser()
       next()
     } catch (error) {
-      console.warn('Token inválido, limpiando sesión y redirigiendo al login')
+      console.warn('Token inválido, limpiando sesión y redirigiendo al login:', error)
       authStore.clearAll()
       
       // Evitar loops de redirección
-      if (to.name !== 'Login') {
+      if (to.name === 'Login') {
+        next()
+        return
+      }
+      
+      next({
+        name: 'Login',
+        replace: true
+      })
+    }
+  } else {
+    // Si no hay token, redirigir al login si no está ya ahí
+    if (to.name === 'Login') {
+      next()
+    } else {
         next({
           name: 'Login',
           replace: true,

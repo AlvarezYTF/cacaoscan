@@ -974,17 +974,17 @@ export default {
         }
 
         // Clean empty values
-        Object.keys(reportData.parametros).forEach(key => {
+        for (const key of Object.keys(reportData.parametros)) {
           if (reportData.parametros[key] === '' || reportData.parametros[key] === null) {
             delete reportData.parametros[key]
           }
-        })
+        }
 
-        Object.keys(reportData.filtros).forEach(key => {
+        for (const key of Object.keys(reportData.filtros)) {
           if (reportData.filtros[key] === '' || reportData.filtros[key] === null) {
             delete reportData.filtros[key]
           }
-        })
+        }
 
         const response = await reportsStore.createReport(reportData)
 

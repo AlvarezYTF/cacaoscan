@@ -211,7 +211,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { predictImage, predictImageYolo, predictImageSmart, createImageFormData, validateImageFile } from '@/services/predictionApi.js';
-import { predictImage as predictImageNew, createPredictionFormData, validateImageFile as validateImageFileNew } from '@/services/api.js';
+import { predictImage as predictImageNew, createPredictionFormData } from '@/services/api.js';
 
 export default {
   name: 'ImageUpload',

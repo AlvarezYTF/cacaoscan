@@ -559,7 +559,8 @@ router.beforeEach(async (to, from) => {
       const requiredRole = to.meta.requiresRole
       if (requiredRole) {
         const userRole = authStore.userRole?.toLowerCase().trim()
-        const normalizedRequiredRole = String(requiredRole).toLowerCase().trim()
+        const roleString = typeof requiredRole === 'string' ? requiredRole : String(requiredRole)
+        const normalizedRequiredRole = roleString.toLowerCase().trim()
 
         const normalizedUserRole = normalizeRole(userRole)
 

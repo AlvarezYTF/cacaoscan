@@ -361,9 +361,9 @@ export default {
     const addData = (data, label) => {
       if (chartInstance) {
         chartInstance.data.labels.push(label)
-        chartInstance.data.datasets.forEach((dataset, index) => {
+        for (const [index, dataset] of chartInstance.data.datasets.entries()) {
           dataset.data.push(data[index] || 0)
-        })
+        }
         chartInstance.update()
       }
     }
@@ -371,9 +371,9 @@ export default {
     const removeData = (index) => {
       if (chartInstance) {
         chartInstance.data.labels.splice(index, 1)
-        chartInstance.data.datasets.forEach(dataset => {
+        for (const dataset of chartInstance.data.datasets) {
           dataset.data.splice(index, 1)
-        })
+        }
         chartInstance.update()
       }
     }

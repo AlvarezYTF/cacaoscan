@@ -68,7 +68,7 @@ export function useImageStats() {
       })
       
       // Agregar otros filtros si existen
-      Object.keys(filters).forEach(key => {
+      for (const key of Object.keys(filters)) {
         if (key !== 'page_size' && filters[key] !== undefined && filters[key] !== null) {
           params.append(key, filters[key].toString())
         }

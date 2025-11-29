@@ -125,7 +125,7 @@ export default {
       renderChart();
       
       // Observador de cambios de tamaño para mejor responsividad
-      if (window.ResizeObserver) {
+      if (globalThis.ResizeObserver) {
         resizeObserver = new ResizeObserver(() => {
           handleResize();
         });
@@ -135,8 +135,8 @@ export default {
       }
 
       // Listener para cambios de orientación en dispositivos móviles
-      window.addEventListener('orientationchange', handleResize);
-      window.addEventListener('resize', handleResize);
+      globalThis.addEventListener('orientationchange', handleResize);
+      globalThis.addEventListener('resize', handleResize);
     });
 
     onUnmounted(() => {
@@ -146,8 +146,8 @@ export default {
       if (resizeObserver) {
         resizeObserver.disconnect();
       }
-      window.removeEventListener('orientationchange', handleResize);
-      window.removeEventListener('resize', handleResize);
+      globalThis.removeEventListener('orientationchange', handleResize);
+      globalThis.removeEventListener('resize', handleResize);
     });
 
     watch(() => props.chartData, () => {

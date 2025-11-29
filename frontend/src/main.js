@@ -49,10 +49,11 @@ const initApp = async () => {
       console.log('✅ Configuración del sistema cargada:', configStore.brandName)
     } catch (err) {
       // Ignorar errores de configuración - usar valores por defecto
-      console.log('ℹ️ Usando configuración por defecto')
+      console.log('ℹ️ Usando configuración por defecto:', err)
     }
     
   } catch (error) {
+    console.error('Error inicializando aplicación:', error)
     console.error('❌ Error inicializando aplicación:', error)
   }
 

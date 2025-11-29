@@ -346,6 +346,7 @@ const loadFincaDetails = async (fincaId) => {
     const data = await getFincaById(fincaId)
     fincaDetalle.value = data
   } catch (error) {
+    console.error('Error cargando detalle de finca:', error)
     fincaDetalle.value = null
   } finally {
     loading.value = false

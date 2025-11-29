@@ -387,7 +387,7 @@ const loadFincaData = () => {
       descripcion: props.finca.descripcion || '',
       coordenadas_lat: props.finca.coordenadas_lat || '',
       coordenadas_lng: props.finca.coordenadas_lng || '',
-      activa: props.finca.activa !== undefined ? props.finca.activa : true
+      activa: props.finca.activa ?? true
     })
     
     // Cargar municipios si hay departamento
@@ -408,7 +408,7 @@ const validateForm = () => {
   
   if (!validation.isValid) {
     errors.value = {}
-    validation.errors.forEach(error => {
+    for (const error of validation.errors) {
       // Mapear errores a campos específicos
       if (error.includes('nombre')) errors.value.nombre = error
       else if (error.includes('ubicación')) errors.value.ubicacion = error
@@ -418,7 +418,7 @@ const validateForm = () => {
       else if (error.includes('latitud')) errors.value.coordenadas_lat = error
       else if (error.includes('longitud')) errors.value.coordenadas_lng = error
       else if (error.includes('descripción')) errors.value.descripcion = error
-    })
+    }
     return false
   }
   
@@ -489,7 +489,7 @@ const handleSubmit = async () => {
       let errorMessage = ''
       let firstErrorField = null
       
-      Object.keys(serverErrors).forEach(field => {
+      for (const field of Object.keys(serverErrors)) {
         // Evitar campos no relacionados como 'error', 'status', etc.
         if (field === 'error' || field === 'status' || field === 'error_detail') {
           if (!errorMessage && typeof serverErrors[field] === 'string') {

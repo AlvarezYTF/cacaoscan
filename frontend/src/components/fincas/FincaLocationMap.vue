@@ -138,7 +138,8 @@ const initMap = () => {
     // Abrir popup automáticamente
     marker.openPopup()
   } catch (error) {
-    // Error al inicializar el mapa - silenciar
+    console.error('Error inicializando mapa:', error)
+    throw error
   }
 }
 
