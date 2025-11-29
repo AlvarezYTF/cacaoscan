@@ -1,10 +1,21 @@
 """
 Report generation services module.
 """
-from .excel import ExcelAgricultoresService, ExcelUsuariosService, ExcelAnalisisService
+# Import generators (not services - they are generators, not services)
+from .excel import (
+    ExcelAgricultoresGenerator,
+    ExcelUsuariosGenerator,
+    ExcelAnalisisGenerator,
+    CacaoReportExcelGenerator
+)
 from .pdf_generator import CacaoReportPDFGenerator
 from .report_generation_service import ReportGenerationService
 from .report_management_service import ReportManagementService
+
+# Backward compatibility aliases
+ExcelAgricultoresService = ExcelAgricultoresGenerator
+ExcelUsuariosService = ExcelUsuariosGenerator
+ExcelAnalisisService = ExcelAnalisisGenerator
 
 # Backward compatibility: Create a combined service that delegates to individual services
 from api.services.base import BaseService, ServiceResult
@@ -44,10 +55,18 @@ class ReportService(BaseService):
         return self.management_service.get_report_statistics(user, filters)
 
 __all__ = [
+    # Generators (actual classes)
+    'ExcelAgricultoresGenerator',
+    'ExcelUsuariosGenerator',
+    'ExcelAnalisisGenerator',
+    'CacaoReportExcelGenerator',
+    # Backward compatibility aliases
     'ExcelAgricultoresService',
     'ExcelUsuariosService',
     'ExcelAnalisisService',
+    # PDF Generator
     'CacaoReportPDFGenerator',
+    # Services
     'ReportGenerationService',
     'ReportManagementService',
     'ReportService',  # For backward compatibility

@@ -1148,11 +1148,6 @@ class CacaoTrainingPipeline:
                 shuffle=True, 
                 num_workers=num_workers_single,
                 pin_memory=pin_memory_single
-                train_dataset_single,
-                batch_size=self.config['batch_size'], 
-                shuffle=True, 
-                num_workers=num_workers_single,
-                pin_memory=pin_memory_single
             )
             val_loader_single = DataLoader(
                 val_dataset_single,

@@ -43,7 +43,7 @@ class PasswordService(BaseService):
                 user = User.objects.get(email=email)
                 
                 # Create reset token
-                from ...utils.model_imports import get_models_safely
+                from api.utils.model_imports import get_models_safely
                 models = get_models_safely({
                     'EmailVerificationToken': 'auth_app.models.EmailVerificationToken'
                 })
@@ -53,7 +53,7 @@ class PasswordService(BaseService):
                 # Send password reset email
                 try:
                     from django.conf import settings
-                    from ...email import send_email_notification
+                    from api.services.email import send_email_notification
                     
                     email_context = {
                         'user_name': user.get_full_name() or user.username,
