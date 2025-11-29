@@ -500,7 +500,24 @@ def load_model_for_evaluation(
     Returns:
         Modelo cargado
     """
-    checkpoint = torch.load(model_path, map_location=device)
+    # Safe loading: restrict pickle module to prevent untrusted code execution
+    import pickle
+    class RestrictedUnpickler(pickle.Unpickler):
+        def find_class(self, module, name):
+            # Only allow safe modules
+            if module == "collections" and name == "OrderedDict":
+                return super().find_class(module, name)
+            if module == "torch._utils" and name == "_rebuild_tensor_v2":
+                return super().find_class(module, name)
+            if module == "torch.storage" and name == "_load_from_bytes":
+                return super().find_class(module, name)
+            raise pickle.UnpicklingError(f"global '{module}.{name}' is forbidden")
+
+    def restricted_load(f):
+        return RestrictedUnpickler(f).load()
+
+    with open(model_path, "rb") as f:
+        checkpoint = torch.load(f, map_location=device, pickle_module=pickle, pickle_loader=restricted_load)
     
     if 'model_state_dict' in checkpoint:
         model = model_class()

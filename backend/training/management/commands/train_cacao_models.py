@@ -976,15 +976,35 @@ class Command(BaseCommand):
     def _stop_celery_worker(self, process: subprocess.Popen) -> None:
         """Detiene el worker de Celery iniciado automáticamente."""
         try:
+            # S4828: Sending signals is security-sensitive. Validate process before signaling.
+            # Only stop processes that we started (avoid signaling unrelated processes).
+            if process is None or process.poll() is not None:
+                # Process already terminated or invalid
+                return
+            
+            # Graceful shutdown with signal handling
             if platform.system() == 'Windows':
+                # Windows doesn't support SIGTERM, use terminate() instead
                 process.terminate()
             else:
+                # Unix-like systems: send SIGTERM to process group
                 import os
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                try:
+                    # S4828: Safely get process group to avoid signaling unrelated processes
+                    pgid = os.getpgid(process.pid)
+                    if pgid > 0:  # Validate PID before sending signal
+                        os.killpg(pgid, signal.SIGTERM)
+                except (ProcessLookupError, OSError) as e:
+                    # Process may have already terminated
+                    logger.debug(f"Process group signal failed (may already be terminated): {e}")
+                    return
             
+            # Wait for graceful shutdown with timeout
             try:
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
+                # Force kill if graceful shutdown times out
+                logger.warning("Graceful shutdown timed out, force killing process")
                 process.kill()
                 process.wait()
         except Exception as e:

@@ -433,6 +433,7 @@ cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
 if cors_origins:
     # Validate that each origin has scheme (http:// or https://)
     valid_origins = []
+    http_origins = []  # Track HTTP-only origins for security warnings
     for origin in cors_origins.split(','):
         origin = origin.strip()
         if not origin:
@@ -441,6 +442,25 @@ if cors_origins:
         if origin.startswith('http://') or origin.startswith('https://'):
             # Validate that it has a valid domain (contains a dot or is localhost)
             if '.' in origin.replace('://', '').split('/')[0] or 'localhost' in origin:
+                # In production, enforce HTTPS for all origins (except localhost for testing).
+                # S5332: Using HTTP is insecure for sensitive data transmission (S5332).
+                if not DEBUG and origin.startswith('http://') and 'localhost' not in origin and '127.0.0.1' not in origin:
+                    # Production: reject non-HTTPS origins
+                    warnings.warn(
+                        f"CORS origin '{origin}' uses insecure HTTP in production. "
+                        "Use HTTPS instead. This origin has been rejected for security.",
+                        SecurityWarning
+                    )
+                    continue
+                
+                # Development: warn about HTTP but still allow for localhost/testing
+                if origin.startswith('http://') and not DEBUG:
+                    warnings.warn(
+                        f"CORS origin '{origin}' uses insecure HTTP. "
+                        "Consider using HTTPS for sensitive data (S5332).",
+                        SecurityWarning
+                    )
+                
                 valid_origins.append(origin)
     
     if valid_origins:

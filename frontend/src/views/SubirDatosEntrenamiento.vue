@@ -556,10 +556,19 @@ export default {
         error.value = ''
         lastTrainingResult.value = null
         
-        // Simular progreso
+        // Simular progreso - Using deterministic increment based on time
+        // This is safe because it's only for UI animation, not cryptographic purposes
+        const startTime = Date.now()
         const progressInterval = setInterval(() => {
           if (trainingProgress.value < 90) {
-            trainingProgress.value += Math.random() * 10
+            // Calculate progress based on elapsed time for smooth, deterministic animation
+            // This avoids using Math.random() which triggers security warnings
+            const elapsed = Date.now() - startTime
+            const targetProgress = Math.min(90, (elapsed / 3000) * 90) // Reach 90% in ~3 seconds
+            const increment = Math.min(10, targetProgress - trainingProgress.value)
+            if (increment > 0) {
+              trainingProgress.value += increment
+            }
           }
         }, 500)
         

@@ -99,9 +99,18 @@ const hideLoading = () => {
 const startProgress = () => {
   clearTimers()
   
+  // Use deterministic progress increment for visual effect
+  // NOSONAR: This is for UI progress bar animation, not cryptographic use
+  // Increment counter for deterministic variation
+  let stepCounter = 0
+  
   progressTimer = setInterval(() => {
     if (progress.value < 90) {
-      progress.value += Math.random() * 10
+      // Deterministic increment with variation: cycles through values 2-9
+      // This provides smooth, predictable progress without using PRNG
+      const increment = 2 + (stepCounter % 8) // Values from 2 to 9
+      progress.value += increment
+      stepCounter++
     }
   }, 150)
 }

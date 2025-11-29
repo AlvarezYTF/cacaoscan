@@ -11,8 +11,10 @@ COPY package*.json ./
 COPY pnpm-lock.yaml* ./
 
 # Instalar pnpm y dependencias
+# S6505: Use --ignore-scripts to prevent execution of arbitrary shell scripts
+# during package installation (e.g., postinstall hooks from malicious packages).
 RUN npm install -g pnpm && \
-    pnpm install --frozen-lockfile || pnpm install
+    pnpm install --frozen-lockfile --ignore-scripts || pnpm install --ignore-scripts
 
 # Copiar únicamente los archivos necesarios para el build (evita copiar
 # todo el contexto y posibles ficheros sensibles). `.dockerignore` ya

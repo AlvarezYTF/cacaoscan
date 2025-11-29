@@ -153,7 +153,9 @@ def remove_background_ai(image_path: str) -> Image.Image:
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = UNet().to(device)
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    # S6985: Use weights_only=True to prevent arbitrary code execution from untrusted model files.
+    # This ensures only model weights are loaded, not arbitrary Python objects or code.
+    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
     model.eval()
 
     # Cargar imagen original

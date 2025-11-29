@@ -193,7 +193,9 @@ class CacaoPredictor:
             try:
                 # CRÍTICO: Detectar número de características de píxeles del checkpoint
                 # antes de crear el modelo
-                checkpoint = torch.load(model_path, map_location=self.device)
+                # S6985: Use weights_only=True to prevent arbitrary code execution from untrusted model files.
+                # This ensures only model weights are loaded, not arbitrary Python objects or code.
+                checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)
                 pixel_feature_dim = None
                 
                 # Importar constantes de características
