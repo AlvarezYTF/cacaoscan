@@ -423,9 +423,30 @@ export const usePredictionStore = defineStore('prediction', {
       // Clear prediction history
       this.predictions = [];
       
+      // Reset statistics
+      this.stats = {
+        totalPredictions: 0,
+        predictionsToday: 0,
+        avgProcessingTime: 0,
+        qualityDistribution: {},
+        avgDimensions: {}
+      };
+      
       // Reset filters and pagination
       this.clearFilters();
-      this.pagination.currentPage = 1;
+      this.pagination = {
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+        itemsPerPage: 10
+      };
+      
+      // Reset last upload state
+      this.lastUpload = {
+        fileName: '',
+        fileSize: 0,
+        uploadTime: null
+      };
     },
     
     // Eliminar una predicción del historial

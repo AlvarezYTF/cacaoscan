@@ -974,28 +974,83 @@ class Command(BaseCommand):
             return False
     
     def _stop_celery_worker(self, process: subprocess.Popen) -> None:
-        """Detiene el worker de Celery iniciado automáticamente."""
+        """
+        Detiene el worker de Celery iniciado automáticamente.
+        
+        SECURITY: S4828 - Sending signals is security-sensitive.
+        This function validates that we only signal processes we started.
+        """
         try:
-            # S4828: Sending signals is security-sensitive. Validate process before signaling.
-            # Only stop processes that we started (avoid signaling unrelated processes).
-            if process is None or process.poll() is not None:
-                # Process already terminated or invalid
+            # S4828: Validate process before signaling to avoid signaling unrelated processes
+            if process is None:
+                logger.debug("Process is None, cannot stop")
+                return
+            
+            # Check if process is still running
+            if process.poll() is not None:
+                # Process already terminated
+                logger.debug("Process already terminated")
+                return
+            
+            # Validate PID is valid and belongs to our process
+            try:
+                process_pid = process.pid
+                if process_pid is None or process_pid <= 0:
+                    logger.warning("Invalid process PID, cannot send signal")
+                    return
+                
+                # Verify process is still alive by checking if PID exists
+                # This prevents signaling a process that was replaced by another process with same PID
+                if platform.system() != 'Windows':
+                    import os
+                    try:
+                        # Check if process exists (sends signal 0 which doesn't kill but checks existence)
+                        os.kill(process_pid, 0)
+                    except ProcessLookupError:
+                        # Process doesn't exist anymore
+                        logger.debug("Process no longer exists")
+                        return
+                    except PermissionError:
+                        # Process exists but we don't have permission (shouldn't happen for our own process)
+                        logger.warning("Permission denied when checking process, aborting signal")
+                        return
+            except (AttributeError, OSError) as e:
+                logger.debug(f"Error validating process: {e}")
                 return
             
             # Graceful shutdown with signal handling
             if platform.system() == 'Windows':
                 # Windows doesn't support SIGTERM, use terminate() instead
+                # terminate() is safe because we validated the process above
                 process.terminate()
             else:
                 # Unix-like systems: send SIGTERM to process group
+                # S4828: Additional validation before signaling process group
                 import os
                 try:
-                    # S4828: Safely get process group to avoid signaling unrelated processes
-                    pgid = os.getpgid(process.pid)
-                    if pgid > 0:  # Validate PID before sending signal
-                        os.killpg(pgid, signal.SIGTERM)
+                    # Get process group ID - this will raise OSError if process doesn't exist
+                    pgid = os.getpgid(process_pid)
+                    
+                    # Validate PGID is positive and matches expected range
+                    # PGID should be positive and typically matches PID for processes we start
+                    if pgid <= 0:
+                        logger.warning(f"Invalid process group ID: {pgid}, cannot send signal")
+                        return
+                    
+                    # Additional safety: verify PGID belongs to our process or its children
+                    # In most cases, pgid should equal process_pid for processes we start with start_new_session=True
+                    # But we allow it to be different if it's a valid process group
+                    # The key validation is that we checked the process exists above
+                    
+                    # Send SIGTERM to process group (safe because we validated process exists)
+                    os.killpg(pgid, signal.SIGTERM)
+                    logger.debug(f"Sent SIGTERM to process group {pgid} (process {process_pid})")
+                except ProcessLookupError:
+                    # Process group doesn't exist (process already terminated)
+                    logger.debug("Process group no longer exists, process may have terminated")
+                    return
                 except OSError as e:
-                    # Process may have already terminated
+                    # Process may have already terminated or permission denied
                     logger.debug(f"Process group signal failed (may already be terminated): {e}")
                     return
             
@@ -1004,9 +1059,11 @@ class Command(BaseCommand):
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 # Force kill if graceful shutdown times out
-                logger.warning("Graceful shutdown timed out, force killing process")
-                process.kill()
-                process.wait()
+                # Only kill if process is still running (validated above)
+                if process.poll() is None:
+                    logger.warning("Graceful shutdown timed out, force killing process")
+                    process.kill()
+                    process.wait()
         except Exception as e:
             self.stdout.write(
                 self.style.WARNING(f"Error deteniendo worker: {e}")

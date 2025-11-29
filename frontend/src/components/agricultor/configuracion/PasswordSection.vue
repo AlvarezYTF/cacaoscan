@@ -605,7 +605,7 @@ const successMessage = ref('')
 
 // Validaciones de contraseña en tiempo real
 const passwordChecks = computed(() => {
-  const inputValue = localPasswordForm.value.newPassword
+  const inputValue = localPasswordForm.value.newPassword || ''
   return {
     length: inputValue.length,
     hasUpperCase: /[A-Z]/.test(inputValue),
