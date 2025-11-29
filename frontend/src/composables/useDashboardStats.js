@@ -268,7 +268,7 @@ export function useDashboardStats() {
       link.download = `dashboard-data-${period}-days.${format}`
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
+      link.remove()
       window.URL.revokeObjectURL(url)
     } catch (err) {
       console.error('Error exporting data:', err)

@@ -120,7 +120,7 @@ const clearTimers = () => {
 
 // Event listeners para eventos de navegación
 const handleRouteLoadingStart = (event) => {
-  const { to, from } = event.detail
+  const { to } = event.detail
   
   // Determinar texto según la ruta de destino
   let text = 'Cargando...'

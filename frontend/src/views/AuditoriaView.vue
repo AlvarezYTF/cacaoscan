@@ -794,7 +794,7 @@ export default {
 
 .btn-primary {
   background-color: #3b82f6;
-  color: white;
+  color: #ffffff;
   border-color: #3b82f6;
 }
 
@@ -816,7 +816,7 @@ export default {
 
 .btn-success {
   background-color: #10b981;
-  color: white;
+  color: #ffffff;
   border-color: #10b981;
   position: relative;
 }

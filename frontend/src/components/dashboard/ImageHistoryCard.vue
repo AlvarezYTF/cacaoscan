@@ -529,7 +529,7 @@ export default {
 
 .btn-primary {
   background: #007bff;
-  color: white;
+  color: #ffffff;
 }
 
 .btn-primary:hover {

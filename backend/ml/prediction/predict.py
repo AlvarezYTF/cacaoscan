@@ -152,7 +152,6 @@ class CacaoPredictor:
         self.runtime_crops_dir = MEDIA_ROOT / "cacao_images" / "crops_runtime"
         ensure_dir_exists(self.runtime_crops_dir)
         
-        today = datetime.now()
         # El 'processor' guarda aquí, así que solo necesitamos saber la ruta
         self.processed_crops_dir_base = MEDIA_ROOT / "cacao_images" / "processed"
     

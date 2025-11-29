@@ -234,7 +234,7 @@ class IncrementalDataManager:
         
         # Si no tenemos suficientes muestras, añadir aleatoriamente
         if len(sampled_records) < max_samples:
-            remaining_indices = set(range(len(records))) - set(i for record in sampled_records for i in range(len(records)) if records[i] == record)
+            remaining_indices = {i for i in range(len(records))} - {i for record in sampled_records for i in range(len(records)) if records[i] == record}
             additional_needed = max_samples - len(sampled_records)
             additional_indices = np.random.choice(list(remaining_indices), 
                                                 min(additional_needed, len(remaining_indices)), 

@@ -111,7 +111,6 @@ export default {
   name: 'NotificationBell',
   setup() {
     const router = useRouter()
-    const authStore = useAuthStore()
     const notificationStore = useNotificationStore()
 
     // Reactive data

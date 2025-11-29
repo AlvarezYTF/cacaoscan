@@ -267,7 +267,6 @@ def train_hybrid_model(
     
     # Evaluate on test set
     model.eval()
-    test_loss = 0.0
     all_predictions = {target: [] for target in ["alto", "ancho", "grosor", "peso"]}
     all_targets = {target: [] for target in ["alto", "ancho", "grosor", "peso"]}
     

@@ -425,7 +425,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Actualizar usuario si está logueado
       if (isAuthenticated.value) {
         await getCurrentUser()
-      } else if (response.data && response.data.user) {
+      } else if (response.data?.user) {
         // Si no está logueado pero la verificación fue exitosa, establecer usuario
         setUser(response.data.user)
       }
@@ -454,9 +454,8 @@ export const useAuthStore = defineStore('auth', () => {
       if (email) {
         const response = await authApi.resendEmailVerification(email)
         return { success: true, message: response.message || 'Email de verificación enviado' }
-      } else {
+      } else if (user.value?.email) {
         // Si no hay email pero hay usuario logueado, usar su email
-        if (user.value && user.value.email) {
           const response = await authApi.resendEmailVerification(user.value.email)
           return { success: true, message: response.message || 'Email de verificación enviado' }
         } else {
@@ -482,7 +481,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.updateProfile(profileData)
       
       // Actualizar datos del usuario si la respuesta incluye data
-      if (response.data && response.data.user) {
+      if (response.data?.user) {
         setUser(response.data.user)
         setSuccess('Perfil actualizado exitosamente')
         return { success: true, data: response.data.user }

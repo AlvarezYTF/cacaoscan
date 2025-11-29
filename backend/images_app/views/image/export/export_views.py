@@ -60,8 +60,6 @@ class ImagesExportView(APIView, ImagePermissionMixin):
             models = get_models_safely({
                 'CacaoImage': 'images_app.models.CacaoImage',
             })
-            cacao_image_model = models['CacaoImage']
-            
             # Obtener parámetros de exportación
             export_format = request.data.get('format', 'csv').lower()
             include_images = request.data.get('include_images', True)

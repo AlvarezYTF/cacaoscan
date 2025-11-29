@@ -38,9 +38,8 @@ export const useReportsStore = defineStore('reports', {
     },
 
     getRecentReports: (state) => (limit = 5) => {
-      return state.reports
-        .sort((a, b) => new Date(b.fecha_solicitud) - new Date(a.fecha_solicitud))
-        .slice(0, limit)
+      const sorted = [...state.reports].sort((a, b) => new Date(b.fecha_solicitud) - new Date(a.fecha_solicitud))
+      return sorted.slice(0, limit)
     },
 
     getCompletedReports: (state) => {
@@ -222,7 +221,7 @@ export const useReportsStore = defineStore('reports', {
         link.click()
         
         // Limpiar
-        document.body.removeChild(link)
+        link.remove()
         window.URL.revokeObjectURL(url)
 
         return true
@@ -262,7 +261,7 @@ export const useReportsStore = defineStore('reports', {
         link.click()
         
         // Limpiar
-        document.body.removeChild(link)
+        link.remove()
         window.URL.revokeObjectURL(url)
 
         return true

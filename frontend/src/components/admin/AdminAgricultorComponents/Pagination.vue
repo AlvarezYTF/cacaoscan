@@ -129,9 +129,8 @@ export default {
         for (let i = 1; i <= this.totalPages; i++) {
           pages.push(i);
         }
-      } else {
-        // Lógica para mostrar páginas con separadores
-        if (this.currentPage <= 3) {
+      } else if (this.currentPage <= 3) {
+        // Lógica para mostrar páginas con separadores - al inicio
           // Al inicio
           for (let i = 1; i <= 3; i++) {
             pages.push(i);
@@ -328,10 +327,6 @@ button:focus-visible {
   
   .text-gray-500 {
     color: #9ca3af;
-  }
-  
-  .text-gray-700 {
-    color: #d1d5db;
   }
   
   .hover\:bg-gray-50:hover {

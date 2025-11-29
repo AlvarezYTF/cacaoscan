@@ -86,8 +86,6 @@ class BatchAnalysisView(AdminPermissionMixin, APIView):
         Returns immediately a task_id that can be used to check the status
         of processing via the endpoint GET /api/v1/tasks/{task_id}/status/
         """
-        start_time = time.time()
-        
         try:
             # 1. Validate input data
             name = request.data.get('name', '').strip()

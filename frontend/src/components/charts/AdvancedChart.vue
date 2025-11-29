@@ -108,7 +108,6 @@ export default {
       const isDark = props.theme === 'dark'
       const textColor = isDark ? '#ffffff' : '#333333'
       const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-      const backgroundColor = isDark ? '#2c3e50' : '#ffffff'
 
       return {
         responsive: props.responsive,

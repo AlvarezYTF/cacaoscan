@@ -341,11 +341,12 @@ export default {
               returnTransparentImage: true
             });
             break;
-          case 'cacaoscan':
+          case 'cacaoscan': {
             // Usar la nueva función predictImage del servicio api.js
             const newFormData = createPredictionFormData(selectedFile.value, formData.value);
             result = { success: true, data: await predictImageNew(newFormData) };
             break;
+          }
           case 'traditional':
           default:
             result = await predictImage(requestFormData);
@@ -403,10 +404,17 @@ export default {
         thickness: apiData.grosor_mm || apiData.thickness,
         predicted_weight: apiData.peso_g || apiData.peso_estimado || apiData.predicted_weight,
         prediction_method: apiData.method || apiData.prediction_method || props.predictionMethod || 'unknown',
-        confidence_level: apiData.nivel_confianza ? 
-          (apiData.nivel_confianza > 0.8 ? 'high' : 
-           apiData.nivel_confianza > 0.6 ? 'medium' : 'low') : 
-          apiData.confidence_level || 'unknown',
+        confidence_level: (() => {
+          if (apiData.nivel_confianza) {
+            if (apiData.nivel_confianza > 0.8) {
+              return 'high'
+            } else if (apiData.nivel_confianza > 0.6) {
+              return 'medium'
+            }
+            return 'low'
+          }
+          return apiData.confidence_level || 'unknown'
+        })(),
         confidence_score: apiData.nivel_confianza || apiData.confidence_score || 0,
         processing_time: apiData.processing_time || 0,
         image_url: apiData.image_url,

@@ -336,7 +336,7 @@ class HybridTrainer:
             
             # Check early stopping
             r2_scores = {target: metrics[target]['r2'] for target in self.TARGETS}
-            should_stop, is_best_loss, should_reduce_lr, should_rollback = self.early_stopping(
+            should_stop, is_best_loss, _, should_rollback = self.early_stopping(
                 epoch + 1,
                 val_loss,
                 r2_scores,

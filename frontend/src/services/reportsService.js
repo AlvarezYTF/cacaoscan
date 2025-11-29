@@ -269,7 +269,7 @@ class ReportsService {
       link.download = downloadFilename
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
+      link.remove()
       window.URL.revokeObjectURL(url)
       
       return true

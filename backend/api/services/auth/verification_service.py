@@ -34,8 +34,6 @@ class VerificationService(BaseService):
             models = get_models_safely({
                 'EmailVerificationToken': 'auth_app.models.EmailVerificationToken'
             })
-            email_verification_token_model = models['EmailVerificationToken']
-            
             token_obj = EmailVerificationToken.objects.filter(token=token).first()
             
             if not token_obj:

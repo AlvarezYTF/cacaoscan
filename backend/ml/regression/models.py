@@ -455,7 +455,6 @@ class HybridCacaoRegression(nn.Module):
             pixel_features_dim = 256
         
         # Calcular tamaño total de features fusionadas
-        total_features = resnet_features + convnext_features + pixel_features_dim
         
         # Proyeccin de features para normalizar dimensiones (con BatchNorm)
         self.resnet_projection = nn.Sequential(

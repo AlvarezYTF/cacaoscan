@@ -43,15 +43,13 @@ export const useAuditStore = defineStore('audit', {
     },
 
     getRecentActivityLogs: (state) => (limit = 10) => {
-      return state.activityLogs
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, limit)
+      const sorted = [...state.activityLogs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      return sorted.slice(0, limit)
     },
 
     getRecentLogins: (state) => (limit = 10) => {
-      return state.loginHistory
-        .sort((a, b) => new Date(b.login_time) - new Date(a.login_time))
-        .slice(0, limit)
+      const sorted = [...state.loginHistory].sort((a, b) => new Date(b.login_time) - new Date(a.login_time))
+      return sorted.slice(0, limit)
     },
 
     getFailedLogins: (state) => {
@@ -178,7 +176,7 @@ export const useAuditStore = defineStore('audit', {
         link.click()
         
         // Limpiar
-        document.body.removeChild(link)
+        link.remove()
         window.URL.revokeObjectURL(url)
 
         return true

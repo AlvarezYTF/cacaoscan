@@ -258,7 +258,7 @@ const validateField = (fieldName) => {
       }
       break
       
-    case 'newPassword':
+    case 'newPassword': {
       const pwd = localPasswordForm.value.newPassword
       if (!pwd) {
         errors.value.newPassword = 'La nueva contraseña es requerida'
@@ -272,6 +272,7 @@ const validateField = (fieldName) => {
         errors.value.newPassword = 'La contraseña debe contener al menos un número'
       }
       break
+    }
       
     case 'confirmPassword':
       if (!localPasswordForm.value.confirmPassword) {

@@ -39,18 +39,17 @@
       <!-- Navigation Menu -->
       <nav class="space-y-1">
         <div v-for="item in menuItems" :key="item.id">
-          <div 
+          <button
+            type="button"
             @click="handleMenuClick(item)"
             @keydown="handleKeyDown($event, item)"
             @keyup="handleKeyUp($event, item)"
             @keypress="handleKeyPress($event, item)"
             :class="[
-              'flex items-center rounded-lg group transition-all duration-200 cursor-pointer',
+              'flex items-center rounded-lg group transition-all duration-200 cursor-pointer w-full text-left border-0 bg-transparent',
               collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-3',
               getMenuItemClass(item)
             ]"
-            role="button"
-            tabindex="0"
           >
             <svg 
               :class="['transition-colors duration-200', collapsed ? 'w-5 h-5' : 'w-5 h-5', getIconClass(item)]"
@@ -63,7 +62,7 @@
             <span v-if="!collapsed && item.badge" class="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-white bg-green-600">
               {{ item.badge }}
             </span>
-          </div>
+          </button>
         </div>
       </nav>
 
@@ -309,25 +308,23 @@ const handleMenuClick = (item) => {
   emit('menu-click', item)
 }
 
-const handleKeyDown = (event, item) => {
+const handleKeyboardAction = (event, item) => {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
     handleMenuClick(item)
   }
+}
+
+const handleKeyDown = (event, item) => {
+  handleKeyboardAction(event, item)
 }
 
 const handleKeyUp = (event, item) => {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault()
-    handleMenuClick(item)
-  }
+  handleKeyboardAction(event, item)
 }
 
 const handleKeyPress = (event, item) => {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault()
-    handleMenuClick(item)
-  }
+  handleKeyboardAction(event, item)
 }
 
 const handleLogout = () => {

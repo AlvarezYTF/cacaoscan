@@ -85,9 +85,9 @@ class CacaoDataset(Dataset):
         img = cv2.imread(image_path)
         mask = np.zeros(img.shape[:2], np.uint8)
         rect = (10, 10, img.shape[1]-20, img.shape[0]-20)
-        bgdModel = np.zeros((1, 65), np.float64)
-        fgdModel = np.zeros((1, 65), np.float64)
-        cv2.grabCut(img, mask, rect, bgdModel, fgdModel, 10, cv2.GC_INIT_WITH_RECT)
+        bgd_model = np.zeros((1, 65), np.float64)
+        fgd_model = np.zeros((1, 65), np.float64)
+        cv2.grabCut(img, mask, rect, bgd_model, fgd_model, 10, cv2.GC_INIT_WITH_RECT)
         mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8') * 255
         return mask2
 
@@ -325,7 +325,7 @@ def _refine_mask_opencv_precise(rgb: np.ndarray, mask: np.ndarray) -> np.ndarray
             # Combinar: usar GrabCut pero mantener solo el rea del contorno ms grande
             mask_final = cv2.bitwise_and(mask_grabcut, mask_final)
             
-        except Exception as e:
+        except Exception:
             # Si GrabCut falla, usar solo el contorno
             pass
         

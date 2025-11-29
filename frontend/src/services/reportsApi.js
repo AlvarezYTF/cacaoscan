@@ -27,7 +27,7 @@ const reportsApi = {
       const contentDisposition = response.headers['content-disposition']
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
-        if (filenameMatch && filenameMatch[1]) {
+        if (filenameMatch?.[1]) {
           filename = filenameMatch[1].replaceAll(/['"]/g, '')
         }
       }
@@ -47,7 +47,7 @@ const reportsApi = {
       
       // Esperar un momento antes de remover y limpiar
       setTimeout(() => {
-        document.body.removeChild(link)
+        link.remove()
       window.URL.revokeObjectURL(url)
       }, 100)
       

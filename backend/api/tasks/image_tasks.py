@@ -71,7 +71,7 @@ def process_batch_analysis_task(
         from pathlib import Path
         import os
         
-        User = get_user_model()
+        user_model = get_user_model()
         
         try:
             user = user_model.objects.get(id=user_id)

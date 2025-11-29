@@ -523,11 +523,14 @@ const estimateTrainingTime = (modelType, config, datasetSize) => {
   
   return {
     totalSeconds: Math.round(totalSeconds),
-    formatted: hours > 0 
-      ? `${hours}h ${minutes}m ${seconds}s`
-      : minutes > 0 
-        ? `${minutes}m ${seconds}s`
-        : `${seconds}s`,
+    formatted: (() => {
+      if (hours > 0) {
+        return `${hours}h ${minutes}m ${seconds}s`
+      } else if (minutes > 0) {
+        return `${minutes}m ${seconds}s`
+      }
+      return `${seconds}s`
+    })(),
     estimatedCompletion: new Date(Date.now() + totalSeconds * 1000)
   };
 };

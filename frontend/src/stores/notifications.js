@@ -36,9 +36,8 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     getRecentNotifications: (state) => (limit = 5) => {
-      return state.notifications
-        .sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion))
-        .slice(0, limit)
+      const sorted = [...state.notifications].sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion))
+      return sorted.slice(0, limit)
     },
 
     getNotificationsByDate: (state) => (date) => {
@@ -332,7 +331,7 @@ export const useNotificationsStore = defineStore('notifications', {
         link.click()
         
         // Limpiar
-        document.body.removeChild(link)
+        link.remove()
         window.URL.revokeObjectURL(url)
 
         return true

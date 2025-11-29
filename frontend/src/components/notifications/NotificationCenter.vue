@@ -251,7 +251,6 @@ import Swal from 'sweetalert2'
 export default {
   name: 'NotificationCenter',
   setup() {
-    const authStore = useAuthStore()
     const notificationStore = useNotificationStore()
 
     // Reactive data

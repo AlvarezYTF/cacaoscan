@@ -435,7 +435,7 @@ export default {
       a.download = `analisis_cacao_${props.predictionData.id}.json`;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      a.remove();
       URL.revokeObjectURL(url);
     };
 

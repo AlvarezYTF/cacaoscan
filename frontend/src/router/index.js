@@ -561,29 +561,7 @@ router.beforeEach(async (to, from) => {
         const userRole = authStore.userRole?.toLowerCase().trim()
         const normalizedRequiredRole = String(requiredRole).toLowerCase().trim()
 
-        // Función para normalizar roles del usuario
-        const normalizeUserRole = (role) => {
-          if (!role) return null
-          const normalized = String(role).toLowerCase().trim()
-
-          // Mapear variantes comunes de roles
-          switch (normalized) {
-            case 'administrador':
-            case 'administrator':
-            case 'admin':
-              return 'admin'
-            case 'analista':
-            case 'analyst':
-              return 'analyst'
-            case 'agricultor':
-            case 'farmer':
-              return 'farmer'
-            default:
-              return normalized
-          }
-        }
-
-        const normalizedUserRole = normalizeUserRole(userRole)
+        const normalizedUserRole = normalizeRole(userRole)
 
         // Verificar si el usuario tiene el rol requerido
         if (normalizedUserRole !== normalizedRequiredRole) {

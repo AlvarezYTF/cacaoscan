@@ -479,7 +479,7 @@ export async function downloadImage(imageId, type = 'original') {
     link.click()
     
     // Limpiar
-    document.body.removeChild(link)
+    link.remove()
     window.URL.revokeObjectURL(url)
 
     console.log('✅ Descarga completada')
@@ -534,7 +534,7 @@ export async function exportResults(options = {}) {
     link.click()
     
     // Limpiar
-    document.body.removeChild(link)
+    link.remove()
     window.URL.revokeObjectURL(url)
 
     console.log('✅ Exportación completada')
