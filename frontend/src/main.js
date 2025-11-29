@@ -9,12 +9,12 @@ import router from './router'
 // Verificar configuración del API al iniciar
 if (typeof window !== 'undefined') {
   console.log('🔍 [Main] Verificando configuración del API...')
-  console.log('🔍 [Main] window.__API_BASE_URL__:', window.__API_BASE_URL__)
+  console.log('🔍 [Main] globalThis.__API_BASE_URL__:', globalThis.__API_BASE_URL__)
   console.log('🔍 [Main] import.meta.env.VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
-  console.log('🔍 [Main] window.location.hostname:', window.location.hostname)
+  console.log('🔍 [Main] globalThis.location.hostname:', globalThis.location.hostname)
   
   // Validar que config.js se haya cargado
-  if (!window.__API_BASE_URL__ && !import.meta.env.VITE_API_BASE_URL) {
+  if (!globalThis.__API_BASE_URL__ && !import.meta.env.VITE_API_BASE_URL) {
     console.error('❌ [Main] ADVERTENCIA: No se encontró configuración del API!')
     console.error('❌ [Main] El frontend usará localhost por defecto')
   }
@@ -61,7 +61,7 @@ const initApp = async () => {
 }
 
 // Configurar notificaciones globales
-window.showNotification = (notification) => {
+globalThis.showNotification = (notification) => {
   // Placeholder para sistema de notificaciones
   console.log('🔔 Notification:', notification)
   

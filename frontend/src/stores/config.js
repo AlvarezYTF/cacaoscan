@@ -171,7 +171,7 @@ export const useConfigStore = defineStore('config', {
           console.log('✅ Configuración general actualizada:', this.brandName)
           
           // Emitir evento de actualización global
-          window.dispatchEvent(new CustomEvent('config-updated', { 
+          globalThis.dispatchEvent(new CustomEvent('config-updated', { 
             detail: { section: 'general', data: this.general }
           }))
         }
@@ -193,7 +193,7 @@ export const useConfigStore = defineStore('config', {
           this.security = { ...this.security, ...saved }
           this.lastUpdate = new Date()
           
-          window.dispatchEvent(new CustomEvent('config-updated', { 
+          globalThis.dispatchEvent(new CustomEvent('config-updated', { 
             detail: { section: 'security', data: this.security }
           }))
         }
@@ -215,7 +215,7 @@ export const useConfigStore = defineStore('config', {
           this.ml = { ...this.ml, ...saved }
           this.lastUpdate = new Date()
           
-          window.dispatchEvent(new CustomEvent('config-updated', { 
+          globalThis.dispatchEvent(new CustomEvent('config-updated', { 
             detail: { section: 'ml', data: this.ml }
           }))
         }

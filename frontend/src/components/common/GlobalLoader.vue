@@ -176,27 +176,27 @@ const handleAPILoadingEnd = () => {
 // Lifecycle
 onMounted(() => {
   // Eventos de navegación
-  window.addEventListener('route-loading-start', handleRouteLoadingStart)
-  window.addEventListener('route-loading-end', handleRouteLoadingEnd)
+  globalThis.addEventListener('route-loading-start', handleRouteLoadingStart)
+  globalThis.addEventListener('route-loading-end', handleRouteLoadingEnd)
   
   // Eventos de API
-  window.addEventListener('api-loading-start', handleAPILoadingStart)
-  window.addEventListener('api-loading-end', handleAPILoadingEnd)
+  globalThis.addEventListener('api-loading-start', handleAPILoadingStart)
+  globalThis.addEventListener('api-loading-end', handleAPILoadingEnd)
 })
 
 onUnmounted(() => {
   // Limpiar event listeners
-  window.removeEventListener('route-loading-start', handleRouteLoadingStart)
-  window.removeEventListener('route-loading-end', handleRouteLoadingEnd)
-  window.removeEventListener('api-loading-start', handleAPILoadingStart)
-  window.removeEventListener('api-loading-end', handleAPILoadingEnd)
+  globalThis.removeEventListener('route-loading-start', handleRouteLoadingStart)
+  globalThis.removeEventListener('route-loading-end', handleRouteLoadingEnd)
+  globalThis.removeEventListener('api-loading-start', handleAPILoadingStart)
+  globalThis.removeEventListener('api-loading-end', handleAPILoadingEnd)
   
   clearTimers()
 })
 
 // Exponer métodos globalmente
-window.showGlobalLoading = showLoading
-window.hideGlobalLoading = hideLoading
+globalThis.showGlobalLoading = showLoading
+globalThis.hideGlobalLoading = hideLoading
 </script>
 
 <style scoped>

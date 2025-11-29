@@ -199,7 +199,7 @@ const handleGestionarFincas = () => {
 }
 
 const checkScreenSize = () => {
-  if (window.innerWidth <= 768) {
+  if (globalThis.innerWidth <= 768) {
     isSidebarCollapsed.value = true
     localStorage.setItem('sidebarCollapsed', 'true')
   }
@@ -240,7 +240,7 @@ const logout = async () => {
 // Lifecycle
 onMounted(async () => {
   checkScreenSize()
-  window.addEventListener('resize', checkScreenSize)
+  globalThis.addEventListener('resize', checkScreenSize)
   
   await Promise.all([
     fetchStats(),
@@ -249,7 +249,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkScreenSize)
+  globalThis.removeEventListener('resize', checkScreenSize)
 })
 </script>
 

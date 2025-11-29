@@ -33,7 +33,7 @@ const reportsApi = {
       }
       
       // Crear URL del objeto blob
-      const url = window.URL.createObjectURL(response.data)
+      const url = globalThis.URL.createObjectURL(response.data)
       
       // Crear elemento link y configurarlo
       const link = document.createElement('a')
@@ -48,7 +48,7 @@ const reportsApi = {
       // Esperar un momento antes de remover y limpiar
       setTimeout(() => {
         link.remove()
-      window.URL.revokeObjectURL(url)
+      globalThis.URL.revokeObjectURL(url)
       }, 100)
       
       return { success: true }
@@ -85,7 +85,7 @@ const reportsApi = {
       })
       
       // Crear URL del objeto blob
-      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const url = globalThis.URL.createObjectURL(new Blob([response.data]))
       
       // Crear elemento link y configurarlo
       const link = document.createElement('a')
@@ -98,7 +98,7 @@ const reportsApi = {
       link.remove()
       
       // Limpiar el URL del objeto
-      window.URL.revokeObjectURL(url)
+      globalThis.URL.revokeObjectURL(url)
       
       return { success: true }
     } catch (error) {

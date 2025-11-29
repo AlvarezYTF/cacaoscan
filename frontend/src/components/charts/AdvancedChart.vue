@@ -308,7 +308,7 @@ export default {
       await renderChart()
       
       // Observador de cambios de tamaño
-      if (window.ResizeObserver) {
+      if (globalThis.ResizeObserver) {
         resizeObserver = new ResizeObserver(() => {
           handleResize()
         })
@@ -318,8 +318,8 @@ export default {
       }
 
       // Listeners para cambios de orientación
-      window.addEventListener('orientationchange', handleResize)
-      window.addEventListener('resize', handleResize)
+      globalThis.addEventListener('orientationchange', handleResize)
+      globalThis.addEventListener('resize', handleResize)
     })
 
     onUnmounted(() => {
@@ -329,8 +329,8 @@ export default {
       if (resizeObserver) {
         resizeObserver.disconnect()
       }
-      window.removeEventListener('orientationchange', handleResize)
-      window.removeEventListener('resize', handleResize)
+      globalThis.removeEventListener('orientationchange', handleResize)
+      globalThis.removeEventListener('resize', handleResize)
     })
 
     // Watchers

@@ -178,7 +178,6 @@
 </template>
 
 <script>
-import { computed } from 'vue'
 
 export default {
   name: 'YoloResultsCard',
@@ -277,14 +276,14 @@ export default {
         })
       }
 
-      images.forEach(image => {
+      for (const image of images) {
         const link = document.createElement('a')
         link.href = image.data
         link.download = image.name
         document.body.appendChild(link)
         link.click()
         link.remove()
-      })
+      }
     }
 
     return {

@@ -139,7 +139,7 @@ export function useImageStats() {
       // Crear blob y descargar
       const blob = new Blob([response.data], { type: 'application/pdf' })
       const link = document.createElement('a')
-      link.href = window.URL.createObjectURL(blob)
+      link.href = globalThis.URL.createObjectURL(blob)
       link.download = `reporte_${reportType}_${new Date().toISOString().split('T')[0]}.pdf`
       link.click()
       

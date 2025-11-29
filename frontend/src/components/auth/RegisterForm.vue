@@ -731,7 +731,7 @@ const handleSubmit = async () => {
     return
   }
 
-  window.dispatchEvent(new CustomEvent('api-loading-start', {
+  globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
     detail: { type: 'register', message: 'Creando tu cuenta...' }
   }))
 
@@ -827,7 +827,7 @@ const handleSubmit = async () => {
     setStatusMessage(errorMessage, 'error')
   } finally {
     isLoading.value = false
-    window.dispatchEvent(new CustomEvent('api-loading-end'))
+    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 

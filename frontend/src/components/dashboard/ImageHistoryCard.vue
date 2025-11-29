@@ -245,12 +245,12 @@ export default {
         }
         
         const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
+        const url = globalThis.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
         link.download = `cacao_${image.id}_${image.file_name || 'image'}.jpg`
         link.click()
-        window.URL.revokeObjectURL(url)
+        globalThis.URL.revokeObjectURL(url)
         
       } catch (err) {
         console.error('Error downloading image:', err)

@@ -444,7 +444,7 @@ export default {
         navigator.share({
           title: 'Análisis de Grano de Cacao',
           text: `Resultados: ${formatDimensions()}, Peso: ${formatWeight()}`,
-          url: window.location.href
+          url: globalThis.location.href
         });
       } else {
         // Fallback: copiar al portapapeles

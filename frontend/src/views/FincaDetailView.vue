@@ -386,7 +386,7 @@ const viewOnMap = () => {
   const lat = finca.value.coordenadas_lat
   const lng = finca.value.coordenadas_lng
   const url = `https://www.google.com/maps?q=${lat},${lng}`
-  window.open(url, '_blank')
+  globalThis.open(url, '_blank')
 }
 
 const formatDate = (dateString) => {

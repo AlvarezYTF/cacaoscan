@@ -558,13 +558,13 @@ const handlePageChange = (page) => {
 // Lifecycle
 onMounted(async () => {
   checkScreenSize()
-  window.addEventListener('resize', checkScreenSize)
+  globalThis.addEventListener('resize', checkScreenSize)
   await loadFarmers()
 })
 
 const checkScreenSize = () => {
   try {
-    if (window.innerWidth <= 768) {
+    if (globalThis.innerWidth <= 768) {
       isSidebarCollapsed.value = true
       localStorage.setItem('sidebarCollapsed', 'true')
     } else {

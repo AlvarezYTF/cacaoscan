@@ -591,7 +591,7 @@ router.beforeEach(async (to, from) => {
       isNavigating = false
       navigationTimeout = null
       // Emit loading end event
-      window.dispatchEvent(new CustomEvent('route-loading-end'))
+      globalThis.dispatchEvent(new CustomEvent('route-loading-end'))
     }, 100)
   }
 })
@@ -640,7 +640,7 @@ const getRedirectPathByRole = (role) => {
 router.afterEach((to, from) => {
   // Scroll al top en cambios de ruta
   if (to.path !== from.path) {
-    window.scrollTo(0, 0)
+    globalThis.scrollTo(0, 0)
   }
 
 })

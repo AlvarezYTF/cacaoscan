@@ -21,7 +21,8 @@
         <div class="relative">
           <input 
             id="password-current"
-            :type="showCurrentPassword ? 'text' : 'password'" 
+            :type="showCurrentPassword ? 'text' : 'password'"
+            autocomplete="current-password" 
             v-model="localPasswordForm.currentPassword"
             autocomplete="current-password" 
             @blur="validateField('currentPassword')"
@@ -56,7 +57,8 @@
         <div class="relative">
           <input 
             id="password-new"
-            :type="showNewPassword ? 'text' : 'password'" 
+            :type="showNewPassword ? 'text' : 'password'"
+            autocomplete="new-password" 
             v-model="localPasswordForm.newPassword"
             autocomplete="new-password" 
             @blur="validateField('newPassword')"
@@ -119,9 +121,10 @@
           </svg>
           Confirmar nueva contraseña *
         </label>
-        <input 
+          <input 
           id="password-confirm"
-          :type="showNewPassword ? 'text' : 'password'" 
+          :type="showNewPassword ? 'text' : 'password'"
+          autocomplete="new-password"
           v-model="localPasswordForm.confirmPassword"
           autocomplete="new-password" 
           @blur="validateField('confirmPassword')"
@@ -223,7 +226,7 @@ const passwordChecks = computed(() => {
     length: pwd.length,
     hasUpperCase: /[A-Z]/.test(pwd),
     hasLowerCase: /[a-z]/.test(pwd),
-    hasNumber: /[0-9]/.test(pwd)
+    hasNumber: /\d/.test(pwd)
   }
 })
 
@@ -268,7 +271,7 @@ const validateField = (fieldName) => {
         errors.value.newPassword = 'La contraseña debe contener al menos una letra mayúscula'
       } else if (!/[a-z]/.test(pwd)) {
         errors.value.newPassword = 'La contraseña debe contener al menos una letra minúscula'
-      } else if (!/[0-9]/.test(pwd)) {
+      } else if (!/\d/.test(pwd)) {
         errors.value.newPassword = 'La contraseña debe contener al menos un número'
       }
       break

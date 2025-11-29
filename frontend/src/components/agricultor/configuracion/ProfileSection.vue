@@ -234,9 +234,10 @@
         <label for="profile-direccion" class="block text-sm font-semibold text-gray-700 mb-2">
           Dirección
         </label>
-        <input 
+          <input 
           id="profile-direccion"
-          type="text" 
+          type="text"
+          autocomplete="street-address"
           v-model="form.direccion"
           autocomplete="street-address"
           placeholder="Calle 10 #5-20" 

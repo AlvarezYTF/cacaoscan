@@ -577,11 +577,11 @@ export default {
     let scrollPosition = 0;
     
     const saveScrollPosition = () => {
-      scrollPosition = window.pageYOffset;
+      scrollPosition = globalThis.pageYOffset;
     };
     
     const restoreScrollPosition = () => {
-      window.scrollTo(0, scrollPosition);
+      globalThis.scrollTo(0, scrollPosition);
     };
     
     // Lifecycle
@@ -590,14 +590,14 @@ export default {
       await predictionStore.initialize();
       
       // Add scroll listener
-      window.addEventListener('scroll', saveScrollPosition);
+      globalThis.addEventListener('scroll', saveScrollPosition);
       
       // Restore scroll position if returning to page
       setTimeout(restoreScrollPosition, 100);
     });
     
     onUnmounted(() => {
-      window.removeEventListener('scroll', saveScrollPosition);
+      globalThis.removeEventListener('scroll', saveScrollPosition);
     });
     
     return {

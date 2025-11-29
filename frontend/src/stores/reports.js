@@ -199,7 +199,7 @@ export const useReportsStore = defineStore('reports', {
 
         // Crear URL para descarga
         const blob = new Blob([response.data])
-        const url = window.URL.createObjectURL(blob)
+        const url = globalThis.URL.createObjectURL(blob)
         
         // Crear enlace temporal para descarga
         const link = document.createElement('a')
@@ -222,7 +222,7 @@ export const useReportsStore = defineStore('reports', {
         
         // Limpiar
         link.remove()
-        window.URL.revokeObjectURL(url)
+        globalThis.URL.revokeObjectURL(url)
 
         return true
       } catch (error) {
@@ -239,7 +239,7 @@ export const useReportsStore = defineStore('reports', {
 
         // Crear URL para descarga
         const blob = new Blob([response.data])
-        const url = window.URL.createObjectURL(blob)
+        const url = globalThis.URL.createObjectURL(blob)
         
         // Crear enlace temporal para descarga
         const link = document.createElement('a')
@@ -262,7 +262,7 @@ export const useReportsStore = defineStore('reports', {
         
         // Limpiar
         link.remove()
-        window.URL.revokeObjectURL(url)
+        globalThis.URL.revokeObjectURL(url)
 
         return true
       } catch (error) {

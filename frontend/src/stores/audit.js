@@ -154,7 +154,7 @@ export const useAuditStore = defineStore('audit', {
 
         // Crear URL para descarga
         const blob = new Blob([response.data])
-        const url = window.URL.createObjectURL(blob)
+        const url = globalThis.URL.createObjectURL(blob)
         
         // Crear enlace temporal para descarga
         const link = document.createElement('a')
@@ -177,7 +177,7 @@ export const useAuditStore = defineStore('audit', {
         
         // Limpiar
         link.remove()
-        window.URL.revokeObjectURL(url)
+        globalThis.URL.revokeObjectURL(url)
 
         return true
       } catch (error) {
