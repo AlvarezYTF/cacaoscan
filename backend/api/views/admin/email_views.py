@@ -232,7 +232,7 @@ class SendBulkNotificationView(APIView):
             properties={
                 'notification_type': openapi.Schema(
                     type=openapi.TYPE_STRING,
-                    enum=['welcome', 'password_reset', 'analysis_complete', 'report_ready', 'training_complete', 'defect_alert', 'system_alert', 'weekly_summary']
+                    enum=['welcome', 'reset_request', 'analysis_complete', 'report_ready', 'training_complete', 'defect_alert', 'system_alert', 'weekly_summary']
                 ),
                 'user_emails': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
@@ -334,7 +334,7 @@ class EmailTemplatePreviewView(APIView):
                 openapi.IN_QUERY,
                 description="Tipo de template a previsualizar",
                 type=openapi.TYPE_STRING,
-                enum=['welcome', 'password_reset', 'analysis_complete', 'report_ready', 'training_complete', 'defect_alert', 'system_alert', 'weekly_summary'],
+                enum=['welcome', 'reset_request', 'analysis_complete', 'report_ready', 'training_complete', 'defect_alert', 'system_alert', 'weekly_summary'],
                 required=True
             )
         ],

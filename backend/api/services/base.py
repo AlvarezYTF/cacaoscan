@@ -117,6 +117,48 @@ class BaseService:
                 details={"missing_fields": missing_fields}
             )
     
+    def _validate_field_type(self, field: str, value: Any, expected_type: type):
+        """Valida el tipo de un campo."""
+        if not isinstance(value, expected_type):
+            raise ValidationServiceError(
+                f"Campo '{field}' debe ser de tipo {expected_type.__name__}",
+                error_code="invalid_field_type",
+                details={"field": field, "expected_type": expected_type.__name__, "actual_type": type(value).__name__}
+            )
+    
+    def _validate_field_range(self, field: str, value: Any, validation: Dict[str, Any]):
+        """Valida el rango de un campo."""
+        if 'min' in validation and value < validation['min']:
+            raise ValidationServiceError(
+                f"Campo '{field}' debe ser mayor o igual a {validation['min']}",
+                error_code="field_value_too_small",
+                details={"field": field, "min": validation['min'], "actual": value}
+            )
+        
+        if 'max' in validation and value > validation['max']:
+            raise ValidationServiceError(
+                f"Campo '{field}' debe ser menor o igual a {validation['max']}",
+                error_code="field_value_too_large",
+                details={"field": field, "max": validation['max'], "actual": value}
+            )
+    
+    def _validate_field_length(self, field: str, value: Any, validation: Dict[str, Any]):
+        """Valida la longitud de un campo."""
+        value_str = str(value)
+        if 'min_length' in validation and len(value_str) < validation['min_length']:
+            raise ValidationServiceError(
+                f"Campo '{field}' debe tener al menos {validation['min_length']} caracteres",
+                error_code="field_too_short",
+                details={"field": field, "min_length": validation['min_length'], "actual_length": len(value_str)}
+            )
+        
+        if 'max_length' in validation and len(value_str) > validation['max_length']:
+            raise ValidationServiceError(
+                f"Campo '{field}' debe tener máximo {validation['max_length']} caracteres",
+                error_code="field_too_long",
+                details={"field": field, "max_length": validation['max_length'], "actual_length": len(value_str)}
+            )
+    
     def validate_field_values(self, data: Dict[str, Any], validations: Dict[str, Any]):
         """
         Valida valores de campos específicos.
@@ -129,48 +171,16 @@ class BaseService:
             ValidationServiceError: Si las validaciones fallan
         """
         for field, validation in validations.items():
-            if field in data:
-                value = data[field]
-                
-                # Validación de tipo
-                if 'type' in validation:
-                    expected_type = validation['type']
-                    if not isinstance(value, expected_type):
-                        raise ValidationServiceError(
-                            f"Campo '{field}' debe ser de tipo {expected_type.__name__}",
-                            error_code="invalid_field_type",
-                            details={"field": field, "expected_type": expected_type.__name__, "actual_type": type(value).__name__}
-                        )
-                
-                # Validación de rango
-                if 'min' in validation and value < validation['min']:
-                    raise ValidationServiceError(
-                        f"Campo '{field}' debe ser mayor o igual a {validation['min']}",
-                        error_code="field_value_too_small",
-                        details={"field": field, "min": validation['min'], "actual": value}
-                    )
-                
-                if 'max' in validation and value > validation['max']:
-                    raise ValidationServiceError(
-                        f"Campo '{field}' debe ser menor o igual a {validation['max']}",
-                        error_code="field_value_too_large",
-                        details={"field": field, "max": validation['max'], "actual": value}
-                    )
-                
-                # Validación de longitud
-                if 'min_length' in validation and len(str(value)) < validation['min_length']:
-                    raise ValidationServiceError(
-                        f"Campo '{field}' debe tener al menos {validation['min_length']} caracteres",
-                        error_code="field_too_short",
-                        details={"field": field, "min_length": validation['min_length'], "actual_length": len(str(value))}
-                    )
-                
-                if 'max_length' in validation and len(str(value)) > validation['max_length']:
-                    raise ValidationServiceError(
-                        f"Campo '{field}' debe tener máximo {validation['max_length']} caracteres",
-                        error_code="field_too_long",
-                        details={"field": field, "max_length": validation['max_length'], "actual_length": len(str(value))}
-                    )
+            if field not in data:
+                continue
+            
+            value = data[field]
+            
+            if 'type' in validation:
+                self._validate_field_type(field, value, validation['type'])
+            
+            self._validate_field_range(field, value, validation)
+            self._validate_field_length(field, value, validation)
     
     def execute_with_transaction(self, func, *args, **kwargs):
         """

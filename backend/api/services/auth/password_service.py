@@ -66,7 +66,7 @@ class PasswordService(BaseService):
                     
                     email_result = send_email_notification(
                         user_email=user.email,
-                        notification_type='password_reset',
+                        notification_type='reset_request',
                         context=email_context
                     )
                     

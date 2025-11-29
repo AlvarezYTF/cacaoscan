@@ -10,6 +10,21 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 
 from api.models import Finca
+from api.tests.test_constants import (
+    TEST_USER_PASSWORD,
+    TEST_ADMIN_PASSWORD,
+    TEST_OTHER_USER_PASSWORD,
+    TEST_USER_USERNAME,
+    TEST_USER_EMAIL,
+    TEST_USER_FIRST_NAME,
+    TEST_USER_LAST_NAME,
+    TEST_ADMIN_USERNAME,
+    TEST_ADMIN_EMAIL,
+    TEST_ADMIN_FIRST_NAME,
+    TEST_ADMIN_LAST_NAME,
+    TEST_OTHER_USER_USERNAME,
+    TEST_OTHER_USER_EMAIL,
+)
 
 
 class FincaModelTest(TestCase):
@@ -18,11 +33,11 @@ class FincaModelTest(TestCase):
     def setUp(self):
         """Configurar datos de prueba."""
         self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
-            password='testpass123',
-            first_name='Test',
-            last_name='User'
+            username=TEST_USER_USERNAME,
+            email=TEST_USER_EMAIL,
+            password=TEST_USER_PASSWORD,
+            first_name=TEST_USER_FIRST_NAME,
+            last_name=TEST_USER_LAST_NAME
         )
     
     def test_finca_creation(self):
@@ -107,19 +122,19 @@ class FincaAPITest(APITestCase):
     def setUp(self):
         """Configurar datos de prueba."""
         self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
-            password='testpass123',
-            first_name='Test',
-            last_name='User'
+            username=TEST_USER_USERNAME,
+            email=TEST_USER_EMAIL,
+            password=TEST_USER_PASSWORD,
+            first_name=TEST_USER_FIRST_NAME,
+            last_name=TEST_USER_LAST_NAME
         )
         
         self.admin_user = User.objects.create_user(
-            username='admin',
-            email='admin@example.com',
-            password='adminpass123',
-            first_name='Admin',
-            last_name='User',
+            username=TEST_ADMIN_USERNAME,
+            email=TEST_ADMIN_EMAIL,
+            password=TEST_ADMIN_PASSWORD,
+            first_name=TEST_ADMIN_FIRST_NAME,
+            last_name=TEST_ADMIN_LAST_NAME,
             is_staff=True,
             is_superuser=True
         )
@@ -185,10 +200,11 @@ class FincaAPITest(APITestCase):
         )
         
         # Crear finca para otro usuario
+        # Using test constant to avoid hard-coded password (SonarQube S2068)
         other_user = User.objects.create_user(
-            username='otheruser',
-            email='other@example.com',
-            password='otherpass123'
+            username=TEST_OTHER_USER_USERNAME,
+            email=TEST_OTHER_USER_EMAIL,
+            password=TEST_OTHER_USER_PASSWORD  # NOSONAR: Test credential from constants
         )
         Finca.objects.create(
             nombre='Otra Finca',
@@ -218,10 +234,11 @@ class FincaAPITest(APITestCase):
             agricultor=self.user
         )
         
+        # Using test constant to avoid hard-coded password (SonarQube S2068)
         other_user = User.objects.create_user(
-            username='otheruser',
-            email='other@example.com',
-            password='otherpass123'
+            username=TEST_OTHER_USER_USERNAME,
+            email=TEST_OTHER_USER_EMAIL,
+            password=TEST_OTHER_USER_PASSWORD  # NOSONAR: Test credential from constants
         )
         Finca.objects.create(
             nombre='Otra Finca',

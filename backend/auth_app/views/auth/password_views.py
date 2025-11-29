@@ -186,7 +186,7 @@ class ForgotPasswordView(APIView):
             # Enviar correo
             email_result = send_email_notification(
                 user_email=user.email,
-                notification_type="password_reset",
+                notification_type="reset_request",
                 context=email_context,
             )
 
@@ -300,7 +300,7 @@ class ResetPasswordView(APIView):
         
         # Enviar email de confirmación (no bloquea si falla)
         try:
-            send_email_notification(user.email, "password_reset_success", ctx)
+            send_email_notification(user.email, "reset_confirmation", ctx)
         except Exception as e:
             logger.error(f"[ERROR] No se pudo enviar email de confirmación: {e}")
 

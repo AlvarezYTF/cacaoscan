@@ -142,117 +142,136 @@ class VerifyOtpView(APIView):
         },
         tags=['Autenticación OTP']
     )
+    def _validate_otp_request(self, request):
+        """Valida la solicitud OTP."""
+        serializer = VerifyOtpSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return serializer.validated_data['email'], serializer.validated_data['code']
+    
+    def _get_verification(self, email: str):
+        """Obtiene la verificación pendiente."""
+        from auth_app.models import PendingEmailVerification
+        verification = PendingEmailVerification.objects.filter(email=email).first()
+        
+        if not verification:
+            return None, Response({
+                'error': 'No se encontró un código para este correo.',
+                'status': 'error'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if verification.is_expired():
+            verification.delete()
+            return None, Response({
+                'error': 'El código ha expirado. Solicita uno nuevo.',
+                'status': 'error'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        return verification, None
+    
+    def _verify_otp_code(self, verification, code: str):
+        """Verifica el código OTP."""
+        if verification.otp_code != code:
+            return Response({
+                'error': 'Código incorrecto.',
+                'status': 'error'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        return None
+    
+    def _check_existing_user(self, email: str, verification):
+        """Verifica si el usuario ya existe."""
+        user_model = get_user_model()
+        if user_model.objects.filter(email=email).exists():
+            verification.delete()
+            return Response({
+                'success': True,
+                'message': 'El email ya está verificado y registrado.'
+            }, status=status.HTTP_200_OK)
+        return None
+    
+    def _create_persona(self, user, data: dict):
+        """Crea el registro de Persona si el modelo existe."""
+        try:
+            from personas.models import Persona
+            Persona.objects.create(
+                user=user,
+                tipo_documento=data.get('tipo_documento') or data.get('tipoDocumento'),
+                numero_documento=data.get('numero_documento') or data.get('numeroDocumento'),
+                genero=data.get('genero'),
+                telefono=data.get('telefono') or data.get('phone_number'),
+                fecha_nacimiento=data.get('fecha_nacimiento') or data.get('fechaNacimiento'),
+                departamento=data.get('departamento') or data.get('departamento_codigo'),
+                municipio=data.get('municipio') or data.get('municipio_codigo'),
+                direccion=data.get('direccion'),
+            )
+        except Exception:
+            pass
+    
+    def _assign_default_role(self, user):
+        """Asigna el rol por defecto si existe helper."""
+        try:
+            from users.signals import assign_default_role
+            assign_default_role(None, user, created=True)
+        except ImportError:
+            pass
+    
+    def _create_user_from_verification(self, verification, email: str):
+        """Crea el usuario desde la verificación."""
+        user_model = get_user_model()
+        data = verification.temp_data or {}
+        password = data.get('password')
+        first_name = data.get('primer_nombre') or data.get('first_name') or ''
+        last_name = data.get('primer_apellido') or data.get('last_name') or ''
+        
+        with transaction.atomic():
+            user = user_model.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                is_active=True,
+            )
+            
+            if hasattr(user, 'auth_email_token'):
+                user.auth_email_token.is_verified = True
+                user.auth_email_token.verified_at = timezone.now()
+                user.auth_email_token.save()
+            
+            self._create_persona(user, data)
+            self._assign_default_role(user)
+            verification.delete()
+            
+            return user
+    
     def post(self, request):
         """Verifica el código OTP y activa la cuenta."""
         try:
-            serializer = VerifyOtpSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            email = serializer.validated_data['email']
-            code = serializer.validated_data['code']
+            email, code = self._validate_otp_request(request)
             
-            # Importar aquí para evitar importaciones circulares
-            from auth_app.models import PendingEmailVerification
+            verification, error_response = self._get_verification(email)
+            if error_response:
+                return error_response
             
-            # Buscar verificación pendiente
-            verification = PendingEmailVerification.objects.filter(email=email).first()
-            
-            if not verification:
-                return Response({
-                    'error': 'No se encontró un código para este correo.',
-                    'status': 'error'
-                }, status=status.HTTP_404_NOT_FOUND)
-            
-            # Verificar expiración
-            if verification.is_expired():
-                verification.delete()
-                return Response({
-                    'error': 'El código ha expirado. Solicita uno nuevo.',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Verificar código
-            if verification.otp_code != code:
-                return Response({
-                    'error': 'Código incorrecto.',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
+            error_response = self._verify_otp_code(verification, code)
+            if error_response:
+                return error_response
             
             user_model = get_user_model()
+            existing_response = self._check_existing_user(email, verification)
+            if existing_response:
+                return existing_response
+            
+            user = self._create_user_from_verification(verification, email)
 
-            # Si ya existe, idempotencia: borrar pending y confirmar
-            if user_model.objects.filter(email=email).exists():
-                verification.delete()
-                return Response({
-                    'success': True,
-                    'message': 'El email ya está verificado y registrado.'
-                }, status=status.HTTP_200_OK)
-
-            # Crear usuario/persona desde temp_data de forma atómica
-            data = verification.temp_data or {}
-            password = data.get('password')
-            first_name = data.get('primer_nombre') or data.get('first_name') or ''
-            last_name = data.get('primer_apellido') or data.get('last_name') or ''
-
-            try:
-                with transaction.atomic():
-                    user = user_model.objects.create_user(
-                        username=email,
-                        email=email,
-                        password=password,
-                        first_name=first_name,
-                        last_name=last_name,
-                        is_active=True,
-                    )
-
-                    # Marcar verificado si aplica
-                    if hasattr(user, 'auth_email_token'):
-                        user.auth_email_token.is_verified = True
-                        user.auth_email_token.verified_at = timezone.now()
-                        user.auth_email_token.save()
-
-                    # Crear Persona si el modelo existe
-                    try:
-                        from personas.models import Persona
-                        Persona.objects.create(
-                            user=user,
-                            tipo_documento=data.get('tipo_documento') or data.get('tipoDocumento'),
-                            numero_documento=data.get('numero_documento') or data.get('numeroDocumento'),
-                            genero=data.get('genero'),
-                            telefono=data.get('telefono') or data.get('phone_number'),
-                            fecha_nacimiento=data.get('fecha_nacimiento') or data.get('fechaNacimiento'),
-                            departamento=data.get('departamento') or data.get('departamento_codigo'),
-                            municipio=data.get('municipio') or data.get('municipio_codigo'),
-                            direccion=data.get('direccion'),
-                        )
-                    except Exception:
-                        pass
-
-                    # Asignar rol por defecto si existe helper
-                    try:
-                        from users.signals import assign_default_role
-                        assign_default_role(None, user, created=True)
-                    except ImportError:
-                        # Si no existe la función, continuar sin asignar rol
-                        pass
-
-                    # Limpiar pending
-                    verification.delete()
-
-                return Response({
-                    'success': True,
-                    'message': 'Cuenta verificada y creada. Ahora puedes iniciar sesión.',
-                    'user': {
-                        'email': email,
-                        'username': user.username,
-                        'is_active': user.is_active
-                    }
-                }, status=status.HTTP_201_CREATED)
-            except Exception as e:
-                logger.error(f"Error creando usuario/persona desde OTP: {e}")
-                return Response({
-                    'error': 'No se pudo crear la cuenta. Intenta nuevamente.',
-                    'status': 'error'
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({
+                'success': True,
+                'message': 'Cuenta verificada y creada. Ahora puedes iniciar sesión.',
+                'user': {
+                    'email': email,
+                    'username': user.username,
+                    'is_active': user.is_active
+                }
+            }, status=status.HTTP_201_CREATED)
                 
         except serializers.ValidationError as e:
             logger.error(f"Error de validación en verify-otp: {e}")

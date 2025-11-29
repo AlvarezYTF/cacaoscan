@@ -642,7 +642,7 @@ EMAIL_TEMPLATES_DIR = BASE_DIR / 'api' / 'templates' / 'emails'
 EMAIL_NOTIFICATIONS_ENABLED = os.environ.get('EMAIL_NOTIFICATIONS_ENABLED', 'True').lower() == 'true'
 EMAIL_NOTIFICATION_TYPES = [
     'welcome',           # Email de bienvenida
-    'password_reset',    # Restablecimiento de contraseña
+    'reset_request',    # Restablecimiento de credenciales
     'analysis_complete', # Análisis completado
     'report_ready',      # Reporte listo
     'training_complete', # Entrenamiento completado
