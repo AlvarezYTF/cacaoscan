@@ -28,8 +28,8 @@ class CacaoImage(TimeStampedModel):
         related_name='cacao_images',
         help_text="Finca a la que pertenece esta imagen"
     )
-    finca_nombre = models.CharField(max_length=200, blank=True, null=True, help_text="Nombre de la finca (campo de respaldo)")
-    region = models.CharField(max_length=100, blank=True, null=True)
+    finca_nombre = models.CharField(max_length=200, blank=True, help_text="Nombre de la finca (campo de respaldo)")
+    region = models.CharField(max_length=100, blank=True)
     lote = models.ForeignKey(
         'fincas_app.Lote', 
         on_delete=models.SET_NULL, 
@@ -38,14 +38,14 @@ class CacaoImage(TimeStampedModel):
         related_name='cacao_images',
         help_text="Lote al que pertenece esta imagen"
     )
-    variedad = models.CharField(max_length=100, blank=True, null=True)
-    fecha_cosecha = models.DateField(blank=True, null=True)
-    notas = models.TextField(blank=True, null=True)
+    variedad = models.CharField(max_length=100, blank=True)
+    fecha_cosecha = models.DateField(blank=True)
+    notas = models.TextField(blank=True)
     
     # Información técnica del archivo
-    file_name = models.CharField(max_length=255, blank=True, null=True)
-    file_size = models.PositiveIntegerField(blank=True, null=True)
-    file_type = models.CharField(max_length=50, blank=True, null=True)
+    file_name = models.CharField(max_length=255, blank=True)
+    file_size = models.PositiveIntegerField(blank=True)
+    file_type = models.CharField(max_length=50, blank=True)
     
     class Meta:
         verbose_name = 'Imagen de Cacao'

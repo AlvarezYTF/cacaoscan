@@ -54,7 +54,7 @@
       >
         <img 
           :src="getImageUrl(image)" 
-          :alt="image.name ? image.name.replace(/\bimage\b\s*/gi, '').trim() || 'Archivo subido' : 'Archivo subido'"
+          :alt="getImageAlt(image)"
           class="w-full h-32 object-cover"
         />
         <button
@@ -120,6 +120,14 @@ const getImageUrl = (file) => {
     return URL.createObjectURL(file)
   }
   return file.url || file
+}
+
+const getImageAlt = (file) => {
+  if (!file || !file.name) {
+    return 'Archivo subido'
+  }
+  const altText = file.name.replace(/\bimage\b\s*/gi, '').trim()
+  return altText || 'Archivo subido'
 }
 
 const validateFile = (file) => {

@@ -49,10 +49,10 @@ class CacaoScalers:
             return StandardScaler()
         elif self.scaler_type == "minmax":
             from sklearn.preprocessing import MinMaxScaler
-            return MinMaxScaler()
+            return MinMaxScaler()  # type: ignore[return-value]
         elif self.scaler_type == "robust":
             from sklearn.preprocessing import RobustScaler
-            return RobustScaler()
+            return RobustScaler()  # type: ignore[return-value]
         else:
             raise ValueError(f"Tipo de escalador '{self.scaler_type}' no soportado")
     

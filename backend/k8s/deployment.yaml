@@ -20,7 +20,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: backend
-        image: cacaoscan-backend:latest
+        image: cacaoscan-backend:v1.0.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000

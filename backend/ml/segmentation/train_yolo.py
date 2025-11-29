@@ -428,7 +428,7 @@ class YOLOTrainingManager:
     def train_model(
         self,
         model_name: str = "yolov8s-seg",
-        resume: bool = False,
+        resume: bool = False,  # noqa: ARG002
         pretrained: bool = True
     ) -> Dict[str, Any]:
         """

@@ -384,7 +384,7 @@ class HybridTrainer:
         self,
         epoch: int,
         filename: str,
-        is_best: bool = False
+        is_best: bool = False  # noqa: ARG002
     ) -> None:
         """
         Save model checkpoint.

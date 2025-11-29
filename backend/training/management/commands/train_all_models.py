@@ -99,30 +99,57 @@ class Command(BaseCommand):
         
         start_time = time.time()
         
-        # Determinar si es híbrido
-        is_hybrid = options['regression_hybrid'] or options['regression_model_type'] == 'hybrid'
+        is_hybrid = self._determine_hybrid_mode(options)
+        yolo_config = self._prepare_yolo_config(options)
+        regression_config = self._prepare_regression_config(options, is_hybrid)
+        
+        self._print_startup_message(yolo_config, regression_config)
+        
+        try:
+            results = {
+                'yolo': None,
+                'regression': None,
+                'status': 'running'
+            }
+            
+            results['yolo'] = self._train_yolo(yolo_config)
+            results['regression'] = self._train_regression(regression_config)
+            self._determine_final_status(results)
+            self._display_results(results, start_time)
+            
+        except Exception as e:
+            self._handle_fatal_error(e)
 
-        # Preparar configuraciones
-        yolo_config = {
+    def _determine_hybrid_mode(self, options):
+        """Determina si el modo es híbrido."""
+        return options['regression_hybrid'] or options['regression_model_type'] == 'hybrid'
+
+    def _prepare_yolo_config(self, options):
+        """Prepara la configuración de YOLO."""
+        return {
             'dataset_size': options['yolo_dataset_size'],
             'epochs': options['yolo_epochs'],
             'batch_size': options['yolo_batch_size'],
             'model_name': options['yolo_model_name']
         }
-        
-        regression_config = {
+
+    def _prepare_regression_config(self, options, is_hybrid):
+        """Prepara la configuración de regresión."""
+        return {
             'epochs': options['regression_epochs'],
             'batch_size': options['regression_batch_size'],
             'learning_rate': options['regression_learning_rate'],
             'model_type': 'hybrid' if is_hybrid else options['regression_model_type'],
-            'multi_head': is_hybrid, # Modelo híbrido es multi-head
+            'multi_head': is_hybrid,
             'hybrid': is_hybrid,
             'use_pixel_features': options['regression_use_pixel_features'] and is_hybrid,
             'img_size': 224,
             'early_stopping_patience': 25,
             'save_best_only': True
         }
-        
+
+    def _print_startup_message(self, yolo_config, regression_config):
+        """Imprime mensaje de inicio y configuraciones."""
         self.stdout.write(
             self.style.SUCCESS(
                 "Iniciando entrenamiento completo: YOLO + Modelos de Regresión"
@@ -130,157 +157,163 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"Configuración YOLO: {json.dumps(yolo_config, indent=2)}")
         self.stdout.write(f"Configuración Regresión: {json.dumps(regression_config, indent=2)}")
-        
-        # --- LÓGICA DE CELERY ELIMINADA ---
-        # Se ejecuta directamente (síncrono)
-        
         self.stdout.write("Ejecutando entrenamiento directamente (síncrono)...")
         self.stdout.write("Esto puede tomar varias horas. Por favor, sea paciente...")
+
+    def _train_yolo(self, yolo_config):
+        """Entrena el modelo YOLO."""
+        self.stdout.write("\n" + "="*60)
+        self.stdout.write("PASO 1/2: ENTRENANDO MODELO YOLO")
+        self.stdout.write("="*60)
         
         try:
-            # Importar funciones directamente
             from ml.segmentation.train_yolo import train_cacao_yolo_model
+            
+            self.stdout.write(f"Configuración YOLO: {json.dumps(yolo_config, indent=2)}")
+            self.stdout.write("Iniciando entrenamiento YOLO...")
+            self.stdout.write("(Esto puede tomar 30-60 minutos)")
+            
+            yolo_result = train_cacao_yolo_model(
+                dataset_size=yolo_config.get('dataset_size', 150),
+                epochs=yolo_config.get('epochs', 100),
+                batch_size=yolo_config.get('batch_size', 16),
+                model_name=yolo_config.get('model_name', 'yolov8s-seg')
+            )
+            
+            return self._process_yolo_result(yolo_result)
+        except Exception as e:
+            return self._handle_yolo_error(e)
+
+    def _process_yolo_result(self, yolo_result):
+        """Procesa el resultado del entrenamiento YOLO."""
+        if yolo_result and yolo_result.get('success', False):
+            self.stdout.write(
+                self.style.SUCCESS("✓ Entrenamiento YOLO completado")
+            )
+            self.stdout.write(f"Modelo guardado en: {yolo_result.get('best_model_path')}")
+            return {
+                'status': 'completed',
+                'message': 'Entrenamiento YOLO completado exitosamente',
+                'best_model_path': yolo_result.get('best_model_path')
+            }
+        else:
+            self.stdout.write(
+                self.style.ERROR(f"✗ Entrenamiento YOLO falló: {yolo_result.get('error')}")
+            )
+            return {
+                'status': 'failed',
+                'message': 'El entrenamiento YOLO falló',
+                'error': yolo_result.get('error', 'Error desconocido')
+            }
+
+    def _handle_yolo_error(self, e):
+        """Maneja errores en el entrenamiento YOLO."""
+        import traceback
+        logger.error(f"Error en entrenamiento YOLO: {e}", exc_info=True)
+        error_traceback = traceback.format_exc()
+        
+        self.stdout.write(self.style.ERROR(f"\n✗ ERROR EN ENTRENAMIENTO YOLO: {str(e)}"))
+        self.stdout.write(error_traceback)
+        
+        return {
+            'status': 'failed',
+            'error': str(e),
+            'traceback': error_traceback
+        }
+
+    def _train_regression(self, regression_config):
+        """Entrena los modelos de regresión."""
+        self.stdout.write("\n" + "="*60)
+        self.stdout.write("PASO 2/2: ENTRENANDO MODELOS DE REGRESIÓN")
+        self.stdout.write("="*60)
+        
+        try:
             from ml.pipeline.train_all import run_training_pipeline
             
-            results = {
-                'yolo': None,
-                'regression': None,
-                'status': 'running'
-            }
+            self.stdout.write(f"Configuración Regresión: {json.dumps(regression_config, indent=2)}")
+            self.stdout.write("Iniciando entrenamiento de regresión...")
+            self.stdout.write("(Esto puede tomar 1-3 horas)")
             
-            # Paso 1: Entrenar YOLO
-            self.stdout.write("\n" + "="*60)
-            self.stdout.write("PASO 1/2: ENTRENANDO MODELO YOLO")
-            self.stdout.write("="*60)
-            try:
-                self.stdout.write(f"Configuración YOLO: {json.dumps(yolo_config, indent=2)}")
-                self.stdout.write("Iniciando entrenamiento YOLO...")
-                self.stdout.write("(Esto puede tomar 30-60 minutos)")
-                
-                yolo_result = train_cacao_yolo_model(
-                    dataset_size=yolo_config.get('dataset_size', 150),
-                    epochs=yolo_config.get('epochs', 100),
-                    batch_size=yolo_config.get('batch_size', 16),
-                    model_name=yolo_config.get('model_name', 'yolov8s-seg')
-                )
-                
-                if yolo_result and yolo_result.get('success', False):
-                    results['yolo'] = {
-                        'status': 'completed',
-                        'message': 'Entrenamiento YOLO completado exitosamente',
-                        'best_model_path': yolo_result.get('best_model_path')
-                    }
-                    self.stdout.write(
-                        self.style.SUCCESS("✓ Entrenamiento YOLO completado")
-                    )
-                    self.stdout.write(f"Modelo guardado en: {yolo_result.get('best_model_path')}")
-                else:
-                    results['yolo'] = {
-                        'status': 'failed',
-                        'message': 'El entrenamiento YOLO falló',
-                        'error': yolo_result.get('error', 'Error desconocido')
-                    }
-                    self.stdout.write(
-                        self.style.ERROR(f"✗ Entrenamiento YOLO falló: {yolo_result.get('error')}")
-                    )
-            except Exception as e:
-                import traceback
-                logger.error(f"Error en entrenamiento YOLO: {e}", exc_info=True)
-                error_traceback = traceback.format_exc()
-                
-                results['yolo'] = {
-                    'status': 'failed',
-                    'error': str(e),
-                    'traceback': error_traceback
-                }
-                
-                self.stdout.write(self.style.ERROR(f"\n✗ ERROR EN ENTRENAMIENTO YOLO: {str(e)}"))
-                self.stdout.write(error_traceback)
+            regression_success = run_training_pipeline(
+                epochs=regression_config.get('epochs', 150),
+                batch_size=regression_config.get('batch_size', 16),
+                learning_rate=regression_config.get('learning_rate', 0.001),
+                multi_head=regression_config.get('multi_head', False),
+                model_type=regression_config.get('model_type', 'resnet18'),
+                img_size=regression_config.get('img_size', 224),
+                early_stopping_patience=regression_config.get('early_stopping_patience', 25),
+                save_best_only=regression_config.get('save_best_only', True),
+                hybrid=regression_config.get('hybrid', False),
+                use_pixel_features=regression_config.get('use_pixel_features', False)
+            )
             
-            # Paso 2: Entrenar modelos de regresión
-            self.stdout.write("\n" + "="*60)
-            self.stdout.write("PASO 2/2: ENTRENANDO MODELOS DE REGRESIÓN")
-            self.stdout.write("="*60)
-            try:
-                self.stdout.write(f"Configuración Regresión: {json.dumps(regression_config, indent=2)}")
-                self.stdout.write("Iniciando entrenamiento de regresión...")
-                self.stdout.write("(Esto puede tomar 1-3 horas)")
-                
-                # Llamar a run_training_pipeline con la configuración mejorada
-                regression_success = run_training_pipeline(
-                    epochs=regression_config.get('epochs', 150),
-                    batch_size=regression_config.get('batch_size', 16),
-                    learning_rate=regression_config.get('learning_rate', 0.001),
-                    multi_head=regression_config.get('multi_head', False),
-                    model_type=regression_config.get('model_type', 'resnet18'),
-                    img_size=regression_config.get('img_size', 224),
-                    early_stopping_patience=regression_config.get('early_stopping_patience', 25),
-                    save_best_only=regression_config.get('save_best_only', True),
-                    # Pasar los nuevos flags del Flujo Mejorado
-                    hybrid=regression_config.get('hybrid', False),
-                    use_pixel_features=regression_config.get('use_pixel_features', False)
-                )
-                
-                if regression_success:
-                    results['regression'] = {
-                        'status': 'completed',
-                        'message': 'Entrenamiento de regresión completado exitosamente'
-                    }
-                    self.stdout.write(
-                        self.style.SUCCESS("✓ Entrenamiento de regresión completado")
-                    )
-                else:
-                    results['regression'] = {
-                        'status': 'failed',
-                        'message': 'El entrenamiento de regresión falló'
-                    }
-                    self.stdout.write(
-                        self.style.ERROR("✗ Entrenamiento de regresión falló")
-                    )
-            except Exception as e:
-                import traceback
-                logger.error(f"Error en entrenamiento de regresión: {e}", exc_info=True)
-                error_traceback = traceback.format_exc()
-                
-                results['regression'] = {
-                    'status': 'failed',
-                    'error': str(e),
-                    'traceback': error_traceback
-                }
-                
-                self.stdout.write(self.style.ERROR(f"\n✗ ERROR EN ENTRENAMIENTO DE REGRESIÓN: {str(e)}"))
-                self.stdout.write(error_traceback)
-            
-            # Determinar estado final
-            yolo_ok = results['yolo'] and results['yolo'].get('status') == 'completed'
-            regression_ok = results['regression'] and results['regression'].get('status') == 'completed'
-            
-            if yolo_ok and regression_ok:
-                results['status'] = 'completed'
-                results['message'] = 'Entrenamiento completo exitoso'
-            elif yolo_ok or regression_ok:
-                results['status'] = 'partial'
-                results['message'] = 'Entrenamiento completado parcialmente'
-            else:
-                results['status'] = 'failed'
-                results['message'] = 'Entrenamiento completo falló'
-            
-            # Mostrar resultados
-            self._display_results(results, start_time)
-            
+            return self._process_regression_result(regression_success)
         except Exception as e:
-            import traceback
-            logger.error(f"Error en entrenamiento completo: {e}", exc_info=True)
-            error_traceback = traceback.format_exc()
-            
-            self.stdout.write("\n" + "="*60)
-            self.stdout.write(self.style.ERROR("ERROR FATAL EN ENTRENAMIENTO"))
-            self.stdout.write("="*60)
-            self.stdout.write(self.style.ERROR(f"Error: {str(e)}"))
-            self.stdout.write(error_traceback)
-            self.stdout.write("="*60)
-            
-            raise CommandError(f"Error en entrenamiento: {e}\n\nTraceback completo:\n{error_traceback}")
+            return self._handle_regression_error(e)
+
+    def _process_regression_result(self, regression_success):
+        """Procesa el resultado del entrenamiento de regresión."""
+        if regression_success:
+            self.stdout.write(
+                self.style.SUCCESS("✓ Entrenamiento de regresión completado")
+            )
+            return {
+                'status': 'completed',
+                'message': 'Entrenamiento de regresión completado exitosamente'
+            }
+        else:
+            self.stdout.write(
+                self.style.ERROR("✗ Entrenamiento de regresión falló")
+            )
+            return {
+                'status': 'failed',
+                'message': 'El entrenamiento de regresión falló'
+            }
+
+    def _handle_regression_error(self, e):
+        """Maneja errores en el entrenamiento de regresión."""
+        import traceback
+        logger.error(f"Error en entrenamiento de regresión: {e}", exc_info=True)
+        error_traceback = traceback.format_exc()
+        
+        self.stdout.write(self.style.ERROR(f"\n✗ ERROR EN ENTRENAMIENTO DE REGRESIÓN: {str(e)}"))
+        self.stdout.write(error_traceback)
+        
+        return {
+            'status': 'failed',
+            'error': str(e),
+            'traceback': error_traceback
+        }
+
+    def _determine_final_status(self, results):
+        """Determina el estado final del entrenamiento."""
+        yolo_ok = results['yolo'] and results['yolo'].get('status') == 'completed'
+        regression_ok = results['regression'] and results['regression'].get('status') == 'completed'
+        
+        if yolo_ok and regression_ok:
+            results['status'] = 'completed'
+            results['message'] = 'Entrenamiento completo exitoso'
+        elif yolo_ok or regression_ok:
+            results['status'] = 'partial'
+            results['message'] = 'Entrenamiento completado parcialmente'
+        else:
+            results['status'] = 'failed'
+            results['message'] = 'Entrenamiento completo falló'
+
+    def _handle_fatal_error(self, e):
+        """Maneja errores fatales en el entrenamiento."""
+        import traceback
+        logger.error(f"Error en entrenamiento completo: {e}", exc_info=True)
+        error_traceback = traceback.format_exc()
+        
+        self.stdout.write("\n" + "="*60)
+        self.stdout.write(self.style.ERROR("ERROR FATAL EN ENTRENAMIENTO"))
+        self.stdout.write("="*60)
+        self.stdout.write(self.style.ERROR(f"Error: {str(e)}"))
+        self.stdout.write(error_traceback)
+        self.stdout.write("="*60)
+        
+        raise CommandError(f"Error en entrenamiento: {e}\n\nTraceback completo:\n{error_traceback}")
     
     def _display_results(self, results: dict, start_time: float) -> None:
         """Muestra los resultados del entrenamiento."""

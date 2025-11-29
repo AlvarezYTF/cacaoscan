@@ -39,58 +39,82 @@ class Command(BaseCommand):
         logger.info(f"Checking training jobs status (filter: {status_filter})")
 
         try:
-            # Si se especifica un job_id, mostrar detalles
             if job_id:
-                try:
-                    job = TrainingJob.objects.get(job_id=job_id)
-                    self._display_job_details(job)
-                    return
-                except TrainingJob.DoesNotExist:
-                    raise CommandError(f'Job {job_id} no encontrado')
+                self._handle_single_job(job_id)
+                return
 
-            # Mostrar jobs según filtro
-            self.stdout.write("=" * 60)
-            self.stdout.write("ESTADO DE ENTRENAMIENTOS")
-            self.stdout.write("=" * 60)
-
-            if status_filter in ['running', 'all']:
-                running_jobs = TrainingJob.objects.filter(status='running').order_by('-created_at')
-                if running_jobs.exists():
-                    self.stdout.write(f"\n🚀 Jobs EN EJECUCIÓN: {running_jobs.count()}")
-                    for job in running_jobs:
-                        self._display_job_summary(job, show_cancel=True)
-                else:
-                    self.stdout.write("\n✅ No hay jobs en ejecución")
-
-            if status_filter in ['pending', 'all']:
-                pending_jobs = TrainingJob.objects.filter(status='pending').order_by('-created_at')
-                if pending_jobs.exists():
-                    self.stdout.write(f"\n⏳ Jobs PENDIENTES: {pending_jobs.count()}")
-                    for job in pending_jobs:
-                        self._display_job_summary(job)
-                else:
-                    self.stdout.write("\n✅ No hay jobs pendientes")
-
-            # Resumen general
-            if status_filter == 'all':
-                completed_jobs = TrainingJob.objects.filter(status='completed').count()
-                failed_jobs = TrainingJob.objects.filter(status='failed').count()
-                cancelled_jobs = TrainingJob.objects.filter(status='cancelled').count()
-
-                self.stdout.write("\n" + "=" * 60)
-                self.stdout.write("RESUMEN")
-                self.stdout.write("=" * 60)
-                self.stdout.write(f"  En ejecución: {TrainingJob.objects.filter(status='running').count()}")
-                self.stdout.write(f"  Pendientes: {TrainingJob.objects.filter(status='pending').count()}")
-                self.stdout.write(f"  Completados: {completed_jobs}")
-                self.stdout.write(f"  Fallidos: {failed_jobs}")
-                self.stdout.write(f"  Cancelados: {cancelled_jobs}")
+            self._display_jobs_by_filter(status_filter)
 
         except CommandError:
             raise
         except Exception as e:
             logger.error(f"Error checking training jobs: {e}", exc_info=True)
             raise CommandError(f'Error al verificar entrenamientos: {str(e)}')
+
+    def _handle_single_job(self, job_id):
+        """Handle displaying details for a single job."""
+        try:
+            job = TrainingJob.objects.get(job_id=job_id)
+            self._display_job_details(job)
+        except TrainingJob.DoesNotExist:
+            raise CommandError(f'Job {job_id} no encontrado')
+
+    def _display_jobs_by_filter(self, status_filter):
+        """Display jobs according to the filter."""
+        self._print_header()
+        self._display_running_jobs(status_filter)
+        self._display_pending_jobs(status_filter)
+        self._display_summary(status_filter)
+
+    def _print_header(self):
+        """Print the header for jobs listing."""
+        self.stdout.write("=" * 60)
+        self.stdout.write("ESTADO DE ENTRENAMIENTOS")
+        self.stdout.write("=" * 60)
+
+    def _display_running_jobs(self, status_filter):
+        """Display running jobs if filter includes them."""
+        if status_filter not in ['running', 'all']:
+            return
+        
+        running_jobs = TrainingJob.objects.filter(status='running').order_by('-created_at')
+        if running_jobs.exists():
+            self.stdout.write(f"\n🚀 Jobs EN EJECUCIÓN: {running_jobs.count()}")
+            for job in running_jobs:
+                self._display_job_summary(job, show_cancel=True)
+        else:
+            self.stdout.write("\n✅ No hay jobs en ejecución")
+
+    def _display_pending_jobs(self, status_filter):
+        """Display pending jobs if filter includes them."""
+        if status_filter not in ['pending', 'all']:
+            return
+        
+        pending_jobs = TrainingJob.objects.filter(status='pending').order_by('-created_at')
+        if pending_jobs.exists():
+            self.stdout.write(f"\n⏳ Jobs PENDIENTES: {pending_jobs.count()}")
+            for job in pending_jobs:
+                self._display_job_summary(job)
+        else:
+            self.stdout.write("\n✅ No hay jobs pendientes")
+
+    def _display_summary(self, status_filter):
+        """Display summary if filter is 'all'."""
+        if status_filter != 'all':
+            return
+        
+        completed_jobs = TrainingJob.objects.filter(status='completed').count()
+        failed_jobs = TrainingJob.objects.filter(status='failed').count()
+        cancelled_jobs = TrainingJob.objects.filter(status='cancelled').count()
+
+        self.stdout.write("\n" + "=" * 60)
+        self.stdout.write("RESUMEN")
+        self.stdout.write("=" * 60)
+        self.stdout.write(f"  En ejecución: {TrainingJob.objects.filter(status='running').count()}")
+        self.stdout.write(f"  Pendientes: {TrainingJob.objects.filter(status='pending').count()}")
+        self.stdout.write(f"  Completados: {completed_jobs}")
+        self.stdout.write(f"  Fallidos: {failed_jobs}")
+        self.stdout.write(f"  Cancelados: {cancelled_jobs}")
 
     def _display_job_summary(self, job, show_cancel=False):
         """Display a summary of a training job."""

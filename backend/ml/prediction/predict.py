@@ -50,13 +50,13 @@ else:
 class PredictionConfig:
     """Configuración para predicción."""
     IMAGE_SIZE: Tuple[int, int] = (224, 224)
-    IMAGENET_MEAN: List[float] = None
-    IMAGENET_STD: List[float] = None
+    IMAGENET_MEAN: Optional[List[float]] = None
+    IMAGENET_STD: Optional[List[float]] = None
     MIN_YOLO_CONFIDENCE: float = 0.25 # (No usado aquí, pero mantenido por si se reactiva)
     MIN_CROP_SIZE: int = 50
     MIN_VISIBLE_RATIO: float = 0.2
-    TARGET_LIMITS: Dict[str, Tuple[float, float]] = None
-    PIXEL_FEATURE_KEYS: List[str] = None
+    TARGET_LIMITS: Optional[Dict[str, Tuple[float, float]]] = None
+    PIXEL_FEATURE_KEYS: Optional[List[str]] = None
     
     def __post_init__(self):
         """Inicializar valores por defecto."""

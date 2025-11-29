@@ -171,7 +171,7 @@ def auto_train_model_task(self, force: bool = False, config: Optional[dict] = No
             logger.warning(f"No .bmp images found in {raw_images_dir}")
             return {
                 'status': 'skipped',
-                'message': f'No .bmp images found for training'
+                'message': 'No .bmp images found for training'
             }
         
         logger.info(f"Found {len(bmp_files)} .bmp images for training")

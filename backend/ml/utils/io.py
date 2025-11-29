@@ -51,8 +51,10 @@ def save_image(image: Image.Image, file_path: Path, format: str = None) -> None:
     """Guarda una imagen."""
     file_path.parent.mkdir(parents=True, exist_ok=True)
     if format is None:
-        format = file_path.suffix[1:].upper()
-    image.save(file_path, format=format)
+        image_format = file_path.suffix[1:].upper()
+    else:
+        image_format = format
+    image.save(file_path, format=image_format)
 
 
 def load_image(file_path: Path) -> Image.Image:

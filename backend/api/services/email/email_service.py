@@ -66,7 +66,7 @@ class EmailService:
     
     def send_email(
         self,
-        to_emails: Union[str, List[str]],
+        to_emails: str | List[str],
         subject: str,
         html_content: str = None,
         text_content: str = None,
@@ -633,7 +633,7 @@ def send_bulk_email_notification(
 
 
 def send_custom_email(
-    to_emails: Union[str, List[str]],
+    to_emails: str | List[str],
     subject: str,
     html_content: str = None,
     text_content: str = None,

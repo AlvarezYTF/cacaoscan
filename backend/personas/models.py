@@ -56,14 +56,12 @@ class Persona(models.Model):
     primer_nombre = models.CharField(max_length=50, help_text="Primer nombre")
     segundo_nombre = models.CharField(
         max_length=50, 
-        null=True, 
         blank=True,
         help_text="Segundo nombre (opcional)"
     )
     primer_apellido = models.CharField(max_length=50, help_text="Primer apellido")
     segundo_apellido = models.CharField(
         max_length=50, 
-        null=True, 
         blank=True,
         help_text="Segundo apellido (opcional)"
     )
@@ -76,7 +74,6 @@ class Persona(models.Model):
     )
     direccion = models.CharField(
         max_length=255, 
-        null=True, 
         blank=True,
         help_text="Dirección de residencia"
     )

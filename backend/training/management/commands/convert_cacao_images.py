@@ -49,41 +49,58 @@ class Command(BaseCommand):
 
         processed = 0
 
-        # 1) BMP -> JPG
         if only in ("bmp", "all"):
-            bmp_files = list(raw_dir.glob("*.bmp"))
-            self.stdout.write(self.style.NOTICE(f"BMP encontrados: {len(bmp_files)}"))
-            for p in bmp_files[: (None if limit == 0 else limit)]:
-                img, meta = convert_bmp_to_jpg(p)
-                if not meta.get("success") or img is None:
-                    logger.error(f"Fallo BMP->JPG {p.name}: {meta.get('error')}")
-                    continue
-                out_path = jpg_dir / f"{p.stem}.jpg"
-                save_image(img, out_path, format="JPEG")
-                processed += 1
+            processed += self._convert_bmp_to_jpg(raw_dir, jpg_dir, limit)
 
-        # 2) JPG -> PNG segmentado
         if only in ("png", "all"):
-            # Aceptar como fuentes: JPG/JPEG en raw y converted_jpg, y también PNG en raw
-            sources = (
-                list(raw_dir.glob("*.jpg")) +
-                list(raw_dir.glob("*.jpeg")) +
-                list(raw_dir.glob("*.png")) +
-                list(jpg_dir.glob("*.jpg")) +
-                list(jpg_dir.glob("*.jpeg"))
-            )
-            self.stdout.write(self.style.NOTICE(f"Imágenes a segmentar (jpg/jpeg/png): {len(sources)}"))
-            self.stdout.write(self.style.NOTICE(f"Guardando PNG en: {png_dir.absolute()}"))
-            for p in sources[: (None if limit == 0 else limit)]:
-                pil_png, meta = segment_and_crop_cacao_bean(p)
-                if not meta.get("success") or pil_png is None:
-                    logger.error(f"Fallo JPG->PNG {p.name}: {meta.get('error')}")
-                    continue
-                out_path = png_dir / f"{p.stem}.png"
-                save_image(pil_png, out_path, format="PNG")
-                self.stdout.write(f"  ✓ Guardado: {out_path.name}")
-                processed += 1
+            processed += self._convert_to_png_segmented(raw_dir, jpg_dir, png_dir, limit)
 
         self.stdout.write(self.style.SUCCESS(f"Procesamiento completado. Archivos procesados: {processed}"))
+
+    def _convert_bmp_to_jpg(self, raw_dir, jpg_dir, limit):
+        """Convierte archivos BMP a JPG."""
+        bmp_files = list(raw_dir.glob("*.bmp"))
+        self.stdout.write(self.style.NOTICE(f"BMP encontrados: {len(bmp_files)}"))
+        
+        processed = 0
+        file_limit = None if limit == 0 else limit
+        for p in bmp_files[:file_limit]:
+            img, meta = convert_bmp_to_jpg(p)
+            if not meta.get("success") or img is None:
+                logger.error(f"Fallo BMP->JPG {p.name}: {meta.get('error')}")
+                continue
+            out_path = jpg_dir / f"{p.stem}.jpg"
+            save_image(img, out_path, format="JPEG")
+            processed += 1
+        return processed
+
+    def _convert_to_png_segmented(self, raw_dir, jpg_dir, png_dir, limit):
+        """Convierte imágenes a PNG segmentadas."""
+        sources = self._get_image_sources(raw_dir, jpg_dir)
+        self.stdout.write(self.style.NOTICE(f"Imágenes a segmentar (jpg/jpeg/png): {len(sources)}"))
+        self.stdout.write(self.style.NOTICE(f"Guardando PNG en: {png_dir.absolute()}"))
+        
+        processed = 0
+        file_limit = None if limit == 0 else limit
+        for p in sources[:file_limit]:
+            pil_png, meta = segment_and_crop_cacao_bean(p)
+            if not meta.get("success") or pil_png is None:
+                logger.error(f"Fallo JPG->PNG {p.name}: {meta.get('error')}")
+                continue
+            out_path = png_dir / f"{p.stem}.png"
+            save_image(pil_png, out_path, format="PNG")
+            self.stdout.write(f"  ✓ Guardado: {out_path.name}")
+            processed += 1
+        return processed
+
+    def _get_image_sources(self, raw_dir, jpg_dir):
+        """Obtiene las fuentes de imágenes para segmentar."""
+        return (
+            list(raw_dir.glob("*.jpg")) +
+            list(raw_dir.glob("*.jpeg")) +
+            list(raw_dir.glob("*.png")) +
+            list(jpg_dir.glob("*.jpg")) +
+            list(jpg_dir.glob("*.jpeg"))
+        )
 
 

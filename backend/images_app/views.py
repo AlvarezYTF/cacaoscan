@@ -41,7 +41,7 @@ class CacaoImageUploadView(APIView):
                 if image_file.size > max_size:
                     errors.append({
                         'file': image_file.name,
-                        'error': f'El archivo excede el tamaño máximo de 20MB'
+                        'error': 'El archivo excede el tamaño máximo de 20MB'
                     })
                     continue
                 

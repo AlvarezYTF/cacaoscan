@@ -777,7 +777,7 @@ class IncrementalTrainer:
             logger.warning(f"No se pudo computar información de Fisher: {e}")
     
     def _train_incremental_model(self, model: nn.Module, train_loader: DataLoader, 
-                                val_loader: DataLoader, target: str) -> Tuple[nn.Module, Dict]:
+                                val_loader: DataLoader, target: str) -> Tuple[nn.Module, Dict]:  # noqa: ARG002
         """Entrena el modelo con estrategias incrementales."""
         model.train()
         
