@@ -98,12 +98,12 @@ describe('Autenticación - Registro', () => {
     const credentials = this.credentials
     const weakPasswords = credentials.weakPasswords
 
-    weakPasswords.forEach(password => {
+    for (const password of weakPasswords) {
       cy.get('[data-cy="password-input"]').clear().type(password)
       cy.get('[data-cy="password-strength"]')
         .should('be.visible')
         .and('contain', 'Contraseña débil')
-    })
+    }
 
     // Verificar contraseña fuerte
     cy.get('[data-cy="password-input"]').clear().type(credentials.strongPassword)

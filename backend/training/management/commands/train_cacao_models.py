@@ -882,11 +882,11 @@ class Command(BaseCommand):
                             self.style.SUCCESS(f"Redis iniciado: {redis_path}")
                         )
                         return True
-                except (FileNotFoundError, OSError):
+                except OSError:
                     continue
             
             return False
-        except (FileNotFoundError, OSError) as e:
+        except OSError as e:
             self.stdout.write(
                 self.style.ERROR(f"No se pudo iniciar Redis: {e}")
             )
@@ -994,7 +994,7 @@ class Command(BaseCommand):
                     pgid = os.getpgid(process.pid)
                     if pgid > 0:  # Validate PID before sending signal
                         os.killpg(pgid, signal.SIGTERM)
-                except (ProcessLookupError, OSError) as e:
+                except OSError as e:
                     # Process may have already terminated
                     logger.debug(f"Process group signal failed (may already be terminated): {e}")
                     return

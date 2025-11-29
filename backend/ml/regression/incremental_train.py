@@ -240,9 +240,10 @@ class IncrementalDataManager:
                     sampled_indices.add(i)
             remaining_indices = set(range(len(records))) - sampled_indices
             additional_needed = max_samples - len(sampled_records)
-            additional_indices = np.random.choice(list(remaining_indices), 
-                                                min(additional_needed, len(remaining_indices)), 
-                                                replace=False)
+            rng = np.random.default_rng()
+            additional_indices = rng.choice(list(remaining_indices), 
+                                          min(additional_needed, len(remaining_indices)), 
+                                          replace=False)
             sampled_records.extend([records[i] for i in additional_indices])
         
         return sampled_records[:max_samples]
@@ -405,7 +406,8 @@ class IncrementalLearningStrategy:
             return []
         
         num_samples = min(num_samples, len(self.replay_buffer))
-        return np.random.choice(self.replay_buffer, num_samples, replace=False).tolist()
+        rng = np.random.default_rng()
+        return rng.choice(self.replay_buffer, num_samples, replace=False).tolist()
 
 
 class IncrementalModelManager:
@@ -835,7 +837,7 @@ class IncrementalTrainer:
             logger.warning(f"No se pudo computar información de Fisher: {e}")
     
     def _train_incremental_model(self, model: nn.Module, train_loader: DataLoader, 
-                                val_loader: DataLoader, target: str) -> Tuple[nn.Module, Dict]:  # noqa: ARG002
+                                val_loader: DataLoader) -> Tuple[nn.Module, Dict]:
         """Entrena el modelo con estrategias incrementales."""
         model.train()
         

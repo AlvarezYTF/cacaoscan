@@ -171,6 +171,24 @@ class Command(BaseCommand):
             logger.error(f"Error during prediction: {e}", exc_info=True)
             raise CommandError(f'Error durante la predicción: {str(e)}')
 
+    def _build_image_path(self, image_path_str: str) -> Path:
+        """Build image path from string."""
+        if image_path_str.startswith('media'):
+            return Path(image_path_str)
+        return Path('media') / image_path_str
+    
+    def _try_alternative_extensions(self, image_path: Path) -> Path:
+        """Try alternative file extensions if image doesn't exist."""
+        if image_path.exists():
+            return image_path
+        
+        for ext in ['.bmp', '.png', '.jpg', '.jpeg']:
+            alt_path = image_path.with_suffix(ext)
+            if alt_path.exists():
+                return alt_path
+        
+        return image_path
+    
     def _find_image_by_id(self, image_id: int) -> tuple:
         """Find image by ID in the dataset."""
         try:
@@ -180,25 +198,15 @@ class Command(BaseCommand):
             
             for record in records:
                 if record['id'] == image_id:
-                    # Construir ruta de imagen
                     image_path_str = str(record['image_path'])
-                    if image_path_str.startswith('media'):
-                        image_path = Path(image_path_str)
-                    else:
-                        image_path = Path('media') / image_path_str
-                    
-                    # Intentar diferentes extensiones
-                    if not image_path.exists():
-                        for ext in ['.bmp', '.png', '.jpg', '.jpeg']:
-                            alt_path = image_path.with_suffix(ext)
-                            if alt_path.exists():
-                                image_path = alt_path
-                                break
-                    
+                    image_path = self._build_image_path(image_path_str)
+                    image_path = self._try_alternative_extensions(image_path)
                     return record, image_path
             
             raise CommandError(f'No se encontró imagen con ID={image_id} en el dataset')
             
+        except CommandError:
+            raise
         except Exception as e:
             logger.error(f"Error finding image by ID: {e}", exc_info=True)
             raise CommandError(f'Error al buscar imagen por ID: {str(e)}')

@@ -19,10 +19,10 @@ describe('Navegación - Rutas y Permisos', () => {
       '/nuevo-analisis'
     ]
     
-    protectedRoutes.forEach(route => {
+    for (const route of protectedRoutes) {
       cy.visit(route)
       cy.url().should('include', '/login')
-    })
+    }
   })
 
   it('debe verificar acceso de agricultor a sus rutas permitidas', () => {
@@ -37,11 +37,11 @@ describe('Navegación - Rutas y Permisos', () => {
       '/mi-perfil'
     ]
     
-    farmerRoutes.forEach(route => {
+    for (const route of farmerRoutes) {
       cy.visit(route)
       cy.url().should('include', route)
       cy.get('body').should('be.visible')
-    })
+    }
   })
 
   it('debe denegar acceso de agricultor a rutas de analista', () => {
@@ -49,13 +49,13 @@ describe('Navegación - Rutas y Permisos', () => {
     
     const analystRoutes = ['/analisis', '/reportes']
     
-    analystRoutes.forEach(route => {
+    for (const route of analystRoutes) {
       cy.visit(route)
       cy.url().should('include', '/acceso-denegado')
       cy.get('[data-cy="access-denied-message"]')
         .should('be.visible')
         .and('contain', 'No tienes permisos')
-    })
+    }
   })
 
   it('debe denegar acceso de agricultor a rutas de admin', () => {
@@ -69,13 +69,13 @@ describe('Navegación - Rutas y Permisos', () => {
       '/admin/training'
     ]
     
-    adminRoutes.forEach(route => {
+    for (const route of adminRoutes) {
       cy.visit(route)
       cy.url().should('include', '/acceso-denegado')
       cy.get('[data-cy="access-denied-message"]')
         .should('be.visible')
         .and('contain', 'No tienes permisos')
-    })
+    }
   })
 
   it('debe verificar acceso de analista a sus rutas permitidas', () => {
@@ -87,11 +87,11 @@ describe('Navegación - Rutas y Permisos', () => {
       '/mi-perfil'
     ]
     
-    analystRoutes.forEach(route => {
+    for (const route of analystRoutes) {
       cy.visit(route)
       cy.url().should('include', route)
       cy.get('body').should('be.visible')
-    })
+    }
   })
 
   it('debe denegar acceso de analista a rutas de agricultor', () => {
@@ -104,13 +104,13 @@ describe('Navegación - Rutas y Permisos', () => {
       '/nuevo-analisis'
     ]
     
-    farmerRoutes.forEach(route => {
+    for (const route of farmerRoutes) {
       cy.visit(route)
       cy.url().should('include', '/acceso-denegado')
       cy.get('[data-cy="access-denied-message"]')
         .should('be.visible')
         .and('contain', 'No tienes permisos')
-    })
+    }
   })
 
   it('debe verificar acceso de admin a todas las rutas', () => {
@@ -127,11 +127,11 @@ describe('Navegación - Rutas y Permisos', () => {
       '/mi-perfil'
     ]
     
-    allRoutes.forEach(route => {
+    for (const route of allRoutes) {
       cy.visit(route)
       cy.url().should('include', route)
       cy.get('body').should('be.visible')
-    })
+    }
   })
 
   it('debe verificar redirección automática según rol', () => {
@@ -233,10 +233,10 @@ describe('Navegación - Rutas y Permisos', () => {
     // Rutas que requieren verificación
     const verifiedRoutes = ['/nuevo-analisis', '/mis-fincas', '/mis-lotes']
     
-    verifiedRoutes.forEach(route => {
+    for (const route of verifiedRoutes) {
       cy.visit(route)
       cy.url().should('include', '/verificacion-pendiente')
-    })
+    }
   })
 
   it('debe verificar navegación con guards de sesión expirada', () => {

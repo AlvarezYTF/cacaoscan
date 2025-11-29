@@ -256,7 +256,6 @@ class VerifyOtpView(APIView):
             if error_response:
                 return error_response
             
-            user_model = get_user_model()
             existing_response = self._check_existing_user(email, verification)
             if existing_response:
                 return existing_response

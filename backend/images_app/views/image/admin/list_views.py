@@ -34,10 +34,20 @@ class AdminImagesListView(PaginationMixin, AdminPermissionMixin, APIView):
     """
     permission_classes = [IsAuthenticated]
     
-    def _apply_filters(self, queryset, user_id, username, region, finca, processed, has_prediction,
-                       search, date_from, date_to, model_version, min_confidence, max_confidence,
-                       filters_applied):
+    def _apply_filters(self, queryset, filters_applied, **filters):
         """Apply filters to queryset and update filters_applied dict."""
+        user_id = filters.get('user_id')
+        username = filters.get('username')
+        region = filters.get('region')
+        finca = filters.get('finca')
+        processed = filters.get('processed')
+        has_prediction = filters.get('has_prediction')
+        search = filters.get('search')
+        date_from = filters.get('date_from')
+        date_to = filters.get('date_to')
+        model_version = filters.get('model_version')
+        min_confidence = filters.get('min_confidence')
+        max_confidence = filters.get('max_confidence')
         if user_id:
             queryset = queryset.filter(user_id=user_id)
             filters_applied['user_id'] = user_id
@@ -153,18 +163,20 @@ class AdminImagesListView(PaginationMixin, AdminPermissionMixin, APIView):
                 return self.admin_permission_denied()
             
             # Obtener parámetros de consulta (paginación se maneja en el mixin)
-            user_id = request.GET.get('user_id')
-            username = request.GET.get('username')
-            region = request.GET.get('region')
-            finca = request.GET.get('finca')
-            processed = request.GET.get('processed')
-            has_prediction = request.GET.get('has_prediction')
-            search = request.GET.get('search')
-            date_from = request.GET.get('date_from')
-            date_to = request.GET.get('date_to')
-            model_version = request.GET.get('model_version')
-            min_confidence = request.GET.get('min_confidence')
-            max_confidence = request.GET.get('max_confidence')
+            filters = {
+                'user_id': request.GET.get('user_id'),
+                'username': request.GET.get('username'),
+                'region': request.GET.get('region'),
+                'finca': request.GET.get('finca'),
+                'processed': request.GET.get('processed'),
+                'has_prediction': request.GET.get('has_prediction'),
+                'search': request.GET.get('search'),
+                'date_from': request.GET.get('date_from'),
+                'date_to': request.GET.get('date_to'),
+                'model_version': request.GET.get('model_version'),
+                'min_confidence': request.GET.get('min_confidence'),
+                'max_confidence': request.GET.get('max_confidence'),
+            }
             
             # Construir queryset base con todas las imágenes
             # Optimizado: select_related para ForeignKeys, prefetch_related para OneToOne reverso
@@ -179,12 +191,7 @@ class AdminImagesListView(PaginationMixin, AdminPermissionMixin, APIView):
             
             # Aplicar filtros
             filters_applied = {}
-            queryset = self._apply_filters(
-                queryset, 
-                user_id, username, region, finca, processed, has_prediction,
-                search, date_from, date_to, model_version, min_confidence, max_confidence,
-                filters_applied
-            )
+            queryset = self._apply_filters(queryset, filters_applied, **filters)
             
             # Ordenar por fecha de creación (más recientes primero)
             queryset = queryset.order_by('-created_at')

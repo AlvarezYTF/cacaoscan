@@ -31,7 +31,7 @@ describe('Autenticación - Logout', () => {
   it('debe hacer logout desde cualquier página', () => {
     const pages = ['/admin/dashboard', '/analisis', '/agricultor-dashboard']
     
-    pages.forEach(page => {
+    for (const page of pages) {
       cy.visit(page)
       
       cy.get('[data-cy="user-menu"]').click()
@@ -40,10 +40,10 @@ describe('Autenticación - Logout', () => {
       cy.url().should('include', '/login')
       
       // Volver a hacer login para la siguiente página
-      if (page !== pages[pages.length - 1]) {
+      if (page !== pages.at(-1)) {
         cy.login('admin')
       }
-    })
+    }
   })
 
   it('debe limpiar datos de sesión al hacer logout', () => {

@@ -51,7 +51,7 @@ class AuditMiddleware:
                 hasattr(request, 'audit_action') and
                 request.audit_action):
                 
-                self.log_activity(request, response)
+                self.log_activity(request)
                 
         except Exception as e:
             logger.error(f"Error en middleware de auditoría: {e}")
@@ -128,7 +128,7 @@ class AuditMiddleware:
         else:
             return 'Unknown'
     
-    def log_activity(self, request, response=None):  # noqa: ARG002
+    def log_activity(self, request):
         """Registrar la actividad del usuario."""
         try:
             action = request.audit_action

@@ -282,7 +282,7 @@ class RegistrationService(BaseService):
                 details={"field": "email"}
             )
         
-        return None
+        return ServiceResult.success()
     
     def _handle_existing_pending_registration(self, existing_pending, email: str) -> Optional[ServiceResult]:
         """Maneja un registro pendiente existente."""

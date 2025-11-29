@@ -25,18 +25,18 @@ const getEnvVar = (key, defaultValue) => {
 const buildTestSecret = () => {
   // Build "Password123!" using character codes
   const chars = [
-    String.fromCharCode(80), // P
-    String.fromCharCode(97), // a
-    String.fromCharCode(115), // s
-    String.fromCharCode(115), // s
-    String.fromCharCode(119), // w
-    String.fromCharCode(111), // o
-    String.fromCharCode(114), // r
-    String.fromCharCode(100), // d
-    String.fromCharCode(49), // 1
-    String.fromCharCode(50), // 2
-    String.fromCharCode(51), // 3
-    String.fromCharCode(33)  // !
+    String.fromCodePoint(80), // P
+    String.fromCodePoint(97), // a
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(119), // w
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(100), // d
+    String.fromCodePoint(49), // 1
+    String.fromCodePoint(50), // 2
+    String.fromCodePoint(51), // 3
+    String.fromCodePoint(33)  // !
   ]
   return chars.join('')
 }
@@ -44,15 +44,15 @@ const buildTestSecret = () => {
 const buildDifferentSecret = () => {
   // Build "DifferentPassword123!" using character codes
   const part1 = [
-    String.fromCharCode(68), // D
-    String.fromCharCode(105), // i
-    String.fromCharCode(102), // f
-    String.fromCharCode(102), // f
-    String.fromCharCode(101), // e
-    String.fromCharCode(114), // r
-    String.fromCharCode(101), // e
-    String.fromCharCode(110), // n
-    String.fromCharCode(116)  // t
+    String.fromCodePoint(68), // D
+    String.fromCodePoint(105), // i
+    String.fromCodePoint(102), // f
+    String.fromCodePoint(102), // f
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(110), // n
+    String.fromCodePoint(116)  // t
   ].join('')
   return part1 + buildTestSecret()
 }
@@ -60,12 +60,12 @@ const buildDifferentSecret = () => {
 const buildStrongSecret = () => {
   // Build "StrongPassword123!" using character codes
   const part1 = [
-    String.fromCharCode(83), // S
-    String.fromCharCode(116), // t
-    String.fromCharCode(114), // r
-    String.fromCharCode(111), // o
-    String.fromCharCode(110), // n
-    String.fromCharCode(103)  // g
+    String.fromCodePoint(83), // S
+    String.fromCodePoint(116), // t
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(110), // n
+    String.fromCodePoint(103)  // g
   ].join('')
   return part1 + buildTestSecret()
 }
@@ -73,9 +73,9 @@ const buildStrongSecret = () => {
 const buildNewSecret = () => {
   // Build "NewPassword123!" using character codes
   const part1 = [
-    String.fromCharCode(78), // N
-    String.fromCharCode(101), // e
-    String.fromCharCode(119)  // w
+    String.fromCodePoint(78), // N
+    String.fromCodePoint(101), // e
+    String.fromCodePoint(119)  // w
   ].join('')
   return part1 + buildTestSecret()
 }
@@ -83,17 +83,17 @@ const buildNewSecret = () => {
 const buildLoginSecret = () => {
   // Build "password123" using character codes
   const chars = [
-    String.fromCharCode(112), // p
-    String.fromCharCode(97),  // a
-    String.fromCharCode(115), // s
-    String.fromCharCode(115), // s
-    String.fromCharCode(119), // w
-    String.fromCharCode(111), // o
-    String.fromCharCode(114), // r
-    String.fromCharCode(100), // d
-    String.fromCharCode(49),  // 1
-    String.fromCharCode(50),  // 2
-    String.fromCharCode(51)   // 3
+    String.fromCodePoint(112), // p
+    String.fromCodePoint(97),  // a
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(119), // w
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(100), // d
+    String.fromCodePoint(49),  // 1
+    String.fromCodePoint(50),  // 2
+    String.fromCodePoint(51)   // 3
   ]
   return chars.join('')
 }
@@ -101,31 +101,31 @@ const buildLoginSecret = () => {
 const buildWeakSecrets = () => {
   // Build weak passwords using character codes
   const secret1 = [
-    String.fromCharCode(49), // 1
-    String.fromCharCode(50), // 2
-    String.fromCharCode(51)  // 3
+    String.fromCodePoint(49), // 1
+    String.fromCodePoint(50), // 2
+    String.fromCodePoint(51)  // 3
   ].join('')
   
   const secret2 = [
-    String.fromCharCode(112), // p
-    String.fromCharCode(97),  // a
-    String.fromCharCode(115), // s
-    String.fromCharCode(115), // s
-    String.fromCharCode(119), // w
-    String.fromCharCode(111), // o
-    String.fromCharCode(114), // r
-    String.fromCharCode(100)  // d
+    String.fromCodePoint(112), // p
+    String.fromCodePoint(97),  // a
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(115), // s
+    String.fromCodePoint(119), // w
+    String.fromCodePoint(111), // o
+    String.fromCodePoint(114), // r
+    String.fromCodePoint(100)  // d
   ].join('')
   
   const secret3 = [
-    String.fromCharCode(49), // 1
-    String.fromCharCode(50), // 2
-    String.fromCharCode(51), // 3
-    String.fromCharCode(52), // 4
-    String.fromCharCode(53), // 5
-    String.fromCharCode(54), // 6
-    String.fromCharCode(55), // 7
-    String.fromCharCode(56)  // 8
+    String.fromCodePoint(49), // 1
+    String.fromCodePoint(50), // 2
+    String.fromCodePoint(51), // 3
+    String.fromCodePoint(52), // 4
+    String.fromCodePoint(53), // 5
+    String.fromCodePoint(54), // 6
+    String.fromCodePoint(55), // 7
+    String.fromCodePoint(56)  // 8
   ].join('')
   
   return [secret1, secret2, secret3]

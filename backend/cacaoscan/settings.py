@@ -429,6 +429,8 @@ REST_FRAMEWORK = {
 
 # CORS settings
 # Never use CORS_ALLOW_ALL_ORIGINS in production - always use explicit CORS_ALLOWED_ORIGINS
+HTTP_SCHEME = 'http://'
+HTTPS_SCHEME = 'https://'
 cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
 if cors_origins:
     # Validate that each origin has scheme (http:// or https://)
@@ -439,12 +441,12 @@ if cors_origins:
         if not origin:
             continue
         # Only accept origins with full scheme (http:// or https://)
-        if origin.startswith('http://') or origin.startswith('https://'):
+        if origin.startswith(HTTP_SCHEME) or origin.startswith(HTTPS_SCHEME):
             # Validate that it has a valid domain (contains a dot or is localhost)
             if '.' in origin.replace('://', '').split('/')[0] or 'localhost' in origin:
                 # In production, enforce HTTPS for all origins (except localhost for testing).
                 # S5332: Using HTTP is insecure for sensitive data transmission (S5332).
-                if not DEBUG and origin.startswith('http://') and 'localhost' not in origin and '127.0.0.1' not in origin:
+                if not DEBUG and origin.startswith(HTTP_SCHEME) and 'localhost' not in origin and '127.0.0.1' not in origin:
                     # Production: reject non-HTTPS origins
                     warnings.warn(
                         f"CORS origin '{origin}' uses insecure HTTP in production. "
@@ -454,7 +456,7 @@ if cors_origins:
                     continue
                 
                 # Development: warn about HTTP but still allow for localhost/testing
-                if origin.startswith('http://') and not DEBUG:
+                if origin.startswith(HTTP_SCHEME) and not DEBUG:
                     warnings.warn(
                         f"CORS origin '{origin}' uses insecure HTTP. "
                         "Consider using HTTPS for sensitive data (S5332).",

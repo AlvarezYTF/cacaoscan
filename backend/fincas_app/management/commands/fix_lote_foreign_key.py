@@ -28,7 +28,7 @@ class Command(BaseCommand):
         
         # Solo permitir letras, números, guiones bajos y guiones
         # Esto es seguro para nombres de objetos PostgreSQL
-        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', identifier):
+        if not re.match(r'^[a-zA-Z_]\w*$', identifier):
             raise ValueError(f'Identificador SQL inválido: {identifier}. Solo se permiten letras, números y guiones bajos.')
         
         # Escapar con comillas dobles para PostgreSQL

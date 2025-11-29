@@ -339,8 +339,8 @@ class YOLOTrainingManager:
         
         # Dividir dataset
         image_ids = list(all_annotations.keys())
-        np.random.seed(42)
-        np.random.shuffle(image_ids)
+        rng = np.random.default_rng(42)
+        rng.shuffle(image_ids)
         
         n_train = int(len(image_ids) * self.train_split)
         n_val = int(len(image_ids) * self.val_split)
@@ -427,7 +427,6 @@ class YOLOTrainingManager:
     def train_model(
         self,
         model_name: str = "yolov8s-seg",
-        resume: bool = False,  # noqa: ARG002
         pretrained: bool = True
     ) -> Dict[str, Any]:
         """

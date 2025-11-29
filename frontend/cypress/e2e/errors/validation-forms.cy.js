@@ -42,12 +42,12 @@ describe('Manejo de Errores - Validación y Formularios', () => {
     
     const weakPasswords = ['123', 'password', '12345678']
     
-    weakPasswords.forEach(password => {
+    for (const password of weakPasswords) {
       cy.get('[data-cy="password-input"]').clear().type(password)
       cy.get('[data-cy="password-strength"]')
         .should('be.visible')
         .and('contain', 'Contraseña débil')
-    })
+    }
     
     // Verificar contraseña fuerte
     cy.get('[data-cy="password-input"]').clear().type('StrongPassword123!')
