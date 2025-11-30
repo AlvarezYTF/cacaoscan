@@ -94,11 +94,18 @@ export function isValidFilename(filename) {
     return false
   }
 
-  // Check for dangerous characters (excluding control characters from regex, check separately)
+  // Check for dangerous characters
   const dangerousChars = /[<>:"|?*]/
-  const controlChars = /[\x00-\x1f]/
-  if (dangerousChars.test(filename) || controlChars.test(filename)) {
+  if (dangerousChars.test(filename)) {
     return false
+  }
+
+  // Check for control characters (0x00-0x1F) without using control chars in regex
+  for (let i = 0; i < filename.length; i++) {
+    const charCode = filename.charCodeAt(i)
+    if (charCode >= 0x00 && charCode <= 0x1F) {
+      return false
+    }
   }
 
   // Filename should not be empty or only whitespace
@@ -123,12 +130,23 @@ export function sanitizeFilename(filename) {
   // Remove path components
   let sanitized = filename.replace(/^.*[\\/]/, '')
   
-  // Remove dangerous characters (excluding control characters, handle separately)
+  // Remove dangerous characters
   sanitized = sanitized.replaceAll(/[<>:"|?*]/g, '_')
-  sanitized = sanitized.replaceAll(/[\x00-\x1f]/g, '_')
+  
+  // Remove control characters (0x00-0x1F) without using control chars in regex
+  let cleaned = ''
+  for (let i = 0; i < sanitized.length; i++) {
+    const charCode = sanitized.charCodeAt(i)
+    if (charCode < 0x00 || charCode > 0x1F) {
+      cleaned += sanitized[i]
+    } else {
+      cleaned += '_'
+    }
+  }
+  sanitized = cleaned
   
   // Remove path traversal attempts
-  sanitized = sanitized.replaceAll(/\.\./g, '_')
+  sanitized = sanitized.replaceAll('..', '_')
   
   // Trim whitespace
   sanitized = sanitized.trim()
