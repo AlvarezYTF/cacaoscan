@@ -2,6 +2,7 @@
  * Tests unitarios para composables de CacaoScan.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { ref, nextTick } from 'vue'
 import { useImageStats } from '../useImageStats.js'
 import { useWebSocket } from '../useWebSocket.js'
 

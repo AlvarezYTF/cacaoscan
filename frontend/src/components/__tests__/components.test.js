@@ -8,8 +8,21 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // Importar componentes principales
 import LoginForm from '../auth/LoginForm.vue'
-import NotificationBell from '../notifications/NotificationBell.vue'
-import ConfirmModal from '../common/ConfirmModal.vue'
+import RegisterForm from '../auth/RegisterForm.vue'
+import ImageUploader from '../admin/AdminAnalisisComponents/ImageUploader.vue'
+import AnalysisSummaryCard from '../analysis/AnalysisSummaryCard.vue'
+import StatsCard from '../reportes/StatsCard.vue'
+import NotificationBell from '../components/notifications/NotificationBell.vue'
+import LoadingSpinner from '../components/common/LoadingSpinner.vue'
+import ErrorAlert from '../components/common/ErrorAlert.vue'
+import ConfirmModal from '../components/common/ConfirmModal.vue'
+import PageHeader from '../components/common/PageHeader.vue'
+import QuickActions from '../components/dashboard/QuickActions.vue'
+import RecentAnalyses from '../components/dashboard/RecentAnalyses.vue'
+import StatsOverview from '../components/dashboard/StatsOverview.vue'
+import BarChart from '../components/charts/BarChart.vue'
+import LineChart from '../components/charts/LineChart.vue'
+import PieChart from '../components/charts/PieChart.vue'
 
 // Mock de servicios
 vi.mock('@/services/api', () => ({

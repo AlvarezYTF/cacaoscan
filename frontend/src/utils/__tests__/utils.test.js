@@ -71,11 +71,22 @@ const debounce = (func, delay) => {
 
 const throttle = (func, delay) => {
   let lastCall = 0
+  let timeoutId = null
   return (...args) => {
     const now = Date.now()
-    if (now - lastCall >= delay) {
+    if (lastCall === 0 || now - lastCall >= delay) {
       lastCall = now
-      return func.apply(null, args)
+      func.apply(null, args)
+    } else {
+      // Schedule the call for after the delay
+      if (timeoutId === null) {
+        const remainingTime = delay - (now - lastCall)
+        timeoutId = setTimeout(() => {
+          lastCall = Date.now()
+          timeoutId = null
+          func.apply(null, args)
+        }, remainingTime)
+      }
     }
   }
 }
@@ -299,7 +310,7 @@ describe('String Utilities', () => {
   }
 
   const truncate = (str, length = 50, suffix = '...') => {
-    if (!str) return ''
+    if (str === null || str === undefined) return ''
     if (str.length <= length) return str
     return str.substring(0, length) + suffix
   }
@@ -312,6 +323,7 @@ describe('String Utilities', () => {
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-+|-+$/g, '')
+      .trim()
   }
 
   it('capitaliza strings correctamente', () => {

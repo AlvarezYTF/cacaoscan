@@ -5,7 +5,8 @@
  * incluyendo subida de imágenes y obtención de resultados de análisis.
  */
 
-import { apiPost, apiGet, apiDelete } from './apiClient'
+import { apiPost, apiGet, apiDelete, apiPatch } from './apiClient'
+import api from './api'
 import { validateImageFile, getImageValidationError } from '@/utils/imageValidationUtils'
 import { handleApiError } from './apiErrorHandler'
 
@@ -347,13 +348,13 @@ export async function getStats(params = {}) {
   try {
     console.log('📊 Obteniendo estadísticas:', params)
 
-    const response = await api.get(API_ENDPOINTS.stats, { params })
+    const data = await apiGet(API_ENDPOINTS.stats, params)
 
     console.log('✅ Estadísticas obtenidas')
 
     return {
       success: true,
-      data: response.data
+      data: data
     }
 
   } catch (error) {
@@ -382,13 +383,13 @@ export async function updateImageMetadata(imageId, data) {
 
     console.log('✏️ Actualizando metadatos de imagen:', imageId, data)
 
-    const response = await api.patch(`${API_ENDPOINTS.images}${imageId}/`, data)
+    const responseData = await apiPatch(`${API_ENDPOINTS.images}${imageId}/`, data)
 
     console.log('✅ Metadatos actualizados exitosamente')
 
     return {
       success: true,
-      data: response.data
+      data: responseData
     }
 
   } catch (error) {
@@ -522,8 +523,9 @@ export async function exportResults(options = {}) {
 // Re-export validateImageFile from utils for backward compatibility
 export { validateImageFile } from '@/utils/imageValidationUtils'
 
-// Re-export createImageFormData from utils for backward compatibility
-export { createImageFormData } from '@/utils/formDataUtils'
+// Import and re-export createImageFormData from utils for backward compatibility
+import { createImageFormData } from '@/utils/formDataUtils'
+export { createImageFormData }
 
 // No exportar api directamente, solo las funciones
 export default {
