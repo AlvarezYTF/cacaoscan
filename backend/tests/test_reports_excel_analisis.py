@@ -178,9 +178,8 @@ class TestExcelAnalisisGenerator:
     @patch.object(ExcelAnalisisGenerator, '_create_header')
     @patch.object(ExcelAnalisisGenerator, '_create_activity_stats_section')
     @patch.object(ExcelAnalisisGenerator, '_create_login_stats_section')
-    @patch.object(ExcelAnalisisGenerator, '_create_recent_activities_table')
     @patch.object(ExcelAnalisisGenerator, '_save_to_buffer')
-    def test_generate_audit_report_success(self, mock_save, mock_activities, mock_login_stats,
+    def test_generate_audit_report_success(self, mock_save, mock_login_stats,
                                          mock_activity_stats, mock_header, mock_workbook,
                                          mock_activity_model, excel_generator, mock_user):
         """Test successful audit report generation."""

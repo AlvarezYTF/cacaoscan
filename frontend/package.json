@@ -11,7 +11,6 @@
     "test:unit:dev": "vitest --coverage",
     "test:unit:watch": "vitest --coverage --watch",
     "test:coverage": "vitest run --coverage --reporter=verbose",
-    "test:all:coverage": "pnpm run test:coverage && pnpm run cypress:run",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
     "test:admin": "cypress run --spec 'cypress/e2e/admin/**/*.cy.js'",

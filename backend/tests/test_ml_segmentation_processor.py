@@ -138,7 +138,12 @@ class TestSegmentationProcessor:
     @patch('ml.segmentation.processor.rembg_remove')
     def test_remove_background_rembg_success(self, mock_rembg, mock_image_path):
         """Test successful rembg background removal."""
-        mock_output = Image.new('RGBA', (200, 200)).tobytes()
+        # Create a valid PNG image bytes
+        img = Image.new('RGBA', (200, 200), color=(255, 0, 0, 128))
+        from io import BytesIO
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        mock_output = buffer.getvalue()
         mock_rembg.return_value = mock_output
         
         result = _remove_background_rembg(mock_image_path)
@@ -189,7 +194,8 @@ class TestSegmentationProcessor:
             assert result.shape == alpha.shape
     
     @patch('ml.segmentation.processor._HAS_XIMGPROC', True)
-    @patch('ml.segmentation.processor.ximgproc.guidedFilter')
+    @patch('ml.segmentation.processor._HAS_XIMGPROC', True)
+    @patch('cv2.ximgproc.guidedFilter')
     def test_guided_refine_with_ximgproc(self, mock_guided, mock_image_path):
         """Test guided_refine with ximgproc available."""
         rgb = np.zeros((100, 100, 3), dtype=np.uint8)

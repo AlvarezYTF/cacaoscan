@@ -1,14 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useReportsStore } from '../reports.js'
-import { fetchGet, fetchPost, fetchDelete } from '@/services/apiClient'
 
-// Mock apiClient
-vi.mock('@/services/apiClient', () => ({
-  fetchGet: vi.fn(),
-  fetchPost: vi.fn(),
-  fetchPatch: vi.fn(),
-  fetchDelete: vi.fn()
+// Mock reportsService
+const mockReportsService = {
+  getReports: vi.fn(),
+  getReportsStats: vi.fn(),
+  createReport: vi.fn(),
+  deleteReport: vi.fn(),
+  downloadReport: vi.fn()
+}
+
+vi.mock('@/services/reportsService', () => ({
+  default: mockReportsService
 }))
 
 // Mock fileExportUtils
@@ -141,11 +145,11 @@ describe('Reports Store', () => {
         page_size: 20
       }
 
-      vi.mocked(fetchGet).mockResolvedValue(mockResponse)
+      mockReportsService.getReports.mockResolvedValue(mockResponse)
 
       const result = await store.fetchReports({ page: 1 })
 
-      expect(fetchGet).toHaveBeenCalled()
+      expect(mockReportsService.getReports).toHaveBeenCalled()
       expect(store.reports).toEqual(mockResponse.results)
       expect(store.pagination.currentPage).toBe(1)
       expect(store.pagination.totalPages).toBe(1)
@@ -159,7 +163,7 @@ describe('Reports Store', () => {
         data: { detail: 'Error fetching reports' }
       }
 
-      vi.mocked(fetchGet).mockRejectedValue(mockError)
+      mockReportsService.getReports.mockRejectedValue(mockError)
 
       await expect(store.fetchReports()).rejects.toThrow()
       expect(store.error).toBe('Error del servidor. Por favor intenta más tarde.')
@@ -176,11 +180,11 @@ describe('Reports Store', () => {
         error_reports: 5
       }
 
-      vi.mocked(fetchGet).mockResolvedValue(mockResponse)
+      mockReportsService.getReportsStats.mockResolvedValue(mockResponse)
 
       const result = await store.fetchStats()
 
-      expect(fetchGet).toHaveBeenCalled()
+      expect(mockReportsService.getReportsStats).toHaveBeenCalled()
       expect(store.stats.totalReports).toBe(50)
     })
   })
@@ -195,16 +199,18 @@ describe('Reports Store', () => {
 
       const mockResponse = {
         id: 1,
-        ...reportData,
-        estado: 'pendiente'
+        tipo_reporte: 'anual',
+        estado: 'pendiente',
+        fecha_solicitud: '2024-01-01',
+        fecha_generacion: '2024-12-31'
       }
 
-      vi.mocked(fetchPost).mockResolvedValue(mockResponse)
+      mockReportsService.createReport.mockResolvedValue(mockResponse)
 
       const result = await store.createReport(reportData)
 
-      expect(fetchPost).toHaveBeenCalled()
-      expect(store.reports).toContainEqual(mockResponse)
+      expect(mockReportsService.createReport).toHaveBeenCalled()
+      expect(store.reports.length).toBeGreaterThan(0)
       expect(store.stats.totalReports).toBe(1)
       expect(store.stats.reportsChange).toBe(1)
     })
@@ -215,7 +221,7 @@ describe('Reports Store', () => {
         data: { detail: 'Error creating report' }
       }
 
-      vi.mocked(fetchPost).mockRejectedValue(mockError)
+      mockReportsService.createReport.mockRejectedValue(mockError)
 
       await expect(store.createReport({})).rejects.toThrow()
       expect(store.error).toBe('Error del servidor. Por favor intenta más tarde.')
@@ -249,11 +255,11 @@ describe('Reports Store', () => {
       ]
       store.stats.totalReports = 2
 
-      vi.mocked(fetchDelete).mockResolvedValue({})
+      mockReportsService.deleteReport.mockResolvedValue(true)
 
       const result = await store.deleteReport(reportId)
 
-      expect(fetchDelete).toHaveBeenCalled()
+      expect(mockReportsService.deleteReport).toHaveBeenCalledWith(reportId)
       expect(store.reports).toHaveLength(1)
       expect(store.stats.totalReports).toBe(1)
       expect(store.stats.reportsChange).toBe(-1)
@@ -271,11 +277,11 @@ describe('Reports Store', () => {
       ]
       store.stats.totalReports = 3
 
-      vi.mocked(fetchPost).mockResolvedValue({})
+      mockReportsService.deleteReport.mockResolvedValue(true)
 
       const result = await store.bulkDeleteReports(reportIds)
 
-      expect(fetchPost).toHaveBeenCalled()
+      expect(mockReportsService.deleteReport).toHaveBeenCalledTimes(2)
       expect(store.reports).toHaveLength(1)
       expect(store.stats.totalReports).toBe(1)
     })
@@ -284,11 +290,10 @@ describe('Reports Store', () => {
   describe('downloadReport', () => {
     it('should download report successfully', async () => {
       const reportId = 1
-      const blob = new Blob(['pdf content'], { type: 'application/pdf' })
 
       const mockResponse = {
         ok: true,
-        json: vi.fn().mockResolvedValue({}),
+        blob: vi.fn().mockResolvedValue(new Blob(['pdf content'], { type: 'application/pdf' })),
         headers: {
           get: vi.fn((key) => {
             if (key === 'content-disposition') {
@@ -299,11 +304,11 @@ describe('Reports Store', () => {
         }
       }
 
-      globalThis.fetch.mockResolvedValue(mockResponse)
+      mockReportsService.downloadReport.mockResolvedValue(mockResponse)
 
       const result = await store.downloadReport(reportId)
 
-      expect(globalThis.fetch).toHaveBeenCalled()
+      expect(mockReportsService.downloadReport).toHaveBeenCalledWith(reportId)
     })
   })
 

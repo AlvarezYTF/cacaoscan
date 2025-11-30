@@ -22,6 +22,7 @@ def command():
 @pytest.fixture
 def mock_options():
     """Create mock command options."""
+    # Django converts --output-dir to output_dir, --skip-existing to skip_existing, etc.
     return {
         'output_dir': 'media/datasets/calibration',
         'calibration_file': 'media/datasets/pixel_calibration.json',
@@ -81,8 +82,25 @@ class TestCalibrateDatasetPixelsCommand:
                                               mock_loader_class, command, mock_options, tmp_path):
         """Test that existing calibration file is loaded."""
         calibration_file = tmp_path / "calibration.json"
+        # Use fixture properly - it's passed as parameter
         calibration_file.write_text(json.dumps({
-            'calibration_records': [sample_calibration_record()]
+            'calibration_records': [{
+                'id': 1,
+                'filename': 'test_image.bmp',
+                'original_image_path': '/path/to/test_image.bmp',
+                'processed_image_path': '/path/to/processed.png',
+                'real_dimensions': {
+                    'alto_mm': 15.5,
+                    'ancho_mm': 12.3,
+                    'grosor_mm': 8.7,
+                    'peso_g': 1.2
+                },
+                'pixel_measurements': {
+                    'grain_area_pixels': 1000,
+                    'width_pixels': 100,
+                    'height_pixels': 150
+                }
+            }]
         }), encoding='utf-8')
         
         mock_options['calibration_file'] = str(calibration_file)
@@ -151,7 +169,7 @@ class TestCalibrateDatasetPixelsCommand:
         
         mock_segment.assert_called()
     
-    @patch('training.management.commands.calibrate_dataset_pixels.create_cacao_cropper')
+    @patch('ml.segmentation.cropper.create_cacao_cropper')
     @patch('training.management.commands.calibrate_dataset_pixels.segment_and_crop_cacao_bean')
     @patch('training.management.commands.calibrate_dataset_pixels.CacaoDatasetLoader')
     @patch('training.management.commands.calibrate_dataset_pixels.get_crop_image_path')
@@ -210,7 +228,7 @@ class TestCalibrateDatasetPixelsCommand:
             'calibration_records': [sample_calibration_record]
         }), encoding='utf-8')
         mock_options['calibration_file'] = str(calibration_file)
-        mock_options['skip_existing'] = True
+        mock_options['skip_existing'] = True  # Django converts --skip-existing to skip_existing
         
         mock_loader = Mock()
         mock_df = Mock()

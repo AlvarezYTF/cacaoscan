@@ -167,12 +167,21 @@ class TestCacaoReportPDFGenerator:
     
     @patch('reports.services.report.pdf_generator.ActivityLog')
     @patch('reports.services.report.pdf_generator.SimpleDocTemplate')
-    def test_generate_audit_report_success(self, mock_doc_template, mock_activity_model,
+    @patch('reports.services.report.pdf_generator.LoginLog')
+    def test_generate_audit_report_success(self, mock_login_model, mock_doc_template, mock_activity_model,
                                            pdf_generator, mock_user):
         """Test successful audit report generation."""
-        mock_queryset = Mock()
-        mock_queryset.select_related.return_value.order_by.return_value = []
-        mock_activity_model.objects.select_related.return_value.order_by.return_value = []
+        # Mock activity queryset
+        mock_activity_queryset = Mock()
+        mock_activity_queryset.count.return_value = 10
+        mock_activity_queryset.select_related.return_value.order_by.return_value = []
+        mock_activity_model.objects.select_related.return_value.order_by.return_value = mock_activity_queryset
+        
+        # Mock login queryset
+        mock_login_queryset = Mock()
+        mock_login_queryset.count.return_value = 5
+        mock_login_queryset.filter.return_value.count.return_value = 4
+        mock_login_model.objects.filter.return_value = mock_login_queryset
         
         mock_doc = Mock()
         mock_doc_template.return_value = mock_doc

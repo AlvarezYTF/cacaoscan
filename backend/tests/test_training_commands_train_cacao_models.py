@@ -185,23 +185,74 @@ class TestTrainCacaoModelsCommand:
             with pytest.raises(CommandError, match="timm es requerido"):
                 command._validate_config(config)
     
-    def test_validate_config_invalid_epochs(self, command):
+    @patch('ml.data.dataset_loader.CacaoDatasetLoader')
+    @patch('training.management.commands.train_cacao_models.get_raw_images_dir')
+    def test_validate_config_invalid_epochs(self, mock_get_raw_dir, mock_loader_class, command, tmp_path):
         """Test validation with invalid epochs."""
-        config = {'epochs': 0}
+        # Mock raw images directory
+        mock_raw_dir = tmp_path / "raw"
+        mock_raw_dir.mkdir()
+        (mock_raw_dir / "test1.bmp").touch()
+        (mock_raw_dir / "test2.bmp").touch()
+        mock_get_raw_dir.return_value = mock_raw_dir
+        
+        # Mock dataset loader
+        mock_loader = Mock()
+        mock_df = Mock()
+        mock_df.__len__ = Mock(return_value=20)
+        mock_loader.load_dataset.return_value = mock_df
+        mock_loader.get_valid_records.return_value = [{}] * 20
+        mock_loader_class.return_value = mock_loader
+        
+        config = {'epochs': 0, 'model_type': 'resnet18', 'hybrid': False}
         
         with pytest.raises(CommandError, match="Número de épocas debe ser >= 1"):
             command._validate_config(config)
     
-    def test_validate_config_invalid_batch_size(self, command):
+    @patch('ml.data.dataset_loader.CacaoDatasetLoader')
+    @patch('training.management.commands.train_cacao_models.get_raw_images_dir')
+    def test_validate_config_invalid_batch_size(self, mock_get_raw_dir, mock_loader_class, command, tmp_path):
         """Test validation with invalid batch size."""
-        config = {'batch_size': 0}
+        # Mock raw images directory
+        mock_raw_dir = tmp_path / "raw"
+        mock_raw_dir.mkdir()
+        (mock_raw_dir / "test1.bmp").touch()
+        (mock_raw_dir / "test2.bmp").touch()
+        mock_get_raw_dir.return_value = mock_raw_dir
+        
+        # Mock dataset loader
+        mock_loader = Mock()
+        mock_df = Mock()
+        mock_df.__len__ = Mock(return_value=20)
+        mock_loader.load_dataset.return_value = mock_df
+        mock_loader.get_valid_records.return_value = [{}] * 20
+        mock_loader_class.return_value = mock_loader
+        
+        config = {'batch_size': 0, 'model_type': 'resnet18', 'hybrid': False, 'epochs': 10}
         
         with pytest.raises(CommandError, match="Tamaño de batch debe ser >= 1"):
             command._validate_config(config)
     
-    def test_validate_config_invalid_learning_rate(self, command):
+    @patch('ml.data.dataset_loader.CacaoDatasetLoader')
+    @patch('training.management.commands.train_cacao_models.get_raw_images_dir')
+    def test_validate_config_invalid_learning_rate(self, mock_get_raw_dir, mock_loader_class, command, tmp_path):
         """Test validation with invalid learning rate."""
-        config = {'learning_rate': 0}
+        # Mock raw images directory
+        mock_raw_dir = tmp_path / "raw"
+        mock_raw_dir.mkdir()
+        (mock_raw_dir / "test1.bmp").touch()
+        (mock_raw_dir / "test2.bmp").touch()
+        mock_get_raw_dir.return_value = mock_raw_dir
+        
+        # Mock dataset loader
+        mock_loader = Mock()
+        mock_df = Mock()
+        mock_df.__len__ = Mock(return_value=20)
+        mock_loader.load_dataset.return_value = mock_df
+        mock_loader.get_valid_records.return_value = [{}] * 20
+        mock_loader_class.return_value = mock_loader
+        
+        config = {'learning_rate': 0, 'model_type': 'resnet18', 'hybrid': False, 'epochs': 10, 'batch_size': 32}
         
         with pytest.raises(CommandError, match="Learning rate debe ser > 0"):
             command._validate_config(config)
@@ -286,7 +337,7 @@ class TestTrainCacaoModelsCommand:
         
         assert warmup == 15
     
-    @patch('training.management.commands.train_cacao_models.get_regressors_artifacts_dir')
+    @patch('ml.utils.paths.get_regressors_artifacts_dir')
     def test_check_models_exist_all_exist(self, mock_get_artifacts_dir, command, tmp_path):
         """Test checking models when all exist."""
         artifacts_dir = tmp_path / "artifacts"
@@ -300,7 +351,7 @@ class TestTrainCacaoModelsCommand:
         
         assert command._check_models_exist() is True
     
-    @patch('training.management.commands.train_cacao_models.get_regressors_artifacts_dir')
+    @patch('ml.utils.paths.get_regressors_artifacts_dir')
     def test_check_models_exist_missing_model(self, mock_get_artifacts_dir, command, tmp_path):
         """Test checking models when a model is missing."""
         artifacts_dir = tmp_path / "artifacts"
@@ -314,7 +365,7 @@ class TestTrainCacaoModelsCommand:
         
         assert command._check_models_exist() is False
     
-    @patch('training.management.commands.train_cacao_models.get_regressors_artifacts_dir')
+    @patch('ml.utils.paths.get_regressors_artifacts_dir')
     def test_check_models_exist_empty_file(self, mock_get_artifacts_dir, command, tmp_path):
         """Test checking models when a file is empty."""
         artifacts_dir = tmp_path / "artifacts"
@@ -331,7 +382,7 @@ class TestTrainCacaoModelsCommand:
         
         assert command._check_models_exist() is False
     
-    @patch('training.management.commands.train_cacao_models.get_regressors_artifacts_dir')
+    @patch('ml.utils.paths.get_regressors_artifacts_dir')
     def test_check_models_exist_exception(self, mock_get_artifacts_dir, command):
         """Test checking models when an exception occurs."""
         mock_get_artifacts_dir.side_effect = Exception("Error")

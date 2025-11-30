@@ -67,7 +67,7 @@ describe('lotesApi', () => {
 
       const result = await getLoteById(1)
 
-      expect(api.get).toHaveBeenCalledWith('/lotes/1/')
+      expect(api.get).toHaveBeenCalledWith('/lotes/1/', { params: {} })
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -95,7 +95,7 @@ describe('lotesApi', () => {
 
       const result = await createLote(loteData)
 
-      expect(api.post).toHaveBeenCalledWith('/lotes/', loteData)
+      expect(api.post).toHaveBeenCalledWith('/lotes/', loteData, {})
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -117,7 +117,7 @@ describe('lotesApi', () => {
 
       const result = await updateLote(1, loteData)
 
-      expect(api.put).toHaveBeenCalledWith('/lotes/1/update/', loteData)
+      expect(api.put).toHaveBeenCalledWith('/lotes/1/update/', loteData, {})
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -135,7 +135,7 @@ describe('lotesApi', () => {
 
       await deleteLote(1)
 
-      expect(api.delete).toHaveBeenCalledWith('/lotes/1/delete/')
+      expect(api.delete).toHaveBeenCalledWith('/lotes/1/delete/', {})
     })
 
     it('should handle error when deleting lote', async () => {
@@ -155,7 +155,7 @@ describe('lotesApi', () => {
 
       const result = await getLoteStats(1)
 
-      expect(api.get).toHaveBeenCalledWith('/lotes/1/stats/')
+      expect(api.get).toHaveBeenCalledWith('/lotes/1/stats/', { params: {} })
       expect(result).toEqual(mockResponse.data)
     })
 
