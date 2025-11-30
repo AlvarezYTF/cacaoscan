@@ -1,17 +1,24 @@
 <template>
-  <div class="modal-overlay" @click="closeModal">
-    <div class="modal-container" @click.stop>
-      <div class="modal-header">
-        <h3>
-          <i class="fas fa-history"></i>
-          Actividad de {{ user.username }}
-        </h3>
-        <button class="close-btn" @click="closeModal">
-          <i class="fas fa-times"></i>
-        </button>
+  <BaseModal
+    :show="true"
+    :title="`Actividad de ${user.username}`"
+    subtitle="Historial de actividades del usuario"
+    max-width="5xl"
+    @close="closeModal"
+  >
+    <template #header>
+      <div class="flex items-center">
+        <div class="bg-blue-100 p-2 rounded-lg mr-3">
+          <i class="fas fa-history text-blue-600"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">Actividad de {{ user.username }}</h3>
+          <p class="text-sm text-gray-600 mt-1">Historial de actividades del usuario</p>
+        </div>
       </div>
+    </template>
 
-      <div class="modal-body">
+    <div class="modal-body-content">
         <!-- Filtros -->
         <div class="filters-section">
           <div class="filters-row">
@@ -167,14 +174,14 @@
           </div>
 
           <!-- Paginación -->
-          <div v-if="totalPages > 1" class="pagination-container">
+          <div v-if="pagination.totalPages > 1" class="pagination-container">
             <nav aria-label="Paginación de actividades">
               <ul class="pagination">
-                <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                <li class="page-item" :class="{ disabled: pagination.currentPage === 1 }">
                   <button 
                     class="page-link"
-                    @click="changePage(currentPage - 1)"
-                    :disabled="currentPage === 1"
+                    @click="changePage(pagination.currentPage - 1)"
+                    :disabled="pagination.currentPage === 1"
                   >
                     <i class="fas fa-chevron-left"></i>
                   </button>
@@ -184,7 +191,7 @@
                   v-for="page in visiblePages" 
                   :key="page"
                   class="page-item"
-                  :class="{ active: page === currentPage }"
+                  :class="{ active: page === pagination.currentPage }"
                 >
                   <button 
                     class="page-link"
@@ -194,11 +201,11 @@
                   </button>
                 </li>
                 
-                <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                <li class="page-item" :class="{ disabled: pagination.currentPage === pagination.totalPages }">
                   <button 
                     class="page-link"
-                    @click="changePage(currentPage + 1)"
-                    :disabled="currentPage === totalPages"
+                    @click="changePage(pagination.currentPage + 1)"
+                    :disabled="pagination.currentPage === pagination.totalPages"
                   >
                     <i class="fas fa-chevron-right"></i>
                   </button>
@@ -209,21 +216,33 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" @click="closeModal">
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end">
+        <button 
+          type="button" 
+          class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          @click="closeModal"
+        >
           Cerrar
         </button>
       </div>
-    </div>
-  </div>
+    </template>
+  </BaseModal>
 </template>
 
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useAdminStore } from '@/stores/admin'
+import BaseModal from '@/components/common/BaseModal.vue'
+import { usePagination } from '@/composables/usePagination'
 
 export default {
   name: 'UserActivityModal',
+  components: {
+    BaseModal
+  },
   props: {
     user: {
       type: Object,
@@ -237,9 +256,13 @@ export default {
     const loading = ref(false)
     const activities = ref([])
     const totalActivities = ref(0)
-    const currentPage = ref(1)
     const pageSize = ref(20)
-    const totalPages = ref(0)
+
+    // Use pagination composable
+    const pagination = usePagination({
+      initialPage: 1,
+      initialItemsPerPage: pageSize.value
+    })
 
     const filters = reactive({
       action: '',
@@ -284,16 +307,8 @@ export default {
       return `Hace ${diffDays} días`
     })
 
-    const visiblePages = computed(() => {
-      const pages = []
-      const start = Math.max(1, currentPage.value - 2)
-      const end = Math.min(totalPages.value, start + 4)
-      
-      for (let i = start; i <= end; i++) {
-        pages.push(i)
-      }
-      return pages
-    })
+    // Use pagination visiblePages from composable
+    const visiblePages = computed(() => pagination.visiblePages.value)
 
     // Methods
     const loadActivities = async () => {
@@ -301,8 +316,8 @@ export default {
       try {
         const params = {
           user_id: props.user.id,
-          page: currentPage.value,
-          page_size: pageSize.value,
+          page: pagination.currentPage.value,
+          page_size: pagination.itemsPerPage.value,
           action: filters.action,
           model: filters.model,
           start_date: getStartDate()
@@ -311,7 +326,14 @@ export default {
         const response = await adminStore.getActivityLogs(params)
         activities.value = response.data.results
         totalActivities.value = response.data.count
-        totalPages.value = Math.ceil(response.data.count / pageSize.value)
+        
+        // Update pagination from API response
+        pagination.updateFromApiResponse({
+          page: response.data.page || pagination.currentPage.value,
+          page_size: response.data.page_size || pagination.itemsPerPage.value,
+          count: response.data.count || 0,
+          total_pages: response.data.total_pages || Math.ceil(response.data.count / pagination.itemsPerPage.value)
+        })
         
       } catch (error) {
         console.error('Error loading activities:', error)
@@ -331,13 +353,12 @@ export default {
       filters.action = ''
       filters.model = ''
       filters.period = '30'
-      currentPage.value = 1
+      pagination.goToPage(1)
       loadActivities()
     }
 
     const changePage = (page) => {
-      if (page >= 1 && page <= totalPages.value) {
-        currentPage.value = page
+      if (pagination.goToPage(page)) {
         loadActivities()
       }
     }
@@ -434,8 +455,7 @@ export default {
       loading,
       activities,
       totalActivities,
-      currentPage,
-      totalPages,
+      pagination,
       filters,
       activitiesToday,
       mostCommonAction,
@@ -456,66 +476,8 @@ export default {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-container {
-  background: white;
-  border-radius: 10px;
-  width: 95%;
-  max-width: 1000px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  padding: 20px;
-  border-bottom: 1px solid #ecf0f1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 1.3rem;
-}
-
-.modal-header h3 i {
-  margin-right: 10px;
-  color: #3498db;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  color: #7f8c8d;
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 3px;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background-color: #ecf0f1;
-  color: #2c3e50;
-}
-
-.modal-body {
-  padding: 20px;
+.modal-body-content {
+  padding: 0;
 }
 
 .filters-section {

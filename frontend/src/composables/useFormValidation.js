@@ -283,6 +283,134 @@ export function useFormValidation() {
     }
   }
 
+  /**
+   * Validates a name field (first name, last name, etc.)
+   * @param {string} value - Name value to validate
+   * @param {string} fieldName - Field name for error message
+   * @returns {string|null} Error message or null if valid
+   */
+  const validateNameField = (value, fieldName) => {
+    if (!value || !value.trim()) {
+      const fieldLabel = fieldName === 'firstName' ? 'nombre' : 
+                        fieldName === 'lastName' ? 'apellido' : 'campo'
+      return `El ${fieldLabel} es requerido`
+    }
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(value)) {
+      const fieldLabel = fieldName === 'firstName' ? 'nombre' : 
+                        fieldName === 'lastName' ? 'apellido' : 'campo'
+      return `El ${fieldLabel} solo puede contener letras`
+    }
+    return null
+  }
+
+  /**
+   * Validates email field with error message
+   * @param {string} value - Email value to validate
+   * @returns {string|null} Error message or null if valid
+   */
+  const validateEmailField = (value) => {
+    if (!value || !value.trim()) {
+      return 'El email es requerido'
+    }
+    if (!isValidEmail(value)) {
+      return 'Ingresa un email válido'
+    }
+    return null
+  }
+
+  /**
+   * Validates phone field with error message
+   * @param {string} value - Phone value to validate
+   * @returns {string|null} Error message or null if valid
+   */
+  const validatePhoneField = (value) => {
+    if (value && !isValidPhone(value)) {
+      return 'El teléfono debe tener entre 7 y 15 dígitos'
+    }
+    return null
+  }
+
+  /**
+   * Validates document field with error message
+   * @param {string} value - Document value to validate
+   * @returns {string|null} Error message or null if valid
+   */
+  const validateDocumentField = (value) => {
+    if (!value || !value.trim()) {
+      return 'El número de documento es requerido'
+    }
+    if (!isValidDocument(value)) {
+      return 'El documento debe tener entre 6 y 11 dígitos'
+    }
+    return null
+  }
+
+  /**
+   * Validates password fields (password and confirm password)
+   * @param {string} password - Password value
+   * @param {string} confirmPassword - Confirm password value
+   * @returns {Object} Object with password and confirmPassword error messages
+   */
+  const validatePasswordFields = (password, confirmPassword) => {
+    const result = {
+      password: null,
+      confirmPassword: null
+    }
+
+    if (!password) {
+      result.password = 'La contraseña es requerida'
+      return result
+    }
+
+    const passwordChecks = validatePassword(password)
+    if (!passwordChecks.isValid) {
+      result.password = 'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número'
+      return result
+    }
+
+    if (!confirmPassword) {
+      result.confirmPassword = 'La confirmación de contraseña es requerida'
+      return result
+    }
+
+    if (password !== confirmPassword) {
+      result.confirmPassword = 'Las contraseñas no coinciden'
+      return result
+    }
+
+    return result
+  }
+
+  /**
+   * Validates birthdate field with error message
+   * @param {string} value - Birthdate value to validate
+   * @returns {string|null} Error message or null if valid
+   */
+  const validateBirthdateField = (value) => {
+    if (value && !isValidBirthdate(value)) {
+      return 'Debes tener al menos 14 años'
+    }
+    return null
+  }
+
+  /**
+   * Gets error message for a specific field
+   * @param {string} fieldName - Field name
+   * @returns {string|null} Error message or null
+   */
+  const getFieldError = (fieldName) => {
+    return errors[fieldName] || null
+  }
+
+  /**
+   * Checks if a specific field has an error
+   * @param {string} fieldName - Field name
+   * @returns {boolean} True if field has error
+   */
+  const hasFieldError = (fieldName) => {
+    return !!errors[fieldName]
+  }
+
   return {
     errors,
     isValidEmail,
@@ -297,7 +425,16 @@ export function useFormValidation() {
     mapServerErrors,
     resetFormErrors,
     handleFormSubmit,
-    scrollToFirstError
+    scrollToFirstError,
+    // New helper methods
+    validateNameField,
+    validateEmailField,
+    validatePhoneField,
+    validateDocumentField,
+    validatePasswordFields,
+    validateBirthdateField,
+    getFieldError,
+    hasFieldError
   }
 }
 

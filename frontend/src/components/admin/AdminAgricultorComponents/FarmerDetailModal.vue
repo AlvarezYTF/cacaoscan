@@ -1,55 +1,41 @@
 <template>
-  <!-- Modal -->
-  <div 
-    id="farmer-detail-modal" 
-    tabindex="-1" 
-    aria-hidden="true" 
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
-    ref="modalContainer"
+  <BaseModal
+    :show="isOpen"
+    :title="farmer ? farmer.name : 'Detalles del Agricultor'"
+    :subtitle="farmer ? farmer.email : ''"
+    max-width="4xl"
+    @close="closeModal"
+    @update:show="(value) => { if (!value) closeModal() }"
   >
-    <div class="relative w-full max-w-4xl max-h-[90vh]">
-      <!-- Modal content -->
-      <div class="relative bg-white rounded-lg shadow-lg border border-gray-200">
-        <!-- Loading state -->
-        <div v-if="loading" class="flex items-center justify-center p-12">
-          <svg class="animate-spin h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        </div>
-
-        <!-- Content -->
-        <template v-else-if="farmer">
-          <!-- Modal header -->
-          <div class="flex items-center justify-between p-6 border-b border-gray-200">
-            <div class="flex items-center">
-              <div class="bg-green-100 p-3 rounded-lg mr-4 shadow-sm">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white font-bold text-base border-2 border-green-100 shadow-md">
-                  {{ farmer.initials }}
-                </div>
-              </div>
-              <div>
-                <h3 class="text-2xl font-bold text-gray-900">
-                  {{ farmer.name }}
-                </h3>
-                <p class="text-sm text-gray-600 mt-1 flex items-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                  </svg>
-                  {{ farmer.email }}
-                </p>
-              </div>
-            </div>
-            <button 
-              type="button" 
-              @click="closeModal"
-              class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg p-2 transition-all duration-200"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
+    <template #header>
+      <div v-if="farmer" class="flex items-center">
+        <div class="bg-green-100 p-3 rounded-lg mr-4 shadow-sm">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white font-bold text-base border-2 border-green-100 shadow-md">
+            {{ farmer.initials }}
           </div>
+        </div>
+        <div>
+          <h3 class="text-2xl font-bold text-gray-900">{{ farmer.name }}</h3>
+          <p class="text-sm text-gray-600 mt-1 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            {{ farmer.email }}
+          </p>
+        </div>
+      </div>
+    </template>
+
+    <!-- Loading state -->
+    <div v-if="loading" class="flex items-center justify-center p-12">
+      <svg class="animate-spin h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+    </div>
+
+    <!-- Content -->
+    <template v-else-if="farmer">
 
           <!-- Modal body -->
           <div class="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
@@ -285,26 +271,27 @@
             </div>
           </div>
 
-          <!-- Modal footer -->
-          <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 px-6">
-            <button 
-              type="button"
-              @click="closeModal"
-              class="px-6 py-3 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200"
-            >
-              Cerrar
-            </button>
-          </div>
-        </template>
+    </template>
+
+    <template #footer>
+      <div class="flex items-center justify-end">
+        <button 
+          type="button"
+          @click="closeModal"
+          class="px-6 py-3 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200"
+        >
+          Cerrar
+        </button>
       </div>
-    </div>
-  </div>
+    </template>
+  </BaseModal>
 </template>
 
 <script>
 import { ref, computed, watch } from 'vue';
 import { getFincas } from '@/services/fincasApi';
 import authApi from '@/services/authApi';
+import BaseModal from '@/components/common/BaseModal.vue';
 
 export default {
   name: 'FarmerDetailModal',
@@ -322,8 +309,11 @@ export default {
     }
   },
   emits: ['close'],
+  components: {
+    BaseModal
+  },
   setup(props, { emit }) {
-    const modalContainer = ref(null);
+    const isOpen = ref(false);
     const loading = ref(false);
     const fincasList = ref([]); // Estado local para las fincas
     const persona = ref(null);
@@ -360,20 +350,12 @@ export default {
     };
 
     const closeModal = () => {
-      if (modalContainer.value) {
-        const modalElement = modalContainer.value;
-        modalElement.classList.add('hidden');
-        modalElement.setAttribute('aria-hidden', 'true');
-      }
+      isOpen.value = false;
       emit('close');
     };
 
     const openModal = () => {
-      if (modalContainer.value) {
-        const modalElement = modalContainer.value;
-        modalElement.classList.remove('hidden');
-        modalElement.setAttribute('aria-hidden', 'false');
-      }
+      isOpen.value = true;
     };
 
     // Cargar detalles completos de usuario (incluye persona)
@@ -416,7 +398,7 @@ export default {
     });
 
     return {
-      modalContainer,
+      isOpen,
       loading,
       totalArea,
       totalAnalisis,

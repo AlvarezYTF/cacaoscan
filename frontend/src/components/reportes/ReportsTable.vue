@@ -12,7 +12,10 @@
           <tr>
             <th v-for="column in columns" :key="column.key" 
                 class="px-3 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
-                :class="column.mobileHidden ? 'mobile-hidden' : ''"
+                :class="[
+                  column.mobileHidden ? 'mobile-hidden' : '',
+                  sortKey === column.key ? 'sorted' : ''
+                ]"
                 @click="handleSort(column.key)">
               <div class="flex items-center space-x-1">
                 <span>{{ column.label }}</span>
@@ -91,6 +94,8 @@
 </template>
 
 <script>
+import { useTable } from '@/composables/useTable'
+
 export default {
   name: 'ReportsTable',
   props: {
@@ -103,29 +108,38 @@ export default {
       default: false
     }
   },
-  data() {
+  emits: ['sort', 'view', 'download', 'delete'],
+  setup(props, { emit }) {
+    // Use table composable for sorting
+    const table = useTable({
+      initialSortKey: 'createdAt',
+      initialSortOrder: 'desc',
+      enableSelection: false
+    })
+
+    const columns = [
+      { key: 'name', label: 'Nombre del Reporte', mobileHidden: false },
+      { key: 'type', label: 'Tipo', mobileHidden: true },
+      { key: 'period', label: 'Período', mobileHidden: true },
+      { key: 'createdAt', label: 'Fecha de Creación', mobileHidden: false },
+      { key: 'status', label: 'Estado', mobileHidden: false }
+    ]
+
+    const handleSort = (key) => {
+      table.handleSort(key)
+      emit('sort', {
+        key: table.sortKey.value,
+        order: table.sortOrder.value
+      })
+    }
+
     return {
-      sortKey: 'createdAt',
-      sortOrder: 'desc',
-      columns: [
-        { key: 'name', label: 'Nombre del Reporte', mobileHidden: false },
-        { key: 'type', label: 'Tipo', mobileHidden: true },
-        { key: 'period', label: 'Período', mobileHidden: true },
-        { key: 'createdAt', label: 'Fecha de Creación', mobileHidden: false },
-        { key: 'status', label: 'Estado', mobileHidden: false }
-      ]
-    };
+      ...table,
+      columns,
+      handleSort
+    }
   },
   methods: {
-    handleSort(key) {
-      if (this.sortKey === key) {
-        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
-      } else {
-        this.sortKey = key;
-        this.sortOrder = 'asc';
-      }
-      this.$emit('sort', { key, order: this.sortOrder });
-    },
     getStatusClasses(status) {
       const classes = {
         'Completado': 'bg-green-100 text-green-800',

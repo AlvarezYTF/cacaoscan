@@ -1,104 +1,76 @@
 <template>
-  <!-- Modal backdrop con animación suave -->
-  <Transition
-    enter-active-class="transition-opacity duration-300 ease-out"
-    enter-from-class="opacity-0"
-    enter-to-class="opacity-100"
-    leave-active-class="transition-opacity duration-200 ease-in"
-    leave-from-class="opacity-100"
-    leave-to-class="opacity-0"
+  <BaseModal
+    :show="show"
+    :title="fincaDetalle ? fincaDetalle.nombre : 'Detalles de la Finca'"
+    subtitle="Información completa de la finca"
+    max-width="5xl"
+    @close="closeModal"
   >
-    <div 
-      v-if="show"
-      class="fixed inset-0 z-50 overflow-y-auto overflow-x-hidden flex items-center justify-center p-4 backdrop-blur-lg bg-black bg-opacity-20"
-      @click.self="closeModal"
-    >
-      <!-- Contenedor principal del modal con animación de escala -->
-      <Transition
-        enter-active-class="transition-all duration-300 ease-out"
-        enter-from-class="opacity-0 scale-95 translate-y-4"
-        enter-to-class="opacity-100 scale-100 translate-y-0"
-        leave-active-class="transition-all duration-200 ease-in"
-        leave-from-class="opacity-100 scale-100 translate-y-0"
-        leave-to-class="opacity-0 scale-95 translate-y-4"
-      >
-        <div class="relative w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-gray-200 transform transition-all">
-          <!-- Loading state mejorado -->
-          <div v-if="loading" class="flex flex-col items-center justify-center p-16">
-            <div class="relative">
-              <svg class="animate-spin h-12 w-12 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    <!-- Loading state -->
+    <div v-if="loading" class="flex flex-col items-center justify-center p-16">
+      <div class="relative">
+        <svg class="animate-spin h-12 w-12 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </div>
+      <p class="mt-4 text-gray-600 font-medium">Cargando información de la finca...</p>
+    </div>
+
+    <!-- Contenido principal -->
+    <div v-else-if="fincaDetalle" class="overflow-hidden">
+      <template #header>
+        <div class="flex items-center justify-between w-full">
+          <div class="flex items-center gap-3">
+            <div class="bg-green-100 p-2 rounded-xl">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
               </svg>
             </div>
-            <p class="mt-4 text-gray-600 font-medium">Cargando información de la finca...</p>
-          </div>
-
-          <!-- Contenido principal -->
-          <div v-else-if="fincaDetalle" class="overflow-hidden rounded-2xl">
-            <!-- Header mejorado con gradiente sutil y badge de estado -->
-            <div class="sticky top-0 bg-gradient-to-r from-white to-gray-50 border-b border-gray-200 px-8 py-6 flex items-start justify-between z-10 shadow-sm">
-              <div class="flex-1">
-                <div class="flex items-center gap-3 mb-2">
-                  <div class="bg-green-100 p-2 rounded-xl">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                  </div>
-                  <h2 class="text-3xl font-bold text-gray-900">{{ fincaDetalle.nombre }}</h2>
-                </div>
-                <div class="flex items-center gap-3 flex-wrap">
-                  <p class="text-base text-gray-600 flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    {{ fincaDetalle.municipio }}, {{ fincaDetalle.departamento }}
-                  </p>
-                  <span
-                    :class="[
-                      'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all',
-                      fincaDetalle.activa 
-                        ? 'bg-green-100 text-green-700 border border-green-200' 
-                        : 'bg-red-100 text-red-700 border border-red-200'
-                    ]"
+            <div>
+              <h2 class="text-3xl font-bold text-gray-900">{{ fincaDetalle.nombre }}</h2>
+              <div class="flex items-center gap-3 mt-2">
+                <p class="text-sm text-gray-600 flex items-center gap-1.5">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  {{ fincaDetalle.municipio }}, {{ fincaDetalle.departamento }}
+                </p>
+                <span
+                  :class="[
+                    'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all',
+                    fincaDetalle.activa 
+                      ? 'bg-green-100 text-green-700 border border-green-200' 
+                      : 'bg-red-100 text-red-700 border border-red-200'
+                  ]"
+                >
+                  <svg 
+                    v-if="fincaDetalle.activa" 
+                    class="w-3 h-3" 
+                    fill="currentColor" 
+                    viewBox="0 0 20 20"
                   >
-                    <svg 
-                      v-if="fincaDetalle.activa" 
-                      class="w-3 h-3" 
-                      fill="currentColor" 
-                      viewBox="0 0 20 20"
-                    >
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                    <svg 
-                      v-else 
-                      class="w-3 h-3" 
-                      fill="currentColor" 
-                      viewBox="0 0 20 20"
-                    >
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                    </svg>
-                    {{ fincaDetalle.activa ? 'Activa' : 'Inactiva' }}
-                  </span>
-                </div>
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                  </svg>
+                  <svg 
+                    v-else 
+                    class="w-3 h-3" 
+                    fill="currentColor" 
+                    viewBox="0 0 20 20"
+                  >
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                  </svg>
+                  {{ fincaDetalle.activa ? 'Activa' : 'Inactiva' }}
+                </span>
               </div>
-              <button
-                @click="closeModal"
-                type="button"
-                class="ml-4 p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                aria-label="Cerrar modal"
-              >
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
             </div>
+          </div>
+        </div>
+      </template>
 
-            <!-- Body con mejor estructura visual -->
-            <div class="overflow-y-auto max-h-[calc(90vh-180px)]">
-              <div class="px-8 py-6 space-y-6">
+      <div class="space-y-6">
                 <!-- Información principal en cards mejoradas -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <!-- Card de ubicación -->
@@ -254,48 +226,48 @@
               </div>
             </div>
 
-            <!-- Footer mejorado con botones más profesionales -->
-            <div class="sticky bottom-0 bg-gradient-to-r from-gray-50 to-white border-t border-gray-200 px-8 py-5 flex items-center justify-between gap-3 shadow-lg">
-              <div class="text-sm text-gray-600">
-                <span class="font-medium">ID:</span> {{ fincaDetalle.id }}
-              </div>
-              <div class="flex items-center gap-3">
-                <button
-                  @click="handleEdit"
-                  v-if="fincaDetalle.activa || userRole === 'admin'"
-                  type="button"
-                  class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                  </svg>
-                  Editar
-                </button>
-                <button
-                  @click="handleViewLotes"
-                  v-if="fincaDetalle.activa || userRole === 'admin'"
-                  type="button"
-                  class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-                  </svg>
-                  Ver Lotes
-                </button>
-                <button
-                  @click="closeModal"
-                  type="button"
-                  class="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Transition>
+      </div>
     </div>
-  </Transition>
+
+    <template #footer>
+      <div class="flex items-center justify-between gap-3 w-full">
+        <div class="text-sm text-gray-600">
+          <span class="font-medium">ID:</span> {{ fincaDetalle?.id }}
+        </div>
+        <div class="flex items-center gap-3">
+          <button
+            @click="handleEdit"
+            v-if="fincaDetalle && (fincaDetalle.activa || userRole === 'admin')"
+            type="button"
+            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+            Editar
+          </button>
+          <button
+            @click="handleViewLotes"
+            v-if="fincaDetalle && (fincaDetalle.activa || userRole === 'admin')"
+            type="button"
+            class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+            </svg>
+            Ver Lotes
+          </button>
+          <button
+            @click="closeModal"
+            type="button"
+            class="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </template>
+  </BaseModal>
 </template>
 
 <script setup>
@@ -307,6 +279,7 @@ import { useAuthStore } from '@/stores/auth'
 
 // 3. Components
 import FincaLocationMap from '@/components/fincas/FincaLocationMap.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 
 // 4. Services
 import { getFincaById } from '@/services/fincasApi'

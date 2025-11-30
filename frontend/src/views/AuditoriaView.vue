@@ -345,6 +345,7 @@ import AuditStatsModal from '@/components/audit/AuditStatsModal.vue';
 import ConfirmModal from '@/components/common/ConfirmModal.vue';
 import { useAuditStore } from '@/stores/audit';
 import { useAuthStore } from '@/stores/auth';
+import { usePagination } from '@/composables/usePagination';
 import Swal from 'sweetalert2';
 
 export default {
@@ -427,8 +428,31 @@ export default {
       }
     });
 
-    // Paginación
-    const pagination = computed(() => auditStore.pagination);
+    // Paginación - using composable
+    const paginationComposable = usePagination({
+      initialPage: 1,
+      initialItemsPerPage: 50
+    });
+
+    // Sync composable with store pagination
+    watch(() => auditStore.pagination, (storePagination) => {
+      if (storePagination) {
+        paginationComposable.updateFromApiResponse({
+          page: storePagination.currentPage,
+          page_size: storePagination.itemsPerPage,
+          count: storePagination.totalItems,
+          total_pages: storePagination.totalPages
+        });
+      }
+    }, { immediate: true });
+
+    // Computed pagination for component (backward compatibility)
+    const pagination = computed(() => ({
+      currentPage: paginationComposable.currentPage.value,
+      totalPages: paginationComposable.totalPages.value,
+      totalItems: paginationComposable.totalItems.value,
+      itemsPerPage: paginationComposable.itemsPerPage.value
+    }));
 
     // Métodos para AdminSidebar y AdminNavbar
     const handleMenuClick = (menuItem) => {
@@ -586,6 +610,10 @@ export default {
 
     const handlePageChange = async (page) => {
       try {
+        // Update composable first
+        paginationComposable.goToPage(page);
+        
+        // Then fetch data with new page
         if (filters.value.auditType === 'activity') {
           await auditStore.fetchActivityLogs({ ...filters.value, page });
         } else if (filters.value.auditType === 'login') {

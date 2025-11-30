@@ -1,28 +1,26 @@
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="closeModal">
-    <div class="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" @click.stop>
-      <!-- Modal Header -->
-      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+  <BaseModal
+    :show="true"
+    :title="mode === 'create' ? 'Crear Usuario' : 'Editar Usuario'"
+    subtitle="Complete el formulario para gestionar el usuario"
+    max-width="2xl"
+    @close="closeModal"
+  >
+    <template #header>
+      <div class="flex items-center">
+        <div class="bg-blue-100 p-2 rounded-lg mr-3">
           <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
           </svg>
-          {{ mode === 'create' ? 'Crear Usuario' : 'Editar Usuario' }}
-        </h3>
-        <button 
-          @click="closeModal"
-          type="button"
-          class="text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
-          aria-label="Cerrar modal"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">{{ mode === 'create' ? 'Crear Usuario' : 'Editar Usuario' }}</h3>
+          <p class="text-sm text-gray-600 mt-1">Complete el formulario para gestionar el usuario</p>
+        </div>
       </div>
+    </template>
 
-      <!-- Modal Body -->
-      <form @submit.prevent="saveUser" class="p-6">
+    <form @submit.prevent="saveUser" class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <!-- Nombre de Usuario -->
           <div>
@@ -273,33 +271,35 @@
           ></textarea>
         </div>
 
-        <!-- Modal Footer -->
-        <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
-          <button 
-            type="button" 
-            @click="closeModal"
-            class="px-6 py-3 bg-gray-500 text-white rounded-lg font-medium hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
-          >
-            Cancelar
-          </button>
-          <button 
-            type="submit" 
-            class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-2"
-            :disabled="loading"
-          >
-            <svg v-if="loading" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            {{ mode === 'create' ? 'Crear Usuario' : 'Guardar Cambios' }}
-          </button>
-        </div>
       </form>
-    </div>
-  </div>
+
+    <template #footer>
+      <div class="flex items-center justify-end gap-3">
+        <button 
+          type="button" 
+          @click="closeModal"
+          class="px-6 py-3 bg-gray-500 text-white rounded-lg font-medium hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
+        >
+          Cancelar
+        </button>
+        <button 
+          type="submit" 
+          @click="saveUser"
+          class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-2"
+          :disabled="loading"
+        >
+          <svg v-if="loading" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          {{ mode === 'create' ? 'Crear Usuario' : 'Guardar Cambios' }}
+        </button>
+      </div>
+    </template>
+  </BaseModal>
 </template>
 
 <script setup>
@@ -312,6 +312,7 @@ import { useAuthStore } from '@/stores/auth'
 
 // 3. Composables
 import { useFormValidation } from '@/composables/useFormValidation'
+import BaseModal from '@/components/common/BaseModal.vue'
 
 // 4. Libraries
 import Swal from 'sweetalert2'

@@ -1,17 +1,24 @@
 <template>
-  <div class="modal-overlay" @click="closeModal">
-    <div class="modal-container" @click.stop>
-      <div class="modal-header">
-        <h3>
-          <i class="fas fa-user"></i>
-          Detalles del Usuario
-        </h3>
-        <button class="close-btn" @click="closeModal">
-          <i class="fas fa-times"></i>
-        </button>
+  <BaseModal
+    :show="true"
+    title="Detalles del Usuario"
+    subtitle="Información completa del usuario"
+    max-width="4xl"
+    @close="closeModal"
+  >
+    <template #header>
+      <div class="flex items-center">
+        <div class="bg-blue-100 p-2 rounded-lg mr-3">
+          <i class="fas fa-user text-blue-600"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">Detalles del Usuario</h3>
+          <p class="text-sm text-gray-600 mt-1">Información completa del usuario</p>
+        </div>
       </div>
+    </template>
 
-      <div class="modal-body">
+    <div class="modal-body-content">
         <div v-if="loading" class="loading-state">
           <i class="fas fa-spinner fa-spin"></i>
           <p>Cargando detalles del usuario...</p>
@@ -195,29 +202,41 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" @click="closeModal">
+    </div>
+
+    <template #footer>
+      <div class="flex items-center justify-end gap-3">
+        <button 
+          type="button" 
+          @click="closeModal"
+          class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+        >
           Cerrar
         </button>
         <button 
+          v-if="canEdit"
           type="button" 
-          class="btn btn-primary"
           @click="editUser"
+          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
         >
           <i class="fas fa-edit"></i>
           Editar Usuario
         </button>
       </div>
-    </div>
-  </div>
+    </template>
+  </BaseModal>
 </template>
 
 <script>
 import { ref, onMounted } from 'vue'
 import { useAdminStore } from '@/stores/admin'
+import BaseModal from '@/components/common/BaseModal.vue'
 
 export default {
   name: 'UserDetailsModal',
+  components: {
+    BaseModal
+  },
   props: {
     user: {
       type: Object,

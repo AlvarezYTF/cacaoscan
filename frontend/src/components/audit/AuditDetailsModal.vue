@@ -1,23 +1,25 @@
 <template>
-  <div class="audit-details-modal" @click="closeModal">
-    <div class="modal-container" @click.stop>
-      <div class="modal-header">
-        <div class="header-content">
-          <div class="header-icon">
-            <i :class="getHeaderIcon()"></i>
-          </div>
-          <div class="header-text">
-            <h3>{{ getHeaderTitle() }}</h3>
-            <p>Detalles completos del evento de auditoría</p>
-          </div>
+  <BaseModal
+    :show="true"
+    :title="getHeaderTitle()"
+    subtitle="Detalles completos del evento de auditoría"
+    max-width="4xl"
+    @close="closeModal"
+  >
+    <template #header>
+      <div class="flex items-center">
+        <div class="bg-blue-100 p-2 rounded-lg mr-3">
+          <i :class="getHeaderIcon()" class="text-blue-600"></i>
         </div>
-        <button class="close-btn" @click="closeModal">
-          <i class="fas fa-times"></i>
-        </button>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">{{ getHeaderTitle() }}</h3>
+          <p class="text-sm text-gray-600 mt-1">Detalles completos del evento de auditoría</p>
+        </div>
       </div>
+    </template>
 
-      <div class="modal-body">
-        <div class="details-content">
+    <div class="modal-body-content">
+      <div class="details-content">
           <!-- Información básica -->
           <div class="details-section">
             <h4>
@@ -156,31 +158,38 @@
           </div>
         </div>
       </div>
-
-      <div class="modal-footer">
-        <div class="footer-left">
-          <button
-            @click="exportEvent"
-            class="btn btn-outline"
-          >
-            <i class="fas fa-download"></i>
-            Exportar Evento
-          </button>
-        </div>
-
-        <div class="footer-right">
-          <button @click="closeModal" class="btn btn-primary">
-            Cerrar
-          </button>
-        </div>
-      </div>
     </div>
-  </div>
+
+    <template #footer>
+      <div class="flex justify-between items-center w-full">
+        <button
+          @click="exportEvent"
+          class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+        >
+          <i class="fas fa-download"></i>
+          Exportar Evento
+        </button>
+        <button 
+          @click="closeModal" 
+          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+        >
+          Cerrar
+        </button>
+      </div>
+    </template>
+  </BaseModal>
 </template>
 
 <script>
+import { useAuditHelpers } from '@/composables/useAuditHelpers'
+import { useDateFormatting } from '@/composables/useDateFormatting'
+import BaseModal from '@/components/common/BaseModal.vue'
+
 export default {
   name: 'AuditDetailsModal',
+  components: {
+    BaseModal
+  },
   props: {
     data: {
       type: Object,
@@ -193,33 +202,33 @@ export default {
     }
   },
   emits: ['close'],
+  setup() {
+    const {
+      getAuditItemTitle,
+      getAuditActionIcon,
+      getAuditStatusClass,
+      formatJson: formatJsonUtil
+    } = useAuditHelpers()
+
+    const { formatDateTime: formatDateTimeUtil, formatDuration: formatDurationUtil } = useDateFormatting()
+
+    return {
+      getAuditItemTitle,
+      getAuditActionIcon,
+      getAuditStatusClass,
+      formatDateTimeUtil,
+      formatDurationUtil,
+      formatJsonUtil
+    }
+  },
   methods: {
     getHeaderTitle() {
-      if (this.auditType === 'activity' || this.auditType === 'both') {
-        return `${this.data.accion_display || this.data.accion} - ${this.data.modelo}`
-      } else if (this.auditType === 'login') {
-        return `Login ${this.data.success ? 'Exitoso' : 'Fallido'}`
-      }
-      return 'Evento de Auditoría'
+      return this.getAuditItemTitle(this.data, this.auditType)
     },
 
     getHeaderIcon() {
       if (this.auditType === 'activity' || this.auditType === 'both') {
-        const actionIcons = {
-          'login': 'fas fa-sign-in-alt',
-          'logout': 'fas fa-sign-out-alt',
-          'create': 'fas fa-plus',
-          'update': 'fas fa-edit',
-          'delete': 'fas fa-trash',
-          'view': 'fas fa-eye',
-          'download': 'fas fa-download',
-          'upload': 'fas fa-upload',
-          'analysis': 'fas fa-chart-line',
-          'training': 'fas fa-brain',
-          'report': 'fas fa-file-alt',
-          'error': 'fas fa-exclamation-triangle'
-        }
-        return actionIcons[this.data.accion] || 'fas fa-circle'
+        return this.getAuditActionIcon(this.data.accion)
       } else if (this.auditType === 'login') {
         return this.data.success ? 'fas fa-check-circle' : 'fas fa-times-circle'
       }
@@ -227,53 +236,19 @@ export default {
     },
 
     getStatusClass() {
-      if (this.auditType === 'login' || this.auditType === 'both') {
-        return this.data.success ? 'status-success' : 'status-error'
-      }
-      return 'status-default'
+      return this.getAuditStatusClass(this.data, this.auditType)
     },
 
     formatDateTime(dateString) {
-      if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleString('es-ES', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      })
+      return this.formatDateTimeUtil(dateString)
     },
 
     formatDuration(durationString) {
-      if (!durationString) return 'N/A'
-      
-      // Parse duration string (e.g., "1:23:45")
-      const parts = durationString.split(':')
-      if (parts.length === 3) {
-        const hours = Number.parseInt(parts[0])
-        const minutes = Number.parseInt(parts[1])
-        const seconds = Number.parseInt(parts[2])
-        
-        if (hours > 0) {
-          return `${hours} horas ${minutes} minutos`
-        } else if (minutes > 0) {
-          return `${minutes} minutos ${seconds} segundos`
-        } else {
-          return `${seconds} segundos`
-        }
-      }
-      
-      return durationString
+      return this.formatDurationUtil(durationString)
     },
 
     formatJson(data) {
-      try {
-        return JSON.stringify(data, null, 2)
-      } catch {
-        return data
-      }
+      return this.formatJsonUtil(data)
     },
 
     isSecurityRelevant() {
