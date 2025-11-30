@@ -210,4 +210,68 @@ describe('Gestión de Fincas - CRUD', () => {
       .should('be.visible')
       .and('contain', 'Debe seleccionar ubicación en el mapa')
   })
+
+  it('debe permitir duplicar finca', () => {
+    cy.get('[data-cy="finca-item"]').first().click()
+    cy.get('[data-cy="duplicate-finca"]').click()
+    
+    // Verificar que se abre formulario con datos prellenados
+    cy.get('[data-cy="finca-nombre"]').should('have.value').and('not.be.empty')
+    
+    // Modificar nombre
+    cy.get('[data-cy="finca-nombre"]').clear().type('Finca Duplicada')
+    cy.get('[data-cy="save-finca"]').click()
+    
+    cy.checkNotification('Finca creada exitosamente', 'success')
+  })
+
+  it('debe permitir activar/desactivar finca', () => {
+    cy.get('[data-cy="finca-item"]').first().click()
+    
+    // Desactivar finca
+    cy.get('[data-cy="toggle-finca-status"]').click()
+    cy.checkNotification('Finca desactivada', 'success')
+    
+    // Activar finca
+    cy.get('[data-cy="toggle-finca-status"]').click()
+    cy.checkNotification('Finca activada', 'success')
+  })
+
+  it('debe mostrar historial de cambios de finca', () => {
+    cy.get('[data-cy="finca-item"]').first().click()
+    cy.get('[data-cy="finca-history"]').should('be.visible')
+    cy.get('[data-cy="history-item"]').should('have.length.greaterThan', 0)
+  })
+
+  it('debe permitir agregar notas a finca', () => {
+    cy.get('[data-cy="finca-item"]').first().click()
+    cy.get('[data-cy="add-note"]').click()
+    
+    cy.get('[data-cy="note-text"]').type('Nota importante sobre la finca')
+    cy.get('[data-cy="save-note"]').click()
+    
+    cy.checkNotification('Nota agregada', 'success')
+    cy.get('[data-cy="finca-notes"]').should('contain', 'Nota importante')
+  })
+
+  it('debe permitir agregar imágenes a finca', () => {
+    cy.get('[data-cy="finca-item"]').first().click()
+    cy.get('[data-cy="add-image"]').click()
+    
+    cy.fixture('test-cacao.jpg').then((fileContent) => {
+      const blob = new Blob([fileContent], { type: 'image/jpeg' })
+      const file = new File([blob], 'finca-image.jpg', { type: 'image/jpeg' })
+      
+      cy.get('[data-cy="image-input"]').then((input) => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.items.add(file)
+        input[0].files = dataTransfer.files
+        
+        cy.wrap(input).trigger('change', { force: true })
+      })
+    })
+    
+    cy.get('[data-cy="upload-image"]').click()
+    cy.checkNotification('Imagen agregada', 'success')
+  })
 })

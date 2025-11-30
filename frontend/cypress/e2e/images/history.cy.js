@@ -217,4 +217,51 @@ describe('Gestión de Imágenes - Historial y Detalles', () => {
       })
     })
   })
+
+  it('debe permitir filtrar por estado de análisis', () => {
+    cy.visit('/mis-imagenes')
+    
+    cy.get('[data-cy="analysis-status-filter"]').select('completado')
+    cy.get('[data-cy="image-item"]').each(($item) => {
+      cy.wrap($item).find('[data-cy="analysis-status"]').should('contain', 'Completado')
+    })
+  })
+
+  it('debe mostrar vista de galería', () => {
+    cy.visit('/mis-imagenes')
+    
+    cy.get('[data-cy="view-gallery"]').click()
+    cy.get('[data-cy="gallery-view"]').should('be.visible')
+    cy.get('[data-cy="gallery-item"]').should('have.length.greaterThan', 0)
+  })
+
+  it('debe permitir etiquetar imágenes', () => {
+    cy.visit('/mis-imagenes')
+    
+    cy.get('[data-cy="image-item"]').first().within(() => {
+      cy.get('[data-cy="add-tag"]').click()
+      cy.get('[data-cy="tag-input"]').type('mejor-calidad')
+      cy.get('[data-cy="save-tag"]').click()
+    })
+    
+    cy.get('[data-cy="image-tags"]').should('contain', 'mejor-calidad')
+  })
+
+  it('debe mostrar timeline de imágenes', () => {
+    cy.visit('/mis-imagenes')
+    
+    cy.get('[data-cy="view-timeline"]').click()
+    cy.get('[data-cy="timeline-view"]').should('be.visible')
+    cy.get('[data-cy="timeline-item"]').should('have.length.greaterThan', 0)
+  })
+
+  it('debe permitir comparar múltiples imágenes', () => {
+    cy.visit('/mis-imagenes')
+    
+    cy.get('[data-cy="image-checkbox"]').first().check()
+    cy.get('[data-cy="image-checkbox"]').eq(1).check()
+    
+    cy.get('[data-cy="compare-images"]').click()
+    cy.get('[data-cy="comparison-view"]').should('be.visible')
+  })
 })

@@ -556,7 +556,7 @@ const handleSubmit = async () => {
         if (!firstErrorField && errors.value[frontendField]) {
           firstErrorField = frontendField
         }
-      })
+      }
       
       // Scroll al primer campo con error
       if (firstErrorField) {

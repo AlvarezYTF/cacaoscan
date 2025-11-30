@@ -252,4 +252,61 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
     cy.get('[data-cy="performance-metrics"]').should('be.visible')
     cy.get('[data-cy="recent-activities"]').should('be.visible')
   })
+
+  it('debe permitir filtrar lotes por variedad', () => {
+    cy.visit('/mis-fincas')
+    cy.get('[data-cy="finca-item"]').first().click()
+    
+    // Filtrar por variedad
+    cy.get('[data-cy="filter-variedad"]').select('Criollo')
+    cy.get('[data-cy="lotes-list"]').should('be.visible')
+    
+    // Verificar que solo se muestran lotes de la variedad seleccionada
+    cy.get('[data-cy="lote-item"]').each(($item) => {
+      cy.wrap($item).find('[data-cy="lote-variedad"]').should('contain', 'Criollo')
+    })
+  })
+
+  it('debe permitir ordenar lotes por área', () => {
+    cy.visit('/mis-fincas')
+    cy.get('[data-cy="finca-item"]').first().click()
+    
+    // Ordenar por área descendente
+    cy.get('[data-cy="sort-lotes"]').select('area-desc')
+    
+    // Verificar orden
+    cy.get('[data-cy="lote-item"]').first().find('[data-cy="lote-area"]').then(($first) => {
+      cy.get('[data-cy="lote-item"]').eq(1).find('[data-cy="lote-area"]').then(($second) => {
+        const firstArea = Number.parseFloat($first.text())
+        const secondArea = Number.parseFloat($second.text())
+        expect(firstArea).to.be.at.least(secondArea)
+      })
+    })
+  })
+
+  it('debe mostrar resumen de calidad por finca', () => {
+    cy.visit('/mis-fincas')
+    cy.get('[data-cy="finca-item"]').first().click()
+    
+    // Verificar resumen de calidad
+    cy.get('[data-cy="quality-summary"]').should('be.visible')
+    cy.get('[data-cy="average-quality"]').should('be.visible')
+    cy.get('[data-cy="quality-distribution"]').should('be.visible')
+  })
+
+  it('debe permitir comparar lotes de la misma finca', () => {
+    cy.visit('/mis-fincas')
+    cy.get('[data-cy="finca-item"]').first().click()
+    
+    // Seleccionar lotes para comparar
+    cy.get('[data-cy="lote-checkbox"]').first().check()
+    cy.get('[data-cy="lote-checkbox"]').eq(1).check()
+    
+    // Activar comparación
+    cy.get('[data-cy="compare-lotes"]').click()
+    
+    // Verificar vista de comparación
+    cy.get('[data-cy="comparison-view"]').should('be.visible')
+    cy.get('[data-cy="comparison-chart"]').should('be.visible')
+  })
 })

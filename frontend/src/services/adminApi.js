@@ -433,7 +433,7 @@ const getExperiments = async (filters = {}) => {
       if (value !== undefined && value !== null && value !== '') {
         params.append(key, value);
       }
-    });
+    }
     
     const url = `${API_BASE_URL}/images/admin/experiments/?${params}`;
     
@@ -730,4 +730,4 @@ export default {
   
   // Nota: TRAINING_PRESETS, DATA_FILTERS y ADMIN_TRAINING_CONFIG 
   // están disponibles como named exports arriba
-};
+}

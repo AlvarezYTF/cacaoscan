@@ -1,6 +1,26 @@
 import { config } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
+import { vi } from 'vitest'
+
+// Mock para Tailwind CSS v4 - clsfn function
+if (typeof globalThis.clsfn === 'undefined') {
+  globalThis.clsfn = (classes) => {
+    if (typeof classes === 'string') {
+      return classes
+    }
+    if (Array.isArray(classes)) {
+      return classes.filter(Boolean).join(' ')
+    }
+    if (typeof classes === 'object' && classes !== null) {
+      return Object.entries(classes)
+        .filter(([, value]) => Boolean(value))
+        .map(([key]) => key)
+        .join(' ')
+    }
+    return ''
+  }
+}
 
 // Configuración global para tests
 const pinia = createPinia()

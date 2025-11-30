@@ -232,4 +232,73 @@ describe('Carga de Imágenes - Upload', () => {
       cy.get('[data-cy="file-input"]').should('have.value', '')
     })
   })
+
+  it('debe permitir cargar múltiples imágenes', () => {
+    cy.get('[data-cy="file-input"]').then((input) => {
+      const files = [
+        new File(['image1'], 'test1.jpg', { type: 'image/jpeg' }),
+        new File(['image2'], 'test2.jpg', { type: 'image/jpeg' })
+      ]
+      
+      const dataTransfer = new DataTransfer()
+      files.forEach(file => dataTransfer.items.add(file))
+      input[0].files = dataTransfer.files
+      
+      cy.wrap(input).trigger('change', { force: true })
+    })
+    
+    cy.get('[data-cy="image-preview"]').should('have.length', 2)
+  })
+
+  it('debe validar resolución mínima de imagen', () => {
+    cy.get('[data-cy="file-input"]').then((input) => {
+      const blob = new Blob(['tiny'], { type: 'image/jpeg' })
+      const file = new File([blob], 'tiny.jpg', { type: 'image/jpeg' })
+      
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file)
+      input[0].files = dataTransfer.files
+      
+      cy.wrap(input).trigger('change', { force: true })
+      
+      cy.get('[data-cy="resolution-error"]')
+        .should('be.visible')
+        .and('contain', 'Resolución mínima')
+    })
+  })
+
+  it('debe mostrar preview con dimensiones correctas', () => {
+    cy.fixture('test-cacao.jpg').then((fileContent) => {
+      const blob = new Blob([fileContent], { type: 'image/jpeg' })
+      const file = new File([blob], 'test-cacao.jpg', { type: 'image/jpeg' })
+      
+      cy.get('[data-cy="file-input"]').then((input) => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.items.add(file)
+        input[0].files = dataTransfer.files
+        
+        cy.wrap(input).trigger('change', { force: true })
+      })
+      
+      cy.get('[data-cy="image-dimensions"]').should('be.visible')
+    })
+  })
+
+  it('debe permitir recortar imagen antes de subir', () => {
+    cy.fixture('test-cacao.jpg').then((fileContent) => {
+      const blob = new Blob([fileContent], { type: 'image/jpeg' })
+      const file = new File([blob], 'test-cacao.jpg', { type: 'image/jpeg' })
+      
+      cy.get('[data-cy="file-input"]').then((input) => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.items.add(file)
+        input[0].files = dataTransfer.files
+        
+        cy.wrap(input).trigger('change', { force: true })
+      })
+      
+      cy.get('[data-cy="crop-image"]').click()
+      cy.get('[data-cy="crop-tool"]').should('be.visible')
+    })
+  })
 })

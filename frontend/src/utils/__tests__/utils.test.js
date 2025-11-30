@@ -1,6 +1,4 @@
-"""
-Tests unitarios para utilidades de CacaoScan.
-"""
+// Tests unitarios para utilidades de CacaoScan.
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // Importar utilidades (asumiendo que existen)
@@ -180,19 +178,20 @@ describe('Function Utilities', () => {
     const mockFn = vi.fn()
     const throttledFn = throttle(mockFn, 100)
     
-    // Llamar múltiples veces rápidamente
+    // Llamar múltiples veces rápidamente (solo la primera se ejecuta)
     throttledFn()
     throttledFn()
     throttledFn()
     
-    // Esperar un poco
+    // Esperar que pase el período de throttle
+    await new Promise(resolve => setTimeout(resolve, 150))
+    
+    // Llamar de nuevo después del throttle (esta se ejecuta)
+    throttledFn()
+    
     await new Promise(resolve => setTimeout(resolve, 50))
     
-    // Llamar de nuevo después del throttle
-    throttledFn()
-    
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
+    // Throttle permite 1 llamada por período, así que esperamos 2 llamadas totales
     expect(mockFn).toHaveBeenCalledTimes(2)
   })
 })
@@ -271,7 +270,8 @@ describe('String Utilities', () => {
   }
 
   const truncate = (str, length = 50, suffix = '...') => {
-    if (!str || str.length <= length) return str
+    if (!str) return ''
+    if (str.length <= length) return str
     return str.substring(0, length) + suffix
   }
 
@@ -282,7 +282,7 @@ describe('String Utilities', () => {
       .replace(/[^a-z0-9 -]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
-      .trim()
+      .replace(/^-+|-+$/g, '')
   }
 
   it('capitaliza strings correctamente', () => {
@@ -417,7 +417,7 @@ describe('Object Utilities', () => {
     expect(cloned).toEqual(original)
     expect(cloned).not.toBe(original)
     expect(cloned.b).not.toBe(original.b)
-    expect(cloned.d).not.toBe(original.d)
+    expect(cloned.b.d).not.toBe(original.b.d)
   })
 
   it('fusiona objetos correctamente', () => {

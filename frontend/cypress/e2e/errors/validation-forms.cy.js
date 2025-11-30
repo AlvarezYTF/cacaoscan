@@ -300,4 +300,66 @@ describe('Manejo de Errores - Validación y Formularios', () => {
       .should('be.visible')
       .and('contain', 'Este campo es requerido para cultivos orgánicos')
   })
+
+  it('debe validar formato de teléfono', () => {
+    cy.visit('/registro')
+    
+    cy.get('[data-cy="phone-input"]').type('123')
+    cy.get('[data-cy="register-button"]').click()
+    
+    cy.get('[data-cy="phone-error"]')
+      .should('be.visible')
+      .and('contain', 'Formato de teléfono inválido')
+  })
+
+  it('debe validar formato de documento', () => {
+    cy.visit('/registro')
+    
+    cy.get('[data-cy="document-input"]').type('123')
+    cy.get('[data-cy="register-button"]').click()
+    
+    cy.get('[data-cy="document-error"]')
+      .should('be.visible')
+      .and('contain', 'Formato de documento inválido')
+  })
+
+  it('debe validar edad mínima en fecha de nacimiento', () => {
+    cy.visit('/registro')
+    
+    const futureDate = new Date()
+    futureDate.setFullYear(futureDate.getFullYear() - 10)
+    const dateString = futureDate.toISOString().split('T')[0]
+    
+    cy.get('[data-cy="birthdate-input"]').type(dateString)
+    cy.get('[data-cy="register-button"]').click()
+    
+    cy.get('[data-cy="birthdate-error"]')
+      .should('be.visible')
+      .and('contain', 'Debes tener al menos 14 años')
+  })
+
+  it('debe validar campos de dirección', () => {
+    cy.visit('/mis-fincas')
+    cy.get('[data-cy="add-finca-button"]').click()
+    
+    cy.get('[data-cy="finca-direccion"]').type('A'.repeat(501))
+    cy.get('[data-cy="save-finca"]').click()
+    
+    cy.get('[data-cy="direccion-error"]')
+      .should('be.visible')
+      .and('contain', 'La dirección es demasiado larga')
+  })
+
+  it('debe validar coordenadas GPS', () => {
+    cy.visit('/mis-fincas')
+    cy.get('[data-cy="add-finca-button"]').click()
+    
+    cy.get('[data-cy="finca-latitud"]').type('100')
+    cy.get('[data-cy="finca-longitud"]').type('200')
+    cy.get('[data-cy="save-finca"]').click()
+    
+    cy.get('[data-cy="coordenadas-error"]')
+      .should('be.visible')
+      .and('contain', 'Coordenadas inválidas')
+  })
 })

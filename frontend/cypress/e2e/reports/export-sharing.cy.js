@@ -268,4 +268,48 @@ describe('Reportes - Exportación y Compartir', () => {
     cy.get('[data-cy="export-progress"]').should('be.visible')
     cy.get('[data-cy="progress-percentage"]').should('contain', '%')
   })
+
+  it('debe exportar reporte como CSV', () => {
+    cy.get('[data-cy="report-item"]').first().click()
+    cy.get('[data-cy="download-csv"]').click()
+    cy.verifyDownload('reporte.csv')
+  })
+
+  it('debe exportar reporte como JSON', () => {
+    cy.get('[data-cy="report-item"]').first().click()
+    cy.get('[data-cy="download-json"]').click()
+    cy.verifyDownload('reporte.json')
+  })
+
+  it('debe validar destinatarios de email', () => {
+    cy.get('[data-cy="report-item"]').first().click()
+    cy.get('[data-cy="share-email"]').click()
+    
+    // Email inválido
+    cy.get('[data-cy="email-recipients"]').type('invalid-email')
+    cy.get('[data-cy="send-email"]').click()
+    
+    cy.get('[data-cy="email-error"]')
+      .should('be.visible')
+      .and('contain', 'Email inválido')
+  })
+
+  it('debe permitir cancelar exportación en progreso', () => {
+    cy.get('[data-cy="report-item"]').first().click()
+    cy.get('[data-cy="download-pdf"]').click()
+    cy.get('[data-cy="confirm-download"]').click()
+    
+    // Cancelar exportación
+    cy.get('[data-cy="cancel-export"]').click()
+    cy.get('[data-cy="export-progress"]').should('not.exist')
+  })
+
+  it('debe mostrar tamaño estimado del archivo', () => {
+    cy.get('[data-cy="report-item"]').first().click()
+    cy.get('[data-cy="download-pdf"]').click()
+    
+    // Verificar tamaño estimado
+    cy.get('[data-cy="estimated-size"]').should('be.visible')
+    cy.get('[data-cy="estimated-size"]').should('contain', 'MB')
+  })
 })

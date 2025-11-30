@@ -1,20 +1,18 @@
-"""
-Tests unitarios para composables de CacaoScan.
-"""
+// Tests unitarios para composables de CacaoScan.
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
-import { useImageStats } from '../composables/useImageStats.js'
-import { useWebSocket } from '../composables/useWebSocket.js'
+import { useImageStats } from '../useImageStats.js'
+import { useWebSocket } from '../useWebSocket.js'
 
 // Mock de servicios
-vi.mock('../services/api.js', () => ({
+vi.mock('@/services/api', () => ({
   default: {
     get: vi.fn(),
     post: vi.fn()
   }
 }))
 
-vi.mock('../services/predictionApi.js', () => ({
+vi.mock('@/services/predictionApi', () => ({
   default: {
     getAnalysisHistory: vi.fn(),
     getAnalysisStats: vi.fn()

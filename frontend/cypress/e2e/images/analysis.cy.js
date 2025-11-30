@@ -212,4 +212,50 @@ describe('Análisis de Imágenes - Procesamiento', () => {
     cy.get('[data-cy="previous-analysis"]').should('be.visible')
     cy.get('[data-cy="improvement-indicator"]').should('be.visible')
   })
+
+  it('debe mostrar gráficos de análisis', () => {
+    cy.uploadTestImage('test-cacao.jpg')
+    cy.get('[data-cy="upload-button"]').click()
+    cy.waitForAnalysis()
+    
+    // Verificar gráficos
+    cy.get('[data-cy="quality-chart"]').should('be.visible')
+    cy.get('[data-cy="maturity-chart"]').should('be.visible')
+    cy.get('[data-cy="defects-chart"]').should('be.visible')
+  })
+
+  it('debe permitir compartir resultados de análisis', () => {
+    cy.uploadTestImage('test-cacao.jpg')
+    cy.get('[data-cy="upload-button"]').click()
+    cy.waitForAnalysis()
+    
+    cy.get('[data-cy="share-results"]').click()
+    cy.get('[data-cy="share-options"]').should('be.visible')
+  })
+
+  it('debe mostrar métricas de confianza del análisis', () => {
+    cy.uploadTestImage('test-cacao.jpg')
+    cy.get('[data-cy="upload-button"]').click()
+    cy.waitForAnalysis()
+    
+    cy.get('[data-cy="confidence-score"]').should('be.visible')
+    cy.get('[data-cy="confidence-level"]').should('be.visible')
+  })
+
+  it('debe permitir re-analizar imagen', () => {
+    cy.uploadTestImage('test-cacao.jpg')
+    cy.get('[data-cy="upload-button"]').click()
+    cy.waitForAnalysis()
+    
+    cy.get('[data-cy="re-analyze"]').click()
+    cy.get('[data-cy="analysis-progress"]').should('be.visible')
+  })
+
+  it('debe mostrar tiempo de procesamiento', () => {
+    cy.uploadTestImage('test-cacao.jpg')
+    cy.get('[data-cy="upload-button"]').click()
+    cy.waitForAnalysis()
+    
+    cy.get('[data-cy="processing-time"]').should('be.visible')
+  })
 })

@@ -486,7 +486,7 @@ export function useWebSocket() {
         } catch (error) {
           console.error(`Error en listener de evento ${event}:`, error)
         }
-      })
+      }
     }
   }
   

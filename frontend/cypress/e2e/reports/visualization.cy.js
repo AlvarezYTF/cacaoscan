@@ -247,4 +247,47 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
     cy.get('[data-cy="next-page"]').click()
     cy.get('[data-cy="page-info"]').should('contain', '2 de 4')
   })
+
+  it('debe mostrar vista de tarjetas y lista', () => {
+    // Cambiar a vista de tarjetas
+    cy.get('[data-cy="view-cards"]').click()
+    cy.get('[data-cy="reports-cards"]').should('be.visible')
+    
+    // Cambiar a vista de lista
+    cy.get('[data-cy="view-list"]').click()
+    cy.get('[data-cy="reports-list"]').should('be.visible')
+  })
+
+  it('debe mostrar preview de reporte en hover', () => {
+    cy.get('[data-cy="report-item"]').first().trigger('mouseover')
+    cy.get('[data-cy="report-preview"]').should('be.visible')
+  })
+
+  it('debe mostrar tags y categorías de reportes', () => {
+    cy.get('[data-cy="report-item"]').first().within(() => {
+      cy.get('[data-cy="report-tags"]').should('be.visible')
+      cy.get('[data-cy="report-category"]').should('be.visible')
+    })
+  })
+
+  it('debe filtrar reportes por múltiples criterios', () => {
+    cy.get('[data-cy="report-type-filter"]').select('analisis-periodo')
+    cy.get('[data-cy="status-filter"]').select('completado')
+    cy.get('[data-cy="apply-filters"]').click()
+    
+    cy.get('[data-cy="active-filters"]').should('be.visible')
+    cy.get('[data-cy="filter-tag"]').should('have.length', 2)
+  })
+
+  it('debe mostrar gráficos interactivos en reporte', () => {
+    cy.get('[data-cy="report-item"]').first().click()
+    
+    // Interactuar con gráficos
+    cy.get('[data-cy="quality-chart"]').should('be.visible')
+    cy.get('[data-cy="chart-legend"]').should('be.visible')
+    
+    // Hacer clic en elemento del gráfico
+    cy.get('[data-cy="chart-bar"]').first().click()
+    cy.get('[data-cy="chart-tooltip"]').should('be.visible')
+  })
 })

@@ -223,4 +223,62 @@ describe('Generación de Reportes - Creación', () => {
     // Verificar preview
     cy.get('[data-cy="format-preview"]').should('be.visible')
   })
+
+  it('debe permitir guardar plantilla de reporte', () => {
+    cy.get('[data-cy="create-report-button"]').click()
+    
+    cy.get('[data-cy="report-type"]').select('analisis-periodo')
+    cy.get('[data-cy="start-date"]').type('2024-01-01')
+    cy.get('[data-cy="end-date"]').type('2024-01-31')
+    
+    // Guardar como plantilla
+    cy.get('[data-cy="save-template"]').click()
+    cy.get('[data-cy="template-name"]').type('Plantilla Mensual')
+    cy.get('[data-cy="save-template-button"]').click()
+    
+    cy.checkNotification('Plantilla guardada', 'success')
+  })
+
+  it('debe permitir usar plantilla guardada', () => {
+    cy.get('[data-cy="use-template"]').click()
+    cy.get('[data-cy="template-item"]').first().click()
+    
+    // Verificar que se llenan los campos
+    cy.get('[data-cy="report-type"]').should('have.value')
+    cy.get('[data-cy="start-date"]').should('have.value')
+  })
+
+  it('debe mostrar estimación de tiempo de generación', () => {
+    cy.get('[data-cy="create-report-button"]').click()
+    
+    cy.get('[data-cy="report-type"]').select('analisis-periodo')
+    cy.get('[data-cy="start-date"]').type('2024-01-01')
+    cy.get('[data-cy="end-date"]').type('2024-01-31')
+    
+    cy.get('[data-cy="estimated-time"]')
+      .should('be.visible')
+      .and('contain', 'minutos')
+  })
+
+  it('debe validar que hay datos para el período', () => {
+    cy.get('[data-cy="create-report-button"]').click()
+    
+    cy.get('[data-cy="report-type"]').select('analisis-periodo')
+    cy.get('[data-cy="start-date"]').type('2030-01-01')
+    cy.get('[data-cy="end-date"]').type('2030-01-31')
+    cy.get('[data-cy="generate-report"]').click()
+    
+    cy.get('[data-cy="no-data-error"]')
+      .should('be.visible')
+      .and('contain', 'No hay datos')
+  })
+
+  it('debe permitir agregar comentarios al reporte', () => {
+    cy.get('[data-cy="create-report-button"]').click()
+    
+    cy.get('[data-cy="report-comments"]').type('Comentario importante sobre el reporte')
+    cy.get('[data-cy="save-comments"]').click()
+    
+    cy.checkNotification('Comentarios guardados', 'success')
+  })
 })

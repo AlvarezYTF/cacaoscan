@@ -166,4 +166,85 @@ describe('Autenticación - Registro', () => {
     cy.get('[data-cy="login-link"]').click()
     cy.url().should('include', '/login')
   })
+
+  it('debe validar longitud mínima de nombre', () => {
+    cy.get('[data-cy="first-name-input"]').type('A')
+    cy.get('[data-cy="register-button"]').click()
+    
+    cy.get('[data-cy="first-name-error"]')
+      .should('be.visible')
+      .and('contain', 'El nombre debe tener al menos')
+  })
+
+  it('debe validar caracteres especiales en nombre', () => {
+    cy.get('[data-cy="first-name-input"]').type('Juan123')
+    cy.get('[data-cy="register-button"]').click()
+    
+    cy.get('[data-cy="first-name-error"]')
+      .should('be.visible')
+      .and('contain', 'Solo se permiten letras')
+  })
+
+  it('debe validar formato de teléfono', () => {
+    cy.get('[data-cy="phone-input"]').type('123')
+    cy.get('[data-cy="register-button"]').click()
+    
+    cy.get('[data-cy="phone-error"]')
+      .should('be.visible')
+      .and('contain', 'Formato de teléfono inválido')
+  })
+
+  it('debe validar edad mínima', () => {
+    const futureDate = new Date()
+    futureDate.setFullYear(futureDate.getFullYear() - 10)
+    const dateString = futureDate.toISOString().split('T')[0]
+    
+    cy.get('[data-cy="birthdate-input"]').type(dateString)
+    cy.get('[data-cy="register-button"]').click()
+    
+    cy.get('[data-cy="birthdate-error"]')
+      .should('be.visible')
+      .and('contain', 'Debes tener al menos')
+  })
+
+  it('debe mostrar indicador de fortaleza de contraseña en tiempo real', () => {
+    cy.get('[data-cy="password-input"]').type('weak')
+    cy.get('[data-cy="password-strength"]').should('contain', 'Débil')
+    
+    cy.get('[data-cy="password-input"]').clear().type('Medium123')
+    cy.get('[data-cy="password-strength"]').should('contain', 'Media')
+    
+    cy.get('[data-cy="password-input"]').clear().type('StrongPassword123!')
+    cy.get('[data-cy="password-strength"]').should('contain', 'Fuerte')
+  })
+
+  it('debe validar que el email no esté en uso', () => {
+    cy.intercept('POST', '/api/auth/register/', {
+      statusCode: 400,
+      body: { email: ['Este email ya está en uso'] }
+    }).as('emailExists')
+    
+    cy.get('[data-cy="email-input"]').type('existing@example.com')
+    cy.get('[data-cy="register-button"]').click()
+    cy.wait('@emailExists')
+    
+    cy.get('[data-cy="email-error"]')
+      .should('be.visible')
+      .and('contain', 'ya está en uso')
+  })
+
+  it('debe mostrar mensaje de verificación de email después del registro', () => {
+    cy.get('[data-cy="first-name-input"]').type('Juan')
+    cy.get('[data-cy="last-name-input"]').type('Pérez')
+    cy.get('[data-cy="email-input"]').type('juan@test.com')
+    cy.get('[data-cy="password-input"]').type('Password123!')
+    cy.get('[data-cy="confirm-password-input"]').type('Password123!')
+    cy.get('[data-cy="role-select"]').select('farmer')
+    cy.get('[data-cy="terms-checkbox"]').check()
+    cy.get('[data-cy="register-button"]').click()
+    
+    cy.get('[data-cy="verification-message"]')
+      .should('be.visible')
+      .and('contain', 'Verifica tu email')
+  })
 })

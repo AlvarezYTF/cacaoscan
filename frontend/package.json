@@ -17,6 +17,10 @@
     "test:unit:dev": "vitest --coverage",
     "test:unit:watch": "vitest --coverage --watch",
     "test:coverage": "vitest run --coverage --reporter=verbose",
+    "test:unit:coverage": "vitest run --coverage",
+    "test:coverage:sonar": "vitest run --coverage --reporter=verbose",
+    "test:all:coverage": "npm run test:coverage:sonar && npm run test:e2e",
+    "test:all": "npm run test:unit && npm run test:e2e",
     "lint": "eslint . --fix",
     "format": "prettier --write src/"
   },

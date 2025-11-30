@@ -92,11 +92,12 @@ export const useConfigStore = defineStore('config', {
 
     _processConfigResults(results, canAccessConfig) {
       if (canAccessConfig && results.length === 4) {
+        // results order: [system, general, security, ml]
         return {
-          general: results[0],
-          security: results[1],
-          ml: results[2],
-          system: results[3]
+          system: results[0],
+          general: results[1],
+          security: results[2],
+          ml: results[3]
         }
       }
       return {

@@ -292,4 +292,45 @@ describe('Navegación - Rutas y Permisos', () => {
       .should('be.visible')
       .and('contain', 'Sistema en mantenimiento')
   })
+
+  it('debe verificar permisos de lectura vs escritura', () => {
+    cy.login('analyst')
+    
+    // Analista puede ver reportes pero no crear
+    cy.visit('/reportes')
+    cy.url().should('include', '/reportes')
+    cy.get('[data-cy="reports-list"]').should('be.visible')
+    
+    // Verificar que no puede crear reportes
+    cy.get('[data-cy="create-report-button"]').should('not.exist')
+  })
+
+  it('debe verificar navegación con múltiples roles', () => {
+    // Usuario con múltiples roles
+    cy.login('multiRole')
+    
+    // Debe poder acceder a todas las rutas de sus roles
+    cy.visit('/agricultor-dashboard')
+    cy.url().should('include', '/agricultor-dashboard')
+    
+    cy.visit('/analisis')
+    cy.url().should('include', '/analisis')
+  })
+
+  it('debe verificar navegación con permisos temporales', () => {
+    cy.login('farmer')
+    
+    // Simular permiso temporal otorgado
+    cy.window().then((win) => {
+      win.localStorage.setItem('temp_permissions', JSON.stringify(['view_reports']))
+    })
+    
+    cy.visit('/reportes')
+    cy.url().should('include', '/reportes')
+    
+    // Limpiar permisos temporales
+    cy.window().then((win) => {
+      win.localStorage.removeItem('temp_permissions')
+    })
+  })
 })

@@ -1,31 +1,31 @@
-"""
-Tests unitarios para componentes Vue de CacaoScan.
-"""
+// Tests unitarios para componentes Vue de CacaoScan.
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // Importar componentes principales
-import LoginForm from '../components/auth/LoginForm.vue'
-import RegisterForm from '../components/auth/RegisterForm.vue'
-import ImageUploader from '../components/analysis/ImageUploader.vue'
-import AnalysisSummaryCard from '../components/analysis/AnalysisSummaryCard.vue'
-import StatsCard from '../components/analisis/StatsCard.vue'
-import NotificationBell from '../components/notifications/NotificationBell.vue'
-import LoadingSpinner from '../components/common/LoadingSpinner.vue'
-import ErrorAlert from '../components/common/ErrorAlert.vue'
-import ConfirmModal from '../components/common/ConfirmModal.vue'
-import PageHeader from '../components/common/PageHeader.vue'
-import QuickActions from '../components/dashboard/QuickActions.vue'
-import RecentAnalyses from '../components/dashboard/RecentAnalyses.vue'
-import StatsOverview from '../components/dashboard/StatsOverview.vue'
-import BarChart from '../components/charts/BarChart.vue'
-import LineChart from '../components/charts/LineChart.vue'
-import PieChart from '../components/charts/PieChart.vue'
+import LoginForm from '../auth/LoginForm.vue'
+import RegisterForm from '../auth/RegisterForm.vue'
+// ImageUploader no existe en analysis, comentado temporalmente
+// import ImageUploader from '../admin/AdminAnalisisComponents/ImageUploader.vue'
+import AnalysisSummaryCard from '../analysis/AnalysisSummaryCard.vue'
+// StatsCard no existe en analisis, comentado temporalmente
+// import StatsCard from '../reportes/StatsCard.vue'
+import NotificationBell from '../notifications/NotificationBell.vue'
+import LoadingSpinner from '../admin/AdminGeneralComponents/LoadingSpinner.vue'
+import ErrorAlert from '../common/ErrorAlert.vue'
+import ConfirmModal from '../common/ConfirmModal.vue'
+import PageHeader from '../common/PageHeader.vue'
+import QuickActions from '../dashboard/QuickActions.vue'
+import RecentAnalyses from '../dashboard/RecentAnalyses.vue'
+import StatsOverview from '../dashboard/StatsOverview.vue'
+import BarChart from '../charts/BarChart.vue'
+import LineChart from '../charts/LineChart.vue'
+import PieChart from '../charts/PieChart.vue'
 
 // Mock de servicios
-vi.mock('../services/api.js', () => ({
+vi.mock('@/services/api', () => ({
   default: {
     post: vi.fn(),
     get: vi.fn(),

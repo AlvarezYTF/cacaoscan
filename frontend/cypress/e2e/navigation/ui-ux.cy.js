@@ -279,4 +279,52 @@ describe('Navegación - UI y UX', () => {
     cy.get('[data-cy="validation-error"]').should('be.visible')
     cy.get('[data-cy="field-error"]').should('have.length.greaterThan', 0)
   })
+
+  it('debe mostrar tooltips en elementos interactivos', () => {
+    cy.visit('/agricultor-dashboard')
+    
+    // Verificar tooltips
+    cy.get('[data-cy="help-icon"]').trigger('mouseover')
+    cy.get('[data-cy="tooltip"]').should('be.visible')
+  })
+
+  it('debe mostrar animaciones de transición', () => {
+    cy.visit('/agricultor-dashboard')
+    
+    // Navegar y verificar transiciones
+    cy.get('[data-cy="nav-fincas"]').click()
+    cy.get('[data-cy="page-transition"]').should('be.visible')
+  })
+
+  it('debe mantener scroll position en navegación', () => {
+    cy.visit('/mis-fincas')
+    
+    // Scroll hacia abajo
+    cy.scrollTo(0, 500)
+    
+    // Navegar a otra página y volver
+    cy.visit('/mis-lotes')
+    cy.visit('/mis-fincas')
+    
+    // Verificar que se mantiene la posición (si está implementado)
+    cy.window().its('scrollY').should('be.greaterThan', 0)
+  })
+
+  it('debe mostrar modales con overlay', () => {
+    cy.visit('/mis-fincas')
+    cy.get('[data-cy="add-finca-button"]').click()
+    
+    // Verificar overlay del modal
+    cy.get('[data-cy="modal-overlay"]').should('be.visible')
+    cy.get('[data-cy="modal-overlay"]').should('have.class', 'backdrop-blur')
+  })
+
+  it('debe cerrar modales con ESC', () => {
+    cy.visit('/mis-fincas')
+    cy.get('[data-cy="add-finca-button"]').click()
+    
+    // Cerrar con ESC
+    cy.get('body').type('{esc}')
+    cy.get('[data-cy="finca-form"]').should('not.exist')
+  })
 })

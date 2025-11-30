@@ -494,6 +494,17 @@ const newFinca = reactive({
   coordenadas_lng: null
 })
 
+// Functions
+const loadFarmersFincas = async (agricultorId) => {
+  try {
+    const response = await getFincas({ agricultor: agricultorId })
+    fincasList.value = response.results || []
+  } catch (error) {
+    console.error('Error cargando fincas:', error)
+    fincasList.value = []
+  }
+}
+
 // Load farmer data when prop changes
 watch(() => props.farmer, async (newFarmer) => {
   if (newFarmer && newFarmer.id) {
@@ -550,17 +561,6 @@ watch(() => props.farmer, async (newFarmer) => {
     }
   }
 }, { immediate: true })
-
-// Functions
-const loadFarmersFincas = async (agricultorId) => {
-  try {
-    const response = await getFincas({ agricultor: agricultorId })
-    fincasList.value = response.results || []
-  } catch (error) {
-    console.error('Error cargando fincas:', error)
-    fincasList.value = []
-  }
-}
 
 const resetNewFinca = () => {
   newFinca.nombre = ''

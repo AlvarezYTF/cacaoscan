@@ -72,7 +72,7 @@ export function useImageStats() {
         if (key !== 'page_size' && filters[key] !== undefined && filters[key] !== null) {
           params.append(key, filters[key].toString())
         }
-      })
+      }
       
       const response = await axios.get(`/api/v1/images/?${params}`)
       
