@@ -347,7 +347,7 @@ const validateForm = () => {
       else if (error.includes('latitud')) errors.value.coordenadas_lat = error
       else if (error.includes('longitud')) errors.value.coordenadas_lng = error
       else if (error.includes('descripción')) errors.value.descripcion = error
-    })
+    }
     return false
   }
   

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import RegisterForm from '../RegisterForm.vue'
+import RegisterForm from '../../auth/RegisterForm.vue'
 
 const mockAuthStore = {
   register: vi.fn(),
