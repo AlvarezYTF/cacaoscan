@@ -2036,7 +2036,7 @@ class CacaoTrainingPipeline:
                     successful += 1
                     
                 except Exception as seg_error:
-                    logger.warning(f"Error en segmentación para ID {image_id}: {seg_error}")
+                    logger.warning(f"Error en segmentación para ID {record.get('id', 'unknown')}: {seg_error}")
                     failed += 1
                     continue
                 
