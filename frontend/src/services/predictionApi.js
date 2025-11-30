@@ -524,8 +524,7 @@ export async function exportResults(options = {}) {
 export { validateImageFile } from '@/utils/imageValidationUtils'
 
 // Import and re-export createImageFormData from utils for backward compatibility
-import { createImageFormData } from '@/utils/formDataUtils'
-export { createImageFormData }
+export { createImageFormData } from '@/utils/formDataUtils'
 
 // No exportar api directamente, solo las funciones
 export default {

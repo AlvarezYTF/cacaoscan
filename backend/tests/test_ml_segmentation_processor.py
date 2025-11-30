@@ -195,12 +195,12 @@ class TestSegmentationProcessor:
     
     @patch('ml.segmentation.processor._HAS_XIMGPROC', True)
     @patch('ml.segmentation.processor._HAS_XIMGPROC', True)
-    @patch('cv2.ximgproc.guidedFilter')
-    def test_guided_refine_with_ximgproc(self, mock_guided, mock_image_path):
+    @patch('ml.segmentation.processor.ximgproc')
+    def test_guided_refine_with_ximgproc(self, mock_ximgproc, mock_image_path):
         """Test guided_refine with ximgproc available."""
         rgb = np.zeros((100, 100, 3), dtype=np.uint8)
         alpha = np.ones((100, 100), dtype=np.uint8) * 255
-        mock_guided.return_value = np.ones((100, 100), dtype=np.float32) * 0.5
+        mock_ximgproc.guidedFilter.return_value = np.ones((100, 100), dtype=np.float32) * 0.5
         
         result = _guided_refine(rgb, alpha)
         

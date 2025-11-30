@@ -15,11 +15,11 @@ describe('Navegación - UI y UX', () => {
         '[data-cy="user-menu"]',
         '[data-cy="nav-link"]'
       ]
-      selectors.forEach(selector => {
+      for (const selector of selectors) {
         if ($body.find(selector).length > 0) {
           cy.get(selector, { timeout: 5000 }).should('exist')
         }
-      })
+      }
     })
   })
 

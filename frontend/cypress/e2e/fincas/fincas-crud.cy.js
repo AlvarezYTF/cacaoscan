@@ -85,11 +85,11 @@ describe('Gestión de Fincas - CRUD', () => {
                 '[data-cy="finca-ubicacion-error"]',
                 '[data-cy="finca-area-error"]'
               ]
-              errorSelectors.forEach(selector => {
+              for (const selector of errorSelectors) {
                 if ($errors.find(selector).length > 0) {
                   cy.get(selector).should('exist')
                 }
-              })
+              }
             })
           }
         })
@@ -141,11 +141,11 @@ describe('Gestión de Fincas - CRUD', () => {
             '[data-cy="finca-description"]',
             '[data-cy="finca-map"]'
           ]
-          detailSelectors.forEach(selector => {
+          for (const selector of detailSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       } else {
         cy.get('body').should('be.visible')
@@ -254,11 +254,11 @@ describe('Gestión de Fincas - CRUD', () => {
         '[data-cy="total-area"]',
         '[data-cy="average-area"]'
       ]
-      statsSelectors.forEach(selector => {
+      for (const selector of statsSelectors) {
         if ($body.find(selector).length > 0) {
           cy.get(selector, { timeout: 5000 }).should('exist')
         }
-      })
+      }
     })
   })
 
@@ -378,11 +378,11 @@ describe('Gestión de Fincas - CRUD', () => {
             '[data-cy="lotes-count"]',
             '[data-cy="add-lote-button"]'
           ]
-          loteSelectors.forEach(selector => {
+          for (const selector of loteSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       } else {
         cy.get('body').should('be.visible')

@@ -161,8 +161,10 @@ class TestImageManagementService:
                                        mock_user, mock_cacao_image):
         """Test getting image details."""
         # Create a proper queryset mock that is iterable - use a list directly
+        mock_predictions_queryset = Mock()
+        mock_predictions_queryset.order_by.return_value = []  # Empty list is iterable
         mock_cacao_image.predictions = Mock()
-        mock_cacao_image.predictions.all.return_value.order_by.return_value = []  # Empty list is iterable
+        mock_cacao_image.predictions.all.return_value = mock_predictions_queryset
         
         mock_model = Mock()
         mock_model.objects.select_related.return_value.prefetch_related.return_value.get.return_value = mock_cacao_image
@@ -196,6 +198,11 @@ class TestImageManagementService:
                                           mock_user, mock_cacao_image):
         """Test updating image metadata."""
         mock_cacao_image.metadata = {'old': 'value'}
+        # Mock predictions queryset to be iterable
+        mock_predictions_queryset = Mock()
+        mock_predictions_queryset.order_by.return_value = []
+        mock_cacao_image.predictions = Mock()
+        mock_cacao_image.predictions.all.return_value = mock_predictions_queryset
         mock_model = Mock()
         mock_model.objects.select_related.return_value.prefetch_related.return_value.get.return_value = mock_cacao_image
         mock_model.DoesNotExist = Exception
@@ -213,9 +220,11 @@ class TestImageManagementService:
                                   mock_user, mock_cacao_image):
         """Test deleting an image."""
         # Create a proper queryset mock that is iterable - use a list directly
+        mock_predictions_queryset = Mock()
+        mock_predictions_queryset.order_by.return_value = []  # Empty list is iterable
         mock_cacao_image.predictions = Mock()
         mock_cacao_image.predictions.count.return_value = 2
-        mock_cacao_image.predictions.all.return_value.order_by.return_value = []  # Empty list is iterable
+        mock_cacao_image.predictions.all.return_value = mock_predictions_queryset
         
         mock_model = Mock()
         mock_model.objects.select_related.return_value.prefetch_related.return_value.get.return_value = mock_cacao_image
@@ -255,10 +264,22 @@ class TestImageManagementService:
     def test_get_image_statistics_success(self, mock_get_model, management_service, mock_user):
         """Test getting image statistics."""
         mock_queryset = Mock()
-        mock_queryset.filter.return_value.select_related.return_value.prefetch_related.return_value = mock_queryset
+        mock_queryset.filter.return_value = mock_queryset
+        mock_queryset.select_related.return_value = mock_queryset
+        mock_queryset.prefetch_related.return_value = mock_queryset
         mock_queryset.count.return_value = 10
-        mock_queryset.filter.return_value.count.return_value = 5
-        mock_queryset.aggregate.return_value = {'total': 10240, 'avg': 1024}
+        
+        # Configure aggregate to return different values
+        call_count = [0]
+        def aggregate_side_effect(**kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return {'total': 10240}
+            elif call_count[0] == 2:
+                return {'avg': 1024}
+            return {}
+        
+        mock_queryset.aggregate.side_effect = aggregate_side_effect
         mock_queryset.values.return_value.annotate.return_value.values_list.return_value = [('image/jpeg', 8), ('image/png', 2)]
         mock_model = Mock()
         mock_model.objects.filter.return_value = mock_queryset

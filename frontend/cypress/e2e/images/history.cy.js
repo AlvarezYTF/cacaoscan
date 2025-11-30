@@ -15,11 +15,11 @@ describe('Gestión de Imágenes - Historial y Detalles', () => {
         '[data-cy="search-images"]',
         '[data-cy="filter-images"]'
       ]
-      selectors.forEach(selector => {
+      for (const selector of selectors) {
         if ($body.find(selector).length > 0) {
           cy.get(selector, { timeout: 5000 }).should('exist')
         }
-      })
+      }
     })
   })
 
@@ -37,11 +37,11 @@ describe('Gestión de Imágenes - Historial y Detalles', () => {
             '[data-cy="analysis-results"]',
             '[data-cy="upload-date"]'
           ]
-          detailSelectors.forEach(selector => {
+          for (const selector of detailSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       }
     })
@@ -175,11 +175,11 @@ describe('Gestión de Imágenes - Historial y Detalles', () => {
         '[data-cy="average-quality"]',
         '[data-cy="images-this-month"]'
       ]
-      statsSelectors.forEach(selector => {
+      for (const selector of statsSelectors) {
         if ($body.find(selector).length > 0) {
           cy.get(selector, { timeout: 5000 }).should('exist')
         }
-      })
+      }
     })
   })
 
@@ -293,9 +293,9 @@ describe('Gestión de Imágenes - Historial y Detalles', () => {
                 '[data-cy="quality-badge"]',
                 '[data-cy="analysis-date"]'
               ]
-              infoSelectors.forEach(selector => {
+              for (const selector of infoSelectors) {
                 cy.get(selector, { timeout: 3000 }).should('exist')
-              })
+              }
             })
           }
         })

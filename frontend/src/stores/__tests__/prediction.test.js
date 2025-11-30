@@ -107,7 +107,7 @@ describe('Prediction Store', () => {
 
     it('should compute quickStats', () => {
       store.predictions = [
-        { predicted_weight: 1.0, confidence_score: 0.8 },
+        { predicted_weight: 1, confidence_score: 0.8 },
         { predicted_weight: 1.5, confidence_score: 0.9 }
       ]
 
@@ -316,7 +316,7 @@ describe('Prediction Store', () => {
 
     it('should update existing prediction in history', () => {
       store.predictions = [
-        { id: 1, predicted_weight: 1.0 }
+        { id: 1, predicted_weight: 1 }
       ]
 
       const updatedData = {
@@ -349,19 +349,19 @@ describe('Prediction Store', () => {
   describe('selectPrediction', () => {
     it('should select prediction from history', () => {
       store.predictions = [
-        { id: 1, predicted_weight: 1.0 },
+        { id: 1, predicted_weight: 1 },
         { id: 2, predicted_weight: 1.5 }
       ]
 
       store.selectPrediction(1)
 
-      expect(store.currentPrediction).toEqual({ id: 1, predicted_weight: 1.0 })
+      expect(store.currentPrediction).toEqual({ id: 1, predicted_weight: 1 })
       expect(store.error).toBe(null)
     })
 
     it('should not select if prediction not found', () => {
       store.predictions = [
-        { id: 1, predicted_weight: 1.0 }
+        { id: 1, predicted_weight: 1 }
       ]
 
       store.selectPrediction(999)
@@ -470,7 +470,7 @@ describe('Prediction Store', () => {
       store.predictions = [
         {
           id: 1,
-          predicted_weight: 1.0
+          predicted_weight: 1
         },
         {
           id: 2,
@@ -495,16 +495,16 @@ describe('Prediction Store', () => {
       const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
 
       store.predictions = [
-        { created_at: today.toISOString(), processing_time: 2.0 },
-        { created_at: today.toISOString(), processing_time: 3.0 },
-        { created_at: yesterday.toISOString(), processing_time: 1.0 }
+        { created_at: today.toISOString(), processing_time: 2 },
+        { created_at: today.toISOString(), processing_time: 3 },
+        { created_at: yesterday.toISOString(), processing_time: 1 }
       ]
 
       store.updateTodayStats()
 
       expect(store.stats.predictionsToday).toBe(2)
       // avgProcessingTime is calculated from all predictions, not just today's
-      expect(store.stats.avgProcessingTime).toBe(2) // (2.0 + 3.0 + 1.0) / 3 = 2.0
+      expect(store.stats.avgProcessingTime).toBe(2) // (2 + 3 + 1) / 3 = 2
     })
   })
 

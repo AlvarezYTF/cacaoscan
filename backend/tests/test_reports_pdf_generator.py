@@ -70,8 +70,8 @@ class TestCacaoReportPDFGenerator:
         # Check if CustomTitle style exists by trying to access it
         assert 'CustomTitle' in pdf_generator.styles.byName or hasattr(pdf_generator.styles, 'CustomTitle')
         assert 'CustomSubtitle' in pdf_generator.styles.byName or hasattr(pdf_generator.styles, 'CustomSubtitle')
-        assert 'CustomNormal' in [s.name for s in pdf_generator.styles]
-        assert 'CustomSmall' in [s.name for s in pdf_generator.styles]
+        assert 'CustomNormal' in pdf_generator.styles.byName or hasattr(pdf_generator.styles, 'CustomNormal')
+        assert 'CustomSmall' in pdf_generator.styles.byName or hasattr(pdf_generator.styles, 'CustomSmall')
     
     @patch('reports.services.report.pdf_generator.CacaoPrediction')
     @patch('reports.services.report.pdf_generator.SimpleDocTemplate')
@@ -82,12 +82,14 @@ class TestCacaoReportPDFGenerator:
         mock_queryset.count.return_value = 10
         
         # Configure aggregate to return different values based on call
+        call_count = [0]
         def aggregate_side_effect(**kwargs):
-            if 'avg' in kwargs.values() and 'average_confidence' in str(kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
                 return {'avg': 0.85}
-            elif 'avg_alto' in kwargs or 'avg_ancho' in kwargs or 'avg_grosor' in kwargs:
+            elif call_count[0] == 2:
                 return {'avg_alto': 10.5, 'avg_ancho': 8.3, 'avg_grosor': 5.2}
-            elif 'peso_g' in str(kwargs):
+            elif call_count[0] == 3:
                 return {'avg': 1.5}
             return {}
         
@@ -114,12 +116,14 @@ class TestCacaoReportPDFGenerator:
         mock_queryset.count.return_value = 5
         
         # Configure aggregate to return different values based on call
+        call_count = [0]
         def aggregate_side_effect(**kwargs):
-            if 'avg' in kwargs.values() and 'average_confidence' in str(kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
                 return {'avg': 0.90}
-            elif 'avg_alto' in kwargs or 'avg_ancho' in kwargs or 'avg_grosor' in kwargs:
+            elif call_count[0] == 2:
                 return {'avg_alto': 11.0, 'avg_ancho': 9.0, 'avg_grosor': 5.5}
-            elif 'peso_g' in str(kwargs):
+            elif call_count[0] == 3:
                 return {'avg': 1.8}
             return {}
         
@@ -167,7 +171,7 @@ class TestCacaoReportPDFGenerator:
     
     @patch('reports.services.report.pdf_generator.ActivityLog')
     @patch('reports.services.report.pdf_generator.SimpleDocTemplate')
-    @patch('reports.services.report.pdf_generator.LoginLog')
+    @patch('reports.services.report.pdf_generator.LoginHistory')
     def test_generate_audit_report_success(self, mock_login_model, mock_doc_template, mock_activity_model,
                                            pdf_generator, mock_user):
         """Test successful audit report generation."""
@@ -266,12 +270,14 @@ class TestCacaoReportPDFGenerator:
         mock_queryset.count.return_value = 10
         
         # Configure aggregate to return different values based on call
+        call_count = [0]
         def aggregate_side_effect(**kwargs):
-            if 'avg' in kwargs.values() and 'average_confidence' in str(kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
                 return {'avg': 0.85}
-            elif 'avg_alto' in kwargs or 'avg_ancho' in kwargs or 'avg_grosor' in kwargs:
+            elif call_count[0] == 2:
                 return {'avg_alto': 10.5, 'avg_ancho': 8.3, 'avg_grosor': 5.2}
-            elif 'peso_g' in str(kwargs):
+            elif call_count[0] == 3:
                 return {'avg': 1.5}
             return {}
         

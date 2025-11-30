@@ -22,11 +22,11 @@ describe('Manejo de Errores - Validación y Formularios', () => {
                 '[data-cy="finca-ubicacion-error"]',
                 '[data-cy="finca-area-error"]'
               ]
-              errorSelectors.forEach(selector => {
+              for (const selector of errorSelectors) {
                 if ($afterSubmit.find(selector).length > 0) {
                   cy.get(selector, { timeout: 3000 }).should('exist')
                 }
-              })
+              }
             })
           }
         })
@@ -61,7 +61,7 @@ describe('Manejo de Errores - Validación y Formularios', () => {
       if ($body.find('[data-cy="password-input"], input[type="password"]').length > 0) {
         const weakPasswords = ['123', 'password', '12345678']
         
-        weakPasswords.forEach((password, index) => {
+        for (const [index, password] of weakPasswords.entries()) {
           if (index > 0) {
             cy.get('[data-cy="password-input"], input[type="password"]').first().clear()
           }
@@ -71,7 +71,7 @@ describe('Manejo de Errores - Validación y Formularios', () => {
               cy.get('[data-cy="password-strength"], .password-strength').should('exist')
             }
           })
-        })
+        }
         
         // Verificar contraseña fuerte si existe el campo
         cy.get('body').then(($strong) => {
@@ -522,11 +522,11 @@ describe('Manejo de Errores - Validación y Formularios', () => {
                 '[data-cy="finca-area-error"]',
                 '[data-cy="finca-ubicacion-error"]'
               ]
-              errorSelectors.forEach(selector => {
+              for (const selector of errorSelectors) {
                 if ($error.find(selector).length > 0) {
                   cy.get(selector).should('exist')
                 }
-              })
+              }
             })
           }
         })

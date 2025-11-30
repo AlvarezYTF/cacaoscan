@@ -6,7 +6,7 @@ describe('Accessibility (A11y) Manual Checks', () => {
     '/legal/terms'
   ]
 
-  routes.forEach(route => {
+  for (const route of routes) {
     it(`should have basic accessibility attributes on ${route}`, () => {
       cy.visit(route)
       cy.get('body', { timeout: 10000 }).should('be.visible')
@@ -52,7 +52,7 @@ describe('Accessibility (A11y) Manual Checks', () => {
         }
       })
     })
-  })
+  }
 
   it('should support keyboard navigation on login', () => {
     cy.visit('/login')

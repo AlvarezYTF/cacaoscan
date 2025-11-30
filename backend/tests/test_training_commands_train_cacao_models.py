@@ -77,9 +77,9 @@ class TestTrainCacaoModelsCommand:
         
         assert targets == ['alto', 'ancho']
     
+    @patch('ml.data.dataset_loader.CacaoDatasetLoader')
     @patch('training.management.commands.train_cacao_models.get_raw_images_dir')
-    @patch('training.management.commands.train_cacao_models.CacaoDatasetLoader')
-    def test_validate_config_success(self, mock_loader_class, mock_get_raw_dir, command, tmp_path):
+    def test_validate_config_success(self, mock_get_raw_dir, mock_loader_class, command, tmp_path):
         """Test successful configuration validation."""
         mock_raw_dir = tmp_path / "raw_images"
         mock_raw_dir.mkdir()
@@ -125,9 +125,9 @@ class TestTrainCacaoModelsCommand:
         with pytest.raises(CommandError, match="Muy pocas imágenes raw"):
             command._validate_config(config)
     
+    @patch('ml.data.dataset_loader.CacaoDatasetLoader')
     @patch('training.management.commands.train_cacao_models.get_raw_images_dir')
-    @patch('training.management.commands.train_cacao_models.CacaoDatasetLoader')
-    def test_validate_config_too_few_csv_records(self, mock_loader_class, mock_get_raw_dir, command, tmp_path):
+    def test_validate_config_too_few_csv_records(self, mock_get_raw_dir, mock_loader_class, command, tmp_path):
         """Test validation when too few CSV records."""
         mock_raw_dir = tmp_path / "raw_images"
         mock_raw_dir.mkdir()
@@ -144,9 +144,9 @@ class TestTrainCacaoModelsCommand:
         with pytest.raises(CommandError, match="Muy pocos registros en el CSV"):
             command._validate_config(config)
     
+    @patch('ml.data.dataset_loader.CacaoDatasetLoader')
     @patch('training.management.commands.train_cacao_models.get_raw_images_dir')
-    @patch('training.management.commands.train_cacao_models.CacaoDatasetLoader')
-    def test_validate_config_too_few_valid_records(self, mock_loader_class, mock_get_raw_dir, command, tmp_path):
+    def test_validate_config_too_few_valid_records(self, mock_get_raw_dir, mock_loader_class, command, tmp_path):
         """Test validation when too few valid records."""
         mock_raw_dir = tmp_path / "raw_images"
         mock_raw_dir.mkdir()
@@ -164,9 +164,9 @@ class TestTrainCacaoModelsCommand:
         with pytest.raises(CommandError, match="Muy pocos registros válidos"):
             command._validate_config(config)
     
+    @patch('ml.data.dataset_loader.CacaoDatasetLoader')
     @patch('training.management.commands.train_cacao_models.get_raw_images_dir')
-    @patch('training.management.commands.train_cacao_models.CacaoDatasetLoader')
-    def test_validate_config_convnext_requires_timm(self, mock_loader_class, mock_get_raw_dir, command, tmp_path):
+    def test_validate_config_convnext_requires_timm(self, mock_get_raw_dir, mock_loader_class, command, tmp_path):
         """Test validation when ConvNeXt requires timm."""
         mock_raw_dir = tmp_path / "raw_images"
         mock_raw_dir.mkdir()
@@ -189,11 +189,11 @@ class TestTrainCacaoModelsCommand:
     @patch('training.management.commands.train_cacao_models.get_raw_images_dir')
     def test_validate_config_invalid_epochs(self, mock_get_raw_dir, mock_loader_class, command, tmp_path):
         """Test validation with invalid epochs."""
-        # Mock raw images directory
+        # Mock raw images directory - need at least 10 files
         mock_raw_dir = tmp_path / "raw"
         mock_raw_dir.mkdir()
-        (mock_raw_dir / "test1.bmp").touch()
-        (mock_raw_dir / "test2.bmp").touch()
+        for i in range(15):
+            (mock_raw_dir / f"test{i}.bmp").touch()
         mock_get_raw_dir.return_value = mock_raw_dir
         
         # Mock dataset loader
@@ -213,11 +213,11 @@ class TestTrainCacaoModelsCommand:
     @patch('training.management.commands.train_cacao_models.get_raw_images_dir')
     def test_validate_config_invalid_batch_size(self, mock_get_raw_dir, mock_loader_class, command, tmp_path):
         """Test validation with invalid batch size."""
-        # Mock raw images directory
+        # Mock raw images directory - need at least 10 files
         mock_raw_dir = tmp_path / "raw"
         mock_raw_dir.mkdir()
-        (mock_raw_dir / "test1.bmp").touch()
-        (mock_raw_dir / "test2.bmp").touch()
+        for i in range(15):
+            (mock_raw_dir / f"test{i}.bmp").touch()
         mock_get_raw_dir.return_value = mock_raw_dir
         
         # Mock dataset loader
@@ -237,11 +237,11 @@ class TestTrainCacaoModelsCommand:
     @patch('training.management.commands.train_cacao_models.get_raw_images_dir')
     def test_validate_config_invalid_learning_rate(self, mock_get_raw_dir, mock_loader_class, command, tmp_path):
         """Test validation with invalid learning rate."""
-        # Mock raw images directory
+        # Mock raw images directory - need at least 10 files
         mock_raw_dir = tmp_path / "raw"
         mock_raw_dir.mkdir()
-        (mock_raw_dir / "test1.bmp").touch()
-        (mock_raw_dir / "test2.bmp").touch()
+        for i in range(15):
+            (mock_raw_dir / f"test{i}.bmp").touch()
         mock_get_raw_dir.return_value = mock_raw_dir
         
         # Mock dataset loader

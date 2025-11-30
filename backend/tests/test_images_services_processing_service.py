@@ -127,11 +127,13 @@ class TestImageProcessingService:
         img_bytes = io.BytesIO()
         img.save(img_bytes, format='JPEG')
         img_bytes.seek(0)
-        invalid_name_file = SimpleUploadedFile(
-            name="a" * 300,  # Too long filename
-            content=img_bytes.getvalue(),
-            content_type="image/jpeg"
-        )
+        # Use Mock to ensure the name is not truncated
+        invalid_name_file = Mock(spec=SimpleUploadedFile)
+        invalid_name_file.name = "a" * 300  # Too long filename
+        invalid_name_file.content_type = "image/jpeg"
+        invalid_name_file.size = len(img_bytes.getvalue())
+        invalid_name_file.read.return_value = img_bytes.getvalue()
+        invalid_name_file.seek = Mock()
         
         result = processing_service.validate_image_file_complete(invalid_name_file)
         
@@ -143,8 +145,7 @@ class TestImageProcessingService:
         result = processing_service.load_image(valid_image_file)
         
         assert result.success is True
-        assert 'data' in result.data
-        assert isinstance(result.data['data'], Image.Image)
+        assert isinstance(result.data, Image.Image)
     
     def test_load_image_converts_to_rgb(self, processing_service):
         """Test that non-RGB images are converted to RGB."""
@@ -161,7 +162,7 @@ class TestImageProcessingService:
         result = processing_service.load_image(gray_file)
         
         assert result.success is True
-        assert result.data['data'].mode == 'RGB'
+        assert result.data.mode == 'RGB'
     
     def test_load_image_failure(self, processing_service):
         """Test image loading failure."""

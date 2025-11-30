@@ -309,11 +309,11 @@ describe('Reportes - Exportación y Compartir', () => {
                     '[data-cy="sharing-method"]',
                     '[data-cy="sharing-recipients"]'
                   ]
-                  sharingSelectors.forEach(selector => {
+                  for (const selector of sharingSelectors) {
                     if ($item.find(selector).length > 0) {
                       cy.get(selector).should('exist')
                     }
-                  })
+                  }
                 })
               }
             })
@@ -457,11 +457,11 @@ describe('Reportes - Exportación y Compartir', () => {
                     '[data-cy="preview-content"]',
                     '[data-cy="preview-pages"]'
                   ]
-                  previewSelectors.forEach(selector => {
+                  for (const selector of previewSelectors) {
                     if ($content.find(selector).length > 0) {
                       cy.get(selector).should('exist')
                     }
-                  })
+                  }
                   
                   // Navegar por páginas si existen los botones
                   if ($content.find('[data-cy="next-page"], button').length > 0) {

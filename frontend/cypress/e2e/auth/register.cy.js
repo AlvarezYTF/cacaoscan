@@ -15,11 +15,11 @@ describe('Autenticación - Registro', () => {
         '[data-cy="password-input"]', '[data-cy="confirm-password-input"]', '[data-cy="role-select"]',
         '[data-cy="terms-checkbox"]', '[data-cy="register-button"]', '[data-cy="login-link"]'
       ]
-      selectors.forEach(selector => {
+      for (const selector of selectors) {
         if ($body.find(selector).length > 0) {
           cy.get(selector, { timeout: 5000 }).should('exist')
         }
-      })
+      }
     })
   })
 
@@ -247,7 +247,7 @@ describe('Autenticación - Registro', () => {
 
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="password-input"], [data-cy="input-password"], input[type="password"]').length > 0) {
-        weakPasswords.forEach(password => {
+        for (const password of weakPasswords) {
           cy.get('[data-cy="password-input"], [data-cy="input-password"], input[type="password"]').first().clear().type(password)
           cy.get('body').then(($strength) => {
             if ($strength.find('[data-cy="password-strength"], .password-strength-meter').length > 0) {
@@ -257,7 +257,7 @@ describe('Autenticación - Registro', () => {
               })
             }
           })
-        })
+        }
 
         // Verificar contraseña fuerte
         cy.get('[data-cy="password-input"], [data-cy="input-password"], input[type="password"]').first().clear().type('StrongPassword123!')
@@ -327,11 +327,11 @@ describe('Autenticación - Registro', () => {
             '[data-cy="first-name-error"]', '[data-cy="last-name-error"]', '[data-cy="email-error"]',
             '[data-cy="password-error"]', '[data-cy="confirm-password-error"]', '[data-cy="role-error"]'
           ]
-          errorSelectors.forEach(selector => {
+          for (const selector of errorSelectors) {
             if ($errors.find(selector).length > 0) {
               cy.get(selector).should('exist')
             }
-          })
+          }
         })
       }
     })

@@ -15,11 +15,11 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
             '[data-cy="lotes-count"]',
             '[data-cy="lotes-list"]'
           ]
-          selectors.forEach(selector => {
+          for (const selector of selectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 5000 }).should('exist')
             }
-          })
+          }
           
           // Verificar información de cada lote
           cy.get('[data-cy="lote-item"], .lote-item, .item', { timeout: 5000 }).then(($items) => {
@@ -31,9 +31,9 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
                     '[data-cy="lote-area"]',
                     '[data-cy="lote-variedad"]'
                   ]
-                  loteSelectors.forEach(selector => {
+                  for (const selector of loteSelectors) {
                     cy.get(selector, { timeout: 3000 }).should('exist')
-                  })
+                  }
                 })
               })
             }
@@ -113,11 +113,11 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
             '[data-cy="variedades-count"]',
             '[data-cy="average-age"]'
           ]
-          statsSelectors.forEach(selector => {
+          for (const selector of statsSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       } else {
         cy.get('body').should('be.visible')
@@ -138,11 +138,11 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
             '[data-cy="average-quality"]',
             '[data-cy="last-analysis"]'
           ]
-          analisisSelectors.forEach(selector => {
+          for (const selector of analisisSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       } else {
         cy.get('body').should('be.visible')
@@ -162,11 +162,11 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
             '[data-cy="quality-comparison"]',
             '[data-cy="area-distribution"]'
           ]
-          chartSelectors.forEach(selector => {
+          for (const selector of chartSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       } else {
         cy.get('body').should('be.visible')
@@ -239,11 +239,11 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
                 '[data-cy="maintenance-alert"]',
                 '[data-cy="harvest-alert"]'
               ]
-              alertTypes.forEach(selector => {
+              for (const selector of alertTypes) {
                 if ($alerts.find(selector).length > 0) {
                   cy.get(selector).should('exist')
                 }
-              })
+              }
             })
           } else {
             cy.get('body').should('be.visible')
@@ -375,11 +375,11 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
             '[data-cy="production-by-lote"]',
             '[data-cy="production-trend"]'
           ]
-          productionSelectors.forEach(selector => {
+          for (const selector of productionSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       } else {
         cy.get('body').should('be.visible')
@@ -409,11 +409,11 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
                 '[data-cy="irrigation-recommendation"]',
                 '[data-cy="harvest-recommendation"]'
               ]
-              recTypes.forEach(selector => {
+              for (const selector of recTypes) {
                 if ($recs.find(selector).length > 0) {
                   cy.get(selector).should('exist')
                 }
-              })
+              }
             })
           } else {
             cy.get('body').should('be.visible')
@@ -496,11 +496,11 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
                     '[data-cy="change-type"]',
                     '[data-cy="change-description"]'
                   ]
-                  changeSelectors.forEach(selector => {
+                  for (const selector of changeSelectors) {
                     if ($item.find(selector).length > 0) {
                       cy.get(selector).should('exist')
                     }
-                  })
+                  }
                 })
               }
             })
@@ -557,11 +557,11 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
             '[data-cy="performance-metrics"]',
             '[data-cy="recent-activities"]'
           ]
-          dashboardSelectors.forEach(selector => {
+          for (const selector of dashboardSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       } else {
         cy.get('body').should('be.visible')

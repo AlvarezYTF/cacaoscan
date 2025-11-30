@@ -537,7 +537,7 @@ class CacaoReportPDFGenerator:
                     lote.identificador,
                     lote.variedad,
                     lote.get_estado_display(),
-                    f"{lote.area_hectareas:.2f}",
+                    f"{float(lote.area_hectareas):.2f}",
                     str(lote.total_analisis),
                     f"{lote.calidad_promedio:.1f}",
                 ])

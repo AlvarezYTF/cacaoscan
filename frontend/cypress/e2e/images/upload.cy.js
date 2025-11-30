@@ -92,7 +92,7 @@ describe('Carga de Imágenes - Upload', () => {
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
         
         // Test archivos permitidos
-        allowedTypes.forEach(type => {
+        for (const type of allowedTypes) {
           cy.get('[data-cy="file-input"], input[type="file"]').first().then(($input) => {
             const blob = new Blob(['fake image content'], { type })
             const file = new File([blob], `test.${type.split('/')[1]}`, { type })
@@ -110,7 +110,7 @@ describe('Carga de Imágenes - Upload', () => {
               }
             })
           })
-        })
+        }
       } else {
         cy.get('body').should('be.visible')
       }
@@ -512,7 +512,9 @@ describe('Carga de Imágenes - Upload', () => {
       ]
       
       const dataTransfer = new DataTransfer()
-      files.forEach(file => dataTransfer.items.add(file))
+      for (const file of files) {
+        dataTransfer.items.add(file)
+      }
       input[0].files = dataTransfer.files
       
       cy.wrap(input).trigger('change', { force: true })

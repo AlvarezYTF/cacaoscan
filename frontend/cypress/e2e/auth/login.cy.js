@@ -14,11 +14,11 @@ describe('Autenticación - Login', () => {
         '[data-cy="email-input"]', '[data-cy="password-input"]', '[data-cy="login-button"]',
         '[data-cy="forgot-password-link"]', '[data-cy="register-link"]'
       ]
-      selectors.forEach(selector => {
+      for (const selector of selectors) {
         if ($body.find(selector).length > 0) {
           cy.get(selector, { timeout: 5000 }).should('exist')
         }
-      })
+      }
     })
   })
 

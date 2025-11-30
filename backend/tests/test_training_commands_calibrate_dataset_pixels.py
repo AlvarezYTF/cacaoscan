@@ -107,8 +107,13 @@ class TestCalibrateDatasetPixelsCommand:
         mock_get_crops_dir.return_value = tmp_path / "crops"
         
         mock_loader = Mock()
-        mock_loader.load_dataset.return_value = Mock()
-        mock_loader.validate_images_exist.return_value = (Mock(__len__=Mock(return_value=0)), None)
+        mock_df = Mock()
+        mock_df.__len__ = Mock(return_value=0)
+        mock_df.__iter__ = Mock(return_value=iter([]))
+        mock_df.iterrows.return_value = []
+        mock_loader.load_dataset.return_value = mock_df
+        mock_loader.validate_images_exist.return_value = (mock_df, [])
+        mock_loader.get_valid_records.return_value = []
         mock_loader_class.return_value = mock_loader
         
         with patch.object(command, 'stdout'):
@@ -157,10 +162,11 @@ class TestCalibrateDatasetPixelsCommand:
         
         mock_loader = Mock()
         mock_df = Mock()
+        mock_df.__len__ = Mock(return_value=0)
         mock_df.__iter__ = Mock(return_value=iter([]))
         mock_df.iterrows.return_value = []
         mock_loader.load_dataset.return_value = mock_df
-        mock_loader.validate_images_exist.return_value = (mock_df, None)
+        mock_loader.validate_images_exist.return_value = (mock_df, [])
         mock_loader.get_valid_records.return_value = []
         mock_loader_class.return_value = mock_loader
         
@@ -197,10 +203,11 @@ class TestCalibrateDatasetPixelsCommand:
         
         mock_loader = Mock()
         mock_df = Mock()
+        mock_df.__len__ = Mock(return_value=0)
         mock_df.__iter__ = Mock(return_value=iter([]))
         mock_df.iterrows.return_value = []
         mock_loader.load_dataset.return_value = mock_df
-        mock_loader.validate_images_exist.return_value = (mock_df, None)
+        mock_loader.validate_images_exist.return_value = (mock_df, [])
         mock_loader.get_valid_records.return_value = []
         mock_loader_class.return_value = mock_loader
         
@@ -232,10 +239,11 @@ class TestCalibrateDatasetPixelsCommand:
         
         mock_loader = Mock()
         mock_df = Mock()
+        mock_df.__len__ = Mock(return_value=0)
         mock_df.__iter__ = Mock(return_value=iter([]))
         mock_df.iterrows.return_value = []
         mock_loader.load_dataset.return_value = mock_df
-        mock_loader.validate_images_exist.return_value = (mock_df, None)
+        mock_loader.validate_images_exist.return_value = (mock_df, [])
         mock_loader.get_valid_records.return_value = []
         mock_loader_class.return_value = mock_loader
         

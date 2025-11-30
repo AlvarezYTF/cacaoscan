@@ -77,12 +77,14 @@ class TestExcelAnalisisGenerator:
         mock_queryset.count.return_value = 10
         
         # Configure aggregate to return different values based on call
+        call_count = [0]
         def aggregate_side_effect(**kwargs):
-            if 'avg' in kwargs.values() and 'average_confidence' in str(kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
                 return {'avg': 0.85}
-            elif 'avg_alto' in kwargs or 'avg_ancho' in kwargs or 'avg_grosor' in kwargs:
+            elif call_count[0] == 2:
                 return {'avg_alto': 10.5, 'avg_ancho': 8.3, 'avg_grosor': 5.2}
-            elif 'peso_g' in str(kwargs):
+            elif call_count[0] == 3:
                 return {'avg': 1.5}
             return {}
         
@@ -117,12 +119,14 @@ class TestExcelAnalisisGenerator:
         mock_queryset.count.return_value = 5
         
         # Configure aggregate to return different values based on call
+        call_count = [0]
         def aggregate_side_effect(**kwargs):
-            if 'avg' in kwargs.values() and 'average_confidence' in str(kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
                 return {'avg': 0.90}
-            elif 'avg_alto' in kwargs or 'avg_ancho' in kwargs or 'avg_grosor' in kwargs:
+            elif call_count[0] == 2:
                 return {'avg_alto': 11.0, 'avg_ancho': 9.0, 'avg_grosor': 5.5}
-            elif 'peso_g' in str(kwargs):
+            elif call_count[0] == 3:
                 return {'avg': 1.8}
             return {}
         
@@ -173,6 +177,7 @@ class TestExcelAnalisisGenerator:
         with pytest.raises(Exception):
             excel_generator.generate_finca_report(999, mock_user)
     
+    @patch('reports.services.report.excel.excel_analisis.LoginHistory')
     @patch('reports.services.report.excel.excel_analisis.ActivityLog')
     @patch.object(ExcelAnalisisGenerator, '_create_workbook')
     @patch.object(ExcelAnalisisGenerator, '_create_header')
@@ -181,11 +186,19 @@ class TestExcelAnalisisGenerator:
     @patch.object(ExcelAnalisisGenerator, '_save_to_buffer')
     def test_generate_audit_report_success(self, mock_save, mock_login_stats,
                                          mock_activity_stats, mock_header, mock_workbook,
-                                         mock_activity_model, excel_generator, mock_user):
+                                         mock_activity_model, mock_login_model, excel_generator, mock_user):
         """Test successful audit report generation."""
-        mock_queryset = Mock()
-        mock_queryset.select_related.return_value.order_by.return_value = []
-        mock_activity_model.objects.select_related.return_value.order_by.return_value = []
+        # Mock activity queryset
+        mock_activity_queryset = Mock()
+        mock_activity_queryset.select_related.return_value.order_by.return_value = []
+        mock_activity_model.objects.select_related.return_value.order_by.return_value = mock_activity_queryset
+        
+        # Mock login queryset
+        mock_login_queryset = Mock()
+        mock_login_queryset.count.return_value = 5
+        mock_login_queryset.filter.return_value.count.return_value = 4
+        mock_login_model.objects.all.return_value = mock_login_queryset
+        mock_login_model.objects.select_related.return_value.order_by.return_value = []
         
         mock_save.return_value = b"excel_content"
         
@@ -215,12 +228,14 @@ class TestExcelAnalisisGenerator:
         mock_queryset.count.return_value = 10
         
         # Configure aggregate to return different values based on call
+        call_count = [0]
         def aggregate_side_effect(**kwargs):
-            if 'avg' in kwargs.values() and 'average_confidence' in str(kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
                 return {'avg': 0.85}
-            elif 'avg_alto' in kwargs or 'avg_ancho' in kwargs or 'avg_grosor' in kwargs:
+            elif call_count[0] == 2:
                 return {'avg_alto': 10.5, 'avg_ancho': 8.3, 'avg_grosor': 5.2}
-            elif 'peso_g' in str(kwargs):
+            elif call_count[0] == 3:
                 return {'avg': 1.5}
             return {}
         

@@ -18,9 +18,11 @@ def test_segment_and_crop_cacao_bean_creates_png(tmp_path):
     3️⃣ Contenga canal alfa (transparencia).
     """
 
-    # 🖼️ Ruta de la imagen de prueba
-    input_image = os.path.abspath("media/datasets/pruebas2.jpg.jpg")
-    assert os.path.exists(input_image), f"La imagen de prueba no existe: {input_image}"
+    # 🖼️ Crear imagen de prueba
+    test_image_path = tmp_path / "pruebas2.jpg"
+    test_image = Image.new('RGB', (512, 512), color='red')
+    test_image.save(test_image_path, format='JPEG')
+    input_image = str(test_image_path)
 
     # 🚀 Ejecutar el procesamiento
     output_path = segment_and_crop_cacao_bean(input_image)

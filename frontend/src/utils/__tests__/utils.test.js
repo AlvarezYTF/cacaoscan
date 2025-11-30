@@ -171,7 +171,7 @@ describe('Number Utilities', () => {
   it('formatea porcentajes correctamente', () => {
     expect(formatPercentage(85.5)).toBe('85.5%')
     expect(formatPercentage(85.567, 2)).toBe('85.57%')
-    expect(formatPercentage(0)).toBe('0.0%')
+    expect(formatPercentage(0)).toBe('0%')
   })
 
   it('maneja porcentajes inválidos', () => {

@@ -70,11 +70,11 @@ describe('Análisis de Imágenes - Procesamiento', () => {
                 '[data-cy="quality-grade"]',
                 '[data-cy="defects-list"]'
               ]
-              sectionSelectors.forEach(selector => {
+              for (const selector of sectionSelectors) {
                 if ($results.find(selector).length > 0) {
                   cy.get(selector, { timeout: 3000 }).should('exist')
                 }
-              })
+              }
             })
           }
         })
@@ -279,11 +279,11 @@ describe('Análisis de Imágenes - Procesamiento', () => {
                 '[data-cy="previous-analysis"]',
                 '[data-cy="improvement-indicator"]'
               ]
-              comparisonSelectors.forEach(selector => {
+              for (const selector of comparisonSelectors) {
                 if ($results.find(selector).length > 0) {
                   cy.get(selector, { timeout: 3000 }).should('exist')
                 }
-              })
+              }
             })
           }
         })

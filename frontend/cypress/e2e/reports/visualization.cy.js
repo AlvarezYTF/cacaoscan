@@ -21,9 +21,9 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
                 '[data-cy="report-date"]',
                 '[data-cy="report-status"]'
               ]
-              selectors.forEach(selector => {
+              for (const selector of selectors) {
                 cy.get(selector, { timeout: 3000 }).should('exist')
-              })
+              }
             })
           }
         })
@@ -42,11 +42,11 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
             '[data-cy="report-metadata"]',
             '[data-cy="report-content"]'
           ]
-          detailSelectors.forEach(selector => {
+          for (const selector of detailSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       } else {
         cy.get('body').should('be.visible')
@@ -65,11 +65,11 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
             '[data-cy="recommendations"]',
             '[data-cy="conclusions"]'
           ]
-          summarySelectors.forEach(selector => {
+          for (const selector of summarySelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       } else {
         cy.get('body').should('be.visible')
@@ -88,11 +88,11 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
             '[data-cy="trend-chart"]',
             '[data-cy="comparison-chart"]'
           ]
-          chartSelectors.forEach(selector => {
+          for (const selector of chartSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       } else {
         cy.get('body').should('be.visible')
@@ -115,11 +115,11 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
                 '[data-cy="download-excel"]',
                 '[data-cy="download-powerpoint"]'
               ]
-              downloadSelectors.forEach(selector => {
+              for (const selector of downloadSelectors) {
                 if ($download.find(selector).length > 0) {
                   cy.get(selector).should('exist')
                 }
-              })
+              }
               
               // Descargar PDF si existe
               if ($download.find('[data-cy="download-pdf"], button, a').length > 0) {
@@ -307,11 +307,11 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
         '[data-cy="reports-this-month"]',
         '[data-cy="average-generation-time"]'
       ]
-      statsSelectors.forEach(selector => {
+      for (const selector of statsSelectors) {
         if ($body.find(selector).length > 0) {
           cy.get(selector, { timeout: 5000 }).should('exist')
         }
-      })
+      }
     })
   })
 
@@ -364,11 +364,11 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
                     '[data-cy="version-date"]',
                     '[data-cy="version-changes"]'
                   ]
-                  versionSelectors.forEach(selector => {
+                  for (const selector of versionSelectors) {
                     if ($item.find(selector).length > 0) {
                       cy.get(selector).should('exist')
                     }
-                  })
+                  }
                 })
               }
             })
@@ -476,11 +476,11 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
             '[data-cy="data-source"]',
             '[data-cy="report-size"]'
           ]
-          metadataSelectors.forEach(selector => {
+          for (const selector of metadataSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       } else {
         cy.get('body').should('be.visible')

@@ -12,11 +12,11 @@ describe('Gestión de Lotes - CRUD', () => {
         '[data-cy="add-lote-button"]',
         '[data-cy="lotes-stats"]'
       ]
-      selectors.forEach(selector => {
+      for (const selector of selectors) {
         if ($body.find(selector).length > 0) {
           cy.get(selector, { timeout: 5000 }).should('exist')
         }
-      })
+      }
     })
   })
 
@@ -55,11 +55,11 @@ describe('Gestión de Lotes - CRUD', () => {
                 '[data-cy="lote-variedad-error"]',
                 '[data-cy="lote-edad-error"]'
               ]
-              errorSelectors.forEach(selector => {
+              for (const selector of errorSelectors) {
                 if ($afterSubmit.find(selector).length > 0) {
                   cy.get(selector, { timeout: 3000 }).should('exist')
                 }
-              })
+              }
             })
           }
         })
@@ -127,11 +127,11 @@ describe('Gestión de Lotes - CRUD', () => {
             '[data-cy="lote-description"]',
             '[data-cy="lote-finca"]'
           ]
-          detailSelectors.forEach(selector => {
+          for (const selector of detailSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       }
     })
@@ -189,11 +189,11 @@ describe('Gestión de Lotes - CRUD', () => {
             '[data-cy="analisis-count"]',
             '[data-cy="ultimo-analisis"]'
           ]
-          analisisSelectors.forEach(selector => {
+          for (const selector of analisisSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       }
     })
@@ -207,11 +207,11 @@ describe('Gestión de Lotes - CRUD', () => {
         '[data-cy="total-area-lotes"]',
         '[data-cy="variedades-count"]'
       ]
-      statsSelectors.forEach(selector => {
+      for (const selector of statsSelectors) {
         if ($body.find(selector).length > 0) {
           cy.get(selector, { timeout: 5000 }).should('exist')
         }
-      })
+      }
     })
   })
 
@@ -297,11 +297,11 @@ describe('Gestión de Lotes - CRUD', () => {
             '[data-cy="calidad-trend"]',
             '[data-cy="produccion-history"]'
           ]
-          chartSelectors.forEach(selector => {
+          for (const selector of chartSelectors) {
             if ($details.find(selector).length > 0) {
               cy.get(selector, { timeout: 3000 }).should('exist')
             }
-          })
+          }
         })
       } else {
         cy.get('body').should('be.visible')
@@ -414,11 +414,11 @@ describe('Gestión de Lotes - CRUD', () => {
                     '[data-cy="analisis-quality"]',
                     '[data-cy="analisis-results"]'
                   ]
-                  analisisSelectors.forEach(selector => {
+                  for (const selector of analisisSelectors) {
                     if ($item.find(selector).length > 0) {
                       cy.get(selector).should('exist')
                     }
-                  })
+                  }
                 })
               }
             })

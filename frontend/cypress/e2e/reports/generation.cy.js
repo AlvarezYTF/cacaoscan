@@ -13,11 +13,11 @@ describe('Generación de Reportes - Creación', () => {
         '[data-cy="reports-list"]',
         '[data-cy="report-filters"]'
       ]
-      selectors.forEach(selector => {
+      for (const selector of selectors) {
         if ($body.find(selector).length > 0) {
           cy.get(selector, { timeout: 5000 }).should('exist')
         }
-      })
+      }
     })
   })
 
@@ -198,11 +198,11 @@ describe('Generación de Reportes - Creación', () => {
                 '[data-cy="report-type-error"]',
                 '[data-cy="date-range-error"]'
               ]
-              errorSelectors.forEach(selector => {
+              for (const selector of errorSelectors) {
                 if ($errors.find(selector).length > 0) {
                   cy.get(selector).should('exist')
                 }
-              })
+              }
             })
           }
         })

@@ -146,11 +146,11 @@ describe('Autenticación - Reset de Contraseña', () => {
       const selectors = [
         '[data-cy="new-password-input"]', '[data-cy="confirm-password-input"]', '[data-cy="reset-button"]'
       ]
-      selectors.forEach(selector => {
+      for (const selector of selectors) {
         if ($body.find(selector).length > 0) {
           cy.get(selector, { timeout: 5000 }).should('exist')
         }
-      })
+      }
     })
   })
 
