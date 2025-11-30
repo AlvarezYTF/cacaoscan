@@ -85,7 +85,7 @@ import { useFincasStore } from '@/stores/fincas'
 
 // 4. Components
 import Sidebar from '@/components/layout/Common/Sidebar.vue'
-import FincaForm from '@/components/FincaForm.vue'
+import FincaForm from '@/components/common/FincasViewComponents/FincaForm.vue'
 import FincasHeader from '@/components/common/FincasViewComponents/FincasHeader.vue'
 import FincasFilters from '@/components/common/FincasViewComponents/FincasFilters.vue'
 import FincaList from '@/components/common/FincasViewComponents/FincaList.vue'

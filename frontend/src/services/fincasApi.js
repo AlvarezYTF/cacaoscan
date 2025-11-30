@@ -277,9 +277,9 @@ function parseHectareas(value) {
  */
 function removeInvalidFields(data) {
   const invalidFields = ['id', 'created_at', 'updated_at', 'total_lotes', 'total_analisis', 'calidad_promedio']
-  invalidFields.forEach(field => {
+  for (const field of invalidFields) {
     delete data[field]
-  })
+  }
 }
 
 /**

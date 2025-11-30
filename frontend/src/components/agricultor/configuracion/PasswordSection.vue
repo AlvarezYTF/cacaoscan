@@ -191,6 +191,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { usePasswordValidation } from '@/composables/usePasswordValidation'
 
 // Error messages constructed dynamically to avoid static analysis detection
 const buildErrorMessages = () => {
@@ -606,21 +607,18 @@ const errors = ref({
 const errorMessage = ref('')
 const successMessage = ref('')
 
+// Password validation composable
+const { validatePasswordStrength, getPasswordValidationError, validatePasswordConfirmation } = usePasswordValidation()
+
 // Validaciones de contraseña en tiempo real
 const passwordChecks = computed(() => {
   const inputValue = localPasswordForm.value.newPassword || ''
-  return {
-    length: inputValue.length,
-    hasUpperCase: /[A-Z]/.test(inputValue),
-    hasLowerCase: /[a-z]/.test(inputValue),
-    hasNumber: /\d/.test(inputValue)
-  }
+  return validatePasswordStrength(inputValue)
 })
 
 // Validar si la contraseña cumple todos los requisitos
 const isPasswordValid = computed(() => {
-  const checks = passwordChecks.value
-  return checks.length >= 8 && checks.hasUpperCase && checks.hasLowerCase && checks.hasNumber
+  return passwordChecks.value.isValid
 })
 
 // Validar si las contraseñas coinciden
@@ -650,27 +648,23 @@ const validateField = (fieldName) => {
       
     case 'newPassword': {
       const inputValue = localPasswordForm.value.newPassword
-      if (!inputValue) {
-        errors.value.newPassword = ERROR_MSGS.newRequired
-      } else if (inputValue.length < 8) {
-        errors.value.newPassword = ERROR_MSGS.minLength
-      } else if (!/[A-Z]/.test(inputValue)) {
-        errors.value.newPassword = ERROR_MSGS.uppercase
-      } else if (!/[a-z]/.test(inputValue)) {
-        errors.value.newPassword = ERROR_MSGS.lowercase
-      } else if (!/\d/.test(inputValue)) {
-        errors.value.newPassword = ERROR_MSGS.number
+      const validationError = getPasswordValidationError(inputValue)
+      if (validationError) {
+        errors.value.newPassword = validationError
       }
       break
     }
       
-    case 'confirmPassword':
-      if (!localPasswordForm.value.confirmPassword) {
-        errors.value.confirmPassword = ERROR_MSGS.confirmRequired
-      } else if (!passwordsMatch.value) {
-        errors.value.confirmPassword = ERROR_MSGS.mismatch
+    case 'confirmPassword': {
+      const confirmationError = validatePasswordConfirmation(
+        localPasswordForm.value.newPassword,
+        localPasswordForm.value.confirmPassword
+      )
+      if (confirmationError) {
+        errors.value.confirmPassword = confirmationError
       }
       break
+    }
     default:
       // Campo no reconocido - no hay validación específica
       break

@@ -398,7 +398,7 @@ export const usePredictionStore = defineStore('prediction', {
       };
     },
     
-    // Reinicia todo el estado de predicción al estado inicial
+    // Reinicia el estado de predicción al estado inicial
     resetState() {
       // Reset current prediction state
       this.currentPrediction = null;

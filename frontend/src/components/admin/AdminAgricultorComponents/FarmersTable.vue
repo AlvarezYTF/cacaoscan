@@ -136,7 +136,7 @@
 
 <script>
 import DataTable from './DataTable.vue';
-import Pagination from './Pagination.vue';
+import Pagination from '@/components/common/Pagination.vue';
 
 export default {
   name: 'FarmersTable',

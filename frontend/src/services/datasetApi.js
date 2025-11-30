@@ -9,6 +9,7 @@
 
 // Importar configuración centralizada del API
 import { getApiBaseUrlWithoutPath } from '@/utils/apiConfig'
+import { validateImageFileSingleError } from '@/utils/imageValidationUtils'
 
 // Configuración base reutilizable
 const API_BASE_URL = getApiBaseUrlWithoutPath();
@@ -210,7 +211,7 @@ export const uploadDatasetImages = async (files, metadata = {}, onProgress = nul
     
     try {
       // Validar archivo
-      const validation = validateImageFile(file);
+      const validation = validateImageFileSingleError(file);
       if (!validation.isValid) {
         results.push({
           file: file.name,
@@ -266,32 +267,8 @@ export const uploadDatasetImages = async (files, metadata = {}, onProgress = nul
   return results;
 };
 
-/**
- * Valida un archivo de imagen
- * @param {File} file - Archivo a validar
- * @returns {Object} Resultado de validación
- */
-export const validateImageFile = (file) => {
-  // Validar tipo
-  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff'];
-  if (!validTypes.includes(file.type)) {
-    return {
-      isValid: false,
-      error: 'Formato no soportado. Use JPG, PNG, BMP o TIFF'
-    };
-  }
-  
-  // Validar tamaño (máximo 20MB)
-  const maxSize = 20 * 1024 * 1024;
-  if (file.size > maxSize) {
-    return {
-      isValid: false,
-      error: `Archivo demasiado grande. Máximo ${Math.round(maxSize / (1024 * 1024))}MB`
-    };
-  }
-  
-  return { isValid: true };
-};
+// Re-export validateImageFile from utils for backward compatibility
+export const validateImageFile = validateImageFileSingleError
 
 // ==========================================
 // ESTADÍSTICAS Y REPORTES

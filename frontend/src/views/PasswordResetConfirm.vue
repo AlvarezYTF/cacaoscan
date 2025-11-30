@@ -234,6 +234,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import authApi from '@/services/authApi'
+import { usePasswordValidation } from '@/composables/usePasswordValidation'
 
 // Build password type string dynamically to avoid static analysis detection
 const buildPasswordType = () => {
@@ -410,6 +411,9 @@ const buildErrorMessages = () => {
 
 const ERROR_MSGS = buildErrorMessages()
 
+// Password validation composable
+const { validatePasswordStrength, getPasswordValidationError, validatePasswordConfirmation } = usePasswordValidation()
+
 // Router y route
 const route = useRoute()
 const router = useRouter()
@@ -433,16 +437,14 @@ const errors = ref({})
 const passwordChecks = computed(() => {
   // Use intermediate variable to avoid static analysis detection
   const credentialValue = form.value.newPassword
-  return {
-    length: credentialValue.length >= 8,
-    uppercase: /[A-Z]/.test(credentialValue),
-    lowercase: /[a-z]/.test(credentialValue),
-    number: /\d/.test(credentialValue)
-  }
+  return validatePasswordStrength(credentialValue, { format: 'simple' })
 })
 
 const isPasswordValid = computed(() => {
-  return Object.values(passwordChecks.value).every(Boolean)
+  return passwordChecks.value.length && 
+         passwordChecks.value.uppercase && 
+         passwordChecks.value.lowercase && 
+         passwordChecks.value.number
 })
 
 const isFormValid = computed(() => {
@@ -464,20 +466,16 @@ const validateForm = () => {
   const newPasswordValue = form.value.newPassword
   const confirmPasswordValue = form.value.confirmPassword
   
-  if (!newPasswordValue) {
-    errors.value.newPassword = ERROR_MSGS.newRequired
+  const passwordError = getPasswordValidationError(newPasswordValue)
+  if (passwordError) {
+    errors.value.newPassword = passwordError
   } else if (!isPasswordValid.value) {
     errors.value.newPassword = ERROR_MSGS.requirements
   }
   
-  if (confirmPasswordValue) {
-    // Compare using variables to avoid direct password comparison detection
-    const valuesMatch = newPasswordValue === confirmPasswordValue
-    if (!valuesMatch) {
-      errors.value.confirmPassword = ERROR_MSGS.mismatch
-    }
-  } else {
-    errors.value.confirmPassword = ERROR_MSGS.confirmRequired
+  const confirmationError = validatePasswordConfirmation(newPasswordValue, confirmPasswordValue)
+  if (confirmationError) {
+    errors.value.confirmPassword = confirmationError
   }
   
   return Object.keys(errors.value).length === 0

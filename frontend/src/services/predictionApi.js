@@ -6,6 +6,7 @@
  */
 
 import api from './api'
+import { validateImageFile, getImageValidationError } from '@/utils/imageValidationUtils'
 
 // Endpoints de la API
 const API_ENDPOINTS = {
@@ -33,16 +34,12 @@ export async function predictImage(formData) {
       throw new Error('El archivo de imagen está vacío o corrupto')
     }
 
-    // Validar formato de imagen
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-    if (!allowedTypes.includes(imageFile.type)) {
-      throw new Error('Formato de imagen no válido. Use JPEG, PNG o WebP')
-    }
-
-    // Validar tamaño máximo (20MB)
-    const maxSize = 20 * 1024 * 1024
-    if (imageFile.size > maxSize) {
-      throw new Error('La imagen es demasiado grande. Máximo 20MB permitido')
+    // Validar imagen usando utilidad compartida
+    const validationError = getImageValidationError(imageFile, {
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    })
+    if (validationError) {
+      throw new Error(validationError)
     }
 
     // Emitir evento de loading
@@ -105,16 +102,12 @@ export async function predictImageYolo(formData) {
       throw new Error('El archivo de imagen está vacío o corrupto')
     }
 
-    // Validar formato de imagen
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
-    if (!allowedTypes.includes(imageFile.type)) {
-      throw new Error('Formato de imagen no válido. Use JPEG, PNG, WebP o BMP')
-    }
-
-    // Validar tamaño máximo (20MB para YOLOv8)
-    const maxSize = 20 * 1024 * 1024
-    if (imageFile.size > maxSize) {
-      throw new Error('La imagen es demasiado grande. Máximo 20MB permitido')
+    // Validar imagen usando utilidad compartida
+    const validationError = getImageValidationError(imageFile, {
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
+    })
+    if (validationError) {
+      throw new Error(validationError)
     }
 
     // Emitir evento de loading
@@ -178,16 +171,12 @@ export async function predictImageSmart(formData, options = {}) {
       throw new Error('El archivo de imagen está vacío o corrupto')
     }
 
-    // Validar formato de imagen
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
-    if (!allowedTypes.includes(imageFile.type)) {
-      throw new Error('Formato de imagen no válido. Use JPEG, PNG, WebP o BMP')
-    }
-
-    // Validar tamaño máximo (20MB para YOLOv8)
-    const maxSize = 20 * 1024 * 1024
-    if (imageFile.size > maxSize) {
-      throw new Error('La imagen es demasiado grande. Máximo 20MB permitido')
+    // Validar imagen usando utilidad compartida
+    const validationError = getImageValidationError(imageFile, {
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
+    })
+    if (validationError) {
+      throw new Error(validationError)
     }
 
     // Agregar opciones al FormData
@@ -559,83 +548,11 @@ export async function exportResults(options = {}) {
   }
 }
 
-// Función auxiliar para validar formatos de imagen
-export function validateImageFile(file) {
-  const errors = []
+// Re-export validateImageFile from utils for backward compatibility
+export { validateImageFile } from '@/utils/imageValidationUtils'
 
-  if (!file) {
-    errors.push('Archivo requerido')
-    return errors
-  }
-
-  // Validar tipo
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-  if (!allowedTypes.includes(file.type)) {
-    errors.push('Formato no válido. Use JPEG, PNG o WebP')
-  }
-
-  // Validar tamaño (20MB máximo)
-  const maxSize = 20 * 1024 * 1024
-  if (file.size > maxSize) {
-    errors.push('Archivo demasiado grande. Máximo 20MB')
-  }
-
-  // Validar tamaño mínimo (1KB)
-  const minSize = 1024
-  if (file.size < minSize) {
-    errors.push('Archivo demasiado pequeño')
-  }
-
-  return errors
-}
-
-/**
- * Crea FormData para envío de imagen con metadatos
- * @param {File} file - Archivo de imagen
- * @param {Object} metadata - Metadatos adicionales
- * @returns {FormData} - FormData preparado para envío
- */
-export function createImageFormData(file, metadata = {}) {
-  const formData = new FormData()
-  
-  // Agregar archivo de imagen
-  formData.append('image', file)
-  
-  // Agregar metadatos
-  if (metadata.lote_id) {
-    formData.append('lote_id', metadata.lote_id)
-  }
-  
-  if (metadata.finca) {
-    formData.append('finca', metadata.finca)
-  }
-  
-  if (metadata.region) {
-    formData.append('region', metadata.region)
-  }
-  
-  if (metadata.variedad) {
-    formData.append('variedad', metadata.variedad)
-  }
-  
-  if (metadata.fecha_cosecha) {
-    formData.append('fecha_cosecha', metadata.fecha_cosecha)
-  }
-  
-  if (metadata.notas) {
-    formData.append('notas', metadata.notas)
-  }
-  
-  // Agregar información técnica del archivo
-  formData.append('file_name', file.name)
-  formData.append('file_size', file.size.toString())
-  formData.append('file_type', file.type)
-  
-  // Timestamp para auditoría
-  formData.append('upload_timestamp', new Date().toISOString())
-  
-  return formData
-}
+// Re-export createImageFormData from utils for backward compatibility
+export { createImageFormData } from '@/utils/formDataUtils'
 
 // No exportar api directamente, solo las funciones
 export default {

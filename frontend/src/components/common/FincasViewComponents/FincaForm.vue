@@ -90,6 +90,32 @@
                   {{ errors.hectareas }}
                 </p>
               </div>
+
+              <!-- Select de agricultor (solo para admin en modo creación) -->
+              <div v-if="isAdmin && !isEditing" class="md:col-span-2">
+                <label for="finca-form-agricultor" class="block text-sm font-semibold text-gray-700 mb-2">
+                  Agricultor asignado *
+                </label>
+                <select
+                  id="finca-form-agricultor"
+                  v-model="formData.agricultor"
+                  name="agricultor"
+                  required
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors bg-white"
+                  :class="{ 'border-red-500 focus:ring-red-500': errors.agricultor }"
+                >
+                  <option value="">Selecciona un agricultor</option>
+                  <option v-for="a in agricultores" :key="a.id" :value="a.id">
+                    {{ a.username }}
+                  </option>
+                </select>
+                <p v-if="errors.agricultor" class="text-red-500 text-xs mt-2 flex items-center gap-1">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  {{ errors.agricultor }}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -320,8 +346,9 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import fincasApi from '@/services/fincasApi'
+import fincasApi, { getAgricultores } from '@/services/fincasApi'
 import { useFincasStore } from '@/stores/fincas'
+import { useAuthStore } from '@/stores/auth'
 import Swal from 'sweetalert2'
 
 const props = defineProps({
@@ -338,11 +365,16 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 
 const fincasStore = useFincasStore()
+const authStore = useAuthStore()
 
 // Estado reactivo
 const loading = ref(false)
 const errors = ref({})
 const municipios = ref([])
+const agricultores = ref([])
+
+// Computed
+const isAdmin = computed(() => authStore.isAdmin)
 
 // Datos del formulario
 const formData = reactive({
@@ -354,7 +386,8 @@ const formData = reactive({
   descripcion: '',
   coordenadas_lat: '',
   coordenadas_lng: '',
-  activa: true
+  activa: true,
+  agricultor: ''
 })
 
 // Computed
@@ -371,7 +404,8 @@ const resetForm = () => {
     descripcion: '',
     coordenadas_lat: '',
     coordenadas_lng: '',
-    activa: true
+    activa: true,
+    agricultor: ''
   })
   errors.value = {}
 }
@@ -495,7 +529,7 @@ const handleSubmit = async () => {
           if (!errorMessage && typeof serverErrors[field] === 'string') {
             errorMessage = serverErrors[field]
           }
-          return
+          continue
         }
         
         const frontendField = fieldMapping[field] || field
@@ -522,7 +556,7 @@ const handleSubmit = async () => {
         if (!firstErrorField && errors.value[frontendField]) {
           firstErrorField = frontendField
         }
-      })
+      }
       
       // Scroll al primer campo con error
       if (firstErrorField) {
@@ -571,10 +605,31 @@ watch(() => props.finca, () => {
   }
 }, { immediate: true })
 
+// Cargar agricultores si es admin
+const loadAgricultores = async () => {
+  if (isAdmin.value && !props.isEditing) {
+    try {
+      const res = await getAgricultores()
+      const data = res.data
+      if (Array.isArray(data?.results)) {
+        agricultores.value = data.results
+      } else if (Array.isArray(data)) {
+        agricultores.value = data
+      } else {
+        agricultores.value = data?.results || []
+      }
+      console.debug('[Fincas] Agricultores cargados:', agricultores.value.length)
+    } catch (e) {
+      console.error('[Fincas] Error cargando agricultores:', e)
+    }
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   if (props.finca) {
     loadFincaData()
   }
+  loadAgricultores()
 })
 </script>

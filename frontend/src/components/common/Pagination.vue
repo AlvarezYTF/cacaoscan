@@ -1,85 +1,86 @@
 <template>
-  <nav v-if="totalPages > 1" aria-label="Paginación">
-    <ul class="pagination justify-content-center">
-      <!-- Botón Anterior -->
-      <li class="page-item" :class="{ disabled: currentPage === 1 }">
-        <button 
-          @click="goToPage(currentPage - 1)" 
-          class="page-link"
-          :disabled="currentPage === 1"
-          aria-label="Página anterior"
+  <div v-if="totalPages > 1" class="bg-gradient-to-r from-green-50 to-green-50 px-6 py-4 border-t border-gray-200">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+      <!-- Información de resultados -->
+      <div class="flex justify-center sm:justify-start">
+        <p class="text-sm font-medium text-gray-600">
+          Mostrando <span class="font-bold text-gray-900">{{ startItem }}</span> a <span class="font-bold text-gray-900">{{ endItem }}</span> de <span class="font-bold text-gray-900">{{ totalItems }}</span> resultados
+        </p>
+      </div>
+      
+      <!-- Navegación de paginación -->
+      <div class="flex justify-center sm:justify-end">
+        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+          <!-- Botón Anterior -->
+          <button 
+            @click="goToPage(currentPage - 1)"
+            :disabled="currentPage === 1"
+            class="relative inline-flex items-center px-4 py-2 rounded-l-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            :class="{ 'hover:bg-green-100': currentPage !== 1 }"
+          >
+            <span class="sr-only">Anterior</span>
+            <svg class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          
+          <!-- Números de página -->
+          <template v-for="page in visiblePages" :key="page">
+            <!-- Página actual -->
+            <button 
+              v-if="page === currentPage"
+              class="relative inline-flex items-center px-4 py-2 border-2 border-green-500 bg-green-100 text-sm font-bold text-green-700 shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              {{ page }}
+            </button>
+            
+            <!-- Otras páginas -->
+            <button 
+              v-else
+              @click="goToPage(page)"
+              class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              {{ page }}
+            </button>
+          </template>
+          
+          <!-- Separador de páginas -->
+          <span v-if="showPageSeparator" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-400">
+            ...
+          </span>
+          
+          <!-- Botón Siguiente -->
+          <button 
+            @click="goToPage(currentPage + 1)"
+            :disabled="currentPage === totalPages"
+            class="relative inline-flex items-center px-4 py-2 rounded-r-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            :class="{ 'hover:bg-green-100': currentPage !== totalPages }"
+          >
+            <span class="sr-only">Siguiente</span>
+            <svg class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </nav>
+      </div>
+      
+      <!-- Selector de elementos por página (opcional) -->
+      <div v-if="showItemsPerPage" class="flex items-center space-x-2">
+        <label for="pagination-items-per-page" class="text-xs sm:text-sm text-gray-700">Mostrar:</label>
+        <select 
+          id="pagination-items-per-page"
+          :value="itemsPerPage"
+          @change="$emit('items-per-page-change', Number.parseInt($event.target.value))"
+          class="text-xs sm:text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-500"
         >
-          <i class="fas fa-chevron-left"></i>
-          <span class="d-none d-sm-inline ms-1">Anterior</span>
-        </button>
-      </li>
-
-      <!-- Primera página -->
-      <li 
-        v-if="showFirstPage" 
-        class="page-item"
-        :class="{ active: currentPage === 1 }"
-      >
-        <button @click="goToPage(1)" class="page-link">1</button>
-      </li>
-
-      <!-- Puntos suspensivos inicial -->
-      <li v-if="showFirstEllipsis" class="page-item disabled">
-        <span class="page-link">...</span>
-      </li>
-
-      <!-- Páginas del medio -->
-      <li 
-        v-for="page in visiblePages" 
-        :key="page"
-        class="page-item"
-        :class="{ active: page === currentPage }"
-      >
-        <button @click="goToPage(page)" class="page-link">
-          {{ page }}
-        </button>
-      </li>
-
-      <!-- Puntos suspensivos final -->
-      <li v-if="showLastEllipsis" class="page-item disabled">
-        <span class="page-link">...</span>
-      </li>
-
-      <!-- Última página -->
-      <li 
-        v-if="showLastPage" 
-        class="page-item"
-        :class="{ active: currentPage === totalPages }"
-      >
-        <button @click="goToPage(totalPages)" class="page-link">
-          {{ totalPages }}
-        </button>
-      </li>
-
-      <!-- Botón Siguiente -->
-      <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-        <button 
-          @click="goToPage(currentPage + 1)" 
-          class="page-link"
-          :disabled="currentPage === totalPages"
-          aria-label="Página siguiente"
-        >
-          <span class="d-none d-sm-inline me-1">Siguiente</span>
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </li>
-    </ul>
-
-    <!-- Información de páginas -->
-    <div class="text-center mt-2">
-      <small class="text-muted">
-        Página {{ currentPage }} de {{ totalPages }}
-        <span v-if="totalItems > 0">
-          ({{ totalItems }} elementos)
-        </span>
-      </small>
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
     </div>
-  </nav>
+  </div>
 </template>
 
 <script setup>
@@ -96,7 +97,15 @@ const props = defineProps({
   },
   totalItems: {
     type: Number,
-    default: 0
+    required: true
+  },
+  itemsPerPage: {
+    type: Number,
+    default: 10
+  },
+  showItemsPerPage: {
+    type: Boolean,
+    default: false
   },
   maxVisiblePages: {
     type: Number,
@@ -104,45 +113,48 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['page-change'])
+const emit = defineEmits(['page-change', 'items-per-page-change'])
 
 // Computed properties
+const startItem = computed(() => {
+  return (props.currentPage - 1) * props.itemsPerPage + 1
+})
+
+const endItem = computed(() => {
+  return Math.min(props.currentPage * props.itemsPerPage, props.totalItems)
+})
+
 const visiblePages = computed(() => {
   const pages = []
-  const half = Math.floor(props.maxVisiblePages / 2)
   
-  let start = Math.max(1, props.currentPage - half)
-  let end = Math.min(props.totalPages, start + props.maxVisiblePages - 1)
-  
-  // Ajustar el inicio si estamos cerca del final
-  if (end - start < props.maxVisiblePages - 1) {
-    start = Math.max(1, end - props.maxVisiblePages + 1)
-  }
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
+  if (props.totalPages <= props.maxVisiblePages) {
+    // Si hay pocas páginas, mostrar todas
+    for (let i = 1; i <= props.totalPages; i++) {
+      pages.push(i)
+    }
+  } else if (props.currentPage <= 3) {
+    // Al inicio
+    for (let i = 1; i <= 3; i++) {
+      pages.push(i)
+    }
+  } else if (props.currentPage >= props.totalPages - 2) {
+    // Al final
+    for (let i = props.totalPages - 2; i <= props.totalPages; i++) {
+      pages.push(i)
+    }
+  } else {
+    // En el medio
+    for (let i = props.currentPage - 1; i <= props.currentPage + 1; i++) {
+      pages.push(i)
+    }
   }
   
   return pages
 })
 
-const showFirstPage = computed(() => {
+const showPageSeparator = computed(() => {
   return props.totalPages > props.maxVisiblePages && 
-         visiblePages.value[0] > 1
-})
-
-const showLastPage = computed(() => {
-  return props.totalPages > props.maxVisiblePages && 
-         visiblePages.value[visiblePages.value.length - 1] < props.totalPages
-})
-
-const showFirstEllipsis = computed(() => {
-  return showFirstPage.value && visiblePages.value[0] > 2
-})
-
-const showLastEllipsis = computed(() => {
-  return showLastPage.value && 
-         visiblePages.value[visiblePages.value.length - 1] < props.totalPages - 1
+         (props.currentPage > 3 && props.currentPage < props.totalPages - 2)
 })
 
 // Methods
@@ -154,62 +166,118 @@ const goToPage = (page) => {
 </script>
 
 <style scoped>
-.pagination {
-  margin-bottom: 0;
-}
-
-.page-link {
-  color: #007bff;
-  border-color: #dee2e6;
-  transition: all 0.2s ease-in-out;
-}
-
-.page-link:hover {
-  color: #0056b3;
-  background-color: #e9ecef;
-  border-color: #dee2e6;
-}
-
-.page-item.active .page-link {
-  background-color: #1f4e79;
-  border-color: #1f4e79;
-  color: #ffffff;
-}
-
-.page-item.disabled .page-link {
-  color: #6c757d;
-  background-color: #fff;
-  border-color: #dee2e6;
-  cursor: not-allowed;
-}
-
-.page-link:focus {
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
 /* Responsive adjustments */
-@media (max-width: 576px) {
-  .pagination {
-    font-size: 0.875rem;
+@media (max-width: 768px) {
+  .md\:px-6 {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
   
-  .page-link {
-    padding: 0.375rem 0.5rem;
+  .md\:py-4 {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  
+  .text-xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
   }
 }
 
-/* Accessibility improvements */
-.page-link:focus-visible {
-  outline: 2px solid #007bff;
+@media (max-width: 640px) {
+  .px-3 {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .py-3 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  .text-xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+  
+  .space-y-3 > * + * {
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .px-3 {
+    padding-left: 0.375rem;
+    padding-right: 0.375rem;
+  }
+  
+  .py-3 {
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+  }
+  
+  .text-xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+}
+
+/* Transiciones suaves */
+* {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Mejoras para dispositivos táctiles */
+@media (hover: none) and (pointer: coarse) {
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
+
+/* Efectos de hover mejorados */
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1);
+}
+
+button:focus:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Animación de entrada */
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bg-gradient-to-r {
+  animation: slideInFromBottom 0.3s ease-out;
+}
+
+/* Mejoras para accesibilidad */
+button:focus-visible {
+  outline: 2px solid #10b981;
   outline-offset: 2px;
 }
 
-/* Animation for page changes */
-.page-item {
-  transition: transform 0.1s ease-in-out;
-}
-
-.page-item:hover {
-  transform: translateY(-1px);
+/* Estados de hover para botones deshabilitados */
+button:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 </style>

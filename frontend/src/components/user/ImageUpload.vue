@@ -210,8 +210,10 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue';
-import { predictImage, predictImageYolo, predictImageSmart, createImageFormData, validateImageFile } from '@/services/predictionApi.js';
-import { predictImage as predictImageNew, createPredictionFormData } from '@/services/api.js';
+import { predictImage, predictImageYolo, predictImageSmart } from '@/services/predictionApi.js';
+import { predictImage as predictImageNew } from '@/services/api.js';
+import { createImageFormData } from '@/utils/formDataUtils';
+import { validateImageFile } from '@/utils/imageValidationUtils';
 
 export default {
   name: 'ImageUpload',
@@ -343,7 +345,7 @@ export default {
             break;
           case 'cacaoscan': {
             // Usar la nueva función predictImage del servicio api.js
-            const newFormData = createPredictionFormData(selectedFile.value, formData.value);
+            const newFormData = createImageFormData(selectedFile.value, formData.value);
             result = { success: true, data: await predictImageNew(newFormData) };
             break;
           }

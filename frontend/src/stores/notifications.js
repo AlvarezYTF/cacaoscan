@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/services/api'
+import { downloadFileFromResponse } from '@/utils/fileExportUtils'
 
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
@@ -307,32 +308,7 @@ export const useNotificationsStore = defineStore('notifications', {
           responseType: 'blob'
         })
 
-        // Crear URL para descarga
-        const blob = new Blob([response.data])
-        const url = globalThis.URL.createObjectURL(blob)
-        
-        // Crear enlace temporal para descarga
-        const link = document.createElement('a')
-        link.href = url
-        
-        // Obtener nombre del archivo del header
-        const contentDisposition = response.headers['content-disposition']
-        let filename = 'notificaciones_exportadas.json'
-        
-        if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename="(.+)"/)
-          if (filenameMatch) {
-            filename = filenameMatch[1]
-          }
-        }
-        
-        link.download = filename
-        document.body.appendChild(link)
-        link.click()
-        
-        // Limpiar
-        link.remove()
-        globalThis.URL.revokeObjectURL(url)
+        downloadFileFromResponse(response, 'notificaciones_exportadas.json')
 
         return true
       } catch (error) {

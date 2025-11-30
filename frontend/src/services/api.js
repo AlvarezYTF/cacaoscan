@@ -414,7 +414,8 @@ api.interceptors.response.use(
         authStore.updateLastActivity()
       }
     } catch (error) {
-      // Ignorar errores del store en caso de que no esté disponible
+      // Log error for debugging transparency - activity update is non-critical
+      console.warn('⚠️ [API] Failed to update user activity:', error.message, error)
     }
 
     return response
@@ -446,33 +447,8 @@ api.interceptors.response.use(
   }
 )
 
-// Función helper para crear requests con manejo de archivos
-export const createFormDataRequest = (data, progressCallback) => {
-  const formData = new FormData()
-  
-  for (const key of Object.keys(data)) {
-    if (data[key] !== null && data[key] !== undefined) {
-      formData.append(key, data[key])
-    }
-  }
-
-  const config = {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  }
-
-  if (progressCallback) {
-    config.onUploadProgress = (progressEvent) => {
-      const progress = Math.round(
-        (progressEvent.loaded * 100) / progressEvent.total
-      )
-      progressCallback(progress)
-    }
-  }
-
-  return { formData, config }
-}
+// Re-export createFormDataRequest from utils for backward compatibility
+export { createFormDataRequest } from '@/utils/formDataUtils'
 
 // Función helper para manejar timeouts específicos
 export const createTimeoutRequest = (timeoutMs) => {
@@ -569,90 +545,11 @@ export async function predictImage(formData) {
   }
 }
 
-/**
- * Función auxiliar para crear FormData para predicción
- * @param {File} file - Archivo de imagen
- * @param {Object} metadata - Metadatos adicionales (opcional)
- * @returns {FormData} - FormData preparado para envío
- */
-export function createPredictionFormData(file, metadata = {}) {
-  const formData = new FormData()
-  
-  // Agregar archivo de imagen
-  formData.append('image', file)
-  
-  // Agregar metadatos si se proporcionan
-  if (metadata.lote_id) {
-    formData.append('lote_id', metadata.lote_id)
-  }
-  
-  if (metadata.finca) {
-    formData.append('finca', metadata.finca)
-  }
-  
-  if (metadata.region) {
-    formData.append('region', metadata.region)
-  }
-  
-  if (metadata.variedad) {
-    formData.append('variedad', metadata.variedad)
-  }
-  
-  if (metadata.fecha_cosecha) {
-    formData.append('fecha_cosecha', metadata.fecha_cosecha)
-  }
-  
-  if (metadata.notas) {
-    formData.append('notas', metadata.notas)
-  }
-  
-  // Agregar información técnica del archivo
-  formData.append('file_name', file.name)
-  formData.append('file_size', file.size.toString())
-  formData.append('file_type', file.type)
-  
-  // Timestamp para auditoría
-  formData.append('upload_timestamp', new Date().toISOString())
-  
-  return formData
-}
+// Re-export createPredictionFormData from utils for backward compatibility
+export { createPredictionFormData } from '@/utils/formDataUtils'
 
-/**
- * Función auxiliar para validar archivos de imagen
- * @param {File} file - Archivo a validar
- * @returns {Object} - Objeto con isValid y errors
- */
-export function validateImageFile(file) {
-  const errors = []
-
-  if (!file) {
-    errors.push('Archivo requerido')
-    return { isValid: false, errors }
-  }
-
-  // Validar tipo
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
-  if (!allowedTypes.includes(file.type)) {
-    errors.push('Formato no válido. Use JPEG, PNG, WebP o BMP')
-  }
-
-  // Validar tamaño (20MB máximo)
-  const maxSize = 20 * 1024 * 1024
-  if (file.size > maxSize) {
-    errors.push('Archivo demasiado grande. Máximo 20MB')
-  }
-
-  // Validar tamaño mínimo (1KB)
-  const minSize = 1024
-  if (file.size < minSize) {
-    errors.push('Archivo demasiado pequeño')
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors
-  }
-}
+// Re-export validateImageFile from utils for backward compatibility
+export { validateImageFileObject as validateImageFile } from '@/utils/imageValidationUtils'
 
 // Exportar configuraciones útiles
 export const API_CONFIG = {

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/services/api'
+import { downloadFileFromResponse } from '@/utils/fileExportUtils'
 
 export const useReportsStore = defineStore('reports', {
   state: () => ({
@@ -197,32 +198,7 @@ export const useReportsStore = defineStore('reports', {
           responseType: 'blob'
         })
 
-        // Crear URL para descarga
-        const blob = new Blob([response.data])
-        const url = globalThis.URL.createObjectURL(blob)
-        
-        // Crear enlace temporal para descarga
-        const link = document.createElement('a')
-        link.href = url
-        
-        // Obtener nombre del archivo del header
-        const contentDisposition = response.headers['content-disposition']
-        let filename = `reporte_${id}.pdf`
-        
-        if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename="(.+)"/)
-          if (filenameMatch) {
-            filename = filenameMatch[1]
-          }
-        }
-        
-        link.download = filename
-        document.body.appendChild(link)
-        link.click()
-        
-        // Limpiar
-        link.remove()
-        globalThis.URL.revokeObjectURL(url)
+        downloadFileFromResponse(response, `reporte_${id}.pdf`)
 
         return true
       } catch (error) {
@@ -237,32 +213,7 @@ export const useReportsStore = defineStore('reports', {
           responseType: 'blob'
         })
 
-        // Crear URL para descarga
-        const blob = new Blob([response.data])
-        const url = globalThis.URL.createObjectURL(blob)
-        
-        // Crear enlace temporal para descarga
-        const link = document.createElement('a')
-        link.href = url
-        
-        // Obtener nombre del archivo del header
-        const contentDisposition = response.headers['content-disposition']
-        let filename = 'reportes_exportados.zip'
-        
-        if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename="(.+)"/)
-          if (filenameMatch) {
-            filename = filenameMatch[1]
-          }
-        }
-        
-        link.download = filename
-        document.body.appendChild(link)
-        link.click()
-        
-        // Limpiar
-        link.remove()
-        globalThis.URL.revokeObjectURL(url)
+        downloadFileFromResponse(response, 'reportes_exportados.zip')
 
         return true
       } catch (error) {

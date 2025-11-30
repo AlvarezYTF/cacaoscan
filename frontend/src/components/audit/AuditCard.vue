@@ -74,6 +74,9 @@
 </template>
 
 <script>
+import { useDateFormatting } from '@/composables/useDateFormatting'
+import { useAuditHelpers } from '@/composables/useAuditHelpers'
+
 export default {
   name: 'AuditCard',
   props: {
@@ -88,51 +91,45 @@ export default {
     }
   },
   emits: ['view-details'],
+  setup() {
+    const { formatDateTime: formatDateTimeUtil, formatDuration: formatDurationUtil } = useDateFormatting()
+    const {
+      getAuditItemTitle,
+      getAuditItemType,
+      getAuditItemStatus,
+      getAuditActionMarkerClass,
+      getAuditActionIcon,
+      getAuditStatusClass
+    } = useAuditHelpers()
+
+    return {
+      formatDateTimeUtil,
+      formatDurationUtil,
+      getAuditItemTitle,
+      getAuditItemType,
+      getAuditItemStatus,
+      getAuditActionMarkerClass,
+      getAuditActionIcon,
+      getAuditStatusClass
+    }
+  },
   methods: {
     getCardTitle() {
-      if (this.auditType === 'activity' || this.auditType === 'both') {
-        return `${this.data.accion_display || this.data.accion} - ${this.data.modelo}`
-      } else if (this.auditType === 'login') {
-        return `Login ${this.data.success ? 'Exitoso' : 'Fallido'}`
-      }
-      return 'Evento de Auditoría'
+      return this.getAuditItemTitle(this.data, this.auditType)
     },
 
     getItemType() {
-      if (this.auditType === 'activity' || this.auditType === 'both') {
-        return 'Actividad'
-      } else if (this.auditType === 'login') {
-        return 'Login'
-      }
-      return 'Evento'
+      return this.getAuditItemType(this.auditType)
     },
 
     getItemStatus() {
-      if (this.auditType === 'activity' || this.auditType === 'both') {
-        return this.data.accion_display || this.data.accion
-      } else if (this.auditType === 'login') {
-        return this.data.success ? 'Exitoso' : 'Fallido'
-      }
-      return 'Completado'
+      return this.getAuditItemStatus(this.data, this.auditType)
     },
 
     getCardClass() {
       if (this.auditType === 'activity' || this.auditType === 'both') {
-        const actionClasses = {
-          'login': 'card-login',
-          'logout': 'card-logout',
-          'create': 'card-create',
-          'update': 'card-update',
-          'delete': 'card-delete',
-          'view': 'card-view',
-          'download': 'card-download',
-          'upload': 'card-upload',
-          'analysis': 'card-analysis',
-          'training': 'card-training',
-          'report': 'card-report',
-          'error': 'card-error'
-        }
-        return actionClasses[this.data.accion] || 'card-default'
+        const markerClass = this.getAuditActionMarkerClass(this.data.accion)
+        return markerClass.replace('marker-', 'card-')
       } else if (this.auditType === 'login') {
         return this.data.success ? 'card-success' : 'card-error'
       }
@@ -141,21 +138,7 @@ export default {
 
     getCardIcon() {
       if (this.auditType === 'activity' || this.auditType === 'both') {
-        const actionIcons = {
-          'login': 'fas fa-sign-in-alt',
-          'logout': 'fas fa-sign-out-alt',
-          'create': 'fas fa-plus',
-          'update': 'fas fa-edit',
-          'delete': 'fas fa-trash',
-          'view': 'fas fa-eye',
-          'download': 'fas fa-download',
-          'upload': 'fas fa-upload',
-          'analysis': 'fas fa-chart-line',
-          'training': 'fas fa-brain',
-          'report': 'fas fa-file-alt',
-          'error': 'fas fa-exclamation-triangle'
-        }
-        return actionIcons[this.data.accion] || 'fas fa-circle'
+        return this.getAuditActionIcon(this.data.accion)
       } else if (this.auditType === 'login') {
         return this.data.success ? 'fas fa-check-circle' : 'fas fa-times-circle'
       }
@@ -163,44 +146,15 @@ export default {
     },
 
     getStatusClass() {
-      if (this.auditType === 'login' || this.auditType === 'both') {
-        return this.data.success ? 'status-success' : 'status-error'
-      }
-      return 'status-default'
+      return this.getAuditStatusClass(this.data, this.auditType)
     },
 
     formatDateTime(dateString) {
-      if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleString('es-ES', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      return this.formatDateTimeUtil(dateString)
     },
 
     formatDuration(durationString) {
-      if (!durationString) return 'N/A'
-      
-      // Parse duration string (e.g., "1:23:45")
-      const parts = durationString.split(':')
-      if (parts.length === 3) {
-        const hours = Number.parseInt(parts[0])
-        const minutes = Number.parseInt(parts[1])
-        const seconds = Number.parseInt(parts[2])
-        
-        if (hours > 0) {
-          return `${hours}h ${minutes}m`
-        } else if (minutes > 0) {
-          return `${minutes}m ${seconds}s`
-        } else {
-          return `${seconds}s`
-        }
-      }
-      
-      return durationString
+      return this.formatDurationUtil(durationString)
     },
 
     truncateText(text, maxLength) {

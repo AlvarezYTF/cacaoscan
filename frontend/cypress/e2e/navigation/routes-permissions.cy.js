@@ -2,11 +2,11 @@ describe('Navegación - Rutas y Permisos', () => {
   it('debe verificar rutas públicas accesibles sin autenticación', () => {
     const publicRoutes = ['/', '/login', '/registro']
     
-    publicRoutes.forEach(route => {
+    for (const route of publicRoutes) {
       cy.visit(route)
       cy.url().should('include', route)
       cy.get('body').should('be.visible')
-    })
+    }
   })
 
   it('debe redirigir a login desde rutas protegidas sin autenticación', () => {
