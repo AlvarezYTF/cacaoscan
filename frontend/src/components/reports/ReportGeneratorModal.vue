@@ -1,6 +1,12 @@
 <template>
-  <div class="modal-overlay" @click="closeModal">
-    <div class="modal-container" @click.stop>
+  <BaseModal
+    :show="true"
+    title="Generar Nuevo Reporte"
+    subtitle="Configura los parámetros para generar tu reporte personalizado"
+    max-width="5xl"
+    @close="closeModal"
+  >
+    <template #header>
       <div class="modal-header">
         <div class="header-content">
           <div class="header-icon">
@@ -11,12 +17,10 @@
             <p>Configura los parámetros para generar tu reporte personalizado</p>
           </div>
         </div>
-        <button class="close-btn" @click="closeModal">
-          <i class="fas fa-times"></i>
-        </button>
       </div>
+    </template>
 
-      <div class="modal-body">
+    <div class="modal-body">
         <!-- Indicador de progreso -->
         <div class="progress-indicator">
           <div class="progress-steps">
@@ -665,6 +669,7 @@
         </form>
       </div>
 
+    <template #footer>
       <div class="modal-footer">
         <div class="footer-left">
           <button 
@@ -709,19 +714,19 @@
           </button>
         </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </BaseModal>
 </template>
 
-<script>
+<script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useReportsStore } from '@/stores/reports'
 import Swal from 'sweetalert2'
+import BaseModal from '@/components/common/BaseModal.vue'
 
-export default {
-  name: 'ReportGeneratorModal',
-  emits: ['close', 'created'],
-  setup(props, { emit }) {
+const emit = defineEmits(['close', 'created'])
+
+const reportsStore = useReportsStore()
     const reportsStore = useReportsStore()
 
     const loading = ref(false)
@@ -1125,63 +1130,13 @@ export default {
       emit('close')
     }
 
-    // Lifecycle
-    onMounted(() => {
-      loadInitialData()
-    })
-
-    return {
-      loading,
-      errors,
-      currentStep,
-      totalSteps,
-      steps,
-      showAdvancedFilters,
-      fincas,
-      lotes,
-      users,
-      formatOptions,
-      formData,
-      canProceed,
-      loadLotes,
-      onTypeChange,
-      onScheduledChange,
-      nextStep,
-      previousStep,
-      generateReport,
-      closeModal
-    }
-  }
-}
+// Lifecycle
+onMounted(() => {
+  loadInitialData()
+})
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.modal-container {
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 900px;
-  max-height: 90vh;
-  overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-}
-
 .modal-header {
   padding: 1.5rem 2rem;
   border-bottom: 1px solid #e5e7eb;
@@ -1190,6 +1145,7 @@ export default {
   align-items: flex-start;
   background: linear-gradient(135deg, #4c63d2 0%, #5a3d8a 100%);
   color: #ffffff;
+  border-radius: 12px 12px 0 0;
 }
 
 .header-content {
@@ -1219,30 +1175,6 @@ export default {
   margin: 0.25rem 0 0 0;
   opacity: 0.9;
   font-size: 0.875rem;
-}
-
-.close-btn {
-  background: rgba(15, 23, 42, 0.85);
-  border: none;
-  color: #ffffff;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: rgba(15, 23, 42, 0.95);
-}
-
-.modal-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 2rem;
 }
 
 /* Progress Indicator */
@@ -1723,16 +1655,7 @@ input:checked + .toggle-label .toggle-slider:before {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .modal-container {
-    margin: 0.5rem;
-    max-height: 95vh;
-  }
-  
   .modal-header {
-    padding: 1rem;
-  }
-  
-  .modal-body {
     padding: 1rem;
   }
   
@@ -1776,16 +1699,6 @@ input:checked + .toggle-label .toggle-slider:before {
 }
 
 @media (max-width: 480px) {
-  .modal-overlay {
-    padding: 0.25rem;
-  }
-  
-  .modal-container {
-    margin: 0;
-    border-radius: 0;
-    max-height: 100vh;
-  }
-  
   .header-content {
     flex-direction: column;
     align-items: flex-start;

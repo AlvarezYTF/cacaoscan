@@ -9,7 +9,7 @@
  * Solo accesible para usuarios con rol de administrador
  */
 
-import api from './api'
+import { apiGet } from './apiClient'
 
 // Endpoints de la API
 const API_ENDPOINTS = {
@@ -27,36 +27,32 @@ const API_ENDPOINTS = {
  * @param {string} params.accion - Filtrar por tipo de acción
  * @param {string} params.fecha_desde - Fecha inicio (YYYY-MM-DD)
  * @param {string} params.fecha_hasta - Fecha fin (YYYY-MM-DD)
- * @returns {Promise<Object>} - Lista paginada de logs
+ * @returns {Promise<Object>} - Lista paginada de logs normalizada
  */
 export async function getActivityLogs(params = {}) {
   try {
-    console.log('📋 Obteniendo logs de actividad:', params)
-
-    const response = await api.get(API_ENDPOINTS.activityLogs, { params })
-
-    console.log('✅ Logs de actividad obtenidos:', {
-      count: response.data.count || 0,
-      results: response.data.results?.length || 0
-    })
-
+    const data = await apiGet(API_ENDPOINTS.activityLogs, params)
+    
+    // Normalize response
     return {
       success: true,
-      data: response.data
+      data: {
+        results: data.results || [],
+        count: data.count || 0,
+        current_page: data.current_page || params.page || 1,
+        total_pages: data.total_pages || Math.ceil((data.count || 0) / (params.page_size || 50)),
+        page_size: data.page_size || params.page_size || 50
+      }
     }
-
   } catch (error) {
-    console.error('❌ Error obteniendo logs de actividad:', error)
+    console.error('Error obteniendo logs de actividad:', error)
     
     const errorMessage = error.response?.data?.detail || 
                         error.response?.data?.error || 
                         error.message || 
                         'Error al obtener los logs de actividad'
 
-    return {
-      success: false,
-      error: errorMessage
-    }
+    throw new Error(errorMessage)
   }
 }
 
@@ -69,36 +65,32 @@ export async function getActivityLogs(params = {}) {
  * @param {boolean} params.exitoso - Filtrar por logins exitosos/fallidos
  * @param {string} params.fecha_desde - Fecha inicio (YYYY-MM-DD)
  * @param {string} params.fecha_hasta - Fecha fin (YYYY-MM-DD)
- * @returns {Promise<Object>} - Lista paginada de logins
+ * @returns {Promise<Object>} - Lista paginada de logins normalizada
  */
 export async function getLoginHistory(params = {}) {
   try {
-    console.log('🔐 Obteniendo historial de logins:', params)
-
-    const response = await api.get(API_ENDPOINTS.loginHistory, { params })
-
-    console.log('✅ Historial de logins obtenido:', {
-      count: response.data.count || 0,
-      results: response.data.results?.length || 0
-    })
-
+    const data = await apiGet(API_ENDPOINTS.loginHistory, params)
+    
+    // Normalize response
     return {
       success: true,
-      data: response.data
+      data: {
+        results: data.results || [],
+        count: data.count || 0,
+        current_page: data.current_page || params.page || 1,
+        total_pages: data.total_pages || Math.ceil((data.count || 0) / (params.page_size || 50)),
+        page_size: data.page_size || params.page_size || 50
+      }
     }
-
   } catch (error) {
-    console.error('❌ Error obteniendo historial de logins:', error)
+    console.error('Error obteniendo historial de logins:', error)
     
     const errorMessage = error.response?.data?.detail || 
                         error.response?.data?.error || 
                         error.message || 
                         'Error al obtener el historial de logins'
 
-    return {
-      success: false,
-      error: errorMessage
-    }
+    throw new Error(errorMessage)
   }
 }
 
@@ -107,33 +99,33 @@ export async function getLoginHistory(params = {}) {
  * @param {Object} params - Parámetros de consulta
  * @param {string} params.fecha_desde - Fecha inicio (YYYY-MM-DD)
  * @param {string} params.fecha_hasta - Fecha fin (YYYY-MM-DD)
- * @returns {Promise<Object>} - Estadísticas de auditoría
+ * @returns {Promise<Object>} - Estadísticas de auditoría normalizadas
  */
 export async function getAuditStats(params = {}) {
   try {
-    console.log('📊 Obteniendo estadísticas de auditoría:', params)
-
-    const response = await api.get(API_ENDPOINTS.stats, { params })
-
-    console.log('✅ Estadísticas de auditoría obtenidas')
-
+    const data = await apiGet(API_ENDPOINTS.stats, params)
+    
+    // Normalize response
     return {
       success: true,
-      data: response.data
+      data: {
+        activity_log: data.activity_log || {},
+        login_history: data.login_history || {},
+        period: {
+          fecha_desde: params.fecha_desde || null,
+          fecha_hasta: params.fecha_hasta || null
+        }
+      }
     }
-
   } catch (error) {
-    console.error('❌ Error obteniendo estadísticas de auditoría:', error)
+    console.error('Error obteniendo estadísticas de auditoría:', error)
     
     const errorMessage = error.response?.data?.detail || 
                         error.response?.data?.error || 
                         error.message || 
                         'Error al obtener las estadísticas de auditoría'
 
-    return {
-      success: false,
-      error: errorMessage
-    }
+    throw new Error(errorMessage)
   }
 }
 

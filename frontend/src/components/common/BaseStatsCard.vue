@@ -1,79 +1,87 @@
 <template>
   <div 
-    class="base-stat-card"
-    :class="[
-      variant,
-      { 
-        'clickable': clickable,
-        'has-trend': trend
-      }
-    ]"
-    @click="handleClick"
+    class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300"
+    :class="{ 'opacity-60 pointer-events-none': loading }"
   >
-    <div class="stat-icon">
-      <i :class="icon"></i>
+    <div class="p-4 md:p-5">
+      <div class="flex items-center">
+        <!-- Icon -->
+        <div class="flex-shrink-0 rounded-lg p-2 md:p-3" :class="iconBgColor">
+          <slot name="icon">
+            <component 
+              v-if="icon" 
+              :is="icon" 
+              class="h-5 w-5 md:h-6 md:w-6" 
+              :class="iconColor" 
+            />
+          </slot>
+        </div>
+
+        <!-- Content -->
+        <div class="ml-3 md:ml-5 flex-1">
+          <dl>
+            <dt class="text-xs md:text-sm font-medium text-gray-500 truncate">{{ title }}</dt>
+            <dd class="mt-1">
+              <div class="text-lg md:text-2xl font-semibold text-gray-900">
+                <slot name="value">
+                  {{ formattedValue }}
+                </slot>
+              </div>
+              
+              <!-- Trend indicator -->
+              <div v-if="trend" class="text-xs md:text-sm flex items-center mt-1" :class="trendColor">
+                <svg 
+                  v-if="trend.value > 0" 
+                  class="w-3 h-3 md:w-4 md:w-4 mr-1" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                </svg>
+                <svg 
+                  v-else-if="trend.value < 0" 
+                  class="w-3 h-3 md:w-4 md:w-4 mr-1" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+                <span>{{ trend.label || `${Math.abs(trend.value)}% desde el mes pasado` }}</span>
+              </div>
+            </dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Footer slot -->
+      <div v-if="$slots.footer" class="mt-4 pt-4 border-t border-gray-100">
+        <slot name="footer" />
+      </div>
     </div>
-    <div class="stat-content">
-      <div class="stat-value">
-        <span class="stat-number">{{ formatValue(value) }}</span>
-        <span v-if="suffix" class="stat-suffix">{{ suffix }}</span>
-      </div>
-      <div class="stat-label">{{ label }}</div>
-      <div v-if="change !== undefined" class="stat-change" :class="getChangeClass(change)">
-        <i :class="getChangeIcon(change)"></i>
-        <span>{{ formatChange(change) }}</span>
-        <span v-if="changePeriod" class="change-period">{{ changePeriod }}</span>
-      </div>
-      <div v-if="description" class="stat-description">
-        {{ description }}
-      </div>
-    </div>
-    <div v-if="trend" class="stat-trend">
-      <TrendChart 
-        :data="trend.data" 
-        :color="trend.color || defaultColor"
-        :height="40"
-      />
+
+    <!-- Loading state -->
+    <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
+      <div class="w-6 h-6 border-2 border-gray-300 border-t-green-600 rounded-full animate-spin"></div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import TrendChart from '@/components/charts/TrendChart.vue'
 
 const props = defineProps({
+  title: {
+    type: String,
+    required: true
+  },
   value: {
     type: [String, Number],
     required: true
   },
-  label: {
-    type: String,
-    required: true
-  },
   icon: {
-    type: String,
-    required: true
-  },
-  variant: {
-    type: String,
-    default: 'default',
-    validator: (value) => ['default', 'primary', 'success', 'warning', 'danger', 'info'].includes(value)
-  },
-  suffix: {
-    type: String,
-    default: null
-  },
-  change: {
-    type: Number,
-    default: undefined
-  },
-  changePeriod: {
-    type: String,
-    default: null
-  },
-  description: {
-    type: String,
+    type: [String, Object],
     default: null
   },
   trend: {
@@ -81,324 +89,126 @@ const props = defineProps({
     default: null,
     validator: (value) => {
       if (!value) return true
-      return value.data && Array.isArray(value.data)
+      return typeof value.value === 'number' && (value.label === undefined || typeof value.label === 'string')
     }
   },
-  clickable: {
+  format: {
+    type: String,
+    default: 'number',
+    validator: (value) => ['number', 'currency', 'percentage'].includes(value)
+  },
+  loading: {
     type: Boolean,
     default: false
   },
   color: {
     type: String,
-    default: null
+    default: 'default',
+    validator: (value) => ['default', 'success', 'warning', 'danger', 'info'].includes(value)
   }
 })
 
-const emit = defineEmits(['click'])
-
-const defaultColor = computed(() => {
-  if (props.color) return props.color
-  
+const iconBgColor = computed(() => {
   const colors = {
-    default: '#3498db',
-    primary: '#1f4e79',
-    success: '#0d5c3d',
-    warning: '#8a4b00',
-    danger: '#8b1f1f',
-    info: '#145057'
+    default: 'bg-gray-50',
+    success: 'bg-green-50',
+    warning: 'bg-yellow-50',
+    danger: 'bg-red-50',
+    info: 'bg-blue-50'
   }
-  return colors[props.variant] || colors.default
+  return colors[props.color] || colors.default
 })
 
-const formatValue = (value) => {
-  if (typeof value === 'number') {
-    if (value >= 1000000) {
-      return (value / 1000000).toFixed(1) + 'M'
-    } else if (value >= 1000) {
-      return (value / 1000).toFixed(1) + 'K'
-    }
-    return value.toLocaleString()
+const iconColor = computed(() => {
+  const colors = {
+    default: 'text-gray-600',
+    success: 'text-green-600',
+    warning: 'text-yellow-600',
+    danger: 'text-red-600',
+    info: 'text-blue-600'
   }
-  return value
-}
+  return colors[props.color] || colors.default
+})
 
-const formatChange = (change) => {
-  if (typeof change === 'number') {
-    const sign = change >= 0 ? '+' : ''
-    return `${sign}${change.toFixed(1)}%`
+const trendColor = computed(() => {
+  if (!props.trend) return ''
+  
+  if (props.trend.value > 0) {
+    return 'text-green-600'
+  } else if (props.trend.value < 0) {
+    return 'text-red-600'
+  } else {
+    return 'text-gray-600'
   }
-  return change
-}
+})
 
-const getChangeClass = (change) => {
-  if (typeof change === 'number') {
-    if (change > 0) return 'positive'
-    if (change < 0) return 'negative'
-    return 'neutral'
+const formattedValue = computed(() => {
+  const numValue = typeof props.value === 'number' ? props.value : Number.parseFloat(props.value)
+  
+  if (Number.isNaN(numValue)) {
+    return props.value
   }
-  return 'neutral'
-}
 
-const getChangeIcon = (change) => {
-  if (typeof change === 'number') {
-    if (change > 0) return 'fas fa-arrow-up'
-    if (change < 0) return 'fas fa-arrow-down'
-    return 'fas fa-minus'
+  switch (props.format) {
+    case 'currency':
+      return new Intl.NumberFormat('es-CO', { 
+        style: 'currency', 
+        currency: 'COP',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(numValue)
+    case 'percentage':
+      return `${numValue.toFixed(1)}%`
+    case 'number':
+    default:
+      return new Intl.NumberFormat('es-CO').format(numValue)
   }
-  return 'fas fa-minus'
-}
-
-const handleClick = () => {
-  if (props.clickable) {
-    emit('click', {
-      value: props.value,
-      label: props.label,
-      variant: props.variant
-    })
-  }
-}
+})
 </script>
 
 <style scoped>
-.base-stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e7eb;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  animation: fadeInUp 0.6s ease-out;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .md\:p-5 {
+    padding: 1rem;
+  }
+  
+  .md\:ml-5 {
+    margin-left: 0.75rem;
+  }
+  
+  .md\:h-6.md\:w-6 {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  
+  .md\:text-2xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
 }
 
-.base-stat-card:hover {
+/* Transitions */
+* {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Hover effects */
+.hover\:shadow-md:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-.base-stat-card.clickable {
-  cursor: pointer;
-}
-
-.base-stat-card.clickable:hover {
-  border-color: #3b82f6;
-}
-
-/* Variants */
-.base-stat-card.primary {
-  background: linear-gradient(135deg, #1f4e79 0%, #31235d 100%);
-  color: #ffffff;
-  border: none;
-}
-
-.base-stat-card.success {
-  background: linear-gradient(135deg, #0d5c3d 0%, #0b3f2b 100%);
-  color: #ffffff;
-  border: none;
-}
-
-.base-stat-card.warning {
-  background: linear-gradient(135deg, #8a4b00 0%, #5c3200 100%);
-  color: #ffffff;
-  border: none;
-}
-
-.base-stat-card.danger {
-  background: linear-gradient(135deg, #8b1f1f 0%, #5a1212 100%);
-  color: #ffffff;
-  border: none;
-}
-
-.base-stat-card.info {
-  background: linear-gradient(135deg, #145057 0%, #0b3744 100%);
-  color: #ffffff;
-  border: none;
-}
-
-.stat-icon {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  color: #1f2937;
-  background: rgba(255, 255, 255, 0.9);
-}
-
-.base-stat-card.primary .stat-icon,
-.base-stat-card.success .stat-icon,
-.base-stat-card.danger .stat-icon,
-.base-stat-card.warning .stat-icon,
-.base-stat-card.info .stat-icon {
-  background: rgba(255, 255, 255, 0.85);
-  color: #1f2937;
-}
-
-.stat-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.stat-value {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  margin-bottom: 4px;
-}
-
-.stat-number {
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1;
-  color: #1f2937;
-}
-
-.base-stat-card.primary .stat-number,
-.base-stat-card.success .stat-number,
-.base-stat-card.danger .stat-number,
-.base-stat-card.warning .stat-number,
-.base-stat-card.info .stat-number {
-  color: #ffffff;
-}
-
-.stat-suffix {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #6b7280;
-}
-
-.base-stat-card.primary .stat-suffix,
-.base-stat-card.success .stat-suffix,
-.base-stat-card.danger .stat-suffix,
-.base-stat-card.warning .stat-suffix,
-.base-stat-card.info .stat-suffix {
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #6b7280;
-  margin-bottom: 8px;
-}
-
-.base-stat-card.primary .stat-label,
-.base-stat-card.success .stat-label,
-.base-stat-card.danger .stat-label,
-.base-stat-card.warning .stat-label,
-.base-stat-card.info .stat-label {
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.stat-change {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.stat-change.positive {
-  color: #059669;
-}
-
-.stat-change.negative {
-  color: #dc2626;
-}
-
-.stat-change.neutral {
-  color: #6b7280;
-}
-
-.base-stat-card.primary .stat-change,
-.base-stat-card.success .stat-change,
-.base-stat-card.danger .stat-change,
-.base-stat-card.warning .stat-change,
-.base-stat-card.info .stat-change {
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.change-period {
-  font-weight: 400;
-  opacity: 0.8;
-}
-
-.stat-description {
-  font-size: 0.75rem;
-  color: #9ca3af;
-  line-height: 1.4;
-}
-
-.base-stat-card.primary .stat-description,
-.base-stat-card.success .stat-description,
-.base-stat-card.danger .stat-description,
-.base-stat-card.warning .stat-description,
-.base-stat-card.info .stat-description {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.stat-trend {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 60px;
-  height: 40px;
-  opacity: 0.7;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .base-stat-card {
-    padding: 20px;
-  }
-  
-  .stat-number {
-    font-size: 1.75rem;
-  }
-  
-  .stat-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 1.25rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .base-stat-card {
-    padding: 16px;
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .stat-icon {
-    align-self: center;
-  }
-  
-  .stat-trend {
-    position: static;
-    margin-top: 12px;
-    align-self: center;
-  }
-}
-
-/* Animation */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
+/* Loading animation */
+@keyframes spin {
   to {
-    opacity: 1;
-    transform: translateY(0);
+    transform: rotate(360deg);
   }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 </style>
-

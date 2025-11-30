@@ -1,6 +1,13 @@
 <template>
-  <div class="confirm-modal-overlay" @click="cancel">
-    <div class="confirm-modal-container" @click.stop>
+  <BaseModal
+    :show="true"
+    :title="title"
+    max-width="md"
+    :show-close-button="!loading"
+    :close-on-overlay="!loading"
+    @close="cancel"
+  >
+    <template #header>
       <div class="confirm-modal-header">
         <div class="header-icon">
           <i class="fas fa-exclamation-triangle"></i>
@@ -9,28 +16,31 @@
           <h3>{{ title }}</h3>
         </div>
       </div>
+    </template>
 
-      <div class="confirm-modal-body">
-        <p>{{ message }}</p>
-        
-        <div v-if="details" class="confirm-details">
-          <h4>Detalles:</h4>
-          <ul>
-            <li v-for="detail in details" :key="detail">{{ detail }}</li>
-          </ul>
-        </div>
-
-        <div v-if="warning" class="confirm-warning">
-          <i class="fas fa-exclamation-circle"></i>
-          <span>{{ warning }}</span>
-        </div>
+    <div class="confirm-modal-body">
+      <p>{{ message }}</p>
+      
+      <div v-if="details && details.length > 0" class="confirm-details">
+        <h4>Detalles:</h4>
+        <ul>
+          <li v-for="(detail, index) in details" :key="index">{{ detail }}</li>
+        </ul>
       </div>
 
+      <div v-if="warning" class="confirm-warning">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ warning }}</span>
+      </div>
+    </div>
+
+    <template #footer>
       <div class="confirm-modal-footer">
         <button
           @click="cancel"
           class="btn btn-outline"
           :disabled="loading"
+          type="button"
         >
           {{ cancelText }}
         </button>
@@ -39,105 +49,71 @@
           class="btn"
           :class="confirmButtonClass"
           :disabled="loading"
+          type="button"
         >
           <i v-if="loading" class="fas fa-spinner fa-spin"></i>
           <i v-else-if="confirmIcon" :class="confirmIcon"></i>
           {{ confirmText }}
         </button>
       </div>
-    </div>
-  </div>
+    </template>
+  </BaseModal>
 </template>
 
-<script>
-export default {
-  name: 'ConfirmModal',
-  props: {
-    title: {
-      type: String,
-      default: 'Confirmar Acción'
-    },
-    message: {
-      type: String,
-      required: true
-    },
-    details: {
-      type: Array,
-      default: null
-    },
-    warning: {
-      type: String,
-      default: null
-    },
-    confirmText: {
-      type: String,
-      default: 'Confirmar'
-    },
-    cancelText: {
-      type: String,
-      default: 'Cancelar'
-    },
-    confirmButtonClass: {
-      type: String,
-      default: 'btn-danger'
-    },
-    confirmIcon: {
-      type: String,
-      default: null
-    },
-    loading: {
-      type: Boolean,
-      default: false
-    }
+<script setup>
+import BaseModal from './BaseModal.vue'
+
+const props = defineProps({
+  title: {
+    type: String,
+    default: 'Confirmar Acción'
   },
-  emits: ['confirm', 'cancel'],
-  methods: {
-    confirm() {
-      this.$emit('confirm')
-    },
-    cancel() {
-      this.$emit('cancel')
-    }
+  message: {
+    type: String,
+    required: true
+  },
+  details: {
+    type: Array,
+    default: null
+  },
+  warning: {
+    type: String,
+    default: null
+  },
+  confirmText: {
+    type: String,
+    default: 'Confirmar'
+  },
+  cancelText: {
+    type: String,
+    default: 'Cancelar'
+  },
+  confirmButtonClass: {
+    type: String,
+    default: 'btn-danger'
+  },
+  confirmIcon: {
+    type: String,
+    default: null
+  },
+  loading: {
+    type: Boolean,
+    default: false
   }
+})
+
+const emit = defineEmits(['confirm', 'cancel'])
+
+const confirm = () => {
+  emit('confirm')
+}
+
+const cancel = () => {
+  emit('cancel')
 }
 </script>
 
 <style scoped>
-.confirm-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.confirm-modal-container {
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 500px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  animation: modalAppear 0.2s ease-out;
-}
-
-@keyframes modalAppear {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
 .confirm-modal-header {
   padding: 1.5rem 2rem;
   background: #dc2626;
@@ -145,6 +121,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 1rem;
+  border-radius: 12px 12px 0 0;
 }
 
 .header-icon {
@@ -304,10 +281,6 @@ export default {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .confirm-modal-container {
-    margin: 0.5rem;
-  }
-  
   .confirm-modal-header {
     padding: 1rem;
   }
@@ -328,15 +301,6 @@ export default {
 }
 
 @media (max-width: 480px) {
-  .confirm-modal-overlay {
-    padding: 0.25rem;
-  }
-  
-  .confirm-modal-container {
-    margin: 0;
-    border-radius: 0;
-  }
-  
   .header-icon {
     width: 2.5rem;
     height: 2.5rem;

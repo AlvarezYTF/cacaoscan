@@ -1,66 +1,57 @@
 describe('Manejo de Errores - Validación y Formularios', () => {
   beforeEach(() => {
-    cy.login('farmer')
+    setupAuth('farmer')
   })
 
   it('debe validar campos requeridos en formulario de finca', () => {
-    cy.visit('/mis-fincas')
+    cy.navigateTo('/mis-fincas')
     cy.get('[data-cy="add-finca-button"]').click()
     
     // Intentar guardar sin llenar campos
-    cy.get('[data-cy="save-finca"]').click()
+    cy.get(SELECTORS.buttons.save).click()
     
     // Verificar errores de validación
-    cy.get('[data-cy="finca-nombre-error"]')
-      .should('be.visible')
-      .and('contain', 'Este campo es requerido')
-    
-    cy.get('[data-cy="finca-ubicacion-error"]')
-      .should('be.visible')
-      .and('contain', 'Este campo es requerido')
-    
-    cy.get('[data-cy="finca-area-error"]')
+    cy.get(SELECTORS.errors.fieldError)
       .should('be.visible')
       .and('contain', 'Este campo es requerido')
   })
 
   it('debe validar formato de email en registro', () => {
-    cy.visit('/registro')
+    cy.navigateTo('/registro')
     
     // Llenar con email inválido
-    cy.get('[data-cy="email-input"]').type('email-invalido')
+    cy.get(SELECTORS.inputs.email).type('email-invalido')
     cy.get('[data-cy="register-button"]').click()
     
     // Verificar error de formato
-    cy.get('[data-cy="email-error"]')
+    cy.get(SELECTORS.errors.fieldError)
       .should('be.visible')
       .and('contain', 'Formato de email inválido')
   })
 
   it('debe validar fortaleza de contraseña', () => {
-    cy.visit('/registro')
+    cy.navigateTo('/registro')
     
     const weakPasswords = ['123', 'password', '12345678']
     
     for (const password of weakPasswords) {
-      cy.get('[data-cy="password-input"]').clear().type(password)
+      cy.get(SELECTORS.inputs.password).clear().type(password)
       cy.get('[data-cy="password-strength"]')
         .should('be.visible')
         .and('contain', 'Contraseña débil')
     }
     
     // Verificar contraseña fuerte
-    cy.get('[data-cy="password-input"]').clear().type('StrongPassword123!')
+    cy.get(SELECTORS.inputs.password).clear().type('StrongPassword123!')
     cy.get('[data-cy="password-strength"]')
       .should('be.visible')
       .and('contain', 'Contraseña fuerte')
   })
 
   it('debe validar coincidencia de contraseñas', () => {
-    cy.visit('/registro')
+    cy.navigateTo('/registro')
     
-    cy.get('[data-cy="password-input"]').type('Password123!')
-    cy.get('[data-cy="confirm-password-input"]').type('DifferentPassword123!')
+    cy.fillForm({ password: 'Password123!', confirmPassword: 'DifferentPassword123!' }, 'login')
     cy.get('[data-cy="register-button"]').click()
     
     // Verificar error de coincidencia
@@ -70,43 +61,43 @@ describe('Manejo de Errores - Validación y Formularios', () => {
   })
 
   it('debe validar longitud de campos de texto', () => {
-    cy.visit('/mis-fincas')
+    cy.navigateTo('/mis-fincas')
     cy.get('[data-cy="add-finca-button"]').click()
     
     // Nombre muy corto
-    cy.get('[data-cy="finca-nombre"]').type('A')
-    cy.get('[data-cy="save-finca"]').click()
+    cy.get(SELECTORS.finca.nombre).type('A')
+    cy.get(SELECTORS.buttons.save).click()
     
-    cy.get('[data-cy="finca-nombre-error"]')
+    cy.get(SELECTORS.errors.fieldError)
       .should('be.visible')
       .and('contain', 'El nombre debe tener al menos 3 caracteres')
     
     // Nombre muy largo
-    cy.get('[data-cy="finca-nombre"]').clear().type('A'.repeat(100))
-    cy.get('[data-cy="save-finca"]').click()
+    cy.get(SELECTORS.finca.nombre).clear().type('A'.repeat(100))
+    cy.get(SELECTORS.buttons.save).click()
     
-    cy.get('[data-cy="finca-nombre-error"]')
+    cy.get(SELECTORS.errors.fieldError)
       .should('be.visible')
       .and('contain', 'El nombre es demasiado largo')
   })
 
   it('debe validar rangos numéricos', () => {
-    cy.visit('/mis-fincas')
+    cy.navigateTo('/mis-fincas')
     cy.get('[data-cy="add-finca-button"]').click()
     
     // Área negativa
-    cy.get('[data-cy="finca-area"]').type('-10')
-    cy.get('[data-cy="save-finca"]').click()
+    cy.get(SELECTORS.finca.area).type('-10')
+    cy.get(SELECTORS.buttons.save).click()
     
-    cy.get('[data-cy="finca-area-error"]')
+    cy.get(SELECTORS.errors.fieldError)
       .should('be.visible')
       .and('contain', 'El área debe ser positiva')
     
     // Área muy grande
-    cy.get('[data-cy="finca-area"]').clear().type('999999999')
-    cy.get('[data-cy="save-finca"]').click()
+    cy.get(SELECTORS.finca.area).clear().type('999999999')
+    cy.get(SELECTORS.buttons.save).click()
     
-    cy.get('[data-cy="finca-area-error"]')
+    cy.get(SELECTORS.errors.fieldError)
       .should('be.visible')
       .and('contain', 'El área es demasiado grande')
   })

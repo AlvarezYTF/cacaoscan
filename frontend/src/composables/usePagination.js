@@ -154,6 +154,60 @@ export function usePagination(options = {}) {
     }
   }
 
+  /**
+   * Syncs pagination state with URL query parameters
+   * @param {Object} route - Vue Router route object (optional, will be imported if not provided)
+   * @param {Object} router - Vue Router router object (optional, will be imported if not provided)
+   * @returns {void}
+   */
+  const syncWithQuery = (route = null, router = null) => {
+    // Lazy import to avoid circular dependencies
+    let routeObj = route
+    let routerObj = router
+
+    if (!routeObj || !routerObj) {
+      try {
+        const { useRoute, useRouter } = require('vue-router')
+        routeObj = routeObj || useRoute()
+        routerObj = routerObj || useRouter()
+      } catch (error) {
+        console.warn('Vue Router not available for query sync:', error)
+        return
+      }
+    }
+
+    // Read from query params
+    if (routeObj.query.page) {
+      const page = Number.parseInt(routeObj.query.page, 10)
+      if (!Number.isNaN(page) && page >= 1) {
+        currentPage.value = page
+      }
+    }
+
+    if (routeObj.query.page_size) {
+      const pageSize = Number.parseInt(routeObj.query.page_size, 10)
+      if (!Number.isNaN(pageSize) && pageSize > 0) {
+        itemsPerPage.value = pageSize
+      }
+    }
+
+    // Watch for changes and update query params
+    const updateQuery = () => {
+      if (routerObj) {
+        routerObj.replace({
+          query: {
+            ...routeObj.query,
+            page: currentPage.value > 1 ? currentPage.value : undefined,
+            page_size: itemsPerPage.value !== initialItemsPerPage ? itemsPerPage.value : undefined
+          }
+        })
+      }
+    }
+
+    // Return a function to manually sync (call this after state changes)
+    return updateQuery
+  }
+
   return {
     // State
     currentPage,
@@ -180,7 +234,8 @@ export function usePagination(options = {}) {
     setTotalItems,
     updateFromApiResponse,
     reset,
-    getPaginationParams
+    getPaginationParams,
+    syncWithQuery
   }
 }
 

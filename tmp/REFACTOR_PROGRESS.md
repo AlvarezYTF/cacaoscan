@@ -86,6 +86,16 @@ Se ha completado la FASE 1 (bajo riesgo) y se está avanzando en la FASE 2 (ries
    - Funciones complejas mantienen su lógica especial
    - Reducción de ~80 líneas de código
 
+9. **`catalogosApi.js`** ✅
+   - Migrado de `api.get` a `apiGet` de `apiClient`
+   - Mantiene lógica de fallback para compatibilidad
+   - Reducción de ~30 líneas de código
+
+10. **`auditApi.js`** ✅
+   - Migrado de `api.get` a `apiGet` de `apiClient`
+   - Mantiene manejo de errores personalizado
+   - Reducción de ~40 líneas de código
+
 ### Componentes Base Creados
 
 1. **`BaseFormField.vue`** ✅
@@ -280,12 +290,12 @@ Se ha completado la FASE 1 (bajo riesgo) y se está avanzando en la FASE 2 (ries
 ### Total Estimado Reducido Hasta Ahora
 
 - **FASE 1**: ~200-300 líneas
-- **FASE 2**: ~1800-2200 líneas
-- **Total**: ~2000-2500 líneas de código duplicado eliminadas
+- **FASE 2**: ~1900-2300 líneas
+- **Total**: ~2100-2600 líneas de código duplicado eliminadas
 
 **Desglose detallado:**
 - Modales migrados: ~1000-1150 líneas (10 modales × ~100-115 líneas cada uno)
-- Servicios unificados: ~470-530 líneas (8 servicios migrados)
+- Servicios unificados: ~540-600 líneas (10 servicios migrados)
 - Vistas migradas a usePagination: ~50 líneas (3 vistas)
 - Componentes base creados: ~200-300 líneas (BaseModal, BaseTable, BaseFormField, BaseTimeline)
 - Campos de formulario migrados a BaseFormField: ~30-40 líneas (4 campos en UserFormModal)

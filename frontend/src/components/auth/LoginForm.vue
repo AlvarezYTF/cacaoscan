@@ -214,17 +214,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useAuth } from '@/composables/useAuth'
 import { useAuthForm } from '@/composables/useAuthForm'
 import LoadingSpinner from '@/components/admin/AdminGeneralComponents/LoadingSpinner.vue'
 
-// Store y route
-const authStore = useAuthStore()
+// Route
 const route = useRoute()
 
-// Use auth form composable
+// Use auth composable
+const { login: loginUser, loading, error, clearError } = useAuth()
+
+// Form state using useAuthForm for validation
 const authForm = useAuthForm({
   initialValues: {
     email: '',
@@ -232,25 +234,25 @@ const authForm = useAuthForm({
     remember: false
   },
   onSubmit: async (formData) => {
-    // Emitir evento de loading
-    globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
-      detail: { type: 'login', message: 'Verificando credenciales...' }
-    }))
-
     try {
-      const result = await authStore.login({
+      globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
+        detail: { type: 'login', message: 'Verificando credenciales...' }
+      }))
+
+      const result = await loginUser({
         email: formData.email.trim(),
         password: formData.password
       })
 
       if (result.success) {
         authForm.setStatusMessage('¡Bienvenido de vuelta a CacaoScan! 🌱', 'success')
-        return result
-      } else {
-        throw new Error(result.error || 'Error al iniciar sesión')
       }
+      
+      return result
+    } catch (err) {
+      authForm.setStatusMessage(err.message || 'Error inesperado al iniciar sesión', 'error')
+      throw err
     } finally {
-      // Emitir evento de fin de loading
       globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
     }
   }
@@ -263,32 +265,34 @@ const statusMessage = authForm.statusMessage
 const statusMessageClass = authForm.statusMessageClass
 const setStatusMessage = authForm.setStatusMessage
 
+// Local state
 const showPassword = ref(false)
 
-// Estado de carga
-const isLoading = computed(() => authStore.isLoading)
-
-// Manejar envío del formulario
+// Handle form submission
 const handleSubmit = async () => {
   try {
     await authForm.handleAuthSubmit()
-  } catch (error) {
-    console.error('Error en login:', error)
-    setStatusMessage(error.message || 'Error inesperado al iniciar sesión', 'error')
+  } catch (err) {
+    console.error('Error en login:', err)
+    // Error is already handled by useAuthForm
   }
 }
 
-// Inicializar componente
+// Computed
+const isLoading = computed(() => loading.value || authForm.isSubmitting.value)
+
+// Initialize component
 onMounted(() => {
-  // Mostrar mensajes desde query params
+  // Show messages from query params
   if (route.query.message) {
     const type = route.query.expired ? 'error' : 'info'
     setStatusMessage(route.query.message, type)
   }
   
-  // Limpiar error del store si existe
-  if (authStore.error) {
-    setStatusMessage(authStore.error, 'error')
+  // Clear error if exists
+  if (error.value) {
+    setStatusMessage(error.value, 'error')
+    clearError()
   }
 })
 </script>

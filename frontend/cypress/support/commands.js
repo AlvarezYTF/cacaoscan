@@ -2,6 +2,9 @@
 // Comandos personalizados para CacaoScan E2E Tests
 // ***********************************************
 
+import { SELECTORS } from './selectors'
+import * as helpers from './helpers'
+
 // Comando para login con diferentes roles
 Cypress.Commands.add('login', (userType = 'admin') => {
   cy.fixture('users').then((users) => {
@@ -129,4 +132,39 @@ Cypress.Commands.add('cleanupTestData', () => {
       'Authorization': `Bearer ${globalThis.localStorage.getItem('auth_token')}`
     }
   })
+})
+
+// Enhanced commands using helpers and selectors
+
+// Navigate to a route
+Cypress.Commands.add('navigateTo', (route) => {
+  cy.visit(route)
+})
+
+// Fill form using helper
+Cypress.Commands.add('fillForm', (formData, formType) => {
+  return helpers.fillForm(formData, formType)
+})
+
+// Submit form
+Cypress.Commands.add('submitForm', () => {
+  cy.get(SELECTORS.buttons.submit).click()
+})
+
+// Interact with table
+Cypress.Commands.add('interactWithTable', (action, options) => {
+  return helpers.interactWithTable(action, options)
+})
+
+// Wait for API
+Cypress.Commands.add('waitForApi', (alias, timeout) => {
+  return helpers.waitForApi(alias, timeout)
+})
+
+// Mock API response (enhanced)
+Cypress.Commands.add('mockApiResponse', (method, url, response, statusCode = 200) => {
+  cy.intercept(method, url, {
+    statusCode,
+    body: response
+  }).as(`mock-${method.toLowerCase()}-${url.replace(/\//g, '-')}`)
 })

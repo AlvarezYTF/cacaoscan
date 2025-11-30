@@ -1,11 +1,11 @@
 describe('Navegación - Flujos Completos', () => {
   beforeEach(() => {
-    cy.login('farmer')
+    setupAuth('farmer')
   })
 
   it('debe completar flujo completo de análisis de imagen', () => {
     // 1. Ir a nuevo análisis
-    cy.visit('/nuevo-analisis')
+    cy.navigateTo('/nuevo-analisis')
     
     // 2. Cargar imagen
     cy.uploadTestImage('test-cacao.jpg')
@@ -16,7 +16,7 @@ describe('Navegación - Flujos Completos', () => {
     cy.waitForAnalysis()
     
     // 4. Ver resultados
-    cy.get('[data-cy="analysis-results"]').should('be.visible')
+    cy.get(SELECTORS.prediction.results).should('be.visible')
     cy.get('[data-cy="quality-score"]').should('be.visible')
     
     // 5. Guardar análisis
@@ -24,22 +24,22 @@ describe('Navegación - Flujos Completos', () => {
     cy.checkNotification('Análisis guardado exitosamente', 'success')
     
     // 6. Verificar que aparece en historial
-    cy.visit('/mis-analisis')
+    cy.navigateTo('/mis-analisis')
     cy.get('[data-cy="analysis-history"]').should('contain', 'test-cacao.jpg')
   })
 
   it('debe completar flujo de gestión de finca y lotes', () => {
     // 1. Crear finca
-    cy.visit('/mis-fincas')
+    cy.navigateTo('/mis-fincas')
     cy.get('[data-cy="add-finca-button"]').click()
     
     cy.fixture('testData').then((data) => {
       const fincaData = data.fincas[0]
-      cy.fillFincaForm(fincaData)
+      cy.fillForm(fincaData, 'finca')
     })
     
     cy.get('[data-cy="map-container"]').click(300, 200)
-    cy.get('[data-cy="save-finca"]').click()
+    cy.get(SELECTORS.buttons.save).click()
     cy.checkNotification('Finca creada exitosamente', 'success')
     
     // 2. Crear lote en la finca
@@ -48,10 +48,10 @@ describe('Navegación - Flujos Completos', () => {
     
     cy.fixture('testData').then((data) => {
       const loteData = data.lotes[0]
-      cy.fillLoteForm(loteData)
+      cy.fillForm(loteData, 'lote')
     })
     
-    cy.get('[data-cy="save-lote"]').click()
+    cy.get(SELECTORS.buttons.save).click()
     cy.checkNotification('Lote creado exitosamente', 'success')
     
     // 3. Verificar relación finca-lote
@@ -61,8 +61,10 @@ describe('Navegación - Flujos Completos', () => {
     cy.get('[data-cy="lote-item"]').first().click()
     cy.get('[data-cy="schedule-analysis"]').click()
     
-    cy.get('[data-cy="analysis-date"]').type('2024-02-15')
-    cy.get('[data-cy="analysis-time"]').type('10:00')
+    cy.fillForm({
+      date: '2024-02-15',
+      time: '10:00'
+    })
     cy.get('[data-cy="save-schedule"]').click()
     cy.checkNotification('Análisis programado exitosamente', 'success')
   })

@@ -1,10 +1,16 @@
 /**
  * Composable para validación de formularios reutilizable
  */
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 
 export function useFormValidation() {
   const errors = reactive({})
+  const validatingFields = ref(new Set())
+  const formState = reactive({
+    dirty: false,
+    touched: {},
+    valid: true
+  })
 
   /**
    * Valida las etiquetas del dominio
@@ -411,6 +417,236 @@ export function useFormValidation() {
     return !!errors[fieldName]
   }
 
+  /**
+   * Validation rule presets
+   */
+  const validationPresets = {
+    email: {
+      required: true,
+      validator: (value) => {
+        if (!value || !value.trim()) {
+          return 'El email es requerido'
+        }
+        if (!isValidEmail(value)) {
+          return 'Ingresa un email válido'
+        }
+        return null
+      }
+    },
+    password: {
+      required: true,
+      validator: (value) => {
+        if (!value) {
+          return 'La contraseña es requerida'
+        }
+        const checks = validatePassword(value)
+        if (!checks.isValid) {
+          return 'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número'
+        }
+        return null
+      }
+    },
+    phone: {
+      required: false,
+      validator: (value) => {
+        if (value && !isValidPhone(value)) {
+          return 'El teléfono debe tener entre 7 y 15 dígitos'
+        }
+        return null
+      }
+    },
+    document: {
+      required: true,
+      validator: (value) => {
+        if (!value || !value.trim()) {
+          return 'El número de documento es requerido'
+        }
+        if (!isValidDocument(value)) {
+          return 'El documento debe tener entre 6 y 11 dígitos'
+        }
+        return null
+      }
+    },
+    name: {
+      required: true,
+      validator: (value, fieldName = 'nombre') => {
+        return validateNameField(value, fieldName)
+      }
+    },
+    birthdate: {
+      required: false,
+      validator: (value) => {
+        return validateBirthdateField(value)
+      }
+    }
+  }
+
+  /**
+   * Validates a field using a preset
+   * @param {string} fieldName - Field name
+   * @param {*} value - Field value
+   * @param {string} preset - Preset name
+   * @returns {string|null} Error message or null
+   */
+  const validateWithPreset = (fieldName, value, preset) => {
+    const presetRule = validationPresets[preset]
+    if (!presetRule) {
+      throw new Error(`Preset "${preset}" not found`)
+    }
+
+    if (presetRule.required && (!value || (typeof value === 'string' && !value.trim()))) {
+      return `${fieldName} es requerido`
+    }
+
+    if (presetRule.validator) {
+      return presetRule.validator(value, fieldName)
+    }
+
+    return null
+  }
+
+  /**
+   * Async validation support
+   * @param {string} fieldName - Field name
+   * @param {Function} validatorFn - Async validator function
+   * @returns {Promise<void>}
+   */
+  const validateFieldAsync = async (fieldName, validatorFn) => {
+    validatingFields.value.add(fieldName)
+    removeError(fieldName)
+
+    try {
+      const errorMessage = await validatorFn()
+      if (errorMessage) {
+        setError(fieldName, errorMessage)
+      }
+    } catch (error) {
+      setError(fieldName, error.message || 'Error de validación')
+    } finally {
+      validatingFields.value.delete(fieldName)
+    }
+  }
+
+  /**
+   * Checks if a field is currently being validated
+   * @param {string} fieldName - Field name
+   * @returns {boolean} True if field is validating
+   */
+  const isFieldValidating = (fieldName) => {
+    return validatingFields.value.has(fieldName)
+  }
+
+  /**
+   * Cross-field validation
+   * @param {Object} fields - Object with field names as keys and values
+   * @param {Function} validatorFn - Validator function that receives all fields
+   * @returns {Object} Object with field names as keys and error messages as values
+   */
+  const validateCrossFields = (fields, validatorFn) => {
+    const crossFieldErrors = validatorFn(fields)
+    
+    if (crossFieldErrors && typeof crossFieldErrors === 'object') {
+      for (const [fieldName, errorMessage] of Object.entries(crossFieldErrors)) {
+        if (errorMessage) {
+          setError(fieldName, errorMessage)
+        } else {
+          removeError(fieldName)
+        }
+      }
+    }
+
+    return crossFieldErrors || {}
+  }
+
+  /**
+   * Marks a field as touched
+   * @param {string} fieldName - Field name
+   * @returns {void}
+   */
+  const markFieldTouched = (fieldName) => {
+    formState.touched[fieldName] = true
+    formState.dirty = true
+  }
+
+  /**
+   * Checks if a field has been touched
+   * @param {string} fieldName - Field name
+   * @returns {boolean} True if field has been touched
+   */
+  const isFieldTouched = (fieldName) => {
+    return !!formState.touched[fieldName]
+  }
+
+  /**
+   * Marks form as dirty
+   * @returns {void}
+   */
+  const markFormDirty = () => {
+    formState.dirty = true
+  }
+
+  /**
+   * Checks if form is dirty
+   * @returns {boolean} True if form is dirty
+   */
+  const isFormDirty = () => {
+    return formState.dirty
+  }
+
+  /**
+   * Validates entire form
+   * @param {Object} formData - Form data object
+   * @param {Object} rules - Validation rules object
+   * @returns {boolean} True if form is valid
+   */
+  const validateForm = (formData, rules) => {
+    clearErrors()
+    let isValid = true
+
+    for (const [fieldName, value] of Object.entries(formData)) {
+      const rule = rules[fieldName]
+      if (!rule) continue
+
+      let error = null
+
+      if (rule.preset) {
+        error = validateWithPreset(fieldName, value, rule.preset)
+      } else if (rule.validator) {
+        error = rule.validator(value, formData)
+      } else if (rule.required && (!value || (typeof value === 'string' && !value.trim()))) {
+        error = `${fieldName} es requerido`
+      }
+
+      if (error) {
+        setError(fieldName, error)
+        isValid = false
+      }
+    }
+
+    // Cross-field validation
+    if (rules._crossField) {
+      const crossFieldErrors = validateCrossFields(formData, rules._crossField)
+      if (Object.keys(crossFieldErrors).length > 0) {
+        isValid = false
+      }
+    }
+
+    formState.valid = isValid
+    return isValid
+  }
+
+  /**
+   * Resets form state
+   * @returns {void}
+   */
+  const resetFormState = () => {
+    clearErrors()
+    formState.dirty = false
+    formState.touched = {}
+    formState.valid = true
+    validatingFields.value.clear()
+  }
+
   return {
     errors,
     isValidEmail,
@@ -434,7 +670,22 @@ export function useFormValidation() {
     validatePasswordFields,
     validateBirthdateField,
     getFieldError,
-    hasFieldError
+    hasFieldError,
+    // New features
+    validationPresets,
+    validateWithPreset,
+    validateFieldAsync,
+    isFieldValidating,
+    validateCrossFields,
+    markFieldTouched,
+    isFieldTouched,
+    markFormDirty,
+    isFormDirty,
+    validateForm,
+    resetFormState,
+    // Form state
+    formState,
+    validatingFields
   }
 }
 
