@@ -167,7 +167,10 @@ class TestCalibrateDatasetPixelsCommand:
         mock_df.iterrows.return_value = []
         mock_loader.load_dataset.return_value = mock_df
         mock_loader.validate_images_exist.return_value = (mock_df, [])
-        mock_loader.get_valid_records.return_value = []
+        # Return valid records so segmentation is called
+        mock_loader.get_valid_records.return_value = [
+            {'id': 1, 'raw_image_path': test_image_path}
+        ]
         mock_loader_class.return_value = mock_loader
         
         with patch.object(command, 'stdout'):
@@ -208,7 +211,13 @@ class TestCalibrateDatasetPixelsCommand:
         mock_df.iterrows.return_value = []
         mock_loader.load_dataset.return_value = mock_df
         mock_loader.validate_images_exist.return_value = (mock_df, [])
-        mock_loader.get_valid_records.return_value = []
+        # Return valid records so fallback is called
+        test_image_path = tmp_path / "test_image.bmp"
+        test_image = Image.new('RGB', (512, 512), color='red')
+        test_image.save(test_image_path)
+        mock_loader.get_valid_records.return_value = [
+            {'id': 1, 'raw_image_path': test_image_path}
+        ]
         mock_loader_class.return_value = mock_loader
         
         with patch.object(command, 'stdout'):

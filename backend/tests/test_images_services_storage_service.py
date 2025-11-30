@@ -91,7 +91,7 @@ class TestImageStorageService:
             assert service is not None
     
     @patch('images_app.services.image.storage_service.CacaoImage')
-    @patch('images_app.services.image.storage_service.invalidate_dataset_validation_cache')
+    @patch('core.utils.invalidate_dataset_validation_cache')
     @patch('core.utils.invalidate_system_stats_cache')
     def test_save_uploaded_image_success(self, mock_invalidate_stats, mock_invalidate_dataset,
                                          mock_cacao_image_model, storage_service, mock_user, valid_image_file):
@@ -120,7 +120,7 @@ class TestImageStorageService:
         assert "error" in result.error.message.lower()
     
     @patch('images_app.services.image.storage_service.CacaoImage')
-    @patch('images_app.services.image.storage_service.invalidate_dataset_validation_cache')
+    @patch('core.utils.invalidate_dataset_validation_cache')
     @patch('core.utils.invalidate_system_stats_cache')
     @patch('ml.segmentation.processor.segment_and_crop_cacao_bean')
     def test_save_uploaded_image_with_segmentation_success(self, mock_segment, mock_invalidate_stats,
@@ -181,7 +181,7 @@ class TestImageStorageService:
         assert result.data['processed_png_path'] is None
     
     @patch('images_app.services.image.storage_service.CacaoImage')
-    @patch('images_app.services.image.storage_service.invalidate_dataset_validation_cache')
+    @patch('core.utils.invalidate_dataset_validation_cache')
     @patch('core.utils.invalidate_system_stats_cache')
     def test_save_uploaded_image_with_segmentation_cache_error(self, mock_invalidate_stats, mock_invalidate_dataset,
                                                                 mock_cacao_image_model, storage_service,

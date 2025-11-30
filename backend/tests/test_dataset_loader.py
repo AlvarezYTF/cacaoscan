@@ -14,7 +14,12 @@ class TestCacaoDatasetLoader:
     
     def setup_method(self):
         """Configuración antes de cada test."""
-        self.loader = CacaoDatasetLoader()
+        # Mock CSV path to avoid FileNotFoundError
+        with patch('ml.data.dataset_loader.get_datasets_dir') as mock_dir:
+            mock_csv = Mock()
+            mock_csv.exists.return_value = True
+            with patch.object(CacaoDatasetLoader, '_detect_csv_file', return_value=mock_csv):
+                self.loader = CacaoDatasetLoader()
     
     def test_init(self):
         """Test de inicialización."""

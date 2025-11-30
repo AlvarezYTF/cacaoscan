@@ -71,7 +71,7 @@ describe('fincasApi', () => {
 
       const result = await getFincaById(1)
 
-      expect(api.get).toHaveBeenCalledWith('/fincas/1/')
+      expect(api.get).toHaveBeenCalledWith('/fincas/1/', { params: {} })
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -100,7 +100,7 @@ describe('fincasApi', () => {
 
       const result = await createFinca(fincaData)
 
-      expect(api.post).toHaveBeenCalledWith('/fincas/', fincaData)
+      expect(api.post).toHaveBeenCalledWith('/fincas/', fincaData, {})
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -126,7 +126,7 @@ describe('fincasApi', () => {
 
       const result = await updateFinca(1, fincaData)
 
-      expect(api.put).toHaveBeenCalledWith('/fincas/1/update/', fincaData)
+      expect(api.put).toHaveBeenCalledWith('/fincas/1/update/', fincaData, {})
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -144,7 +144,7 @@ describe('fincasApi', () => {
 
       await deleteFinca(1)
 
-      expect(api.delete).toHaveBeenCalledWith('/fincas/1/delete/')
+      expect(api.delete).toHaveBeenCalledWith('/fincas/1/delete/', {})
     })
 
     it('should handle error when deleting finca', async () => {
@@ -165,7 +165,7 @@ describe('fincasApi', () => {
 
       const result = await activateFinca(1)
 
-      expect(api.post).toHaveBeenCalledWith('/fincas/1/activate/')
+      expect(api.post).toHaveBeenCalledWith('/fincas/1/activate/', {}, {})
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -180,7 +180,7 @@ describe('fincasApi', () => {
 
       const result = await getFincaStats(1)
 
-      expect(api.get).toHaveBeenCalledWith('/fincas/1/stats/')
+      expect(api.get).toHaveBeenCalledWith('/fincas/1/stats/', { params: {} })
       expect(result).toEqual(mockResponse.data)
     })
   })

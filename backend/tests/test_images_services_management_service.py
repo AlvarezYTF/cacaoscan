@@ -162,7 +162,7 @@ class TestImageManagementService:
         """Test getting image details."""
         # Create a proper queryset mock that is iterable - use a list directly
         mock_predictions_queryset = Mock()
-        mock_predictions_queryset.order_by.return_value = []  # Empty list is iterable
+        mock_predictions_queryset.order_by = Mock(return_value=[])  # Return empty list directly
         mock_cacao_image.predictions = Mock()
         mock_cacao_image.predictions.all.return_value = mock_predictions_queryset
         
@@ -200,7 +200,7 @@ class TestImageManagementService:
         mock_cacao_image.metadata = {'old': 'value'}
         # Mock predictions queryset to be iterable
         mock_predictions_queryset = Mock()
-        mock_predictions_queryset.order_by.return_value = []
+        mock_predictions_queryset.order_by = Mock(return_value=[])
         mock_cacao_image.predictions = Mock()
         mock_cacao_image.predictions.all.return_value = mock_predictions_queryset
         mock_model = Mock()
@@ -221,7 +221,7 @@ class TestImageManagementService:
         """Test deleting an image."""
         # Create a proper queryset mock that is iterable - use a list directly
         mock_predictions_queryset = Mock()
-        mock_predictions_queryset.order_by.return_value = []  # Empty list is iterable
+        mock_predictions_queryset.order_by = Mock(return_value=[])  # Empty list is iterable
         mock_cacao_image.predictions = Mock()
         mock_cacao_image.predictions.count.return_value = 2
         mock_cacao_image.predictions.all.return_value = mock_predictions_queryset
@@ -243,6 +243,7 @@ class TestImageManagementService:
         mock_queryset = Mock()
         mock_queryset.filter.return_value.select_related.return_value.prefetch_related.return_value = mock_queryset
         mock_queryset.__len__ = Mock(return_value=2)
+        mock_queryset.__iter__ = Mock(return_value=iter(mock_images))
         mock_queryset.count.return_value = 2
         mock_model = Mock()
         mock_model.objects.filter.return_value = mock_queryset

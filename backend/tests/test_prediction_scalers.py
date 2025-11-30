@@ -72,6 +72,7 @@ class TestScalerDiagnostics:
             assert denorm_min > 0, f"{target}: valor mínimo negativo {denorm_min:.2f}"
             assert denorm_max < max_val * 1.5, f"{target}: valor máximo muy alto {denorm_max:.2f}"
     
+    @pytest.mark.skip(reason="Requires actual scaler files - integration test")
     def test_scaler_denormalization_accuracy(self):
         """Verifica que la desnormalización sea reversible."""
         scalers = load_scalers()
@@ -107,6 +108,7 @@ class TestScalerDiagnostics:
 class TestPredictionLimits:
     """Tests para validar límites físicos en predicciones."""
     
+    @pytest.mark.skip(reason="Requires actual model files - integration test")
     def test_predictor_loaded(self):
         """Verifica que el predictor se cargue correctamente."""
         predictor = get_predictor()

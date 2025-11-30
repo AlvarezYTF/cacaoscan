@@ -188,6 +188,11 @@ class TestExcelAnalisisGenerator:
                                          mock_activity_stats, mock_header, mock_workbook,
                                          mock_activity_model, mock_login_model, excel_generator, mock_user):
         """Test successful audit report generation."""
+        # Mock workbook to be created
+        from openpyxl import Workbook
+        mock_wb = Workbook()
+        excel_generator.workbook = mock_wb
+        
         # Mock activity queryset
         mock_activity_queryset = Mock()
         mock_activity_queryset.select_related.return_value.order_by.return_value = []

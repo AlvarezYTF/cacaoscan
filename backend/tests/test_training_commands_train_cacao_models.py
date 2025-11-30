@@ -83,8 +83,9 @@ class TestTrainCacaoModelsCommand:
         """Test successful configuration validation."""
         mock_raw_dir = tmp_path / "raw_images"
         mock_raw_dir.mkdir()
-        (mock_raw_dir / "image1.bmp").touch()
-        (mock_raw_dir / "image2.bmp").touch()
+        # Need at least 10 files
+        for i in range(15):
+            (mock_raw_dir / f"image{i}.bmp").touch()
         mock_get_raw_dir.return_value = mock_raw_dir
         
         mock_loader = Mock()
@@ -179,9 +180,17 @@ class TestTrainCacaoModelsCommand:
         mock_loader.get_valid_records.return_value = [{'id': i} for i in range(15)]
         mock_loader_class.return_value = mock_loader
         
-        config = {'model_type': 'convnext_tiny'}
+        config = {'model_type': 'convnext_tiny', 'hybrid': False}
         
-        with patch('builtins.__import__', side_effect=ImportError("No module named 'timm'")):
+        # Mock the import to raise ImportError
+        import sys
+        original_import = __import__
+        def mock_import(name, *args, **kwargs):
+            if name == 'timm':
+                raise ImportError("No module named 'timm'")
+            return original_import(name, *args, **kwargs)
+        
+        with patch('builtins.__import__', side_effect=mock_import):
             with pytest.raises(CommandError, match="timm es requerido"):
                 command._validate_config(config)
     

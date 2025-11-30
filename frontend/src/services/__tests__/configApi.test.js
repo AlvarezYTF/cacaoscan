@@ -23,7 +23,7 @@ describe('configApi', () => {
 
       const result = await configApi.getGeneralConfig()
 
-      expect(api.get).toHaveBeenCalledWith('/config/general/')
+      expect(api.get).toHaveBeenCalledWith('/config/general/', { params: {} })
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -71,7 +71,7 @@ describe('configApi', () => {
 
       const result = await configApi.saveGeneralConfig(configData)
 
-      expect(api.put).toHaveBeenCalledWith('/config/general/', configData)
+      expect(api.put).toHaveBeenCalledWith('/config/general/', configData, {})
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -92,7 +92,7 @@ describe('configApi', () => {
 
       const result = await configApi.getSecurityConfig()
 
-      expect(api.get).toHaveBeenCalledWith('/config/security/')
+      expect(api.get).toHaveBeenCalledWith('/config/security/', { params: {} })
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -120,7 +120,7 @@ describe('configApi', () => {
 
       const result = await configApi.saveSecurityConfig(configData)
 
-      expect(api.put).toHaveBeenCalledWith('/config/security/', configData)
+      expect(api.put).toHaveBeenCalledWith('/config/security/', configData, {})
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -134,7 +134,7 @@ describe('configApi', () => {
 
       const result = await configApi.getMLConfig()
 
-      expect(api.get).toHaveBeenCalledWith('/config/ml/')
+      expect(api.get).toHaveBeenCalledWith('/config/ml/', { params: {} })
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -162,7 +162,7 @@ describe('configApi', () => {
 
       const result = await configApi.saveMLConfig(configData)
 
-      expect(api.put).toHaveBeenCalledWith('/config/ml/', configData)
+      expect(api.put).toHaveBeenCalledWith('/config/ml/', configData, {})
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -179,7 +179,7 @@ describe('configApi', () => {
 
       const result = await configApi.getSystemConfig()
 
-      expect(api.get).toHaveBeenCalledWith('/config/system/')
+      expect(api.get).toHaveBeenCalledWith('/config/system/', { params: {} })
       expect(result).toEqual(mockResponse.data)
     })
 

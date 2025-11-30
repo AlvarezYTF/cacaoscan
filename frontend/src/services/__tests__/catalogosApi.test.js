@@ -41,7 +41,7 @@ describe('catalogosApi', () => {
       const result = await catalogosApi.getParametrosPorTema('TIPO_DOC')
 
       expect(api.get).toHaveBeenCalledTimes(2)
-      expect(api.get).toHaveBeenNthCalledWith(2, '/parametros/tema/TIPO_DOC/')
+      expect(api.get).toHaveBeenNthCalledWith(2, '/parametros/tema/TIPO_DOC/', { params: {} })
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -59,7 +59,7 @@ describe('catalogosApi', () => {
       const result = await catalogosApi.getParametrosPorTema('TIPO_DOC')
 
       expect(api.get).toHaveBeenCalledTimes(3)
-      expect(api.get).toHaveBeenNthCalledWith(3, '/temas/TIPO_DOC/parametros/')
+      expect(api.get).toHaveBeenNthCalledWith(3, '/temas/TIPO_DOC/parametros/', { params: {} })
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -86,7 +86,7 @@ describe('catalogosApi', () => {
 
       const result = await catalogosApi.getTemas()
 
-      expect(api.get).toHaveBeenCalledWith('/temas/')
+      expect(api.get).toHaveBeenCalledWith('/temas/', { params: {} })
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -110,7 +110,7 @@ describe('catalogosApi', () => {
 
       const result = await catalogosApi.getDepartamentos()
 
-      expect(api.get).toHaveBeenCalledWith('/departamentos/')
+      expect(api.get).toHaveBeenCalledWith('/departamentos/', { params: {} })
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -158,7 +158,7 @@ describe('catalogosApi', () => {
 
       const result = await catalogosApi.getDepartamentoPorCodigo('05')
 
-      expect(api.get).toHaveBeenCalledWith('/departamentos/')
+      expect(api.get).toHaveBeenCalledWith('/departamentos/', { params: {} })
       expect(result).toEqual({ codigo: '05', nombre: 'Antioquia' })
     })
 

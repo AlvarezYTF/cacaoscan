@@ -70,7 +70,7 @@ class TestCacaoCropper:
     
     @patch('ml.segmentation.cropper.cv2.imread')
     @patch('ml.segmentation.cropper.create_transparent_crop')
-    @patch('ml.segmentation.cropper.resize_crop_to_square')
+    @patch('ml.data.transforms.resize_crop_to_square')
     @patch('ml.segmentation.cropper.save_image')
     def test_process_image_success(self, mock_save, mock_resize, mock_crop, mock_imread):
         """Test de procesamiento exitoso de imagen."""

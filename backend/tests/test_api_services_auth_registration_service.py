@@ -149,7 +149,7 @@ class TestRegistrationService:
     @patch('api.services.auth.registration_service.User')
     @patch('api.utils.model_imports.get_models_safely')
     @patch('core.utils.validate_password_strength')
-    @patch('api.services.auth.registration_service.send_custom_email')
+    @patch('api.services.email.email_service.send_custom_email')
     def test_register_user_with_email_verification_success(self, mock_send_email, mock_validate_password,
                                                            mock_models, mock_user_model,
                                                            registration_service, user_data, mock_request):
@@ -181,7 +181,7 @@ class TestRegistrationService:
         assert 'user' in result.data
         assert result.data['verification_required'] is True
     
-    @patch('api.services.auth.registration_service.PendingRegistration')
+    @patch('personas.models.PendingRegistration')
     @patch('core.utils.validate_password_strength')
     @patch('api.services.auth.registration_service.User')
     def test_pre_register_user_success(self, mock_user_model, mock_validate_password,
@@ -200,7 +200,7 @@ class TestRegistrationService:
             assert result.success is True
             assert 'email' in result.data
     
-    @patch('api.services.auth.registration_service.PendingRegistration')
+    @patch('personas.models.PendingRegistration')
     @patch('core.utils.validate_password_strength')
     @patch('api.services.auth.registration_service.User')
     def test_pre_register_user_existing_pending(self, mock_user_model, mock_validate_password,
@@ -218,7 +218,7 @@ class TestRegistrationService:
             
             assert result.success is True
     
-    @patch('api.services.auth.registration_service.PendingRegistration')
+    @patch('personas.models.PendingRegistration')
     @patch('core.utils.validate_password_strength')
     def test_pre_register_user_validation_failure(self, mock_validate_password,
                                                    mock_pending_reg, registration_service):
@@ -231,8 +231,8 @@ class TestRegistrationService:
         
         assert result.success is False
     
-    @patch('api.services.auth.registration_service.PendingRegistration')
-    @patch('api.services.auth.registration_service.PersonaRegistroSerializer')
+    @patch('personas.models.PendingRegistration')
+    @patch('personas.serializers.PersonaRegistroSerializer')
     @patch('api.services.auth.registration_service.User')
     @patch('api.services.auth.registration_service.transaction')
     def test_verify_pre_registration_and_create_user_success(self, mock_transaction, mock_user_model,
@@ -273,7 +273,7 @@ class TestRegistrationService:
         assert 'user' in result.data
         mock_pending.verify.assert_called_once()
     
-    @patch('api.services.auth.registration_service.PendingRegistration')
+    @patch('personas.models.PendingRegistration')
     def test_verify_pre_registration_invalid_token(self, mock_pending_reg, registration_service):
         """Test verification with invalid token."""
         mock_pending_reg.objects.get.side_effect = Exception("DoesNotExist")
@@ -283,7 +283,7 @@ class TestRegistrationService:
         assert result.success is False
         assert "inválido" in result.error.message
     
-    @patch('api.services.auth.registration_service.PendingRegistration')
+    @patch('personas.models.PendingRegistration')
     def test_verify_pre_registration_already_verified(self, mock_pending_reg, registration_service):
         """Test verification with already verified token."""
         import uuid
@@ -298,7 +298,7 @@ class TestRegistrationService:
         assert result.success is False
         assert "ya fue utilizado" in result.error.message
     
-    @patch('api.services.auth.registration_service.PendingRegistration')
+    @patch('personas.models.PendingRegistration')
     def test_verify_pre_registration_expired(self, mock_pending_reg, registration_service):
         """Test verification with expired token."""
         import uuid
