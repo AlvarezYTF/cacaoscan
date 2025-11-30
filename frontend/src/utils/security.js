@@ -70,7 +70,7 @@ export function escapeHTML(text) {
     "'": '&#039;'
   }
 
-  return text.replace(/[&<>"']/g, (char) => map[char])
+  return text.replaceAll(/[&<>"']/g, (char) => map[char])
 }
 
 /**
@@ -94,9 +94,10 @@ export function isValidFilename(filename) {
     return false
   }
 
-  // Check for dangerous characters
-  const dangerousChars = /[<>:"|?*\x00-\x1f]/
-  if (dangerousChars.test(filename)) {
+  // Check for dangerous characters (excluding control characters from regex, check separately)
+  const dangerousChars = /[<>:"|?*]/
+  const controlChars = /[\x00-\x1f]/
+  if (dangerousChars.test(filename) || controlChars.test(filename)) {
     return false
   }
 
@@ -122,11 +123,12 @@ export function sanitizeFilename(filename) {
   // Remove path components
   let sanitized = filename.replace(/^.*[\\/]/, '')
   
-  // Remove dangerous characters
-  sanitized = sanitized.replace(/[<>:"|?*\x00-\x1f]/g, '_')
+  // Remove dangerous characters (excluding control characters, handle separately)
+  sanitized = sanitized.replaceAll(/[<>:"|?*]/g, '_')
+  sanitized = sanitized.replaceAll(/[\x00-\x1f]/g, '_')
   
   // Remove path traversal attempts
-  sanitized = sanitized.replace(/\.\./g, '_')
+  sanitized = sanitized.replaceAll(/\.\./g, '_')
   
   // Trim whitespace
   sanitized = sanitized.trim()

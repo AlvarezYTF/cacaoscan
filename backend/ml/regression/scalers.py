@@ -54,17 +54,18 @@ class CacaoScalers:
         else:
             raise ValueError(f"Tipo de escalador '{self.scaler_type}' no soportado")
     
-    def _convert_to_dict(self, data: Union[pd.DataFrame, Dict[str, np.ndarray]]) -> Dict[str, np.ndarray]:
-        """Convierte datos a diccionario de arrays numpy 2D."""
-        if isinstance(data, pd.DataFrame):
-            target_data = {}
-            for target in TARGETS:
-                if target in data.columns:
-                    target_data[target] = data[target].values.reshape(-1, 1)
-                else:
-                    raise ValueError(f"Columna '{target}' no encontrada en DataFrame")
-            return target_data
-        
+    def _convert_dataframe_to_dict(self, data: pd.DataFrame) -> Dict[str, np.ndarray]:
+        """Convierte DataFrame a diccionario de arrays numpy 2D."""
+        target_data = {}
+        for target in TARGETS:
+            if target in data.columns:
+                target_data[target] = data[target].values.reshape(-1, 1)
+            else:
+                raise ValueError(f"Columna '{target}' no encontrada en DataFrame")
+        return target_data
+
+    def _convert_dict_to_2d_arrays(self, data: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        """Convierte diccionario a arrays numpy 2D."""
         target_data = {}
         for target in TARGETS:
             if target not in data:
@@ -82,6 +83,12 @@ class CacaoScalers:
                 raise ValueError(f"Array de target '{target}' tiene dimensión inválida: {target_array.ndim}")
         
         return target_data
+
+    def _convert_to_dict(self, data: Union[pd.DataFrame, Dict[str, np.ndarray]]) -> Dict[str, np.ndarray]:
+        """Convierte datos a diccionario de arrays numpy 2D."""
+        if isinstance(data, pd.DataFrame):
+            return self._convert_dataframe_to_dict(data)
+        return self._convert_dict_to_2d_arrays(data)
     
     def _apply_log_transform(self, target: str, target_array: np.ndarray) -> np.ndarray:
         """Aplica transformación log1p si el target lo requiere."""

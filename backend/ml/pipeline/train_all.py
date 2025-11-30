@@ -672,6 +672,71 @@ class CacaoTrainingPipeline:
 
         return pixel_features, real_dimensions, extended_features, metadata
 
+    def _append_calibration_record_data(
+        self,
+        calib_record: Dict[str, Any],
+        image_id: int,
+        pixel_features_lists: Dict[str, List[float]],
+        real_dimensions_lists: Dict[str, List[float]],
+        extended_features_lists: Dict[str, List[float]],
+        metadata_list: List[Dict[str, Any]]
+    ) -> None:
+        """Append calibration record data to lists."""
+        pixel_feat, real_dims, ext_feat, metadata = self._process_calibration_record(calib_record, image_id)
+        for key, value in pixel_feat.items():
+            pixel_features_lists[key].append(value)
+        for key, value in real_dims.items():
+            real_dimensions_lists[key].append(value)
+        for key, value in ext_feat.items():
+            extended_features_lists[key].append(value)
+        metadata_list.append(metadata)
+
+    def _append_default_calibration_data(
+        self,
+        image_id: int,
+        pixel_features_lists: Dict[str, List[float]],
+        real_dimensions_lists: Dict[str, List[float]],
+        extended_features_lists: Dict[str, List[float]],
+        metadata_list: List[Dict[str, Any]]
+    ) -> None:
+        """Append default calibration data when record is missing."""
+        pixel_features_lists["pixel_width"].append(0.0)
+        pixel_features_lists["pixel_height"].append(0.0)
+        pixel_features_lists["pixel_area"].append(0.0)
+        pixel_features_lists["scale_factor"].append(0.0)
+        pixel_features_lists["aspect_ratio"].append(1.0)
+
+        for k in SINGLE_DIM_TARGETS:
+            real_dimensions_lists[k].append(0.0)
+
+        for k in CALIB_PIXEL_FEATURE_KEYS:
+            extended_features_lists[k].append(0.0)
+
+        metadata_list.append({
+            "id": image_id,
+            "real_dimensions": {},
+            "pixel_measurements": {},
+            "background_info": {},
+            "scale_factors": {},
+            "segmentation_confidence": 0.0,
+        })
+
+    def _build_feature_arrays(
+        self,
+        pixel_features_lists: Dict[str, List[float]],
+        extended_features_lists: Dict[str, List[float]]
+    ) -> Dict[str, np.ndarray]:
+        """Build feature arrays from lists."""
+        pixel_features = {
+            k: np.array(v, dtype=np.float32) for k, v in pixel_features_lists.items()
+        }
+
+        for key in CALIB_PIXEL_FEATURE_KEYS:
+            if key not in pixel_features and key in extended_features_lists:
+                pixel_features[key] = np.array(extended_features_lists[key], dtype=np.float32)
+
+        return pixel_features
+
     def _process_pixel_calibration_data(
         self, pixel_calibration: Dict[str, Any], crop_records: List[Dict[str, Any]]
     ) -> Tuple[Optional[Dict[str, np.ndarray]], Dict[str, np.ndarray], Dict[str, np.ndarray], List[Dict[str, Any]]]:
@@ -713,43 +778,17 @@ class CacaoTrainingPipeline:
             calib_record = calibration_by_id.get(image_id)
 
             if calib_record:
-                pixel_feat, real_dims, ext_feat, metadata = self._process_calibration_record(calib_record, image_id)
-                for key, value in pixel_feat.items():
-                    pixel_features_lists[key].append(value)
-                for key, value in real_dims.items():
-                    real_dimensions_lists[key].append(value)
-                for key, value in ext_feat.items():
-                    extended_features_lists[key].append(value)
-                metadata_list.append(metadata)
+                self._append_calibration_record_data(
+                    calib_record, image_id, pixel_features_lists,
+                    real_dimensions_lists, extended_features_lists, metadata_list
+                )
             else:
-                pixel_features_lists["pixel_width"].append(0.0)
-                pixel_features_lists["pixel_height"].append(0.0)
-                pixel_features_lists["pixel_area"].append(0.0)
-                pixel_features_lists["scale_factor"].append(0.0)
-                pixel_features_lists["aspect_ratio"].append(1.0)
+                self._append_default_calibration_data(
+                    image_id, pixel_features_lists,
+                    real_dimensions_lists, extended_features_lists, metadata_list
+                )
 
-                for k in SINGLE_DIM_TARGETS:
-                    real_dimensions_lists[k].append(0.0)
-
-                for k in CALIB_PIXEL_FEATURE_KEYS:
-                    extended_features_lists[k].append(0.0)
-
-                metadata_list.append({
-                    "id": image_id,
-                    "real_dimensions": {},
-                    "pixel_measurements": {},
-                    "background_info": {},
-                    "scale_factors": {},
-                    "segmentation_confidence": 0.0,
-                })
-
-        pixel_features = {
-            k: np.array(v, dtype=np.float32) for k, v in pixel_features_lists.items()
-        }
-
-        for key in CALIB_PIXEL_FEATURE_KEYS:
-            if key not in pixel_features and key in extended_features_lists:
-                pixel_features[key] = np.array(extended_features_lists[key], dtype=np.float32)
+        pixel_features = self._build_feature_arrays(pixel_features_lists, extended_features_lists)
 
         real_dimensions = {
             k: np.array(v, dtype=np.float32) for k, v in real_dimensions_lists.items()
@@ -766,6 +805,63 @@ class CacaoTrainingPipeline:
         )
 
         return pixel_features, real_dimensions, extended_features, metadata_list
+
+    def _handle_missing_crops_opencv_mode(
+        self, missing_crop_records: List[Dict[str, Any]], crop_records: List[Dict[str, Any]]
+    ) -> None:
+        """Handle missing crops in opencv mode."""
+        logger.info(
+            "Modo sólo-crops-existentes "
+            "(segmentation_backend=opencv): se omiten %d registros sin PNG.",
+            len(missing_crop_records),
+        )
+        if len(crop_records) < 10:
+            raise ValueError(
+                "Muy pocos registros con crops existentes: "
+                f"{len(crop_records)}. Se necesitan al menos 10 para entrenamiento."
+            )
+
+    def _handle_missing_crops_generate_mode(
+        self, missing_crop_records: List[Dict[str, Any]], crop_records: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Handle missing crops by generating them."""
+        logger.info(
+            "Generando crops para %d imágenes faltantes...",
+            len(missing_crop_records),
+        )
+        new_crop_records = self._generate_crops_for_missing(missing_crop_records)
+        crop_records.extend(new_crop_records)
+
+        logger.info(
+            "Total de registros con crops después de generación: %d",
+            len(crop_records),
+        )
+
+        if len(crop_records) < 10:
+            raise ValueError(
+                "Muy pocos registros con crops después de generación: "
+                f"{len(crop_records)}"
+            )
+        return crop_records
+
+    def _process_pixel_features(
+        self, pixel_calibration: Optional[Dict[str, Any]], crop_records: List[Dict[str, Any]]
+    ) -> Optional[Dict[str, np.ndarray]]:
+        """Process pixel features from calibration data."""
+        if pixel_calibration is None:
+            logger.info(
+                " Calibración de píxeles no disponible. Entrenando sin features de píxeles."
+            )
+            return None
+
+        pixel_features, real_dims, ext_feat, metadata = self._process_pixel_calibration_data(
+            pixel_calibration, crop_records
+        )
+        if pixel_features is not None:
+            self.single_dim_real_dimensions = real_dims
+            self.single_dim_pixel_features = ext_feat
+            self.single_dim_metadata = metadata
+        return pixel_features
 
     def load_data(
         self,
@@ -799,34 +895,9 @@ class CacaoTrainingPipeline:
 
         if missing_crop_records:
             if seg_backend == "opencv":
-                logger.info(
-                    "Modo sólo-crops-existentes "
-                    "(segmentation_backend=opencv): se omiten %d registros sin PNG.",
-                    len(missing_crop_records),
-                )
-                if len(crop_records) < 10:
-                    raise ValueError(
-                        "Muy pocos registros con crops existentes: "
-                        f"{len(crop_records)}. Se necesitan al menos 10 para entrenamiento."
-                    )
+                self._handle_missing_crops_opencv_mode(missing_crop_records, crop_records)
             else:
-                logger.info(
-                    "Generando crops para %d imágenes faltantes...",
-                    len(missing_crop_records),
-                )
-                new_crop_records = self._generate_crops_for_missing(missing_crop_records)
-                crop_records.extend(new_crop_records)
-
-                logger.info(
-                    "Total de registros con crops después de generación: %d",
-                    len(crop_records),
-                )
-
-                if len(crop_records) < 10:
-                    raise ValueError(
-                        "Muy pocos registros con crops después de generación: "
-                        f"{len(crop_records)}"
-                    )
+                crop_records = self._handle_missing_crops_generate_mode(missing_crop_records, crop_records)
         else:
             logger.info("[OK] Todos los crops ya existen y están validados.")
 
@@ -840,19 +911,7 @@ class CacaoTrainingPipeline:
         self.single_dim_pixel_features = None
         self.single_dim_metadata = None
 
-        pixel_features: Optional[Dict[str, np.ndarray]] = None
-        if pixel_calibration is not None:
-            pixel_features, real_dims, ext_feat, metadata = self._process_pixel_calibration_data(
-                pixel_calibration, crop_records
-            )
-            if pixel_features is not None:
-                self.single_dim_real_dimensions = real_dims
-                self.single_dim_pixel_features = ext_feat
-                self.single_dim_metadata = metadata
-        else:
-            logger.info(
-                " Calibración de píxeles no disponible. Entrenando sin features de píxeles."
-            )
+        pixel_features = self._process_pixel_features(pixel_calibration, crop_records)
 
         if self.single_dimension_training and (
             self.single_dim_real_dimensions is None
@@ -893,7 +952,7 @@ class CacaoTrainingPipeline:
             
             strata_counts = pd.Series(strata).value_counts()
             if strata_counts.min() < 2:
-                logger.warning(f"Algunos estratos tienen menos de 2 muestras. Usando split aleatorio.")
+                logger.warning("Algunos estratos tienen menos de 2 muestras. Usando split aleatorio.")
                 return self._create_random_split(n_samples, test_size, val_size)
             
             train_idx, test_idx = train_test_split(
@@ -1515,63 +1574,71 @@ class CacaoTrainingPipeline:
         save_scalers(self.scalers)
         logger.info("Escaladores guardados")
     
-    def _verify_artifacts_saved(self) -> None:
-        """Verifica que todos los artefactos se guardaron correctamente."""
-        logger.info("Verificando que todos los artefactos se guardaron correctamente...")
-        artifacts_dir = get_regressors_artifacts_dir()
-        missing_files = []
-
+    def _check_model_file(self, artifacts_dir: Path, missing_files: List[str]) -> None:
+        """Check if model file exists and is not empty."""
         if self.is_multi_head or self.is_hybrid:
             model_name = MODEL_HYBRID if self.is_hybrid else MODEL_MULTIHEAD
             model_path = artifacts_dir / model_name
             if not model_path.exists():
                 missing_files.append(f"Modelo {model_name}: {model_path}")
-                missing_files.append(f"Modelo {model_name}: {model_path}")
             elif model_path.stat().st_size == 0:
                 missing_files.append(f"Modelo {model_name} está vacío: {model_path}")
-                missing_files.append(f"Modelo {model_name} está vacío: {model_path}")
-        
+
+    def _check_scaler_files(self, artifacts_dir: Path, missing_files: List[str]) -> None:
+        """Check if scaler files exist and are not empty."""
         for target in TARGETS:
             scaler_path = artifacts_dir / f"{target}_scaler.pkl"
             if not scaler_path.exists():
                 missing_files.append(f"Escalador {target}: {scaler_path}")
             elif scaler_path.stat().st_size == 0:
                 missing_files.append(f"Escalador {target} está vacío: {scaler_path}")
+
+    def _log_hybrid_artifacts_summary(self, artifacts_dir: Path) -> None:
+        """Log summary for hybrid/multi-head model artifacts."""
+        model_name = MODEL_HYBRID if self.is_hybrid else MODEL_MULTIHEAD
+        model_path = artifacts_dir / model_name
+        model_size = model_path.stat().st_size
+        
+        scaler_size = sum(
+            (artifacts_dir / f"{target}_scaler.pkl").stat().st_size
+            for target in TARGETS
+        )
+        
+        total_size = model_size + scaler_size
+        total_files = 1 + len(TARGETS)
+        logger.info(f"[OK] Total de artefactos guardados: {total_files} archivos, {total_size / 1024 / 1024:.2f} MB")
+        logger.info(f"  - Modelo: {model_name} ({model_size / 1024 / 1024:.2f} MB)")
+        logger.info(f"  - Escaladores: {len(TARGETS)} archivos ({scaler_size / 1024 / 1024:.2f} MB)")
+
+    def _log_individual_artifacts_summary(self, artifacts_dir: Path) -> None:
+        """Log summary for individual model artifacts."""
+        total_size = sum(
+            (artifacts_dir / f"{target}.pt").stat().st_size + 
+            (artifacts_dir / f"{target}_scaler.pkl").stat().st_size
+            for target in TARGETS
+        )
+        logger.info(f"[OK] Total de artefactos guardados: {len(TARGETS) * 2} archivos, {total_size / 1024 / 1024:.2f} MB")
+
+    def _verify_artifacts_saved(self) -> None:
+        """Verifica que todos los artefactos se guardaron correctamente."""
+        logger.info("Verificando que todos los artefactos se guardaron correctamente...")
+        artifacts_dir = get_regressors_artifacts_dir()
+        missing_files = []
+
+        self._check_model_file(artifacts_dir, missing_files)
+        self._check_scaler_files(artifacts_dir, missing_files)
         
         if missing_files:
             error_msg = f"[ERROR] Archivos faltantes o vacos: {missing_files}"
             logger.error(error_msg)
             raise IOError(error_msg)
+        
+        logger.info("[OK] Todos los artefactos se guardaron correctamente")
+        
+        if self.is_multi_head or self.is_hybrid:
+            self._log_hybrid_artifacts_summary(artifacts_dir)
         else:
-            logger.info("[OK] Todos los artefactos se guardaron correctamente")
-            
-            # Mostrar resumen de archivos guardados
-            # Calcular tamaño total según el tipo de modelo
-            if self.is_multi_head or self.is_hybrid:
-                # Modelo híbrido o multi-head: solo hay un archivo de modelo
-                model_name = MODEL_HYBRID if self.is_hybrid else MODEL_MULTIHEAD
-                model_path = artifacts_dir / model_name
-                model_size = model_path.stat().st_size
-                
-                # Sumar tamaños de escaladores (4 escaladores)
-                scaler_size = sum(
-                    (artifacts_dir / f"{target}_scaler.pkl").stat().st_size
-                    for target in TARGETS
-                )
-                
-                total_size = model_size + scaler_size
-                total_files = 1 + len(TARGETS)  # 1 modelo + 4 escaladores
-                logger.info(f"[OK] Total de artefactos guardados: {total_files} archivos, {total_size / 1024 / 1024:.2f} MB")
-                logger.info(f"  - Modelo: {model_name} ({model_size / 1024 / 1024:.2f} MB)")
-                logger.info(f"  - Escaladores: {len(TARGETS)} archivos ({scaler_size / 1024 / 1024:.2f} MB)")
-            else:
-                # Modelos individuales: un archivo por target
-                total_size = sum(
-                    (artifacts_dir / f"{target}.pt").stat().st_size + 
-                    (artifacts_dir / f"{target}_scaler.pkl").stat().st_size
-                    for target in TARGETS
-                )
-                logger.info(f"[OK] Total de artefactos guardados: {len(TARGETS) * 2} archivos, {total_size / 1024 / 1024:.2f} MB")
+            self._log_individual_artifacts_summary(artifacts_dir)
     
     def generate_reports(self, evaluation_results: Dict, save_dir: Optional[Path] = None) -> None:
         """

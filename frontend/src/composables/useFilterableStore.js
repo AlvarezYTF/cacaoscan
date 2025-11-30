@@ -37,7 +37,7 @@ export function useFilterableStore(options = {}) {
     // Default filter implementation
     return items.filter(item => {
       return Object.entries(filters).every(([key, value]) => {
-        if (value == null || value === '') {
+        if (value == null || (!Array.isArray(value) && value == '')) {
           return true
         }
 
@@ -102,7 +102,10 @@ export function useFilterableStore(options = {}) {
       if (Array.isArray(value)) {
         return value.length > 0
       }
-      return value != null && String(value) !== ''
+      if (value == null) {
+        return false
+      }
+      return String(value) !== ''
     })
   })
 
@@ -115,7 +118,10 @@ export function useFilterableStore(options = {}) {
       if (Array.isArray(value)) {
         return value.length > 0
       }
-      return value != null && String(value) !== ''
+      if (value == null) {
+        return false
+      }
+      return String(value) !== ''
     }).length
   })
 

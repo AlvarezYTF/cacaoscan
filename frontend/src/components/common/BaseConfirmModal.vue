@@ -339,6 +339,7 @@ const handleUpdateShow = (value) => {
 
 .btn-success:hover:not(:disabled) {
   background-color: #047857;
+  color: #ffffff;
   border-color: #047857;
 }
 
@@ -349,8 +350,9 @@ const handleUpdateShow = (value) => {
 }
 
 .btn-warning:hover:not(:disabled) {
-  background-color: #d97706;
-  border-color: #d97706;
+  background-color: #b45309;
+  color: #ffffff;
+  border-color: #b45309;
 }
 
 /* Responsive */

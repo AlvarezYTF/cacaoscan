@@ -124,8 +124,8 @@ const localFilters = ref({ ...props.filters })
  * @param {string} prefix - Prefix for the ID
  * @returns {string} Unique ID
  */
-const generateSecureId = (prefix) => {
-  const prefixStr = prefix || 'id'
+const generateSecureId = (prefix = 'id') => {
+  const prefixStr = prefix
   
   // Use crypto.getRandomValues() if available (cryptographically secure)
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {

@@ -21,10 +21,11 @@ function appendArrayItem(formData, itemKey, item) {
 }
 
 function appendArrayToFormData(formData, key, arrayValue) {
-  arrayValue.forEach((item, index) => {
+  for (let index = 0; index < arrayValue.length; index++) {
+    const item = arrayValue[index]
     const itemKey = `${key}[${index}]`
     appendArrayItem(formData, itemKey, item)
-  })
+  }
 }
 
 /**

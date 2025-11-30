@@ -5,6 +5,69 @@ import { computed } from 'vue'
 import { useConfigStore } from '@/stores/config'
 
 /**
+ * Validates domain labels
+ * @param {string[]} labels - Domain labels to validate
+ * @returns {boolean} True if all labels are valid
+ */
+const validateDomainLabels = (labels) => {
+  for (const label of labels) {
+    if (label.length === 0 || label.length > 63) {
+      return false
+    }
+    if (!/^[A-Za-z0-9-]+$/.test(label)) {
+      return false
+    }
+    if (label.startsWith('-') || label.endsWith('-')) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * Validates local part of email
+ * @param {string} local - Local part to validate
+ * @returns {boolean} True if local part is valid
+ */
+const validateLocalPart = (local) => {
+  if (local.length === 0 || local.length > 64) {
+    return false
+  }
+  if (/\s/.test(local)) {
+    return false
+  }
+  if (!/^[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~.]+$/.test(local)) {
+    return false
+  }
+  if (local.includes('..')) {
+    return false
+  }
+  return true
+}
+
+/**
+ * Validates domain part of email
+ * @param {string} domain - Domain part to validate
+ * @returns {boolean} True if domain part is valid
+ */
+const validateDomainPart = (domain) => {
+  if (domain.length === 0 || domain.length > 255) {
+    return false
+  }
+  if (/\s/.test(domain)) {
+    return false
+  }
+  if (!domain.includes('.')) {
+    return false
+  }
+  if (domain.includes('..')) {
+    return false
+  }
+  const labels = domain.split('.')
+  return validateDomainLabels(labels)
+}
+
+/**
  * Secure email validation function that prevents ReDoS attacks
  * Uses bounded checks instead of complex regex to avoid catastrophic backtracking
  * 
@@ -18,13 +81,9 @@ import { useConfigStore } from '@/stores/config'
  * @returns {boolean} True if email is valid
  */
 const isValidEmailSecure = (email) => {
-  // Avoid complex/ambiguous regexes that can exhibit catastrophic backtracking
-  // Implement simple, bounded checks instead
   if (!email || typeof email !== 'string') {
     return false
   }
-  
-  // Overall length limits per RFC guidance (prevents DoS from extremely long strings)
   if (email.length > 320) {
     return false
   }
@@ -35,52 +94,7 @@ const isValidEmailSecure = (email) => {
   }
 
   const [local, domain] = parts
-
-  // Length checks for local and domain parts (bounds regex operations)
-  if (local.length === 0 || local.length > 64) {
-    return false
-  }
-  if (domain.length === 0 || domain.length > 255) {
-    return false
-  }
-
-  // No whitespace allowed (simple regex check on bounded strings)
-  if (/\s/.test(local) || /\s/.test(domain)) {
-    return false
-  }
-
-  // Domain must contain at least one dot and consist of valid labels
-  if (!domain.includes('.')) {
-    return false
-  }
-  
-  const labels = domain.split('.')
-  for (const label of labels) {
-    if (label.length === 0 || label.length > 63) {
-      return false
-    }
-    // Simple regex without nested quantifiers - bounded by length check
-    // This prevents ReDoS as the regex is applied to bounded strings (max 63 chars)
-    if (!/^[A-Za-z0-9-]+$/.test(label)) {
-      return false
-    }
-    if (label.startsWith('-') || label.endsWith('-')) {
-      return false
-    }
-  }
-
-  // Local part: allow common unquoted atoms (letters, digits and a small set of symbols)
-  // Keep regex simple (no nested quantifiers) and bounded by local length check above (max 64 chars)
-  if (!/^[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~.]+$/.test(local)) {
-    return false
-  }
-
-  // Reject consecutive dots in local or domain (simple string check, no regex)
-  if (local.includes('..') || domain.includes('..')) {
-    return false
-  }
-
-  return true
+  return validateLocalPart(local) && validateDomainPart(domain)
 }
 
 /**

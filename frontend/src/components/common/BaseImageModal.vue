@@ -66,7 +66,7 @@
               <img
                 v-if="imageSrc"
                 :src="imageSrc"
-                :alt="imageAlt"
+                :alt="alt"
                 class="max-w-full max-h-[70vh] object-contain"
                 @load="handleImageLoad"
                 @error="handleImageError"
@@ -128,7 +128,7 @@ const props = defineProps({
     type: String,
     default: null
   },
-  imageAlt: {
+  alt: {
     type: String,
     default: 'Vista previa'
   },

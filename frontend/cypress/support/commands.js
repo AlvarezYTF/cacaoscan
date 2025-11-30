@@ -315,7 +315,14 @@ Cypress.Commands.add('navigateTablePage', (direction) => {
 
 // Generic search/filter helper
 Cypress.Commands.add('applyTableFilter', (filterType, value) => {
-  const filterTypeStr = typeof filterType === 'string' ? filterType : String(filterType)
+  let filterTypeStr
+  if (typeof filterType === 'string') {
+    filterTypeStr = filterType
+  } else if (typeof filterType === 'number' || typeof filterType === 'boolean') {
+    filterTypeStr = String(filterType)
+  } else {
+    throw new Error(`filterType must be a string, number, or boolean, got: ${typeof filterType}`)
+  }
   cy.get(`[data-cy="filter-${filterTypeStr}"]`).clear().type(value)
   cy.get(SELECTORS.buttons.filter).click()
   cy.waitForDataLoad()

@@ -370,7 +370,7 @@ export function useFormValidation() {
    * @returns {string|null} Error message or null if valid
    */
   const validateDocumentField = (value) => {
-    if (!value || !value.trim()) {
+    if (!value?.trim()) {
       return 'El número de documento es requerido'
     }
     if (!isValidDocument(value)) {
@@ -726,11 +726,7 @@ export function useFormValidation() {
     resetFormState,
     // Form state
     formState,
-    validatingFields,
-    // Validation helper functions (exported for reuse)
-    isValidEmail,
-    isValidPhone,
-    isValidDocument
+    validatingFields
   }
 }
 

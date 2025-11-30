@@ -189,7 +189,8 @@ export const exportDatasetCSV = async (filters = {}) => {
   }
   
   const queryString = queryParams.toString()
-  const url = `${API_BASE_URL}/api/images/admin/images/export-csv/${queryString ? `?${queryString}` : ''}`
+  const queryPart = queryString ? `?${queryString}` : ''
+  const url = `${API_BASE_URL}/api/images/admin/images/export-csv/${queryPart}`
   const response = await fetch(url, {
     headers: {
       'Authorization': `Bearer ${token}`,

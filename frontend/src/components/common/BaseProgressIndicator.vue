@@ -98,7 +98,7 @@ const props = defineProps({
       }
       // Fallback: Use timestamp + counter for uniqueness
       const timestamp = Date.now().toString(36)
-      const counter = (window.__progressIdCounter = (window.__progressIdCounter || 0) + 1)
+      const counter = (globalThis.__progressIdCounter = (globalThis.__progressIdCounter || 0) + 1)
       return `progress-${timestamp}-${counter.toString(36)}`
     }
   },

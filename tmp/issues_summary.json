@@ -1,0 +1,449 @@
+{
+  "total": 49,
+  "by_file": {
+    "backend/ml/pipeline/train_all.py": [
+      {
+        "rule": "python:S3776",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "line": 675,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 24 to the 15 allowed.",
+        "key": "0258c26f-6e0c-47bf-843b-753573bb3359"
+      },
+      {
+        "rule": "python:S3457",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 896,
+        "message": "Add replacement fields or use a normal string instead of an f-string.",
+        "key": "97519401-2455-44b4-891b-a0629f3c6112"
+      },
+      {
+        "rule": "python:S3776",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "line": 770,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed.",
+        "key": "30a4609c-13e5-44c7-b164-fff57e7f29c6"
+      },
+      {
+        "rule": "python:S3776",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "line": 1518,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed.",
+        "key": "e094d1f7-f64d-424e-af4c-cbf95a9d1907"
+      }
+    ],
+    "backend/ml/regression/models.py": [
+      {
+        "rule": "python:S3776",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "line": 200,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed.",
+        "key": "d221f57d-37ce-48bc-8e4f-b06a180bf87d"
+      },
+      {
+        "rule": "python:S3776",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "line": 360,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 27 to the 15 allowed.",
+        "key": "124695f3-6719-4a73-a4f3-6c7a2e0efa38"
+      }
+    ],
+    "backend/ml/regression/scalers.py": [
+      {
+        "rule": "python:S3776",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "line": 57,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed.",
+        "key": "270a5bd4-1721-4c02-9640-6ae132538f20"
+      },
+      {
+        "rule": "python:S6546",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 46,
+        "message": "Use a union type expression for this type hint.",
+        "key": "1bb4c066-513c-4e2b-a985-a571ed76ffea"
+      }
+    ],
+    "backend/training/management/commands/train_cacao_models.py": [
+      {
+        "rule": "python:S7632",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 1251,
+        "message": "Fix the syntax of this issue suppression comment.",
+        "key": "e2e18f31-930f-4c05-bfc7-f9e2f09c9fc6"
+      },
+      {
+        "rule": "python:S7632",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 1252,
+        "message": "Fix the syntax of this issue suppression comment.",
+        "key": "5e6d75ec-3791-4773-a136-c3b724c140e3"
+      }
+    ],
+    "frontend/cypress/support/commands.js": [
+      {
+        "rule": "javascript:S6551",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "line": 318,
+        "message": "'filterType' will use Object's default stringification format ('[object Object]') when stringified.",
+        "key": "f0050c17-3667-4cc8-b56c-fa6f2406e12c"
+      }
+    ],
+    "frontend/cypress/support/test-data.js": [
+      {
+        "rule": "javascript:S125",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 255,
+        "message": "Remove this commented out code.",
+        "key": "39214509-e5de-48bb-ab31-718196030f6d"
+      }
+    ],
+    "frontend/src/components/common/BaseConfirmModal.vue": [
+      {
+        "rule": "css:S7924",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 336,
+        "message": "Text does not meet the minimal contrast requirement with its background.",
+        "key": "6db3d095-1f52-42a6-a1c1-b7a92bf16a20"
+      },
+      {
+        "rule": "css:S7924",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 347,
+        "message": "Text does not meet the minimal contrast requirement with its background.",
+        "key": "465b9ddd-78ca-4389-bb6b-e38ad8eba9f4"
+      }
+    ],
+    "frontend/src/components/common/BaseFincaFilters.vue": [
+      {
+        "rule": "javascript:S7760",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 128,
+        "message": "Prefer default parameters over reassignment.",
+        "key": "190148a5-344b-49cb-adbe-06d260a1d612"
+      }
+    ],
+    "frontend/src/components/common/BaseFormField.vue": [
+      {
+        "rule": "javascript:S7764",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "line": 231,
+        "message": "Prefer `globalThis` over `window`.",
+        "key": "62c0b33e-90fb-41f6-9fd9-6c4b11f42d15"
+      },
+      {
+        "rule": "javascript:S7764",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "line": 231,
+        "message": "Prefer `globalThis` over `window`.",
+        "key": "8ea263bb-51cf-4238-acaf-401654d3ad4e"
+      }
+    ],
+    "frontend/src/components/common/BaseHistoryCard.vue": [
+      {
+        "rule": "css:S7924",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 205,
+        "message": "Text does not meet the minimal contrast requirement with its background.",
+        "key": "37cc892e-dcb4-4710-8a0a-b4f4f772724a"
+      }
+    ],
+    "frontend/src/components/common/BaseImageModal.vue": [
+      {
+        "rule": "Web:S6851",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 66,
+        "message": "Remove redundant word \"image\" from the \"alt\" attribute of your \"img\" tag.",
+        "key": "35e3179d-773d-412f-bcff-e6a45534fe59"
+      }
+    ],
+    "frontend/src/components/common/BaseProgressIndicator.vue": [
+      {
+        "rule": "javascript:S7764",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "line": 101,
+        "message": "Prefer `globalThis` over `window`.",
+        "key": "29abca6a-ad1c-4855-b445-e59cdb89d82b"
+      },
+      {
+        "rule": "javascript:S7764",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "line": 101,
+        "message": "Prefer `globalThis` over `window`.",
+        "key": "54848795-fe71-4048-8a37-66aacd3988ee"
+      }
+    ],
+    "frontend/src/components/common/BaseSearchInput.vue": [
+      {
+        "rule": "javascript:S7760",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 73,
+        "message": "Prefer default parameters over reassignment.",
+        "key": "85c8b575-ba72-414a-820b-7ce4f4d3bf1e"
+      }
+    ],
+    "frontend/src/components/common/BaseToggleSwitch.vue": [
+      {
+        "rule": "Web:S6807",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 11,
+        "message": "The attribute \"aria-checked\" is required by the role \"switch\".",
+        "key": "06536afe-df74-4c52-b3fd-2fdafbbec1d2"
+      }
+    ],
+    "frontend/src/composables/useAuditHelpers.js": [
+      {
+        "rule": "javascript:S6551",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "line": 139,
+        "message": "'data' may use Object's default stringification format ('[object Object]') when stringified.",
+        "key": "9619f293-e464-44a3-b775-31535fdd0816"
+      }
+    ],
+    "frontend/src/composables/useConfigStoreWrapper.js": [
+      {
+        "rule": "javascript:S3776",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "line": 20,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed.",
+        "key": "fab8dd29-d510-426e-bb04-760e6ba0bc77"
+      }
+    ],
+    "frontend/src/composables/useFileUpload.js": [
+      {
+        "rule": "javascript:S6551",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "line": 68,
+        "message": "'err' will use Object's default stringification format ('[object Object]') when stringified.",
+        "key": "355dc9b8-6657-4c52-85c8-18c66e22ed19"
+      }
+    ],
+    "frontend/src/composables/useFilterableStore.js": [
+      {
+        "rule": "javascript:S3403",
+        "severity": "MAJOR",
+        "type": "BUG",
+        "line": 40,
+        "message": "Remove this \"===\" check; it will always be false. Did you mean to use \"==\"?",
+        "key": "6c9547a8-cb6a-49d2-9dc3-274846eddc2b"
+      }
+    ],
+    "frontend/src/composables/useFormValidation.js": [
+      {
+        "rule": "javascript:S1534",
+        "severity": "MAJOR",
+        "type": "BUG",
+        "line": 731,
+        "message": "Duplicate name 'isValidEmail'.",
+        "key": "9008bfb4-876a-4f39-8ea6-03daaa88c98f"
+      },
+      {
+        "rule": "javascript:S1534",
+        "severity": "MAJOR",
+        "type": "BUG",
+        "line": 732,
+        "message": "Duplicate name 'isValidPhone'.",
+        "key": "0a55efe8-867d-4dc6-a9a0-c0a21685b629"
+      },
+      {
+        "rule": "javascript:S1534",
+        "severity": "MAJOR",
+        "type": "BUG",
+        "line": 733,
+        "message": "Duplicate name 'isValidDocument'.",
+        "key": "cf6a40df-d02b-413f-b27c-782f66ab2279"
+      },
+      {
+        "rule": "javascript:S6582",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 373,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "key": "5ce25f10-b5aa-4f58-8e01-f98d9c2d71c0"
+      }
+    ],
+    "frontend/src/services/auth/authDTOs.js": [
+      {
+        "rule": "javascript:S7776",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "line": 146,
+        "message": "`excludedFields` should be a `Set`, and use `excludedFields.has()` to check existence or non-existence.",
+        "key": "4bf4bccc-0c72-42b6-b893-e6f4df8f1950"
+      }
+    ],
+    "frontend/src/services/datasetApi.js": [
+      {
+        "rule": "javascript:S4624",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 192,
+        "message": "Refactor this code to not use nested template literals.",
+        "key": "0f685b1f-ad8d-4d4c-9adc-83f370c2ff2f"
+      }
+    ],
+    "frontend/src/services/httpClient.js": [
+      {
+        "rule": "javascript:S6671",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 55,
+        "message": "Expected the Promise rejection reason to be an Error.",
+        "key": "86ce0bf5-0d6d-443f-9657-f229f8a03a95"
+      },
+      {
+        "rule": "javascript:S6671",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "line": 112,
+        "message": "Expected the Promise rejection reason to be an Error.",
+        "key": "9273d013-3fb9-4ee9-98ca-4728bd6267c4"
+      }
+    ],
+    "frontend/src/stores/auth.js": [
+      {
+        "rule": "javascript:S1135",
+        "severity": "INFO",
+        "type": "CODE_SMELL",
+        "line": 165,
+        "message": "Complete the task associated to this \"TODO\" comment.",
+        "key": "e23bd580-de7e-4fb3-ba00-c7b27f567f1d"
+      },
+      {
+        "rule": "javascript:S1135",
+        "severity": "INFO",
+        "type": "CODE_SMELL",
+        "line": 353,
+        "message": "Complete the task associated to this \"TODO\" comment.",
+        "key": "c5e3336c-55c4-49e1-a3a0-7e33c61c13d0"
+      },
+      {
+        "rule": "javascript:S1135",
+        "severity": "INFO",
+        "type": "CODE_SMELL",
+        "line": 511,
+        "message": "Complete the task associated to this \"TODO\" comment.",
+        "key": "0387f1ff-90e3-45bd-9391-9a08116cf029"
+      }
+    ],
+    "frontend/src/utils/formDataUtils.js": [
+      {
+        "rule": "javascript:S7728",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "line": 24,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "key": "b89924a3-f3d9-4c8f-8a3b-47dbb405bb48"
+      }
+    ],
+    "frontend/src/utils/security.js": [
+      {
+        "rule": "javascript:S7781",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "line": 73,
+        "message": "Prefer `String#replaceAll()` over `String#replace()`.",
+        "key": "9d3bbbd8-749b-46f6-9c0c-4e944ea9f1b4"
+      },
+      {
+        "rule": "javascript:S6324",
+        "severity": "MAJOR",
+        "type": "BUG",
+        "line": 98,
+        "message": "Remove this control character.",
+        "key": "06fabe83-bc22-46c6-a6fe-95cb54c05242"
+      },
+      {
+        "rule": "javascript:S6324",
+        "severity": "MAJOR",
+        "type": "BUG",
+        "line": 98,
+        "message": "Remove this control character.",
+        "key": "9d76ba7b-1446-4ffc-844f-dbea90b8f5f0"
+      },
+      {
+        "rule": "javascript:S7781",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "line": 126,
+        "message": "Prefer `String#replaceAll()` over `String#replace()`.",
+        "key": "96b23cb5-84a6-434d-bd62-51e833d977bb"
+      },
+      {
+        "rule": "javascript:S6324",
+        "severity": "MAJOR",
+        "type": "BUG",
+        "line": 126,
+        "message": "Remove this control character.",
+        "key": "c3aad0bb-7918-4e09-b27f-9b275b2328c0"
+      },
+      {
+        "rule": "javascript:S6324",
+        "severity": "MAJOR",
+        "type": "BUG",
+        "line": 126,
+        "message": "Remove this control character.",
+        "key": "d3d15870-a3b9-4eac-80f9-6f7e430cb063"
+      },
+      {
+        "rule": "javascript:S7781",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "line": 129,
+        "message": "Prefer `String#replaceAll()` over `String#replace()`.",
+        "key": "923164ef-7c74-4949-a196-048262ac08ac"
+      }
+    ],
+    "tmp/get_security_hotspots.py": [
+      {
+        "rule": "secrets:S6702",
+        "severity": "BLOCKER",
+        "type": "VULNERABILITY",
+        "line": 13,
+        "message": "Make sure this SonarQube token gets revoked, changed, and removed from the code.",
+        "key": "06a882f3-5c86-41a8-8eb4-8b35a3eaa1bd"
+      },
+      {
+        "rule": "python:S3776",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "line": 16,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 25 to the 15 allowed.",
+        "key": "9f84a4b6-6e6a-422e-b190-4a58e26b17cc"
+      },
+      {
+        "rule": "python:S5754",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "line": 120,
+        "message": "Reraise this exception to stop the application as the user expects",
+        "key": "e3a24d0c-9103-4178-b2a4-e2b08e4caca0"
+      }
+    ]
+  }
+}

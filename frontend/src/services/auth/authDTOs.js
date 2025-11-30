@@ -143,10 +143,10 @@ function getStatusMessage(status) {
  */
 function extractFieldErrors(errorData) {
   const fieldErrors = {}
-  const excludedFields = ['detail', 'error', 'non_field_errors']
+  const excludedFields = new Set(['detail', 'error', 'non_field_errors'])
   
   for (const [field, errors] of Object.entries(errorData)) {
-    if (excludedFields.includes(field)) {
+    if (excludedFields.has(field)) {
       continue
     }
     

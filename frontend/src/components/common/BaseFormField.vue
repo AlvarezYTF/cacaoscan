@@ -228,7 +228,7 @@ const generateFieldId = () => {
   }
   // Fallback: Use timestamp + counter for uniqueness
   const timestamp = Date.now().toString(36)
-  const counter = (window.__fieldIdCounter = (window.__fieldIdCounter || 0) + 1)
+  const counter = (globalThis.__fieldIdCounter = (globalThis.__fieldIdCounter || 0) + 1)
   return `field-${timestamp}-${counter.toString(36)}`
 }
 

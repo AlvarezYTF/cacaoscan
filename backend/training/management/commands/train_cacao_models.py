@@ -1248,8 +1248,8 @@ class Command(BaseCommand):
             # The process_pid has already been validated by _extract_process_pid (must be > 0)
             # The process has been validated as a Celery worker by _can_attempt_stop
             # Signal 0 is a null signal that only validates process existence and permissions
-            # NOSONAR: S4828 - Signal 0 is explicitly safe, it performs no action, only validation
-            os.kill(process_pid, 0)  # NOSONAR: S4828
+            # NOSONAR S4828 - Signal 0 is explicitly safe, it performs no action, only validation
+            os.kill(process_pid, 0)  # NOSONAR S4828
             return True
         except ProcessLookupError:
             logger.debug("Process no longer exists")

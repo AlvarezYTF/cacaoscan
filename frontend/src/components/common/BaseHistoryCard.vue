@@ -202,7 +202,7 @@ const loadMore = () => {
 .base-history-load-more {
   padding: 0.5rem 1.5rem;
   background: #059669;
-  color: white;
+  color: #ffffff;
   border: none;
   border-radius: 0.5rem;
   font-weight: 500;
@@ -211,7 +211,8 @@ const loadMore = () => {
 }
 
 .base-history-load-more:hover:not(:disabled) {
-  background: #059669;
+  background: #047857;
+  color: #ffffff;
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
