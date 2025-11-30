@@ -409,10 +409,8 @@ import { personasApi } from '@/services'
 import { useCatalogos } from '@/composables/useCatalogos'
 import { useFormValidation } from '@/composables/useFormValidation'
 import { useBirthdateRange } from '@/composables/useBirthdateRange'
+import { useNotifications } from '@/composables/useNotifications'
 import BaseModal from '@/components/common/BaseModal.vue'
-
-// 4. Utils
-import Swal from 'sweetalert2'
 
 // Props
 const props = defineProps({
@@ -449,6 +447,7 @@ const {
 
 const { errors, isValidEmail, isValidPhone, isValidDocument, clearErrors } = useFormValidation()
 const { maxBirthdate, minBirthdate } = useBirthdateRange()
+const { showSuccess, showError } = useNotifications()
 
 // State
 const isOpen = ref(false)
@@ -538,12 +537,7 @@ watch(() => props.farmer, async (newFarmer) => {
       } else {
         // Handle unexpected errors by showing notification to user
         console.error('Error al cargar datos de persona:', errorMessage, error)
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: errorMessage,
-          confirmButtonColor: '#10b981'
-        })
+        showError(errorMessage)
       }
     }
   }
@@ -573,12 +567,7 @@ const resetNewFinca = () => {
 const handleCreateFinca = async () => {
   // Validate required fields
   if (!newFinca.nombre || !newFinca.municipio || !newFinca.departamento || !newFinca.hectareas) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Por favor completa todos los campos requeridos',
-      confirmButtonColor: '#ef4444'
-    })
+    showError('Por favor completa todos los campos requeridos')
     return
   }
 
@@ -598,12 +587,7 @@ const handleCreateFinca = async () => {
 
     await createFinca(fincaData)
 
-    Swal.fire({
-      icon: 'success',
-      title: 'Finca creada',
-      text: 'La finca ha sido registrada exitosamente',
-      confirmButtonColor: '#10b981'
-    })
+    showSuccess('La finca ha sido registrada exitosamente')
 
     resetNewFinca()
     showCreateFinca.value = false
@@ -630,12 +614,7 @@ const handleCreateFinca = async () => {
       }
     }
 
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      html: errorMessage.replaceAll('\n', '<br>'),
-      confirmButtonColor: '#ef4444'
-    })
+    showError(errorMessage.replaceAll('\n', ' '))
   } finally {
     isCreatingFinca.value = false
   }
@@ -646,12 +625,7 @@ const handleUpdate = async () => {
   clearErrors()
 
   if (!formData.first_name || !formData.last_name || !formData.email) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Por favor completa todos los campos requeridos',
-      confirmButtonColor: '#ef4444'
-    })
+    showError('Por favor completa todos los campos requeridos')
     return
   }
 
@@ -690,12 +664,7 @@ const handleUpdate = async () => {
       }
     }
 
-    Swal.fire({
-      icon: 'success',
-      title: 'Agricultor actualizado',
-      text: 'La información del agricultor ha sido actualizada exitosamente',
-      confirmButtonColor: '#10b981'
-    })
+    showSuccess('La información del agricultor ha sido actualizada exitosamente')
 
     emit('farmer-updated', { type: 'user-updated', user: response.user })
     closeModal()
@@ -716,12 +685,7 @@ const handleUpdate = async () => {
       }
     }
 
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      html: errorMessage.replaceAll('\n', '<br>'),
-      confirmButtonColor: '#ef4444'
-    })
+    showError(errorMessage.replaceAll('\n', ' '))
   } finally {
     isSubmitting.value = false
   }

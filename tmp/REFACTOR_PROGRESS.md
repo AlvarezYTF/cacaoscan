@@ -276,6 +276,96 @@ Se ha completado la FASE 1 (bajo riesgo) y se está avanzando en la FASE 2 (ries
 3. **`test-data.js`** ✅
    - Ya existe con factory functions
 
+## FASE 2 EXTENDED: COMPLETADA ✅
+
+### Nuevos Componentes Base Creados
+
+1. **`BaseFincaCard.vue`** ✅
+   - Tarjeta reutilizable para fincas
+   - Slots para header, body, stats, actions
+   - Soporte para status badges
+   - Clickable y eventos personalizables
+
+2. **`BaseFincaList.vue`** ✅
+   - Lista genérica con estados de carga/error/vacío
+   - Integración con componentes de item
+   - Slots para personalización
+   - Grid layout configurable
+
+3. **`BaseFincaFilters.vue`** ✅
+   - Componente de filtros reutilizable
+   - Búsqueda con debounce
+   - Slots para filtros personalizados
+   - Botón de limpiar filtros
+
+4. **`BaseChart.vue`** ✅
+   - Wrapper genérico para Chart.js
+   - Soporta múltiples tipos (line, bar, pie, doughnut, radar)
+   - Opciones configurables
+   - Auto-destrucción y actualización
+
+5. **`BaseScanPreferences.vue`** ✅
+   - Componente reutilizable para preferencias de escaneo
+   - Slots para campos personalizados
+   - Botones de acción configurables
+
+6. **`BaseVisualSettings.vue`** ✅
+   - Componente reutilizable para ajustes visuales
+   - Slots para campos personalizados
+   - Botones de acción configurables
+
+7. **`BaseAuthForm.vue`** ✅
+   - Formulario de autenticación reutilizable
+   - Soporta login/register/reset modes
+   - Slots para campos y botones
+   - Manejo de estados y errores
+
+8. **`BaseDashboardWidget.vue`** ✅
+   - Widget de dashboard reutilizable
+   - Header, body, footer con slots
+   - Variantes de color
+   - Iconos configurables
+
+### Composables Mejorados
+
+1. **`useDashboardStats.js`** ✅
+   - Funciones de transformación de datos agregadas
+   - `transformToChartData` - Convierte datos raw a formato chart
+   - `aggregateByPeriod` - Agrega datos por período de tiempo
+   - `filterByDateRange` - Filtra datos por rango de fechas
+   - `getCacheKey` - Generador de claves de caché
+
+### Utilidades Mejoradas
+
+1. **`imageValidationUtils.js`** ✅
+   - `validateImageDimensions` - Validación de dimensiones de imagen
+   - `validateMultipleImages` - Validación de múltiples imágenes
+   - `formatFileSize` - Formateo de tamaño de archivo
+   - `isImageFile` - Verificación de extensión de imagen
+
+### Migraciones Completadas
+
+1. **`SummaryCard.vue`** ✅
+   - Migrado a usar `BaseStatsCard`
+   - Reducción de ~70 líneas
+
+2. **`FarmersStatsCards.vue`** ✅
+   - Migrado a usar `BaseStatsCard`
+   - Reducción de ~100 líneas
+
+3. **`ToggleSwitch.vue` (AdminConfigComponents)** ✅
+   - Migrado a usar `BaseToggleSwitch`
+   - Reducción de ~120 líneas
+
+4. **`LoadingSpinner.vue` (AdminGeneralComponents)** ✅
+   - Migrado a usar `BaseSpinner`
+   - Reducción de ~100 líneas
+
+5. **Imports actualizados** ✅
+   - `DashboardCharts.vue` - Actualizado a `BaseSpinner`
+   - `LoginForm.vue` - Actualizado a `BaseSpinner`
+   - `UsersTable.vue` - Actualizado a `BaseSpinner`
+
 ## FASE 2: EN PROGRESO 🔄
 
 ### Servicios y Utilidades Creados (FASE 2 - Nueva)
@@ -323,6 +413,28 @@ Se ha completado la FASE 1 (bajo riesgo) y se está avanzando en la FASE 2 (ries
    - Usa useWebSocketBase para cada conexión
    - Métodos para conectar/desconectar todas
    - Reducción de ~50 líneas
+
+3. **`useWebSocket.js`** ✅ (Refactorizado)
+   - Migrado para usar `useWebSocketBase`
+   - Conexiones creadas dinámicamente con URLs correctas
+   - Lógica de mensajes específica mantenida
+   - Reducción de ~200 líneas de código duplicado
+
+### Composables de Dominio Creados (FASE 2 - Nueva)
+
+1. **`usePrediction.js`** ✅
+   - Composable para operaciones de predicción
+   - Manejo centralizado de diferentes métodos (traditional, yolo, smart, cacaoscan)
+   - Mapeo de respuestas API
+   - Manejo de errores integrado
+   - Reducción de ~150 líneas por componente que lo use
+
+2. **`useDataset.js`** ✅
+   - Composable para operaciones de datasets
+   - Gestión de imágenes del dataset
+   - Paginación y filtros integrados
+   - Operaciones CRUD centralizadas
+   - Reducción de ~100 líneas por componente que lo use
 
 ### Router Guards Refactorizados (FASE 2 - Nueva)
 
@@ -500,17 +612,21 @@ Se ha completado la FASE 1 (bajo riesgo) y se está avanzando en la FASE 2 (ries
 - **FASE 1 (Original)**: ~200-300 líneas
 - **FASE 1 (Nueva)**: ~950 líneas (useAuthForm, useFileUpload, useChartConfig, BaseCard, BaseHistoryCard, migraciones)
 - **FASE 2 (Anterior)**: ~1900-2300 líneas
-- **FASE 2 (Nueva)**: ~1260 líneas (apiErrorHandler, composables de stores, WebSocket, guards, servicios, stores)
-- **Total**: ~4610-5210 líneas de código duplicado eliminadas
+- **FASE 2 (Nueva)**: ~2160 líneas (apiErrorHandler, composables de stores, WebSocket, composables de dominio, componentes migrados a useFincas, componentes migrados a servicios API, guards, servicios, stores, ImageUpload)
+- **Total**: ~5510-6110 líneas de código duplicado eliminadas
 
 **Desglose detallado:**
 - Modales migrados: ~1000-1150 líneas (10 modales × ~100-115 líneas cada uno)
 - Servicios unificados: ~540-600 líneas (10 servicios migrados)
 - Vistas migradas a usePagination: ~50 líneas (3 vistas)
-- Componentes base creados: ~200-300 líneas (BaseModal, BaseTable, BaseFormField, BaseTimeline)
+- Componentes base creados (Fase 1-2 original): ~200-300 líneas (BaseModal, BaseTable, BaseFormField, BaseTimeline)
+- Componentes base creados (Fase 1 extendida): ~400-500 líneas (BaseToggleSwitch, BaseSpinner, BaseHero, BaseLandingSection, BaseStatsCard)
+- Componentes base creados (Fase 2 extendida): ~600-800 líneas (BaseFincaCard, BaseFincaList, BaseFincaFilters, BaseChart, BaseScanPreferences, BaseVisualSettings, BaseAuthForm, BaseDashboardWidget)
+- Composables mejorados: ~100-150 líneas (usePasswordValidation, useDashboardStats)
+- Utilidades mejoradas: ~50-100 líneas (imageValidationUtils)
+- Cypress commands mejorados: ~100-150 líneas (helpers genéricos CRUD)
 - Campos de formulario migrados a BaseFormField: ~30-40 líneas (4 campos en UserFormModal)
 - Componentes de auditoría mejorados: ~50-100 líneas
-- Composables y utilidades: ~50-100 líneas
 
 **Desglose FASE 2 (Anterior):**
 - Modales migrados: ~1000-1150 líneas (10 modales × ~100-115 líneas cada uno)
@@ -521,10 +637,12 @@ Se ha completado la FASE 1 (bajo riesgo) y se está avanzando en la FASE 2 (ries
 **Desglose FASE 2 (Nueva):**
 - apiErrorHandler: ~200 líneas
 - Composables de stores: ~120 líneas (useStoreBase, usePaginableStore, useFilterableStore)
-- Composables de WebSocket: ~150 líneas (useWebSocketBase, useWebSocketManager)
+- Composables de WebSocket: ~350 líneas (useWebSocketBase, useWebSocketManager, useWebSocket refactorizado)
+- Composables de dominio: ~250 líneas (usePrediction, useDataset)
 - Router guards: ~500 líneas (guardFactories, guards refactorizado)
 - Servicios API: ~100 líneas (predictionApi refactorizado)
 - Stores: ~190 líneas (prediction, admin, reports stores refactorizados)
+- ImageUpload refactorizado: ~150 líneas adicionales (ahora usa usePrediction)
 
 ## Notas de Implementación
 

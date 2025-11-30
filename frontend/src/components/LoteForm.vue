@@ -247,6 +247,10 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import lotesApi from '@/services/lotesApi'
 import fincasApi from '@/services/fincasApi'
+import { useLotes } from '@/composables/useLotes'
+import { useFincas } from '@/composables/useFincas'
+import { useFormValidation } from '@/composables/useFormValidation'
+import { useNotifications } from '@/composables/useNotifications'
 
 const props = defineProps({
   lote: {
@@ -261,10 +265,16 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'saved'])
 
+// Composables
+const { createLote, updateLote, loading: isLotesLoading, error: lotesError } = useLotes()
+const { loadFincas: loadFincasComposable, fincas: fincasFromComposable, isLoading: isFincasLoading } = useFincas()
+const { errors, setError, clearErrors, mapServerErrors } = useFormValidation()
+const { showSuccess, showError } = useNotifications()
+
 // Estado reactivo
-const loading = ref(false)
-const errors = ref({})
-const fincas = ref([])
+const localLoading = ref(false)
+const loading = computed(() => localLoading.value || isLotesLoading.value || isFincasLoading.value)
+const fincas = computed(() => fincasFromComposable.value)
 
 // Datos del formulario
 const formData = reactive({
@@ -300,7 +310,7 @@ const resetForm = () => {
     coordenadas_lng: '',
     activa: true
   })
-  errors.value = {}
+  clearErrors()
 }
 
 const loadLoteData = () => {
@@ -323,50 +333,51 @@ const loadLoteData = () => {
 
 const loadFincas = async () => {
   try {
-    const response = await fincasApi.getFincas()
-    fincas.value = response.results || response
+    await loadFincasComposable()
   } catch (error) {
     console.error('Error loading fincas:', error)
+    showError('No se pudieron cargar las fincas')
   }
 }
 
 const validateForm = () => {
+  clearErrors()
   const formattedData = lotesApi.formatLoteData(formData)
   const validation = lotesApi.validateLoteData(formattedData)
   
   if (!validation.isValid) {
-    errors.value = {}
     for (const error of validation.errors) {
       // Mapear errores a campos específicos
-      if (error.includes('finca')) errors.value.finca = error
-      else if (error.includes('identificador')) errors.value.identificador = error
-      else if (error.includes('variedad')) errors.value.variedad = error
-      else if (error.includes('plantación')) errors.value.fecha_plantacion = error
-      else if (error.includes('cosecha')) errors.value.fecha_cosecha = error
-      else if (error.includes('área')) errors.value.area_hectareas = error
-      else if (error.includes('latitud')) errors.value.coordenadas_lat = error
-      else if (error.includes('longitud')) errors.value.coordenadas_lng = error
-      else if (error.includes('descripción')) errors.value.descripcion = error
-    })
+      if (error.includes('finca')) setError('finca', error)
+      else if (error.includes('identificador')) setError('identificador', error)
+      else if (error.includes('variedad')) setError('variedad', error)
+      else if (error.includes('plantación')) setError('fecha_plantacion', error)
+      else if (error.includes('cosecha')) setError('fecha_cosecha', error)
+      else if (error.includes('área')) setError('area_hectareas', error)
+      else if (error.includes('latitud')) setError('coordenadas_lat', error)
+      else if (error.includes('longitud')) setError('coordenadas_lng', error)
+      else if (error.includes('descripción')) setError('descripcion', error)
+    }
     return false
   }
   
-  errors.value = {}
   return true
 }
 
 const handleSubmit = async () => {
   if (!validateForm()) return
   
-  loading.value = true
+  localLoading.value = true
   
   try {
     const formattedData = lotesApi.formatLoteData(formData)
     
     if (props.isEditing) {
-      await lotesApi.updateLote(props.lote.id, formattedData)
+      await updateLote(props.lote.id, formattedData)
+      showSuccess('El lote ha sido actualizado exitosamente')
     } else {
-      await lotesApi.createLote(formattedData)
+      await createLote(formattedData)
+      showSuccess('El lote ha sido creado exitosamente')
     }
     
     emit('saved')
@@ -376,18 +387,23 @@ const handleSubmit = async () => {
     // Manejar errores de validación del servidor
     if (error.response?.data) {
       const serverErrors = error.response.data
-      errors.value = {}
-      
-      for (const field of Object.keys(serverErrors)) {
-        if (Array.isArray(serverErrors[field])) {
-          errors.value[field] = serverErrors[field][0]
-        } else {
-          errors.value[field] = serverErrors[field]
-        }
+      const fieldMapping = {
+        'finca': 'finca',
+        'identificador': 'identificador',
+        'variedad': 'variedad',
+        'fecha_plantacion': 'fecha_plantacion',
+        'fecha_cosecha': 'fecha_cosecha',
+        'area_hectareas': 'area_hectareas',
+        'coordenadas_lat': 'coordenadas_lat',
+        'coordenadas_lng': 'coordenadas_lng',
+        'descripcion': 'descripcion'
       }
+      mapServerErrors(serverErrors, fieldMapping)
+    } else {
+      showError('No se pudo guardar el lote. Intenta nuevamente.')
     }
   } finally {
-    loading.value = false
+    localLoading.value = false
   }
 }
 

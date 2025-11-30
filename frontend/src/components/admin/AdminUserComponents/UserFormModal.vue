@@ -316,11 +316,9 @@ import { useAuthStore } from '@/stores/auth'
 
 // 3. Composables
 import { useFormValidation } from '@/composables/useFormValidation'
+import { useNotifications } from '@/composables/useNotifications'
 import BaseModal from '@/components/common/BaseModal.vue'
 import BaseFormField from '@/components/common/BaseFormField.vue'
-
-// 4. Libraries
-import Swal from 'sweetalert2'
 
 // Props
 const props = defineProps({
@@ -344,6 +342,7 @@ const authStore = useAuthStore()
 
 // Composables
 const { errors, isValidEmail, isValidPhone, validatePassword, setError, clearErrors } = useFormValidation()
+const { showSuccess, showError } = useNotifications()
 
 // State
 const loading = ref(false)
@@ -530,11 +529,7 @@ const saveUser = async () => {
       ? await adminStore.createUser(userData)
       : await adminStore.updateUser(props.user.id, userData)
 
-    await Swal.fire({
-      icon: 'success',
-      title: 'Usuario guardado',
-      text: `El usuario ha sido ${props.mode === 'create' ? 'creado' : 'actualizado'} exitosamente`
-    })
+    showSuccess(`El usuario ha sido ${props.mode === 'create' ? 'creado' : 'actualizado'} exitosamente`)
 
     emit('saved', response.data)
     closeModal()
@@ -546,18 +541,10 @@ const saveUser = async () => {
       processUserErrors(errorData)
       
       if (Object.keys(errors).length === 0) {
-        await Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: errorData.detail || 'No se pudo guardar el usuario'
-        })
+        showError(errorData.detail || 'No se pudo guardar el usuario')
       }
     } else {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No se pudo guardar el usuario'
-      })
+      showError('No se pudo guardar el usuario')
     }
   } finally {
     loading.value = false

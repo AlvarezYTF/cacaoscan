@@ -272,7 +272,7 @@
 
 <script setup>
 // 1. Vue core
-import { ref, watch } from 'vue'
+import { watch } from 'vue'
 
 // 2. Stores
 import { useAuthStore } from '@/stores/auth'
@@ -281,8 +281,8 @@ import { useAuthStore } from '@/stores/auth'
 import FincaLocationMap from '@/components/fincas/FincaLocationMap.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 
-// 4. Services
-import { getFincaById } from '@/services/fincasApi'
+// 4. Composables
+import { useFincas } from '@/composables/useFincas'
 
 // Props
 const props = defineProps({
@@ -306,23 +306,16 @@ const emit = defineEmits(['close', 'edit', 'view-lotes'])
 // Stores
 const authStore = useAuthStore()
 
-// State
-const loading = ref(false)
-const fincaDetalle = ref(null)
+// Use fincas composable
+const { currentFinca: fincaDetalle, isLoading: loading, loadFinca, clearCurrentFinca } = useFincas()
 
 // Methods
 const loadFincaDetails = async (fincaId) => {
   if (!fincaId) return
-  
   try {
-    loading.value = true
-    const data = await getFincaById(fincaId)
-    fincaDetalle.value = data
+    await loadFinca(fincaId)
   } catch (error) {
     console.error('Error cargando detalle de finca:', error)
-    fincaDetalle.value = null
-  } finally {
-    loading.value = false
   }
 }
 
@@ -330,7 +323,7 @@ const closeModal = () => {
   emit('close')
   // Reset después de un pequeño delay para la animación
   setTimeout(() => {
-    fincaDetalle.value = null
+    clearCurrentFinca()
   }, 300)
 }
 

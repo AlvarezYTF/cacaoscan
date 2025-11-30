@@ -129,6 +129,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseHistoryCard from '@/components/common/BaseHistoryCard.vue'
+import { getImages, downloadImage as downloadImageApi } from '@/services/predictionApi'
+import { handleApiError } from '@/services/apiErrorHandler'
 
 const props = defineProps({
   initialImages: {
@@ -179,30 +181,20 @@ const loadImages = async (page = 1, append = false) => {
   error.value = null
   
   try {
-    const response = await fetch(`/api/v1/images/?page=${page}&page_size=12`, {
-      headers: {
-        'Authorization': `Token ${localStorage.getItem('accessToken')}`
-      }
-    })
-    
-    if (!response.ok) {
-      throw new Error('Error al cargar imágenes')
-    }
-    
-    const data = await response.json()
+    const response = await getImages({ page, page_size: 12 })
     
     if (append) {
-      images.value = [...images.value, ...data.results]
+      images.value = [...images.value, ...(response.results || [])]
     } else {
-      images.value = data.results
+      images.value = response.results || []
     }
     
-    hasMorePages.value = data.next !== null
+    hasMorePages.value = response.next !== null
     currentPage.value = page
     
   } catch (err) {
-    console.error('Error loading images:', err)
-    error.value = err.message
+    const errorInfo = handleApiError(err, { logError: true })
+    error.value = errorInfo.message
   } finally {
     loading.value = false
   }
@@ -228,27 +220,16 @@ const viewImageDetails = (image) => {
 
 const downloadImage = async (image) => {
   try {
-    const response = await fetch(`/api/v1/images/${image.id}/download/`, {
-      headers: {
-        'Authorization': `Token ${localStorage.getItem('accessToken')}`
-      }
-    })
-    
-    if (!response.ok) {
-      throw new Error('Error al descargar imagen')
-    }
-    
-    const blob = await response.blob()
+    const blob = await downloadImageApi(image.id)
     const url = globalThis.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.download = `cacao_${image.id}_${image.file_name || 'image'}.jpg`
     link.click()
     globalThis.URL.revokeObjectURL(url)
-    
   } catch (err) {
-    console.error('Error downloading image:', err)
-    alert('Error al descargar la imagen')
+    const errorInfo = handleApiError(err, { logError: true })
+    alert(errorInfo.message || 'Error al descargar la imagen')
   }
 }
 

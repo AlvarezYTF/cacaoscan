@@ -1,70 +1,73 @@
 <template>
-  <div 
-    :class="['base-finca-card', cardClass]"
-    @click="handleCardClick"
+  <div
+    class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer"
+    :class="{ 'border-green-500': selected }"
+    @click="handleClick"
   >
-    <div class="p-6">
+    <!-- Image -->
+    <div v-if="finca.image || $slots.image" class="relative h-48 bg-gray-200 overflow-hidden">
+      <slot name="image">
+        <img
+          v-if="finca.image"
+          :src="finca.image"
+          :alt="finca.nombre"
+          class="w-full h-full object-cover"
+        />
+        <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100">
+          <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+        </div>
+      </slot>
+    </div>
+
+    <!-- Content -->
+    <div class="p-4 sm:p-6">
       <!-- Header -->
-      <div class="flex justify-between items-start mb-4">
-        <div class="flex-1">
-          <slot name="header">
-            <h3 v-if="title" class="text-lg font-bold text-gray-900 mb-1">{{ title }}</h3>
-            <p v-if="subtitle" class="text-sm text-gray-600 flex items-center gap-1">
-              <slot name="subtitle-icon">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-              </slot>
-              {{ subtitle }}
-            </p>
-          </slot>
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex-1 min-w-0">
+          <h3 class="text-lg font-semibold text-gray-900 truncate">{{ finca.nombre }}</h3>
+          <p v-if="finca.ubicacion" class="text-sm text-gray-600 mt-1 truncate">{{ finca.ubicacion }}</p>
         </div>
-        <slot name="status-badge">
-          <span
-            v-if="status !== null"
-            :class="[
-              'px-3 py-1 text-xs font-semibold rounded-full flex items-center gap-1',
-              status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-            ]"
-          >
-            <svg v-if="status" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <svg v-else class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            {{ status ? statusLabelActive : statusLabelInactive }}
-          </span>
-        </slot>
+        <slot name="header-actions" />
       </div>
 
-      <!-- Body Content -->
-      <div class="space-y-3 mb-4">
-        <slot name="body">
-          <!-- Default body content can be provided via props or slots -->
-        </slot>
+      <!-- Stats -->
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <p class="text-xs text-gray-500">Área Total</p>
+          <p class="text-sm font-semibold text-gray-900">{{ formatArea(finca.area_total || finca.area) }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500">Lotes</p>
+          <p class="text-sm font-semibold text-gray-900">{{ (finca.lotes || finca.lots || []).length }}</p>
+        </div>
       </div>
 
-      <!-- Stats Grid -->
-      <div v-if="stats && stats.length > 0" class="grid grid-cols-2 gap-4 mb-4">
-        <div
-          v-for="(stat, index) in stats"
-          :key="index"
-          :class="['rounded-lg p-3 text-center', stat.bgClass || 'bg-blue-50']"
-        >
-          <div :class="['text-2xl font-bold', stat.valueClass || 'text-blue-600']">
-            {{ stat.value }}
+      <!-- Description -->
+      <p v-if="finca.descripcion && showDescription" class="text-sm text-gray-600 line-clamp-2 mb-4">
+        {{ finca.descripcion }}
+      </p>
+
+      <!-- Footer -->
+      <div v-if="$slots.footer || showActions" class="flex items-center justify-between pt-4 border-t border-gray-200">
+        <slot name="footer">
+          <div v-if="showActions" class="flex items-center space-x-2">
+            <button
+              v-for="action in actions"
+              :key="action.key"
+              @click.stop="handleAction(action)"
+              :class="[
+                'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+                action.variant === 'primary' ? 'bg-green-600 text-white hover:bg-green-700' : '',
+                action.variant === 'secondary' ? 'bg-gray-200 text-gray-900 hover:bg-gray-300' : '',
+                action.variant === 'danger' ? 'bg-red-600 text-white hover:bg-red-700' : '',
+                !action.variant ? 'bg-green-600 text-white hover:bg-green-700' : ''
+              ]"
+            >
+              {{ action.label }}
+            </button>
           </div>
-          <div class="text-xs text-gray-600">{{ stat.label }}</div>
-        </div>
-      </div>
-      <slot name="stats"></slot>
-
-      <!-- Actions -->
-      <div v-if="showActions || $slots.actions" class="flex gap-2 flex-wrap">
-        <slot name="actions">
-          <!-- Default actions can be provided via props -->
         </slot>
       </div>
     </div>
@@ -75,61 +78,53 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-  title: {
-    type: String,
-    default: ''
+  finca: {
+    type: Object,
+    required: true
   },
-  subtitle: {
-    type: String,
-    default: ''
-  },
-  status: {
+  selected: {
     type: Boolean,
-    default: null
+    default: false
   },
-  statusLabelActive: {
-    type: String,
-    default: 'Activa'
-  },
-  statusLabelInactive: {
-    type: String,
-    default: 'Inactiva'
-  },
-  stats: {
-    type: Array,
-    default: () => []
+  showDescription: {
+    type: Boolean,
+    default: true
   },
   showActions: {
     type: Boolean,
-    default: true
+    default: false
   },
-  clickable: {
-    type: Boolean,
-    default: true
-  },
-  cardClass: {
-    type: String,
-    default: 'relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-200'
+  actions: {
+    type: Array,
+    default: null,
+    validator: (value) => {
+      if (!value) return true
+      return value.every(action => typeof action === 'object' && 'key' in action && 'label' in action)
+    }
   }
 })
 
-const emit = defineEmits(['view-details', 'edit', 'delete', 'activate', 'click'])
+const emit = defineEmits(['click', 'action-click'])
 
-const handleCardClick = () => {
-  if (props.clickable) {
-    emit('view-details')
-    emit('click')
-  }
+const formatArea = (area) => {
+  if (!area) return '0 ha'
+  return `${Number.parseFloat(area).toFixed(2)} ha`
+}
+
+const handleClick = () => {
+  emit('click', props.finca)
+}
+
+const handleAction = (action) => {
+  emit('action-click', { action, finca: props.finca })
 }
 </script>
 
 <style scoped>
-.base-finca-card {
-  @apply cursor-pointer;
-}
-
-.base-finca-card:not(.clickable) {
-  @apply cursor-default;
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>
-

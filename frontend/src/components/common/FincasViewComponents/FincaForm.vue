@@ -350,7 +350,8 @@ import fincasApi, { getAgricultores } from '@/services/fincasApi'
 import { useFincasStore } from '@/stores/fincas'
 import { useAuthStore } from '@/stores/auth'
 import { useFormValidation } from '@/composables/useFormValidation'
-import Swal from 'sweetalert2'
+import { useNotifications } from '@/composables/useNotifications'
+import { useFincas } from '@/composables/useFincas'
 
 const props = defineProps({
   finca: {
@@ -368,9 +369,19 @@ const emit = defineEmits(['close', 'saved'])
 const fincasStore = useFincasStore()
 const authStore = useAuthStore()
 const { errors, mapServerErrors, scrollToFirstError } = useFormValidation()
+const { showSuccess, showError } = useNotifications()
+const { create: createFincaComposable, update: updateFincaComposable, isLoading: isFincasLoading } = useFincas({
+  onFincaCreate: () => {
+    showSuccess('La finca se creó correctamente.')
+  },
+  onFincaUpdate: () => {
+    showSuccess('La finca se actualizó correctamente.')
+  }
+})
 
-// Estado reactivo
-const loading = ref(false)
+// Estado reactivo - combinar loading del composable con estado local del formulario
+const localLoading = ref(false)
+const loading = computed(() => localLoading.value || isFincasLoading.value)
 const municipios = ref([])
 const agricultores = ref([])
 
@@ -495,17 +506,7 @@ const saveFinca = async (formattedData) => {
   return 'Finca creada'
 }
 
-const showSuccessNotification = (message) => {
-  Swal.fire({
-    icon: 'success',
-    title: message,
-    text: message === 'Finca actualizada' 
-      ? 'La finca se actualizó correctamente.'
-      : 'La finca se creó correctamente.',
-    timer: 3000,
-    showConfirmButton: false
-  })
-}
+// showSuccessNotification ya no es necesario - se maneja en los callbacks del composable
 
 const extractErrorMessageFromServerErrors = (serverErrors) => {
   const nonFieldKeys = new Set(['error', 'status', 'error_detail'])
@@ -523,25 +524,12 @@ const processServerErrors = (serverErrors) => {
   return extractErrorMessageFromServerErrors(serverErrors)
 }
 
-const showValidationErrorNotification = (errorMessage) => {
-  Swal.fire({
-    icon: 'error',
-    title: 'Error de validación',
-    html: errorMessage 
-      ? `<p style="margin: 0; padding: 10px;">${errorMessage}</p>`
-      : '<p style="margin: 0; padding: 10px;">Por favor revisa los campos marcados en rojo.</p>',
-    timer: errorMessage ? 6000 : 4000,
-    showConfirmButton: true
-  })
+const showValidationErrorNotification = (errorMessage = 'Por favor revisa los campos marcados en rojo.') => {
+  showError(errorMessage)
 }
 
 const showGeneralErrorNotification = (errorMsg) => {
-  Swal.fire({
-    icon: 'error',
-    title: 'Error',
-    text: errorMsg,
-    timer: 4000
-  })
+  showError(errorMsg)
 }
 
 const handleServerError = (error) => {
@@ -559,7 +547,7 @@ const handleServerError = (error) => {
 const handleSubmit = async () => {
   if (!validateForm()) return
   
-  loading.value = true
+  localLoading.value = true
   
   try {
     const formattedData = fincasApi.formatFincaData(formData)
@@ -568,7 +556,7 @@ const handleSubmit = async () => {
     console.log('📤 [FincaForm] Datos originales del formulario:', JSON.stringify(formData, null, 2))
     
     const successMessage = await saveFinca(formattedData)
-    showSuccessNotification(successMessage)
+    // showSuccessNotification ya se llama desde los callbacks del composable
     emit('saved')
   } catch (error) {
     console.error('❌ [FincaForm] Error saving finca:', error)
@@ -577,7 +565,7 @@ const handleSubmit = async () => {
     
     handleServerError(error)
   } finally {
-    loading.value = false
+    localLoading.value = false
   }
 }
 

@@ -62,3 +62,15 @@ export function normalizeApiResponse(responseData, alwaysWrap = false) {
   return responseData
 }
 
+/**
+ * Normalizes API response arrays from paginated or non-paginated endpoints
+ * Handles both {results: [...]} and [...] formats
+ * @param {Object|Array} data - Response data (can be paginated object or array)
+ * @returns {Array} Normalized array
+ */
+export function normalizeResponse(data) {
+  if (data && Array.isArray(data.results)) return data.results
+  if (Array.isArray(data)) return data
+  return []
+}
+

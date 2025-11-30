@@ -280,6 +280,175 @@ export function useDashboardStats() {
     await loadAllData(period)
   }
 
+  /**
+   * Transform raw data to chart format
+   * @param {Array} rawData - Raw data array
+   * @param {Object} config - Transformation config
+   * @returns {Object} Chart data object
+   */
+  const transformToChartData = (rawData, config = {}) => {
+    const {
+      labelKey = 'label',
+      valueKey = 'value',
+      labels = null,
+      datasets = null,
+      colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4']
+    } = config
+
+    if (labels && datasets) {
+      return {
+        labels,
+        datasets: datasets.map((dataset, index) => ({
+          ...dataset,
+          backgroundColor: dataset.backgroundColor || colors[index % colors.length],
+          borderColor: dataset.borderColor || colors[index % colors.length]
+        }))
+      }
+    }
+
+    if (Array.isArray(rawData)) {
+      return {
+        labels: rawData.map(item => item[labelKey] || item.name || item.label),
+        datasets: [{
+          label: config.datasetLabel || 'Datos',
+          data: rawData.map(item => item[valueKey] || item.count || item.value),
+          backgroundColor: colors[0],
+          borderColor: colors[0]
+        }]
+      }
+    }
+
+    return { labels: [], datasets: [] }
+  }
+
+  /**
+   * Aggregate data by time period
+   * @param {Array} data - Data array with timestamps
+   * @param {string} period - Time period (day, week, month)
+   * @returns {Object} Aggregated chart data
+   */
+  const aggregateByPeriod = (data, period = 'day') => {
+    if (!Array.isArray(data) || data.length === 0) {
+      return { labels: [], datasets: [] }
+    }
+
+    const grouped = {}
+    const dateFormat = period === 'day' ? 'YYYY-MM-DD' : period === 'week' ? 'YYYY-[W]WW' : 'YYYY-MM'
+
+    data.forEach(item => {
+      const date = new Date(item.date || item.timestamp || item.created_at)
+      const key = formatDateKey(date, period)
+      
+      if (!grouped[key]) {
+        grouped[key] = { count: 0, values: [] }
+      }
+      grouped[key].count++
+      if (item.value !== undefined) {
+        grouped[key].values.push(item.value)
+      }
+    })
+
+    const labels = Object.keys(grouped).sort()
+    const values = labels.map(key => {
+      const group = grouped[key]
+      return group.values.length > 0
+        ? group.values.reduce((a, b) => a + b, 0) / group.values.length
+        : group.count
+    })
+
+    return {
+      labels,
+      datasets: [{
+        label: 'Datos',
+        data: values,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true
+      }]
+    }
+  }
+
+  /**
+   * Format date key for grouping
+   * @param {Date} date - Date object
+   * @param {string} period - Time period
+   * @returns {string} Formatted key
+   */
+  const formatDateKey = (date, period) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    if (period === 'day') {
+      return `${year}-${month}-${day}`
+    } else if (period === 'week') {
+      const week = getWeekNumber(date)
+      return `${year}-W${String(week).padStart(2, '0')}`
+    } else if (period === 'month') {
+      return `${year}-${month}`
+    }
+    return `${year}-${month}-${day}`
+  }
+
+  /**
+   * Get week number
+   * @param {Date} date - Date object
+   * @returns {number} Week number
+   */
+  const getWeekNumber = (date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+    const dayNum = d.getUTCDay() || 7
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7)
+  }
+
+  /**
+   * Filter chart data by date range
+   * @param {Object} chartData - Chart data object
+   * @param {Date} startDate - Start date
+   * @param {Date} endDate - End date
+   * @returns {Object} Filtered chart data
+   */
+  const filterByDateRange = (chartData, startDate, endDate) => {
+    if (!chartData.labels || !chartData.datasets) {
+      return chartData
+    }
+
+    const filteredLabels = []
+    const filteredDatasets = chartData.datasets.map(dataset => ({
+      ...dataset,
+      data: []
+    }))
+
+    chartData.labels.forEach((label, index) => {
+      const labelDate = new Date(label)
+      if (labelDate >= startDate && labelDate <= endDate) {
+        filteredLabels.push(label)
+        chartData.datasets.forEach((dataset, datasetIndex) => {
+          if (dataset.data[index] !== undefined) {
+            filteredDatasets[datasetIndex].data.push(dataset.data[index])
+          }
+        })
+      }
+    })
+
+    return {
+      labels: filteredLabels,
+      datasets: filteredDatasets
+    }
+  }
+
+  /**
+   * Cache key generator for stats
+   * @param {string} type - Stats type
+   * @param {string} period - Time period
+   * @returns {string} Cache key
+   */
+  const getCacheKey = (type, period = '30') => {
+    return `dashboard-stats-${type}-${period}`
+  }
+
   return {
     // Estado
     loading,
@@ -314,6 +483,12 @@ export function useDashboardStats() {
     loadAllData,
     dismissAlert,
     exportData,
-    refreshData
+    refreshData,
+    
+    // Chart data transformation methods
+    transformToChartData,
+    aggregateByPeriod,
+    filterByDateRange,
+    getCacheKey
   }
 }

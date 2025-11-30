@@ -169,7 +169,7 @@
         :disabled="isLoading"
         class="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-4 focus:ring-green-500/50 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-xl active:scale-[0.97] group"
       >
-        <LoadingSpinner 
+        <BaseSpinner 
           v-if="isLoading"
           size="md"
           color="white"
@@ -218,7 +218,7 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useAuthForm } from '@/composables/useAuthForm'
-import LoadingSpinner from '@/components/admin/AdminGeneralComponents/LoadingSpinner.vue'
+import BaseSpinner from '@/components/common/BaseSpinner.vue'
 
 // Route
 const route = useRoute()

@@ -28,7 +28,7 @@
             :disabled="loading"
             title="Actualizar datos"
           >
-            <LoadingSpinner 
+            <BaseSpinner 
               v-if="loading" 
               size="sm" 
               color="gray" 
@@ -77,7 +77,7 @@
           :disabled="loading"
           title="Actualizar datos"
         >
-          <LoadingSpinner 
+          <BaseSpinner 
             v-if="loading" 
             size="sm" 
             color="gray" 
@@ -111,7 +111,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import LoadingSpinner from '@/components/admin/AdminGeneralComponents/LoadingSpinner.vue'
+import BaseSpinner from '@/components/common/BaseSpinner.vue'
 import BaseChart from '@/components/charts/BaseChart.vue'
 
 // Props

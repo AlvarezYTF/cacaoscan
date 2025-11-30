@@ -245,12 +245,14 @@
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useNotificationStore } from '@/stores/notifications'
-import Swal from 'sweetalert2'
+import { useNotifications } from '@/composables/useNotifications'
+import Swal from 'sweetalert2' // Keep for confirmation dialogs
 
 export default {
   name: 'NotificationCenter',
   setup() {
     const notificationStore = useNotificationStore()
+    const { showSuccess, showError } = useNotifications()
 
     // Reactive data
     const loading = ref(false)
@@ -323,11 +325,7 @@ export default {
         
       } catch (error) {
         console.error('Error loading notifications:', error)
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudieron cargar las notificaciones'
-        })
+        showError('No se pudieron cargar las notificaciones')
       } finally {
         loading.value = false
       }
@@ -368,11 +366,7 @@ export default {
         
       } catch (error) {
         console.error('Error marking notification as read:', error)
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo marcar la notificación como leída'
-        })
+        showError('No se pudo marcar la notificación como leída')
       }
     }
 
@@ -388,19 +382,11 @@ export default {
           }
         }
         
-        Swal.fire({
-          icon: 'success',
-          title: 'Notificaciones marcadas',
-          text: 'Todas las notificaciones han sido marcadas como leídas'
-        })
+        showSuccess('Todas las notificaciones han sido marcadas como leídas')
         
       } catch (error) {
         console.error('Error marking all notifications as read:', error)
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudieron marcar todas las notificaciones como leídas'
-        })
+        showError('No se pudieron marcar todas las notificaciones como leídas')
       }
     }
 
@@ -424,19 +410,11 @@ export default {
           notifications.value = notifications.value.filter(n => n.id !== notification.id)
           totalCount.value--
           
-          Swal.fire({
-            icon: 'success',
-            title: 'Notificación eliminada',
-            text: 'La notificación ha sido eliminada exitosamente'
-          })
+          showSuccess('La notificación ha sido eliminada exitosamente')
           
         } catch (error) {
           console.error('Error deleting notification:', error)
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo eliminar la notificación'
-          })
+          showError('No se pudo eliminar la notificación')
         }
       }
     }
@@ -445,19 +423,11 @@ export default {
       try {
         await notificationStore.updateSettings(settings.value)
         
-        Swal.fire({
-          icon: 'success',
-          title: 'Configuración actualizada',
-          text: 'Las preferencias de notificaciones han sido guardadas'
-        })
+        showSuccess('Las preferencias de notificaciones han sido guardadas')
         
       } catch (error) {
         console.error('Error updating notification settings:', error)
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudieron actualizar las preferencias'
-        })
+        showError('No se pudieron actualizar las preferencias')
       }
     }
 

@@ -1,390 +1,291 @@
 /**
- * Composable for fincas management
- * Consolidates CRUD operations, permissions, and related data loading
+ * Composable for fincas operations
+ * Centralizes fincas management logic
  */
 import { ref, computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { useNotificationStore } from '@/stores/notifications'
-import * as fincasApi from '@/services/fincasApi'
-import { useDateFormatting } from './useDateFormatting'
+import { getFincas, getFincaById, createFinca, updateFinca, deleteFinca } from '@/services/fincasApi'
+import { handleApiError } from '@/services/apiErrorHandler'
 
 /**
- * Main useFincas composable
- * @param {Object} options - Configuration options
- * @returns {Object} Fincas composable methods and state
+ * Create fincas composable
+ * @param {Object} options - Options
+ * @param {Function} options.onFincaCreate - Callback when finca is created
+ * @param {Function} options.onFincaUpdate - Callback when finca is updated
+ * @param {Function} options.onFincaDelete - Callback when finca is deleted
+ * @returns {Object} Fincas state and methods
  */
 export function useFincas(options = {}) {
-  const authStore = useAuthStore()
-  const notificationStore = useNotificationStore()
-  const { formatDate } = useDateFormatting()
-  
+  const {
+    onFincaCreate = null,
+    onFincaUpdate = null,
+    onFincaDelete = null
+  } = options
+
   // State
-  const loading = ref(false)
-  const error = ref(null)
-  const finca = ref(null)
   const fincas = ref([])
-  const lotes = ref([])
-  const analisis = ref([])
-  
+  const currentFinca = ref(null)
+  const isLoading = ref(false)
+  const error = ref(null)
+  const filters = ref({})
+  const pagination = ref({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 20
+  })
+
   // Computed
-  const isAdmin = computed(() => authStore.userRole === 'admin')
-  const isFarmer = computed(() => authStore.userRole === 'farmer' || authStore.userRole === 'agricultor')
-  
-  /**
-   * Check if user can edit finca
-   * @param {Object} fincaData - Finca data
-   * @returns {boolean} Can edit
-   */
-  const canEdit = (fincaData) => {
-    if (!fincaData) return false
-    if (isAdmin.value) return true
-    if (isFarmer.value) {
-      return fincaData.agricultor === authStore.user?.id || fincaData.agricultor_id === authStore.user?.id
-    }
-    return false
-  }
-  
-  /**
-   * Check if user can delete finca
-   * @param {Object} fincaData - Finca data
-   * @returns {boolean} Can delete
-   */
-  const canDelete = (fincaData) => {
-    return canEdit(fincaData)
-  }
-  
-  /**
-   * Check if user can view finca
-   * @param {Object} fincaData - Finca data
-   * @returns {boolean} Can view
-   */
-  const canView = (fincaData) => {
-    if (!fincaData) return false
-    if (isAdmin.value) return true
-    if (isFarmer.value) {
-      return fincaData.agricultor === authStore.user?.id || fincaData.agricultor_id === authStore.user?.id
-    }
-    return false
-  }
-  
+  const hasFincas = computed(() => fincas.value.length > 0)
+  const hasCurrentFinca = computed(() => currentFinca.value !== null)
+  const hasError = computed(() => error.value !== null)
+
   /**
    * Load fincas list
-   * @param {Object} params - Filter and pagination parameters
-   * @returns {Promise<Array>} List of fincas
+   * @param {Object} filterParams - Filter parameters
+   * @param {number} page - Page number
+   * @param {number} pageSize - Page size
+   * @returns {Promise<Object>} Response data
    */
-  const loadFincas = async (params = {}) => {
+  const loadFincas = async (filterParams = {}, page = 1, pageSize = 20) => {
+    isLoading.value = true
+    error.value = null
+
     try {
-      loading.value = true
-      error.value = null
-      
-      const data = await fincasApi.getFincas(params)
-      fincas.value = Array.isArray(data) ? data : (data?.results || [])
-      
-      return fincas.value
+      const params = {
+        ...filterParams,
+        page,
+        page_size: pageSize
+      }
+
+      const response = await getFincas(params)
+
+      if (page === 1) {
+        fincas.value = response.results || []
+      } else {
+        fincas.value = [...fincas.value, ...(response.results || [])]
+      }
+
+      pagination.value = {
+        currentPage: page,
+        totalPages: Math.ceil((response.count || 0) / pageSize),
+        totalItems: response.count || 0,
+        itemsPerPage: pageSize
+      }
+
+      filters.value = { ...filterParams }
+
+      return response
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Error al cargar las fincas'
-      error.value = errorMessage
-      
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
-      
+      const errorInfo = handleApiError(err, { logError: true })
+      error.value = errorInfo.message
       throw err
     } finally {
-      loading.value = false
+      isLoading.value = false
     }
   }
-  
+
   /**
-   * Load single finca by ID
+   * Load single finca details
    * @param {number} fincaId - Finca ID
    * @returns {Promise<Object>} Finca data
    */
   const loadFinca = async (fincaId) => {
+    isLoading.value = true
+    error.value = null
+
     try {
-      loading.value = true
-      error.value = null
-      
-      const data = await fincasApi.getFincaById(fincaId)
-      finca.value = data
-      
-      return data
+      const fincaData = await getFincaById(fincaId)
+      currentFinca.value = fincaData
+      return fincaData
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Error al cargar la finca'
-      error.value = errorMessage
-      
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
-      
+      const errorInfo = handleApiError(err, { logError: true })
+      error.value = errorInfo.message
       throw err
     } finally {
-      loading.value = false
+      isLoading.value = false
     }
   }
-  
+
   /**
    * Create finca
    * @param {Object} fincaData - Finca data
    * @returns {Promise<Object>} Created finca
    */
-  const createFinca = async (fincaData) => {
+  const create = async (fincaData) => {
+    isLoading.value = true
+    error.value = null
+
     try {
-      loading.value = true
-      error.value = null
-      
-      // Validate data
-      const validation = fincasApi.validateFincaData(fincaData)
-      if (!validation.isValid) {
-        throw new Error(validation.errors.join(', '))
+      const newFinca = await createFinca(fincaData)
+
+      // Add to local state
+      fincas.value.unshift(newFinca)
+      pagination.value.totalItems += 1
+
+      if (onFincaCreate && typeof onFincaCreate === 'function') {
+        onFincaCreate(newFinca)
       }
-      
-      // Format data
-      const formatted = fincasApi.formatFincaData(fincaData)
-      
-      const result = await fincasApi.createFinca(formatted)
-      
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Finca creada',
-        message: 'La finca ha sido creada exitosamente'
-      })
-      
-      return result
+
+      return newFinca
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Error al crear la finca'
-      error.value = errorMessage
-      
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
-      
+      const errorInfo = handleApiError(err, { logError: true })
+      error.value = errorInfo.message
       throw err
     } finally {
-      loading.value = false
+      isLoading.value = false
     }
   }
-  
+
   /**
    * Update finca
    * @param {number} fincaId - Finca ID
-   * @param {Object} fincaData - Updated finca data
+   * @param {Object} updateData - Data to update
    * @returns {Promise<Object>} Updated finca
    */
-  const updateFinca = async (fincaId, fincaData) => {
+  const update = async (fincaId, updateData) => {
+    isLoading.value = true
+    error.value = null
+
     try {
-      loading.value = true
-      error.value = null
-      
-      // Validate data
-      const validation = fincasApi.validateFincaData(fincaData)
-      if (!validation.isValid) {
-        throw new Error(validation.errors.join(', '))
+      const updatedFinca = await updateFinca(fincaId, updateData)
+
+      // Update in local state
+      const index = fincas.value.findIndex(f => f.id === fincaId)
+      if (index !== -1) {
+        fincas.value[index] = updatedFinca
       }
-      
-      // Format data
-      const formatted = fincasApi.formatFincaData(fincaData)
-      
-      const result = await fincasApi.updateFinca(fincaId, formatted)
-      
-      // Update local state
-      if (finca.value && finca.value.id === fincaId) {
-        finca.value = result
+
+      if (currentFinca.value && currentFinca.value.id === fincaId) {
+        currentFinca.value = updatedFinca
       }
-      
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Finca actualizada',
-        message: 'La finca ha sido actualizada exitosamente'
-      })
-      
-      return result
+
+      if (onFincaUpdate && typeof onFincaUpdate === 'function') {
+        onFincaUpdate(updatedFinca)
+      }
+
+      return updatedFinca
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Error al actualizar la finca'
-      error.value = errorMessage
-      
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
-      
+      const errorInfo = handleApiError(err, { logError: true })
+      error.value = errorInfo.message
       throw err
     } finally {
-      loading.value = false
+      isLoading.value = false
     }
   }
-  
+
   /**
-   * Delete (deactivate) finca
+   * Delete finca
    * @param {number} fincaId - Finca ID
-   * @returns {Promise<boolean>} Success status
+   * @returns {Promise<void>}
    */
-  const deleteFinca = async (fincaId) => {
+  const remove = async (fincaId) => {
+    isLoading.value = true
+    error.value = null
+
     try {
-      loading.value = true
-      error.value = null
-      
-      await fincasApi.deleteFinca(fincaId)
-      
+      await deleteFinca(fincaId)
+
       // Remove from local state
       fincas.value = fincas.value.filter(f => f.id !== fincaId)
-      if (finca.value && finca.value.id === fincaId) {
-        finca.value = null
+
+      if (currentFinca.value && currentFinca.value.id === fincaId) {
+        currentFinca.value = null
       }
-      
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Finca desactivada',
-        message: 'La finca ha sido desactivada exitosamente'
-      })
-      
-      return true
+
+      // Update pagination
+      pagination.value.totalItems = Math.max(0, pagination.value.totalItems - 1)
+
+      if (onFincaDelete && typeof onFincaDelete === 'function') {
+        onFincaDelete(fincaId)
+      }
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Error al desactivar la finca'
-      error.value = errorMessage
-      
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
-      
+      const errorInfo = handleApiError(err, { logError: true })
+      error.value = errorInfo.message
       throw err
     } finally {
-      loading.value = false
+      isLoading.value = false
     }
   }
-  
+
   /**
-   * Activate finca
-   * @param {number} fincaId - Finca ID
-   * @returns {Promise<Object>} Activated finca
+   * Set filters
+   * @param {Object} newFilters - New filter values
    */
-  const activateFinca = async (fincaId) => {
-    try {
-      loading.value = true
-      error.value = null
-      
-      const result = await fincasApi.activateFinca(fincaId)
-      
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Finca reactivada',
-        message: 'La finca ha sido reactivada exitosamente'
-      })
-      
-      return result
-    } catch (err) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Error al reactivar la finca'
-      error.value = errorMessage
-      throw err
-    } finally {
-      loading.value = false
-    }
+  const setFilters = (newFilters) => {
+    filters.value = { ...filters.value, ...newFilters }
   }
-  
+
   /**
-   * Load lotes for a finca
-   * @param {number} fincaId - Finca ID
-   * @param {Object} params - Filter parameters
-   * @returns {Promise<Array>} List of lotes
+   * Clear filters
    */
-  const loadLotes = async (fincaId, params = {}) => {
-    try {
-      loading.value = true
-      error.value = null
-      
-      const data = await fincasApi.getLotesByFinca(fincaId, params)
-      lotes.value = Array.isArray(data.lotes || data) ? (data.lotes || data) : (data?.results || [])
-      
-      return lotes.value
-    } catch (err) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Error al cargar los lotes'
-      error.value = errorMessage
-      throw err
-    } finally {
-      loading.value = false
-    }
+  const clearFilters = () => {
+    filters.value = {}
   }
-  
+
   /**
-   * Load finca statistics
-   * @param {number} fincaId - Finca ID
-   * @returns {Promise<Object>} Statistics
+   * Set current finca
+   * @param {Object} finca - Finca object
    */
-  const loadStats = async (fincaId) => {
-    try {
-      return await fincasApi.getFincaStats(fincaId)
-    } catch (err) {
-      console.error('Error loading finca stats:', err)
-      throw err
-    }
+  const setCurrentFinca = (finca) => {
+    currentFinca.value = finca
   }
-  
+
   /**
-   * Format finca location
-   * @param {Object} fincaData - Finca data
-   * @returns {string} Formatted location
+   * Clear current finca
    */
-  const formatLocation = (fincaData) => {
-    if (!fincaData) return ''
-    if (fincaData.ubicacion_completa) return fincaData.ubicacion_completa
-    if (fincaData.municipio && fincaData.departamento) {
-      return `${fincaData.municipio}, ${fincaData.departamento}`
-    }
-    return fincaData.ubicacion || ''
+  const clearCurrentFinca = () => {
+    currentFinca.value = null
   }
-  
+
   /**
-   * Clear error state
+   * Reset state
+   */
+  const reset = () => {
+    fincas.value = []
+    currentFinca.value = null
+    isLoading.value = false
+    error.value = null
+    filters.value = {}
+    pagination.value = {
+      currentPage: 1,
+      totalPages: 1,
+      totalItems: 0,
+      itemsPerPage: 20
+    }
+  }
+
+  /**
+   * Clear error
    */
   const clearError = () => {
     error.value = null
   }
-  
+
   return {
     // State
-    loading,
-    error,
-    finca,
     fincas,
-    lotes,
-    analisis,
-    
+    currentFinca,
+    isLoading,
+    error,
+    filters,
+    pagination,
+
     // Computed
-    isAdmin,
-    isFarmer,
-    
+    hasFincas,
+    hasCurrentFinca,
+    hasError,
+
     // Methods
-    canEdit,
-    canDelete,
-    canView,
     loadFincas,
     loadFinca,
-    createFinca,
-    updateFinca,
-    deleteFinca,
-    activateFinca,
-    loadLotes,
-    loadStats,
-    formatLocation,
-    clearError,
-    
-    // Utilities
-    formatDate,
-    
-    // API helpers
-    getDepartamentosColombia: fincasApi.getDepartamentosColombia,
-    getMunicipiosByDepartamento: fincasApi.getMunicipiosByDepartamento,
-    validateFincaData: fincasApi.validateFincaData,
-    formatFincaData: fincasApi.formatFincaData
+    create,
+    update,
+    remove,
+    setFilters,
+    clearFilters,
+    setCurrentFinca,
+    clearCurrentFinca,
+    reset,
+    clearError
   }
 }
-

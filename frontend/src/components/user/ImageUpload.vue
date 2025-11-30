@@ -210,10 +210,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { predictImage, predictImageYolo, predictImageSmart } from '@/services/predictionApi.js'
-import { predictImage as predictImageNew } from '@/services/api.js'
 import { createImageFormData } from '@/utils/formDataUtils'
 import { useFileUpload } from '@/composables/useFileUpload'
+import { usePrediction } from '@/composables/usePrediction'
 
 const props = defineProps({
   predictionMethod: {
@@ -239,9 +238,6 @@ const error = fileUpload.error
 const fileInput = fileUpload.fileInput
 const formatFileSize = fileUpload.formatFileSize
 
-// Estado adicional
-const isLoading = ref(false)
-
 // Datos del formulario
 const formData = ref({
   batch_number: '',
@@ -249,9 +245,23 @@ const formData = ref({
   notes: ''
 })
 
+// Use prediction composable
+const prediction = usePrediction({
+  method: props.predictionMethod,
+  onSuccess: (result) => {
+    emit('prediction-result', result)
+    resetForm()
+  },
+  onError: (errorInfo) => {
+    fileUpload.error.value = errorInfo.message
+    emit('prediction-error', errorInfo.originalError)
+  }
+})
+
 // Computed
+const isLoading = computed(() => prediction.isLoading.value)
 const canSubmit = computed(() => {
-  return fileUpload.hasFile.value && !isLoading.value
+  return fileUpload.hasFile.value && !isLoading.value && !fileUpload.error.value
 })
 
 // Método principal para enviar predicción
@@ -261,96 +271,31 @@ const handleSubmit = async () => {
     return
   }
 
-  isLoading.value = true
   fileUpload.error.value = ''
 
   try {
     // Crear FormData con imagen y metadatos
     const requestFormData = createImageFormData(selectedFile.value, formData.value)
     
-    // Llamar a la API según el método seleccionado
-    let result
-    switch (props.predictionMethod) {
-      case 'yolo':
-        result = await predictImageYolo(requestFormData)
-        break
-      case 'smart':
-        result = await predictImageSmart(requestFormData, {
-          returnCroppedImage: true,
-          returnTransparentImage: true
-        })
-        break
-      case 'cacaoscan': {
-        // Usar la nueva función predictImage del servicio api.js
-        const newFormData = createImageFormData(selectedFile.value, formData.value)
-        result = { success: true, data: await predictImageNew(newFormData) }
-        break
-      }
-      case 'traditional':
-      default:
-        result = await predictImage(requestFormData)
-        break
-    }
-    
-    // Emitir evento con resultado exitoso
-    if (result.success) {
-      // Mapear datos de la API al formato esperado por PredictionResults
-      const mappedData = mapApiResponseToPredictionData(result.data)
-      emit('prediction-result', mappedData)
-    } else {
-      throw new Error(result.error || 'Error en la predicción')
-    }
-    
-    // Limpiar formulario después del éxito
-    resetForm()
-    
+    // Execute prediction using composable
+    await prediction.executePrediction(requestFormData, {
+      returnCroppedImage: props.predictionMethod === 'smart',
+      returnTransparentImage: props.predictionMethod === 'smart'
+    })
   } catch (err) {
-    fileUpload.error.value = err.message || 'Error al procesar la imagen'
-    emit('prediction-error', err)
-  } finally {
-    isLoading.value = false
+    // Error is already handled by composable
+    console.error('Error en predicción:', err)
   }
 }
 
 const resetForm = () => {
-  fileUpload.reset()
+  fileUpload.removeSelectedFile()
   formData.value = {
     batch_number: '',
     origin: '',
     notes: ''
   }
-}
-
-// Función para mapear respuesta de API al formato esperado por PredictionResults
-const mapApiResponseToPredictionData = (apiData) => {
-  return {
-    id: apiData.id || Date.now(),
-    width: apiData.ancho_mm || apiData.width,
-    height: apiData.alto_mm || apiData.altura_mm || apiData.height,
-    thickness: apiData.grosor_mm || apiData.thickness,
-    predicted_weight: apiData.peso_g || apiData.peso_estimado || apiData.predicted_weight,
-    prediction_method: apiData.method || apiData.prediction_method || props.predictionMethod || 'unknown',
-    confidence_level: (() => {
-      if (apiData.nivel_confianza) {
-        if (apiData.nivel_confianza > 0.8) {
-          return 'high'
-        } else if (apiData.nivel_confianza > 0.6) {
-          return 'medium'
-        }
-        return 'low'
-      }
-      return apiData.confidence_level || 'unknown'
-    })(),
-    confidence_score: apiData.nivel_confianza || apiData.confidence_score || 0,
-    processing_time: apiData.processing_time || 0,
-    image_url: apiData.image_url,
-    created_at: apiData.created_at,
-    // Campos adicionales específicos de cada método
-    detection_info: apiData.detection_info,
-    smart_crop: apiData.smart_crop,
-    derived_metrics: apiData.derived_metrics,
-    weight_comparison: apiData.weight_comparison
-  }
+  prediction.reset()
 }
 </script>
 

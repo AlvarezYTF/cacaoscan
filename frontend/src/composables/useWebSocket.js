@@ -199,55 +199,6 @@ export function useWebSocket() {
   const lastMessage = ref(null)
   const messageHistory = ref([])
   
-  // Crear conexiones usando useWebSocketBase (se recrean en connect con URLs correctas)
-  const createInitialConnections = () => {
-    return {
-      notification: useWebSocketBase({
-        url: '',
-        onMessage: handleNotificationMessage,
-        onError: (error) => {
-          connectionError.value = 'Error de conexión de notificaciones'
-          emit('connection-error', { type: 'notifications', error })
-        },
-        reconnectInterval: wsConfig.reconnectDelay,
-        maxReconnectAttempts: 5
-      }),
-      systemStatus: useWebSocketBase({
-        url: '',
-        onMessage: handleSystemStatusMessage,
-        onError: (error) => {
-          emit('connection-error', { type: 'system-status', error })
-        },
-        reconnectInterval: wsConfig.reconnectDelay,
-        maxReconnectAttempts: 5
-      }),
-      audit: useWebSocketBase({
-        url: '',
-        onMessage: handleAuditMessage,
-        onError: (error) => {
-          emit('connection-error', { type: 'audit', error })
-        },
-        reconnectInterval: wsConfig.reconnectDelay,
-        maxReconnectAttempts: 5
-      }),
-      userStats: useWebSocketBase({
-        url: '',
-        onMessage: handleUserStatsMessage,
-        onError: (error) => {
-          emit('connection-error', { type: 'user-stats', error })
-        },
-        reconnectInterval: wsConfig.reconnectDelay,
-        maxReconnectAttempts: 5
-      })
-    }
-  }
-  
-  // Mantener referencias a las conexiones
-  let connections = createInitialConnections()
-  const notificationSocket = connections.notification
-  const systemStatusSocket = connections.systemStatus
-  const auditSocket = connections.audit
-  const userStatsSocket = connections.userStats
   
   // Estado agregado
   const connectionError = ref(null)
@@ -398,57 +349,71 @@ export function useWebSocket() {
       timestamp: new Date().toISOString()
     }
     
-    notificationSocket.send(pingMessage)
-    systemStatusSocket.send(pingMessage)
-    auditSocket.send(pingMessage)
-    userStatsSocket.send(pingMessage)
+    if (notificationSocket) notificationSocket.send(pingMessage)
+    if (systemStatusSocket) systemStatusSocket.send(pingMessage)
+    if (auditSocket) auditSocket.send(pingMessage)
+    if (userStatsSocket) userStatsSocket.send(pingMessage)
   }
   
   // Métodos específicos de notificaciones
   const markNotificationRead = (notificationId) => {
-    notificationSocket.send({
-      type: 'mark_read',
-      notification_id: notificationId
-    })
+    if (notificationSocket) {
+      notificationSocket.send({
+        type: 'mark_read',
+        notification_id: notificationId
+      })
+    }
   }
   
   const markAllNotificationsRead = () => {
-    notificationSocket.send({
-      type: 'mark_all_read'
-    })
+    if (notificationSocket) {
+      notificationSocket.send({
+        type: 'mark_all_read'
+      })
+    }
   }
   
   const getNotificationStats = () => {
-    notificationSocket.send({
-      type: 'get_stats'
-    })
+    if (notificationSocket) {
+      notificationSocket.send({
+        type: 'get_stats'
+      })
+    }
   }
   
   // Métodos específicos de auditoría
   const getAuditStats = () => {
-    auditSocket.send({
-      type: 'get_audit_stats'
-    })
+    if (auditSocket) {
+      auditSocket.send({
+        type: 'get_audit_stats'
+      })
+    }
   }
   
   const getRecentActivity = () => {
-    auditSocket.send({
-      type: 'get_recent_activity'
-    })
+    if (auditSocket) {
+      auditSocket.send({
+        type: 'get_recent_activity'
+      })
+    }
   }
   
   // Métodos específicos de sistema
   const getSystemStatus = () => {
-    systemStatusSocket.send({
-      type: 'get_status'
-    })
+    if (systemStatusSocket) {
+      systemStatusSocket.send({
+        type: 'get_status'
+      })
+    }
   }
   
   // Métodos específicos de usuarios
   const getUserStats = () => {
-    userStatsSocket.send({
-      type: 'get_stats'
-    })
+    if (userStatsSocket) {
+      userStatsSocket.send({
+        type: 'get_stats'
+      })
+    }
   }
   
   // Computed para estado agregado

@@ -206,9 +206,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useReports } from '@/composables/useReports'
-import { getFincas } from '@/services/fincasApi'
+import { useFincas } from '@/composables/useFincas'
 
 const emit = defineEmits(['reporte-generado', 'ver-detalles'])
 
@@ -222,8 +222,10 @@ const {
   resetForm
 } = useReports()
 
+// Use fincas composable
+const { fincas, loadFincas } = useFincas()
+
 const reporteGenerado = ref(null)
-const fincas = ref([])
 
 const tipoReporteOpciones = computed(() => reportTypes.value.map(type => ({
   value: type.value,
@@ -237,8 +239,7 @@ const formatoOpciones = computed(() => reportFormats.value.map(format => ({
 
 const cargarFincas = async () => {
   try {
-    const data = await getFincas()
-    fincas.value = Array.isArray(data) ? data : (data?.results || [])
+    await loadFincas({}, 1, 100) // Load first 100 fincas
   } catch (err) {
     console.error('Error cargando fincas:', err)
   }

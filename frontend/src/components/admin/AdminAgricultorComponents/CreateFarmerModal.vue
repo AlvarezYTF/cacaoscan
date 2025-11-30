@@ -335,10 +335,8 @@ import authApi from '@/services/authApi'
 import { useCatalogos } from '@/composables/useCatalogos'
 import { useFormValidation } from '@/composables/useFormValidation'
 import { useBirthdateRange } from '@/composables/useBirthdateRange'
+import { useNotifications } from '@/composables/useNotifications'
 import BaseModal from '@/components/common/BaseModal.vue'
-
-// 4. Utils
-import Swal from 'sweetalert2'
 
 // Error messages constructed dynamically to avoid static analysis detection
 const buildErrorMessages = () => {
@@ -508,6 +506,7 @@ const {
 
 const { errors, isValidEmail, isValidPhone, isValidDocument, isValidBirthdate, validatePassword, clearErrors } = useFormValidation()
 const { maxBirthdate, minBirthdate } = useBirthdateRange()
+const { showSuccess, showError } = useNotifications()
 // State
 const isOpen = ref(false)
 const isSubmitting = ref(false)
@@ -662,12 +661,7 @@ const buildFarmerData = () => {
 }
 
 const handleConnectionError = () => {
-  Swal.fire({
-    icon: 'error',
-    title: 'Error de conexión',
-    text: 'Error de conexión con el servidor. Verifica que el endpoint esté disponible.',
-    confirmButtonColor: '#ef4444'
-  })
+  showError('Error de conexión con el servidor. Verifica que el endpoint esté disponible.')
 }
 
 const processFieldErrors = (data) => {
@@ -751,12 +745,7 @@ const handleSubmit = async () => {
     const farmerData = buildFarmerData()
     const response = await authApi.register(farmerData)
 
-    Swal.fire({
-      icon: 'success',
-      title: 'Agricultor creado',
-      text: 'El agricultor ha sido registrado exitosamente',
-      confirmButtonColor: '#10b981'
-    })
+    showSuccess('El agricultor ha sido registrado exitosamente')
 
     emit('farmer-created', response)
     resetForm()
@@ -776,20 +765,9 @@ const handleSubmit = async () => {
 
       processFieldErrors(data)
       const errorMessage = extractErrorMessage(data)
-
-      Swal.fire({
-        icon: 'error',
-        title: 'Error al crear el agricultor',
-        html: errorMessage.replaceAll('\n', '<br>'),
-        confirmButtonColor: '#ef4444'
-      })
+      showError(errorMessage.replaceAll('\n', ' '))
     } else {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error al crear el agricultor',
-        html: (error.message || 'Error al crear el agricultor').replaceAll('\n', '<br>'),
-        confirmButtonColor: '#ef4444'
-      })
+      showError(error.message || 'Error al crear el agricultor')
     }
   } finally {
     isSubmitting.value = false
