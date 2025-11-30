@@ -69,6 +69,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { generateSecureId } from '@/utils/security'
 
 const props = defineProps({
   modelValue: {
@@ -139,7 +140,7 @@ const props = defineProps({
   },
   id: {
     type: String,
-    default: () => `select-${Math.random().toString(36).substr(2, 9)}`
+    default: () => generateSecureId('select')
   }
 })
 
@@ -167,7 +168,7 @@ const selectClass = computed(() => {
     : ''
 
   const prefixPadding = props.prefixIcon || props.$slots.prefix ? 'pl-10' : ''
-  const suffixPadding = !props.multiple ? 'pr-10' : ''
+  const suffixPadding = props.multiple ? '' : 'pr-10'
 
   return [
     baseClasses,

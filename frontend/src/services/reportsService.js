@@ -60,7 +60,7 @@ class ReportsService {
     // ya que apiClient devuelve JSON por defecto
     const token = localStorage.getItem('access_token') || localStorage.getItem('token')
     const url = `${this.baseURL}/${reportId}/download/`
-    const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`
+    const fullUrl = url.startsWith('http') ? url : `${globalThis.location.origin}${url}`
     
     const response = await fetch(fullUrl, {
       headers: {

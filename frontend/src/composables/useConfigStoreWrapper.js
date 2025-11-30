@@ -5,6 +5,99 @@ import { computed } from 'vue'
 import { useConfigStore } from '@/stores/config'
 
 /**
+ * Validates domain labels
+ * @param {string[]} labels - Domain labels to validate
+ * @returns {boolean} True if all labels are valid
+ */
+const validateDomainLabels = (labels) => {
+  for (const label of labels) {
+    if (label.length === 0 || label.length > 63) {
+      return false
+    }
+    if (!/^[A-Za-z0-9-]+$/.test(label)) {
+      return false
+    }
+    if (label.startsWith('-') || label.endsWith('-')) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * Validates local part of email
+ * @param {string} local - Local part to validate
+ * @returns {boolean} True if local part is valid
+ */
+const validateLocalPart = (local) => {
+  if (local.length === 0 || local.length > 64) {
+    return false
+  }
+  if (/\s/.test(local)) {
+    return false
+  }
+  if (!/^[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~.]+$/.test(local)) {
+    return false
+  }
+  if (local.includes('..')) {
+    return false
+  }
+  return true
+}
+
+/**
+ * Validates domain part of email
+ * @param {string} domain - Domain part to validate
+ * @returns {boolean} True if domain part is valid
+ */
+const validateDomainPart = (domain) => {
+  if (domain.length === 0 || domain.length > 255) {
+    return false
+  }
+  if (/\s/.test(domain)) {
+    return false
+  }
+  if (!domain.includes('.')) {
+    return false
+  }
+  if (domain.includes('..')) {
+    return false
+  }
+  const labels = domain.split('.')
+  return validateDomainLabels(labels)
+}
+
+/**
+ * Secure email validation function that prevents ReDoS attacks
+ * Uses bounded checks instead of complex regex to avoid catastrophic backtracking
+ * 
+ * SECURITY: This validation avoids ReDoS by:
+ * - Using length bounds before regex checks
+ * - Splitting validation into multiple simple checks
+ * - Using simple regex patterns without nested quantifiers
+ * - Bounding all regex operations to prevent exponential backtracking
+ * 
+ * @param {string} email - Email to validate
+ * @returns {boolean} True if email is valid
+ */
+const isValidEmailSecure = (email) => {
+  if (!email || typeof email !== 'string') {
+    return false
+  }
+  if (email.length > 320) {
+    return false
+  }
+
+  const parts = email.split('@')
+  if (parts.length !== 2) {
+    return false
+  }
+
+  const [local, domain] = parts
+  return validateLocalPart(local) && validateDomainPart(domain)
+}
+
+/**
  * Provides config store wrapper with helpers
  * @returns {Object} Config store wrapper with helpers
  */
@@ -105,8 +198,10 @@ export function useConfigStoreWrapper() {
         if (!val || typeof val !== 'string') {
           return 'El email de contacto es requerido'
         }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(val)) {
+        // Use secure email validation to prevent ReDoS attacks
+        // This validation uses bounded checks instead of vulnerable regex patterns
+        // SonarQube S5852: ReDoS protection - regex operations are bounded by length checks
+        if (!isValidEmailSecure(val)) {
           return 'El email de contacto no es válido'
         }
         return null

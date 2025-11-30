@@ -1,3 +1,4 @@
+
 <template>
   <div class="form-field" :class="fieldClass">
     <label 
@@ -111,7 +112,7 @@
     </div>
 
     <!-- Custom Content Slot (for custom inputs) -->
-    <slot v-else></slot>
+    <slot v-else :fieldId="fieldId"></slot>
 
     <!-- Error Message -->
     <p v-if="error" class="text-red-600 text-xs mt-1">
@@ -210,9 +211,30 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'blur', 'focus', 'change'])
 
+/**
+ * Generates a unique field ID using cryptographically secure methods
+ * SonarQube S2245: Uses crypto.getRandomValues() instead of Math.random() for security
+ */
+const generateFieldId = () => {
+  // Use cryptographically secure random number generator for unique ID
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `field-${crypto.randomUUID()}`
+  }
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const array = new Uint8Array(9)
+    crypto.getRandomValues(array)
+    const randomStr = Array.from(array, byte => byte.toString(36)).join('').substring(0, 9)
+    return `field-${randomStr}`
+  }
+  // Fallback: Use timestamp + counter for uniqueness
+  const timestamp = Date.now().toString(36)
+  const counter = (globalThis.__fieldIdCounter = (globalThis.__fieldIdCounter || 0) + 1)
+  return `field-${timestamp}-${counter.toString(36)}`
+}
+
 // Generate unique field ID
 const fieldId = computed(() => {
-  return props.name || `field-${Math.random().toString(36).substr(2, 9)}`
+  return props.name || generateFieldId()
 })
 
 // Password visibility

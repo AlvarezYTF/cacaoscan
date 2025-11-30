@@ -3,7 +3,7 @@
  * Handles drag-drop, preview, validation, and file management
  */
 import { ref, computed } from 'vue'
-import { validateImageFile, getImageValidationError } from '@/utils/imageValidationUtils'
+import { getImageValidationError } from '@/utils/imageValidationUtils'
 
 /**
  * Create file upload composable
@@ -64,8 +64,10 @@ export function useFileUpload(options = {}) {
       reader.onload = (e) => {
         resolve(e.target.result)
       }
-      reader.onerror = (err) => {
-        reject(err)
+      reader.onerror = (event) => {
+        const errorMessage = event?.target?.error?.message || 'FileReader error occurred'
+        const error = new Error(errorMessage)
+        reject(error)
       }
       reader.readAsDataURL(file)
     })
@@ -202,11 +204,11 @@ export function useFileUpload(options = {}) {
     }
 
     // Add metadata
-    Object.entries(metadata).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(metadata)) {
       if (value !== null && value !== undefined && value !== '') {
         formData.append(key, value)
       }
-    })
+    }
 
     return formData
   }

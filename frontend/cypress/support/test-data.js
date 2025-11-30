@@ -214,7 +214,7 @@ export function createTestLote(overrides = {}) {
     identificador: 'LOTE-001',
     variedad: 'Criollo',
     fecha_plantacion: new Date().toISOString().split('T')[0],
-    area_hectareas: 5.0,
+    area_hectareas: 5,
     estado: 'activo',
     descripcion: 'Descripción de lote de prueba',
     ...overrides
@@ -252,7 +252,6 @@ export function createTestPrediction(overrides = {}) {
   }
 }
 
-// Export for convenience
 export default {
   TEST_CREDENTIALS,
   TEST_USERS,

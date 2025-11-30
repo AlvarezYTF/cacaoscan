@@ -2,7 +2,7 @@
  * Composable for quick actions functionality
  * Provides state and methods for dashboard quick actions
  */
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 /**
@@ -22,7 +22,7 @@ export function useQuickActions() {
    * @returns {Promise<void>}
    */
   const executeAction = async (action) => {
-    if (!action || !action.key) {
+    if (!action?.key) {
       throw new Error('Invalid action: action must have a key')
     }
 
@@ -45,9 +45,9 @@ export function useQuickActions() {
       // If action has an external URL, open it
       if (action.url) {
         if (action.external) {
-          window.open(action.url, '_blank')
+          globalThis.open(action.url, '_blank')
         } else {
-          window.location.href = action.url
+          globalThis.location.href = action.url
         }
         return
       }

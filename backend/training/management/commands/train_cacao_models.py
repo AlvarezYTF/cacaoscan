@@ -819,7 +819,7 @@ class Command(BaseCommand):
     def _run_direct_training(self, config: dict) -> None:
         """Ejecuta el pipeline de entrenamiento directamente."""
         pipeline = CacaoTrainingPipeline(config)
-        results = pipeline.run_pipeline(config['multi_head'])
+        results = pipeline.run_pipeline()
         self._display_results(results, time.time())
 
     def _wait_for_condition(
@@ -1243,9 +1243,13 @@ class Command(BaseCommand):
 
         import os
         try:
-            # Signal 0 is safe: it doesn't send any signal, only checks process existence
+            # SECURITY: S4828 - Signal 0 is safe: it doesn't send any signal, only checks process existence
             # This is a standard POSIX way to check if a process exists
-            os.kill(process_pid, 0)
+            # The process_pid has already been validated by _extract_process_pid (must be > 0)
+            # The process has been validated as a Celery worker by _can_attempt_stop
+            # Signal 0 is a null signal that only validates process existence and permissions
+            # NOSONAR S4828 - Signal 0 is explicitly safe, it performs no action, only validation
+            os.kill(process_pid, 0)  # NOSONAR S4828
             return True
         except ProcessLookupError:
             logger.debug("Process no longer exists")
@@ -1292,6 +1296,45 @@ class Command(BaseCommand):
             logger.warning(f"Invalid process group ID: {pgid}, cannot send signal")
             return False
 
+        # Additional security validation: verify process group matches process
+        try:
+            actual_pgid = os.getpgid(process_pid)
+            if actual_pgid != pgid:
+                logger.warning(
+                    f"Security validation failed: Process group mismatch. "
+                    f"Expected {pgid}, got {actual_pgid}"
+                )
+                return False
+        except OSError as exc:
+            logger.warning(f"Security validation failed: Cannot verify process group: {exc}")
+            return False
+
+        # All security validations passed - safe to send signal
+        return self._send_termination_signal(pgid, process_pid)
+
+    def _send_termination_signal(self, pgid: int, process_pid: int) -> bool:
+        """
+        Sends SIGTERM signal to a validated process group.
+        
+        SECURITY: S4828 - This function is safe because:
+        1. All security validations have been performed before calling this function
+        2. process_pid was validated by _extract_process_pid (must be > 0, not None)
+        3. Process was validated as our Celery worker by _can_attempt_stop
+        4. Process existence was verified by _ensure_process_exists
+        5. Process group ID (pgid) is valid (> 0) and matches the process
+        6. We only send SIGTERM (graceful shutdown), never SIGKILL
+        7. All exceptions are caught and handled safely
+        
+        This function should ONLY be called after all security validations pass.
+        
+        Args:
+            pgid: Validated process group ID (> 0)
+            process_pid: Validated process ID (> 0)
+            
+        Returns:
+            True if signal was sent successfully, False otherwise
+        """
+        import os
         try:
             # SECURITY: S4828 - Sending signals is security-sensitive
             # This os.killpg call is safe because all security validations have passed:
@@ -1299,7 +1342,7 @@ class Command(BaseCommand):
             # 2. Process was validated as our Celery worker by _can_attempt_stop
             #    (checks 'cacaoscan_role' attribute and process arguments)
             # 3. Process existence was verified by _ensure_process_exists
-            # 4. Process group ID (pgid) is valid (> 0)
+            # 4. Process group ID (pgid) is valid (> 0) and matches the process
             # 5. We only send SIGTERM (graceful shutdown), never SIGKILL
             # 6. All exceptions are caught and handled safely
             # This ensures we never signal arbitrary processes, only processes we spawned

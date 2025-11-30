@@ -197,7 +197,8 @@ export function parseChange(change) {
     return 0
   }
   
-  const match = change.match(/^([+-]?)(\d+\.?\d*)/)
+  const regex = /^([+-]?)(\d+\.?\d*)/
+  const match = regex.exec(change)
   if (!match) {
     return 0
   }

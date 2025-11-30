@@ -2,37 +2,34 @@
  * Unified API module exports
  * Centralizes all API domain modules for consistent access
  */
-import * as httpClient from '../httpClient'
-import * as fincasApi from '../fincasApi'
-import * as lotesApi from '../lotesApi'
-import * as personasApi from '../personasApi'
-import * as reportsApi from '../reportsApi'
-import * as catalogosApi from '../catalogosApi'
-import * as auditApi from '../auditApi'
-import * as predictionApi from '../predictionApi'
-import * as datasetApi from '../datasetApi'
-import * as adminApi from '../adminApi'
-import * as configApi from '../configApi'
 
 // Re-export HTTP client methods
-export const { get, post, put, patch, delete: del, upload, download } = httpClient
+export { get, post, put, patch, delete as del, upload, download, httpClient } from '../httpClient'
 
-// Export domain APIs
-export {
-  fincasApi,
-  lotesApi,
-  personasApi,
-  reportsApi,
-  catalogosApi,
-  auditApi,
-  predictionApi,
-  datasetApi,
-  adminApi,
-  configApi
-}
+// Re-export domain APIs using export...from
+export * as fincasApi from '../fincasApi'
+export * as lotesApi from '../lotesApi'
+export * as personasApi from '../personasApi'
+export * as reportsApi from '../reportsApi'
+export * as catalogosApi from '../catalogosApi'
+export * as auditApi from '../auditApi'
+export * as predictionApi from '../predictionApi'
+export * as datasetApi from '../datasetApi'
+export * as adminApi from '../adminApi'
+export * as configApi from '../configApi'
 
-// Export HTTP client for advanced usage
-export { httpClient }
+// Import for default export (needed for namespace access)
+import { httpClient } from '../httpClient'
+import * as fincasApiModule from '../fincasApi'
+import * as lotesApiModule from '../lotesApi'
+import * as personasApiModule from '../personasApi'
+import * as reportsApiModule from '../reportsApi'
+import * as catalogosApiModule from '../catalogosApi'
+import * as auditApiModule from '../auditApi'
+import * as predictionApiModule from '../predictionApi'
+import * as datasetApiModule from '../datasetApi'
+import * as adminApiModule from '../adminApi'
+import * as configApiModule from '../configApi'
 
 // Default export with all APIs organized
 export default {
@@ -40,15 +37,15 @@ export default {
   http: httpClient,
   
   // Domain APIs
-  fincas: fincasApi,
-  lotes: lotesApi,
-  personas: personasApi,
-  reports: reportsApi,
-  catalogos: catalogosApi,
-  audit: auditApi,
-  prediction: predictionApi,
-  dataset: datasetApi,
-  admin: adminApi,
-  config: configApi
+  fincas: fincasApiModule,
+  lotes: lotesApiModule,
+  personas: personasApiModule,
+  reports: reportsApiModule,
+  catalogos: catalogosApiModule,
+  audit: auditApiModule,
+  prediction: predictionApiModule,
+  dataset: datasetApiModule,
+  admin: adminApiModule,
+  config: configApiModule
 }
 

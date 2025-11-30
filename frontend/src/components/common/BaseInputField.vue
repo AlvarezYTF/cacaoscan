@@ -62,6 +62,38 @@
 <script setup>
 import { computed } from 'vue'
 
+/**
+ * Generates a unique ID for form elements
+ * Uses cryptographically secure methods when available
+ * 
+ * SECURITY NOTE: While this ID is not used for security purposes (only DOM identification),
+ * we use secure random generation to satisfy static analysis tools and best practices.
+ * 
+ * @param {string} prefix - Prefix for the ID (default: 'input')
+ * @returns {string} Unique ID string
+ */
+const generateUniqueId = (prefix = 'input') => {
+  // Use crypto.randomUUID() if available (modern browsers, cryptographically secure)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `${prefix}-${crypto.randomUUID()}`
+  }
+  
+  // Fallback: use crypto.getRandomValues() (cryptographically secure)
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const array = new Uint8Array(9)
+    crypto.getRandomValues(array)
+    // Convert to base36 string (similar format to Math.random().toString(36))
+    const randomStr = Array.from(array, byte => byte.toString(36)).join('').substring(0, 9)
+    return `${prefix}-${randomStr}`
+  }
+  
+  // Last resort: use timestamp + counter (not cryptographically secure but acceptable for DOM IDs)
+  // This is acceptable since DOM IDs are not used for security purposes
+  const timestamp = Date.now().toString(36)
+  const counter = (generateUniqueId.counter = (generateUniqueId.counter || 0) + 1)
+  return `${prefix}-${timestamp}-${counter.toString(36)}`
+}
+
 const props = defineProps({
   modelValue: {
     type: [String, Number],
@@ -152,7 +184,7 @@ const props = defineProps({
   },
   id: {
     type: String,
-    default: () => `input-${Math.random().toString(36).substr(2, 9)}`
+    default: () => generateUniqueId('input')
   }
 })
 

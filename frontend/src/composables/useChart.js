@@ -86,7 +86,7 @@ export function useChart(config) {
     }
 
     // Get current type value (handle both ref/computed and plain values)
-    const currentType = typeof type === 'function' || (type && typeof type.value !== 'undefined')
+    const currentType = typeof type === 'function' || type?.value !== undefined
       ? type.value
       : type
 
@@ -134,13 +134,14 @@ export function useChart(config) {
         chartInstance.data.labels.push(label)
       }
       if (Array.isArray(data)) {
-        chartInstance.data.datasets.forEach((dataset, index) => {
+        for (let index = 0; index < chartInstance.data.datasets.length; index++) {
+          const dataset = chartInstance.data.datasets[index]
           dataset.data.push(data[index] || 0)
-        })
+        }
       } else {
-        chartInstance.data.datasets.forEach((dataset) => {
+        for (const dataset of chartInstance.data.datasets) {
           dataset.data.push(data)
-        })
+        }
       }
       chartInstance.update()
     }
@@ -155,11 +156,11 @@ export function useChart(config) {
       if (chartInstance.data.labels && chartInstance.data.labels.length > index) {
         chartInstance.data.labels.splice(index, 1)
       }
-      chartInstance.data.datasets.forEach((dataset) => {
+      for (const dataset of chartInstance.data.datasets) {
         if (dataset.data.length > index) {
           dataset.data.splice(index, 1)
         }
-      })
+      }
       chartInstance.update()
     }
   }
@@ -267,7 +268,7 @@ export function useChart(config) {
   }
 
   // Watch for type changes - requires recreating chart (only if type is reactive)
-  if (typeof type === 'function' || (type && typeof type.value !== 'undefined')) {
+  if (typeof type === 'function' || type?.value !== undefined) {
     watch(type, () => {
       createChart(chartData, options)
     })

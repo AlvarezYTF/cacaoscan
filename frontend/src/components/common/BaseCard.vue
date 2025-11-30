@@ -133,7 +133,7 @@ const handleClick = (event) => {
   height: 2.5rem;
   border-radius: 0.5rem;
   background: #f3f4f6;
-  color: #6b7280;
+  color: #4b5563;
   flex-shrink: 0;
 }
 

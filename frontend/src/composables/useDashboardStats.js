@@ -333,9 +333,8 @@ export function useDashboardStats() {
     }
 
     const grouped = {}
-    const dateFormat = period === 'day' ? 'YYYY-MM-DD' : period === 'week' ? 'YYYY-[W]WW' : 'YYYY-MM'
 
-    data.forEach(item => {
+    for (const item of data) {
       const date = new Date(item.date || item.timestamp || item.created_at)
       const key = formatDateKey(date, period)
       
@@ -346,14 +345,15 @@ export function useDashboardStats() {
       if (item.value !== undefined) {
         grouped[key].values.push(item.value)
       }
-    })
+    }
 
-    const labels = Object.keys(grouped).sort()
+    const labels = Object.keys(grouped).sort((a, b) => a.localeCompare(b))
     const values = labels.map(key => {
       const group = grouped[key]
-      return group.values.length > 0
-        ? group.values.reduce((a, b) => a + b, 0) / group.values.length
-        : group.count
+      if (group.values.length > 0) {
+        return group.values.reduce((a, b) => a + b, 0) / group.values.length
+      }
+      return group.count
     })
 
     return {
@@ -421,17 +421,19 @@ export function useDashboardStats() {
       data: []
     }))
 
-    chartData.labels.forEach((label, index) => {
+    for (let index = 0; index < chartData.labels.length; index++) {
+      const label = chartData.labels[index]
       const labelDate = new Date(label)
       if (labelDate >= startDate && labelDate <= endDate) {
         filteredLabels.push(label)
-        chartData.datasets.forEach((dataset, datasetIndex) => {
+        for (let datasetIndex = 0; datasetIndex < chartData.datasets.length; datasetIndex++) {
+          const dataset = chartData.datasets[datasetIndex]
           if (dataset.data[index] !== undefined) {
             filteredDatasets[datasetIndex].data.push(dataset.data[index])
           }
-        })
+        }
       }
-    })
+    }
 
     return {
       labels: filteredLabels,

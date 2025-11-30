@@ -447,9 +447,6 @@ api.interceptors.response.use(
   }
 )
 
-// Re-export createFormDataRequest from utils for backward compatibility
-export { createFormDataRequest } from '@/utils/formDataUtils'
-
 // Función helper para manejar timeouts específicos
 export const createTimeoutRequest = (timeoutMs) => {
   return axios.create({
@@ -544,9 +541,6 @@ export async function predictImage(formData) {
     globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
-
-// Re-export createPredictionFormData from utils for backward compatibility
-export { createPredictionFormData } from '@/utils/formDataUtils'
 
 // Re-export validateImageFile from utils for backward compatibility
 export { validateImageFileObject as validateImageFile } from '@/utils/imageValidationUtils'

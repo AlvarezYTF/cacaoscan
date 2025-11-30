@@ -198,7 +198,7 @@ export function usePagination(options = {}) {
           query: {
             ...routeObj.query,
             page: currentPage.value > 1 ? currentPage.value : undefined,
-            page_size: itemsPerPage.value !== initialItemsPerPage ? itemsPerPage.value : undefined
+            page_size: itemsPerPage.value === initialItemsPerPage ? undefined : itemsPerPage.value
           }
         })
       }

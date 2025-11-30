@@ -5,7 +5,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Tuple
+from typing import Dict, List, Optional, Tuple
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 import logging
 
@@ -43,7 +43,7 @@ class CacaoScalers:
         
         logger.info(f"CacaoScalers initialized with LOG_TARGETS: {self.LOG_TARGETS}")
     
-    def _create_scaler(self) -> Union[StandardScaler, MinMaxScaler, RobustScaler]:
+    def _create_scaler(self) -> StandardScaler | MinMaxScaler | RobustScaler:
         """Crea un escalador según el tipo especificado."""
         if self.scaler_type == "standard":
             return StandardScaler()
@@ -54,7 +54,52 @@ class CacaoScalers:
         else:
             raise ValueError(f"Tipo de escalador '{self.scaler_type}' no soportado")
     
-    def fit(self, data: Union[pd.DataFrame, Dict[str, np.ndarray]]) -> None:
+    def _convert_dataframe_to_dict(self, data: pd.DataFrame) -> Dict[str, np.ndarray]:
+        """Convierte DataFrame a diccionario de arrays numpy 2D."""
+        target_data = {}
+        for target in TARGETS:
+            if target in data.columns:
+                target_data[target] = data[target].values.reshape(-1, 1)
+            else:
+                raise ValueError(f"Columna '{target}' no encontrada en DataFrame")
+        return target_data
+
+    def _convert_dict_to_2d_arrays(self, data: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        """Convierte diccionario a arrays numpy 2D."""
+        target_data = {}
+        for target in TARGETS:
+            if target not in data:
+                raise ValueError(f"Target '{target}' no encontrado en datos")
+            
+            target_array = data[target]
+            if not isinstance(target_array, np.ndarray):
+                target_array = np.array(target_array)
+            
+            if target_array.ndim == 1:
+                target_data[target] = target_array.reshape(-1, 1)
+            elif target_array.ndim == 2:
+                target_data[target] = target_array
+            else:
+                raise ValueError(f"Array de target '{target}' tiene dimensión inválida: {target_array.ndim}")
+        
+        return target_data
+
+    def _convert_to_dict(self, data: pd.DataFrame | Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        """Convierte datos a diccionario de arrays numpy 2D."""
+        if isinstance(data, pd.DataFrame):
+            return self._convert_dataframe_to_dict(data)
+        return self._convert_dict_to_2d_arrays(data)
+    
+    def _apply_log_transform(self, target: str, target_array: np.ndarray) -> np.ndarray:
+        """Aplica transformación log1p si el target lo requiere."""
+        if target in self.LOG_TARGETS:
+            transformed = np.log1p(target_array)
+            logger.info(f"Applied log1p transform to {target} before scaling")
+            return transformed
+        logger.debug(f"No log transform for {target}")
+        return target_array
+    
+    def fit(self, data: pd.DataFrame | Dict[str, np.ndarray]) -> None:
         """
         Ajusta los escaladores a los datos de entrenamiento.
         
@@ -63,46 +108,14 @@ class CacaoScalers:
         """
         logger.info(f"Ajustando escaladores {self.scaler_type} para {len(TARGETS)} targets")
         
-        # Convertir a diccionario si es DataFrame
-        if isinstance(data, pd.DataFrame):
-            target_data = {}
-            for target in TARGETS:
-                if target in data.columns:
-                    target_data[target] = data[target].values.reshape(-1, 1)
-                else:
-                    raise ValueError(f"Columna '{target}' no encontrada en DataFrame")
-        else:
-            # Si es diccionario, asegurar que los arrays sean 2D para los scalers
-            target_data = {}
-            for target in TARGETS:
-                if target not in data:
-                    raise ValueError(f"Target '{target}' no encontrado en datos")
-                
-                target_array = data[target]
-                # Asegurar que sea array numpy
-                if not isinstance(target_array, np.ndarray):
-                    target_array = np.array(target_array)
-                
-                # Reshape a 2D si es 1D
-                if target_array.ndim == 1:
-                    target_data[target] = target_array.reshape(-1, 1)
-                elif target_array.ndim == 2:
-                    target_data[target] = target_array
-                else:
-                    raise ValueError(f"Array de target '{target}' tiene dimensión inválida: {target_array.ndim}")
+        target_data = self._convert_to_dict(data)
         
-        # Crear y ajustar escalador para cada target
         for target in TARGETS:
             if target not in target_data:
                 raise ValueError(f"Target '{target}' no encontrado en datos")
             
-            # Aplicar log1p SOLO a grosor y peso ANTES de normalizar
             target_array = target_data[target].copy()
-            if target in self.LOG_TARGETS:
-                target_array = np.log1p(target_array)
-                logger.info(f"Applied log1p transform to {target} before scaling")
-            else:
-                logger.debug(f"No log transform for {target}")
+            target_array = self._apply_log_transform(target, target_array)
             
             scaler = self._create_scaler()
             scaler.fit(target_array)
@@ -113,7 +126,7 @@ class CacaoScalers:
         self.is_fitted = True
         logger.info("Escaladores ajustados exitosamente")
     
-    def transform(self, data: Union[pd.DataFrame, Dict[str, np.ndarray]]) -> Dict[str, np.ndarray]:
+    def transform(self, data: pd.DataFrame | Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
         Transforma los datos usando los escaladores ajustados.
         
@@ -126,43 +139,15 @@ class CacaoScalers:
         if not self.is_fitted:
             raise ValueError("Los escaladores deben ser ajustados antes de transformar")
         
-        # Convertir a diccionario si es DataFrame
-        if isinstance(data, pd.DataFrame):
-            target_data = {}
-            for target in TARGETS:
-                if target in data.columns:
-                    target_data[target] = data[target].values.reshape(-1, 1)
-                else:
-                    raise ValueError(f"Columna '{target}' no encontrada en DataFrame")
-        else:
-            # Si es diccionario, asegurar que los arrays sean 2D para los scalers
-            target_data = {}
-            for target in TARGETS:
-                if target not in data:
-                    raise ValueError(f"Target '{target}' no encontrado en datos")
-                
-                target_array = data[target]
-                # Asegurar que sea array numpy
-                if not isinstance(target_array, np.ndarray):
-                    target_array = np.array(target_array)
-                
-                # Reshape a 2D si es 1D
-                if target_array.ndim == 1:
-                    target_data[target] = target_array.reshape(-1, 1)
-                elif target_array.ndim == 2:
-                    target_data[target] = target_array
-                else:
-                    raise ValueError(f"Array de target '{target}' tiene dimensión inválida: {target_array.ndim}")
-        
+        target_data = self._convert_to_dict(data)
         transformed_data = {}
+        
         for target in TARGETS:
             if target not in target_data:
                 raise ValueError(f"Target '{target}' no encontrado en datos")
             
-            # Aplicar log1p SOLO a grosor y peso ANTES de transformar
             target_array = target_data[target].copy()
-            if target in self.LOG_TARGETS:
-                target_array = np.log1p(target_array)
+            target_array = self._apply_log_transform(target, target_array)
             
             transformed = self.scalers[target].transform(target_array)
             transformed_data[target] = transformed.flatten()
@@ -200,7 +185,7 @@ class CacaoScalers:
             
         return original_data
     
-    def fit_transform(self, data: Union[pd.DataFrame, Dict[str, np.ndarray]]) -> Dict[str, np.ndarray]:
+    def fit_transform(self, data: pd.DataFrame | Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
         Ajusta y transforma los datos en una sola operación.
         
@@ -319,7 +304,7 @@ def save_scalers(
 
 
 def create_scalers_from_data(
-    data: Union[pd.DataFrame, Dict[str, np.ndarray]],
+    data: pd.DataFrame | Dict[str, np.ndarray],
     scaler_type: str = "standard"
 ) -> CacaoScalers:
     """

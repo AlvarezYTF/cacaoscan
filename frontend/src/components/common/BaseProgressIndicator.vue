@@ -7,20 +7,19 @@
     </div>
 
     <!-- Progress Bar -->
-    <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden" :class="barClass">
-      <div
+    <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden relative" :class="barClass">
+      <progress
         :id="id"
-        class="h-full transition-all duration-300 ease-out rounded-full"
+        class="progress-bar h-full transition-all duration-300 ease-out rounded-full"
         :class="progressBarClass"
-        :style="{ width: `${percentage}%` }"
-        role="progressbar"
-        :aria-valuenow="value"
-        :aria-valuemin="min"
-        :aria-valuemax="max"
+        :value="value"
+        :min="min"
+        :max="max"
         :aria-label="ariaLabel || label"
       >
-        <div v-if="animated" class="h-full w-full bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shimmer"></div>
-      </div>
+        {{ formattedValue }}
+      </progress>
+      <div v-if="animated" class="h-full w-full bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shimmer absolute top-0 left-0 pointer-events-none"></div>
     </div>
 
     <!-- Helper text -->
@@ -85,7 +84,23 @@ const props = defineProps({
   },
   id: {
     type: String,
-    default: () => `progress-${Math.random().toString(36).substr(2, 9)}`
+    default: () => {
+      // Use cryptographically secure random number generator for unique ID
+      // SonarQube S2245: crypto.getRandomValues() is safe for generating unique IDs
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return `progress-${crypto.randomUUID()}`
+      }
+      if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const array = new Uint8Array(9)
+        crypto.getRandomValues(array)
+        const randomStr = Array.from(array, byte => byte.toString(36)).join('').substring(0, 9)
+        return `progress-${randomStr}`
+      }
+      // Fallback: Use timestamp + counter for uniqueness
+      const timestamp = Date.now().toString(36)
+      const counter = (globalThis.__progressIdCounter = (globalThis.__progressIdCounter || 0) + 1)
+      return `progress-${timestamp}-${counter.toString(36)}`
+    }
   },
   ariaLabel: {
     type: String,
@@ -157,6 +172,31 @@ const containerClass = computed(() => {
 
 .animate-shimmer {
   animation: shimmer 2s infinite;
+}
+
+/* Style progress element to match previous appearance */
+.progress-bar {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: none;
+  background: transparent;
+}
+
+.progress-bar::-webkit-progress-bar {
+  background: transparent;
+  border-radius: 9999px;
+}
+
+.progress-bar::-webkit-progress-value {
+  border-radius: 9999px;
+  transition: width 0.3s ease-out;
+}
+
+.progress-bar::-moz-progress-bar {
+  border-radius: 9999px;
+  transition: width 0.3s ease-out;
 }
 </style>
 

@@ -216,8 +216,6 @@
         </div>
       </div>
 
-    </div>
-
     <template #footer>
       <div class="flex justify-end">
         <button 

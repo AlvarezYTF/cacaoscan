@@ -34,5 +34,9 @@
   "invalidUser": {
     "email": "invalid@test.com",
     "password": "WrongPassword123!"
+  },
+  "validationTestUser": {
+    "email": "email-invalido",
+    "password": "TestPassword123!"
   }
 }

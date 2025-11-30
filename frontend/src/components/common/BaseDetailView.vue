@@ -21,12 +21,12 @@
         </nav>
 
         <!-- Loading State -->
-        <div v-if="loading" class="text-center py-5" role="status" aria-live="polite">
+        <output v-if="loading" class="text-center py-5 block" aria-live="polite">
           <div class="spinner-border text-primary" :aria-label="loadingText || 'Cargando información'">
             <span class="visually-hidden">{{ loadingText || 'Cargando...' }}</span>
           </div>
           <p class="mt-3">{{ loadingText || 'Cargando información...' }}</p>
-        </div>
+        </output>
 
         <!-- Error State -->
         <div v-else-if="error" class="alert alert-danger" role="alert">
@@ -75,7 +75,7 @@
               </div>
               <div v-if="$slots.header-content || mainContent" class="card-body">
                 <slot name="header-content">
-                  <div v-if="mainContent" v-html="mainContent"></div>
+                  <div v-if="mainContent">{{ sanitizedMainContent }}</div>
                 </slot>
               </div>
             </div>
@@ -84,7 +84,7 @@
             <slot name="main">
               <div v-if="mainContent" class="card">
                 <div class="card-body">
-                  <div v-html="mainContent"></div>
+                  <div>{{ sanitizedMainContent }}</div>
                 </div>
               </div>
             </slot>
@@ -144,7 +144,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { escapeHTML } from '@/utils/security'
 
 const props = defineProps({
   // Breadcrumbs
@@ -278,6 +278,16 @@ const handleEdit = () => {
 const handleRetry = () => {
   emit('retry')
 }
+
+// Sanitize HTML content to prevent XSS attacks
+const sanitizedMainContent = computed(() => {
+  if (!props.mainContent) {
+    return ''
+  }
+  // Escape HTML to prevent XSS
+  // If HTML rendering is truly needed, use a proper sanitization library like DOMPurify
+  return escapeHTML(props.mainContent)
+})
 </script>
 
 <style scoped>

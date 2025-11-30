@@ -1,6 +1,7 @@
 describe('Manejo de Errores - Validación y Formularios', () => {
   beforeEach(() => {
     setupAuth('farmer')
+    cy.fixture('testCredentials').as('credentials')
   })
 
   it('debe validar campos requeridos en formulario de finca', () => {
@@ -29,10 +30,10 @@ describe('Manejo de Errores - Validación y Formularios', () => {
       .and('contain', 'Formato de email inválido')
   })
 
-  it('debe validar fortaleza de contraseña', () => {
+  it('debe validar fortaleza de contraseña', function() {
     cy.navigateTo('/registro')
     
-    const weakPasswords = ['123', 'password', '12345678']
+    const weakPasswords = this.credentials.weakPasswords
     
     for (const password of weakPasswords) {
       cy.get(SELECTORS.inputs.password).clear().type(password)
@@ -42,16 +43,21 @@ describe('Manejo de Errores - Validación y Formularios', () => {
     }
     
     // Verificar contraseña fuerte
-    cy.get(SELECTORS.inputs.password).clear().type('StrongPassword123!')
+    cy.get(SELECTORS.inputs.password).clear().type(this.credentials.strongPassword)
     cy.get('[data-cy="password-strength"]')
       .should('be.visible')
       .and('contain', 'Contraseña fuerte')
   })
 
-  it('debe validar coincidencia de contraseñas', () => {
+  it('debe validar coincidencia de contraseñas', function() {
     cy.navigateTo('/registro')
     
-    cy.fillForm({ password: 'Password123!', confirmPassword: 'DifferentPassword123!' }, 'login')
+    const testUser = this.credentials.testUsers.farmer
+    
+    cy.fillForm({ 
+      password: testUser.password, 
+      confirmPassword: this.credentials.mismatchPassword 
+    }, 'login')
     cy.get('[data-cy="register-button"]').click()
     
     // Verificar error de coincidencia

@@ -29,9 +29,36 @@ const formatNumber = (number, decimals = 2) => {
   return number.toFixed(decimals)
 }
 
+// Secure email validation to prevent ReDoS attacks
+// Uses simple, bounded checks instead of complex regex
 const validateEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
+  if (!email) return false
+  // Overall length limits per RFC-like guidance
+  if (email.length > 320) return false
+
+  const parts = email.split('@')
+  if (parts.length !== 2) return false
+
+  const [local, domain] = parts
+
+  // Length checks for local and domain parts
+  if (local.length === 0 || local.length > 64) return false
+  if (domain.length === 0 || domain.length > 255) return false
+
+  // No whitespace allowed
+  if (/\s/.test(local) || /\s/.test(domain)) return false
+
+  // Domain must contain at least one dot
+  if (!domain.includes('.')) return false
+
+  // Local part: allow common unquoted atoms (letters, digits and a small set of symbols)
+  // Keep regex simple (no nested quantifiers) and bounded by local length check above
+  if (!/^[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~.]+$/.test(local)) return false
+
+  // Reject consecutive dots
+  if (local.includes('..') || domain.includes('..')) return false
+
+  return true
 }
 
 const debounce = (func, delay) => {

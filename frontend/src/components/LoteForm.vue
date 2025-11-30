@@ -246,7 +246,6 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import lotesApi from '@/services/lotesApi'
-import fincasApi from '@/services/fincasApi'
 import { useLotes } from '@/composables/useLotes'
 import { useFincas } from '@/composables/useFincas'
 import { useFormValidation } from '@/composables/useFormValidation'
@@ -326,7 +325,7 @@ const loadLoteData = () => {
       descripcion: props.lote.descripcion || '',
       coordenadas_lat: props.lote.coordenadas_lat || '',
       coordenadas_lng: props.lote.coordenadas_lng || '',
-      activa: props.lote.activa !== undefined ? props.lote.activa : true
+      activa: props.lote.activa ?? true
     })
   }
 }

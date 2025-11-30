@@ -85,9 +85,9 @@ export function useForm(options = {}) {
 
   // Methods - Form state
   const resetForm = (newValues = {}) => {
-    Object.keys(form).forEach(key => {
+    for (const key of Object.keys(form)) {
       delete form[key]
-    })
+    }
     Object.assign(form, { ...initialValues, ...newValues })
     clearErrors()
     isDirty.value = false
@@ -102,14 +102,14 @@ export function useForm(options = {}) {
   const updateFields = (fields) => {
     Object.assign(form, fields)
     // Clear errors for updated fields
-    Object.keys(fields).forEach(key => {
+    for (const key of Object.keys(fields)) {
       removeError(key)
-    })
+    }
   }
 
   // Methods - Validation
   const validateField = (fieldName, value = null) => {
-    const fieldValue = value !== null ? value : form[fieldName]
+    const fieldValue = value === null ? form[fieldName] : value
     let error = null
 
     // Use field-specific validators
@@ -177,11 +177,11 @@ export function useForm(options = {}) {
     let isValid = true
 
     // Validate all fields in form
-    Object.keys(form).forEach(fieldName => {
+    for (const fieldName of Object.keys(form)) {
       if (!validateField(fieldName)) {
         isValid = false
       }
-    })
+    }
 
     // Run custom validator if provided
     if (validator && typeof validator === 'function') {
@@ -189,9 +189,9 @@ export function useForm(options = {}) {
       if (customValidation !== true) {
         isValid = false
         if (typeof customValidation === 'object') {
-          Object.entries(customValidation).forEach(([field, message]) => {
+          for (const [field, message] of Object.entries(customValidation)) {
             setError(field, message)
-          })
+          }
         }
       }
     }
@@ -241,9 +241,11 @@ export function useForm(options = {}) {
       )
 
       return result
-    } catch (error) {
+    } catch (err) {
       // Error already handled in handleFormSubmitValidation
-      throw error
+      // Log error for debugging and re-throw to allow caller to handle
+      console.error('Form submission error:', err)
+      throw err
     } finally {
       isSubmitting.value = false
     }

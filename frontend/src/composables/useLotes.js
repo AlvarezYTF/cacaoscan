@@ -62,15 +62,8 @@ export function useLotes(options = {}) {
    * @returns {boolean} Can view
    */
   const canView = (loteData) => {
-    if (!loteData) return false
-    if (isAdmin.value) return true
-    if (isFarmer.value && loteData.finca) {
-      const fincaData = typeof loteData.finca === 'object' ? loteData.finca : finca.value
-      if (fincaData) {
-        return fincaData.agricultor === authStore.user?.id || fincaData.agricultor_id === authStore.user?.id
-      }
-    }
-    return false
+    // View permission is the same as edit permission
+    return canEdit(loteData)
   }
   
   /**
@@ -226,7 +219,7 @@ export function useLotes(options = {}) {
       const result = await lotesApi.updateLote(loteId, formatted)
       
       // Update local state
-      if (lote.value && lote.value.id === loteId) {
+      if (lote.value?.id === loteId) {
         lote.value = result
       }
       
@@ -267,7 +260,7 @@ export function useLotes(options = {}) {
       
       // Remove from local state
       lotes.value = lotes.value.filter(l => l.id !== loteId)
-      if (lote.value && lote.value.id === loteId) {
+      if (lote.value?.id === loteId) {
         lote.value = null
       }
       

@@ -17,59 +17,59 @@
       <p class="mt-4 text-gray-600 font-medium">Cargando información de la finca...</p>
     </div>
 
-    <!-- Contenido principal -->
-    <div v-else-if="fincaDetalle" class="overflow-hidden">
-      <template #header>
-        <div class="flex items-center justify-between w-full">
-          <div class="flex items-center gap-3">
-            <div class="bg-green-100 p-2 rounded-xl">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-              </svg>
-            </div>
-            <div>
-              <h2 class="text-3xl font-bold text-gray-900">{{ fincaDetalle.nombre }}</h2>
-              <div class="flex items-center gap-3 mt-2">
-                <p class="text-sm text-gray-600 flex items-center gap-1.5">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  </svg>
-                  {{ fincaDetalle.municipio }}, {{ fincaDetalle.departamento }}
-                </p>
-                <span
-                  :class="[
-                    'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all',
-                    fincaDetalle.activa 
-                      ? 'bg-green-100 text-green-700 border border-green-200' 
-                      : 'bg-red-100 text-red-700 border border-red-200'
-                  ]"
+    <template #header>
+      <div v-if="fincaDetalle" class="flex items-center justify-between w-full">
+        <div class="flex items-center gap-3">
+          <div class="bg-green-100 p-2 rounded-xl">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-3xl font-bold text-gray-900">{{ fincaDetalle.nombre }}</h2>
+            <div class="flex items-center gap-3 mt-2">
+              <p class="text-sm text-gray-600 flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                {{ fincaDetalle.municipio }}, {{ fincaDetalle.departamento }}
+              </p>
+              <span
+                :class="[
+                  'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all',
+                  fincaDetalle.activa 
+                    ? 'bg-green-100 text-green-700 border border-green-200' 
+                    : 'bg-red-100 text-red-700 border border-red-200'
+                ]"
+              >
+                <svg 
+                  v-if="fincaDetalle.activa" 
+                  class="w-3 h-3" 
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
                 >
-                  <svg 
-                    v-if="fincaDetalle.activa" 
-                    class="w-3 h-3" 
-                    fill="currentColor" 
-                    viewBox="0 0 20 20"
-                  >
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                  </svg>
-                  <svg 
-                    v-else 
-                    class="w-3 h-3" 
-                    fill="currentColor" 
-                    viewBox="0 0 20 20"
-                  >
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                  </svg>
-                  {{ fincaDetalle.activa ? 'Activa' : 'Inactiva' }}
-                </span>
-              </div>
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <svg 
+                  v-else 
+                  class="w-3 h-3" 
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                >
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                {{ fincaDetalle.activa ? 'Activa' : 'Inactiva' }}
+              </span>
             </div>
           </div>
         </div>
-      </template>
+      </div>
+    </template>
 
+    <!-- Contenido principal -->
+    <div v-if="!loading && fincaDetalle" class="overflow-hidden">
       <div class="space-y-6">
                 <!-- Información principal en cards mejoradas -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -223,9 +223,6 @@
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
       </div>
     </div>
 

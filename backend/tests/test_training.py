@@ -1,8 +1,14 @@
+"""
+Integration tests for training API endpoints.
+NOTE: These tests require a running Django server.
+They should be skipped if the server is not available.
+"""
 import os
+import pytest
 import requests
+from unittest.mock import patch, Mock
 
 # Load credentials from environment variables for security
-# These should be set in a .env file or environment, not hardcoded
 ADMIN_USERNAME = os.getenv('TEST_ADMIN_USERNAME', 'admin_training')
 ADMIN_PASSWORD = os.getenv('TEST_ADMIN_PASSWORD', '')  # noqa: S106  # NOSONAR - S2068 credentials from environment
 

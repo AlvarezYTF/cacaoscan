@@ -3,6 +3,7 @@
  * Provides reusable helper functions for common test operations
  */
 import { SELECTORS } from './selectors'
+import { TEST_CREDENTIALS } from './test-data'
 
 /**
  * Creates a test user object
@@ -12,7 +13,7 @@ import { SELECTORS } from './selectors'
 export function createTestUser(overrides = {}) {
   return {
     email: 'test@example.com',
-    password: 'Test1234!',
+    password: TEST_CREDENTIALS.testPassword,
     firstName: 'Test',
     lastName: 'User',
     document: '1234567890',
@@ -45,7 +46,7 @@ export function createTestFinca(overrides = {}) {
 export function createTestLote(overrides = {}) {
   return {
     nombre: 'Test Lote',
-    area: 5.0,
+    area: 5,
     variedad: 'Criollo',
     edad_plantas: 5,
     descripcion: 'Test lote description',
@@ -87,8 +88,8 @@ export function mockApiResponses(responses) {
   }
 
   for (const [endpoint, response] of Object.entries(defaultResponses)) {
-    cy.intercept('GET', endpoint, { statusCode: 200, body: response }).as(`api-${endpoint.replace(/\//g, '-')}`)
-    cy.intercept('POST', endpoint, { statusCode: 201, body: response }).as(`api-post-${endpoint.replace(/\//g, '-')}`)
+    cy.intercept('GET', endpoint, { statusCode: 200, body: response }).as(`api-${endpoint.replaceAll('/', '-')}`)
+    cy.intercept('POST', endpoint, { statusCode: 201, body: response }).as(`api-post-${endpoint.replaceAll('/', '-')}`)
   }
 }
 
@@ -178,13 +179,14 @@ export function verifyTableData(expectedData, tableSelector = SELECTORS.tables.d
     return cy.wrap(null)
   }
 
-  expectedData.forEach((row, index) => {
+  for (let index = 0; index < expectedData.length; index++) {
+    const row = expectedData[index]
     cy.get(`${tableSelector} ${SELECTORS.tables.tableRow}`).eq(index).within(() => {
-      for (const [key, value] of Object.entries(row)) {
+      for (const value of Object.values(row)) {
         cy.contains(value.toString()).should('be.visible')
       }
     })
-  })
+  }
 
   return cy.wrap(null)
 }

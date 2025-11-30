@@ -80,11 +80,11 @@ export const useReportsStore = defineStore('reports', {
         this.loading = true
         this.error = null
 
-        const page = params.page || this.pagination.currentPage
-        const pageSize = params.page_size || params.itemsPerPage || this.pagination.itemsPerPage
+        // Extract pagination and filters from params
+        const { page: pageParam, page_size: pageSizeParam, itemsPerPage: itemsPerPageParam, ...filters } = params
         
-        // Extract filters from params
-        const { page: _, page_size: __, itemsPerPage: ___, ...filters } = params
+        const page = pageParam || this.pagination.currentPage
+        const pageSize = pageSizeParam || itemsPerPageParam || this.pagination.itemsPerPage
         
         const response = await reportsService.getReports(filters, page, pageSize)
         
@@ -124,7 +124,7 @@ export const useReportsStore = defineStore('reports', {
         }
         return response
       } catch (error) {
-        const errorInfo = handleApiError(error, { logError: true })
+        handleApiError(error, { logError: true })
         throw error
       }
     },
@@ -264,7 +264,7 @@ export const useReportsStore = defineStore('reports', {
 
         return true
       } catch (error) {
-        const errorInfo = handleApiError(error, { logError: true })
+        handleApiError(error, { logError: true })
         throw error
       }
     },
@@ -279,7 +279,7 @@ export const useReportsStore = defineStore('reports', {
         
         // Update report in list if exists
         const index = this.reports.findIndex(r => r.id === id)
-        if (index !== -1) {
+        if (index >= 0) {
           this.reports[index] = report
         } else {
           this.reports.push(report)
@@ -287,7 +287,7 @@ export const useReportsStore = defineStore('reports', {
         
         return report
       } catch (error) {
-        const errorInfo = handleApiError(error, { logError: true })
+        handleApiError(error, { logError: true })
         throw error
       }
     },

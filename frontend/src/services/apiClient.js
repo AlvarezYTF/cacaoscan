@@ -39,7 +39,9 @@ const buildQueryParams = (filters = {}) => {
   for (const [key, value] of Object.entries(filters)) {
     if (value !== undefined && value !== null && value !== '') {
       if (Array.isArray(value)) {
-        value.forEach(item => params.append(key, item))
+        for (const item of value) {
+          params.append(key, item)
+        }
       } else {
         params.append(key, value)
       }
@@ -173,9 +175,9 @@ export const apiDelete = async (endpoint, options = {}) => {
 export const fetchGet = async (endpoint, filters = {}, options = {}) => {
   try {
     const queryParams = buildQueryParams(filters)
-    const url = endpoint.startsWith('http') 
-      ? `${endpoint}${queryParams.toString() ? `?${queryParams}` : ''}`
-      : `${API_BASE_URL}${endpoint}${queryParams.toString() ? `?${queryParams}` : ''}`
+    const queryString = queryParams.toString() ? `?${queryParams}` : ''
+    const baseUrl = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`
+    const url = `${baseUrl}${queryString}`
     
     const response = await fetch(url, {
       method: 'GET',

@@ -162,7 +162,7 @@ export const useAuthStore = defineStore('auth', () => {
       
     } catch (error) {
       console.error('❌ Error inicializando autenticación:', error)
-      // Si hay error durante la inicialización, limpiar todo el estado
+      // Si hay error durante la inicialización, limpiar el estado completo
       // para evitar datos inconsistentes o tokens inválidos en el store
       clearAll()
     }
@@ -350,7 +350,7 @@ export const useAuthStore = defineStore('auth', () => {
       throw new Error('Respuesta inválida del servidor')
     } catch (err) {
       console.error('❌ Error refrescando token:', err)
-      // Si el refresh token expiró o fue rechazado, limpiar todo el estado
+      // Si el refresh token expiró o fue rechazado, limpiar el estado completo
       // y forzar logout para que el usuario se autentique nuevamente
       if (err.response?.status === 401 || err.response?.status === 403) {
         await logout(false)
@@ -458,11 +458,10 @@ export const useAuthStore = defineStore('auth', () => {
         return { success: true, message: response.message || 'Email de verificación enviado' }
       } else if (user.value?.email) {
         // Si no hay email pero hay usuario logueado, usar su email
-          const response = await authApi.resendEmailVerification(user.value.email)
-          return { success: true, message: response.message || 'Email de verificación enviado' }
-        } else {
-          throw new Error('Email requerido para reenviar verificación')
-        }
+        const response = await authApi.resendEmailVerification(user.value.email)
+        return { success: true, message: response.message || 'Email de verificación enviado' }
+      } else {
+        throw new Error('Email requerido para reenviar verificación')
       }
     } catch (err) {
       console.error('Error reenviando verificación:', err)
@@ -509,7 +508,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Limpia todo el estado de autenticación del store.
+   * Limpia el estado completo de autenticación del store.
    * Elimina tokens, datos de usuario, errores y flags de carga.
    * Útil para resetear el estado después de logout o errores de autenticación.
    */

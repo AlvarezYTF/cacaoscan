@@ -31,7 +31,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import BaseStatsCard from '@/components/common/BaseStatsCard.vue'
 
 const props = defineProps({

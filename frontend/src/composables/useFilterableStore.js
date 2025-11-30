@@ -2,7 +2,7 @@
  * Composable for stores with filtering
  * Provides reactive filter state and methods
  */
-import { reactive, computed, watch } from 'vue'
+import { reactive, computed } from 'vue'
 
 /**
  * Create filterable store composable
@@ -37,7 +37,7 @@ export function useFilterableStore(options = {}) {
     // Default filter implementation
     return items.filter(item => {
       return Object.entries(filters).every(([key, value]) => {
-        if (value === null || value === undefined || value === '') {
+        if (value == null || (!Array.isArray(value) && value == '')) {
           return true
         }
 
@@ -78,9 +78,9 @@ export function useFilterableStore(options = {}) {
    * Clear all filters
    */
   const clearFilters = () => {
-    Object.keys(filters).forEach(key => {
+    for (const key of Object.keys(filters)) {
       filters[key] = initialFilters[key] || null
-    })
+    }
   }
 
   /**
@@ -102,7 +102,10 @@ export function useFilterableStore(options = {}) {
       if (Array.isArray(value)) {
         return value.length > 0
       }
-      return value !== null && value !== undefined && value !== ''
+      if (value == null) {
+        return false
+      }
+      return String(value) !== ''
     })
   })
 
@@ -115,7 +118,10 @@ export function useFilterableStore(options = {}) {
       if (Array.isArray(value)) {
         return value.length > 0
       }
-      return value !== null && value !== undefined && value !== ''
+      if (value == null) {
+        return false
+      }
+      return String(value) !== ''
     }).length
   })
 

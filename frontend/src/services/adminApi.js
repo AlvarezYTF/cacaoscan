@@ -18,9 +18,9 @@ import {
   getTrainingJobStatus as baseGetJobStatus,
   getTrainingJobs as baseGetJobs,
   formatNumber
-} from './datasetApi.js';
+} from './datasetApi.js'
 
-import { fetchGet, fetchPost } from './apiClient';
+import { fetchGet, fetchPost } from './apiClient'
 import { getApiBaseUrlWithPath } from '@/utils/apiConfig'
 
 // Reutilizar utilidades del archivo base (DRY)
@@ -435,12 +435,13 @@ const startMLTraining = async (config = {}) => {
 }
 
 // Re-exportar funciones base necesarias para compatibilidad (DRY)
+// Using export...from would require separate statements for aliases, so keeping this structure
 export { 
-  baseTrainRegression as trainRegressionModel,
-  baseTrainVision as trainVisionModel,
-  baseGetJobStatus as getTrainingJobStatus,
-  baseGetJobs as getTrainingJobs
-};
+  trainRegressionModel: baseTrainRegression,
+  trainVisionModel: baseTrainVision,
+  getTrainingJobStatus: baseGetJobStatus,
+  getTrainingJobs: baseGetJobs
+}
 
 // Exportar funciones avanzadas
 export {

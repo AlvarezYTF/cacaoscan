@@ -2,7 +2,7 @@
  * Composable for dashboard metrics
  * Consolidates metric calculation, formatting, and display logic
  */
-import { ref, computed } from 'vue'
+// No Vue imports needed - this composable only provides utility functions
 import { useDateFormatting } from './useDateFormatting'
 
 /**
@@ -142,7 +142,7 @@ export function useDashboardMetrics(options = {}) {
       suffix,
       prefix,
       description,
-      change: change !== null ? formatPercentageChange(change) : undefined,
+      change: change === null ? undefined : formatPercentageChange(change),
       rawChange: change,
       changePeriod,
       clickable,

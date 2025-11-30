@@ -2,7 +2,7 @@
  * Composable for modal management
  * Provides reusable modal state and methods
  */
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 
 /**
  * Provides modal state and methods

@@ -153,10 +153,10 @@ export function useAnalysis() {
 
     // Quality distribution
     const qualityDistribution = {}
-    validResults.forEach(r => {
+    for (const r of validResults) {
       const quality = r.quality || r.calidad || 'unknown'
       qualityDistribution[quality] = (qualityDistribution[quality] || 0) + 1
-    })
+    }
 
     return {
       total,

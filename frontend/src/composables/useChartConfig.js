@@ -69,7 +69,6 @@ export function useChartConfig(options = {}) {
    * @returns {Object} Chart.js options
    */
   const getDefaultOptions = computed(() => {
-    const isDark = theme === 'dark'
     const textColor = themeColors.value.textColor
     const gridColor = themeColors.value.gridColor
 
@@ -173,7 +172,7 @@ export function useChartConfig(options = {}) {
    * @returns {Object} Processed chart data
    */
   const processChartData = (chartData, gradient = false, createGradient = null) => {
-    if (!chartData || !chartData.datasets) {
+    if (!chartData?.datasets) {
       return chartData
     }
 

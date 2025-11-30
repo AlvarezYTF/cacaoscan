@@ -11,8 +11,7 @@ import {
   createVerifiedGuard,
   createPermissionGuard,
   createCompositeGuard,
-  getRedirectPathByRole,
-  getErrorPathByRole
+  getRedirectPathByRole
 } from './guardFactories'
 
 /**
@@ -137,24 +136,27 @@ export const requireCanUpload = async (to, from, next) => {
     return
   }
 
-  if (!authStore.canUploadImages) {
-    if (!authStore.isVerified) {
-      next({
-        name: 'EmailVerification',
-        query: {
-          message: 'Debes verificar tu email para subir imágenes'
-        }
-      })
-    } else {
-      next({
-        path: '/acceso-denegado',
-        replace: true,
-        query: {
-          message: 'No tienes permisos para subir imágenes'
-        }
-      })
-    }
+  if (authStore.canUploadImages) {
+    next()
     return
+  }
+  
+  if (authStore.isVerified) {
+    // User is verified but doesn't have upload permission
+    next({
+      path: '/acceso-denegado',
+      replace: true,
+      query: {
+        message: 'No tienes permisos para subir imágenes'
+      }
+    })
+  } else {
+    next({
+      name: 'EmailVerification',
+      query: {
+        message: 'Debes verificar tu email para subir imágenes'
+      }
+    })
   }
 
   next()
@@ -204,21 +206,20 @@ export const checkTokenValidity = async (to, from, next) => {
         replace: true
       })
     }
+  } else if (to.name === 'Login') {
+    // Si no hay token y ya está en login, permitir acceso
+    next()
   } else {
-    // Si no hay token, redirigir al login si no está ya ahí
-    if (to.name === 'Login') {
-      next()
-    } else {
-      next({
-        name: 'Login',
-        replace: true,
-        query: {
-          message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
-          expired: 'true',
-          redirect: to.fullPath
-        }
-      })
-    }
+    // Si no hay token, redirigir al login
+    next({
+      name: 'Login',
+      replace: true,
+      query: {
+        message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+        expired: 'true',
+        redirect: to.fullPath
+      }
+    })
   }
 }
 

@@ -64,11 +64,11 @@ export function useStoreBase(options = {}) {
     error.value = null
 
     // Reset custom state if provided
-    Object.entries(newState).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(newState)) {
       if (initialState[key] !== undefined) {
         initialState[key] = value
       }
-    })
+    }
   }
 
   /**
