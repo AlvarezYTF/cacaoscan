@@ -117,7 +117,7 @@ export function useDataset(options = {}) {
         images.value[index] = updatedImage
       }
 
-      if (currentImage.value && currentImage.value.id === imageId) {
+      if (currentImage.value?.id === imageId) {
         currentImage.value = updatedImage
       }
 
@@ -150,7 +150,7 @@ export function useDataset(options = {}) {
       // Remove from local state
       images.value = images.value.filter(img => img.id !== imageId)
 
-      if (currentImage.value && currentImage.value.id === imageId) {
+      if (currentImage.value?.id === imageId) {
         currentImage.value = null
       }
 

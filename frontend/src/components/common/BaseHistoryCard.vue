@@ -83,9 +83,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import BaseCard from './BaseCard.vue'
-import { usePagination } from '@/composables/usePagination'
 
 const props = defineProps({
   title: {

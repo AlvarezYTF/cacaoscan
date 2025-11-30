@@ -167,7 +167,7 @@ const selectClass = computed(() => {
     : ''
 
   const prefixPadding = props.prefixIcon || props.$slots.prefix ? 'pl-10' : ''
-  const suffixPadding = !props.multiple ? 'pr-10' : ''
+  const suffixPadding = props.multiple ? '' : 'pr-10'
 
   return [
     baseClasses,

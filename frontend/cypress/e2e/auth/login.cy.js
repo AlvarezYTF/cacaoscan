@@ -81,12 +81,16 @@ describe('Autenticación - Login', () => {
   })
 
   it('debe validar formato de email', () => {
-    cy.fillForm({ email: 'email-invalido', password: 'password123' }, 'login')
-    cy.get(SELECTORS.buttons.login).click()
-    
-    cy.get('[data-cy="email-error"]')
-      .should('be.visible')
-      .and('contain', 'Formato de email inválido')
+    cy.fixture('users').then((users) => {
+      const validationUser = users.validationTestUser
+      
+      cy.fillForm({ email: validationUser.email, password: validationUser.password }, 'login')
+      cy.get(SELECTORS.buttons.login).click()
+      
+      cy.get('[data-cy="email-error"]')
+        .should('be.visible')
+        .and('contain', 'Formato de email inválido')
+    })
   })
 
   it('debe recordar credenciales si está habilitado', () => {

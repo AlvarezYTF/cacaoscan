@@ -7,7 +7,7 @@
 
 import { apiPost, apiGet, apiDelete } from './apiClient'
 import { validateImageFile, getImageValidationError } from '@/utils/imageValidationUtils'
-import { handleApiError, getErrorMessage } from './apiErrorHandler'
+import { handleApiError } from './apiErrorHandler'
 
 // Endpoints de la API
 const API_ENDPOINTS = {

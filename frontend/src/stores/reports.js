@@ -279,7 +279,7 @@ export const useReportsStore = defineStore('reports', {
         
         // Update report in list if exists
         const index = this.reports.findIndex(r => r.id === id)
-        if (index !== -1) {
+        if (index >= 0) {
           this.reports[index] = report
         } else {
           this.reports.push(report)

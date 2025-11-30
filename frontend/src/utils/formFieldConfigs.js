@@ -27,7 +27,7 @@ export const COMMON_FIELDS = {
     required: true,
     autocomplete: 'given-name',
     validator: (value) => {
-      if (!value || !value.trim()) {
+      if (!value?.trim()) {
         return 'El nombre es requerido'
       }
       if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(value)) {
@@ -60,7 +60,7 @@ export const COMMON_FIELDS = {
     required: true,
     autocomplete: 'family-name',
     validator: (value) => {
-      if (!value || !value.trim()) {
+      if (!value?.trim()) {
         return 'El apellido es requerido'
       }
       if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(value)) {
@@ -93,7 +93,7 @@ export const COMMON_FIELDS = {
     required: true,
     autocomplete: 'email',
     validator: (value, isValidEmail) => {
-      if (!value || !value.trim()) {
+      if (!value?.trim()) {
         return 'El email es requerido'
       }
       if (!isValidEmail(value)) {
@@ -140,7 +140,7 @@ export const COMMON_FIELDS = {
     required: true,
     autocomplete: 'off',
     validator: (value, isValidDocument) => {
-      if (!value || !value.trim()) {
+      if (!value?.trim()) {
         return 'El número de documento es requerido'
       }
       if (!isValidDocument(value)) {
@@ -270,12 +270,12 @@ export function getFieldConfig(fieldName) {
  */
 export function getFieldConfigs(fieldNames) {
   const configs = {}
-  fieldNames.forEach(name => {
+  for (const name of fieldNames) {
     const config = getFieldConfig(name)
     if (config) {
       configs[name] = config
     }
-  })
+  }
   return configs
 }
 

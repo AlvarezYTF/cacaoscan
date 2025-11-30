@@ -138,19 +138,20 @@ export const requireCanUpload = async (to, from, next) => {
   }
 
   if (!authStore.canUploadImages) {
-    if (!authStore.isVerified) {
-      next({
-        name: 'EmailVerification',
-        query: {
-          message: 'Debes verificar tu email para subir imágenes'
-        }
-      })
-    } else {
+    if (authStore.isVerified) {
+      // User is verified but doesn't have upload permission
       next({
         path: '/acceso-denegado',
         replace: true,
         query: {
           message: 'No tienes permisos para subir imágenes'
+        }
+      })
+    } else {
+      next({
+        name: 'EmailVerification',
+        query: {
+          message: 'Debes verificar tu email para subir imágenes'
         }
       })
     }

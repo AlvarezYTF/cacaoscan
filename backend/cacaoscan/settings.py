@@ -45,9 +45,10 @@ if not os.path.exists(dotenv_path):
         default_env_content = f"""# ===========================
 # Configuración de Base de Datos PostgreSQL
 # ===========================
+# IMPORTANTE: Cambia estas credenciales por valores seguros
 DB_NAME=cacaoscan_db
-DB_USER=cristian
-DB_PASSWORD=123456
+DB_USER=cacaoscan_user
+DB_PASSWORD=CHANGE_THIS_PASSWORD_IN_PRODUCTION
 DB_HOST=localhost
 DB_PORT=5432
 
@@ -72,7 +73,7 @@ EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=tu-email@gmail.com
-EMAIL_HOST_PASSWORD=tu-app-password
+EMAIL_HOST_PASSWORD=CHANGE_THIS_EMAIL_PASSWORD
 
 # ===========================
 # Configuración de CORS (Desarrollo)

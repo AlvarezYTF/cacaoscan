@@ -3,7 +3,7 @@
  * Handles drag-drop, preview, validation, and file management
  */
 import { ref, computed } from 'vue'
-import { validateImageFile, getImageValidationError } from '@/utils/imageValidationUtils'
+import { getImageValidationError } from '@/utils/imageValidationUtils'
 
 /**
  * Create file upload composable

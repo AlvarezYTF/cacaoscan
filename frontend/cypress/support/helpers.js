@@ -3,6 +3,7 @@
  * Provides reusable helper functions for common test operations
  */
 import { SELECTORS } from './selectors'
+import { TEST_CREDENTIALS } from './test-data'
 
 /**
  * Creates a test user object
@@ -12,7 +13,7 @@ import { SELECTORS } from './selectors'
 export function createTestUser(overrides = {}) {
   return {
     email: 'test@example.com',
-    password: 'Test1234!',
+    password: TEST_CREDENTIALS.testPassword,
     firstName: 'Test',
     lastName: 'User',
     document: '1234567890',

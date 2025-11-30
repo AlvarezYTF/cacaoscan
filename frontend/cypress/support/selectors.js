@@ -29,8 +29,9 @@ export const SELECTORS = {
   // Inputs
   inputs: {
     email: '[data-cy="email-input"]',
-    password: '[data-cy="password-input"]',
-    confirmPassword: '[data-cy="confirm-password-input"]',
+    // NOSONAR: S2068 - This is a CSS selector string for test automation, not a hardcoded password
+    password: '[data-cy="password-input"]', // NOSONAR: S2068
+    confirmPassword: '[data-cy="confirm-password-input"]', // NOSONAR: S2068
     nombre: '[data-cy="nombre-input"]',
     search: '[data-cy="search-input"]',
     filter: '[data-cy="filter-input"]',
@@ -46,7 +47,7 @@ export const SELECTORS = {
     finca: '[data-cy="finca-form"]',
     lote: '[data-cy="lote-form"]',
     profile: '[data-cy="profile-form"]',
-    passwordReset: '[data-cy="password-reset-form"]',
+    passwordReset: '[data-cy="password-reset-form"]', // NOSONAR: S2068
     prediction: '[data-cy="prediction-form"]'
   },
 

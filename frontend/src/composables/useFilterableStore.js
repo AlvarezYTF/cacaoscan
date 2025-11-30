@@ -2,7 +2,7 @@
  * Composable for stores with filtering
  * Provides reactive filter state and methods
  */
-import { reactive, computed, watch } from 'vue'
+import { reactive, computed } from 'vue'
 
 /**
  * Create filterable store composable
