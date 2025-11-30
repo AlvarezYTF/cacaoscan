@@ -1,3 +1,4 @@
+
 <template>
   <div class="form-field" :class="fieldClass">
     <label 
@@ -111,7 +112,7 @@
     </div>
 
     <!-- Custom Content Slot (for custom inputs) -->
-    <slot v-else></slot>
+    <slot v-else :fieldId="fieldId"></slot>
 
     <!-- Error Message -->
     <p v-if="error" class="text-red-600 text-xs mt-1">

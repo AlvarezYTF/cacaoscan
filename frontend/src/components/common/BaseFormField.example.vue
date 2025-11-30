@@ -47,90 +47,105 @@
     <form @submit.prevent="handleSubmit" class="space-y-4">
       <!-- Ejemplo 1: Campo de texto simple -->
       <BaseFormField 
-        id="nombre"
+        name="nombre"
         label="Nombre"
         :error="errors.nombre"
         :required="true"
       >
-        <input 
-          v-model="form.nombre" 
-          type="text" 
-          required
-          class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          :class="errors.nombre ? 'border-red-500' : 'border-gray-300'" 
-          placeholder="Juan" 
-        />
+        <template #default="{ fieldId }">
+          <input 
+            :id="fieldId"
+            v-model="form.nombre" 
+            type="text" 
+            required
+            class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            :class="errors.nombre ? 'border-red-500' : 'border-gray-300'" 
+            placeholder="Juan" 
+          />
+        </template>
       </BaseFormField>
 
       <!-- Ejemplo 2: Campo de email -->
       <BaseFormField 
-        id="email"
+        name="email"
         label="Email"
         :error="errors.email"
         :required="true"
         help-text="Ingresa un email válido"
       >
-        <input 
-          v-model="form.email" 
-          type="email" 
-          required
-          class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          :class="errors.email ? 'border-red-500' : 'border-gray-300'" 
-          placeholder="juan@ejemplo.com" 
-        />
+        <template #default="{ fieldId }">
+          <input 
+            :id="fieldId"
+            v-model="form.email" 
+            type="email" 
+            required
+            class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            :class="errors.email ? 'border-red-500' : 'border-gray-300'" 
+            placeholder="juan@ejemplo.com" 
+          />
+        </template>
       </BaseFormField>
 
       <!-- Ejemplo 3: Campo de teléfono -->
       <BaseFormField 
-        id="telefono"
+        name="telefono"
         label="Teléfono"
         :error="errors.telefono"
         help-text="Formato: +57 300 123 4567"
       >
-        <input 
-          v-model="form.telefono" 
-          type="tel" 
-          class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          :class="errors.telefono ? 'border-red-500' : 'border-gray-300'" 
-          placeholder="+57 300 123 4567" 
-        />
+        <template #default="{ fieldId }">
+          <input 
+            :id="fieldId"
+            v-model="form.telefono" 
+            type="tel" 
+            class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            :class="errors.telefono ? 'border-red-500' : 'border-gray-300'" 
+            placeholder="+57 300 123 4567" 
+          />
+        </template>
       </BaseFormField>
 
       <!-- Ejemplo 4: Select -->
       <BaseFormField 
-        id="pais"
+        name="pais"
         label="País"
         :error="errors.pais"
         :required="true"
       >
-        <select 
-          v-model="form.pais" 
-          required
-          class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          :class="errors.pais ? 'border-red-500' : 'border-gray-300'"
-        >
-          <option value="">Selecciona un país</option>
-          <option value="CO">Colombia</option>
-          <option value="EC">Ecuador</option>
-          <option value="PE">Perú</option>
-        </select>
+        <template #default="{ fieldId }">
+          <select 
+            :id="fieldId"
+            v-model="form.pais" 
+            required
+            class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            :class="errors.pais ? 'border-red-500' : 'border-gray-300'"
+          >
+            <option value="">Selecciona un país</option>
+            <option value="CO">Colombia</option>
+            <option value="EC">Ecuador</option>
+            <option value="PE">Perú</option>
+          </select>
+        </template>
       </BaseFormField>
 
       <!-- Ejemplo 5: Textarea -->
       <BaseFormField 
-        id="comentarios"
+        name="comentarios"
         label="Comentarios"
         :error="errors.comentarios"
         help-text="Máximo 500 caracteres"
       >
-        <textarea 
-          v-model="form.comentarios" 
-          rows="4"
-          maxlength="500"
-          class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          :class="errors.comentarios ? 'border-red-500' : 'border-gray-300'" 
-          placeholder="Escribe tus comentarios aquí..."
-        ></textarea>
+        <template #default="{ fieldId }">
+          <textarea 
+            :id="fieldId"
+            v-model="form.comentarios" 
+            rows="4"
+            maxlength="500"
+            class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            :class="errors.comentarios ? 'border-red-500' : 'border-gray-300'" 
+            placeholder="Escribe tus comentarios aquí..."
+          ></textarea>
+        </template>
       </BaseFormField>
 
       <div class="flex justify-end gap-3">
@@ -181,25 +196,29 @@ const resetForm = () => {
 
 const handleSubmit = () => {
   // Validación simple de ejemplo
-  if (!form.nombre) {
-    errors.nombre = 'El nombre es requerido'
-  } else {
+  if (form.nombre) {
     errors.nombre = ''
+  } else {
+    errors.nombre = 'El nombre es requerido'
   }
 
-  if (!form.email) {
-    errors.email = 'El email es requerido'
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    errors.email = 'Ingresa un email válido'
+  if (form.email) {
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      errors.email = ''
+    } else {
+      errors.email = 'Ingresa un email válido'
+    }
   } else {
-    errors.email = ''
+    errors.email = 'El email es requerido'
   }
 
   // Si no hay errores, enviar formulario
-  if (!Object.values(errors).some(error => error)) {
-    console.log('Formulario válido:', form)
-    alert('Formulario enviado correctamente')
+  const hasErrors = Object.values(errors).some(Boolean)
+  if (hasErrors) {
+    return
   }
+  console.log('Formulario válido:', form)
+  alert('Formulario enviado correctamente')
 }
 </script>
 

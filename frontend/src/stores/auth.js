@@ -458,11 +458,10 @@ export const useAuthStore = defineStore('auth', () => {
         return { success: true, message: response.message || 'Email de verificación enviado' }
       } else if (user.value?.email) {
         // Si no hay email pero hay usuario logueado, usar su email
-          const response = await authApi.resendEmailVerification(user.value.email)
-          return { success: true, message: response.message || 'Email de verificación enviado' }
-        } else {
-          throw new Error('Email requerido para reenviar verificación')
-        }
+        const response = await authApi.resendEmailVerification(user.value.email)
+        return { success: true, message: response.message || 'Email de verificación enviado' }
+      } else {
+        throw new Error('Email requerido para reenviar verificación')
       }
     } catch (err) {
       console.error('Error reenviando verificación:', err)

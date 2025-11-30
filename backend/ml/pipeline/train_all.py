@@ -138,6 +138,7 @@ class CacaoDataset(Dataset):
         self.image_paths = image_paths
         self.targets = targets
         self.transform = transform
+        self.pixel_features = pixel_features
         self.is_multi_head = is_multi_head
         self.is_hybrid = is_hybrid
         
@@ -262,67 +263,109 @@ class CacaoDataset(Dataset):
     def __len__(self) -> int:
         return len(self.image_paths)
 
-    def __getitem__(self, idx: int):
-        image_path = self.image_paths[idx]
+    def _load_and_process_image(self, image_path: Path) -> torch.Tensor:
+        """
+        Loads and processes an image, converting to RGB and applying transforms.
         
+        Args:
+            image_path: Path to the image file
+            
+        Returns:
+            Processed image tensor
+        """
         try:
-            # Abrir imagen y convertir a RGB explícitamente
             image = Image.open(image_path)
             
-            # Validar que la imagen sea válida
             if image is None:
                 raise ValueError(f"Imagen no se pudo cargar: {image_path}")
             
-            # Convertir a RGB (asegura 3 canales)
             if image.mode != 'RGB':
                 logger.debug(f"Convirtiendo imagen {image_path.name} de {image.mode} a RGB")
                 image = image.convert('RGB')
             
-            # Aplicar transformaciones
             image_tensor = self.transform(image)
             
-            # Validar formato del tensor
             if image_tensor.shape[0] != 3:
                 raise ValueError(
                     f"Imagen debe tener 3 canales RGB, obtuvo {image_tensor.shape[0]} canales"
                 )
+            
+            return image_tensor
         except Exception as e:
             logger.error(f"Error cargando imagen {image_path}: {e}")
             raise
 
+    def _get_pixel_feature_values(self, idx: int) -> List[float]:
+        """
+        Gets pixel feature values for a given index.
+        
+        Args:
+            idx: Index of the sample
+            
+        Returns:
+            List of pixel feature values
+        """
+        if self.pixel_features is None:
+            return []
+        
+        feature_keys = self._determine_feature_keys(self.pixel_features)
+        return [float(self.pixel_features[key][idx]) for key in feature_keys]
+
+    def _build_pixel_feature_tensor(self, idx: int, normalize: bool = False) -> torch.Tensor:
+        """
+        Builds pixel feature tensor from features at given index.
+        
+        Args:
+            idx: Index of the sample
+            normalize: Whether to normalize the features
+            
+        Returns:
+            Pixel feature tensor
+        """
+        pixel_feat_values = self._get_pixel_feature_values(idx)
+        
+        if not pixel_feat_values:
+            return torch.tensor([], dtype=torch.float32)
+        
+        pixel_feat = np.array(pixel_feat_values, dtype=np.float32)
+        
+        if normalize and self.pixel_means is not None and self.pixel_stds is not None:
+            pixel_feat = (pixel_feat - self.pixel_means) / self.pixel_stds
+        
+        return torch.tensor(pixel_feat, dtype=torch.float32)
+
+    def _get_single_target(self, idx: int) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+        """
+        Gets single target value for simple (non-multi-head) mode.
+        
+        Args:
+            idx: Index of the sample
+            
+        Returns:
+            Tuple of (target_tensor, optional_pixel_feat_tensor)
+        """
         available_targets = list(self.targets.keys())
+        target_name = available_targets[0]
+        target_value = float(self.targets[target_name][idx])
+        target_tensor = torch.tensor(target_value, dtype=torch.float32)
+        
+        if self.pixel_features is not None:
+            pixel_feat = self._build_pixel_feature_tensor(idx, normalize=False)
+            return (target_tensor, pixel_feat)
+        
+        return (target_tensor, None)
 
-        # Caso simple: un solo target
-        if not self.is_multi_head and not self.is_hybrid:
-            target_name = available_targets[0]
-            target_value = float(self.targets[target_name][idx])
-
-            if self.pixel_features is not None:
-                # Detectar dinámicamente qué features están disponibles
-                pixel_feat_values = []
-                # Intentar usar features extendidos primero
-                if all(k in self.pixel_features for k in CALIB_PIXEL_FEATURE_KEYS):
-                    for key in CALIB_PIXEL_FEATURE_KEYS:
-                        pixel_feat_values.append(float(self.pixel_features[key][idx]))
-                else:
-                    # Fallback a features básicos
-                    for key in PIXEL_FEATURE_KEYS:
-                        if key in self.pixel_features:
-                            pixel_feat_values.append(float(self.pixel_features[key][idx]))
-                
-                pixel_feat = torch.tensor(pixel_feat_values, dtype=torch.float32)
-                # Para compatibilidad con RegressionTrainer, se omite metadata aquí
-                return (
-                    image_tensor,
-                    torch.tensor(target_value, dtype=torch.float32),
-                    pixel_feat,
-                )
-
-            return image_tensor, torch.tensor(target_value, dtype=torch.float32)
-
-        # Modelo multi‑head / híbrido: devolver los 4 targets en orden correcto
-        # Orden: [alto, ancho, grosor, peso]
-        targets_tensor = torch.tensor(
+    def _get_multi_targets(self, idx: int) -> torch.Tensor:
+        """
+        Gets multi-head targets tensor in correct order.
+        
+        Args:
+            idx: Index of the sample
+            
+        Returns:
+            Targets tensor with [alto, ancho, grosor, peso]
+        """
+        return torch.tensor(
             [
                 float(self.targets["alto"][idx]),
                 float(self.targets["ancho"][idx]),
@@ -332,26 +375,21 @@ class CacaoDataset(Dataset):
             dtype=torch.float32,
         )
 
+    def __getitem__(self, idx: int):
+        image_path = self.image_paths[idx]
+        image_tensor = self._load_and_process_image(image_path)
+
+        if not self.is_multi_head and not self.is_hybrid:
+            target_tensor, pixel_feat = self._get_single_target(idx)
+            
+            if pixel_feat is not None:
+                return image_tensor, target_tensor, pixel_feat
+            return image_tensor, target_tensor
+
+        targets_tensor = self._get_multi_targets(idx)
+
         if self.pixel_features is not None:
-            # Usar todos los features disponibles (pueden ser 5 básicos o 12 extendidos)
-            pixel_feat_values = []
-            # Intentar usar features extendidos primero
-            if all(k in self.pixel_features for k in CALIB_PIXEL_FEATURE_KEYS):
-                for key in CALIB_PIXEL_FEATURE_KEYS:
-                    pixel_feat_values.append(float(self.pixel_features[key][idx]))
-            else:
-                # Fallback a features básicos
-                for key in PIXEL_FEATURE_KEYS:
-                    if key in self.pixel_features:
-                        pixel_feat_values.append(float(self.pixel_features[key][idx]))
-            
-            pixel_feat = np.array(pixel_feat_values, dtype=np.float32)
-            
-            # Normalizar pixel_features
-            if self.pixel_means is not None and self.pixel_stds is not None:
-                pixel_feat = (pixel_feat - self.pixel_means) / self.pixel_stds
-            
-            pixel_feat = torch.tensor(pixel_feat, dtype=torch.float32)
+            pixel_feat = self._build_pixel_feature_tensor(idx, normalize=True)
             return image_tensor, targets_tensor, pixel_feat
 
         return image_tensor, targets_tensor
