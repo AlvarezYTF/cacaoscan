@@ -633,16 +633,129 @@ class HybridCacaoRegression(nn.Module):
         return self.fusion(fused)
 
 
+def _create_hybrid_model(
+    pretrained: bool,
+    dropout_rate: float,
+    pixel_feature_dim: Optional[int],
+    use_pixel_features: bool
+) -> nn.Module:
+    """Crea un modelo híbrido."""
+    num_pixel_feat = pixel_feature_dim if pixel_feature_dim is not None else 10
+    
+    if not pretrained:
+        logger.warning("=" * 60)
+        logger.warning("⚠ pretrained=False detectado para modelo híbrido")
+        logger.warning("  Esto resultará en R² muy negativos en epoch 1 (grosor R² ~-1.0)")
+        logger.warning("  Forzando pretrained=True para mejor rendimiento")
+        logger.warning("=" * 60)
+        pretrained = True
+    else:
+        logger.info("=" * 60)
+        logger.info("✔ Creando modelo híbrido con pretrained=True")
+        logger.info(f"  ConvNeXt usará pesos ImageNet-12k ({CONVNEXT_TINY_MODEL_NAME})")
+        logger.info("=" * 60)
+    
+    logger.info(f"Creando HybridCacaoRegression con pretrained={pretrained}, num_pixel_features={num_pixel_feat}")
+    return HybridCacaoRegression(
+        num_outputs=4,
+        pretrained=pretrained,
+        dropout_rate=dropout_rate,
+        num_pixel_features=num_pixel_feat,
+        use_pixel_features=use_pixel_features
+    )
+
+
+def _create_multi_head_model(
+    model_type: str,
+    pretrained: bool,
+    dropout_rate: float
+) -> nn.Module:
+    """Crea un modelo multi-head."""
+    logger.info(f"Creando modelo Multi-Head (Backbone: {model_type})")
+    return MultiHeadRegression(
+        backbone_type=model_type,
+        pretrained=pretrained,
+        dropout_rate=dropout_rate,
+        shared_features=True
+    )
+
+
+def _create_optimized_model(
+    model_type: str,
+    num_outputs: int,
+    pretrained: bool,
+    dropout_rate: float
+) -> Optional[nn.Module]:
+    """Intenta crear un modelo optimizado."""
+    try:
+        from .optimized_models import create_optimized_model
+        
+        if model_type == "resnet18":
+            logger.info("Usando modelo optimizado ResNet18")
+            return create_optimized_model(
+                model_type="resnet18",
+                num_outputs=num_outputs,
+                pretrained=pretrained,
+                dropout_rate=dropout_rate
+            )
+        elif model_type == "simple":
+            logger.info("Usando modelo Simple optimizado (recomendado)")
+            return create_optimized_model(
+                model_type="simple",
+                num_outputs=num_outputs,
+                pretrained=pretrained,
+                dropout_rate=dropout_rate
+            )
+    except ImportError:
+        logger.warning("Modelos optimizados no disponibles, usando modelos estándar")
+    
+    return None
+
+
+def _create_standard_model(
+    model_type: str,
+    num_outputs: int,
+    pretrained: bool,
+    dropout_rate: float,
+    pixel_feature_dim: Optional[int],
+    use_pixel_features: bool
+) -> nn.Module:
+    """Crea un modelo estándar."""
+    if model_type == "resnet18":
+        return ResNet18Regression(
+            num_outputs=num_outputs,
+            pretrained=pretrained,
+            dropout_rate=dropout_rate
+        )
+    elif model_type == "convnext_tiny":
+        return ConvNeXtTinyRegression(
+            num_outputs=num_outputs,
+            pretrained=pretrained,
+            dropout_rate=dropout_rate
+        )
+    elif model_type == "hybrid":
+        num_pixel_feat = pixel_feature_dim if pixel_feature_dim is not None else 5
+        return HybridCacaoRegression(
+            num_outputs=4 if num_outputs == 1 else num_outputs,
+            pretrained=pretrained,
+            dropout_rate=dropout_rate,
+            num_pixel_features=num_pixel_feat,
+            use_pixel_features=use_pixel_features
+        )
+    else:
+        raise ValueError(f"Tipo de modelo '{model_type}' no soportado")
+
+
 def create_model(
     model_type: str = "resnet18",
     num_outputs: int = 1,
     pretrained: bool = True,
-    dropout_rate: float = 0.3,  # Aumentado a 0.3 por defecto (mejor para regresión)
+    dropout_rate: float = 0.3,
     multi_head: bool = False,
     hybrid: bool = False,
     use_pixel_features: bool = True,
     pixel_feature_dim: Optional[int] = None,
-    use_optimized: bool = True  # Usar modelos optimizados por defecto
+    use_optimized: bool = True
 ) -> nn.Module:
     """
     Función de conveniencia para crear modelos.
@@ -660,92 +773,21 @@ def create_model(
         Modelo creado
     """
     if hybrid:
-        # Modelo hbrido que fusiona ResNet18 + ConvNeXt + Pxeles
-        # Determinar número de features de píxeles (10 por defecto con compactness y roundness)
-        num_pixel_feat = pixel_feature_dim if pixel_feature_dim is not None else 10
-        
-        # FORZAR pretrained=True para cargar pesos ImageNet-12k (CRÍTICO para buen rendimiento)
-        if not pretrained:
-            logger.warning("=" * 60)
-            logger.warning("⚠ pretrained=False detectado para modelo híbrido")
-            logger.warning("  Esto resultará en R² muy negativos en epoch 1 (grosor R² ~-1.0)")
-            logger.warning("  Forzando pretrained=True para mejor rendimiento")
-            logger.warning("=" * 60)
-            pretrained = True
-        else:
-            logger.info("=" * 60)
-            logger.info("✔ Creando modelo híbrido con pretrained=True")
-            logger.info(f"  ConvNeXt usará pesos ImageNet-12k ({CONVNEXT_TINY_MODEL_NAME})")
-            logger.info("=" * 60)
-        
-        logger.info(f"Creando HybridCacaoRegression con pretrained={pretrained}, num_pixel_features={num_pixel_feat}")
-        return HybridCacaoRegression(
-            num_outputs=4, # El modelo híbrido siempre tiene 4 salidas
-            pretrained=pretrained,
-            dropout_rate=dropout_rate,
-            num_pixel_features=num_pixel_feat,
-            use_pixel_features=use_pixel_features
-        )
-    elif multi_head:
-        logger.info(f"Creando modelo Multi-Head (Backbone: {model_type})")
-        return MultiHeadRegression(
-            backbone_type=model_type,
-            pretrained=pretrained,
-            dropout_rate=dropout_rate,
-            shared_features=True
-        )
-    else:
-        logger.info(f"Creando modelo Individual (Backbone: {model_type}, Outputs: {num_outputs})")
-        
-        # Intentar usar modelos optimizados si están disponibles
-        if use_optimized:
-            try:
-                from .optimized_models import create_optimized_model
-                
-                if model_type == "resnet18":
-                    logger.info("Usando modelo optimizado ResNet18")
-                    return create_optimized_model(
-                        model_type="resnet18",
-                        num_outputs=num_outputs,
-                        pretrained=pretrained,
-                        dropout_rate=dropout_rate
-                    )
-                elif model_type == "simple":
-                    logger.info("Usando modelo Simple optimizado (recomendado)")
-                    return create_optimized_model(
-                        model_type="simple",
-                        num_outputs=num_outputs,
-                        pretrained=pretrained,
-                        dropout_rate=dropout_rate
-                    )
-            except ImportError:
-                logger.warning("Modelos optimizados no disponibles, usando modelos estándar")
-        
-        # Fallback a modelos estándar
-        if model_type == "resnet18":
-            return ResNet18Regression(
-                num_outputs=num_outputs,
-                pretrained=pretrained,
-                dropout_rate=dropout_rate
-            )
-        elif model_type == "convnext_tiny":
-            return ConvNeXtTinyRegression(
-                num_outputs=num_outputs,
-                pretrained=pretrained,
-                dropout_rate=dropout_rate
-            )
-        elif model_type == "hybrid":
-            # Si se especifica "hybrid" sin flag, crear modelo hbrido
-            num_pixel_feat = pixel_feature_dim if pixel_feature_dim is not None else 5
-            return HybridCacaoRegression(
-                num_outputs=4 if num_outputs == 1 else num_outputs,
-                pretrained=pretrained,
-                dropout_rate=dropout_rate,
-                num_pixel_features=num_pixel_feat,
-                use_pixel_features=use_pixel_features
-            )
-        else:
-            raise ValueError(f"Tipo de modelo '{model_type}' no soportado")
+        return _create_hybrid_model(pretrained, dropout_rate, pixel_feature_dim, use_pixel_features)
+    
+    if multi_head:
+        return _create_multi_head_model(model_type, pretrained, dropout_rate)
+    
+    logger.info(f"Creando modelo Individual (Backbone: {model_type}, Outputs: {num_outputs})")
+    
+    if use_optimized:
+        optimized_model = _create_optimized_model(model_type, num_outputs, pretrained, dropout_rate)
+        if optimized_model is not None:
+            return optimized_model
+    
+    return _create_standard_model(
+        model_type, num_outputs, pretrained, dropout_rate, pixel_feature_dim, use_pixel_features
+    )
 
 
 def get_model_info(model: nn.Module) -> Dict[str, any]:

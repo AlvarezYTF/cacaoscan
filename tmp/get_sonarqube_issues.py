@@ -91,7 +91,10 @@ def main():
     try:
         issues = get_sonarqube_issues(token)
     except SystemExit:
-        print("\nFailed to fetch issues. Please check your SONARQUBE_TOKEN or network connection.")
+        raise
+    except Exception as e:
+        print(f"\nFailed to fetch issues: {e}")
+        print("Please check your SONARQUBE_TOKEN or network connection.")
         return []
     
     print(f"\nFound {len(issues)} issues")

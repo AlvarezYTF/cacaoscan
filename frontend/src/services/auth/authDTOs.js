@@ -91,6 +91,74 @@ export function normalizeUser(rawUser) {
 }
 
 /**
+ * Extracts error message from error data
+ * @param {Object|string} errorData - Error data object
+ * @returns {string|null} Error message
+ */
+function extractErrorMessage(errorData) {
+  if (typeof errorData === 'string') {
+    return errorData
+  }
+  
+  if (errorData.detail) {
+    return errorData.detail
+  }
+  
+  if (errorData.error) {
+    return errorData.error
+  }
+  
+  if (errorData.non_field_errors) {
+    return Array.isArray(errorData.non_field_errors)
+      ? errorData.non_field_errors[0]
+      : errorData.non_field_errors
+  }
+  
+  return null
+}
+
+/**
+ * Gets error message from HTTP status code
+ * @param {number} status - HTTP status code
+ * @returns {string} Error message
+ */
+function getStatusMessage(status) {
+  const statusMessages = {
+    400: 'Datos inválidos',
+    401: 'Credenciales inválidas',
+    403: 'No tienes permisos',
+    404: 'Recurso no encontrado',
+    422: 'Error de validación',
+    500: 'Error del servidor'
+  }
+  return statusMessages[status] || 'Error de autenticación'
+}
+
+/**
+ * Extracts field errors from error data
+ * @param {Object} errorData - Error data object
+ * @returns {Object|null} Field errors object
+ */
+function extractFieldErrors(errorData) {
+  const fieldErrors = {}
+  const excludedFields = ['detail', 'error', 'non_field_errors']
+  
+  for (const [field, errors] of Object.entries(errorData)) {
+    if (excludedFields.includes(field)) {
+      continue
+    }
+    
+    if (Array.isArray(errors)) {
+      fieldErrors[field] = errors[0]
+    } else if (typeof errors === 'string') {
+      fieldErrors[field] = errors
+    }
+  }
+  
+  return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+}
+
+/**
  * Normalizes error response from auth API
  * @param {Error} error - Error object
  * @returns {Object} Normalized error object
@@ -104,49 +172,17 @@ export function normalizeAuthError(error) {
   }
   
   const errorData = error.response.data
+  const status = error.response.status
   
-  // Extract error message
-  let message = errorData.detail || errorData.error
-  
-  if (!message && typeof errorData === 'string') {
-    message = errorData
-  }
-  
-  if (!message && errorData.non_field_errors) {
-    message = Array.isArray(errorData.non_field_errors)
-      ? errorData.non_field_errors[0]
-      : errorData.non_field_errors
-  }
-  
-  if (!message && error.response.status) {
-    const statusMessages = {
-      400: 'Datos inválidos',
-      401: 'Credenciales inválidas',
-      403: 'No tienes permisos',
-      404: 'Recurso no encontrado',
-      422: 'Error de validación',
-      500: 'Error del servidor'
-    }
-    message = statusMessages[error.response.status] || 'Error de autenticación'
-  }
-  
-  // Extract field errors
-  const fieldErrors = {}
-  for (const [field, errors] of Object.entries(errorData)) {
-    if (field !== 'detail' && field !== 'error' && field !== 'non_field_errors') {
-      if (Array.isArray(errors)) {
-        fieldErrors[field] = errors[0]
-      } else if (typeof errors === 'string') {
-        fieldErrors[field] = errors
-      }
-    }
-  }
+  const message = extractErrorMessage(errorData) || 
+                  (status ? getStatusMessage(status) : 'Error de autenticación')
+  const fieldErrors = extractFieldErrors(errorData)
   
   return {
-    message: message || 'Error de autenticación',
-    type: error.response.status === 401 ? 'authentication' : 'validation',
-    status: error.response.status,
-    fieldErrors: Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+    message,
+    type: status === 401 ? 'authentication' : 'validation',
+    status,
+    fieldErrors
   }
 }
 

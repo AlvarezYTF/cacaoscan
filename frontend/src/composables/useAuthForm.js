@@ -2,9 +2,8 @@
  * Composable for authentication forms
  * Extends useForm with authentication-specific validations and helpers
  */
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useForm } from './useForm'
-import { useFormValidation } from './useFormValidation'
 
 /**
  * Maximum input length to prevent ReDoS attacks

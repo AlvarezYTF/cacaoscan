@@ -179,6 +179,105 @@ export function usePrediction(options = {}) {
   }
 
   /**
+   * Prepares FormData from various input types
+   * @param {FormData|File|null} formDataOrFile - Form data, File, or null
+   * @returns {FormData} Prepared FormData
+   */
+  const prepareFormData = (formDataOrFile) => {
+    if (formDataOrFile instanceof FormData) {
+      return formDataOrFile
+    }
+    
+    if (formDataOrFile instanceof File) {
+      const formData = new FormData()
+      formData.append('image', formDataOrFile)
+      return formData
+    }
+    
+    const imageToUse = fileUpload.selectedFile.value || store?.currentImage
+    if (!imageToUse) {
+      throw new Error('No hay imagen disponible para analizar')
+    }
+    
+    if (imageToUse instanceof File) {
+      const formData = new FormData()
+      formData.append('image', imageToUse)
+      return formData
+    }
+    
+    throw new Error('Formato de imagen no soportado para predicción directa')
+  }
+
+  /**
+   * Executes prediction API call based on selected method
+   * @param {FormData} formData - FormData with image
+   * @param {Object} predictionOptions - Additional options
+   * @returns {Promise<Object>} API result
+   */
+  const executePredictionApi = async (formData, predictionOptions) => {
+    switch (selectedMethod.value) {
+      case 'yolo':
+        return await predictImageYolo(formData)
+      
+      case 'smart':
+        return await predictImageSmart(formData, {
+          returnCroppedImage: true,
+          returnTransparentImage: true,
+          ...predictionOptions
+        })
+      
+      case 'cacaoscan': {
+        const { predictImage: predictImageNew } = await import('@/services/api')
+        return { success: true, data: await predictImageNew(formData) }
+      }
+      
+      case 'traditional':
+      default:
+        return await predictImage(formData)
+    }
+  }
+
+  /**
+   * Handles successful prediction result
+   * @param {Object} apiResult - API result
+   * @param {number} startTime - Start timestamp
+   * @returns {Object} Mapped prediction data
+   */
+  const handlePredictionSuccess = (apiResult, startTime) => {
+    const mappedData = mapApiResponseToPredictionData(apiResult.data, selectedMethod.value)
+    result.value = mappedData
+    processingTime.value = Date.now() - startTime
+
+    if (store) {
+      store.setCurrentPrediction(mappedData)
+    }
+
+    if (onSuccess && typeof onSuccess === 'function') {
+      onSuccess(mappedData)
+    }
+
+    return mappedData
+  }
+
+  /**
+   * Handles prediction error
+   * @param {Error} err - Error object
+   * @returns {void}
+   */
+  const handlePredictionError = (err) => {
+    const errorInfo = handleApiError(err, { logError: true })
+    error.value = errorInfo.message
+
+    if (store) {
+      store.setError(errorInfo.message)
+    }
+
+    if (onError && typeof onError === 'function') {
+      onError(errorInfo)
+    }
+  }
+
+  /**
    * Execute prediction
    * @param {FormData|File|null} formDataOrFile - Form data with image, File object, or null to use current image
    * @param {Object} predictionOptions - Additional options for prediction
@@ -207,83 +306,16 @@ export function usePrediction(options = {}) {
     const startTime = Date.now()
 
     try {
-      // Prepare FormData
-      let formData
-      if (formDataOrFile instanceof FormData) {
-        formData = formDataOrFile
-      } else if (formDataOrFile instanceof File) {
-        formData = new FormData()
-        formData.append('image', formDataOrFile)
-      } else {
-        // Use current image file from file upload composable or store
-        const imageToUse = fileUpload.selectedFile.value || store?.currentImage
-        if (!imageToUse) {
-          throw new Error('No hay imagen disponible para analizar')
-        }
-        
-        if (imageToUse instanceof File) {
-          formData = new FormData()
-          formData.append('image', imageToUse)
-        } else {
-          // If it's a URL/base64, we need to convert it or use it directly
-          throw new Error('Formato de imagen no soportado para predicción directa')
-        }
-      }
-
-      let apiResult
-
-      switch (selectedMethod.value) {
-        case 'yolo':
-          apiResult = await predictImageYolo(formData)
-          break
-        case 'smart':
-          apiResult = await predictImageSmart(formData, {
-            returnCroppedImage: true,
-            returnTransparentImage: true,
-            ...predictionOptions
-          })
-          break
-        case 'cacaoscan': {
-          // Import dynamically to avoid circular dependencies
-          const { predictImage: predictImageNew } = await import('@/services/api')
-          apiResult = { success: true, data: await predictImageNew(formData) }
-          break
-        }
-        case 'traditional':
-        default:
-          apiResult = await predictImage(formData)
-          break
-      }
+      const formData = prepareFormData(formDataOrFile)
+      const apiResult = await executePredictionApi(formData, predictionOptions)
 
       if (apiResult.success) {
-        const mappedData = mapApiResponseToPredictionData(apiResult.data, selectedMethod.value)
-        result.value = mappedData
-        processingTime.value = Date.now() - startTime
-
-        if (store) {
-          store.setCurrentPrediction(mappedData)
-        }
-
-        if (onSuccess && typeof onSuccess === 'function') {
-          onSuccess(mappedData)
-        }
-
-        return mappedData
-      } else {
-        throw new Error(apiResult.error || 'Error en la predicción')
+        return handlePredictionSuccess(apiResult, startTime)
       }
+      
+      throw new Error(apiResult.error || 'Error en la predicción')
     } catch (err) {
-      const errorInfo = handleApiError(err, { logError: true })
-      error.value = errorInfo.message
-
-      if (store) {
-        store.setError(errorInfo.message)
-      }
-
-      if (onError && typeof onError === 'function') {
-        onError(errorInfo)
-      }
-
+      handlePredictionError(err)
       throw err
     } finally {
       isLoading.value = false
