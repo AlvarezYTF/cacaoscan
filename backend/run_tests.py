@@ -8,6 +8,9 @@ import os
 import shutil
 from pathlib import Path
 
+# Constants
+TESTS_DIR = 'tests/'
+
 # Asegurar que estamos en el directorio correcto
 project_root = Path(__file__).parent
 os.chdir(project_root)
@@ -81,7 +84,7 @@ def run_tests(test_path=None, verbose=True, stop_on_first_error=False):
     if test_path:
         cmd.append(test_path)
     else:
-        cmd.append('tests/')
+        cmd.append(TESTS_DIR)
     
     if verbose:
         cmd.append('-v')
@@ -114,9 +117,9 @@ if __name__ == '__main__':
         # Ejecutar con cobertura
         python_cmd = get_python_cmd()
         if isinstance(python_cmd, list):
-            cmd = python_cmd + ['-m', 'pytest', 'tests/', '-v', '--cov=.', '--cov-report=html', '--cov-report=term']
+            cmd = python_cmd + ['-m', 'pytest', TESTS_DIR, '-v', '--cov=.', '--cov-report=html', '--cov-report=term']
         else:
-            cmd = [python_cmd, '-m', 'pytest', 'tests/', '-v', '--cov=.', '--cov-report=html', '--cov-report=term']
+            cmd = [python_cmd, '-m', 'pytest', TESTS_DIR, '-v', '--cov=.', '--cov-report=html', '--cov-report=term']
         if args.test_path:
             cmd.insert(-1, args.test_path)
         subprocess.run(cmd, cwd=project_root)

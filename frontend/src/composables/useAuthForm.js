@@ -215,8 +215,7 @@ export function useAuthForm(options = {}) {
     autoLoadCatalogos: false // Auth forms don't need catalogos
   })
 
-  // Get validation helpers
-  const { isValidEmail: isValidEmailFromValidation } = useFormValidation()
+  // Get validation helpers (isValidEmail is used directly, not through destructuring)
 
   // Status message state
   const statusMessage = ref('')
@@ -229,11 +228,13 @@ export function useAuthForm(options = {}) {
    */
   const setStatusMessage = (message, type = 'info') => {
     statusMessage.value = message
-    statusMessageClass.value = type === 'success'
-      ? 'bg-green-100 border border-green-400 text-green-700'
-      : type === 'error'
-        ? 'bg-red-100 border border-red-400 text-red-700'
-        : 'bg-blue-100 border border-blue-400 text-blue-700'
+    let statusClass = 'bg-blue-100 border border-blue-400 text-blue-700'
+    if (type === 'success') {
+      statusClass = 'bg-green-100 border border-green-400 text-green-700'
+    } else if (type === 'error') {
+      statusClass = 'bg-red-100 border border-red-400 text-red-700'
+    }
+    statusMessageClass.value = statusClass
 
     // Clear message after 5 seconds
     setTimeout(() => {
@@ -247,7 +248,7 @@ export function useAuthForm(options = {}) {
    * @returns {string | null} Error message or null if valid
    */
   const validateEmailOrUsername = (value) => {
-    if (!value || !value.trim()) {
+    if (!value?.trim()) {
       return 'El email o usuario es requerido'
     }
 

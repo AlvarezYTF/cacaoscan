@@ -819,7 +819,7 @@ class Command(BaseCommand):
     def _run_direct_training(self, config: dict) -> None:
         """Ejecuta el pipeline de entrenamiento directamente."""
         pipeline = CacaoTrainingPipeline(config)
-        results = pipeline.run_pipeline(config['multi_head'])
+        results = pipeline.run_pipeline()
         self._display_results(results, time.time())
 
     def _wait_for_condition(

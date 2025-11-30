@@ -105,6 +105,10 @@ CALIB_PIXEL_FEATURE_KEYS = [
     "segmentation_confidence",
 ]
 
+# Model file names constants
+MODEL_HYBRID = "hybrid.pt"
+MODEL_MULTIHEAD = "multihead.pt"
+
 
 class CacaoDataset(Dataset):
     """
@@ -137,38 +141,44 @@ class CacaoDataset(Dataset):
         self.is_multi_head = is_multi_head
         self.is_hybrid = is_hybrid
         
-        # Paso 2: Normalizar pixel_features antes de fusionar
         self.pixel_means = None
         self.pixel_stds = None
         if pixel_features is not None and is_hybrid:
-            # Determinar qué features usar
-            available_keys = list(pixel_features.keys())
-            if all(k in available_keys for k in CALIB_PIXEL_FEATURE_KEYS):
-                feature_keys = CALIB_PIXEL_FEATURE_KEYS
-            else:
-                feature_keys = PIXEL_FEATURE_KEYS
-            
-            # Crear DataFrame con los features
-            pixel_df = pd.DataFrame({k: pixel_features[k] for k in feature_keys})
-            self.pixel_means = pixel_df.mean().values
-            self.pixel_stds = pixel_df.std().values
-            # Evitar división por cero
-            self.pixel_stds = np.where(self.pixel_stds < 1e-8, 1.0, self.pixel_stds)
-            logger.debug(f"Pixel features normalizados: mean shape={self.pixel_means.shape}, std shape={self.pixel_stds.shape}")
+            self._normalize_pixel_features(pixel_features)
 
-        # Validar estructura si se solicita
         if validate_structure:
             self._validate_structure()
 
+        self._validate_data_lengths(image_paths, targets, pixel_features)
+    
+    def _determine_feature_keys(self, pixel_features: Dict[str, np.ndarray]) -> List[str]:
+        """Determine which feature keys to use based on available features."""
+        available_keys = list(pixel_features.keys())
+        if all(k in available_keys for k in CALIB_PIXEL_FEATURE_KEYS):
+            return CALIB_PIXEL_FEATURE_KEYS
+        return PIXEL_FEATURE_KEYS
+    
+    def _normalize_pixel_features(self, pixel_features: Dict[str, np.ndarray]) -> None:
+        """Normalize pixel features before fusion."""
+        feature_keys = self._determine_feature_keys(pixel_features)
+        pixel_df = pd.DataFrame({k: pixel_features[k] for k in feature_keys})
+        self.pixel_means = pixel_df.mean().values
+        self.pixel_stds = pixel_df.std().values
+        # Avoid division by zero
+        self.pixel_stds = np.where(self.pixel_stds < 1e-8, 1.0, self.pixel_stds)
+        logger.debug(f"Pixel features normalizados: mean shape={self.pixel_means.shape}, std shape={self.pixel_stds.shape}")
+    
+    def _validate_data_lengths(
+        self,
+        image_paths: List[Path],
+        targets: Dict[str, np.ndarray],
+        pixel_features: Optional[Dict[str, np.ndarray]]
+    ) -> None:
+        """Validate that all data arrays have consistent lengths."""
         lengths: List[int] = [len(image_paths)] + [len(v) for v in targets.values()]
-        if pixel_features is not None and is_hybrid:
-            # Verificar features disponibles (pueden ser básicos o extendidos)
-            available_keys = list(pixel_features.keys())
-            if all(k in available_keys for k in CALIB_PIXEL_FEATURE_KEYS):
-                feature_keys = CALIB_PIXEL_FEATURE_KEYS
-            else:
-                feature_keys = PIXEL_FEATURE_KEYS
-            
+        
+        if pixel_features is not None and self.is_hybrid:
+            feature_keys = self._determine_feature_keys(pixel_features)
             missing_keys = [k for k in feature_keys if k not in pixel_features]
             if missing_keys:
                 raise ValueError(
@@ -177,21 +187,28 @@ class CacaoDataset(Dataset):
             lengths.extend(len(pixel_features[feat]) for feat in feature_keys)
 
         if len(set(lengths)) > 1:
-            mismatched: Dict[str, int] = {
-                "images": len(image_paths),
-                **{f"target_{k}": len(v) for k, v in targets.items()},
-                **(
-                    {f"pixel_{k}": len(v) for k, v in pixel_features.items()}
-                    if pixel_features is not None and is_hybrid
-                    else {}
-                ),
-            }
+            mismatched = self._build_mismatch_dict(image_paths, targets, pixel_features)
             logger.error(
                 f"Error: Longitudes de datos inconsistentes: {mismatched}"
             )
             raise ValueError(
                 f"Longitudes inconsistentes en los datos del dataset: {mismatched}"
             )
+    
+    def _build_mismatch_dict(
+        self,
+        image_paths: List[Path],
+        targets: Dict[str, np.ndarray],
+        pixel_features: Optional[Dict[str, np.ndarray]]
+    ) -> Dict[str, int]:
+        """Build dictionary with length information for error reporting."""
+        mismatched: Dict[str, int] = {
+            "images": len(image_paths),
+            **{f"target_{k}": len(v) for k, v in targets.items()},
+        }
+        if pixel_features is not None and self.is_hybrid:
+            mismatched.update({f"pixel_{k}": len(v) for k, v in pixel_features.items()})
+        return mismatched
     
     def _validate_structure(self) -> None:
         """Valida la estructura de datos."""
@@ -521,15 +538,8 @@ class CacaoTrainingPipeline:
             bad_crop_records: List[Dict[str, Any]] = []
             good_crop_records: List[Dict[str, Any]] = []
 
-            from ..segmentation.cropper import create_cacao_cropper as _create_c
             from ..data.transforms import validate_crop_quality  # noqa: F401
             import cv2
-
-            cropper = _create_c(  # noqa: F841
-                confidence_threshold=0.3,
-                crop_size=512,
-                padding=10,
-            )
 
             for record in crop_records:
                 try:
@@ -1247,13 +1257,6 @@ class CacaoTrainingPipeline:
             pixel_feature_dim=pixel_feature_dim
         )
         
-        # Preparar información del dataset
-        dataset_info = {
-            'train_size': len(self.train_loader.dataset),
-            'val_size': len(self.val_loader.dataset),
-            'test_size': len(self.test_loader.dataset) if self.test_loader else 0
-        }
-        
         # Determinar si usar UncertaintyWeightedLoss
         # Se puede configurar explícitamente o se detecta automáticamente
         use_uncertainty_loss = self.config.get('use_uncertainty_loss', None)
@@ -1346,7 +1349,7 @@ class CacaoTrainingPipeline:
             
             # Crear evaluador con el loader especfico
             evaluator = RegressionEvaluator(
-                model=model, test_loader=target_loader,
+                model=model, test_loader=test_loader_single,
                 scalers=self.scalers, device=self.device
             )
             target_results = evaluator.evaluate_single_model(target, denormalize=True)
@@ -1358,16 +1361,13 @@ class CacaoTrainingPipeline:
         """Evalúa modelo multi-head."""
         logger.info("Evaluando modelo multi-head...")
         
-        MODEL_HYBRID = "hybrid.pt"
-        MODEL_MULTIHEAD = "multihead.pt"
-        
         model_name = MODEL_HYBRID if self.is_hybrid else MODEL_MULTIHEAD
         model_path = get_regressors_artifacts_dir() / model_name
         
         if not model_path.exists():
             if self.is_hybrid and (get_regressors_artifacts_dir() / MODEL_MULTIHEAD).exists():
                 model_path = get_regressors_artifacts_dir() / MODEL_MULTIHEAD
-                logger.warning("Usando 'multihead.pt' para el modelo híbrido.")
+                logger.warning(f"Usando '{MODEL_MULTIHEAD}' para el modelo híbrido.")
             else:
                  logger.warning(f"Modelo {model_name} no encontrado: {model_path}")
                  return {}
@@ -1466,7 +1466,7 @@ class CacaoTrainingPipeline:
         missing_files = []
 
         if self.is_multi_head or self.is_hybrid:
-            model_name = "hybrid.pt" if self.is_hybrid else "multihead.pt"
+            model_name = MODEL_HYBRID if self.is_hybrid else MODEL_MULTIHEAD
             model_path = artifacts_dir / model_name
             if not model_path.exists():
                 missing_files.append(f"Modelo {model_name}: {model_path}")
@@ -1493,7 +1493,7 @@ class CacaoTrainingPipeline:
             # Calcular tamaño total según el tipo de modelo
             if self.is_multi_head or self.is_hybrid:
                 # Modelo híbrido o multi-head: solo hay un archivo de modelo
-                model_name = "hybrid.pt" if self.is_hybrid else "multihead.pt"
+                model_name = MODEL_HYBRID if self.is_hybrid else MODEL_MULTIHEAD
                 model_path = artifacts_dir / model_name
                 model_size = model_path.stat().st_size
                 
@@ -1731,7 +1731,7 @@ class CacaoTrainingPipeline:
         try:
             # 1. Cargar datos con pixel_calibration.json
             logger.info("PASO 1: Cargando datos con pixel_calibration.json...")
-            image_paths, targets_original, pixel_features = self.load_data()
+            image_paths, _, _ = self.load_data()
             
             # Verificar que tenemos los datos de calibración necesarios
             if self.single_dim_real_dimensions is None or self.single_dim_pixel_features is None:
@@ -1740,7 +1740,6 @@ class CacaoTrainingPipeline:
                     "Ejecuta primero: python manage.py calibrate_dataset_pixels"
                 )
             
-            results = {}
             training_histories = {}
             evaluation_results = {}
             
@@ -2100,10 +2099,12 @@ def _create_argument_parser() -> argparse.ArgumentParser:
         help='Entrenar cada dimensión (alto, ancho, grosor, peso) por separado usando pixel_calibration.json'
     )
     
-    args = parser.parse_args()
-    
-    # Crear configuración
-    config = {
+    return parser
+
+
+def _build_config_from_args(args: argparse.Namespace) -> Dict[str, Any]:
+    """Construye la configuración a partir de los argumentos parseados."""
+    return {
         'multi_head': args.multihead.lower() == 'true',
         'model_type': args.model_type,
         'epochs': args.epochs,
@@ -2118,30 +2119,27 @@ def _create_argument_parser() -> argparse.ArgumentParser:
         'min_lr': 1e-6,
         'train_separate_dimensions': args.train_separate_dimensions,
     }
+
+
+def _print_evaluation_results(results: Dict[str, Any], config: Dict[str, Any]) -> None:
+    """Imprime los resultados de evaluación."""
+    if 'evaluation_results' not in results:
+        return
     
-    # Crear y ejecutar pipeline
-    pipeline = CacaoTrainingPipeline(config)
-    results = pipeline.run_pipeline(config['multi_head'])
+    eval_results = results['evaluation_results']
+    print("\n=== RESULTADOS DE EVALUACIÓN ===")
     
-    print("Pipeline completado exitosamente!")
-    print(f"Tiempo total: {results['total_time']:.2f}s")
-    
-    # Mostrar resultados de evaluación
-    if 'evaluation_results' in results:
-        eval_results = results['evaluation_results']
-        print("\n=== RESULTADOS DE EVALUACIÓN ===")
-        
-        if config['multi_head'] and 'multihead' in eval_results:
-            multihead_results = eval_results['multihead']
-            for target in TARGETS:
-                if target in multihead_results:
-                    metrics = multihead_results[target]
-                    print(f"{target.upper()}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, R²={metrics['r2']:.4f}")
-        else:
-            for target in TARGETS:
-                if target in eval_results:
-                    metrics = eval_results[target]
-                    print(f"{target.upper()}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, R²={metrics['r2']:.4f}")
+    if config['multi_head'] and 'multihead' in eval_results:
+        multihead_results = eval_results['multihead']
+        for target in TARGETS:
+            if target in multihead_results:
+                metrics = multihead_results[target]
+                print(f"{target.upper()}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, R²={metrics['r2']:.4f}")
+    else:
+        for target in TARGETS:
+            if target in eval_results:
+                metrics = eval_results[target]
+                print(f"{target.upper()}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, R²={metrics['r2']:.4f}")
 
 def main():
     """Función principal del script."""

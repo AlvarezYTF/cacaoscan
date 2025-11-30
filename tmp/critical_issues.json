@@ -1,0 +1,234 @@
+[
+  {
+    "file": "frontend/src/composables/usePrediction.js",
+    "line": 187,
+    "rule": "javascript:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 28 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "frontend/src/composables/useDashboardStats.js",
+    "line": 351,
+    "rule": "javascript:S2871",
+    "message": "Provide a compare function that depends on \"String.localeCompare\", to reliably sort elements alphabetically.",
+    "severity": "CRITICAL",
+    "type": "BUG"
+  },
+  {
+    "file": "frontend/src/utils/formDataUtils.js",
+    "line": 113,
+    "rule": "javascript:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 35 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "frontend/src/services/auth/authDTOs.js",
+    "line": 98,
+    "rule": "javascript:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 19 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "frontend/src/components/common/BaseFormField.example.vue",
+    "line": 55,
+    "rule": "Web:S7930",
+    "message": "Duplicate id \"nombre\" found. First occurrence was on line 49.",
+    "severity": "CRITICAL",
+    "type": "BUG"
+  },
+  {
+    "file": "frontend/src/components/common/BaseFormField.example.vue",
+    "line": 74,
+    "rule": "Web:S7930",
+    "message": "Duplicate id \"email\" found. First occurrence was on line 67.",
+    "severity": "CRITICAL",
+    "type": "BUG"
+  },
+  {
+    "file": "frontend/src/components/common/BaseFormField.example.vue",
+    "line": 92,
+    "rule": "Web:S7930",
+    "message": "Duplicate id \"telefono\" found. First occurrence was on line 86.",
+    "severity": "CRITICAL",
+    "type": "BUG"
+  },
+  {
+    "file": "frontend/src/components/common/BaseFormField.example.vue",
+    "line": 109,
+    "rule": "Web:S7930",
+    "message": "Duplicate id \"pais\" found. First occurrence was on line 103.",
+    "severity": "CRITICAL",
+    "type": "BUG"
+  },
+  {
+    "file": "frontend/src/components/common/BaseFormField.example.vue",
+    "line": 130,
+    "rule": "Web:S7930",
+    "message": "Duplicate id \"comentarios\" found. First occurrence was on line 124.",
+    "severity": "CRITICAL",
+    "type": "BUG"
+  },
+  {
+    "file": "backend/ml/pipeline/train_all.py",
+    "line": 1357,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 39 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/training/management/commands/train_cacao_models.py",
+    "line": 822,
+    "rule": "python:S930",
+    "message": "Remove 1 unexpected arguments; 'run_pipeline' expects 0 positional arguments.",
+    "severity": "BLOCKER",
+    "type": "BUG"
+  },
+  {
+    "file": "backend/images_app/services/image/management_service.py",
+    "line": 184,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 24 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/run_tests.py",
+    "line": 15,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 25 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/run_tests.py",
+    "line": 84,
+    "rule": "python:S1192",
+    "message": "Define a constant instead of duplicating this literal 'tests/' 3 times.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/pipeline/train_all.py",
+    "line": 124,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 17 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/pipeline/train_all.py",
+    "line": 248,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 42 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/pipeline/train_all.py",
+    "line": 455,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 92 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/pipeline/train_all.py",
+    "line": 837,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/pipeline/train_all.py",
+    "line": 1174,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 27 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/regression/models.py",
+    "line": 200,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/regression/models.py",
+    "line": 360,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 27 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/regression/models.py",
+    "line": 636,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 28 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/regression/scalers.py",
+    "line": 57,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 27 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/regression/scalers.py",
+    "line": 116,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 27 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/pipeline/train_all.py",
+    "line": 1361,
+    "rule": "python:S1192",
+    "message": "Define a constant instead of duplicating this literal \"hybrid.pt\" 3 times.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/pipeline/train_all.py",
+    "line": 1362,
+    "rule": "python:S1192",
+    "message": "Define a constant instead of duplicating this literal \"multihead.pt\" 3 times.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/pipeline/train_all.py",
+    "line": 1462,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/pipeline/train_all.py",
+    "line": 2073,
+    "rule": "python:S3776",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 19 to the 15 allowed.",
+    "severity": "CRITICAL",
+    "type": "CODE_SMELL"
+  },
+  {
+    "file": "backend/ml/pipeline/train_all.py",
+    "line": 2124,
+    "rule": "python:S930",
+    "message": "Remove 1 unexpected arguments; 'run_pipeline' expects 0 positional arguments.",
+    "severity": "BLOCKER",
+    "type": "BUG"
+  }
+]

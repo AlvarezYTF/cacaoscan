@@ -72,7 +72,7 @@ export function useImageHandling() {
     const added = []
     const errors = []
 
-    fileArray.forEach(file => {
+    for (const file of fileArray) {
       const validation = validateImage(file)
       if (validation.isValid) {
         selectedImages.value.push(file)
@@ -81,7 +81,7 @@ export function useImageHandling() {
       } else {
         errors.push({ file: file.name, error: validation.error })
       }
-    })
+    }
 
     return { added, errors }
   }
@@ -134,11 +134,11 @@ export function useImageHandling() {
    */
   const clearImages = () => {
     // Revoke all preview URLs
-    imagePreviews.value.forEach(url => {
+    for (const url of imagePreviews.value) {
       if (url.startsWith('blob:')) {
         URL.revokeObjectURL(url)
       }
-    })
+    }
 
     selectedImages.value = []
     imagePreviews.value = []

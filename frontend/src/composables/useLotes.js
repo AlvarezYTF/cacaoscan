@@ -226,7 +226,7 @@ export function useLotes(options = {}) {
       const result = await lotesApi.updateLote(loteId, formatted)
       
       // Update local state
-      if (lote.value && lote.value.id === loteId) {
+      if (lote.value?.id === loteId) {
         lote.value = result
       }
       
@@ -267,7 +267,7 @@ export function useLotes(options = {}) {
       
       // Remove from local state
       lotes.value = lotes.value.filter(l => l.id !== loteId)
-      if (lote.value && lote.value.id === loteId) {
+      if (lote.value?.id === loteId) {
         lote.value = null
       }
       

@@ -119,14 +119,23 @@ export function formatJson(data) {
   // Try to format as JSON
   try {
     const parsed = typeof data === 'string' ? JSON.parse(data) : data
-    return JSON.stringify(parsed, null, 2)
+    if (typeof parsed === 'object' && parsed !== null) {
+      return JSON.stringify(parsed, null, 2)
+    }
+    return String(parsed)
   } catch {
     // Fallback: convert primitive types to string
     const type = typeof data
-    if (type === 'object') return '[Object]'
+    if (type === 'object' && data !== null) {
+      try {
+        return JSON.stringify(data, null, 2)
+      } catch {
+        return '[Object]'
+      }
+    }
     
     const stringifiableTypes = new Set(['string', 'number', 'boolean', 'symbol', 'function'])
-    return stringifiableTypes.has(type) ? data.toString() : '[Unknown]'
+    return stringifiableTypes.has(type) ? String(data) : '[Unknown]'
   }
 }
 

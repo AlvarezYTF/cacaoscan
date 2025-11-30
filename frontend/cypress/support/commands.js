@@ -174,11 +174,12 @@ Cypress.Commands.add('mockApiResponse', (method, url, response, statusCode = 200
 // Create entity (generic)
 Cypress.Commands.add('createEntity', (entityType, data, options = {}) => {
   const { useApi = false, waitForResponse = true } = options
+  const entityTypeStr = String(entityType)
   
   if (useApi) {
     return cy.request({
       method: 'POST',
-      url: `/api/${entityType}/`,
+      url: `/api/${entityTypeStr}/`,
       body: data,
       headers: {
         'Authorization': `Bearer ${globalThis.localStorage.getItem('auth_token')}`
@@ -192,8 +193,8 @@ Cypress.Commands.add('createEntity', (entityType, data, options = {}) => {
   }
   
   // UI-based creation
-  cy.get(`[data-cy="${entityType}-form"]`).within(() => {
-    helpers.fillForm(data, entityType)
+  cy.get(`[data-cy="${entityTypeStr}-form"]`).within(() => {
+    helpers.fillForm(data, entityTypeStr)
   })
   cy.submitForm()
   
@@ -205,11 +206,12 @@ Cypress.Commands.add('createEntity', (entityType, data, options = {}) => {
 // Update entity (generic)
 Cypress.Commands.add('updateEntity', (entityType, id, data, options = {}) => {
   const { useApi = false } = options
+  const entityTypeStr = String(entityType)
   
   if (useApi) {
     return cy.request({
       method: 'PUT',
-      url: `/api/${entityType}/${id}/`,
+      url: `/api/${entityTypeStr}/${id}/`,
       body: data,
       headers: {
         'Authorization': `Bearer ${globalThis.localStorage.getItem('auth_token')}`
@@ -218,11 +220,11 @@ Cypress.Commands.add('updateEntity', (entityType, id, data, options = {}) => {
   }
   
   // UI-based update
-  cy.get(`[data-cy="${entityType}-${id}"]`).within(() => {
+  cy.get(`[data-cy="${entityTypeStr}-${id}"]`).within(() => {
     cy.get(SELECTORS.buttons.edit).click()
   })
-  cy.get(`[data-cy="${entityType}-form"]`).within(() => {
-    helpers.fillForm(data, entityType)
+  cy.get(`[data-cy="${entityTypeStr}-form"]`).within(() => {
+    helpers.fillForm(data, entityTypeStr)
   })
   cy.submitForm()
 })
@@ -230,11 +232,12 @@ Cypress.Commands.add('updateEntity', (entityType, id, data, options = {}) => {
 // Delete entity (generic)
 Cypress.Commands.add('deleteEntity', (entityType, id, options = {}) => {
   const { useApi = false, confirm = true } = options
+  const entityTypeStr = String(entityType)
   
   if (useApi) {
     return cy.request({
       method: 'DELETE',
-      url: `/api/${entityType}/${id}/`,
+      url: `/api/${entityTypeStr}/${id}/`,
       headers: {
         'Authorization': `Bearer ${globalThis.localStorage.getItem('auth_token')}`
       }
@@ -242,7 +245,7 @@ Cypress.Commands.add('deleteEntity', (entityType, id, options = {}) => {
   }
   
   // UI-based deletion
-  cy.get(`[data-cy="${entityType}-${id}"]`).within(() => {
+  cy.get(`[data-cy="${entityTypeStr}-${id}"]`).within(() => {
     cy.get(SELECTORS.buttons.delete).click()
   })
   
@@ -283,11 +286,11 @@ Cypress.Commands.add('logoutWithConfirmation', (options = {}) => {
 // Generic form validation helper
 Cypress.Commands.add('validateFormErrors', (formSelector, expectedErrors) => {
   cy.get(formSelector).within(() => {
-    Object.keys(expectedErrors).forEach((field) => {
+    for (const field of Object.keys(expectedErrors)) {
       cy.get(`[data-cy="${field}-error"]`)
         .should('be.visible')
         .and('contain', expectedErrors[field])
-    })
+    }
   })
 })
 

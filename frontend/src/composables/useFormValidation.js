@@ -297,13 +297,21 @@ export function useFormValidation() {
    */
   const validateNameField = (value, fieldName) => {
     if (!value || !value.trim()) {
-      const fieldLabel = fieldName === 'firstName' ? 'nombre' : 
-                        fieldName === 'lastName' ? 'apellido' : 'campo'
+      let fieldLabel = 'campo'
+      if (fieldName === 'firstName') {
+        fieldLabel = 'nombre'
+      } else if (fieldName === 'lastName') {
+        fieldLabel = 'apellido'
+      }
       return `El ${fieldLabel} es requerido`
     }
     if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(value)) {
-      const fieldLabel = fieldName === 'firstName' ? 'nombre' : 
-                        fieldName === 'lastName' ? 'apellido' : 'campo'
+      let fieldLabel = 'campo'
+      if (fieldName === 'firstName') {
+        fieldLabel = 'nombre'
+      } else if (fieldName === 'lastName') {
+        fieldLabel = 'apellido'
+      }
       return `El ${fieldLabel} solo puede contener letras`
     }
     return null
@@ -424,7 +432,7 @@ export function useFormValidation() {
     email: {
       required: true,
       validator: (value) => {
-        if (!value || !value.trim()) {
+        if (!value?.trim()) {
           return 'El email es requerido'
         }
         if (!isValidEmail(value)) {
@@ -458,7 +466,7 @@ export function useFormValidation() {
     document: {
       required: true,
       validator: (value) => {
-        if (!value || !value.trim()) {
+        if (!value?.trim()) {
           return 'El número de documento es requerido'
         }
         if (!isValidDocument(value)) {

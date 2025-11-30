@@ -188,7 +188,7 @@ export function useFincas(options = {}) {
       // Remove from local state
       fincas.value = fincas.value.filter(f => f.id !== fincaId)
 
-      if (currentFinca.value && currentFinca.value.id === fincaId) {
+      if (currentFinca.value?.id === fincaId) {
         currentFinca.value = null
       }
 

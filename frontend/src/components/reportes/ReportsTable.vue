@@ -94,7 +94,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { useTable } from '@/composables/useTable'
 import { formatReportStatus, getReportStatusClass } from '@/composables/useReports'
 import { useDateFormatting } from '@/composables/useDateFormatting'

@@ -84,7 +84,8 @@ export const useReportsStore = defineStore('reports', {
         const pageSize = params.page_size || params.itemsPerPage || this.pagination.itemsPerPage
         
         // Extract filters from params
-        const { page: _, page_size: __, itemsPerPage: ___, ...filters } = params
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { page, page_size, itemsPerPage, ...filters } = params
         
         const response = await reportsService.getReports(filters, page, pageSize)
         
@@ -124,7 +125,7 @@ export const useReportsStore = defineStore('reports', {
         }
         return response
       } catch (error) {
-        const errorInfo = handleApiError(error, { logError: true })
+        handleApiError(error, { logError: true })
         throw error
       }
     },
@@ -264,7 +265,7 @@ export const useReportsStore = defineStore('reports', {
 
         return true
       } catch (error) {
-        const errorInfo = handleApiError(error, { logError: true })
+        handleApiError(error, { logError: true })
         throw error
       }
     },
@@ -287,7 +288,7 @@ export const useReportsStore = defineStore('reports', {
         
         return report
       } catch (error) {
-        const errorInfo = handleApiError(error, { logError: true })
+        handleApiError(error, { logError: true })
         throw error
       }
     },

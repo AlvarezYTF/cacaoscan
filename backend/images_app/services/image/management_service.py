@@ -25,7 +25,6 @@ logger = logging.getLogger("cacaoscan.services.image.management")
 
 # Error message constants
 ERROR_IMAGE_NOT_FOUND = "Imagen no encontrada"
-ERROR_IMAGE_NOT_FOUND = "Imagen no encontrada"
 
 
 class ImageManagementService(BaseService):
@@ -181,6 +180,103 @@ class ImageManagementService(BaseService):
                 ValidationServiceError("Error interno obteniendo imágenes", details={"original_error": str(e)})
             )
     
+    def _get_predictions_list(self, image: CacaoImage) -> List[Any]:
+        """
+        Safely retrieves predictions list from image.
+        
+        Args:
+            image: CacaoImage instance
+            
+        Returns:
+            List of predictions or empty list
+        """
+        if not hasattr(image, 'predictions'):
+            return []
+        
+        try:
+            all_result = image.predictions.all()
+            if all_result is None:
+                return []
+            
+            ordered_result = all_result.order_by('-created_at')
+            return self._safe_convert_to_list(ordered_result)
+        except Exception:
+            return []
+    
+    def _safe_convert_to_list(self, ordered_result: Any) -> List[Any]:
+        """
+        Safely converts ordered result to list, handling mocks and non-iterables.
+        
+        Args:
+            ordered_result: Result from queryset order_by
+            
+        Returns:
+            List of results or empty list
+        """
+        try:
+            if isinstance(ordered_result, list):
+                return ordered_result
+            return list(ordered_result)
+        except Exception:
+            return []
+    
+    def _process_predictions_data(self, predictions_list: List[Any]) -> List[Dict[str, Any]]:
+        """
+        Processes predictions list into dictionary format.
+        
+        Args:
+            predictions_list: List of prediction objects
+            
+        Returns:
+            List of prediction dictionaries
+        """
+        prediction_data = []
+        for prediction in predictions_list:
+            try:
+                created_at = getattr(prediction, 'created_at', None)
+                created_at_str = created_at.isoformat() if created_at and hasattr(created_at, 'isoformat') else None
+                
+                prediction_data.append({
+                    'id': getattr(prediction, 'id', None),
+                    'alto_mm': getattr(prediction, 'alto_mm', None),
+                    'ancho_mm': getattr(prediction, 'ancho_mm', None),
+                    'grosor_mm': getattr(prediction, 'grosor_mm', None),
+                    'peso_g': getattr(prediction, 'peso_g', None),
+                    'average_confidence': getattr(prediction, 'average_confidence', None),
+                    'processing_time_ms': getattr(prediction, 'processing_time_ms', None),
+                    'created_at': created_at_str,
+                    'crop_url': getattr(prediction, 'crop_url', None)
+                })
+            except (AttributeError, TypeError, ValueError):
+                continue
+        
+        return prediction_data
+    
+    def _build_image_data(self, image: CacaoImage, prediction_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Builds image data dictionary.
+        
+        Args:
+            image: CacaoImage instance
+            prediction_data: List of prediction dictionaries
+            
+        Returns:
+            Dictionary with image data
+        """
+        return {
+            'id': image.id,
+            'file_name': image.file_name,
+            'file_size': image.file_size,
+            'file_type': image.file_type,
+            'processed': image.processed,
+            'created_at': image.created_at.isoformat(),
+            'updated_at': image.updated_at.isoformat(),
+            'image_url': image.image.url if image.image else None,
+            'metadata': image.metadata,
+            'predictions': prediction_data,
+            'predictions_count': len(prediction_data)
+        }
+    
     def get_image_details(self, image_id: int, user: User) -> ServiceResult:
         """
         Obtiene detalles de una imagen específica.
@@ -193,80 +289,13 @@ class ImageManagementService(BaseService):
             ServiceResult con detalles de la imagen
         """
         try:
-            try:
-                # Obtener imagen sin prefetch_related para evitar problemas con mocks en tests
-                image = CacaoImage.objects.select_related(
-                    'finca',
-                    'finca__agricultor',
-                    'lote',
-                    'lote__finca',
-                    'lote__finca__agricultor'
-                ).get(id=image_id, user=user)
-            except CacaoImage.DoesNotExist:
+            image = self._get_image_by_id(image_id, user)
+            if image is None:
                 return ServiceResult.not_found_error(ERROR_IMAGE_NOT_FOUND)
             
-            # Obtener predicciones asociadas de forma segura
-            prediction_data = []
-            predictions_list = []
-            try:
-                # Intentar obtener predicciones de forma completamente segura
-                # Envolver toda la operación en try/except para capturar cualquier error
-                if hasattr(image, 'predictions'):
-                    all_result = image.predictions.all()
-                    if all_result is not None:
-                        ordered_result = all_result.order_by('-created_at')
-                        # Verificar si es lista directamente (mock configurado así)
-                        # Verificar el tipo de forma segura sin causar iteración
-                        try:
-                            if isinstance(ordered_result, list):
-                                predictions_list = ordered_result
-                            else:
-                                # Intentar convertir, capturando cualquier error de iteración
-                                try:
-                                    predictions_list = list(ordered_result)
-                                except (TypeError, ValueError):
-                                    # Si no es iterable (Mock), usar lista vacía
-                                    predictions_list = []
-                        except Exception:
-                            # Si isinstance falla con Mock, usar lista vacía
-                            predictions_list = []
-            except Exception:
-                # Capturar cualquier error (incluyendo problemas con mocks o iteración)
-                # El error puede ser "argument of type 'Mock' is not iterable"
-                predictions_list = []
-            
-            # Procesar predicciones solo si tenemos una lista válida
-            if isinstance(predictions_list, list):
-                for prediction in predictions_list:
-                    try:
-                        prediction_data.append({
-                            'id': getattr(prediction, 'id', None),
-                            'alto_mm': getattr(prediction, 'alto_mm', None),
-                            'ancho_mm': getattr(prediction, 'ancho_mm', None),
-                            'grosor_mm': getattr(prediction, 'grosor_mm', None),
-                            'peso_g': getattr(prediction, 'peso_g', None),
-                            'average_confidence': getattr(prediction, 'average_confidence', None),
-                            'processing_time_ms': getattr(prediction, 'processing_time_ms', None),
-                            'created_at': getattr(getattr(prediction, 'created_at', None), 'isoformat', lambda: None)(),
-                            'crop_url': getattr(prediction, 'crop_url', None)
-                        })
-                    except (AttributeError, TypeError, ValueError):
-                        # Si prediction no tiene los atributos esperados, saltar
-                        continue
-            
-            image_data = {
-                'id': image.id,
-                'file_name': image.file_name,
-                'file_size': image.file_size,
-                'file_type': image.file_type,
-                'processed': image.processed,
-                'created_at': image.created_at.isoformat(),
-                'updated_at': image.updated_at.isoformat(),
-                'image_url': image.image.url if image.image else None,
-                'metadata': image.metadata,
-                'predictions': prediction_data,
-                'predictions_count': len(prediction_data)
-            }
+            predictions_list = self._get_predictions_list(image)
+            prediction_data = self._process_predictions_data(predictions_list)
+            image_data = self._build_image_data(image, prediction_data)
             
             return ServiceResult.success(
                 data=image_data,
@@ -278,6 +307,28 @@ class ImageManagementService(BaseService):
             return ServiceResult.error(
                 ValidationServiceError("Error interno obteniendo detalles", details={"original_error": str(e)})
             )
+    
+    def _get_image_by_id(self, image_id: int, user: User) -> Optional[CacaoImage]:
+        """
+        Retrieves image by ID and user, handling DoesNotExist exception.
+        
+        Args:
+            image_id: ID of the image
+            user: User instance
+            
+        Returns:
+            CacaoImage instance or None if not found
+        """
+        try:
+            return CacaoImage.objects.select_related(
+                'finca',
+                'finca__agricultor',
+                'lote',
+                'lote__finca',
+                'lote__finca__agricultor'
+            ).get(id=image_id, user=user)
+        except CacaoImage.DoesNotExist:
+            return None
     
     def update_image_metadata(self, image_id: int, user: User, metadata: Dict[str, Any]) -> ServiceResult:
         """

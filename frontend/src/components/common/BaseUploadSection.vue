@@ -260,7 +260,9 @@ const processFiles = (newFiles) => {
     const currentFiles = Array.isArray(props.modelValue) ? props.modelValue : []
     const updatedFiles = [...currentFiles, ...validFiles]
     emit('update:modelValue', updatedFiles)
-    validFiles.forEach(file => emit('file-added', file))
+    for (const file of validFiles) {
+      emit('file-added', file)
+    }
   } else {
     emit('update:modelValue', validFiles[0])
     emit('file-added', validFiles[0])

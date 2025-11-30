@@ -143,7 +143,7 @@ export function useRecentActivity(options = {}) {
   const groupByDate = () => {
     const groups = {}
 
-    activities.value.forEach(activity => {
+    for (const activity of activities.value) {
       const date = new Date(activity.timestamp || activity.created_at || activity.date)
       const dateKey = date.toLocaleDateString('es-CO', {
         year: 'numeric',
@@ -156,7 +156,7 @@ export function useRecentActivity(options = {}) {
       }
 
       groups[dateKey].push(activity)
-    })
+    }
 
     return groups
   }

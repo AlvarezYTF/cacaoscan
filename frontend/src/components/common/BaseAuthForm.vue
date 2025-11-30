@@ -63,7 +63,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import BaseSpinner from './BaseSpinner.vue'
 
 const props = defineProps({

@@ -33,7 +33,8 @@ export function createFormData(data, options = {}) {
     if (transformedValue instanceof File || transformedValue instanceof Blob) {
       formData.append(key, transformedValue)
     } else if (Array.isArray(transformedValue)) {
-      transformedValue.forEach((item, index) => {
+      for (let index = 0; index < transformedValue.length; index++) {
+        const item = transformedValue[index]
         if (item instanceof File || item instanceof Blob) {
           formData.append(`${key}[${index}]`, item)
         } else if (typeof item === 'object' && item !== null) {
@@ -41,7 +42,7 @@ export function createFormData(data, options = {}) {
         } else {
           formData.append(`${key}[${index}]`, item)
         }
-      })
+      }
     } else if (typeof transformedValue === 'object' && transformedValue !== null) {
       formData.append(key, JSON.stringify(transformedValue))
     } else {
@@ -91,9 +92,9 @@ export function serializeFormData(data) {
     }
 
     if (Array.isArray(value)) {
-      value.forEach(item => {
+      for (const item of value) {
         params.append(key, item)
-      })
+      }
     } else if (typeof value === 'object') {
       params.append(key, JSON.stringify(value))
     } else {

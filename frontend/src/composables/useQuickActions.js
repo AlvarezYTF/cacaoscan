@@ -2,7 +2,7 @@
  * Composable for quick actions functionality
  * Provides state and methods for dashboard quick actions
  */
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 /**
@@ -22,7 +22,7 @@ export function useQuickActions() {
    * @returns {Promise<void>}
    */
   const executeAction = async (action) => {
-    if (!action || !action.key) {
+    if (!action?.key) {
       throw new Error('Invalid action: action must have a key')
     }
 

@@ -611,7 +611,7 @@ os.makedirs(LOG_DIR, exist_ok=True)
 LOGS_DIR = BASE_DIR / 'logs'
 try:
     LOGS_DIR.mkdir(exist_ok=True)
-except (OSError, PermissionError) as e:
+except OSError as e:
     # Si no se puede crear el directorio (permisos, etc.), usar solo console handler
     import warnings
     warnings.warn(f"No se pudo crear el directorio de logs: {e}. Usando solo console handler.")

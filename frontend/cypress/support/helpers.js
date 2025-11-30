@@ -178,13 +178,14 @@ export function verifyTableData(expectedData, tableSelector = SELECTORS.tables.d
     return cy.wrap(null)
   }
 
-  expectedData.forEach((row, index) => {
+  for (let index = 0; index < expectedData.length; index++) {
+    const row = expectedData[index]
     cy.get(`${tableSelector} ${SELECTORS.tables.tableRow}`).eq(index).within(() => {
-      for (const [key, value] of Object.entries(row)) {
+      for (const value of Object.values(row)) {
         cy.contains(value.toString()).should('be.visible')
       }
     })
-  })
+  }
 
   return cy.wrap(null)
 }

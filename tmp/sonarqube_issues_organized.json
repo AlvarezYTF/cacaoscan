@@ -1,0 +1,1856 @@
+{
+  "frontend/src/components/LoteForm.vue": {
+    "javascript:S1128": [
+      {
+        "line": 249,
+        "message": "Remove this unused import of 'fincasApi'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "75810a4d-c76d-4b92-99ea-c618bc1a9012"
+      }
+    ],
+    "javascript:S7735": [
+      {
+        "line": 329,
+        "message": "Unexpected negated condition.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "dded93e7-19f5-4cbb-9930-94b26b3a2ec1"
+      }
+    ]
+  },
+  "frontend/src/components/reportes/ReportsTable.vue": {
+    "javascript:S1128": [
+      {
+        "line": 97,
+        "message": "Remove this unused import of 'computed'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "69558dcc-b6ec-4f23-9c95-6230bd015eaa"
+      }
+    ]
+  },
+  "frontend/src/composables/useAuditHelpers.js": {
+    "javascript:S6551": [
+      {
+        "line": 129,
+        "message": "'data' may use Object's default stringification format ('[object Object]') when stringified.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "08ffde4f-f330-45a9-a9e8-f6866ab0a454"
+      }
+    ]
+  },
+  "frontend/src/composables/usePrediction.js": {
+    "javascript:S6582": [
+      {
+        "line": 174,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "8c82b771-9ddc-487c-b855-f19287a0e897"
+      },
+      {
+        "line": 219,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "0b4939d5-67fb-47bc-9c19-cae7287f0839"
+      }
+    ],
+    "javascript:S3776": [
+      {
+        "line": 187,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 28 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "0a02ec07-714e-4c6a-bfd4-d1a171bda7f3"
+      }
+    ],
+    "javascript:S7786": [
+      {
+        "line": 229,
+        "message": "`new Error()` is too unspecific for a type check. Use `new TypeError()` instead.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "75739ac3-a04b-420c-872b-2c698c866738"
+      }
+    ]
+  },
+  "frontend/src/components/admin/AdminAgricultorComponents/FarmersStatsCards.vue": {
+    "javascript:S1128": [
+      {
+        "line": 34,
+        "message": "Remove this unused import of 'computed'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "389d2185-0cdd-4200-bb0c-60f752a3a7d1"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseAuthForm.vue": {
+    "javascript:S1128": [
+      {
+        "line": 66,
+        "message": "Remove this unused import of 'computed'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "1cbd415a-a389-4c13-a85d-be321e0764af"
+      }
+    ]
+  },
+  "frontend/src/composables/useDashboardStats.js": {
+    "javascript:S1481": [
+      {
+        "line": 336,
+        "message": "Remove the declaration of the unused 'dateFormat' variable.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "31c50c54-f6bf-4dc9-b656-93649adfdf90"
+      }
+    ],
+    "javascript:S1854": [
+      {
+        "line": 336,
+        "message": "Remove this useless assignment to variable \"dateFormat\".",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "912d9ac7-6e79-4ed3-a713-374b3a1f8a12"
+      }
+    ],
+    "javascript:S3358": [
+      {
+        "line": 336,
+        "message": "Extract this nested ternary operation into an independent statement.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "ad4bea13-3707-4442-8843-53e7d2933914"
+      }
+    ],
+    "javascript:S7728": [
+      {
+        "line": 338,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "b9f36fb4-1009-4992-a66e-ad1ef1ad934a"
+      },
+      {
+        "line": 424,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "5eda93f0-1bc1-4e6e-90be-bf7f1a223c29"
+      },
+      {
+        "line": 428,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "938f5030-1a60-4390-bfd5-b670a6d1808d"
+      }
+    ],
+    "javascript:S2871": [
+      {
+        "line": 351,
+        "message": "Provide a compare function that depends on \"String.localeCompare\", to reliably sort elements alphabetically.",
+        "severity": "CRITICAL",
+        "type": "BUG",
+        "key": "3a1913f9-3aa1-4dad-a429-de2b07152c7a"
+      }
+    ]
+  },
+  "frontend/src/composables/useDataset.js": {
+    "javascript:S6582": [
+      {
+        "line": 120,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "ece384c4-42ea-4baa-82b3-fb564c72fbc6"
+      },
+      {
+        "line": 153,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "a632706d-e480-4d4b-bb88-52e8a7c4085d"
+      }
+    ]
+  },
+  "frontend/src/composables/useFincas.js": {
+    "javascript:S6582": [
+      {
+        "line": 158,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "a7532856-4474-4b87-9225-09acd4f6d0b9"
+      },
+      {
+        "line": 191,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "b5005596-8a06-41d4-ad26-e4c4f1e279c4"
+      }
+    ]
+  },
+  "frontend/src/composables/useModal.js": {
+    "javascript:S1128": [
+      {
+        "line": 5,
+        "message": "Remove this unused import of 'onMounted'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "b4033300-52f5-4c56-b53e-2ef56a08c04b"
+      }
+    ]
+  },
+  "frontend/src/services/api/index.js": {
+    "javascript:S7763": [
+      {
+        "line": 22,
+        "message": "Use `export…from` to re-export `fincasApi`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "dcdf6434-0d48-430e-8bc3-fd673b58669b"
+      },
+      {
+        "line": 23,
+        "message": "Use `export…from` to re-export `lotesApi`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "f522757c-5ea9-407e-b656-c0f35be47af6"
+      },
+      {
+        "line": 24,
+        "message": "Use `export…from` to re-export `personasApi`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "94cb6838-67f3-4669-98fd-9cdc4f7691d7"
+      },
+      {
+        "line": 25,
+        "message": "Use `export…from` to re-export `reportsApi`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "57f4cb33-3d0c-495b-a2dd-61c96439eda1"
+      },
+      {
+        "line": 26,
+        "message": "Use `export…from` to re-export `catalogosApi`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "8ab8781d-59ae-4202-8eb0-a54e77fb9f5e"
+      },
+      {
+        "line": 27,
+        "message": "Use `export…from` to re-export `auditApi`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "f73f1f51-c41c-4a89-a714-98a761b18fb6"
+      },
+      {
+        "line": 28,
+        "message": "Use `export…from` to re-export `predictionApi`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "cffb86a6-47f5-4792-8687-8b42c8284906"
+      },
+      {
+        "line": 29,
+        "message": "Use `export…from` to re-export `datasetApi`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "9042c993-ce19-4064-9eb0-8b6822002e08"
+      },
+      {
+        "line": 30,
+        "message": "Use `export…from` to re-export `adminApi`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "f4e01921-8954-40fb-8acc-57b63271129c"
+      },
+      {
+        "line": 31,
+        "message": "Use `export…from` to re-export `configApi`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "7f7f96f5-4643-40dd-900d-52e036643c1d"
+      },
+      {
+        "line": 35,
+        "message": "Use `export…from` to re-export `httpClient`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "b35acab5-454b-49e5-94fa-a8d296ddf39e"
+      }
+    ]
+  },
+  "frontend/src/services/httpClient.js": {
+    "javascript:S6671": [
+      {
+        "line": 55,
+        "message": "Expected the Promise rejection reason to be an Error.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "86ce0bf5-0d6d-443f-9657-f229f8a03a95"
+      },
+      {
+        "line": 112,
+        "message": "Expected the Promise rejection reason to be an Error.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "9273d013-3fb9-4ee9-98ca-4728bd6267c4"
+      }
+    ]
+  },
+  "frontend/src/services/predictionApi.js": {
+    "javascript:S1128": [
+      {
+        "line": 8,
+        "message": "Remove this unused import of 'apiPatch'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "3ae26b56-c197-4201-8f02-98cbf422fd14"
+      },
+      {
+        "line": 10,
+        "message": "Remove this unused import of 'getErrorMessage'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "b9ead9c3-d491-4fa0-a7dd-0e7ad9ffd2ea"
+      }
+    ]
+  },
+  "frontend/src/utils/formDataUtils.js": {
+    "javascript:S7728": [
+      {
+        "line": 36,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "c830078a-6b70-4bf8-b9e8-6e5010bce492"
+      },
+      {
+        "line": 94,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "38bb423f-350f-487f-af51-a326ee85eff7"
+      }
+    ],
+    "javascript:S3776": [
+      {
+        "line": 113,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 35 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "d6824da7-7022-4f22-9563-08fb399a301f"
+      }
+    ]
+  },
+  "frontend/cypress/support/commands.js": {
+    "javascript:S6551": [
+      {
+        "line": 181,
+        "message": "'entityType' will use Object's default stringification format ('[object Object]') when stringified.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "3be7ed67-47da-466d-9b73-f056e4fbb35d"
+      },
+      {
+        "line": 195,
+        "message": "'entityType' will use Object's default stringification format ('[object Object]') when stringified.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "d3a28aa8-d5dd-443b-b9a4-6f3c71175997"
+      },
+      {
+        "line": 212,
+        "message": "'entityType' will use Object's default stringification format ('[object Object]') when stringified.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "9c9da574-72d1-45b8-8244-970c2257512e"
+      },
+      {
+        "line": 221,
+        "message": "'entityType' will use Object's default stringification format ('[object Object]') when stringified.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "f242eab9-2c98-4539-aff0-d237e748da61"
+      },
+      {
+        "line": 224,
+        "message": "'entityType' will use Object's default stringification format ('[object Object]') when stringified.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "748dd547-eac0-4246-8c44-3fefb701f661"
+      },
+      {
+        "line": 237,
+        "message": "'entityType' will use Object's default stringification format ('[object Object]') when stringified.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "740168ca-75bc-4009-9287-c04ac12d120a"
+      },
+      {
+        "line": 245,
+        "message": "'entityType' will use Object's default stringification format ('[object Object]') when stringified.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "7ea9f213-9296-4b65-bb6e-f67fd85700f0"
+      },
+      {
+        "line": 315,
+        "message": "'filterType' will use Object's default stringification format ('[object Object]') when stringified.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "f0050c17-3667-4cc8-b56c-fa6f2406e12c"
+      }
+    ],
+    "javascript:S7728": [
+      {
+        "line": 286,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "a5060c71-22fd-4c9d-980e-9c0b5f4eeb91"
+      }
+    ],
+    "javascript:S7781": [
+      {
+        "line": 169,
+        "message": "Prefer `String#replaceAll()` over `String#replace()`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "ca841bf1-8896-4872-aef1-e8766ded874e"
+      }
+    ]
+  },
+  "frontend/cypress/support/test-data.js": {
+    "javascript:S7748": [
+      {
+        "line": 217,
+        "message": "Don't use a zero fraction in the number.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "8aac3cf7-bebf-4024-8b30-21eed70b2941"
+      }
+    ],
+    "javascript:S125": [
+      {
+        "line": 255,
+        "message": "Remove this commented out code.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "39214509-e5de-48bb-ab31-718196030f6d"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseFincaCard.vue": {
+    "javascript:S1128": [
+      {
+        "line": 78,
+        "message": "Remove this unused import of 'computed'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "dbb59daa-83a8-47e3-b0cb-b66d73d0c580"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseHero.vue": {
+    "javascript:S1128": [
+      {
+        "line": 67,
+        "message": "Remove this unused import of 'computed'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "f9a3cb97-c0f2-4706-9583-c06900efdfbb"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseImageModal.vue": {
+    "Web:S6851": [
+      {
+        "line": 66,
+        "message": "Remove redundant word \"image\" from the \"alt\" attribute of your \"img\" tag.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "35e3179d-773d-412f-bcff-e6a45534fe59"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseProgressIndicator.vue": {
+    "Web:S6819": [
+      {
+        "line": 11,
+        "message": "Use <progress> instead of the progressbar role to ensure accessibility across all devices.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "bcea4955-bfcd-4618-9cd1-2d7abc52ab03"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseSelectField.vue": {
+    "javascript:S7735": [
+      {
+        "line": 170,
+        "message": "Unexpected negated condition.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "ce2f3d6d-548f-47c6-8e23-48059ede93f5"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseToggleSwitch.vue": {
+    "Web:S6807": [
+      {
+        "line": 11,
+        "message": "The attribute \"aria-checked\" is required by the role \"switch\".",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "06536afe-df74-4c52-b3fd-2fdafbbec1d2"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseUploadSection.vue": {
+    "Web:S6853": [
+      {
+        "line": 4,
+        "message": "A form label must be associated with a control.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "ec8af183-9f43-41dc-9ed8-e0b19c8fb751"
+      }
+    ],
+    "javascript:S7728": [
+      {
+        "line": 263,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "20e3c8dd-ea41-4dd9-ad2a-31f76e75fc98"
+      }
+    ]
+  },
+  "frontend/src/composables/useAnalysis.js": {
+    "javascript:S7728": [
+      {
+        "line": 156,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "7f779d3f-e5ab-47e5-a520-b9b42e161f04"
+      }
+    ]
+  },
+  "frontend/src/composables/useChart.js": {
+    "javascript:S7741": [
+      {
+        "line": 89,
+        "message": "Compare with `undefined` directly instead of using `typeof`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "6f80b652-78d3-4095-b843-5b3d655c05a1"
+      },
+      {
+        "line": 270,
+        "message": "Compare with `undefined` directly instead of using `typeof`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "94ce8b9c-1482-4a84-b5a7-84c0862ffb11"
+      }
+    ],
+    "javascript:S6582": [
+      {
+        "line": 89,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "b5e753b6-5a70-411e-a4b2-fa3decc38be1"
+      },
+      {
+        "line": 270,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "1509225e-3235-4bb9-9146-6a797f1dbed3"
+      }
+    ],
+    "javascript:S7728": [
+      {
+        "line": 137,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "d88eb4a7-04e0-438d-a36e-cb0de8f29581"
+      },
+      {
+        "line": 141,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "44eeb629-24a0-4078-9c86-5027f5d86087"
+      },
+      {
+        "line": 158,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "55f96158-0831-4c5c-9c01-bf574c5ae706"
+      }
+    ]
+  },
+  "frontend/src/composables/useImageHandling.js": {
+    "javascript:S7728": [
+      {
+        "line": 75,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "76840f45-45a6-4299-a86f-a257619487dc"
+      },
+      {
+        "line": 137,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "1ad11c48-d2b1-4222-8955-47064cf55406"
+      }
+    ]
+  },
+  "frontend/src/composables/useQuickActions.js": {
+    "javascript:S1128": [
+      {
+        "line": 5,
+        "message": "Remove this unused import of 'computed'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "d43feccc-33ed-45ad-82ea-f35c0ced5546"
+      }
+    ],
+    "javascript:S6582": [
+      {
+        "line": 25,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "7a0534fe-55eb-455b-9a7c-d895170734e0"
+      }
+    ],
+    "javascript:S7764": [
+      {
+        "line": 50,
+        "message": "Prefer `globalThis` over `window`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "7b2733ee-1cc7-43b5-95b6-7e79bbe1645d"
+      }
+    ]
+  },
+  "frontend/src/composables/useRecentActivity.js": {
+    "javascript:S7728": [
+      {
+        "line": 146,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "d8387573-98b0-4011-9193-1ead5971d421"
+      }
+    ]
+  },
+  "frontend/src/stores/reports.js": {
+    "javascript:S1854": [
+      {
+        "line": 127,
+        "message": "Remove this useless assignment to variable \"errorInfo\".",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "1cb83e9d-5ae7-4141-9246-7de3cdf8f017"
+      },
+      {
+        "line": 267,
+        "message": "Remove this useless assignment to variable \"errorInfo\".",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "2dac5851-fc14-44de-8cbb-d96c68624875"
+      },
+      {
+        "line": 290,
+        "message": "Remove this useless assignment to variable \"errorInfo\".",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "94954cab-8f33-4132-9abb-d9509efb67a2"
+      }
+    ],
+    "javascript:S1481": [
+      {
+        "line": 87,
+        "message": "Remove the declaration of the unused '__' variable.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "08f4546f-47f6-4910-b65f-76f7df5e8861"
+      },
+      {
+        "line": 87,
+        "message": "Remove the declaration of the unused '_' variable.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "18581c86-3121-46c6-af55-ffcce7dbd4b3"
+      },
+      {
+        "line": 87,
+        "message": "Remove the declaration of the unused '___' variable.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "1d2ca90e-1447-4134-879c-388f144b2daf"
+      },
+      {
+        "line": 127,
+        "message": "Remove the declaration of the unused 'errorInfo' variable.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "74b554c4-208e-48f5-b9c0-d3ffe2f7ddb8"
+      },
+      {
+        "line": 267,
+        "message": "Remove the declaration of the unused 'errorInfo' variable.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "4e22195b-49e5-4a49-86b1-c18a564b7758"
+      },
+      {
+        "line": 290,
+        "message": "Remove the declaration of the unused 'errorInfo' variable.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "63abe97c-1e8e-4d34-82d1-32814a2fde0a"
+      }
+    ],
+    "javascript:S7735": [
+      {
+        "line": 282,
+        "message": "Unexpected negated condition.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "4a768253-b874-4d9d-a31a-1f7d910fbb3b"
+      }
+    ]
+  },
+  "frontend/src/utils/formatters.js": {
+    "javascript:S6594": [
+      {
+        "line": 200,
+        "message": "Use the \"RegExp.exec()\" method instead.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "7c6141a4-0ccb-469a-bbd6-e8a1ec837bc5"
+      }
+    ]
+  },
+  "frontend/cypress/support/helpers.js": {
+    "javascript:S7748": [
+      {
+        "line": 48,
+        "message": "Don't use a zero fraction in the number.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "55390921-4c03-4b41-9ca4-4a74eaee096d"
+      }
+    ],
+    "javascript:S7781": [
+      {
+        "line": 90,
+        "message": "Prefer `String#replaceAll()` over `String#replace()`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "6c71fce5-84c4-41a4-ba03-b36fd730d0af"
+      },
+      {
+        "line": 91,
+        "message": "Prefer `String#replaceAll()` over `String#replace()`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "963857c7-c1a5-4948-885d-b5b7014395e2"
+      }
+    ],
+    "javascript:S7728": [
+      {
+        "line": 181,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "3f4a2b0a-b435-4fe2-858e-4cd58968495c"
+      }
+    ],
+    "javascript:S1481": [
+      {
+        "line": 183,
+        "message": "Remove the declaration of the unused 'key' variable.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "362a3282-3399-4a3e-a6e4-946ca5d64713"
+      }
+    ],
+    "javascript:S1854": [
+      {
+        "line": 183,
+        "message": "Remove this useless assignment to variable \"key\".",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "97e598b3-3e85-44e2-ad95-5610c59da986"
+      }
+    ]
+  },
+  "frontend/src/components/auth/LoginForm.vue": {
+    "javascript:S1128": [
+      {
+        "line": 217,
+        "message": "Remove this unused import of 'reactive'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "772cc30c-e79a-430b-89ca-b2dbf6ab09eb"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseDetailView.vue": {
+    "Web:S6819": [
+      {
+        "line": 24,
+        "message": "Use <output> instead of the status role to ensure accessibility across all devices.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "e9d81fd4-97ed-4e11-8a35-92ecc9d1d394"
+      }
+    ],
+    "javascript:S1128": [
+      {
+        "line": 147,
+        "message": "Remove this unused import of 'computed'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "5f1e4caf-9da5-4e0b-800c-6d70adb5aaee"
+      }
+    ]
+  },
+  "frontend/src/composables/useDashboardMetrics.js": {
+    "javascript:S1128": [
+      {
+        "line": 5,
+        "message": "Remove this unused import of 'computed'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "0a92e15e-a95b-480c-9279-70bc4e038a61"
+      },
+      {
+        "line": 5,
+        "message": "Remove this unused import of 'ref'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "a265ceb2-2fbb-4313-8361-5504230dec89"
+      }
+    ],
+    "javascript:S7735": [
+      {
+        "line": 145,
+        "message": "Unexpected negated condition.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "a570ac57-e14e-481d-afe6-27d3a788a43c"
+      }
+    ]
+  },
+  "frontend/src/composables/useFormValidation.js": {
+    "javascript:S6582": [
+      {
+        "line": 299,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "a130f58f-62ab-435c-b070-c7f8fd74137b"
+      },
+      {
+        "line": 318,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "aa8a11a0-a681-4c59-bacc-96632e2bb122"
+      },
+      {
+        "line": 345,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "5ce25f10-b5aa-4f58-8e01-f98d9c2d71c0"
+      },
+      {
+        "line": 427,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "1b6a4ad6-e601-467f-b30a-be5a1d6ddce1"
+      },
+      {
+        "line": 461,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "39737b71-bda6-4d1b-83df-0d465ffd2814"
+      }
+    ],
+    "javascript:S3358": [
+      {
+        "line": 301,
+        "message": "Extract this nested ternary operation into an independent statement.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "358f4faa-6018-4cb7-be5a-eb4791d4409f"
+      },
+      {
+        "line": 306,
+        "message": "Extract this nested ternary operation into an independent statement.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "40b60764-d446-4029-9ee9-38eff29fccc5"
+      }
+    ]
+  },
+  "frontend/src/composables/useLotes.js": {
+    "javascript:S4144": [
+      {
+        "line": 64,
+        "message": "Update this function so that its implementation is not identical to the one on line 38.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "2eea82fa-f0d7-46d9-a5f5-d8d97a584cb9"
+      }
+    ],
+    "javascript:S6582": [
+      {
+        "line": 229,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "551a558d-1ebd-4e50-a73d-0d5caff02d35"
+      },
+      {
+        "line": 270,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "92848a7e-04d7-44bd-9598-81815f5921fb"
+      }
+    ]
+  },
+  "frontend/src/composables/usePagination.js": {
+    "javascript:S7735": [
+      {
+        "line": 201,
+        "message": "Unexpected negated condition.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "6d1e8af4-243f-4e32-80ab-23de1e398050"
+      }
+    ]
+  },
+  "frontend/src/services/auth/authDTOs.js": {
+    "javascript:S3776": [
+      {
+        "line": 98,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 19 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "f51720d7-002c-4713-b8f6-bf3b5476813b"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseCard.vue": {
+    "css:S7924": [
+      {
+        "line": 136,
+        "message": "Text does not meet the minimal contrast requirement with its background.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "84f9a87f-322b-45c9-aebb-3c0787a77a4d"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseConfirmModal.vue": {
+    "css:S7924": [
+      {
+        "line": 325,
+        "message": "Text does not meet the minimal contrast requirement with its background.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "f24df93b-8e72-4f1d-8206-e6cdcf923d1c"
+      },
+      {
+        "line": 336,
+        "message": "Text does not meet the minimal contrast requirement with its background.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "6db3d095-1f52-42a6-a1c1-b7a92bf16a20"
+      },
+      {
+        "line": 347,
+        "message": "Text does not meet the minimal contrast requirement with its background.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "465b9ddd-78ca-4389-bb6b-e38ad8eba9f4"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseHistoryCard.vue": {
+    "javascript:S1128": [
+      {
+        "line": 86,
+        "message": "Remove this unused import of 'computed'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "dbb3eb6c-c4e0-4364-901b-9d4817d9b187"
+      },
+      {
+        "line": 88,
+        "message": "Remove this unused import of 'usePagination'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "d658815b-467a-4875-8092-3560e1d694a7"
+      }
+    ],
+    "css:S7924": [
+      {
+        "line": 207,
+        "message": "Text does not meet the minimal contrast requirement with its background.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "37cc892e-dcb4-4710-8a0a-b4f4f772724a"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseTimeline.vue": {
+    "javascript:S1128": [
+      {
+        "line": 82,
+        "message": "Remove this unused import of 'computed'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "c9a7a658-1ece-4fff-97c6-47186eaa15c6"
+      }
+    ]
+  },
+  "frontend/src/composables/useAuthForm.js": {
+    "javascript:S1128": [
+      {
+        "line": 5,
+        "message": "Remove this unused import of 'computed'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "cf03ea14-1c54-429a-b099-f906c6081a65"
+      }
+    ],
+    "javascript:S1481": [
+      {
+        "line": 219,
+        "message": "Remove the declaration of the unused 'isValidEmailFromValidation' variable.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "5dd9ee26-2e00-4f57-838b-25dd1e736c41"
+      }
+    ],
+    "javascript:S1854": [
+      {
+        "line": 219,
+        "message": "Remove this useless assignment to variable \"isValidEmailFromValidation\".",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "62306642-eaae-4e6e-8ec1-20af7f201ed2"
+      }
+    ],
+    "javascript:S3358": [
+      {
+        "line": 234,
+        "message": "Extract this nested ternary operation into an independent statement.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "b24732d5-4bde-4197-8e85-aaef375e4bef"
+      }
+    ],
+    "javascript:S6582": [
+      {
+        "line": 250,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "e3f6f38f-c3f9-444f-a473-908e7f38870b"
+      }
+    ]
+  },
+  "frontend/src/composables/useChartConfig.js": {
+    "javascript:S1481": [
+      {
+        "line": 72,
+        "message": "Remove the declaration of the unused 'isDark' variable.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "03010e06-0221-4cb6-9220-6943386acc5f"
+      }
+    ],
+    "javascript:S1854": [
+      {
+        "line": 72,
+        "message": "Remove this useless assignment to variable \"isDark\".",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "b8f183af-0968-482f-bd50-3052a23be06b"
+      }
+    ],
+    "javascript:S6582": [
+      {
+        "line": 176,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "3d6ca33b-9337-425d-b5c9-f7ffffb484fd"
+      }
+    ]
+  },
+  "frontend/src/composables/useFileUpload.js": {
+    "javascript:S1128": [
+      {
+        "line": 6,
+        "message": "Remove this unused import of 'validateImageFile'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "3298520d-e48f-4ed5-a3b8-9850fd0fb9d0"
+      }
+    ],
+    "javascript:S6671": [
+      {
+        "line": 68,
+        "message": "Expected the Promise rejection reason to be an Error.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "7525098a-7554-48a2-a8fa-ea30d9d5c5e2"
+      }
+    ],
+    "javascript:S7728": [
+      {
+        "line": 205,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "b648839d-b55a-43bc-ac0d-96a0139c59bc"
+      }
+    ]
+  },
+  "frontend/src/composables/useFilterableStore.js": {
+    "javascript:S1128": [
+      {
+        "line": 5,
+        "message": "Remove this unused import of 'watch'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "ca732d58-b90b-41ce-9696-1ded43b78030"
+      }
+    ],
+    "javascript:S3403": [
+      {
+        "line": 40,
+        "message": "Remove this \"===\" check; it will always be false. Did you mean to use \"==\"?",
+        "severity": "MAJOR",
+        "type": "BUG",
+        "key": "6c9547a8-cb6a-49d2-9dc3-274846eddc2b"
+      },
+      {
+        "line": 105,
+        "message": "Remove this \"!==\" check; it will always be true. Did you mean to use \"!=\"?",
+        "severity": "MAJOR",
+        "type": "BUG",
+        "key": "8e4e26a9-0f11-4f3d-b8ab-2c8f1a055e93"
+      },
+      {
+        "line": 118,
+        "message": "Remove this \"!==\" check; it will always be true. Did you mean to use \"!=\"?",
+        "severity": "MAJOR",
+        "type": "BUG",
+        "key": "4f422a62-a247-45dd-b918-ffdddd1f0962"
+      }
+    ],
+    "javascript:S7728": [
+      {
+        "line": 81,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "f3e0d4c5-b263-430e-89b5-73974e5eef20"
+      }
+    ]
+  },
+  "frontend/src/composables/usePaginableStore.js": {
+    "javascript:S1128": [
+      {
+        "line": 6,
+        "message": "Remove this unused import of 'useStoreBase'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "dac60645-5bb4-47c4-bfdc-c089ec0387f3"
+      }
+    ]
+  },
+  "frontend/src/composables/useReports.js": {
+    "javascript:S7728": [
+      {
+        "line": 276,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "86dbd955-9e8f-4c28-9f49-9479edbc5e36"
+      }
+    ]
+  },
+  "frontend/src/composables/useStoreBase.js": {
+    "javascript:S7728": [
+      {
+        "line": 67,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "eb66e66b-3854-48f1-8776-10c69802abbf"
+      }
+    ]
+  },
+  "frontend/src/composables/useWebSocketManager.js": {
+    "javascript:S7728": [
+      {
+        "line": 23,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "38ee7119-0540-4d32-9327-b9965722dcf5"
+      },
+      {
+        "line": 46,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "e7ca07b8-a464-4dc9-8236-50f4f3a480b0"
+      },
+      {
+        "line": 55,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "47a81d37-cd06-4e32-a26e-d2642ad18b68"
+      },
+      {
+        "line": 64,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "fc15940a-4a07-4dfb-a542-601143a7ba96"
+      },
+      {
+        "line": 96,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "067d6689-0eac-46d1-9183-8cb5d2ec8e02"
+      }
+    ]
+  },
+  "frontend/src/router/guardFactories.js": {
+    "javascript:S3626": [
+      {
+        "line": 240,
+        "message": "Remove this redundant jump.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "e0e01a43-16ee-407e-a2c1-4af04394283a"
+      }
+    ]
+  },
+  "frontend/src/router/guards.js": {
+    "javascript:S1128": [
+      {
+        "line": 15,
+        "message": "Remove this unused import of 'getErrorPathByRole'.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "17392dd8-b7aa-4cad-8abe-df56f07489c3"
+      }
+    ],
+    "javascript:S6660": [
+      {
+        "line": 209,
+        "message": "'If' statement should not be the only statement in 'else' block",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "d3e01069-fcff-48a6-8ea9-696161e6b250"
+      }
+    ],
+    "javascript:S7735": [
+      {
+        "line": 141,
+        "message": "Unexpected negated condition.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "ca5722f7-fb19-4e84-a803-d0d9d89543f5"
+      }
+    ]
+  },
+  "frontend/src/services/datasetApi.js": {
+    "javascript:S4624": [
+      {
+        "line": 191,
+        "message": "Refactor this code to not use nested template literals.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "f856396d-9b52-4b44-a583-8325988fa194"
+      }
+    ]
+  },
+  "frontend/src/styles/dashboard/dashboard-utilities.css": {
+    "css:S7924": [
+      {
+        "line": 56,
+        "message": "Text does not meet the minimal contrast requirement with its background.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "72a72862-efd5-498f-ad78-af78c959b701"
+      }
+    ]
+  },
+  "frontend/src/components/common/BaseFormField.example.vue": {
+    "Web:S7930": [
+      {
+        "line": 55,
+        "message": "Duplicate id \"nombre\" found. First occurrence was on line 49.",
+        "severity": "CRITICAL",
+        "type": "BUG",
+        "key": "7ebdf8be-37b6-40f5-8027-728e52c2a1a0"
+      },
+      {
+        "line": 74,
+        "message": "Duplicate id \"email\" found. First occurrence was on line 67.",
+        "severity": "CRITICAL",
+        "type": "BUG",
+        "key": "8fbf5261-7d70-4f34-9401-a315f77e658d"
+      },
+      {
+        "line": 92,
+        "message": "Duplicate id \"telefono\" found. First occurrence was on line 86.",
+        "severity": "CRITICAL",
+        "type": "BUG",
+        "key": "62fa3d2e-c970-4a99-992e-bbaa88ecf028"
+      },
+      {
+        "line": 109,
+        "message": "Duplicate id \"pais\" found. First occurrence was on line 103.",
+        "severity": "CRITICAL",
+        "type": "BUG",
+        "key": "b24a3bfe-e7b7-4fb4-aebb-39db07dc7d85"
+      },
+      {
+        "line": 130,
+        "message": "Duplicate id \"comentarios\" found. First occurrence was on line 124.",
+        "severity": "CRITICAL",
+        "type": "BUG",
+        "key": "5c8b04f2-778f-4315-86ae-4d89ce4c983d"
+      }
+    ],
+    "javascript:S7728": [
+      {
+        "line": 181,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "30219de4-8136-4593-8a9a-28797057b7ac"
+      }
+    ],
+    "javascript:S7735": [
+      {
+        "line": 189,
+        "message": "Unexpected negated condition.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "560586eb-aaca-4d68-9a94-f4c05bd2ae39"
+      },
+      {
+        "line": 197,
+        "message": "Unexpected negated condition.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "fa8eb0d3-1127-4eb9-90b0-90eec13086d4"
+      }
+    ],
+    "javascript:S7770": [
+      {
+        "line": 204,
+        "message": "arrow function is equivalent to `Boolean`. Use `Boolean` directly.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "f8ebc4c5-7e21-4524-b997-dc0ea8e9ff1f"
+      }
+    ]
+  },
+  "frontend/src/composables/useForm.js": {
+    "javascript:S7728": [
+      {
+        "line": 88,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "c2cdc50f-ddf9-439c-83f5-09d43bb45b36"
+      },
+      {
+        "line": 105,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "d974a35c-00ac-4172-b6d2-63461bb8e2c3"
+      },
+      {
+        "line": 180,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "0986d0b6-0c14-493c-8e2d-3144c9c66693"
+      },
+      {
+        "line": 192,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "970909cc-596b-42b4-ae6f-9379dc28e8bf"
+      }
+    ],
+    "javascript:S7735": [
+      {
+        "line": 112,
+        "message": "Unexpected negated condition.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "1487a0ee-eeae-49ba-b44b-12c71a95b1e9"
+      }
+    ],
+    "javascript:S2737": [
+      {
+        "line": 244,
+        "message": "Add logic to this catch clause or eliminate it and rethrow the exception automatically.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "d7480463-2e96-40ae-9e79-a3ed60a57017"
+      }
+    ]
+  },
+  "frontend/src/services/apiClient.js": {
+    "javascript:S7728": [
+      {
+        "line": 42,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "706b8fc8-a23a-4e6b-97a1-5c12beb62a6d"
+      }
+    ],
+    "javascript:S3358": [
+      {
+        "line": 177,
+        "message": "Extract this nested ternary operation into an independent statement.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "03408fe7-86c7-4c55-b5a2-7f7e75efc279"
+      },
+      {
+        "line": 178,
+        "message": "Extract this nested ternary operation into an independent statement.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "3096aca0-53b0-4e3a-a464-5bc5b7689990"
+      }
+    ],
+    "javascript:S4624": [
+      {
+        "line": 177,
+        "message": "Refactor this code to not use nested template literals.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "9f925895-f0ea-44f6-8aad-4d636676c399"
+      },
+      {
+        "line": 178,
+        "message": "Refactor this code to not use nested template literals.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "c2292bee-2499-42bf-a36e-7292db6ddac2"
+      }
+    ]
+  },
+  "frontend/src/services/reportsService.js": {
+    "javascript:S7764": [
+      {
+        "line": 63,
+        "message": "Prefer `globalThis` over `window`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "bccbbb04-3990-4f0f-8c08-d0ff6dd0fe0e"
+      }
+    ]
+  },
+  "frontend/src/utils/formFieldConfigs.js": {
+    "javascript:S6582": [
+      {
+        "line": 30,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "5036c401-c3b6-49bf-b161-9f82b9850c11"
+      },
+      {
+        "line": 63,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "505ba601-381a-40ec-8f36-06ee0e089986"
+      },
+      {
+        "line": 96,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "c363977c-e020-438f-b0fb-1406f9048123"
+      },
+      {
+        "line": 143,
+        "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "d8030861-aeae-4d6d-9157-b8d502799650"
+      }
+    ],
+    "javascript:S7728": [
+      {
+        "line": 273,
+        "message": "Use `for…of` instead of `.forEach(…)`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "599d57fd-7c6e-4587-a3db-86db158a3ca6"
+      }
+    ]
+  },
+  "frontend/src/components/common/FincasViewComponents/FincaForm.vue": {
+    "javascript:S1481": [
+      {
+        "line": 558,
+        "message": "Remove the declaration of the unused 'successMessage' variable.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "61d015de-1f95-4e48-a9bc-e7f80123d136"
+      }
+    ],
+    "javascript:S1854": [
+      {
+        "line": 558,
+        "message": "Remove this useless assignment to variable \"successMessage\".",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "b3b6e8b1-2783-4853-87f8-b0706fb6aebc"
+      }
+    ]
+  },
+  "backend/ml/pipeline/train_all.py": {
+    "python:S3776": [
+      {
+        "line": 124,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 17 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "fa59accd-5a4c-475e-a5db-c6066d1261fb"
+      },
+      {
+        "line": 248,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 42 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "6be29261-f93b-495f-bbdc-c0b485e8356c"
+      },
+      {
+        "line": 455,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 92 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "30a4609c-13e5-44c7-b164-fff57e7f29c6"
+      },
+      {
+        "line": 837,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "081176ab-44d3-4167-be61-1bcc88c6a37f"
+      },
+      {
+        "line": 1174,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 27 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "c4b40ea3-d787-4c03-96e0-1bcf0beecb54"
+      },
+      {
+        "line": 1357,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 39 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "70c9c0f6-589d-4232-af84-12bec76512de"
+      },
+      {
+        "line": 1462,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "e094d1f7-f64d-424e-af4c-cbf95a9d1907"
+      },
+      {
+        "line": 2073,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 19 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "3311510e-1592-46fa-b70c-8e52ba23fc25"
+      }
+    ],
+    "python:S1481": [
+      {
+        "line": 528,
+        "message": "Remove the unused local variable \"cropper\".",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "5a82a3fe-2128-4977-991f-f7a582965030"
+      },
+      {
+        "line": 1251,
+        "message": "Remove the unused local variable \"dataset_info\".",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "ef7d6da3-eb28-48f6-b5bc-75735ecf65b9"
+      },
+      {
+        "line": 1339,
+        "message": "Remove the unused local variable \"test_loader_single\".",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "589fed64-15c6-4494-8994-2a519a274e66"
+      },
+      {
+        "line": 1734,
+        "message": "Replace the unused local variable \"pixel_features\" with \"_\".",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "29dfdea7-4f2b-4747-9394-e2c5cd0108a9"
+      },
+      {
+        "line": 1734,
+        "message": "Replace the unused local variable \"targets_original\" with \"_\".",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "b92945eb-e49e-447e-88dc-a5477fa9f254"
+      },
+      {
+        "line": 1743,
+        "message": "Remove the unused local variable \"results\".",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "c7e11370-0426-4c8f-9f95-d4f252836425"
+      }
+    ],
+    "python:S112": [
+      {
+        "line": 1981,
+        "message": "Replace this generic exception class with a more specific one.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "0f4b2816-bc64-4713-851e-a4df10c7edd7"
+      }
+    ],
+    "python:S1192": [
+      {
+        "line": 1361,
+        "message": "Define a constant instead of duplicating this literal \"hybrid.pt\" 3 times.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "9522861c-360d-4b55-a823-a03b433d761a"
+      },
+      {
+        "line": 1362,
+        "message": "Define a constant instead of duplicating this literal \"multihead.pt\" 3 times.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "784b0aee-65c6-4552-a959-2839e6b47717"
+      }
+    ],
+    "python:S930": [
+      {
+        "line": 2124,
+        "message": "Remove 1 unexpected arguments; 'run_pipeline' expects 0 positional arguments.",
+        "severity": "BLOCKER",
+        "type": "BUG",
+        "key": "27e75fd8-d4a0-41a0-8a0a-a841df8ccdc8"
+      }
+    ]
+  },
+  "backend/training/management/commands/train_cacao_models.py": {
+    "python:S930": [
+      {
+        "line": 822,
+        "message": "Remove 1 unexpected arguments; 'run_pipeline' expects 0 positional arguments.",
+        "severity": "BLOCKER",
+        "type": "BUG",
+        "key": "d8662d4f-afcb-4dde-8264-6debce0027f0"
+      }
+    ]
+  },
+  "backend/cacaoscan/settings.py": {
+    "python:S5713": [
+      {
+        "line": 614,
+        "message": "Remove this redundant Exception class; it derives from another which is already caught.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "6f1f63ac-e1d9-43b2-89f3-5cf17a98740d"
+      }
+    ]
+  },
+  "backend/images_app/services/image/management_service.py": {
+    "python:S3776": [
+      {
+        "line": 184,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 24 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "1d065919-c8ba-4279-bebb-783fc4735a95"
+      }
+    ]
+  },
+  "backend/run_tests.py": {
+    "python:S3776": [
+      {
+        "line": 15,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 25 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "a0349209-47ee-4b92-804f-8ab6d93d6221"
+      }
+    ],
+    "python:S3457": [
+      {
+        "line": 27,
+        "message": "Add replacement fields or use a normal string instead of an f-string.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "ca3cd450-5c78-4f92-87d3-f58983d5e4d7"
+      }
+    ],
+    "python:S1192": [
+      {
+        "line": 84,
+        "message": "Define a constant instead of duplicating this literal 'tests/' 3 times.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "d1a08341-9d85-47d7-974c-6a60f1241893"
+      }
+    ]
+  },
+  "backend/ml/regression/scalers.py": {
+    "python:S6546": [
+      {
+        "line": 46,
+        "message": "Use a union type expression for this type hint.",
+        "severity": "MAJOR",
+        "type": "CODE_SMELL",
+        "key": "1bb4c066-513c-4e2b-a985-a571ed76ffea"
+      }
+    ],
+    "python:S3776": [
+      {
+        "line": 57,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 27 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "e82d6608-23ea-4e49-a786-3b0edf76ba44"
+      },
+      {
+        "line": 116,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 27 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "dfa6b917-81bd-4cba-96d1-2d5c86b82b33"
+      }
+    ]
+  },
+  "backend/ml/regression/models.py": {
+    "python:S3776": [
+      {
+        "line": 200,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "d221f57d-37ce-48bc-8e4f-b06a180bf87d"
+      },
+      {
+        "line": 360,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 27 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "124695f3-6719-4a73-a4f3-6c7a2e0efa38"
+      },
+      {
+        "line": 636,
+        "message": "Refactor this function to reduce its Cognitive Complexity from 28 to the 15 allowed.",
+        "severity": "CRITICAL",
+        "type": "CODE_SMELL",
+        "key": "55b3df94-0200-41fd-b892-95d5c6ffd0d8"
+      }
+    ]
+  },
+  "frontend/src/services/adminApi.js": {
+    "javascript:S7744": [
+      {
+        "line": 427,
+        "message": "The empty object is useless.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "865fbbfb-8c8f-405a-a854-05384e44272d"
+      }
+    ],
+    "javascript:S7763": [
+      {
+        "line": 439,
+        "message": "Use `export…from` to re-export `trainRegressionModel`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "884c5a8f-8d68-48a0-bfbd-694212bbef96"
+      },
+      {
+        "line": 440,
+        "message": "Use `export…from` to re-export `trainVisionModel`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "6f1c2cfc-9dda-4e1b-9d25-a6d561a8b24e"
+      },
+      {
+        "line": 441,
+        "message": "Use `export…from` to re-export `getTrainingJobStatus`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "ea1a8da6-200c-4c17-a5fa-42cb064f06d7"
+      },
+      {
+        "line": 442,
+        "message": "Use `export…from` to re-export `getTrainingJobs`.",
+        "severity": "MINOR",
+        "type": "CODE_SMELL",
+        "key": "75dfd9f4-6317-4626-a707-af643b5de593"
+      }
+    ]
+  }
+}

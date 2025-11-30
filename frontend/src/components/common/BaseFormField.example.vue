@@ -53,7 +53,6 @@
         :required="true"
       >
         <input 
-          id="nombre"
           v-model="form.nombre" 
           type="text" 
           required
@@ -72,7 +71,6 @@
         help-text="Ingresa un email válido"
       >
         <input 
-          id="email"
           v-model="form.email" 
           type="email" 
           required
@@ -90,7 +88,6 @@
         help-text="Formato: +57 300 123 4567"
       >
         <input 
-          id="telefono"
           v-model="form.telefono" 
           type="tel" 
           class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -107,7 +104,6 @@
         :required="true"
       >
         <select 
-          id="pais"
           v-model="form.pais" 
           required
           class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -128,7 +124,6 @@
         help-text="Máximo 500 caracteres"
       >
         <textarea 
-          id="comentarios"
           v-model="form.comentarios" 
           rows="4"
           maxlength="500"

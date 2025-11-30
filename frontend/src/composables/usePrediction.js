@@ -171,7 +171,7 @@ export function usePrediction(options = {}) {
       return { isValid: false, error: 'Debes seleccionar un método de análisis' }
     }
 
-    if (!fileUpload.hasFile.value && (!store || !store.currentImage)) {
+    if (!fileUpload.hasFile.value && !store?.currentImage) {
       return { isValid: false, error: 'Debes subir una imagen para analizar' }
     }
 
@@ -216,7 +216,7 @@ export function usePrediction(options = {}) {
         formData.append('image', formDataOrFile)
       } else {
         // Use current image file from file upload composable or store
-        const imageToUse = fileUpload.selectedFile.value || (store && store.currentImage)
+        const imageToUse = fileUpload.selectedFile.value || store?.currentImage
         if (!imageToUse) {
           throw new Error('No hay imagen disponible para analizar')
         }
