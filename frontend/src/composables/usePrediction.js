@@ -183,26 +183,32 @@ export function usePrediction(options = {}) {
    * @param {FormData|File|null} formDataOrFile - Form data, File, or null
    * @returns {FormData} Prepared FormData
    */
+  const createImageFormData = (file) => {
+    const formData = new FormData()
+    formData.append('image', file)
+    return formData
+  }
+
+  const getImageFromStore = () => {
+    return fileUpload.selectedFile.value || store?.currentImage
+  }
+
   const prepareFormData = (formDataOrFile) => {
     if (formDataOrFile instanceof FormData) {
       return formDataOrFile
     }
     
     if (formDataOrFile instanceof File) {
-      const formData = new FormData()
-      formData.append('image', formDataOrFile)
-      return formData
+      return createImageFormData(formDataOrFile)
     }
     
-    const imageToUse = fileUpload.selectedFile.value || store?.currentImage
+    const imageToUse = getImageFromStore()
     if (!imageToUse) {
       throw new Error('No hay imagen disponible para analizar')
     }
     
     if (imageToUse instanceof File) {
-      const formData = new FormData()
-      formData.append('image', imageToUse)
-      return formData
+      return createImageFormData(imageToUse)
     }
     
     throw new Error('Formato de imagen no soportado para predicción directa')

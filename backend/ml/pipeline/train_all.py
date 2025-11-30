@@ -1395,6 +1395,77 @@ class CacaoTrainingPipeline:
         
         return results
 
+    def _detect_pixel_feature_dim_from_checkpoint(self, checkpoint: Dict) -> Optional[int]:
+        """Detect pixel_feature_dim from checkpoint state_dict."""
+        if 'model_state_dict' not in checkpoint:
+            return None
+        state_dict = checkpoint['model_state_dict']
+        if 'pixel_branch.0.weight' in state_dict:
+            pixel_feature_dim = state_dict['pixel_branch.0.weight'].shape[1]
+            logger.info(f"Detectado pixel_feature_dim={pixel_feature_dim} desde checkpoint (pixel_branch.0.weight.shape)")
+            return pixel_feature_dim
+        return None
+
+    def _detect_pixel_feature_dim_from_model_info(self, checkpoint: Dict) -> Optional[int]:
+        """Detect pixel_feature_dim from model_info in checkpoint."""
+        if 'model_info' not in checkpoint:
+            return None
+        model_info = checkpoint.get('model_info', {})
+        config = model_info.get('config', {})
+        if 'pixel_feature_dim' in config:
+            pixel_feature_dim = config['pixel_feature_dim']
+            logger.info(f"Detectado pixel_feature_dim={pixel_feature_dim} desde model_info.config")
+            return pixel_feature_dim
+        return None
+
+    def _infer_pixel_feature_dim_from_features(self, pixel_features: Dict) -> Optional[int]:
+        """Infer pixel_feature_dim from pixel_features keys."""
+        if pixel_features is None:
+            return None
+        num_keys = len(pixel_features.keys())
+        if num_keys == len(CALIB_PIXEL_FEATURE_KEYS):
+            pixel_feature_dim = len(CALIB_PIXEL_FEATURE_KEYS)
+            logger.info(f"Inferido pixel_feature_dim={pixel_feature_dim} desde pixel_features (12 features extendidos)")
+            return pixel_feature_dim
+        if num_keys == len(PIXEL_FEATURE_KEYS):
+            pixel_feature_dim = len(PIXEL_FEATURE_KEYS)
+            logger.info(f"Inferido pixel_feature_dim={pixel_feature_dim} desde pixel_features (5 features básicos)")
+            return pixel_feature_dim
+        logger.warning(f"Número inesperado de features de píxeles: {num_keys}. Usando 10 por defecto.")
+        return 10
+
+    def _detect_pixel_feature_dim(self, checkpoint: Dict) -> int:
+        """Detect pixel_feature_dim using multiple methods."""
+        if not (self.is_hybrid and self.use_pixel_features):
+            return None
+        
+        # Method 1: From checkpoint state_dict
+        pixel_feature_dim = self._detect_pixel_feature_dim_from_checkpoint(checkpoint)
+        if pixel_feature_dim is not None:
+            return pixel_feature_dim
+        
+        # Method 2: From model_info
+        pixel_feature_dim = self._detect_pixel_feature_dim_from_model_info(checkpoint)
+        if pixel_feature_dim is not None:
+            return pixel_feature_dim
+        
+        # Method 3: Infer from pixel_features
+        pixel_feature_dim = self._infer_pixel_feature_dim_from_features(self.test_pixel_features)
+        if pixel_feature_dim is not None:
+            return pixel_feature_dim
+        
+        pixel_feature_dim = self._infer_pixel_feature_dim_from_features(self.train_pixel_features)
+        if pixel_feature_dim is not None:
+            return pixel_feature_dim
+        
+        # Fallback
+        pixel_feature_dim = 10
+        logger.warning(
+            f"No se pudo detectar pixel_feature_dim. Usando default={pixel_feature_dim}. "
+            f"Si el modelo fue entrenado con 12 features, esto causará un error de size mismatch."
+        )
+        return pixel_feature_dim
+
     def _evaluate_multi_head_model(self) -> Dict[str, Dict]:
         """Evalúa modelo multi-head."""
         logger.info("Evaluando modelo multi-head...")
@@ -1420,55 +1491,7 @@ class CacaoTrainingPipeline:
             ) from exc
         
         # Determinar pixel_feature_dim de la misma manera que en entrenamiento
-        pixel_feature_dim = None
-        if self.is_hybrid and self.use_pixel_features:
-            # Método 1: Intentar detectar desde el checkpoint (shape de pixel_branch.0.weight)
-            if 'model_state_dict' in checkpoint:
-                state_dict = checkpoint['model_state_dict']
-                if 'pixel_branch.0.weight' in state_dict:
-                    # El shape es [256, num_pixel_features]
-                    pixel_feature_dim = state_dict['pixel_branch.0.weight'].shape[1]
-                    logger.info(f"Detectado pixel_feature_dim={pixel_feature_dim} desde checkpoint (pixel_branch.0.weight.shape)")
-            
-            # Método 2: Intentar desde model_info si está disponible
-            if pixel_feature_dim is None and 'model_info' in checkpoint:
-                model_info = checkpoint.get('model_info', {})
-                config = model_info.get('config', {})
-                if 'pixel_feature_dim' in config:
-                    pixel_feature_dim = config['pixel_feature_dim']
-                    logger.info(f"Detectado pixel_feature_dim={pixel_feature_dim} desde model_info.config")
-            
-            # Método 3: Inferir desde pixel_features disponibles (igual que en entrenamiento)
-            if pixel_feature_dim is None:
-                if self.test_pixel_features is not None:
-                    num_keys = len(self.test_pixel_features.keys())
-                    if num_keys == len(CALIB_PIXEL_FEATURE_KEYS):
-                        pixel_feature_dim = len(CALIB_PIXEL_FEATURE_KEYS)  # 12 features extendidos
-                        logger.info(f"Inferido pixel_feature_dim={pixel_feature_dim} desde test_pixel_features (12 features extendidos)")
-                    elif num_keys == len(PIXEL_FEATURE_KEYS):
-                        pixel_feature_dim = len(PIXEL_FEATURE_KEYS)  # 5 features básicos
-                        logger.info(f"Inferido pixel_feature_dim={pixel_feature_dim} desde test_pixel_features (5 features básicos)")
-                    else:
-                        logger.warning(f"Número inesperado de features de píxeles: {num_keys}. Usando 10 por defecto.")
-                        pixel_feature_dim = 10
-                elif self.train_pixel_features is not None:
-                    num_keys = len(self.train_pixel_features.keys())
-                    if num_keys == len(CALIB_PIXEL_FEATURE_KEYS):
-                        pixel_feature_dim = len(CALIB_PIXEL_FEATURE_KEYS)  # 12 features extendidos
-                        logger.info(f"Inferido pixel_feature_dim={pixel_feature_dim} desde train_pixel_features (12 features extendidos)")
-                    elif num_keys == len(PIXEL_FEATURE_KEYS):
-                        pixel_feature_dim = len(PIXEL_FEATURE_KEYS)  # 5 features básicos
-                        logger.info(f"Inferido pixel_feature_dim={pixel_feature_dim} desde train_pixel_features (5 features básicos)")
-                    else:
-                        logger.warning(f"Número inesperado de features de píxeles: {num_keys}. Usando 10 por defecto.")
-                        pixel_feature_dim = 10
-                else:
-                    # Fallback: usar 10 por defecto (pero advertir)
-                    pixel_feature_dim = 10
-                    logger.warning(
-                        f"No se pudo detectar pixel_feature_dim. Usando default={pixel_feature_dim}. "
-                        f"Si el modelo fue entrenado con 12 features, esto causará un error de size mismatch."
-                    )
+        pixel_feature_dim = self._detect_pixel_feature_dim(checkpoint)
         
         # Crear modelo con el pixel_feature_dim detectado
         model = create_model(

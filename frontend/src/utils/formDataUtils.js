@@ -10,19 +10,21 @@
  * @param {Array} arrayValue - Array value
  * @returns {void}
  */
-function appendArrayToFormData(formData, key, arrayValue) {
-  for (let index = 0; index < arrayValue.length; index++) {
-    const item = arrayValue[index]
-    const itemKey = `${key}[${index}]`
-    
-    if (item instanceof File || item instanceof Blob) {
-      formData.append(itemKey, item)
-    } else if (typeof item === 'object' && item !== null) {
-      formData.append(itemKey, JSON.stringify(item))
-    } else {
-      formData.append(itemKey, item)
-    }
+function appendArrayItem(formData, itemKey, item) {
+  if (item instanceof File || item instanceof Blob) {
+    formData.append(itemKey, item)
+  } else if (typeof item === 'object' && item !== null) {
+    formData.append(itemKey, JSON.stringify(item))
+  } else {
+    formData.append(itemKey, item)
   }
+}
+
+function appendArrayToFormData(formData, key, arrayValue) {
+  arrayValue.forEach((item, index) => {
+    const itemKey = `${key}[${index}]`
+    appendArrayItem(formData, itemKey, item)
+  })
 }
 
 /**

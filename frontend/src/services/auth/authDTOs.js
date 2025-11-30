@@ -95,6 +95,12 @@ export function normalizeUser(rawUser) {
  * @param {Object|string} errorData - Error data object
  * @returns {string|null} Error message
  */
+function extractNonFieldErrors(nonFieldErrors) {
+  return Array.isArray(nonFieldErrors)
+    ? nonFieldErrors[0]
+    : nonFieldErrors
+}
+
 function extractErrorMessage(errorData) {
   if (typeof errorData === 'string') {
     return errorData
@@ -109,9 +115,7 @@ function extractErrorMessage(errorData) {
   }
   
   if (errorData.non_field_errors) {
-    return Array.isArray(errorData.non_field_errors)
-      ? errorData.non_field_errors[0]
-      : errorData.non_field_errors
+    return extractNonFieldErrors(errorData.non_field_errors)
   }
   
   return null
