@@ -5,7 +5,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Tuple
+from typing import Dict, List, Optional, Tuple
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 import logging
 
@@ -43,7 +43,7 @@ class CacaoScalers:
         
         logger.info(f"CacaoScalers initialized with LOG_TARGETS: {self.LOG_TARGETS}")
     
-    def _create_scaler(self) -> Union[StandardScaler, MinMaxScaler, RobustScaler]:
+    def _create_scaler(self) -> StandardScaler | MinMaxScaler | RobustScaler:
         """Crea un escalador según el tipo especificado."""
         if self.scaler_type == "standard":
             return StandardScaler()
@@ -84,7 +84,7 @@ class CacaoScalers:
         
         return target_data
 
-    def _convert_to_dict(self, data: Union[pd.DataFrame, Dict[str, np.ndarray]]) -> Dict[str, np.ndarray]:
+    def _convert_to_dict(self, data: pd.DataFrame | Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """Convierte datos a diccionario de arrays numpy 2D."""
         if isinstance(data, pd.DataFrame):
             return self._convert_dataframe_to_dict(data)
@@ -99,7 +99,7 @@ class CacaoScalers:
         logger.debug(f"No log transform for {target}")
         return target_array
     
-    def fit(self, data: Union[pd.DataFrame, Dict[str, np.ndarray]]) -> None:
+    def fit(self, data: pd.DataFrame | Dict[str, np.ndarray]) -> None:
         """
         Ajusta los escaladores a los datos de entrenamiento.
         
@@ -126,7 +126,7 @@ class CacaoScalers:
         self.is_fitted = True
         logger.info("Escaladores ajustados exitosamente")
     
-    def transform(self, data: Union[pd.DataFrame, Dict[str, np.ndarray]]) -> Dict[str, np.ndarray]:
+    def transform(self, data: pd.DataFrame | Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
         Transforma los datos usando los escaladores ajustados.
         
@@ -185,7 +185,7 @@ class CacaoScalers:
             
         return original_data
     
-    def fit_transform(self, data: Union[pd.DataFrame, Dict[str, np.ndarray]]) -> Dict[str, np.ndarray]:
+    def fit_transform(self, data: pd.DataFrame | Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
         Ajusta y transforma los datos en una sola operación.
         
@@ -304,7 +304,7 @@ def save_scalers(
 
 
 def create_scalers_from_data(
-    data: Union[pd.DataFrame, Dict[str, np.ndarray]],
+    data: pd.DataFrame | Dict[str, np.ndarray],
     scaler_type: str = "standard"
 ) -> CacaoScalers:
     """

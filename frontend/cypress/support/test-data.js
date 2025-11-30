@@ -252,7 +252,6 @@ export function createTestPrediction(overrides = {}) {
   }
 }
 
-// Export for convenience
 export default {
   TEST_CREDENTIALS,
   TEST_USERS,

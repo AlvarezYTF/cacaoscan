@@ -52,7 +52,8 @@ function createHttpClient() {
       return config
     },
     (error) => {
-      return Promise.reject(createStandardError(error))
+      const standardError = error instanceof Error ? error : createStandardError(error)
+      return Promise.reject(standardError)
     }
   )
 

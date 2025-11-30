@@ -201,7 +201,7 @@ const loadMore = () => {
 
 .base-history-load-more {
   padding: 0.5rem 1.5rem;
-  background: #059669;
+  background: #047857;
   color: #ffffff;
   border: none;
   border-radius: 0.5rem;
