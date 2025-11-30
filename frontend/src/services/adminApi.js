@@ -491,7 +491,7 @@ export default {
   trainVisionModel: baseTrainVision,
   getTrainingJobStatus: baseGetJobStatus,
   getTrainingJobs: baseGetJobs
-  
-  // Nota: TRAINING_PRESETS, DATA_FILTERS y ADMIN_TRAINING_CONFIG 
-  // están disponibles como named exports arriba
-};
+}
+
+// Nota: TRAINING_PRESETS, DATA_FILTERS y ADMIN_TRAINING_CONFIG 
+// están disponibles como named exports arriba

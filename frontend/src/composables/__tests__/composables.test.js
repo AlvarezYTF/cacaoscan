@@ -1,6 +1,6 @@
-"""
-Tests unitarios para composables de CacaoScan.
-"""
+/**
+ * Tests unitarios para composables de CacaoScan.
+ */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
 import { useImageStats } from '../composables/useImageStats.js'

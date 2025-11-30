@@ -13,7 +13,7 @@
         ref="toggleButton"
         type="button"
         role="switch"
-        :aria-checked="Boolean(modelValue)"
+        :aria-checked="modelValue ? 'true' : 'false'"
         :aria-label="ariaLabel"
         :class="[
           'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 ease-in-out',

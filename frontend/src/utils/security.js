@@ -102,8 +102,8 @@ export function isValidFilename(filename) {
 
   // Check for control characters (0x00-0x1F) without using control chars in regex
   for (let i = 0; i < filename.length; i++) {
-    const charCode = filename.charCodeAt(i)
-    if (charCode >= 0x00 && charCode <= 0x1F) {
+    const codePoint = filename.codePointAt(i)
+    if (codePoint !== undefined && codePoint >= 0x00 && codePoint <= 0x1F) {
       return false
     }
   }
@@ -136,11 +136,11 @@ export function sanitizeFilename(filename) {
   // Remove control characters (0x00-0x1F) without using control chars in regex
   let cleaned = ''
   for (let i = 0; i < sanitized.length; i++) {
-    const charCode = sanitized.charCodeAt(i)
-    if (charCode < 0x00 || charCode > 0x1F) {
-      cleaned += sanitized[i]
-    } else {
+    const codePoint = sanitized.codePointAt(i)
+    if (codePoint !== undefined && codePoint >= 0x00 && codePoint <= 0x1F) {
       cleaned += '_'
+    } else {
+      cleaned += sanitized[i]
     }
   }
   sanitized = cleaned

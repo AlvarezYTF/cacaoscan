@@ -1,6 +1,6 @@
-"""
-Tests unitarios para componentes Vue de CacaoScan.
-"""
+/**
+ * Tests unitarios para componentes Vue de CacaoScan.
+ */
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'

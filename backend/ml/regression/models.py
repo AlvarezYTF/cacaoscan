@@ -506,8 +506,8 @@ class HybridCacaoRegression(nn.Module):
             nn.Linear(64, final_outputs)
         )
 
-    def _init_weights(self, modules: List[nn.Module], final_outputs: int) -> None:
-        """Inicializa los pesos de los módulos."""
+    def _init_module_weights(self, module: nn.Module) -> None:
+        """Inicializa los pesos de un módulo individual."""
         def init_weights(m):
             if isinstance(m, nn.Linear):
                 nn.init.xavier_uniform_(m.weight)
@@ -517,17 +517,24 @@ class HybridCacaoRegression(nn.Module):
                 nn.init.constant_(m.weight, 1.0)
                 nn.init.constant_(m.bias, 0.0)
         
-        for module in modules:
-            if module is not None:
-                module.apply(init_weights)
-        
-        # Inicializar última capa del regression_head
+        if module is not None:
+            module.apply(init_weights)
+    
+    def _init_final_layer_weights(self, final_outputs: int) -> None:
+        """Inicializa los pesos de la última capa del regression_head."""
         for module in reversed(list(self.regression_head.modules())):
             if isinstance(module, nn.Linear) and module.out_features == final_outputs:
                 nn.init.xavier_uniform_(module.weight)
                 if module.bias is not None:
                     module.bias.data.zero_()
                 break
+    
+    def _init_weights(self, modules: List[nn.Module], final_outputs: int) -> None:
+        """Inicializa los pesos de los módulos."""
+        for module in modules:
+            self._init_module_weights(module)
+        
+        self._init_final_layer_weights(final_outputs)
 
     def __init__(
         self,
@@ -578,6 +585,7 @@ class HybridCacaoRegression(nn.Module):
         self._init_weights(modules_to_init, final_outputs)
         
         self.num_outputs = final_outputs  # Siempre 4
+        fused_features_dim = 512 + pixel_features_dim if use_pixel_features else 512
         logger.info(
             f"Modelo Híbrido Creado con FEATURE GATING: "
             f"Fused features dim = {fused_features_dim} "

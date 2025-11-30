@@ -107,6 +107,38 @@ export function getAuditStatusClass(item, auditType) {
 }
 
 /**
+ * Format primitive value to string safely
+ * @param {*} value - Value to format
+ * @returns {string} Formatted string
+ */
+function formatPrimitiveValue(value) {
+  const type = typeof value
+  if (type === 'string') {
+    return value
+  }
+  if (type === 'number') {
+    return String(value)
+  }
+  if (type === 'boolean') {
+    return String(value)
+  }
+  return '[Unknown]'
+}
+
+/**
+ * Try to stringify object safely
+ * @param {Object} obj - Object to stringify
+ * @returns {string} Stringified object or fallback
+ */
+function safeStringifyObject(obj) {
+  try {
+    return JSON.stringify(obj, null, 2)
+  } catch {
+    return '[Object]'
+  }
+}
+
+/**
  * Format JSON data for display
  * @param {Object|string} data - Data to format
  * @returns {string} Formatted JSON string
@@ -127,25 +159,10 @@ export function formatJson(data) {
     // Fallback: convert primitive types to string
     const type = typeof data
     if (type === 'object' && data !== null) {
-      try {
-        return JSON.stringify(data, null, 2)
-      } catch {
-        return '[Object]'
-      }
+      return safeStringifyObject(data)
     }
     
-    // Only stringify primitive types that are safe
-    if (type === 'string') {
-      return data
-    }
-    if (type === 'number') {
-      return data.toString()
-    }
-    if (type === 'boolean') {
-      return data.toString()
-    }
-    // For other types (symbol, function, etc.), return a safe representation
-    return '[Unknown]'
+    return formatPrimitiveValue(data)
   }
 }
 

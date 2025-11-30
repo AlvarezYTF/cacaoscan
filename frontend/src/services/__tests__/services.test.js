@@ -1,6 +1,6 @@
-"""
-Tests unitarios para servicios de CacaoScan Frontend.
-"""
+/**
+ * Tests unitarios para servicios de CacaoScan Frontend.
+ */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import axios from 'axios'
 

@@ -123,8 +123,17 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-// Generate unique ID for the input field
-const fieldId = computed(() => `upload-${Math.random().toString(36).substring(2, 9)}`)
+// Generate unique ID for the input field using cryptographically secure random UUID
+const generateSecureId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `upload-${crypto.randomUUID()}`
+  }
+  // Fallback for older browsers using crypto.getRandomValues
+  const array = new Uint8Array(16)
+  crypto.getRandomValues(array)
+  return `upload-${Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')}`
+}
+const fieldId = ref(generateSecureId())
 
 const props = defineProps({
   modelValue: {

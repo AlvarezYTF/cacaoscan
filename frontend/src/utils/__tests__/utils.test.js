@@ -1,6 +1,6 @@
-"""
-Tests unitarios para utilidades de CacaoScan.
-"""
+/**
+ * Tests unitarios para utilidades de CacaoScan.
+ */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // Importar utilidades (asumiendo que existen)

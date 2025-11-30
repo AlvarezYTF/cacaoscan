@@ -76,6 +76,7 @@ class TestSonarQubeFixesInCode(TestCase):
                 # Verificación básica: si hay un if y elif con la misma condición, es redundante
                 # Esta es una verificación simplificada
                 # Por ahora solo verificamos que el archivo existe y es válido
+                pass
         
         # Verificación simple: el archivo debe ser válido Python
         self.assertIn('class', content, "auth_service.py debe contener clases")

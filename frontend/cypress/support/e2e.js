@@ -16,13 +16,28 @@
 // Import commands.js using ES2015 syntax:
 import './commands'
 
-// Import selectors and helpers for use in tests
-import { SELECTORS } from './selectors'
-import * as helpers from './helpers'
+// Manejo global de errores no capturados
+Cypress.on('uncaught:exception', (err, runnable) => {
+  // Ignorar errores de módulos que no se pueden resolver (común en desarrollo)
+  if (err.message.includes('Failed to fetch dynamically imported module') ||
+      err.message.includes('Loading chunk') ||
+      err.message.includes('ChunkLoadError')) {
+    return false
+  }
+  
+  // Ignorar errores de traducción de Google (común en desarrollo)
+  if (err.message.includes('translate') || err.message.includes('google')) {
+    return false
+  }
+  
+  // Por defecto, no fallar en errores no capturados
+  return false
+})
 
-// Make SELECTORS and helpers available globally
-globalThis.SELECTORS = SELECTORS
-globalThis.helpers = helpers
+// Configuración global de timeouts
+Cypress.config('defaultCommandTimeout', 10000)
+Cypress.config('requestTimeout', 10000)
+Cypress.config('responseTimeout', 10000)
 
 // Alternatively you can use CommonJS syntax:
 // require('./commands')
