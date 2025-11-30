@@ -866,6 +866,84 @@ class CacaoTrainingPipeline:
 
         return image_paths, targets, pixel_features
     
+    def _create_random_split(self, n_samples: int, test_size: float, val_size: float) -> Tuple[List[int], List[int], List[int]]:
+        """Create random train/val/test split."""
+        train_idx, test_idx = train_test_split(
+            range(n_samples), test_size=test_size, random_state=42
+        )
+        train_idx, val_idx = train_test_split(
+            train_idx, test_size=val_size/(1-test_size), random_state=42
+        )
+        return list(train_idx), list(val_idx), list(test_idx)
+
+    def _create_stratified_split_indices(
+        self, n_samples: int, peso_values: np.ndarray, test_size: float, val_size: float
+    ) -> Tuple[List[int], List[int], List[int]]:
+        """Create stratified split indices using quantiles."""
+        n_quantiles = min(5, n_samples // 10)
+        
+        if n_quantiles < 2:
+            logger.warning("Muy pocos muestras para estratificación, usando split aleatorio")
+            return self._create_random_split(n_samples, test_size, val_size)
+        
+        try:
+            quantile_transformer = QuantileTransformer(n_quantiles=n_quantiles, random_state=42)
+            peso_quantiles = quantile_transformer.fit_transform(peso_values.reshape(-1, 1)).flatten()
+            strata = pd.cut(peso_quantiles, bins=n_quantiles, labels=False)
+            
+            strata_counts = pd.Series(strata).value_counts()
+            if strata_counts.min() < 2:
+                logger.warning(f"Algunos estratos tienen menos de 2 muestras. Usando split aleatorio.")
+                return self._create_random_split(n_samples, test_size, val_size)
+            
+            train_idx, test_idx = train_test_split(
+                range(n_samples), test_size=test_size, random_state=42, stratify=strata
+            )
+            
+            train_strata = strata[train_idx]
+            train_strata_counts = pd.Series(train_strata).value_counts()
+            
+            if train_strata_counts.min() < 2:
+                logger.warning("Estratificación no viable para validación. Usando split aleatorio para validación.")
+                train_idx, val_idx = train_test_split(
+                    train_idx, test_size=val_size/(1-test_size), random_state=42
+                )
+            else:
+                train_idx, val_idx = train_test_split(
+                    train_idx, test_size=val_size/(1-test_size), random_state=42, stratify=train_strata
+                )
+            
+            return list(train_idx), list(val_idx), list(test_idx)
+        except ValueError as e:
+            logger.warning(f"Error en estratificación: {e}. Usando split aleatorio.")
+            return self._create_random_split(n_samples, test_size, val_size)
+
+    def _split_pixel_features(
+        self, pixel_features: Dict[str, np.ndarray], train_idx: List[int], val_idx: List[int], test_idx: List[int]
+    ) -> Tuple[Optional[Dict[str, np.ndarray]], Optional[Dict[str, np.ndarray]], Optional[Dict[str, np.ndarray]]]:
+        """Split pixel features by indices."""
+        if self.single_dim_pixel_features is not None and len(self.single_dim_pixel_features) == len(CALIB_PIXEL_FEATURE_KEYS):
+            feature_keys = CALIB_PIXEL_FEATURE_KEYS
+            logger.info(f"✅ Usando {len(feature_keys)} features extendidos de pixel_calibration.json")
+        else:
+            feature_keys = PIXEL_FEATURE_KEYS
+            logger.info(f"✅ Usando {len(feature_keys)} features básicos de píxeles")
+        
+        available_keys = [k for k in feature_keys if k in pixel_features]
+        if len(available_keys) != len(feature_keys):
+            missing = set(feature_keys) - set(available_keys)
+            logger.warning(f"Algunos features faltantes: {missing}. Usando solo los disponibles.")
+            feature_keys = available_keys
+        
+        if not feature_keys:
+            return None, None, None
+        
+        train_pixel_features = {key: pixel_features[key][train_idx] for key in feature_keys}
+        val_pixel_features = {key: pixel_features[key][val_idx] for key in feature_keys}
+        test_pixel_features = {key: pixel_features[key][test_idx] for key in feature_keys}
+        logger.info(f"✅ Features de píxeles divididas por splits ({len(feature_keys)} features)")
+        return train_pixel_features, val_pixel_features, test_pixel_features
+
     def create_stratified_split(
         self,
         image_paths: List[Path],
@@ -889,65 +967,11 @@ class CacaoTrainingPipeline:
         logger.info("Creando split estratificado...")
         
         n_samples = len(image_paths)
-        
         peso_values = targets['peso']
-        n_quantiles = min(5, n_samples // 10)  # Ajustar número de cuantiles
         
-        if n_quantiles < 2:
-            logger.warning("Muy pocos muestras para estratificación, usando split aleatorio")
-            # Split aleatorio simple
-            train_idx, test_idx = train_test_split(
-                range(n_samples), test_size=test_size, random_state=42
-            )
-            train_idx, val_idx = train_test_split(
-                train_idx, test_size=val_size/(1-test_size), random_state=42
-            )
-        else:
-            try:
-                # Estratificación por cuantiles de peso
-                quantile_transformer = QuantileTransformer(n_quantiles=n_quantiles, random_state=42)
-                peso_quantiles = quantile_transformer.fit_transform(peso_values.reshape(-1, 1)).flatten()
-                
-                # Convertir a bins para estratificación
-                strata = pd.cut(peso_quantiles, bins=n_quantiles, labels=False)
-                
-                # Verificar que todos los estratos tengan al menos 2 muestras
-                strata_counts = pd.Series(strata).value_counts()
-                min_strata_count = strata_counts.min()
-                
-                if min_strata_count < 2:
-                    logger.warning(f"Algunos estratos tienen menos de 2 muestras (mínimo: {min_strata_count}). Usando split aleatorio.")
-                    raise ValueError("Estratificación no viable")
-                
-                # Split estratificado
-                train_idx, test_idx = train_test_split(
-                    range(n_samples), test_size=test_size, random_state=42, stratify=strata
-                )
-                
-                # Crear estratos para el conjunto de entrenamiento
-                train_strata = strata[train_idx]
-                train_strata_counts = pd.Series(train_strata).value_counts()
-                
-                # Verificar que los estratos del train también tengan al menos 2 muestras
-                if train_strata_counts.min() < 2:
-                    logger.warning("Estratificación no viable para validación. Usando split aleatorio para validación.")
-                    train_idx, val_idx = train_test_split(
-                        train_idx, test_size=val_size/(1-test_size), random_state=42
-                    )
-                else:
-                    train_idx, val_idx = train_test_split(
-                        train_idx, test_size=val_size/(1-test_size), random_state=42, stratify=train_strata
-                    )
-                    
-            except ValueError as e:
-                logger.warning(f"Error en estratificación: {e}. Usando split aleatorio.")
-                # Fallback a split aleatorio
-                train_idx, test_idx = train_test_split(
-                    range(n_samples), test_size=test_size, random_state=42
-                )
-                train_idx, val_idx = train_test_split(
-                    train_idx, test_size=val_size/(1-test_size), random_state=42
-                )
+        train_idx, val_idx, test_idx = self._create_stratified_split_indices(
+            n_samples, peso_values, test_size, val_size
+        )
         
         # Crear splits de imágenes
         train_images = [image_paths[i] for i in train_idx]
@@ -958,36 +982,11 @@ class CacaoTrainingPipeline:
         val_targets = {target: targets[target][val_idx] for target in TARGETS}
         test_targets = {target: targets[target][test_idx] for target in TARGETS}
         
-        train_pixel_features = None
-        val_pixel_features = None
-        test_pixel_features = None
-        
+        train_pixel_features, val_pixel_features, test_pixel_features = None, None, None
         if self.use_pixel_features and pixel_features is not None:
-            # Determinar qué features usar (básicos o extendidos)
-            # Si tenemos single_dim_pixel_features, significa que usamos features extendidos
-            if self.single_dim_pixel_features is not None and len(self.single_dim_pixel_features) == len(CALIB_PIXEL_FEATURE_KEYS):
-                # Usar features extendidos de pixel_calibration.json
-                feature_keys = CALIB_PIXEL_FEATURE_KEYS
-                logger.info(f"✅ Usando {len(feature_keys)} features extendidos de pixel_calibration.json")
-            else:
-                # Usar features básicos
-                feature_keys = PIXEL_FEATURE_KEYS
-                logger.info(f"✅ Usando {len(feature_keys)} features básicos de píxeles")
-            
-            # Verificar que todos los keys existen en pixel_features
-            available_keys = [k for k in feature_keys if k in pixel_features]
-            if len(available_keys) != len(feature_keys):
-                missing = set(feature_keys) - set(available_keys)
-                logger.warning(f"Algunos features faltantes: {missing}. Usando solo los disponibles.")
-                feature_keys = available_keys
-            
-            if feature_keys:
-                train_pixel_features = {key: pixel_features[key][train_idx] for key in feature_keys}
-                val_pixel_features = {key: pixel_features[key][val_idx] for key in feature_keys}
-                test_pixel_features = {key: pixel_features[key][test_idx] for key in feature_keys}
-                logger.info(f"✅ Features de píxeles divididas por splits ({len(feature_keys)} features)")
-            else:
-                logger.warning("No hay features de píxeles disponibles después de validación")
+            train_pixel_features, val_pixel_features, test_pixel_features = self._split_pixel_features(
+                pixel_features, train_idx, val_idx, test_idx
+            )
         
         logger.info(f"Split creado: Train={len(train_images)}, Val={len(val_images)}, Test={len(test_images)}")
         
@@ -1203,87 +1202,99 @@ class CacaoTrainingPipeline:
         
         return histories
 
+    def _try_hybrid_v2_training(self, config: Dict[str, Any]) -> Optional[Dict[str, Union[Dict, List]]]:
+        """Try hybrid v2 training system."""
+        try:
+            from .hybrid_v2_training import train_hybrid_v2
+            logger.info("Using optimized hybrid v2 training system")
+            results = train_hybrid_v2(config)
+            return {
+                'hybrid': results,
+                'history': results.get('history', {}),
+                'test_metrics': results.get('test_metrics', {})
+            }
+        except ImportError as e:
+            logger.warning(f"Hybrid v2 training not available: {e}. Trying hybrid v1.")
+            return None
+        except Exception as e:
+            logger.error(f"Error in hybrid v2 training: {e}. Trying hybrid v1.")
+            return None
+
+    def _try_hybrid_v1_training(self, config: Dict[str, Any]) -> Optional[Dict[str, Union[Dict, List]]]:
+        """Try hybrid v1 training system."""
+        try:
+            from .hybrid_training import train_hybrid_model
+            logger.info("Using hybrid v1 training system with normalized pixel features")
+            results = train_hybrid_model(config)
+            return {
+                'hybrid': results,
+                'history': results.get('history', {}),
+                'test_metrics': results.get('test_metrics', {})
+            }
+        except ImportError as e:
+            logger.warning(f"Hybrid v1 training not available: {e}. Falling back to legacy hybrid.")
+            return None
+        except Exception as e:
+            logger.error(f"Error in hybrid v1 training: {e}. Falling back to legacy hybrid.")
+            return None
+
+    def _determine_pixel_feature_dim(self, is_hybrid: bool, use_pixel_features: bool) -> int:
+        """Determine pixel feature dimension from training data."""
+        if not (is_hybrid and use_pixel_features):
+            return 5
+        
+        if self.train_pixel_features is None:
+            return 5
+        
+        num_keys = len(self.train_pixel_features.keys())
+        if num_keys == len(CALIB_PIXEL_FEATURE_KEYS):
+            pixel_feature_dim = len(CALIB_PIXEL_FEATURE_KEYS)
+            logger.info(f"Usando {pixel_feature_dim} features de píxeles extendidos de pixel_calibration.json")
+            return pixel_feature_dim
+        if num_keys == len(PIXEL_FEATURE_KEYS):
+            pixel_feature_dim = len(PIXEL_FEATURE_KEYS)
+            logger.info(f"Usando {pixel_feature_dim} features de píxeles básicos")
+            return pixel_feature_dim
+        
+        logger.warning(f"Número inesperado de features de píxeles: {num_keys}. Usando 5 por defecto.")
+        return 5
+
     def _train_multi_head_model(self) -> Dict[str, Union[Dict, List]]:
         """Entrena modelo multi-head o híbrido."""
-        # Verificar si es modelo híbrido nuevo (usando el sistema híbrido mejorado)
         is_hybrid = self.config.get('hybrid', False) or self.config.get('model_type') == 'hybrid'
         use_pixel_features = self.config.get('use_pixel_features', True)
         use_hybrid_v2 = self.config.get('hybrid_v2', False)
         
-        # Check if using new hybrid v2 system (optimized)
         if (is_hybrid or use_hybrid_v2) and use_pixel_features:
-            try:
-                from .hybrid_v2_training import train_hybrid_v2
-                logger.info("Using optimized hybrid v2 training system")
-                results = train_hybrid_v2(self.config)
-                return {
-                    'hybrid': results,
-                    'history': results.get('history', {}),
-                    'test_metrics': results.get('test_metrics', {})
-                }
-            except ImportError as e:
-                logger.warning(f"Hybrid v2 training not available: {e}. Trying hybrid v1.")
-            except Exception as e:
-                logger.error(f"Error in hybrid v2 training: {e}. Trying hybrid v1.")
+            result = self._try_hybrid_v2_training(self.config)
+            if result:
+                return result
         
-        # Check if using hybrid v1 system
         if is_hybrid and use_pixel_features:
-            try:
-                from .hybrid_training import train_hybrid_model
-                logger.info("Using hybrid v1 training system with normalized pixel features")
-                results = train_hybrid_model(self.config)
-                return {
-                    'hybrid': results,
-                    'history': results.get('history', {}),
-                    'test_metrics': results.get('test_metrics', {})
-                }
-            except ImportError as e:
-                logger.warning(f"Hybrid v1 training not available: {e}. Falling back to legacy hybrid.")
-            except Exception as e:
-                logger.error(f"Error in hybrid v1 training: {e}. Falling back to legacy hybrid.")
+            result = self._try_hybrid_v1_training(self.config)
+            if result:
+                return result
         
-        # Legacy hybrid/multi-head training
         if is_hybrid:
             logger.info("Entrenando modelo HÍBRIDO (ResNet18 + ConvNeXt + Píxeles)...")
         else:
             logger.info("Entrenando modelo multi-head...")
         
-        # Determinar número de features de píxeles
-        pixel_feature_dim = None
-        if is_hybrid and use_pixel_features:
-            # Verificar si se están usando features extendidos de pixel_calibration.json
-            if self.train_pixel_features is not None:
-                # Contar cuántas keys hay en pixel_features
-                num_keys = len(self.train_pixel_features.keys())
-                if num_keys == len(CALIB_PIXEL_FEATURE_KEYS):
-                    pixel_feature_dim = len(CALIB_PIXEL_FEATURE_KEYS)  # 12 features extendidos
-                    logger.info(f"Usando {pixel_feature_dim} features de píxeles extendidos de pixel_calibration.json")
-                elif num_keys == len(PIXEL_FEATURE_KEYS):
-                    pixel_feature_dim = len(PIXEL_FEATURE_KEYS)  # 5 features básicos
-                    logger.info(f"Usando {pixel_feature_dim} features de píxeles básicos")
-                else:
-                    logger.warning(f"Número inesperado de features de píxeles: {num_keys}. Usando 5 por defecto.")
-                    pixel_feature_dim = 5
-            else:
-                pixel_feature_dim = 5  # Por defecto
+        pixel_feature_dim = self._determine_pixel_feature_dim(is_hybrid, use_pixel_features)
         
-        # Crear modelo multi-head o hbrido
         model = create_model(
             model_type=self.config['model_type'],
             num_outputs=4, 
             pretrained=self.config.get('pretrained', True),
             dropout_rate=self.config.get('dropout_rate', 0.2),
-            multi_head=not is_hybrid,  # Si es hbrido, no usar multi_head (usa hybrid=True)
+            multi_head=not is_hybrid,
             hybrid=is_hybrid,
             use_pixel_features=use_pixel_features,
             pixel_feature_dim=pixel_feature_dim
         )
         
-        # Determinar si usar UncertaintyWeightedLoss
-        # Se puede configurar explícitamente o se detecta automáticamente
         use_uncertainty_loss = self.config.get('use_uncertainty_loss', None)
         
-        # Entrenar modelo
         history = train_multi_head_model(
             model=model,
             train_loader=self.train_loader,
