@@ -2,10 +2,9 @@
  * Unified API module exports
  * Centralizes all API domain modules for consistent access
  */
-import * as httpClient from '../httpClient'
 
 // Re-export HTTP client methods
-export const { get, post, put, patch, delete: del, upload, download } = httpClient
+export { get, post, put, patch, delete as del, upload, download, httpClient } from '../httpClient'
 
 // Re-export domain APIs using export...from
 export * as fincasApi from '../fincasApi'
@@ -19,10 +18,8 @@ export * as datasetApi from '../datasetApi'
 export * as adminApi from '../adminApi'
 export * as configApi from '../configApi'
 
-// Export HTTP client for advanced usage
-export { httpClient } from '../httpClient'
-
 // Import for default export (needed for namespace access)
+import { httpClient } from '../httpClient'
 import * as fincasApiModule from '../fincasApi'
 import * as lotesApiModule from '../lotesApi'
 import * as personasApiModule from '../personasApi'

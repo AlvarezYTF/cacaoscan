@@ -62,15 +62,8 @@ export function useLotes(options = {}) {
    * @returns {boolean} Can view
    */
   const canView = (loteData) => {
-    if (!loteData) return false
-    if (isAdmin.value) return true
-    if (isFarmer.value && loteData.finca) {
-      const fincaData = typeof loteData.finca === 'object' ? loteData.finca : finca.value
-      if (fincaData) {
-        return fincaData.agricultor === authStore.user?.id || fincaData.agricultor_id === authStore.user?.id
-      }
-    }
-    return false
+    // View permission is the same as edit permission
+    return canEdit(loteData)
   }
   
   /**

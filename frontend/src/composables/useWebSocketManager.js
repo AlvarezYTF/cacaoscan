@@ -20,7 +20,7 @@ export function useWebSocketManager(options = {}) {
   const connectionInstances = ref({})
 
   // Initialize connections
-  Object.entries(connections).forEach(([name, config]) => {
+  for (const [name, config] of Object.entries(connections)) {
     connectionInstances.value[name] = useWebSocketBase({
       url: config.url,
       onMessage: config.onMessage,
@@ -28,7 +28,7 @@ export function useWebSocketManager(options = {}) {
       reconnectInterval: config.reconnectInterval || 3000,
       maxReconnectAttempts: config.maxReconnectAttempts || 5
     })
-  })
+  }
 
   /**
    * Get connection by name

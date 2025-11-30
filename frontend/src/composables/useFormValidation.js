@@ -316,7 +316,7 @@ export function useFormValidation() {
    * @returns {string|null} Error message or null if valid
    */
   const validateNameField = (value, fieldName) => {
-    if (!value || !value.trim()) {
+    if (!value?.trim()) {
       let fieldLabel = 'campo'
       if (fieldName === 'firstName') {
         fieldLabel = 'nombre'
@@ -343,7 +343,7 @@ export function useFormValidation() {
    * @returns {string|null} Error message or null if valid
    */
   const validateEmailField = (value) => {
-    if (!value || !value.trim()) {
+    if (!value?.trim()) {
       return 'El email es requerido'
     }
     if (!isValidEmail(value)) {

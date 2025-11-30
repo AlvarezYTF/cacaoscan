@@ -39,7 +39,9 @@ const buildQueryParams = (filters = {}) => {
   for (const [key, value] of Object.entries(filters)) {
     if (value !== undefined && value !== null && value !== '') {
       if (Array.isArray(value)) {
-        value.forEach(item => params.append(key, item))
+        for (const item of value) {
+          params.append(key, item)
+        }
       } else {
         params.append(key, value)
       }

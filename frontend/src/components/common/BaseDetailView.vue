@@ -21,12 +21,12 @@
         </nav>
 
         <!-- Loading State -->
-        <div v-if="loading" class="text-center py-5" role="status" aria-live="polite">
+        <output v-if="loading" class="text-center py-5 block" aria-live="polite">
           <div class="spinner-border text-primary" :aria-label="loadingText || 'Cargando información'">
             <span class="visually-hidden">{{ loadingText || 'Cargando...' }}</span>
           </div>
           <p class="mt-3">{{ loadingText || 'Cargando información...' }}</p>
-        </div>
+        </output>
 
         <!-- Error State -->
         <div v-else-if="error" class="alert alert-danger" role="alert">
@@ -144,7 +144,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { escapeHTML } from '@/utils/security'
 
 const props = defineProps({

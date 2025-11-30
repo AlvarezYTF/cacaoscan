@@ -321,31 +321,31 @@ const handleUpdateShow = (value) => {
 }
 
 .btn-primary {
-  background-color: #3b82f6;
-  color: #ffffff;
-  border-color: #3b82f6;
-}
-
-.btn-primary:hover:not(:disabled) {
   background-color: #2563eb;
+  color: #ffffff;
   border-color: #2563eb;
 }
 
-.btn-success {
-  background-color: #10b981;
-  color: #ffffff;
-  border-color: #10b981;
+.btn-primary:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
 }
 
-.btn-success:hover:not(:disabled) {
+.btn-success {
   background-color: #059669;
+  color: #ffffff;
   border-color: #059669;
 }
 
+.btn-success:hover:not(:disabled) {
+  background-color: #047857;
+  border-color: #047857;
+}
+
 .btn-warning {
-  background-color: #f59e0b;
+  background-color: #d97706;
   color: #ffffff;
-  border-color: #f59e0b;
+  border-color: #d97706;
 }
 
 .btn-warning:hover:not(:disabled) {

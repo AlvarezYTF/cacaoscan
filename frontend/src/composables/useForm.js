@@ -109,7 +109,7 @@ export function useForm(options = {}) {
 
   // Methods - Validation
   const validateField = (fieldName, value = null) => {
-    const fieldValue = value !== null ? value : form[fieldName]
+    const fieldValue = value === null ? form[fieldName] : value
     let error = null
 
     // Use field-specific validators
@@ -243,7 +243,8 @@ export function useForm(options = {}) {
       return result
     } catch (err) {
       // Error already handled in handleFormSubmitValidation
-      // Re-throw to allow caller to handle if needed
+      // Log error for debugging and re-throw to allow caller to handle
+      console.error('Form submission error:', err)
       throw err
     } finally {
       isSubmitting.value = false

@@ -106,16 +106,14 @@ function extractErrorMessage(errorData) {
     return errorData
   }
   
-  if (errorData.detail) {
-    return errorData.detail
-  }
-  
-  if (errorData.error) {
-    return errorData.error
-  }
-  
-  if (errorData.non_field_errors) {
-    return extractNonFieldErrors(errorData.non_field_errors)
+  // Check error fields in priority order
+  const errorFields = ['detail', 'error', 'non_field_errors']
+  for (const field of errorFields) {
+    if (errorData[field]) {
+      return field === 'non_field_errors' 
+        ? extractNonFieldErrors(errorData[field])
+        : errorData[field]
+    }
   }
   
   return null

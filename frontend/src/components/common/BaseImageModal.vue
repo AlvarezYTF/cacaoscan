@@ -130,7 +130,7 @@ const props = defineProps({
   },
   imageAlt: {
     type: String,
-    default: 'Imagen'
+    default: 'Vista previa'
   },
   title: {
     type: String,

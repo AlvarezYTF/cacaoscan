@@ -142,7 +142,7 @@ export function useDashboardMetrics(options = {}) {
       suffix,
       prefix,
       description,
-      change: change !== null ? formatPercentageChange(change) : undefined,
+      change: change === null ? undefined : formatPercentageChange(change),
       rawChange: change,
       changePeriod,
       clickable,

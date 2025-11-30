@@ -155,7 +155,7 @@ export function useFincas(options = {}) {
         fincas.value[index] = updatedFinca
       }
 
-      if (currentFinca.value && currentFinca.value.id === fincaId) {
+      if (currentFinca.value?.id === fincaId) {
         currentFinca.value = updatedFinca
       }
 

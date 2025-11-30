@@ -3,7 +3,6 @@
  * Extends useStoreBase with pagination functionality
  */
 import { ref, computed } from 'vue'
-import { useStoreBase } from './useStoreBase'
 
 /**
  * Create paginable store composable

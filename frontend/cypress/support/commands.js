@@ -315,7 +315,8 @@ Cypress.Commands.add('navigateTablePage', (direction) => {
 
 // Generic search/filter helper
 Cypress.Commands.add('applyTableFilter', (filterType, value) => {
-  cy.get(`[data-cy="filter-${filterType}"]`).clear().type(value)
+  const filterTypeStr = typeof filterType === 'string' ? filterType : String(filterType)
+  cy.get(`[data-cy="filter-${filterTypeStr}"]`).clear().type(value)
   cy.get(SELECTORS.buttons.filter).click()
   cy.waitForDataLoad()
 })

@@ -134,8 +134,12 @@ export function formatJson(data) {
       }
     }
     
-    const stringifiableTypes = new Set(['string', 'number', 'boolean', 'symbol', 'function'])
-    return stringifiableTypes.has(type) ? String(data) : '[Unknown]'
+    // Only stringify primitive types that are safe
+    if (type === 'string' || type === 'number' || type === 'boolean') {
+      return String(data)
+    }
+    // For other types (symbol, function, etc.), return a safe representation
+    return '[Unknown]'
   }
 }
 

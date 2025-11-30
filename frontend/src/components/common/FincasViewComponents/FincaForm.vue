@@ -555,7 +555,7 @@ const handleSubmit = async () => {
     console.log('📤 [FincaForm] Datos a enviar:', formattedData)
     console.log('📤 [FincaForm] Datos originales del formulario:', JSON.stringify(formData, null, 2))
     
-    const successMessage = await saveFinca(formattedData)
+    await saveFinca(formattedData)
     // showSuccessNotification ya se llama desde los callbacks del composable
     emit('saved')
   } catch (error) {

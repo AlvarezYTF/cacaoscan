@@ -317,9 +317,9 @@ export function usePrediction(options = {}) {
 
       if (apiResult.success) {
         return handlePredictionSuccess(apiResult, startTime)
-      }
-      
-      throw new Error(apiResult.error || 'Error en la predicción')
+        }
+
+        throw new Error(apiResult.error || 'Error en la predicción')
     } catch (err) {
       handlePredictionError(err)
       throw err

@@ -191,10 +191,10 @@ const errors = reactive({
 })
 
 const resetForm = () => {
-  Object.keys(form).forEach(key => {
+  for (const key of Object.keys(form)) {
     form[key] = ''
     errors[key] = ''
-  })
+  }
 }
 
 const handleSubmit = () => {

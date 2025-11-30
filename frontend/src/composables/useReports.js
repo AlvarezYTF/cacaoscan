@@ -273,9 +273,9 @@ export function useReports(options = {}) {
    * Clear all filters
    */
   const clearFilters = () => {
-    Object.keys(filters).forEach(key => {
+    for (const key of Object.keys(filters)) {
       filters[key] = ''
-    })
+    }
   }
   
   /**

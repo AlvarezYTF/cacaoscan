@@ -3,6 +3,7 @@
     <!-- Label -->
     <label
       v-if="label"
+      :for="fieldId"
       class="block text-sm font-medium text-gray-700 mb-2"
     >
       {{ label }}
@@ -24,6 +25,7 @@
     >
       <!-- Input (hidden) -->
       <input
+        :id="fieldId"
         ref="fileInput"
         type="file"
         :accept="accept"
@@ -120,6 +122,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+
+// Generate unique ID for the input field
+const fieldId = computed(() => `upload-${Math.random().toString(36).substring(2, 9)}`)
 
 const props = defineProps({
   modelValue: {
