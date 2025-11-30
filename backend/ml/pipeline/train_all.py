@@ -1434,7 +1434,7 @@ class CacaoTrainingPipeline:
         logger.warning(f"Número inesperado de features de píxeles: {num_keys}. Usando 10 por defecto.")
         return 10
 
-    def _detect_pixel_feature_dim(self, checkpoint: Dict) -> int:
+    def _detect_pixel_feature_dim(self, checkpoint: Dict) -> Optional[int]:
         """Detect pixel_feature_dim using multiple methods."""
         if not (self.is_hybrid and self.use_pixel_features):
             return None
