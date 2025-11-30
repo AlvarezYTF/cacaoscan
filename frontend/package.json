@@ -1,24 +1,32 @@
 {
   "name": "cacaoscan-frontend",
   "version": "0.0.0",
-  "private": true,
   "type": "module",
-  "engines": {
-    "node": "^20.19.0 || >=22.12.0"
-  },
   "scripts": {
-    "dev": "vite --host",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "prepare": "cypress install",
-    "test:e2e": "start-server-and-test preview http://localhost:4173 'cypress run --e2e'",
-    "test:e2e:dev": "start-server-and-test 'vite dev --port 4173' http://localhost:4173 'cypress open --e2e'",
-    "test:unit": "vitest run --coverage",
-    "test:unit:dev": "vitest --coverage",
-    "test:unit:watch": "vitest --coverage --watch",
-    "test:coverage": "vitest run --coverage --reporter=verbose",
-    "lint": "eslint . --fix",
-    "format": "prettier --write src/"
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "test:admin": "cypress run --spec 'cypress/e2e/admin/**/*.cy.js'",
+    "test:auth": "cypress run --spec 'cypress/e2e/auth/**/*.cy.js'",
+    "test:fincas": "cypress run --spec 'cypress/e2e/fincas/**/*.cy.js'",
+    "test:images": "cypress run --spec 'cypress/e2e/images/**/*.cy.js'",
+    "test:reports": "cypress run --spec 'cypress/e2e/reports/**/*.cy.js'",
+    "test:errors": "cypress run --spec 'cypress/e2e/errors/**/*.cy.js'",
+    "test:navigation": "cypress run --spec 'cypress/e2e/navigation/**/*.cy.js'",
+    "test:ui": "cypress run --spec 'cypress/e2e/ui/**/*.cy.js'",
+    "test:agricultor": "cypress run --spec 'cypress/e2e/agricultor/**/*.cy.js'",
+    "test:analysis": "cypress run --spec 'cypress/e2e/analysis/**/*.cy.js'",
+    "test:audit": "cypress run --spec 'cypress/e2e/audit/**/*.cy.js'",
+    "test:integration": "cypress run --spec 'cypress/e2e/integration/**/*.cy.js'",
+    "test:performance": "cypress run --spec 'cypress/e2e/performance/**/*.cy.js'",
+    "test:public": "cypress run --spec 'cypress/e2e/public/**/*.cy.js'",
+    "test:security": "cypress run --spec 'cypress/e2e/security/**/*.cy.js'",
+    "test:settings": "cypress run --spec 'cypress/e2e/settings/**/*.cy.js'",
+    "test:accessibility": "cypress run --spec 'cypress/e2e/accessibility/**/*.cy.js'"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
@@ -50,5 +58,9 @@
     "vite": "^7.0.6",
     "vite-plugin-vue-devtools": "^8.0.0",
     "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   }
 }
+
