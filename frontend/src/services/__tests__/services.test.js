@@ -9,12 +9,12 @@ vi.mock('axios')
 const mockedAxios = axios
 
 // Importar servicios
-import api from '../services/api.js'
-import authApi from '../services/authApi.js'
-import predictionApi from '../services/predictionApi.js'
-import fincasApi from '../services/fincasApi.js'
-import lotesApi from '../services/lotesApi.js'
-import adminApi from '../services/adminApi.js'
+import api from '../api.js'
+import authApi from '../authApi.js'
+import predictionApi from '../predictionApi.js'
+import fincasApi from '../fincasApi.js'
+import lotesApi from '../lotesApi.js'
+import adminApi from '../adminApi.js'
 
 describe('API Service', () => {
   beforeEach(() => {

@@ -3,8 +3,8 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
-import { useImageStats } from '../composables/useImageStats.js'
-import { useWebSocket } from '../composables/useWebSocket.js'
+import { useImageStats } from '../useImageStats.js'
+import { useWebSocket } from '../useWebSocket.js'
 
 // Mock de servicios
 vi.mock('../services/api.js', () => ({

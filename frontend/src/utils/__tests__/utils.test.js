@@ -71,11 +71,22 @@ const debounce = (func, delay) => {
 
 const throttle = (func, delay) => {
   let lastCall = 0
+  let timeoutId = null
   return (...args) => {
     const now = Date.now()
-    if (now - lastCall >= delay) {
+    if (lastCall === 0 || now - lastCall >= delay) {
       lastCall = now
-      return func.apply(null, args)
+      func.apply(null, args)
+    } else {
+      // Schedule the call for after the delay
+      if (timeoutId === null) {
+        const remainingTime = delay - (now - lastCall)
+        timeoutId = setTimeout(() => {
+          lastCall = Date.now()
+          timeoutId = null
+          func.apply(null, args)
+        }, remainingTime)
+      }
     }
   }
 }
@@ -298,7 +309,8 @@ describe('String Utilities', () => {
   }
 
   const truncate = (str, length = 50, suffix = '...') => {
-    if (!str || str.length <= length) return str
+    if (str === null || str === undefined) return ''
+    if (str.length <= length) return str
     return str.substring(0, length) + suffix
   }
 
@@ -309,6 +321,7 @@ describe('String Utilities', () => {
       .replace(/[^a-z0-9 -]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '')
       .trim()
   }
 
@@ -444,7 +457,7 @@ describe('Object Utilities', () => {
     expect(cloned).toEqual(original)
     expect(cloned).not.toBe(original)
     expect(cloned.b).not.toBe(original.b)
-    expect(cloned.d).not.toBe(original.d)
+    expect(cloned.b.d).not.toBe(original.b.d)
   })
 
   it('fusiona objetos correctamente', () => {
