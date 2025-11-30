@@ -19,10 +19,13 @@
               required
             >
               <option value="">Seleccione un tipo</option>
-              <option value="calidad">Reporte de Calidad</option>
-              <option value="finca">Reporte de Finca</option>
-              <option value="auditoria">Reporte de Auditoría</option>
-              <option value="personalizado">Reporte Personalizado</option>
+              <option
+                v-for="tipo in tipoReporteOpciones"
+                :key="tipo.value"
+                :value="tipo.value"
+              >
+                {{ tipo.label }}
+              </option>
             </select>
           </div>
 
@@ -36,10 +39,13 @@
               required
             >
               <option value="">Seleccione un formato</option>
-              <option value="pdf">PDF</option>
-              <option value="excel">Excel</option>
-              <option value="csv">CSV</option>
-              <option value="json">JSON</option>
+              <option
+                v-for="formato in formatoOpciones"
+                :key="formato.value"
+                :value="formato.value"
+              >
+                {{ formato.label }}
+              </option>
             </select>
           </div>
 
@@ -159,13 +165,13 @@
           <div class="d-flex gap-2">
             <button
               type="submit"
-              :disabled="generando"
+              :disabled="generating"
               class="btn btn-primary"
-              :class="{ 'loading': generando }"
+              :class="{ 'loading': generating }"
             >
-              <i v-if="generando" class="fas fa-spinner fa-spin"></i>
+              <i v-if="generating" class="fas fa-spinner fa-spin"></i>
               <i v-else class="fas fa-file-alt"></i>
-              {{ generando ? 'Generando...' : 'Generar Reporte' }}
+              {{ generating ? 'Generando...' : 'Generar Reporte' }}
             </button>
             <button
               type="button"
@@ -184,7 +190,7 @@
           <strong>¡Reporte generado exitosamente!</strong><br>
           <small>
             ID: {{ reporteGenerado.id }} | 
-            Estado: {{ reporteGenerado.estado }} |
+            Estado: {{ reporteGenerado.estado_display || reporteGenerado.estado }} |
             <a href="#" @click.prevent="verDetalles">Ver detalles</a>
           </small>
         </div>
@@ -199,142 +205,70 @@
   </div>
 </template>
 
-<script>
-import { ref, reactive, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { useNotificationStore } from '@/stores/notifications'
+<script setup>
+import { onMounted, computed } from 'vue'
+import { useReports } from '@/composables/useReports'
+import { useFincas } from '@/composables/useFincas'
 
-export default {
-  name: 'ReportGenerator',
-  emits: ['reporte-generado'],
-  setup(props, { emit }) {
-    const authStore = useAuthStore()
-    const notificationStore = useNotificationStore()
-    
-    const generando = ref(false)
-    const error = ref('')
-    const reporteGenerado = ref(null)
-    const fincas = ref([])
-    
-    const formulario = reactive({
-      tipo_reporte: '',
-      formato: '',
-      titulo: '',
-      descripcion: '',
-      parametros: {
-        finca_id: '',
-        include_dimensions: true,
-        include_weight: true,
-        include_confidence: true
-      },
-      filtros: {
-        fecha_desde: '',
-        fecha_hasta: ''
-      }
-    })
-    
-    const cargarFincas = async () => {
-      try {
-        const response = await fetch('/api/fincas/', {
-          headers: {
-            'Authorization': `Bearer ${authStore.token}`
-          }
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          fincas.value = data.results || []
-        }
-      } catch (err) {
-        console.error('Error cargando fincas:', err)
-      }
-    }
-    
-    const generarReporte = async () => {
-      try {
-        generando.value = true
-        error.value = ''
-        reporteGenerado.value = null
-        
-        const response = await fetch('/api/reportes/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authStore.token}`
-          },
-          body: JSON.stringify(formulario)
-        })
-        
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Error al generar el reporte')
-        }
-        
-        reporteGenerado.value = data
-        emit('reporte-generado', data)
-        
-        notificationStore.addNotification({
-          type: 'success',
-          title: 'Reporte generado',
-          message: `El reporte "${data.titulo}" se está generando en segundo plano.`
-        })
-        
-      } catch (err) {
-        console.error('Error generando reporte:', err)
-        error.value = err.message
-        notificationStore.addNotification({
-          type: 'error',
-          title: 'Error al generar reporte',
-          message: err.message
-        })
-      } finally {
-        generando.value = false
-      }
-    }
-    
-    const limpiarFormulario = () => {
-      Object.assign(formulario, {
-        tipo_reporte: '',
-        formato: '',
-        titulo: '',
-        descripcion: '',
-        parametros: {
-          finca_id: '',
-          include_dimensions: true,
-          include_weight: true,
-          include_confidence: true
-        },
-        filtros: {
-          fecha_desde: '',
-          fecha_hasta: ''
-        }
-      })
-      error.value = ''
-      reporteGenerado.value = null
-    }
-    
-    const verDetalles = () => {
-      // Emitir evento para mostrar detalles del reporte
-      emit('ver-detalles', reporteGenerado.value.id)
-    }
-    
-    onMounted(() => {
-      cargarFincas()
-    })
-    
-    return {
-      generando,
-      error,
-      reporteGenerado,
-      fincas,
-      formulario,
-      generarReporte,
-      limpiarFormulario,
-      verDetalles
-    }
+const emit = defineEmits(['reporte-generado', 'ver-detalles'])
+
+const {
+  formData,
+  generating,
+  error,
+  reportTypes,
+  reportFormats,
+  generateReport: generateReportFromComposable,
+  resetForm
+} = useReports()
+
+// Use fincas composable
+const { fincas, loadFincas } = useFincas()
+
+const reporteGenerado = ref(null)
+
+const tipoReporteOpciones = computed(() => reportTypes.value.map(type => ({
+  value: type.value,
+  label: type.label
+})))
+
+const formatoOpciones = computed(() => reportFormats.value.map(format => ({
+  value: format.value,
+  label: format.label
+})))
+
+const cargarFincas = async () => {
+  try {
+    await loadFincas({}, 1, 100) // Load first 100 fincas
+  } catch (err) {
+    console.error('Error cargando fincas:', err)
   }
 }
+
+const generarReporte = async () => {
+  try {
+    const result = await generateReportFromComposable()
+    reporteGenerado.value = result
+    emit('reporte-generado', result)
+  } catch (err) {
+    console.error('Error generando reporte:', err)
+  }
+}
+
+const limpiarFormulario = () => {
+  resetForm()
+  reporteGenerado.value = null
+}
+
+const verDetalles = () => {
+  if (reporteGenerado.value) {
+    emit('ver-detalles', reporteGenerado.value.id)
+  }
+}
+
+onMounted(() => {
+  cargarFincas()
+})
 </script>
 
 <style scoped>

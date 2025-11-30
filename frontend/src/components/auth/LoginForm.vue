@@ -169,7 +169,7 @@
         :disabled="isLoading"
         class="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-4 focus:ring-green-500/50 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-xl active:scale-[0.97] group"
       >
-        <LoadingSpinner 
+        <BaseSpinner 
           v-if="isLoading"
           size="md"
           color="white"
@@ -214,373 +214,85 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import LoadingSpinner from '@/components/admin/AdminGeneralComponents/LoadingSpinner.vue'
+import { useAuth } from '@/composables/useAuth'
+import { useAuthForm } from '@/composables/useAuthForm'
+import BaseSpinner from '@/components/common/BaseSpinner.vue'
 
-// Store y route
-const authStore = useAuthStore()
+// Route
 const route = useRoute()
 
-// Estado del formulario
-const form = ref({
-  email: '',
-  password: '',
-  remember: false
+// Use auth composable
+const { login: loginUser, loading, error, clearError } = useAuth()
+
+// Form state using useAuthForm for validation
+const authForm = useAuthForm({
+  initialValues: {
+    email: '',
+    password: '',
+    remember: false
+  },
+  onSubmit: async (formData) => {
+    try {
+      globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
+        detail: { type: 'login', message: 'Verificando credenciales...' }
+      }))
+
+      const result = await loginUser({
+        email: formData.email.trim(),
+        password: formData.password
+      })
+
+      if (result.success) {
+        authForm.setStatusMessage('¡Bienvenido de vuelta a CacaoScan! 🌱', 'success')
+      }
+      
+      return result
+    } catch (err) {
+      authForm.setStatusMessage(err.message || 'Error inesperado al iniciar sesión', 'error')
+      throw err
+    } finally {
+      globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
+    }
+  }
 })
 
+// Extract form properties
+const form = authForm.form
+const errors = authForm.errors
+const statusMessage = authForm.statusMessage
+const statusMessageClass = authForm.statusMessageClass
+const setStatusMessage = authForm.setStatusMessage
+
+// Local state
 const showPassword = ref(false)
-const errors = ref({})
 
-// Estado de carga
-const isLoading = computed(() => authStore.isLoading)
-
-// Mensaje de estado (desde query params o errores)
-const statusMessage = ref('')
-const statusMessageClass = ref('')
-
-// Error messages constructed dynamically to avoid static analysis detection
-const buildErrorMessages = () => {
-  // Build error message using character codes
-  const msg1 = [
-    String.fromCodePoint(76), // L
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(241), // ñ
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(113), // q
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(100), // d
-    String.fromCodePoint(97)  // a
-  ].join('')
-  
-  // Build error message using character codes
-  const msg2 = [
-    String.fromCodePoint(76), // L
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(241), // ñ
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(100), // d
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(98), // b
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(108), // l
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(109), // m
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(54), // 6
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(115)  // s
-  ].join('')
-  
-  return {
-    passwordRequired: msg1,
-    passwordMinLength: msg2
-  }
-}
-
-const ERROR_MSGS = buildErrorMessages()
-
-// Validación del formulario
-const validateForm = () => {
-  errors.value = {}
-  
-  if (!form.value.email.trim()) {
-    errors.value.email = 'El email es requerido'
-  } else if (!isValidEmail(form.value.email) && !isValidUsername(form.value.email)) {
-    errors.value.email = 'Ingresa un email válido o nombre de usuario'
-  }
-  
-  if (!form.value.password) {
-    errors.value.password = ERROR_MSGS.passwordRequired
-  } else if (form.value.password.length < 6) {
-    errors.value.password = ERROR_MSGS.passwordMinLength
-  }
-  
-  return Object.keys(errors.value).length === 0
-}
-
-// Validators
-// Maximum input length to prevent ReDoS attacks
-const MAX_EMAIL_LENGTH = 254 // RFC 5321 limit
-const MAX_USERNAME_LENGTH = 30
-
-/**
- * @typedef {{ localPart: string, domain: string }} EmailParts
- */
-
-const isAlphaNumericCode = (code) => {
-  return (code >= 48 && code <= 57) || // 0-9
-    (code >= 65 && code <= 90) || // A-Z
-    (code >= 97 && code <= 122) // a-z
-}
-
-// Character code ranges for fast validation without regex backtracking
-const isValidLocalPartChar = (char) => {
-  const code = char.codePointAt(0)
-  if (code === undefined) {
-    return false
-  }
-  return code >= 33 && code <= 126 && char !== ' ' && char !== '@'
-}
-
-const isValidUsernameChar = (char) => {
-  const code = char.codePointAt(0)
-  if (code === undefined) {
-    return false
-  }
-  return isAlphaNumericCode(code) || char === '_' || char === '-'
-}
-
-const hasValidEmailLength = (emailValue) => {
-  return typeof emailValue === 'string' &&
-    emailValue.length >= 3 &&
-    emailValue.length <= MAX_EMAIL_LENGTH
-}
-
-/**
- * @param {string} email
- * @returns {EmailParts | null}
- */
-const splitEmailParts = (email) => {
-  const atIndex = email.indexOf('@')
-  if (atIndex <= 0 || atIndex === email.length - 1) {
-    return null
-  }
-
-  return {
-    localPart: email.slice(0, atIndex),
-    domain: email.slice(atIndex + 1)
-  }
-}
-
-const isValidLocalPartSection = (localPart) => {
-  if (localPart.length === 0 || localPart.length > 64) {
-    return false
-  }
-
-  for (const char of localPart) {
-    if (!isValidLocalPartChar(char)) {
-      return false
-    }
-  }
-
-  return true
-}
-
-const isValidDomainSection = (domain) => {
-  if (domain.length === 0 || domain.length > 253) {
-    return false
-  }
-
-  const domainParts = domain.split('.')
-  if (domainParts.length < 2) {
-    return false
-  }
-
-  for (let idx = 0; idx < domainParts.length; idx += 1) {
-    const part = domainParts[idx]
-    if (!isValidDomainPart(part, idx === domainParts.length - 1)) {
-      return false
-    }
-  }
-
-  return true
-}
-
-const hasValidDomainPartLength = (length, isTLD) => {
-  if (length === 0) {
-    return false
-  }
-
-  if (isTLD) {
-    return length >= 2
-  }
-
-  return true
-}
-
-const isValidTLDPart = (part) => {
-  for (const char of part) {
-    const code = char.codePointAt(0)
-    if (code === undefined || !isAlphaNumericCode(code)) {
-      return false
-    }
-  }
-
-  return true
-}
-
-const isValidSubdomainPart = (part) => {
-  const lastIndex = part.length - 1
-
-  for (let idx = 0; idx < part.length; idx += 1) {
-    const char = part[idx]
-    const code = char.codePointAt(0)
-    if (code === undefined) {
-      return false
-    }
-
-    if (!isAlphaNumericCode(code) && char !== '-') {
-      return false
-    }
-
-    if (char === '-' && (idx === 0 || idx === lastIndex)) {
-      return false
-    }
-  }
-
-  return true
-}
-
-const isValidDomainPart = (part, isTLD) => {
-  if (!hasValidDomainPartLength(part.length, isTLD)) {
-    return false
-  }
-
-  if (isTLD) {
-    return isValidTLDPart(part)
-  }
-
-  return isValidSubdomainPart(part)
-}
-
-const isValidEmail = (email) => {
-  if (!hasValidEmailLength(email)) {
-    return false
-  }
-
-  const emailParts = splitEmailParts(email)
-  if (!emailParts) {
-    return false
-  }
-
-  if (!isValidLocalPartSection(emailParts.localPart)) {
-    return false
-  }
-
-  return isValidDomainSection(emailParts.domain)
-}
-
-const isValidUsername = (username) => {
-  if (typeof username !== 'string') {
-    return false
-  }
-
-  if (username.length < 3 || username.length > MAX_USERNAME_LENGTH) {
-    return false
-  }
-
-  return Array.from(username).every((char) => {
-    return isValidUsernameChar(char)
-  })
-}
-
-// Manejar envío del formulario
+// Handle form submission
 const handleSubmit = async () => {
-  if (!validateForm()) {
-    return
-  }
-
-  // Emitir evento de loading
-  globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
-    detail: { type: 'login', message: 'Verificando credenciales...' }
-  }))
-
   try {
-    const result = await authStore.login({
-      email: form.value.email.trim(),
-      password: form.value.password
-    })
-
-    if (result.success) {
-      // Éxito manejado por el store (redirección automática)
-      setStatusMessage('¡Bienvenido de vuelta a CacaoScan! 🌱', 'success')
-    } else {
-      setStatusMessage(result.error || 'Error al iniciar sesión', 'error')
-    }
-  } catch (error) {
-    console.error('Error en login:', error)
-    setStatusMessage('Error inesperado al iniciar sesión', 'error')
-  } finally {
-    // Emitir evento de fin de loading
-    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
+    await authForm.handleAuthSubmit()
+  } catch (err) {
+    console.error('Error en login:', err)
+    // Error is already handled by useAuthForm
   }
 }
 
-// Configurar mensaje de estado
-const setStatusMessage = (message, type) => {
-  statusMessage.value = message
-  statusMessageClass.value = type === 'success' 
-    ? 'bg-green-100 border border-green-400 text-green-700'
-    : 'bg-red-100 border border-red-400 text-red-700'
-  
-  // Limpiar mensaje después de 5 segundos
-  setTimeout(() => {
-    statusMessage.value = ''
-  }, 5000)
-}
+// Computed
+const isLoading = computed(() => loading.value || authForm.isSubmitting.value)
 
-// Inicializar componente
+// Initialize component
 onMounted(() => {
-  // Mostrar mensajes desde query params
+  // Show messages from query params
   if (route.query.message) {
     const type = route.query.expired ? 'error' : 'info'
     setStatusMessage(route.query.message, type)
   }
   
-  // Limpiar error del store si existe
-  if (authStore.error) {
-    setStatusMessage(authStore.error, 'error')
+  // Clear error if exists
+  if (error.value) {
+    setStatusMessage(error.value, 'error')
+    clearError()
   }
 })
 </script>

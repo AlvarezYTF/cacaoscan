@@ -28,7 +28,7 @@
             :disabled="loading"
             title="Actualizar datos"
           >
-            <LoadingSpinner 
+            <BaseSpinner 
               v-if="loading" 
               size="sm" 
               color="gray" 
@@ -46,7 +46,16 @@
         </div>
       </div>
       <div class="h-80">
-        <canvas ref="activityChart" @click="handleActivityClick" class="rounded-xl max-h-[320px] cursor-pointer"></canvas>
+        <BaseChart
+          ref="activityChartRef"
+          :chart-data="activityChartData"
+          :options="mergedActivityOptions"
+          :type="activityChartType"
+          :height="320"
+          :show-legend="true"
+          :show-controls="false"
+          @chart-click="handleActivityClick"
+        />
       </div>
     </div>
 
@@ -68,7 +77,7 @@
           :disabled="loading"
           title="Actualizar datos"
         >
-          <LoadingSpinner 
+          <BaseSpinner 
             v-if="loading" 
             size="sm" 
             color="gray" 
@@ -85,21 +94,25 @@
         </button>
       </div>
       <div class="h-80">
-        <canvas ref="qualityChart" @click="handleQualityClick" class="rounded-xl max-h-[320px] cursor-pointer"></canvas>
+        <BaseChart
+          ref="qualityChartRef"
+          :chart-data="qualityChartData"
+          :options="mergedQualityOptions"
+          type="doughnut"
+          :height="320"
+          :show-legend="true"
+          :show-controls="false"
+          @chart-click="handleQualityClick"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-// 1. Vue core
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-
-// 2. Components
-import LoadingSpinner from '@/components/admin/AdminGeneralComponents/LoadingSpinner.vue'
-
-// 3. Libraries
-import Chart from 'chart.js/auto'
+import { ref, computed, watch } from 'vue'
+import BaseSpinner from '@/components/common/BaseSpinner.vue'
+import BaseChart from '@/components/charts/BaseChart.vue'
 
 // Props
 const props = defineProps({
@@ -141,88 +154,31 @@ const props = defineProps({
 const emit = defineEmits(['activity-chart-type-change', 'activity-refresh', 'quality-refresh', 'activity-click', 'quality-click'])
 
 // Chart refs
-const activityChart = ref(null)
-const qualityChart = ref(null)
+const activityChartRef = ref(null)
+const qualityChartRef = ref(null)
 const activityChartType = ref(props.initialActivityChartType)
 
-// Chart instances
-let activityChartInstance = null
-let qualityChartInstance = null
-
-// Functions
-const createActivityChart = () => {
-  if (!activityChart.value) {
-    console.warn('⚠️ Canvas de actividad no está disponible aún')
-    return
+// Merged options
+const mergedActivityOptions = computed(() => {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    ...props.activityChartOptions
   }
+})
 
-  if (activityChartInstance) {
-    activityChartInstance.destroy()
-    activityChartInstance = null
+const mergedQualityOptions = computed(() => {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    ...props.qualityChartOptions
   }
+})
 
-  try {
-    const ctx = activityChart.value.getContext('2d')
-    activityChartInstance = new Chart(ctx, {
-      type: activityChartType.value,
-      data: props.activityChartData,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        ...props.activityChartOptions
-      }
-    })
-    console.log('✅ Gráfico de actividad creado correctamente')
-  } catch (error) {
-    console.error('❌ Error al crear gráfico de actividad:', error)
-  }
-}
-
-const createQualityChart = () => {
-  if (!qualityChart.value) {
-    console.warn('⚠️ Canvas de calidad no está disponible aún')
-    return
-  }
-
-  if (qualityChartInstance) {
-    qualityChartInstance.destroy()
-    qualityChartInstance = null
-  }
-
-  try {
-    const ctx = qualityChart.value.getContext('2d')
-    qualityChartInstance = new Chart(ctx, {
-      type: 'doughnut',
-      data: props.qualityChartData,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        ...props.qualityChartOptions
-      }
-    })
-    console.log('✅ Gráfico de calidad creado correctamente')
-  } catch (error) {
-    console.error('❌ Error al crear gráfico de calidad:', error)
-  }
-}
-
-const updateActivityChart = () => {
-  if (activityChartInstance) {
-    activityChartInstance.data = props.activityChartData
-    activityChartInstance.update()
-  }
-}
-
-const updateQualityChart = () => {
-  if (qualityChartInstance) {
-    qualityChartInstance.data = props.qualityChartData
-    qualityChartInstance.update()
-  }
-}
-
+// Event handlers
 const handleActivityChartTypeChange = () => {
   emit('activity-chart-type-change', activityChartType.value)
-  createActivityChart()
+  // Chart type change requires recreating the chart, which BaseChart handles via watch
 }
 
 const handleActivityRefresh = () => {
@@ -233,69 +189,37 @@ const handleQualityRefresh = () => {
   emit('quality-refresh')
 }
 
-const handleActivityClick = (event) => {
-  emit('activity-click', event)
+const handleActivityClick = (data) => {
+  emit('activity-click', data)
 }
 
-const handleQualityClick = (event) => {
-  emit('quality-click', event)
+const handleQualityClick = (data) => {
+  emit('quality-click', data)
 }
 
 // Watch for data changes
 watch(() => props.activityChartData, () => {
-  updateActivityChart()
+  if (activityChartRef.value) {
+    activityChartRef.value.updateChart(props.activityChartData)
+  }
 }, { deep: true })
 
 watch(() => props.qualityChartData, () => {
-  updateQualityChart()
+  if (qualityChartRef.value) {
+    qualityChartRef.value.updateChart(props.qualityChartData)
+  }
 }, { deep: true })
 
 watch(() => props.initialActivityChartType, (newValue) => {
   activityChartType.value = newValue
 })
-
-// Lifecycle
-onMounted(async () => {
-  await nextTick()
-  
-  console.log('📊 Iniciando creación de gráficos...')
-  console.log('Canvas actividad:', activityChart.value)
-  console.log('Canvas calidad:', qualityChart.value)
-  
-  if (activityChart.value && qualityChart.value) {
-    createActivityChart()
-    createQualityChart()
-  } else {
-    console.error('❌ Elementos canvas no disponibles en onMounted')
-    setTimeout(() => {
-      console.log('🔄 Reintentando creación de gráficos...')
-      createActivityChart()
-      createQualityChart()
-    }, 200)
-  }
-})
-
-onUnmounted(() => {
-  if (activityChartInstance) {
-    activityChartInstance.destroy()
-  }
-  if (qualityChartInstance) {
-    qualityChartInstance.destroy()
-  }
-})
 </script>
 
 <style scoped>
-/* Solo estilos que no están en Tailwind */
-canvas:hover {
-  filter: brightness(1.05);
-  transition: filter 0.2s ease-in-out;
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  canvas {
-    max-height: 250px;
+  .h-80 {
+    height: 250px;
   }
 }
 </style>

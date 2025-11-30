@@ -112,13 +112,21 @@ export function getAuditStatusClass(item, auditType) {
  * @returns {string} Formatted JSON string
  */
 export function formatJson(data) {
+  // Handle null and undefined first
+  if (data === null) return 'null'
+  if (data === undefined) return 'undefined'
+  
+  // Try to format as JSON
   try {
-    if (typeof data === 'string') {
-      return JSON.stringify(JSON.parse(data), null, 2)
-    }
-    return JSON.stringify(data, null, 2)
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data
+    return JSON.stringify(parsed, null, 2)
   } catch {
-    return String(data)
+    // Fallback: convert primitive types to string
+    const type = typeof data
+    if (type === 'object') return '[Object]'
+    
+    const stringifiableTypes = new Set(['string', 'number', 'boolean', 'symbol', 'function'])
+    return stringifiableTypes.has(type) ? data.toString() : '[Unknown]'
   }
 }
 

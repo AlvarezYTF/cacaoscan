@@ -10,7 +10,22 @@ const PASSWORD_RULES = {
   minLength: 8,
   requireUpperCase: true,
   requireLowerCase: true,
-  requireNumber: true
+  requireNumber: true,
+  requireSpecialChar: false
+}
+
+/**
+ * Password validation error messages
+ */
+const ERROR_MESSAGES = {
+  required: 'La contraseña es requerida',
+  minLength: 'La contraseña debe tener al menos 8 caracteres',
+  uppercase: 'La contraseña debe contener al menos una letra mayúscula',
+  lowercase: 'La contraseña debe contener al menos una letra minúscula',
+  number: 'La contraseña debe contener al menos un número',
+  specialChar: 'La contraseña debe contener al menos un carácter especial',
+  confirmRequired: 'La confirmación de contraseña es requerida',
+  confirmMismatch: 'Las contraseñas no coinciden'
 }
 
 /**
@@ -28,7 +43,8 @@ export function validatePasswordStrength(password, options = {}) {
         length: false,
         uppercase: false,
         lowercase: false,
-        number: false
+        number: false,
+        specialChar: false
       }
     }
     return {
@@ -36,6 +52,7 @@ export function validatePasswordStrength(password, options = {}) {
       hasUpperCase: false,
       hasLowerCase: false,
       hasNumber: false,
+      hasSpecialChar: false,
       isValid: false
     }
   }
@@ -44,14 +61,21 @@ export function validatePasswordStrength(password, options = {}) {
   const hasUpperCase = /[A-Z]/.test(password)
   const hasLowerCase = /[a-z]/.test(password)
   const hasNumber = /\d/.test(password)
-  const isValid = lengthCheck && hasUpperCase && hasLowerCase && hasNumber
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
+  
+  const isValid = lengthCheck && 
+    hasUpperCase && 
+    hasLowerCase && 
+    hasNumber && 
+    (!PASSWORD_RULES.requireSpecialChar || hasSpecialChar)
   
   if (format === 'simple') {
     return {
       length: lengthCheck,
       uppercase: hasUpperCase,
       lowercase: hasLowerCase,
-      number: hasNumber
+      number: hasNumber,
+      specialChar: hasSpecialChar
     }
   }
   
@@ -60,6 +84,7 @@ export function validatePasswordStrength(password, options = {}) {
     hasUpperCase,
     hasLowerCase,
     hasNumber,
+    hasSpecialChar,
     isValid
   }
 }
@@ -67,27 +92,34 @@ export function validatePasswordStrength(password, options = {}) {
 /**
  * Get password validation error messages
  * @param {string} password - Password to validate
+ * @param {Object} options - Options for error messages
  * @returns {string|null} Error message or null if valid
  */
-export function getPasswordValidationError(password) {
+export function getPasswordValidationError(password, options = {}) {
+  const { fieldName = 'contraseña' } = options
+  
   if (!password) {
-    return 'La nueva contraseña es requerida'
+    return `La ${fieldName} es requerida`
   }
   
   if (password.length < PASSWORD_RULES.minLength) {
-    return 'La contraseña debe tener al menos 8 caracteres'
+    return ERROR_MESSAGES.minLength
   }
   
-  if (!/[A-Z]/.test(password)) {
-    return 'La contraseña debe contener al menos una letra mayúscula'
+  if (PASSWORD_RULES.requireUpperCase && !/[A-Z]/.test(password)) {
+    return ERROR_MESSAGES.uppercase
   }
   
-  if (!/[a-z]/.test(password)) {
-    return 'La contraseña debe contener al menos una letra minúscula'
+  if (PASSWORD_RULES.requireLowerCase && !/[a-z]/.test(password)) {
+    return ERROR_MESSAGES.lowercase
   }
   
-  if (!/\d/.test(password)) {
-    return 'La contraseña debe contener al menos un número'
+  if (PASSWORD_RULES.requireNumber && !/\d/.test(password)) {
+    return ERROR_MESSAGES.number
+  }
+  
+  if (PASSWORD_RULES.requireSpecialChar && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    return ERROR_MESSAGES.specialChar
   }
   
   return null
@@ -97,18 +129,75 @@ export function getPasswordValidationError(password) {
  * Validate password confirmation matches
  * @param {string} password - Original password
  * @param {string} confirmPassword - Confirmation password
+ * @param {Object} options - Options for validation
  * @returns {string|null} Error message or null if valid
  */
-export function validatePasswordConfirmation(password, confirmPassword) {
-  if (!confirmPassword) {
-    return 'La confirmación de contraseña es requerida'
+export function validatePasswordConfirmation(password, confirmPassword, options = {}) {
+  const { required = true, fieldName = 'confirmación de contraseña' } = options
+  
+  if (required && !confirmPassword) {
+    return `La ${fieldName} es requerida`
   }
   
   if (password !== confirmPassword) {
-    return 'Las contraseñas no coinciden'
+    return ERROR_MESSAGES.confirmMismatch
   }
   
   return null
+}
+
+/**
+ * Get password requirements checklist
+ * @param {string} password - Password to check
+ * @returns {Array} Array of requirement objects with status
+ */
+export function getPasswordRequirements(password) {
+  if (!password) {
+    return [
+      { text: `Al menos ${PASSWORD_RULES.minLength} caracteres`, met: false },
+      { text: 'Al menos una letra mayúscula', met: false },
+      { text: 'Al menos una letra minúscula', met: false },
+      { text: 'Al menos un número', met: false }
+    ]
+  }
+  
+  const checks = validatePasswordStrength(password, { format: 'simple' })
+  
+  return [
+    { text: `Al menos ${PASSWORD_RULES.minLength} caracteres`, met: checks.length },
+    { text: 'Al menos una letra mayúscula', met: checks.uppercase },
+    { text: 'Al menos una letra minúscula', met: checks.lowercase },
+    { text: 'Al menos un número', met: checks.number }
+  ]
+}
+
+/**
+ * Validate password with all rules
+ * @param {string} password - Password to validate
+ * @param {string} confirmPassword - Confirmation password (optional)
+ * @param {Object} options - Validation options
+ * @returns {Object} Validation result with errors object
+ */
+export function validatePassword(password, confirmPassword = null, options = {}) {
+  const { requireConfirm = false } = options
+  const errors = {}
+  
+  const passwordError = getPasswordValidationError(password, options)
+  if (passwordError) {
+    errors.password = passwordError
+  }
+  
+  if (requireConfirm && confirmPassword !== null) {
+    const confirmError = validatePasswordConfirmation(password, confirmPassword, options)
+    if (confirmError) {
+      errors.confirmPassword = confirmError
+    }
+  }
+  
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  }
 }
 
 /**
@@ -120,7 +209,10 @@ export function usePasswordValidation() {
     validatePasswordStrength,
     getPasswordValidationError,
     validatePasswordConfirmation,
-    PASSWORD_RULES
+    getPasswordRequirements,
+    validatePassword,
+    PASSWORD_RULES,
+    ERROR_MESSAGES
   }
 }
 

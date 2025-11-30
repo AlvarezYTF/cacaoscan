@@ -20,7 +20,7 @@
     </div>
 
     <div v-if="loading" class="flex flex-col items-center justify-center py-12">
-      <LoadingSpinner size="lg" color="green" />
+      <BaseSpinner size="lg" color="green" />
       <p class="mt-4 text-gray-600">Cargando usuarios...</p>
     </div>
 
@@ -198,7 +198,7 @@
 import { computed } from 'vue'
 
 // 2. Components
-import LoadingSpinner from '@/components/admin/AdminGeneralComponents/LoadingSpinner.vue'
+import BaseSpinner from '@/components/common/BaseSpinner.vue'
 
 // Props
 const props = defineProps({

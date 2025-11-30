@@ -159,7 +159,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="lote in filteredLotes" :key="lote.id">
+                    <tr v-for="lote in displayedLotes" :key="lote.id">
                       <td>
                         <div class="d-flex align-items-center">
                           <i class="fas fa-seedling text-success me-2"></i>
@@ -271,6 +271,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
+import { usePagination } from '@/composables/usePagination'
 
 const route = useRoute()
 const router = useRouter()
@@ -283,8 +284,9 @@ const lotes = ref([])
 const variedades = ref([])
 const loading = ref(true)
 const error = ref(null)
-const currentPage = ref(1)
-const itemsPerPage = 10
+
+// Paginación usando composable
+const pagination = usePagination(1, 10)
 
 // Filters
 const filters = reactive({
@@ -337,20 +339,37 @@ const stats = computed(() => {
   }
 })
 
-const totalPages = computed(() => {
-  return Math.ceil(filteredLotes.value.length / itemsPerPage)
-})
+// Actualizar totalItems en paginación cuando cambian los filteredLotes
+watch(() => filteredLotes.value.length, (newTotal) => {
+  pagination.updatePagination({
+    page: pagination.currentPage.value,
+    page_size: pagination.itemsPerPage.value,
+    count: newTotal
+  })
+}, { immediate: true })
+
+// Computed para compatibilidad con el template
+const currentPage = computed(() => pagination.currentPage.value)
+const totalPages = computed(() => pagination.totalPages.value)
+const itemsPerPage = computed(() => pagination.itemsPerPage.value)
 
 const visiblePages = computed(() => {
   const pages = []
-  const start = Math.max(1, currentPage.value - 2)
-  const end = Math.min(totalPages.value, start + 4)
+  const start = Math.max(1, pagination.currentPage.value - 2)
+  const end = Math.min(pagination.totalPages.value, start + 4)
   
   for (let i = start; i <= end; i++) {
     pages.push(i)
   }
   
   return pages
+})
+
+// Lotes mostrados en la página actual (paginación en cliente)
+const displayedLotes = computed(() => {
+  const start = (pagination.currentPage.value - 1) * pagination.itemsPerPage.value
+  const end = start + pagination.itemsPerPage.value
+  return filteredLotes.value.slice(start, end)
 })
 
 // Methods
@@ -421,12 +440,12 @@ const clearFilters = () => {
   filters.search = ''
   filters.estado = ''
   filters.variedad = ''
-  currentPage.value = 1
+  pagination.goToPage(1)
 }
 
 const changePage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
+    pagination.goToPage(page)
   }
 }
 
@@ -439,17 +458,17 @@ let searchTimeout = null
 const debouncedSearch = () => {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
-    currentPage.value = 1
+    pagination.goToPage(1)
   }, 300)
 }
 
 // Watchers
 watch(() => filters.estado, () => {
-  currentPage.value = 1
+  pagination.goToPage(1)
 })
 
 watch(() => filters.variedad, () => {
-  currentPage.value = 1
+  pagination.goToPage(1)
 })
 
 // Lifecycle

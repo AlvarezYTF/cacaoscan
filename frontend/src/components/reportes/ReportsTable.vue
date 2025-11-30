@@ -12,7 +12,10 @@
           <tr>
             <th v-for="column in columns" :key="column.key" 
                 class="px-3 py-3 md:px-6 md:py-4 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
-                :class="column.mobileHidden ? 'mobile-hidden' : ''"
+                :class="[
+                  column.mobileHidden ? 'mobile-hidden' : '',
+                  sortKey === column.key ? 'sorted' : ''
+                ]"
                 @click="handleSort(column.key)">
               <div class="flex items-center space-x-1">
                 <span>{{ column.label }}</span>
@@ -90,62 +93,72 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ReportsTable',
-  props: {
-    reports: {
-      type: Array,
-      required: true
-    },
-    loading: {
-      type: Boolean,
-      default: false
-    }
+<script setup>
+import { computed } from 'vue'
+import { useTable } from '@/composables/useTable'
+import { formatReportStatus, getReportStatusClass } from '@/composables/useReports'
+import { useDateFormatting } from '@/composables/useDateFormatting'
+
+const props = defineProps({
+  reports: {
+    type: Array,
+    required: true
   },
-  data() {
-    return {
-      sortKey: 'createdAt',
-      sortOrder: 'desc',
-      columns: [
-        { key: 'name', label: 'Nombre del Reporte', mobileHidden: false },
-        { key: 'type', label: 'Tipo', mobileHidden: true },
-        { key: 'period', label: 'Período', mobileHidden: true },
-        { key: 'createdAt', label: 'Fecha de Creación', mobileHidden: false },
-        { key: 'status', label: 'Estado', mobileHidden: false }
-      ]
-    };
-  },
-  methods: {
-    handleSort(key) {
-      if (this.sortKey === key) {
-        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
-      } else {
-        this.sortKey = key;
-        this.sortOrder = 'asc';
-      }
-      this.$emit('sort', { key, order: this.sortOrder });
-    },
-    getStatusClasses(status) {
-      const classes = {
-        'Completado': 'bg-green-100 text-green-800',
-        'En Proceso': 'bg-yellow-100 text-yellow-800',
-        'Pendiente': 'bg-gray-100 text-gray-800',
-        'Error': 'bg-red-100 text-red-800'
-      };
-      return classes[status] || classes['Pendiente'];
-    },
-    handleView(report) {
-      this.$emit('view', report);
-    },
-    handleDownload(report) {
-      this.$emit('download', report);
-    },
-    handleDelete(report) {
-      this.$emit('delete', report);
-    }
+  loading: {
+    type: Boolean,
+    default: false
   }
-};
+})
+
+defineEmits(['sort', 'view', 'download', 'delete'])
+
+const { formatDate } = useDateFormatting()
+
+// Use table composable for sorting
+const table = useTable({
+  initialSortKey: 'createdAt',
+  initialSortOrder: 'desc',
+  enableSelection: false
+})
+
+const columns = [
+  { key: 'name', label: 'Nombre del Reporte', mobileHidden: false },
+  { key: 'type', label: 'Tipo', mobileHidden: true },
+  { key: 'period', label: 'Período', mobileHidden: true },
+  { key: 'createdAt', label: 'Fecha de Creación', mobileHidden: false },
+  { key: 'status', label: 'Estado', mobileHidden: false }
+]
+
+const handleSort = (key) => {
+  table.handleSort(key)
+}
+
+const getStatusClasses = (status) => {
+  const statusClass = getReportStatusClass(status)
+  const classMap = {
+    'status-completed': 'bg-green-100 text-green-800',
+    'status-processing': 'bg-yellow-100 text-yellow-800',
+    'status-generating': 'bg-yellow-100 text-yellow-800',
+    'status-pending': 'bg-gray-100 text-gray-800',
+    'status-error': 'bg-red-100 text-red-800'
+  }
+  return classMap[statusClass] || classMap['status-pending']
+}
+
+const handleView = (report) => {
+  emit('view', report)
+}
+
+const handleDownload = (report) => {
+  emit('download', report)
+}
+
+const handleDelete = (report) => {
+  emit('delete', report)
+}
+
+const formatReportDate = (dateString) => formatDate(dateString)
+const formatReportStatusLabel = (status) => formatReportStatus(status)
 </script>
 
 <style scoped>

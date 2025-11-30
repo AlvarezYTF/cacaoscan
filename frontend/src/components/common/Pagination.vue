@@ -70,7 +70,7 @@
         <select 
           id="pagination-items-per-page"
           :value="itemsPerPage"
-          @change="$emit('items-per-page-change', Number.parseInt($event.target.value))"
+          @change="handleItemsPerPageChange(Number.parseInt($event.target.value))"
           class="text-xs sm:text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-500"
         >
           <option value="5">5</option>
@@ -84,7 +84,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
+import { usePagination } from '@/composables/usePagination'
 
 const props = defineProps({
   currentPage: {
@@ -115,7 +116,31 @@ const props = defineProps({
 
 const emit = defineEmits(['page-change', 'items-per-page-change'])
 
-// Computed properties
+// Use pagination composable for computed values
+const pagination = usePagination({
+  initialPage: props.currentPage,
+  initialItemsPerPage: props.itemsPerPage,
+  maxVisiblePages: props.maxVisiblePages
+})
+
+// Sync composable state with props
+watch(() => props.currentPage, (newPage) => {
+  if (newPage !== pagination.currentPage.value) {
+    pagination.goToPage(newPage)
+  }
+}, { immediate: true })
+
+watch(() => props.totalItems, (newTotal) => {
+  pagination.setTotalItems(newTotal)
+}, { immediate: true })
+
+watch(() => props.itemsPerPage, (newSize) => {
+  if (newSize !== pagination.itemsPerPage.value) {
+    pagination.setItemsPerPage(newSize)
+  }
+}, { immediate: true })
+
+// Use computed values from composable, but override visiblePages to use props.totalPages
 const startItem = computed(() => {
   return (props.currentPage - 1) * props.itemsPerPage + 1
 })
@@ -128,22 +153,18 @@ const visiblePages = computed(() => {
   const pages = []
   
   if (props.totalPages <= props.maxVisiblePages) {
-    // Si hay pocas páginas, mostrar todas
     for (let i = 1; i <= props.totalPages; i++) {
       pages.push(i)
     }
   } else if (props.currentPage <= 3) {
-    // Al inicio
     for (let i = 1; i <= 3; i++) {
       pages.push(i)
     }
   } else if (props.currentPage >= props.totalPages - 2) {
-    // Al final
     for (let i = props.totalPages - 2; i <= props.totalPages; i++) {
       pages.push(i)
     }
   } else {
-    // En el medio
     for (let i = props.currentPage - 1; i <= props.currentPage + 1; i++) {
       pages.push(i)
     }
@@ -162,6 +183,10 @@ const goToPage = (page) => {
   if (page >= 1 && page <= props.totalPages && page !== props.currentPage) {
     emit('page-change', page)
   }
+}
+
+const handleItemsPerPageChange = (newSize) => {
+  emit('items-per-page-change', newSize)
 }
 </script>
 

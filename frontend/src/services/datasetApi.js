@@ -7,72 +7,17 @@
  * - SRP: Una responsabilidad por función
  */
 
-// Importar configuración centralizada del API
-import { getApiBaseUrlWithoutPath } from '@/utils/apiConfig'
+/**
+ * Servicio API para gestión administrativa de datasets
+ * Usa apiClient para reducir duplicación de código
+ * Mantiene fetch directo para operaciones con FormData
+ */
+import { fetchGet, fetchPost, fetchPatch, fetchDelete } from './apiClient'
 import { validateImageFileSingleError } from '@/utils/imageValidationUtils'
+import { getApiBaseUrlWithoutPath } from '@/utils/apiConfig'
 
 // Configuración base reutilizable
 const API_BASE_URL = getApiBaseUrlWithoutPath();
-
-/**
- * Configuración común para todas las peticiones
- * @returns {Object} Headers comunes
- */
-const getCommonHeaders = () => {
-  const headers = {
-    'Content-Type': 'application/json'
-  }
-  
-  // Agregar token de autenticación si está disponible
-  const token = localStorage.getItem('access_token')
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-  
-  return headers
-}
-
-/**
- * Maneja respuestas HTTP de manera consistente (DRY)
- * @param {Response} response - Respuesta de fetch
- * @returns {Promise<Object>} Datos de respuesta o error
- */
-const handleResponse = async (response) => {
-  const contentType = response.headers.get('content-type');
-  
-  if (contentType?.includes('application/json')) {
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || data.error || `HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    return data;
-  }
-  
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  
-  return await response.text();
-};
-
-/**
- * Construye parámetros de consulta de manera consistente (DRY)
- * @param {Object} filters - Filtros a aplicar
- * @returns {URLSearchParams} Parámetros de consulta
- */
-const buildQueryParams = (filters = {}) => {
-  const params = new URLSearchParams();
-  
-  for (const [key, value] of Object.entries(filters)) {
-    if (value !== undefined && value !== null && value !== '') {
-      params.append(key, value);
-    }
-  }
-  
-  return params;
-};
 
 // ==========================================
 // GESTIÓN DE IMÁGENES DE DATASET
@@ -86,25 +31,13 @@ const buildQueryParams = (filters = {}) => {
  * @returns {Promise<Object>} Lista paginada de imágenes
  */
 export const getDatasetImages = async (filters = {}, page = 1, pageSize = 20) => {
-  try {
-    const queryParams = buildQueryParams({
-      ...filters,
-      page,
-      page_size: pageSize
-    });
-    
-    const url = `${API_BASE_URL}/api/images/admin/images/?${queryParams}`;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: getCommonHeaders()
-    });
-    
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Error obteniendo imágenes del dataset:', error);
-    throw error;
+  const params = {
+    ...filters,
+    page,
+    page_size: pageSize
   }
-};
+  return await fetchGet('/api/images/admin/images/', params)
+}
 
 /**
  * Obtiene detalles de una imagen específica
@@ -112,18 +45,8 @@ export const getDatasetImages = async (filters = {}, page = 1, pageSize = 20) =>
  * @returns {Promise<Object>} Detalles de la imagen
  */
 export const getDatasetImage = async (imageId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/images/admin/images/${imageId}/`, {
-      method: 'GET',
-      headers: getCommonHeaders()
-    });
-    
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Error obteniendo imagen:', error);
-    throw error;
-  }
-};
+  return await fetchGet(`/api/images/admin/images/${imageId}/`)
+}
 
 /**
  * Actualiza una imagen del dataset
@@ -132,19 +55,8 @@ export const getDatasetImage = async (imageId) => {
  * @returns {Promise<Object>} Imagen actualizada
  */
 export const updateDatasetImage = async (imageId, updateData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/images/admin/images/${imageId}/`, {
-      method: 'PATCH',
-      headers: getCommonHeaders(),
-      body: JSON.stringify(updateData)
-    });
-    
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Error actualizando imagen:', error);
-    throw error;
-  }
-};
+  return await fetchPatch(`/api/images/admin/images/${imageId}/`, updateData)
+}
 
 /**
  * Elimina una imagen del dataset
@@ -152,20 +64,8 @@ export const updateDatasetImage = async (imageId, updateData) => {
  * @returns {Promise<void>}
  */
 export const deleteDatasetImage = async (imageId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/images/admin/images/${imageId}/`, {
-      method: 'DELETE',
-      headers: getCommonHeaders()
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-  } catch (error) {
-    console.error('Error eliminando imagen:', error);
-    throw error;
-  }
-};
+  await fetchDelete(`/api/images/admin/images/${imageId}/`)
+}
 
 /**
  * Actualización masiva de imágenes
@@ -174,22 +74,11 @@ export const deleteDatasetImage = async (imageId) => {
  * @returns {Promise<Object>} Resultado de la operación
  */
 export const bulkUpdateDatasetImages = async (imageIds, updateData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/images/admin/images/bulk-update/`, {
-      method: 'POST',
-      headers: getCommonHeaders(),
-      body: JSON.stringify({
-        image_ids: imageIds,
-        ...updateData
-      })
-    });
-    
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Error en actualización masiva:', error);
-    throw error;
-  }
-};
+  return await fetchPost('/api/images/admin/images/bulk-update/', {
+    image_ids: imageIds,
+    ...updateData
+  })
+}
 
 // ==========================================
 // SUBIDA Y GESTIÓN DE ARCHIVOS
@@ -279,18 +168,8 @@ export const validateImageFile = validateImageFileSingleError
  * @returns {Promise<Object>} Estadísticas completas
  */
 export const getDatasetStats = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/images/admin/images/admin-stats/`, {
-      method: 'GET',
-      headers: getCommonHeaders()
-    });
-    
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Error obteniendo estadísticas:', error);
-    throw error;
-  }
-};
+  return await fetchGet('/api/images/admin/images/admin-stats/')
+}
 
 /**
  * Exporta datos del dataset a CSV
@@ -298,28 +177,31 @@ export const getDatasetStats = async () => {
  * @returns {Promise<Blob>} Archivo CSV
  */
 export const exportDatasetCSV = async (filters = {}) => {
-  try {
-    const queryParams = buildQueryParams(filters);
-    const url = `${API_BASE_URL}/api/images/admin/images/export-csv/?${queryParams}`;
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        ...getCommonHeaders(),
-        'Accept': 'text/csv'
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  // Para descargas de archivos, necesitamos usar fetch directamente
+  // ya que apiClient devuelve JSON por defecto
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+  const queryParams = new URLSearchParams()
+  
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== null && value !== '') {
+      queryParams.append(key, value)
     }
-    
-    return await response.blob();
-  } catch (error) {
-    console.error('Error exportando CSV:', error);
-    throw error;
   }
-};
+  
+  const url = `${API_BASE_URL}/api/images/admin/images/export-csv/${queryParams.toString() ? `?${queryParams}` : ''}`
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'text/csv'
+    }
+  })
+  
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+  }
+  
+  return await response.blob()
+}
 
 // ==========================================
 // ENTRENAMIENTO DE MODELOS
@@ -331,22 +213,11 @@ export const exportDatasetCSV = async (filters = {}) => {
  * @returns {Promise<Object>} Información del job iniciado
  */
 export const trainRegressionModel = async (trainingParams) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/train/jobs/create/`, {
-      method: 'POST',
-      headers: getCommonHeaders(),
-      body: JSON.stringify({
-        job_type: 'regression',
-        ...trainingParams
-      })
-    });
-    
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Error iniciando entrenamiento de regresión:', error);
-    throw error;
-  }
-};
+  return await fetchPost('/api/train/jobs/create/', {
+    job_type: 'regression',
+    ...trainingParams
+  })
+}
 
 /**
  * Inicia entrenamiento de modelo de visión
@@ -354,22 +225,11 @@ export const trainRegressionModel = async (trainingParams) => {
  * @returns {Promise<Object>} Información del job iniciado
  */
 export const trainVisionModel = async (trainingParams) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/train/jobs/create/`, {
-      method: 'POST',
-      headers: getCommonHeaders(),
-      body: JSON.stringify({
-        job_type: 'vision',
-        ...trainingParams
-      })
-    });
-    
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Error iniciando entrenamiento de visión:', error);
-    throw error;
-  }
-};
+  return await fetchPost('/api/train/jobs/create/', {
+    job_type: 'vision',
+    ...trainingParams
+  })
+}
 
 /**
  * Obtiene estado de un job de entrenamiento
@@ -377,37 +237,17 @@ export const trainVisionModel = async (trainingParams) => {
  * @returns {Promise<Object>} Estado del job
  */
 export const getTrainingJobStatus = async (jobId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/train/jobs/${jobId}/status/`, {
-      method: 'GET',
-      headers: getCommonHeaders()
-    });
-    
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Error obteniendo estado del job:', error);
-    throw error;
-  }
-};
+  return await fetchGet(`/api/train/jobs/${jobId}/status/`)
+}
 
 /**
  * Obtiene lista de todos los jobs de entrenamiento
  * @returns {Promise<Array>} Lista de jobs
  */
 export const getTrainingJobs = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/train/jobs/`, {
-      method: 'GET',
-      headers: getCommonHeaders()
-    });
-    
-    const data = await handleResponse(response);
-    return data.results || [];
-  } catch (error) {
-    console.error('Error obteniendo lista de jobs:', error);
-    throw error;
-  }
-};
+  const data = await fetchGet('/api/train/jobs/')
+  return data.results || []
+}
 
 // ==========================================
 // GESTIÓN DE DATOS
@@ -418,18 +258,8 @@ export const getTrainingJobs = async () => {
  * @returns {Promise<Object>} Reporte de integridad
  */
 export const validateDataIntegrity = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/images/admin/data/validate-integrity/`, {
-      method: 'POST',
-      headers: getCommonHeaders()
-    });
-    
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Error validando integridad:', error);
-    throw error;
-  }
-};
+  return await fetchPost('/api/images/admin/data/validate-integrity/')
+}
 
 // ==========================================
 // UTILIDADES Y HELPERS

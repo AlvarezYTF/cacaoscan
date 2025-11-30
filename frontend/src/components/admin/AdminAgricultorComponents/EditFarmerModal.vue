@@ -1,38 +1,29 @@
 <template>
-  <!-- Modal -->
-  <div id="edit-farmer-modal" tabindex="-1" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
-    ref="modalContainer">
-    <div class="relative w-full max-w-4xl max-h-[90vh]">
-      <!-- Modal content -->
-      <div class="relative bg-white rounded-lg shadow-lg border border-gray-200">
-        <!-- Modal header -->
-        <div class="flex items-center justify-between p-6 border-b border-gray-200">
-          <div class="flex items-center">
-            <div class="bg-green-100 p-3 rounded-lg mr-4">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                </path>
-              </svg>
-            </div>
-            <div>
-              <h3 class="text-xl font-bold text-gray-900">
-                Editar Agricultor
-              </h3>
-              <p class="text-sm text-gray-600 mt-1">Modifica la información del agricultor y gestiona sus fincas</p>
-            </div>
-          </div>
-          <button type="button" @click="closeModal"
-            class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg p-2 transition-all duration-200">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
+  <BaseModal
+    :show="isOpen"
+    title="Editar Agricultor"
+    subtitle="Modifica la información del agricultor y gestiona sus fincas"
+    max-width="4xl"
+    @close="closeModal"
+    @update:show="(value) => { if (!value) closeModal() }"
+  >
+    <template #header>
+      <div class="flex items-center">
+        <div class="bg-green-100 p-3 rounded-lg mr-4">
+          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+            </path>
+          </svg>
         </div>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">Editar Agricultor</h3>
+          <p class="text-sm text-gray-600 mt-1">Modifica la información del agricultor y gestiona sus fincas</p>
+        </div>
+      </div>
+    </template>
 
-        <!-- Modal body -->
-        <div class="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
+    <div class="max-h-[calc(90vh-200px)] overflow-y-auto">
           <!-- Tabs -->
           <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 mb-6">
             <li class="mr-2">
@@ -371,31 +362,38 @@
             </div>
           </div>
         </div>
-
-        <!-- Modal footer -->
-        <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 px-6">
-          <button type="button" @click="closeModal"
-            class="px-6 py-3 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200">
-            Cancelar
-          </button>
-          <button type="button" @click="handleUpdate" :disabled="isSubmitting"
-            class="inline-flex items-center px-6 py-3 text-sm font-semibold text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg">
-            <span v-if="!isSubmitting">Guardar Cambios</span>
-            <span v-else class="flex items-center">
-              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
-                viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                </path>
-              </svg>
-              Guardando...
-            </span>
-          </button>
-        </div>
-      </div>
     </div>
-  </div>
+
+    <template #footer>
+      <div class="flex items-center justify-end gap-3">
+        <button 
+          type="button" 
+          @click="closeModal"
+          class="px-6 py-3 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200"
+        >
+          Cancelar
+        </button>
+        <button 
+          type="button" 
+          @click="handleUpdate" 
+          :disabled="isSubmitting"
+          class="inline-flex items-center px-6 py-3 text-sm font-semibold text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+        >
+          <span v-if="!isSubmitting">Guardar Cambios</span>
+          <span v-else class="flex items-center">
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+              viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+              </path>
+            </svg>
+            Guardando...
+          </span>
+        </button>
+      </div>
+    </template>
+  </BaseModal>
 </template>
 
 <script setup>
@@ -411,10 +409,8 @@ import { personasApi } from '@/services'
 import { useCatalogos } from '@/composables/useCatalogos'
 import { useFormValidation } from '@/composables/useFormValidation'
 import { useBirthdateRange } from '@/composables/useBirthdateRange'
-import { useModal } from '@/composables/useModal'
-
-// 4. Utils
-import Swal from 'sweetalert2'
+import { useNotifications } from '@/composables/useNotifications'
+import BaseModal from '@/components/common/BaseModal.vue'
 
 // Props
 const props = defineProps({
@@ -451,9 +447,10 @@ const {
 
 const { errors, isValidEmail, isValidPhone, isValidDocument, clearErrors } = useFormValidation()
 const { maxBirthdate, minBirthdate } = useBirthdateRange()
-const { modalContainer, openModal: openModalBase, closeModal: closeModalBase } = useModal('edit-farmer-modal')
+const { showSuccess, showError } = useNotifications()
 
 // State
+const isOpen = ref(false)
 const isSubmitting = ref(false)
 const isCreatingFinca = ref(false)
 const activeTab = ref('info')
@@ -540,12 +537,7 @@ watch(() => props.farmer, async (newFarmer) => {
       } else {
         // Handle unexpected errors by showing notification to user
         console.error('Error al cargar datos de persona:', errorMessage, error)
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: errorMessage,
-          confirmButtonColor: '#10b981'
-        })
+        showError(errorMessage)
       }
     }
   }
@@ -575,12 +567,7 @@ const resetNewFinca = () => {
 const handleCreateFinca = async () => {
   // Validate required fields
   if (!newFinca.nombre || !newFinca.municipio || !newFinca.departamento || !newFinca.hectareas) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Por favor completa todos los campos requeridos',
-      confirmButtonColor: '#ef4444'
-    })
+    showError('Por favor completa todos los campos requeridos')
     return
   }
 
@@ -600,12 +587,7 @@ const handleCreateFinca = async () => {
 
     await createFinca(fincaData)
 
-    Swal.fire({
-      icon: 'success',
-      title: 'Finca creada',
-      text: 'La finca ha sido registrada exitosamente',
-      confirmButtonColor: '#10b981'
-    })
+    showSuccess('La finca ha sido registrada exitosamente')
 
     resetNewFinca()
     showCreateFinca.value = false
@@ -632,12 +614,7 @@ const handleCreateFinca = async () => {
       }
     }
 
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      html: errorMessage.replaceAll('\n', '<br>'),
-      confirmButtonColor: '#ef4444'
-    })
+    showError(errorMessage.replaceAll('\n', ' '))
   } finally {
     isCreatingFinca.value = false
   }
@@ -648,12 +625,7 @@ const handleUpdate = async () => {
   clearErrors()
 
   if (!formData.first_name || !formData.last_name || !formData.email) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Por favor completa todos los campos requeridos',
-      confirmButtonColor: '#ef4444'
-    })
+    showError('Por favor completa todos los campos requeridos')
     return
   }
 
@@ -692,12 +664,7 @@ const handleUpdate = async () => {
       }
     }
 
-    Swal.fire({
-      icon: 'success',
-      title: 'Agricultor actualizado',
-      text: 'La información del agricultor ha sido actualizada exitosamente',
-      confirmButtonColor: '#10b981'
-    })
+    showSuccess('La información del agricultor ha sido actualizada exitosamente')
 
     emit('farmer-updated', { type: 'user-updated', user: response.user })
     closeModal()
@@ -718,12 +685,7 @@ const handleUpdate = async () => {
       }
     }
 
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      html: errorMessage.replaceAll('\n', '<br>'),
-      confirmButtonColor: '#ef4444'
-    })
+    showError(errorMessage.replaceAll('\n', ' '))
   } finally {
     isSubmitting.value = false
   }
@@ -738,14 +700,14 @@ const onDepartamentoChange = async () => {
 }
 
 const closeModal = () => {
-  closeModalBase()
+  isOpen.value = false
   showCreateFinca.value = false
   resetNewFinca()
   emit('close')
 }
 
 const openModal = async () => {
-  openModalBase()
+  isOpen.value = true
   await cargarCatalogos()
 }
 

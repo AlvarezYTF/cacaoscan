@@ -1,91 +1,70 @@
-import api from './api'
+/**
+ * Servicio API para gestión de configuración
+ * Usa apiClient para reducir duplicación de código
+ * Mantiene lógica especial de manejo de errores para códigos 403/500
+ */
+import { apiGet, apiPut } from './apiClient'
 
 const CONFIG_BASE = '/config'
+
+/**
+ * Helper para manejar errores esperados (403/500) devolviendo null
+ */
+const handleExpectedError = (error, defaultReturn = null) => {
+  if (error.response?.status === 500 || error.response?.status === 403) {
+    return defaultReturn
+  }
+  console.error('Error en configuración:', error)
+  throw error
+}
 
 const configApi = {
   // Obtener configuración general
   async getGeneralConfig() {
     try {
-      const response = await api.get(`${CONFIG_BASE}/general/`)
-      return response.data
+      return await apiGet(`${CONFIG_BASE}/general/`)
     } catch (error) {
-      // Error 500 o 403 esperado - devolver objeto vacío en lugar de lanzar
-      if (error.response?.status === 500 || error.response?.status === 403) {
-        return null
-      }
-      console.error('Error obteniendo configuración general:', error)
-      throw error
+      return handleExpectedError(error, null)
     }
   },
 
   // Guardar configuración general
   async saveGeneralConfig(data) {
-    try {
-      const response = await api.put(`${CONFIG_BASE}/general/`, data)
-      return response.data
-    } catch (error) {
-      console.error('Error guardando configuración general:', error)
-      throw error
-    }
+    return await apiPut(`${CONFIG_BASE}/general/`, data)
   },
 
   // Obtener configuración de seguridad
   async getSecurityConfig() {
     try {
-      const response = await api.get(`${CONFIG_BASE}/security/`)
-      return response.data
+      return await apiGet(`${CONFIG_BASE}/security/`)
     } catch (error) {
-      // Error 403 esperado - devolver objeto vacío en lugar de lanzar
-      if (error.response?.status === 403 || error.response?.status === 500) {
-        return null
-      }
-      console.error('Error obteniendo configuración de seguridad:', error)
-      throw error
+      return handleExpectedError(error, null)
     }
   },
 
   // Guardar configuración de seguridad
   async saveSecurityConfig(data) {
-    try {
-      const response = await api.put(`${CONFIG_BASE}/security/`, data)
-      return response.data
-    } catch (error) {
-      console.error('Error guardando configuración de seguridad:', error)
-      throw error
-    }
+    return await apiPut(`${CONFIG_BASE}/security/`, data)
   },
 
   // Obtener configuración de modelos ML
   async getMLConfig() {
     try {
-      const response = await api.get(`${CONFIG_BASE}/ml/`)
-      return response.data
+      return await apiGet(`${CONFIG_BASE}/ml/`)
     } catch (error) {
-      // Error 403 esperado - devolver objeto vacío en lugar de lanzar
-      if (error.response?.status === 403 || error.response?.status === 500) {
-        return null
-      }
-      console.error('Error obteniendo configuración ML:', error)
-      throw error
+      return handleExpectedError(error, null)
     }
   },
 
   // Guardar configuración de modelos ML
   async saveMLConfig(data) {
-    try {
-      const response = await api.put(`${CONFIG_BASE}/ml/`, data)
-      return response.data
-    } catch (error) {
-      console.error('Error guardando configuración ML:', error)
-      throw error
-    }
+    return await apiPut(`${CONFIG_BASE}/ml/`, data)
   },
 
   // Obtener configuración del sistema
   async getSystemConfig() {
     try {
-      const response = await api.get(`${CONFIG_BASE}/system/`)
-      return response.data
+      return await apiGet(`${CONFIG_BASE}/system/`)
     } catch (error) {
       // Si falla, devolver valores por defecto en lugar de lanzar
       if (error.response?.status === 500 || error.response?.status === 403) {

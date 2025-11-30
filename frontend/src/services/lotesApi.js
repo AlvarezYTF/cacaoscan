@@ -1,67 +1,34 @@
 /**
  * Servicio API para gestión de lotes
+ * Usa apiClient para reducir duplicación de código
  */
 
-import api from './api'
+import { apiGet, apiPost, apiPut, apiDelete } from './apiClient'
 import { normalizeResponse } from '@/utils/apiResponse'
 
 export async function getLotes(params = {}) {
-  try {
-    const response = await api.get('/lotes/', { params })
-    return normalizeResponse(response.data)
-  } catch (error) {
-    console.error('Error obteniendo lotes:', error)
-    throw error
-  }
+  const data = await apiGet('/lotes/', params)
+  return normalizeResponse(data)
 }
 
 export async function getLoteById(loteId) {
-  try {
-    const response = await api.get(`/lotes/${loteId}/`)
-    return response.data
-  } catch (error) {
-    console.error(`Error obteniendo lote ${loteId}:`, error)
-    throw error
-  }
+  return await apiGet(`/lotes/${loteId}/`)
 }
 
 export async function createLote(loteData) {
-  try {
-    const response = await api.post('/lotes/', loteData)
-    return response.data
-  } catch (error) {
-    console.error('Error creando lote:', error)
-    throw error
-  }
+  return await apiPost('/lotes/', loteData)
 }
 
 export async function updateLote(loteId, loteData) {
-  try {
-    const response = await api.put(`/lotes/${loteId}/update/`, loteData)
-    return response.data
-  } catch (error) {
-    console.error(`Error actualizando lote ${loteId}:`, error)
-    throw error
-  }
+  return await apiPut(`/lotes/${loteId}/update/`, loteData)
 }
 
 export async function deleteLote(loteId) {
-  try {
-    await api.delete(`/lotes/${loteId}/delete/`)
-  } catch (error) {
-    console.error(`Error eliminando lote ${loteId}:`, error)
-    throw error
-  }
+  await apiDelete(`/lotes/${loteId}/delete/`)
 }
 
 export async function getLoteStats(loteId) {
-  try {
-    const response = await api.get(`/lotes/${loteId}/stats/`)
-    return response.data
-  } catch (error) {
-    console.error(`Error obteniendo estadísticas de lote ${loteId}:`, error)
-    throw error
-  }
+  return await apiGet(`/lotes/${loteId}/stats/`)
 }
 
 export function validateLoteData(loteData) {

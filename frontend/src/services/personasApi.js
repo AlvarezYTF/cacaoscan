@@ -1,17 +1,15 @@
-import api from './api'
+/**
+ * Servicio API para gestión de personas
+ * Usa apiClient para reducir duplicación de código
+ */
+import { apiGet, apiPost, apiPatch } from './apiClient'
 
 export const personasApi = {
   /**
    * Obtener el perfil de la persona del usuario autenticado
    */
   async getPerfil() {
-    try {
-      const response = await api.get('/api/personas/perfil/')
-      return response.data
-    } catch (error) {
-      console.error('Error obteniendo perfil:', error)
-      throw error
-    }
+    return await apiGet('/api/personas/perfil/')
   },
 
   /**
@@ -19,13 +17,7 @@ export const personasApi = {
    * @param {Object} data - Datos de la persona
    */
   async crearPerfil(data) {
-    try {
-      const response = await api.post('/api/personas/perfil/', data)
-      return response.data
-    } catch (error) {
-      console.error('Error creando perfil:', error)
-      throw error
-    }
+    return await apiPost('/api/personas/perfil/', data)
   },
 
   /**
@@ -33,35 +25,17 @@ export const personasApi = {
    * @param {Object} data - Datos a actualizar (excepto email)
    */
   async actualizarPerfil(data) {
-    try {
-      const response = await api.patch('/api/personas/perfil/', data)
-      return response.data
-    } catch (error) {
-      console.error('Error actualizando perfil:', error)
-      throw error
-    }
+    return await apiPatch('/api/personas/perfil/', data)
   },
 
   // Admin: obtener persona por user_id
   async getPersonaByUserId(userId) {
-    try {
-      const response = await api.get(`/personas/admin/${userId}/`)
-      return response.data
-    } catch (error) {
-      console.error('Error obteniendo persona (admin):', error)
-      throw error
-    }
+    return await apiGet(`/personas/admin/${userId}/`)
   },
 
   // Admin: actualizar/crear persona por user_id
   async updatePersonaByUserId(userId, data) {
-    try {
-      const response = await api.patch(`/personas/admin/${userId}/`, data)
-      return response.data
-    } catch (error) {
-      console.error('Error actualizando persona (admin):', error)
-      throw error
-    }
+    return await apiPatch(`/personas/admin/${userId}/`, data)
   }
 }
 

@@ -1,7 +1,7 @@
 describe('Gestión de Lotes - CRUD', () => {
   beforeEach(() => {
-    cy.login('farmer')
-    cy.visit('/mis-lotes')
+    setupAuth('farmer')
+    cy.navigateTo('/mis-lotes')
   })
 
   it('debe mostrar lista de lotes del usuario', () => {
@@ -19,11 +19,11 @@ describe('Gestión de Lotes - CRUD', () => {
       // Seleccionar finca
       cy.get('[data-cy="finca-select"]').select('1')
       
-      // Llenar formulario
-      cy.fillLoteForm(loteData)
+      // Llenar formulario usando helper
+      cy.fillForm(loteData, 'lote')
       
       // Guardar lote
-      cy.get('[data-cy="save-lote"]').click()
+      cy.get(SELECTORS.buttons.save).click()
       
       // Verificar éxito
       cy.checkNotification('Lote creado exitosamente', 'success')
@@ -35,28 +35,27 @@ describe('Gestión de Lotes - CRUD', () => {
 
   it('debe validar campos requeridos en formulario de lote', () => {
     cy.get('[data-cy="add-lote-button"]').click()
-    cy.get('[data-cy="save-lote"]').click()
+    cy.get(SELECTORS.buttons.save).click()
     
     // Verificar errores de validación
-    cy.get('[data-cy="lote-nombre-error"]').should('be.visible')
-    cy.get('[data-cy="lote-area-error"]').should('be.visible')
-    cy.get('[data-cy="lote-variedad-error"]').should('be.visible')
-    cy.get('[data-cy="lote-edad-error"]').should('be.visible')
+    cy.get(SELECTORS.errors.fieldError).should('be.visible')
   })
 
   it('debe validar área de lote positiva', () => {
     cy.get('[data-cy="add-lote-button"]').click()
     
     cy.get('[data-cy="finca-select"]').select('1')
-    cy.get('[data-cy="lote-nombre"]').type('Lote Test')
-    cy.get('[data-cy="lote-area"]').type('-2')
-    cy.get('[data-cy="lote-variedad"]').select('CCN-51')
-    cy.get('[data-cy="lote-edad"]').type('5')
-    cy.get('[data-cy="lote-descripcion"]').type('Test description')
+    cy.fillForm({
+      nombre: 'Lote Test',
+      area: '-2',
+      variedad: 'CCN-51',
+      edad: '5',
+      descripcion: 'Test description'
+    }, 'lote')
     
-    cy.get('[data-cy="save-lote"]').click()
+    cy.get(SELECTORS.buttons.save).click()
     
-    cy.get('[data-cy="lote-area-error"]')
+    cy.get(SELECTORS.errors.fieldError)
       .should('be.visible')
       .and('contain', 'El área debe ser positiva')
   })

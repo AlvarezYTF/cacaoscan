@@ -173,11 +173,91 @@ export const TEST_USERS = {
     password: TEST_CREDENTIALS.testPassword,
     confirmPassword: TEST_CREDENTIALS.testPassword,
     role: 'analyst'
+  },
+  
+  admin: {
+    firstName: 'Admin',
+    lastName: 'User',
+    email: 'admin@test.com',
+    password: TEST_CREDENTIALS.testPassword,
+    confirmPassword: TEST_CREDENTIALS.testPassword,
+    role: 'admin'
+  }
+}
+
+/**
+ * Factory function to create test finca data
+ * @param {Object} overrides - Properties to override
+ * @returns {Object} Test finca object
+ */
+export function createTestFinca(overrides = {}) {
+  return {
+    nombre: 'Finca de Prueba',
+    ubicacion: 'Test Location',
+    municipio: 'Test Municipio',
+    departamento: 'Test Departamento',
+    hectareas: 10.5,
+    descripcion: 'Descripción de prueba',
+    coordenadas_lat: 4.6097,
+    coordenadas_lng: -74.0817,
+    ...overrides
+  }
+}
+
+/**
+ * Factory function to create test lote data
+ * @param {Object} overrides - Properties to override
+ * @returns {Object} Test lote object
+ */
+export function createTestLote(overrides = {}) {
+  return {
+    identificador: 'LOTE-001',
+    variedad: 'Criollo',
+    fecha_plantacion: new Date().toISOString().split('T')[0],
+    area_hectareas: 5.0,
+    estado: 'activo',
+    descripcion: 'Descripción de lote de prueba',
+    ...overrides
+  }
+}
+
+/**
+ * Factory function to create test report data
+ * @param {Object} overrides - Properties to override
+ * @returns {Object} Test report object
+ */
+export function createTestReport(overrides = {}) {
+  return {
+    tipo_reporte: 'calidad',
+    formato: 'excel',
+    titulo: 'Reporte de Prueba',
+    descripcion: 'Descripción del reporte de prueba',
+    parametros: {},
+    filtros: {},
+    ...overrides
+  }
+}
+
+/**
+ * Factory function to create test prediction data
+ * @param {Object} overrides - Properties to override
+ * @returns {Object} Test prediction object
+ */
+export function createTestPrediction(overrides = {}) {
+  return {
+    quality: 85,
+    confidence: 0.92,
+    defects: ['minor'],
+    ...overrides
   }
 }
 
 // Export for convenience
 export default {
   TEST_CREDENTIALS,
-  TEST_USERS
+  TEST_USERS,
+  createTestFinca,
+  createTestLote,
+  createTestReport,
+  createTestPrediction
 }

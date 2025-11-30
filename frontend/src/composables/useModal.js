@@ -1,53 +1,128 @@
 /**
- * Composable para manejar modales de forma reutilizable
+ * Composable for modal management
+ * Provides reusable modal state and methods
  */
-import { ref } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 
-export function useModal(modalId) {
-  const modalContainer = ref(null)
+/**
+ * Provides modal state and methods
+ * @param {Object} options - Modal options
+ * @param {boolean} options.closeOnBackdrop - Close modal when clicking backdrop
+ * @param {boolean} options.closeOnEscape - Close modal on Escape key
+ * @param {Function} options.onOpen - Callback when modal opens
+ * @param {Function} options.onClose - Callback when modal closes
+ * @returns {Object} Modal composable
+ */
+export function useModal(options = {}) {
+  const {
+    closeOnBackdrop = true,
+    closeOnEscape = true,
+    onOpen = null,
+    onClose = null
+  } = options
+
   const isOpen = ref(false)
+  const isClosing = ref(false)
+
+  // Computed
+  const isVisible = computed(() => isOpen.value && !isClosing.value)
 
   /**
-   * Abre el modal
+   * Opens the modal
+   * @returns {void}
    */
-  const openModal = () => {
-    if (modalContainer.value) {
-      const modalElement = modalContainer.value
-      modalElement.classList.remove('hidden')
-      modalElement.setAttribute('aria-hidden', 'false')
-    }
+  const open = () => {
+    if (isOpen.value) return
     isOpen.value = true
-  }
-
-  /**
-   * Cierra el modal
-   */
-  const closeModal = () => {
-    if (modalContainer.value) {
-      const modalElement = modalContainer.value
-      modalElement.classList.add('hidden')
-      modalElement.setAttribute('aria-hidden', 'true')
+    isClosing.value = false
+    
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden'
+    
+    if (onOpen) {
+      onOpen()
     }
-    isOpen.value = false
   }
 
   /**
-   * Toggle del modal
+   * Closes the modal
+   * @returns {void}
    */
-  const toggleModal = () => {
+  const close = () => {
+    if (!isOpen.value) return
+    
+    isClosing.value = true
+    
+    // Allow body scroll when modal closes
+    document.body.style.overflow = ''
+    
+    // Wait for animation to complete
+    setTimeout(() => {
+      isOpen.value = false
+      isClosing.value = false
+      
+      if (onClose) {
+        onClose()
+      }
+    }, 300) // Match transition duration
+  }
+
+  /**
+   * Toggles the modal
+   * @returns {void}
+   */
+  const toggle = () => {
     if (isOpen.value) {
-      closeModal()
+      close()
     } else {
-      openModal()
+      open()
     }
   }
+
+  /**
+   * Handles backdrop click
+   * @returns {void}
+   */
+  const handleBackdropClick = () => {
+    if (closeOnBackdrop) {
+      close()
+    }
+  }
+
+  /**
+   * Handles Escape key press
+   * @param {KeyboardEvent} event - Keyboard event
+   * @returns {void}
+   */
+  const handleEscape = (event) => {
+    if (closeOnEscape && event.key === 'Escape' && isOpen.value) {
+      close()
+    }
+  }
+
+  // Watch for Escape key
+  watch(isOpen, (open) => {
+    if (open && closeOnEscape) {
+      document.addEventListener('keydown', handleEscape)
+    } else {
+      document.removeEventListener('keydown', handleEscape)
+    }
+  })
+
+  // Cleanup on unmount
+  onUnmounted(() => {
+    document.removeEventListener('keydown', handleEscape)
+    document.body.style.overflow = ''
+  })
 
   return {
-    modalContainer,
     isOpen,
-    openModal,
-    closeModal,
-    toggleModal
+    isClosing,
+    isVisible,
+    open,
+    close,
+    toggle,
+    handleBackdropClick
   }
 }
 

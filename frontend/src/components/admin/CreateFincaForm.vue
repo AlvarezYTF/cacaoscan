@@ -105,12 +105,13 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useFincasStore } from '@/stores/fincas'
 import { createFinca, getAgricultores } from '@/services/fincasApi'
-import Swal from 'sweetalert2'
+import { useNotifications } from '@/composables/useNotifications'
 
 const emit = defineEmits(['close', 'saved'])
 
 const auth = useAuthStore()
 const fincasStore = useFincasStore()
+const { showSuccess, showError } = useNotifications()
 
 const form = ref({ nombre: '', agricultor: '' })
 const agricultores = ref([])
@@ -134,7 +135,7 @@ onMounted(async () => {
       console.debug('[Fincas] Agricultores cargados:', agricultores.value.length)
     } catch (e) {
       console.error('[Fincas] Error cargando agricultores:', e)
-      Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la lista de agricultores', timer: 3000 })
+      showError('No se pudo cargar la lista de agricultores')
     }
   }
 })
@@ -144,12 +145,12 @@ const submitForm = async () => {
   console.debug('[Fincas] SubmitForm - Datos:', form.value)
   try {
     await createFinca(form.value)
-    Swal.fire({ icon: 'success', title: 'Finca creada', text: 'Finca creada correctamente', timer: 3000, showConfirmButton: false })
+    showSuccess('Finca creada correctamente')
     form.value = { nombre: '', agricultor: '' }
     emit('saved')
   } catch (error) {
     console.error('[Fincas] Error creando finca:', error)
-    Swal.fire({ icon: 'error', title: 'Error', text: 'Error al crear la finca', timer: 3000 })
+    showError('Error al crear la finca')
   } finally {
     loading.value = false
   }

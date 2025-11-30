@@ -31,12 +31,18 @@
               <th 
                 v-for="column in getColumns()" 
                 :key="column.key"
-                :class="{ 'sortable': column.sortable }"
-                @click="column.sortable ? handleSort(column.key) : null"
+                :class="{ 
+                  'sortable': column.sortable,
+                  'sorted': column.sortable && sortKey === column.key
+                }"
+                @click="column.sortable ? handleSortClick(column.key) : null"
               >
                 <div class="th-content">
                   <span>{{ column.label }}</span>
-                  <i v-if="column.sortable" class="fas fa-sort sort-icon"></i>
+                  <i v-if="column.sortable && sortKey === column.key" 
+                     :class="sortOrder === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                     class="sort-icon"></i>
+                  <i v-else-if="column.sortable" class="fas fa-sort sort-icon inactive"></i>
                 </div>
               </th>
               <th class="actions-column">Acciones</th>
@@ -144,6 +150,11 @@
 </template>
 
 <script>
+import { useTable } from '@/composables/useTable'
+import { useAuditHelpers } from '@/composables/useAuditHelpers'
+import { useDateFormatting } from '@/composables/useDateFormatting'
+import { formatDate as formatDateUtil, formatDateTime as formatDateTimeUtil } from '@/utils/formatters'
+
 export default {
   name: 'AuditTable',
   props: {
@@ -162,6 +173,41 @@ export default {
     }
   },
   emits: ['view-details', 'sort'],
+  setup(props, { emit }) {
+    // Use table composable for sorting
+    const table = useTable({
+      initialSortKey: '',
+      initialSortOrder: 'asc',
+      enableSelection: false
+    })
+
+    // Use audit helpers
+    const {
+      getAuditActionIcon,
+      getAuditActionMarkerClass
+    } = useAuditHelpers()
+
+    // Use date formatting (formatDateTime from centralized formatters, formatDuration from composable)
+    const { formatDuration: formatDurationUtil } = useDateFormatting()
+
+    // Handle sort with emit
+    const handleSortClick = (key) => {
+      table.handleSort(key)
+      emit('sort', {
+        key: table.sortKey.value,
+        order: table.sortOrder.value
+      })
+    }
+
+    return {
+      ...table,
+      handleSortClick,
+      getAuditActionIcon,
+      getAuditActionMarkerClass,
+      formatDateTimeUtil,
+      formatDurationUtil
+    }
+  },
   methods: {
     getTableTitle() {
       switch (this.auditType) {
@@ -222,47 +268,17 @@ export default {
     },
 
     getActionIcon(action) {
-      const icons = {
-        'login': 'fas fa-sign-in-alt',
-        'logout': 'fas fa-sign-out-alt',
-        'create': 'fas fa-plus',
-        'update': 'fas fa-edit',
-        'delete': 'fas fa-trash',
-        'view': 'fas fa-eye',
-        'download': 'fas fa-download',
-        'upload': 'fas fa-upload',
-        'analysis': 'fas fa-chart-line',
-        'training': 'fas fa-brain',
-        'report': 'fas fa-file-alt',
-        'error': 'fas fa-exclamation-triangle'
-      }
-      return icons[action] || 'fas fa-circle'
-    },
-
-    handleSort(key) {
-      this.$emit('sort', { key, order: 'asc' })
+      return this.getAuditActionIcon(action)
     },
 
     formatDateTime(dateString) {
       if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleString('es-ES', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      return this.formatDateTimeUtil(dateString)
     },
 
     formatDate(dateString) {
       if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleDateString('es-ES', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
+      return formatDateUtil(dateString, { dateStyle: 'short' })
     },
 
     formatTime(dateString) {
@@ -277,24 +293,7 @@ export default {
 
     formatDuration(durationString) {
       if (!durationString) return 'N/A'
-      
-      // Parse duration string (e.g., "1:23:45")
-      const parts = durationString.split(':')
-      if (parts.length === 3) {
-        const hours = Number.parseInt(parts[0])
-        const minutes = Number.parseInt(parts[1])
-        const seconds = Number.parseInt(parts[2])
-        
-        if (hours > 0) {
-          return `${hours}h ${minutes}m`
-        } else if (minutes > 0) {
-          return `${minutes}m ${seconds}s`
-        } else {
-          return `${seconds}s`
-        }
-      }
-      
-      return durationString
+      return this.formatDurationUtil(durationString)
     },
 
     truncateText(text, maxLength) {

@@ -1,13 +1,13 @@
 describe('Autenticación - Login', () => {
   beforeEach(() => {
-    cy.visit('/login')
+    cy.navigateTo('/login')
   })
 
   it('debe mostrar el formulario de login correctamente', () => {
-    cy.get('[data-cy="login-form"]').should('be.visible')
-    cy.get('[data-cy="email-input"]').should('be.visible')
-    cy.get('[data-cy="password-input"]').should('be.visible')
-    cy.get('[data-cy="login-button"]').should('be.visible')
+    cy.get(SELECTORS.forms.login).should('be.visible')
+    cy.get(SELECTORS.inputs.email).should('be.visible')
+    cy.get(SELECTORS.inputs.password).should('be.visible')
+    cy.get(SELECTORS.buttons.login).should('be.visible')
     cy.get('[data-cy="forgot-password-link"]').should('be.visible')
     cy.get('[data-cy="register-link"]').should('be.visible')
   })
@@ -16,9 +16,8 @@ describe('Autenticación - Login', () => {
     cy.fixture('users').then((users) => {
       const admin = users.admin
       
-      cy.get('[data-cy="email-input"]').type(admin.email)
-      cy.get('[data-cy="password-input"]').type(admin.password)
-      cy.get('[data-cy="login-button"]').click()
+      cy.fillForm({ email: admin.email, password: admin.password }, 'login')
+      cy.get(SELECTORS.buttons.login).click()
       
       // Verificar redirección al dashboard de admin
       cy.url().should('include', '/admin/dashboard')
@@ -31,9 +30,8 @@ describe('Autenticación - Login', () => {
     cy.fixture('users').then((users) => {
       const analyst = users.analyst
       
-      cy.get('[data-cy="email-input"]').type(analyst.email)
-      cy.get('[data-cy="password-input"]').type(analyst.password)
-      cy.get('[data-cy="login-button"]').click()
+      cy.fillForm({ email: analyst.email, password: analyst.password }, 'login')
+      cy.get(SELECTORS.buttons.login).click()
       
       // Verificar redirección al dashboard de analista
       cy.url().should('include', '/analisis')
@@ -45,9 +43,8 @@ describe('Autenticación - Login', () => {
     cy.fixture('users').then((users) => {
       const farmer = users.farmer
       
-      cy.get('[data-cy="email-input"]').type(farmer.email)
-      cy.get('[data-cy="password-input"]').type(farmer.password)
-      cy.get('[data-cy="login-button"]').click()
+      cy.fillForm({ email: farmer.email, password: farmer.password }, 'login')
+      cy.get(SELECTORS.buttons.login).click()
       
       // Verificar redirección al dashboard de agricultor
       cy.url().should('include', '/agricultor-dashboard')
@@ -59,12 +56,11 @@ describe('Autenticación - Login', () => {
     cy.fixture('users').then((users) => {
       const invalidUser = users.invalidUser
       
-      cy.get('[data-cy="email-input"]').type(invalidUser.email)
-      cy.get('[data-cy="password-input"]').type(invalidUser.password)
-      cy.get('[data-cy="login-button"]').click()
+      cy.fillForm({ email: invalidUser.email, password: invalidUser.password }, 'login')
+      cy.get(SELECTORS.buttons.login).click()
       
       // Verificar mensaje de error
-      cy.get('[data-cy="error-message"]')
+      cy.get(SELECTORS.errors.errorMessage)
         .should('be.visible')
         .and('contain', 'Credenciales inválidas')
       
@@ -74,10 +70,10 @@ describe('Autenticación - Login', () => {
   })
 
   it('debe validar campos requeridos', () => {
-    cy.get('[data-cy="login-button"]').click()
+    cy.get(SELECTORS.buttons.login).click()
     
-    cy.get('[data-cy="email-input"]').should('have.attr', 'required')
-    cy.get('[data-cy="password-input"]').should('have.attr', 'required')
+    cy.get(SELECTORS.inputs.email).should('have.attr', 'required')
+    cy.get(SELECTORS.inputs.password).should('have.attr', 'required')
     
     // Verificar mensajes de validación
     cy.get('[data-cy="email-error"]').should('be.visible')
@@ -85,9 +81,8 @@ describe('Autenticación - Login', () => {
   })
 
   it('debe validar formato de email', () => {
-    cy.get('[data-cy="email-input"]').type('email-invalido')
-    cy.get('[data-cy="password-input"]').type('password123')
-    cy.get('[data-cy="login-button"]').click()
+    cy.fillForm({ email: 'email-invalido', password: 'password123' }, 'login')
+    cy.get(SELECTORS.buttons.login).click()
     
     cy.get('[data-cy="email-error"]')
       .should('be.visible')
@@ -99,15 +94,14 @@ describe('Autenticación - Login', () => {
       const admin = users.admin
       
       cy.get('[data-cy="remember-me"]').check()
-      cy.get('[data-cy="email-input"]').type(admin.email)
-      cy.get('[data-cy="password-input"]').type(admin.password)
-      cy.get('[data-cy="login-button"]').click()
+      cy.fillForm({ email: admin.email, password: admin.password }, 'login')
+      cy.get(SELECTORS.buttons.login).click()
       
       // Logout y verificar que se recuerdan las credenciales
       cy.logout()
-      cy.visit('/login')
+      cy.navigateTo('/login')
       
-      cy.get('[data-cy="email-input"]').should('have.value', admin.email)
+      cy.get(SELECTORS.inputs.email).should('have.value', admin.email)
       cy.get('[data-cy="remember-me"]').should('be.checked')
     })
   })
@@ -117,15 +111,14 @@ describe('Autenticación - Login', () => {
       const admin = users.admin
       
       // Intentar acceder a una página protegida
-      cy.visit('/admin/agricultores')
+      cy.navigateTo('/admin/agricultores')
       
       // Debería redirigir al login
       cy.url().should('include', '/login')
       
       // Hacer login
-      cy.get('[data-cy="email-input"]').type(admin.email)
-      cy.get('[data-cy="password-input"]').type(admin.password)
-      cy.get('[data-cy="login-button"]').click()
+      cy.fillForm({ email: admin.email, password: admin.password }, 'login')
+      cy.get(SELECTORS.buttons.login).click()
       
       // Debería redirigir a la página originalmente solicitada
       cy.url().should('include', '/admin/agricultores')

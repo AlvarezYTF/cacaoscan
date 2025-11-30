@@ -23,7 +23,7 @@
       <div class="report-info">
         <div class="info-item">
           <i class="fas fa-calendar"></i>
-          <span>{{ formatDate(report.fecha_solicitud) }}</span>
+          <span>{{ formatReportDate(report.fecha_solicitud) }}</span>
         </div>
         <div class="info-item">
           <i class="fas fa-user"></i>
@@ -42,11 +42,11 @@
       <div class="report-stats">
         <div class="stat-item">
           <span class="stat-label">Tamaño</span>
-          <span class="stat-value">{{ formatFileSize(report.tamaño_archivo) }}</span>
+          <span class="stat-value">{{ formatReportFileSize(report.tamaño_archivo || report.tamano_archivo_mb * 1024 * 1024) }}</span>
         </div>
         <div class="stat-item">
           <span class="stat-label">Duración</span>
-          <span class="stat-value">{{ formatDuration(report.tiempo_generacion) }}</span>
+          <span class="stat-value">{{ formatReportDuration(report.tiempo_generacion_segundos || report.tiempo_generacion) }}</span>
         </div>
       </div>
     </div>
@@ -85,89 +85,45 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ReportCard',
-  props: {
-    report: {
-      type: Object,
-      required: true
-    },
-    selected: {
-      type: Boolean,
-      default: false
-    }
+<script setup>
+import {
+  formatReportType,
+  formatReportStatus,
+  getReportStatusClass,
+  getReportStatusIcon,
+  formatFileSize,
+  formatDuration
+} from '@/composables/useReports'
+import { useDateFormatting } from '@/composables/useDateFormatting'
+
+const props = defineProps({
+  report: {
+    type: Object,
+    required: true
   },
-  emits: ['view', 'download', 'delete', 'select'],
-  methods: {
-    getReportTypeLabel(type) {
-      const labels = {
-        'calidad': 'Calidad',
-        'finca': 'Finca',
-        'lote': 'Lote',
-        'usuario': 'Usuario',
-        'auditoria': 'Auditoría',
-        'personalizado': 'Personalizado',
-        'metricas': 'Métricas',
-        'entrenamiento': 'Entrenamiento'
-      }
-      return labels[type] || type
-    },
-
-    getStatusLabel(status) {
-      const labels = {
-        'pendiente': 'Pendiente',
-        'procesando': 'Procesando',
-        'completado': 'Completado',
-        'error': 'Error'
-      }
-      return labels[status] || status
-    },
-
-    getStatusClass(status) {
-      const classes = {
-        'pendiente': 'status-pending',
-        'procesando': 'status-processing',
-        'completado': 'status-completed',
-        'error': 'status-error'
-      }
-      return classes[status] || 'status-pending'
-    },
-
-    getStatusIcon(status) {
-      const icons = {
-        'pendiente': 'fas fa-clock',
-        'procesando': 'fas fa-spinner fa-spin',
-        'completado': 'fas fa-check-circle',
-        'error': 'fas fa-exclamation-circle'
-      }
-      return icons[status] || 'fas fa-clock'
-    },
-
-    formatDate(dateString) {
-      if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleDateString('es-ES', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
-    },
-
-    formatFileSize(bytes) {
-      if (!bytes) return 'N/A'
-      const sizes = ['B', 'KB', 'MB', 'GB']
-      const i = Math.floor(Math.log(bytes) / Math.log(1024))
-      return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
-    },
-
-    formatDuration(seconds) {
-      if (!seconds) return 'N/A'
-      const minutes = Math.floor(seconds / 60)
-      const remainingSeconds = seconds % 60
-      return `${minutes}m ${remainingSeconds}s`
-    }
+  selected: {
+    type: Boolean,
+    default: false
   }
+})
+
+defineEmits(['view', 'download', 'delete', 'select'])
+
+const { formatDate } = useDateFormatting()
+
+const getReportTypeLabel = (type) => formatReportType(type)
+const getStatusLabel = (status) => formatReportStatus(status)
+const getStatusClass = (status) => getReportStatusClass(status)
+const getStatusIcon = (status) => getReportStatusIcon(status)
+
+const formatReportDate = (dateString) => formatDate(dateString)
+const formatReportFileSize = (bytes) => {
+  if (!bytes) return 'N/A'
+  return formatFileSize(bytes)
+}
+const formatReportDuration = (seconds) => {
+  if (!seconds && seconds !== 0) return 'N/A'
+  return formatDuration(seconds)
 }
 </script>
 

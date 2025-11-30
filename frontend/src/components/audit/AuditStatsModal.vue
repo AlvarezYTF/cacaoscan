@@ -1,22 +1,24 @@
 <template>
-  <div class="audit-stats-modal" @click="closeModal">
-    <div class="modal-container" @click.stop>
-      <div class="modal-header">
-        <div class="header-content">
-          <div class="header-icon">
-            <i class="fas fa-chart-bar"></i>
-          </div>
-          <div class="header-text">
-            <h3>Estadísticas Detalladas de Auditoría</h3>
-            <p>Análisis completo de la actividad del sistema</p>
-          </div>
+  <BaseModal
+    :show="true"
+    title="Estadísticas Detalladas de Auditoría"
+    subtitle="Análisis completo de la actividad del sistema"
+    max-width="6xl"
+    @close="closeModal"
+  >
+    <template #header>
+      <div class="flex items-center">
+        <div class="bg-blue-100 p-2 rounded-lg mr-3">
+          <i class="fas fa-chart-bar text-blue-600"></i>
         </div>
-        <button class="close-btn" @click="closeModal">
-          <i class="fas fa-times"></i>
-        </button>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">Estadísticas Detalladas de Auditoría</h3>
+          <p class="text-sm text-gray-600 mt-1">Análisis completo de la actividad del sistema</p>
+        </div>
       </div>
+    </template>
 
-      <div class="modal-body">
+    <div class="modal-body-content">
         <div class="stats-content">
           <!-- Resumen general -->
           <div class="stats-section">
@@ -226,30 +228,36 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <div class="footer-left">
-          <button
-            @click="exportStats"
-            class="btn btn-outline"
-          >
-            <i class="fas fa-download"></i>
-            Exportar Estadísticas
-          </button>
-        </div>
-
-        <div class="footer-right">
-          <button @click="closeModal" class="btn btn-primary">
-            Cerrar
-          </button>
-        </div>
-      </div>
     </div>
-  </div>
+
+    <template #footer>
+      <div class="flex justify-between items-center w-full">
+        <button
+          @click="exportStats"
+          class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+        >
+          <i class="fas fa-download"></i>
+          Exportar Estadísticas
+        </button>
+        <button 
+          @click="closeModal" 
+          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+        >
+          Cerrar
+        </button>
+      </div>
+    </template>
+  </BaseModal>
 </template>
 
 <script>
+import BaseModal from '@/components/common/BaseModal.vue'
+
 export default {
   name: 'AuditStatsModal',
+  components: {
+    BaseModal
+  },
   props: {
     stats: {
       type: Object,

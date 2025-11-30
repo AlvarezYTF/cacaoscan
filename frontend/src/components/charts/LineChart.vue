@@ -1,111 +1,68 @@
 <template>
-    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h3 class="text-lg font-semibold text-gray-800 mb-4">Evolución de análisis por tipo de defecto</h3>
-      <canvas ref="lineChart"></canvas>
-    </div>
-  </template>
-  
-  <script>
-  import { ref, onMounted, watch } from 'vue';
-  import { Chart, registerables } from 'chart.js';
-  
-  Chart.register(...registerables);
-  
-  export default {
-    name: 'LineChart',
-    props: {
-      chartData: {
-        type: Object,
-        required: true,
-        default: () => ({ datasets: [] })
-      },
-      chartOptions: {
-        type: Object,
-        default: () => ({
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'top',
-              labels: {
-                usePointStyle: true,
-                boxWidth: 10,
-                padding: 20,
-              },
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-            },
-          },
-          scales: {
-            x: {
-              grid: {
-                display: false,
-              },
-            },
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 2,
-              },
-            },
-          },
-        })
+  <BaseChart
+    type="line"
+    :data="chartData"
+    :options="mergedOptions"
+    :title="title"
+  />
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import BaseChart from '@/components/common/BaseChart.vue'
+
+const props = defineProps({
+  chartData: {
+    type: Object,
+    required: true,
+    default: () => ({ datasets: [] })
+  },
+  chartOptions: {
+    type: Object,
+    default: () => ({})
+  },
+  title: {
+    type: String,
+    default: 'Evolución de análisis por tipo de defecto'
+  }
+})
+
+const defaultOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'top',
+      labels: {
+        usePointStyle: true,
+        boxWidth: 10,
+        padding: 20
       }
     },
-    setup(props) {
-      const lineChart = ref(null);
-      let chartInstance = null;
-  
-      const createChart = () => {
-        if (chartInstance) {
-          chartInstance.destroy();
-        }
-        chartInstance = new Chart(lineChart.value, {
-          type: 'line',
-          data: props.chartData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'top',
-              },
-              title: {
-                display: false,
-                text: 'Evolución de análisis por tipo de defecto'
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true
-              }
-            },
-            ...props.chartOptions
-          }
-        });
-      };
-  
-      onMounted(() => {
-        createChart();
-      });
-  
-      watch(() => props.chartData, () => {
-        createChart();
-      }, { deep: true });
-  
-      watch(() => props.chartOptions, () => {
-        createChart();
-      }, { deep: true });
-  
-      return {
-        lineChart
-      };
+    tooltip: {
+      mode: 'index',
+      intersect: false
     }
-  };
-  </script>
-  
-  <style scoped>
-  /* Add any specific styles for the chart here */
-  </style>
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false
+      }
+    },
+    y: {
+      beginAtZero: true,
+      ticks: {
+        stepSize: 2
+      }
+    }
+  }
+}
+
+const mergedOptions = computed(() => {
+  return {
+    ...defaultOptions,
+    ...props.chartOptions
+  }
+})
+</script>

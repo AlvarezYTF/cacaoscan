@@ -5,8 +5,9 @@
  * incluyendo subida de imágenes y obtención de resultados de análisis.
  */
 
-import api from './api'
+import { apiPost, apiGet, apiPatch, apiDelete } from './apiClient'
 import { validateImageFile, getImageValidationError } from '@/utils/imageValidationUtils'
+import { handleApiError, getErrorMessage } from './apiErrorHandler'
 
 // Endpoints de la API
 const API_ENDPOINTS = {
@@ -53,31 +54,28 @@ export async function predictImage(formData) {
       fileType: imageFile.type
     })
 
-    const response = await api.post(API_ENDPOINTS.predict, formData, {
+    const response = await apiPost(API_ENDPOINTS.predict, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
       timeout: 60000 // 60 segundos para procesamiento ML
     })
 
-    console.log('✅ Predicción completada:', response.data)
+    console.log('✅ Predicción completada:', response)
 
     return {
       success: true,
-      data: response.data
+      data: response
     }
 
   } catch (error) {
-    console.error('❌ Error en predicción:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error inesperado al procesar la imagen'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   } finally {
     // Emitir evento de fin de loading
@@ -121,31 +119,28 @@ export async function predictImageYolo(formData) {
       fileType: imageFile.type
     })
 
-    const response = await api.post(API_ENDPOINTS.predictYolo, formData, {
+    const response = await apiPost(API_ENDPOINTS.predictYolo, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
       timeout: 120000 // 120 segundos para YOLOv8
     })
 
-    console.log('✅ Predicción YOLOv8 completada:', response.data)
+    console.log('✅ Predicción YOLOv8 completada:', response)
 
     return {
       success: true,
-      data: response.data
+      data: response
     }
 
   } catch (error) {
-    console.error('❌ Error en predicción YOLOv8:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error inesperado al procesar la imagen con YOLOv8'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   } finally {
     // Emitir evento de fin de loading
@@ -199,31 +194,28 @@ export async function predictImageSmart(formData, options = {}) {
       options
     })
 
-    const response = await api.post(API_ENDPOINTS.predictSmart, formData, {
+    const response = await apiPost(API_ENDPOINTS.predictSmart, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
       timeout: 150000 // 150 segundos para recorte inteligente
     })
 
-    console.log('✅ Predicción con recorte inteligente completada:', response.data)
+    console.log('✅ Predicción con recorte inteligente completada:', response)
 
     return {
       success: true,
-      data: response.data
+      data: response
     }
 
   } catch (error) {
-    console.error('❌ Error en predicción con recorte inteligente:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error inesperado al procesar la imagen con recorte inteligente'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   } finally {
     // Emitir evento de fin de loading
@@ -240,29 +232,26 @@ export async function getImages(params = {}) {
   try {
     console.log('📋 Obteniendo lista de imágenes:', params)
 
-    const response = await api.get(API_ENDPOINTS.images, { params })
+    const response = await apiGet(API_ENDPOINTS.images, params)
 
     console.log('✅ Imágenes obtenidas:', {
-      count: response.data.results?.length || 0,
-      total: response.data.count || 0
+      count: response.results?.length || 0,
+      total: response.count || 0
     })
 
     return {
       success: true,
-      data: response.data
+      data: response
     }
 
   } catch (error) {
-    console.error('❌ Error obteniendo imágenes:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al obtener el historial de imágenes'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
@@ -294,26 +283,23 @@ export async function getImageDetails(imageId) {
 
     console.log('🔍 Obteniendo detalles de imagen:', imageId)
 
-    const response = await api.get(`${API_ENDPOINTS.images}${imageId}/`)
+    const response = await apiGet(`${API_ENDPOINTS.images}${imageId}/`)
 
     console.log('✅ Detalles de imagen obtenidos')
 
     return {
       success: true,
-      data: response.data
+      data: response
     }
     
   } catch (error) {
-    console.error('❌ Error obteniendo detalles de imagen:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al obtener los detalles de la imagen'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
@@ -331,7 +317,7 @@ export async function deleteImage(imageId) {
 
     console.log('🗑️ Eliminando imagen:', imageId)
 
-    await api.delete(`${API_ENDPOINTS.images}${imageId}/`)
+    await apiDelete(`${API_ENDPOINTS.images}${imageId}/`)
 
     console.log('✅ Imagen eliminada exitosamente')
 
@@ -341,16 +327,13 @@ export async function deleteImage(imageId) {
     }
 
   } catch (error) {
-    console.error('❌ Error eliminando imagen:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al eliminar la imagen'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
@@ -374,16 +357,13 @@ export async function getStats(params = {}) {
     }
 
   } catch (error) {
-    console.error('❌ Error obteniendo estadísticas:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al obtener las estadísticas'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
@@ -412,16 +392,13 @@ export async function updateImageMetadata(imageId, data) {
     }
 
   } catch (error) {
-    console.error('❌ Error actualizando metadatos:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al actualizar los metadatos'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
@@ -479,16 +456,13 @@ export async function downloadImage(imageId, type = 'original') {
     }
 
   } catch (error) {
-    console.error('❌ Error descargando imagen:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al descargar la imagen'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
@@ -534,16 +508,13 @@ export async function exportResults(options = {}) {
     }
 
   } catch (error) {
-    console.error('❌ Error exportando resultados:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al exportar los resultados'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }

@@ -226,6 +226,7 @@ import reportsApi from '@/services/reportsApi'
 
 // 5. Composables
 import { useWebSocket } from '@/composables/useWebSocket'
+import { usePagination } from '@/composables/usePagination'
 
 // 6. Components
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue'
@@ -291,10 +292,14 @@ const statusFilter = ref('')
 const sortBy = ref('-date_joined')
 
 // Pagination
-const currentPage = ref(1)
-const pageSize = ref(20)
+// Paginación usando composable
+const pagination = usePagination(1, 20)
 const totalUsersCount = ref(0)
-const totalPages = ref(0)
+
+// Computed para compatibilidad con el template
+const currentPage = computed(() => pagination.currentPage.value)
+const pageSize = computed(() => pagination.itemsPerPage.value)
+const totalPages = computed(() => pagination.totalPages.value)
 
 // Modals
 const showUserModal = ref(false)
@@ -321,8 +326,8 @@ const newUsersToday = computed(() => userStats.value.new_today)
 
 const visiblePages = computed(() => {
   const pages = []
-  const start = Math.max(1, currentPage.value - 2)
-  const end = Math.min(totalPages.value, start + 4)
+  const start = Math.max(1, pagination.currentPage.value - 2)
+  const end = Math.min(pagination.totalPages.value, start + 4)
 
   for (let i = start; i <= end; i++) {
     pages.push(i)
@@ -368,8 +373,8 @@ const loadUserStats = async () => {
       loading.value = true
       try {
         const params = {
-          page: currentPage.value,
-          page_size: pageSize.value,
+          page: pagination.currentPage.value,
+          page_size: pagination.itemsPerPage.value,
           search: searchQuery.value,
           role: roleFilter.value,
           status: statusFilter.value,
@@ -379,7 +384,14 @@ const loadUserStats = async () => {
         const response = await adminStore.getAllUsers(params)
         users.value = response.data.results
         totalUsersCount.value = response.data.count
-        totalPages.value = Math.ceil(response.data.count / pageSize.value)
+        
+        // Actualizar paginación desde respuesta API
+        pagination.updateFromApiResponse({
+          page: response.data.current_page || currentPage.value,
+          page_size: pageSize.value,
+          count: response.data.count,
+          total_pages: response.data.total_pages || Math.ceil(response.data.count / pageSize.value)
+        })
 
       } catch (error) {
         console.error('Error loading users:', error)
@@ -388,7 +400,11 @@ const loadUserStats = async () => {
         if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
           users.value = []
           totalUsersCount.value = 0
-          totalPages.value = 1
+          pagination.updatePagination({
+            page: 1,
+            page_size: pageSize.value,
+            count: 0
+          })
         }
         
         // Solo mostrar error si no es un error de red común
@@ -406,12 +422,12 @@ const loadUserStats = async () => {
     }
 
     const debouncedSearch = debounce(() => {
-      currentPage.value = 1
+      pagination.goToPage(1)
       loadUsers()
     }, 500)
 
     const applyFilters = () => {
-      currentPage.value = 1
+      pagination.goToPage(1)
       loadUsers()
     }
 
@@ -420,13 +436,13 @@ const loadUserStats = async () => {
       roleFilter.value = ''
       statusFilter.value = ''
       sortBy.value = '-date_joined'
-      currentPage.value = 1
+      pagination.goToPage(1)
       loadUsers()
     }
 
     const changePage = (page) => {
       if (page >= 1 && page <= totalPages.value) {
-        currentPage.value = page
+        pagination.goToPage(page)
         loadUsers()
       }
     }
@@ -846,7 +862,7 @@ const loadUserStats = async () => {
             })
             
             // Solo recargar usuarios si están en la primera página
-            if (currentPage.value === 1) {
+            if (pagination.currentPage.value === 1) {
               loadUsers().catch(err => {
                 console.error('Error en polling de usuarios:', err)
               })

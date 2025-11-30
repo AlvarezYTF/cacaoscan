@@ -16,8 +16,13 @@
 // Import commands.js using ES2015 syntax:
 import './commands'
 
-// Alternatively you can use CommonJS syntax:
-// require('./commands')
+// Import selectors and helpers for use in component tests
+import { SELECTORS } from './selectors'
+import * as helpers from './helpers'
+
+// Make SELECTORS and helpers available globally for component tests
+globalThis.SELECTORS = SELECTORS
+globalThis.helpers = helpers
 
 // Import global styles
 import '@/assets/main.css'

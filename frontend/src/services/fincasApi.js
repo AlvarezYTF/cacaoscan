@@ -1,10 +1,12 @@
 /**
  * Servicio API para gestión de fincas
  * Maneja todas las operaciones CRUD relacionadas con fincas de cacao
+ * Usa apiClient para reducir duplicación de código
  */
 
-import api from './api'
+import { apiGet, apiPost, apiPut, apiDelete } from './apiClient'
 import { normalizeResponse } from '@/utils/apiResponse'
+import api from './api' // Mantener para getAgricultores y getFincasByAgricultor que devuelven respuesta Axios
 
 /**
  * Obtener lista de fincas del usuario autenticado
@@ -12,13 +14,8 @@ import { normalizeResponse } from '@/utils/apiResponse'
  * @returns {Promise<Object>} - Lista de fincas con metadatos
  */
 export async function getFincas(params = {}) {
-  try {
-    const response = await api.get('/fincas/', { params })
-    return normalizeResponse(response.data)
-  } catch (error) {
-    console.error('Error obteniendo fincas:', error)
-    throw error
-  }
+  const data = await apiGet('/fincas/', params)
+  return normalizeResponse(data)
 }
 
 /**
@@ -27,13 +24,7 @@ export async function getFincas(params = {}) {
  * @returns {Promise<Object>} - Detalles de la finca
  */
 export async function getFincaById(fincaId) {
-  try {
-    const response = await api.get(`/fincas/${fincaId}/`)
-    return response.data
-  } catch (error) {
-    console.error(`Error obteniendo finca ${fincaId}:`, error)
-    throw error
-  }
+  return await apiGet(`/fincas/${fincaId}/`)
 }
 
 /**
@@ -42,16 +33,10 @@ export async function getFincaById(fincaId) {
  * @returns {Promise<Object>} - Finca creada
  */
 export async function createFinca(fincaData) {
-  try {
-    console.log('📤 [fincasApi] Enviando datos al backend:', fincaData)
-    const response = await api.post('/fincas/', fincaData)
-    console.log('✅ [fincasApi] Respuesta del backend:', response.data)
-    return response.data
-  } catch (error) {
-    console.error('❌ [fincasApi] Error creando finca:', error)
-    console.error('❌ [fincasApi] Error response:', error.response?.data)
-    throw error
-  }
+  console.log('📤 [fincasApi] Enviando datos al backend:', fincaData)
+  const data = await apiPost('/fincas/', fincaData)
+  console.log('✅ [fincasApi] Respuesta del backend:', data)
+  return data
 }
 
 /**
@@ -61,13 +46,7 @@ export async function createFinca(fincaData) {
  * @returns {Promise<Object>} - Finca actualizada
  */
 export async function updateFinca(fincaId, fincaData) {
-  try {
-    const response = await api.put(`/fincas/${fincaId}/update/`, fincaData)
-    return response.data
-  } catch (error) {
-    console.error(`Error actualizando finca ${fincaId}:`, error)
-    throw error
-  }
+  return await apiPut(`/fincas/${fincaId}/update/`, fincaData)
 }
 
 /**
@@ -76,12 +55,7 @@ export async function updateFinca(fincaId, fincaData) {
  * @returns {Promise<void>}
  */
 export async function deleteFinca(fincaId) {
-  try {
-    await api.delete(`/fincas/${fincaId}/delete/`)
-  } catch (error) {
-    console.error(`Error eliminando finca ${fincaId}:`, error)
-    throw error
-  }
+  await apiDelete(`/fincas/${fincaId}/delete/`)
 }
 
 /**
@@ -90,13 +64,7 @@ export async function deleteFinca(fincaId) {
  * @returns {Promise<Object>} - Finca reactivada
  */
 export async function activateFinca(fincaId) {
-  try {
-    const response = await api.post(`/fincas/${fincaId}/activate/`)
-    return response.data
-  } catch (error) {
-    console.error(`Error reactivando finca ${fincaId}:`, error)
-    throw error
-  }
+  return await apiPost(`/fincas/${fincaId}/activate/`)
 }
 
 /**
@@ -105,13 +73,7 @@ export async function activateFinca(fincaId) {
  * @returns {Promise<Object>} - Estadísticas de la finca
  */
 export async function getFincaStats(fincaId) {
-  try {
-    const response = await api.get(`/fincas/${fincaId}/stats/`)
-    return response.data
-  } catch (error) {
-    console.error(`Error obteniendo estadísticas de finca ${fincaId}:`, error)
-    throw error
-  }
+  return await apiGet(`/fincas/${fincaId}/stats/`)
 }
 
 /**
@@ -121,19 +83,14 @@ export async function getFincaStats(fincaId) {
  * @returns {Promise<Object>} - Lista de lotes de la finca
  */
 export async function getLotesByFinca(fincaId, params = {}) {
-  try {
-    const response = await api.get(`/fincas/${fincaId}/lotes/`, { params })
-    return normalizeResponse(response.data)
-  } catch (error) {
-    console.error(`Error obteniendo lotes de finca ${fincaId}:`, error)
-    throw error
-  }
+  const data = await apiGet(`/fincas/${fincaId}/lotes/`, params)
+  return normalizeResponse(data)
 }
 
 // Nuevas funciones no intrusivas para la administración/agricultor
 // Obtener lista de agricultores (usa endpoint existente de usuarios con role=farmer)
+// Mantiene api.get para compatibilidad con código que espera respuesta Axios
 export const getAgricultores = (params = {}) => {
-  // Usar solo role=farmer (rol='agricultor' no existe como parámetro)
   const query = { role: 'farmer', page_size: 100, ...params }
   return api.get('/auth/users/', { params: query })
 }

@@ -1,0 +1,106 @@
+/**
+ * Dashboard Utilities
+ * Utility classes and helpers for dashboard components
+ */
+
+/* Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background-color: #1f7a3b;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: #219653;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2);
+}
+
+.btn-secondary {
+  background-color: #f5f6fa;
+  color: #2c3e50;
+  border: 1px solid #dfe6e9;
+}
+
+.btn-secondary:hover {
+  background-color: #e1e7ec;
+  transform: translateY(-2px);
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.875rem;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid #3498db;
+  color: #3498db;
+}
+
+.btn-outline:hover {
+  background-color: #3498db;
+  color: #ffffff;
+}
+
+/* Spacing Utilities */
+.dashboard-section {
+  margin-bottom: 2.5rem;
+}
+
+.dashboard-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Text Utilities */
+.text-muted {
+  color: #7f8c8d;
+}
+
+.text-primary {
+  color: #1f7a3b;
+}
+
+/* Card Utilities */
+.card-shadow {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.card-shadow-hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Grid Utilities */
+.grid-auto-fit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.grid-auto-fill {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+  .grid-auto-fit,
+  .grid-auto-fill {
+    grid-template-columns: 1fr;
+  }
+}
+

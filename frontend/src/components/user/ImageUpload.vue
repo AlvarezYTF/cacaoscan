@@ -20,23 +20,23 @@
         </label>
         
         <div 
-          @dragover.prevent="handleDragOver"
-          @dragleave.prevent="handleDragLeave"
-          @drop.prevent="handleDrop"
-          @click="openFileSelector"
+          @dragover.prevent="fileUpload.handleDragOver"
+          @dragleave.prevent="fileUpload.handleDragLeave"
+          @drop.prevent="fileUpload.handleDrop"
+          @click="fileUpload.openFileSelector"
           class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-200"
           :class="{
-            'border-green-500 bg-green-50': isDragging,
-            'border-gray-300 hover:border-green-400 hover:bg-gray-50': !isDragging && !selectedFile,
-            'border-green-500 bg-green-50': selectedFile
+            'border-green-500 bg-green-50': isDragging.value,
+            'border-gray-300 hover:border-green-400 hover:bg-gray-50': !isDragging.value && !selectedFile.value,
+            'border-green-500 bg-green-50': selectedFile.value
           }"
         >
           <!-- Upload State -->
-          <div v-if="!selectedFile" class="flex flex-col items-center justify-center space-y-3">
+          <div v-if="!selectedFile.value" class="flex flex-col items-center justify-center space-y-3">
             <div class="relative">
               <svg 
                 class="w-16 h-16 text-gray-400 transition-colors duration-200"
-                :class="{ 'text-green-500': isDragging }"
+                :class="{ 'text-green-500': isDragging.value }"
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -49,7 +49,7 @@
                 />
               </svg>
               <div 
-                v-if="isDragging" 
+                v-if="isDragging.value" 
                 class="absolute inset-0 flex items-center justify-center"
               >
                 <div class="w-16 h-16 bg-green-500 rounded-full opacity-20 animate-pulse"></div>
@@ -57,7 +57,7 @@
             </div>
             <div class="space-y-2">
               <p class="text-lg font-medium text-gray-700">
-                {{ isDragging ? 'Suelta la imagen aquí' : 'Selecciona una imagen del grano' }}
+                {{ isDragging.value ? 'Suelta la imagen aquí' : 'Selecciona una imagen del grano' }}
               </p>
               <p class="text-sm text-gray-500">
                 Arrastra y suelta o haz clic para seleccionar
@@ -72,13 +72,13 @@
           <div v-else class="flex flex-col items-center space-y-4">
             <div class="relative">
               <img 
-                :src="imagePreview" 
-                :alt="selectedFile.name"
+                :src="imagePreview.value" 
+                :alt="selectedFile.value.name"
                 class="w-32 h-32 object-cover rounded-lg border-2 border-green-200"
               />
               <button
                 type="button"
-                @click.stop="removeSelectedFile"
+                @click.stop="fileUpload.removeSelectedFile"
                 class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                 aria-label="Eliminar imagen"
               >
@@ -88,13 +88,13 @@
               </button>
             </div>
             <div class="text-center">
-              <p class="font-medium text-gray-700">{{ selectedFile.name }}</p>
+              <p class="font-medium text-gray-700">{{ selectedFile.value.name }}</p>
               <p class="text-sm text-gray-500">
-                {{ formatFileSize(selectedFile.size) }} • {{ selectedFile.type }}
+                {{ formatFileSize(selectedFile.value.size) }} • {{ selectedFile.value.type }}
               </p>
               <button
                 type="button"
-                @click.stop="openFileSelector"
+                @click.stop="fileUpload.openFileSelector"
                 class="mt-2 text-sm text-green-600 hover:text-green-700 underline"
               >
                 Cambiar imagen
@@ -110,7 +110,7 @@
           type="file"
           accept="image/jpeg,image/jpg,image/png,image/bmp,image/tiff"
           class="hidden"
-          @change="handleFileSelect"
+          @change="fileUpload.handleFileSelect"
         />
       </div>
 
@@ -157,14 +157,14 @@
       </div>
 
       <!-- Error Message -->
-      <div v-if="error" class="bg-red-50 border border-red-200 rounded-md p-4">
+      <div v-if="error.value" class="bg-red-50 border border-red-200 rounded-md p-4">
         <div class="flex items-start">
           <svg class="w-5 h-5 text-red-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div>
             <h3 class="text-sm font-medium text-red-800">Error en la predicción</h3>
-            <p class="text-sm text-red-700 mt-1">{{ error }}</p>
+            <p class="text-sm text-red-700 mt-1">{{ error.value }}</p>
           </div>
         </div>
       </div>
@@ -173,7 +173,7 @@
       <div class="flex justify-end">
         <button
           type="submit"
-          :disabled="!selectedFile || isLoading"
+          :disabled="!selectedFile.value || isLoading"
           class="px-6 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
         >
           <span v-if="isLoading" class="flex items-center">
@@ -208,258 +208,95 @@
   </div>
 </template>
 
-<script>
-import { ref, computed, onMounted } from 'vue';
-import { predictImage, predictImageYolo, predictImageSmart } from '@/services/predictionApi.js';
-import { predictImage as predictImageNew } from '@/services/api.js';
-import { createImageFormData } from '@/utils/formDataUtils';
-import { validateImageFile } from '@/utils/imageValidationUtils';
+<script setup>
+import { ref, computed } from 'vue'
+import { createImageFormData } from '@/utils/formDataUtils'
+import { useFileUpload } from '@/composables/useFileUpload'
+import { usePrediction } from '@/composables/usePrediction'
 
-export default {
-  name: 'ImageUpload',
-  props: {
-    predictionMethod: {
-      type: String,
-      default: 'traditional'
-    }
-  },
-  emits: ['prediction-result', 'prediction-error'],
-  
-  setup(props, { emit }) {
-    // Estado reactivo
-    const isDragging = ref(false);
-    const selectedFile = ref(null);
-    const imagePreview = ref(null);
-    const isLoading = ref(false);
-    const error = ref('');
-    const fileInput = ref(null);
-    
-    // Datos del formulario
-    const formData = ref({
-      batch_number: '',
-      origin: '',
-      notes: ''
-    });
-
-    // Computed
-    const canSubmit = computed(() => {
-      return selectedFile.value && !isLoading.value;
-    });
-
-    // Métodos para manejo de archivos
-    const handleDragOver = (event) => {
-      event.preventDefault();
-      isDragging.value = true;
-    };
-
-    const handleDragLeave = (event) => {
-      event.preventDefault();
-      // Solo cambiar el estado si realmente salimos del área
-      if (!event.currentTarget.contains(event.relatedTarget)) {
-        isDragging.value = false;
-      }
-    };
-
-    const handleDrop = (event) => {
-      event.preventDefault();
-      isDragging.value = false;
-      
-      const files = Array.from(event.dataTransfer.files);
-      if (files.length > 0) {
-        processFile(files[0]);
-      }
-    };
-
-    const openFileSelector = () => {
-      if (fileInput.value) {
-        fileInput.value.click();
-      }
-    };
-
-    const handleFileSelect = (event) => {
-      const files = Array.from(event.target.files);
-      if (files.length > 0) {
-        processFile(files[0]);
-      }
-      // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
-      event.target.value = '';
-    };
-
-    const processFile = async (file) => {
-      error.value = '';
-      
-      try {
-        // Validar archivo
-        const validation = validateImageFile(file);
-        if (validation.length > 0) {
-          error.value = validation[0]; // Mostrar el primer error
-          return;
-        }
-
-        // Establecer archivo seleccionado
-        selectedFile.value = file;
-        
-        // Crear vista previa
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          imagePreview.value = e.target.result;
-        };
-        reader.readAsDataURL(file);
-        
-      } catch (err) {
-        error.value = 'Error al procesar el archivo: ' + err.message;
-      }
-    };
-
-    const removeSelectedFile = () => {
-      selectedFile.value = null;
-      imagePreview.value = null;
-      error.value = '';
-    };
-
-    // Método principal para enviar predicción
-    const handleSubmit = async () => {
-      if (!selectedFile.value) {
-        error.value = 'Por favor selecciona una imagen';
-        return;
-      }
-
-      isLoading.value = true;
-      error.value = '';
-
-      try {
-        // Crear FormData con imagen y metadatos
-        const requestFormData = createImageFormData(selectedFile.value, formData.value);
-        
-        // Llamar a la API según el método seleccionado
-        let result;
-        switch (props.predictionMethod) {
-          case 'yolo':
-            result = await predictImageYolo(requestFormData);
-            break;
-          case 'smart':
-            result = await predictImageSmart(requestFormData, {
-              returnCroppedImage: true,
-              returnTransparentImage: true
-            });
-            break;
-          case 'cacaoscan': {
-            // Usar la nueva función predictImage del servicio api.js
-            const newFormData = createImageFormData(selectedFile.value, formData.value);
-            result = { success: true, data: await predictImageNew(newFormData) };
-            break;
-          }
-          case 'traditional':
-          default:
-            result = await predictImage(requestFormData);
-            break;
-        }
-        
-        // Emitir evento con resultado exitoso
-        if (result.success) {
-          // Mapear datos de la API al formato esperado por PredictionResults
-          const mappedData = mapApiResponseToPredictionData(result.data);
-          emit('prediction-result', mappedData);
-        } else {
-          throw new Error(result.error || 'Error en la predicción');
-        }
-        
-        // Limpiar formulario después del éxito
-        resetForm();
-        
-      } catch (err) {
-        error.value = err.message || 'Error al procesar la imagen';
-        emit('prediction-error', err);
-      } finally {
-        isLoading.value = false;
-      }
-    };
-
-    const resetForm = () => {
-      selectedFile.value = null;
-      imagePreview.value = null;
-      formData.value = {
-        batch_number: '',
-        origin: '',
-        notes: ''
-      };
-      error.value = '';
-    };
-
-    // Utility para formatear tamaño de archivo
-    const formatFileSize = (bytes) => {
-      if (bytes === 0) return '0 Bytes';
-      
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      
-      return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
-
-    // Función para mapear respuesta de API al formato esperado por PredictionResults
-    const mapApiResponseToPredictionData = (apiData) => {
-      return {
-        id: apiData.id || Date.now(),
-        width: apiData.ancho_mm || apiData.width,
-        height: apiData.alto_mm || apiData.altura_mm || apiData.height,
-        thickness: apiData.grosor_mm || apiData.thickness,
-        predicted_weight: apiData.peso_g || apiData.peso_estimado || apiData.predicted_weight,
-        prediction_method: apiData.method || apiData.prediction_method || props.predictionMethod || 'unknown',
-        confidence_level: (() => {
-          if (apiData.nivel_confianza) {
-            if (apiData.nivel_confianza > 0.8) {
-              return 'high'
-            } else if (apiData.nivel_confianza > 0.6) {
-              return 'medium'
-            }
-            return 'low'
-          }
-          return apiData.confidence_level || 'unknown'
-        })(),
-        confidence_score: apiData.nivel_confianza || apiData.confidence_score || 0,
-        processing_time: apiData.processing_time || 0,
-        image_url: apiData.image_url,
-        created_at: apiData.created_at,
-        // Campos adicionales específicos de cada método
-        detection_info: apiData.detection_info,
-        smart_crop: apiData.smart_crop,
-        derived_metrics: apiData.derived_metrics,
-        weight_comparison: apiData.weight_comparison
-      };
-    };
-
-    // Lifecycle
-    onMounted(() => {
-      // Componente montado correctamente
-    });
-
-    return {
-      // Estado
-      isDragging,
-      selectedFile,
-      imagePreview,
-      isLoading,
-      error,
-      fileInput,
-      formData,
-      
-      // Computed
-      canSubmit,
-      
-      // Métodos
-      handleDragOver,
-      handleDragLeave,
-      handleDrop,
-      openFileSelector,
-      handleFileSelect,
-      removeSelectedFile,
-      handleSubmit,
-      resetForm,
-      formatFileSize
-    };
+const props = defineProps({
+  predictionMethod: {
+    type: String,
+    default: 'traditional'
   }
-};
+})
+
+const emit = defineEmits(['prediction-result', 'prediction-error'])
+
+// Use file upload composable
+const fileUpload = useFileUpload({
+  allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff'],
+  maxSize: 20 * 1024 * 1024, // 20MB
+  enablePreview: true
+})
+
+// Extract upload properties
+const isDragging = fileUpload.isDragging
+const selectedFile = fileUpload.selectedFile
+const imagePreview = fileUpload.imagePreview
+const error = fileUpload.error
+const fileInput = fileUpload.fileInput
+const formatFileSize = fileUpload.formatFileSize
+
+// Datos del formulario
+const formData = ref({
+  batch_number: '',
+  origin: '',
+  notes: ''
+})
+
+// Use prediction composable
+const prediction = usePrediction({
+  method: props.predictionMethod,
+  onSuccess: (result) => {
+    emit('prediction-result', result)
+    resetForm()
+  },
+  onError: (errorInfo) => {
+    fileUpload.error.value = errorInfo.message
+    emit('prediction-error', errorInfo.originalError)
+  }
+})
+
+// Computed
+const isLoading = computed(() => prediction.isLoading.value)
+const canSubmit = computed(() => {
+  return fileUpload.hasFile.value && !isLoading.value && !fileUpload.error.value
+})
+
+// Método principal para enviar predicción
+const handleSubmit = async () => {
+  if (!fileUpload.hasFile.value) {
+    fileUpload.error.value = 'Por favor selecciona una imagen'
+    return
+  }
+
+  fileUpload.error.value = ''
+
+  try {
+    // Crear FormData con imagen y metadatos
+    const requestFormData = createImageFormData(selectedFile.value, formData.value)
+    
+    // Execute prediction using composable
+    await prediction.executePrediction(requestFormData, {
+      returnCroppedImage: props.predictionMethod === 'smart',
+      returnTransparentImage: props.predictionMethod === 'smart'
+    })
+  } catch (err) {
+    // Error is already handled by composable
+    console.error('Error en predicción:', err)
+  }
+}
+
+const resetForm = () => {
+  fileUpload.removeSelectedFile()
+  formData.value = {
+    batch_number: '',
+    origin: '',
+    notes: ''
+  }
+  prediction.reset()
+}
 </script>
 
 <style scoped>

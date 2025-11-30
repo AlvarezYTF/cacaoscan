@@ -1,10 +1,16 @@
 /**
  * Composable para validación de formularios reutilizable
  */
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 
 export function useFormValidation() {
   const errors = reactive({})
+  const validatingFields = ref(new Set())
+  const formState = reactive({
+    dirty: false,
+    touched: {},
+    valid: true
+  })
 
   /**
    * Valida las etiquetas del dominio
@@ -148,6 +154,42 @@ export function useFormValidation() {
   }
 
   /**
+   * Checks if a field name should be skipped (non-field errors)
+   * @param {string} fieldName - Field name to check
+   * @returns {boolean}
+   */
+  const shouldSkipField = (fieldName) => {
+    const nonFieldKeys = new Set(['error', 'status', 'error_detail'])
+    return nonFieldKeys.has(fieldName)
+  }
+
+  /**
+   * Extracts error message from different error value formats
+   * @param {*} errorValue - Error value (can be array, string, or object)
+   * @returns {string|null} - Extracted error message or null
+   */
+  const extractErrorMessage = (errorValue) => {
+    if (Array.isArray(errorValue) && errorValue.length > 0) {
+      return errorValue[0]
+    }
+    
+    if (typeof errorValue === 'string') {
+      return errorValue
+    }
+    
+    if (errorValue && typeof errorValue === 'object') {
+      const firstKey = Object.keys(errorValue)[0]
+      if (firstKey && errorValue[firstKey]) {
+        return Array.isArray(errorValue[firstKey]) 
+          ? errorValue[firstKey][0] 
+          : errorValue[firstKey]
+      }
+    }
+    
+    return null
+  }
+
+  /**
    * Maps server validation errors to form fields
    * @param {Object} serverErrors - Server error response
    * @param {Object} fieldMapping - Optional mapping from server field names to form field names
@@ -161,25 +203,15 @@ export function useFormValidation() {
     }
 
     for (const [serverField, errorValue] of Object.entries(serverErrors)) {
-      // Skip non-field errors
-      if (serverField === 'error' || serverField === 'status' || serverField === 'error_detail') {
+      if (shouldSkipField(serverField)) {
         continue
       }
 
       const formField = fieldMapping[serverField] || serverField
+      const errorMessage = extractErrorMessage(errorValue)
       
-      // Handle different error formats
-      if (Array.isArray(errorValue) && errorValue.length > 0) {
-        errors[formField] = errorValue[0]
-      } else if (typeof errorValue === 'string') {
-        errors[formField] = errorValue
-      } else if (errorValue && typeof errorValue === 'object') {
-        // If nested object, extract first message
-        const firstKey = Object.keys(errorValue)[0]
-        if (firstKey && errorValue[firstKey]) {
-          const msg = Array.isArray(errorValue[firstKey]) ? errorValue[firstKey][0] : errorValue[firstKey]
-          errors[formField] = msg
-        }
+      if (errorMessage) {
+        errors[formField] = errorMessage
       }
     }
   }
@@ -257,6 +289,364 @@ export function useFormValidation() {
     }
   }
 
+  /**
+   * Validates a name field (first name, last name, etc.)
+   * @param {string} value - Name value to validate
+   * @param {string} fieldName - Field name for error message
+   * @returns {string|null} Error message or null if valid
+   */
+  const validateNameField = (value, fieldName) => {
+    if (!value || !value.trim()) {
+      const fieldLabel = fieldName === 'firstName' ? 'nombre' : 
+                        fieldName === 'lastName' ? 'apellido' : 'campo'
+      return `El ${fieldLabel} es requerido`
+    }
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(value)) {
+      const fieldLabel = fieldName === 'firstName' ? 'nombre' : 
+                        fieldName === 'lastName' ? 'apellido' : 'campo'
+      return `El ${fieldLabel} solo puede contener letras`
+    }
+    return null
+  }
+
+  /**
+   * Validates email field with error message
+   * @param {string} value - Email value to validate
+   * @returns {string|null} Error message or null if valid
+   */
+  const validateEmailField = (value) => {
+    if (!value || !value.trim()) {
+      return 'El email es requerido'
+    }
+    if (!isValidEmail(value)) {
+      return 'Ingresa un email válido'
+    }
+    return null
+  }
+
+  /**
+   * Validates phone field with error message
+   * @param {string} value - Phone value to validate
+   * @returns {string|null} Error message or null if valid
+   */
+  const validatePhoneField = (value) => {
+    if (value && !isValidPhone(value)) {
+      return 'El teléfono debe tener entre 7 y 15 dígitos'
+    }
+    return null
+  }
+
+  /**
+   * Validates document field with error message
+   * @param {string} value - Document value to validate
+   * @returns {string|null} Error message or null if valid
+   */
+  const validateDocumentField = (value) => {
+    if (!value || !value.trim()) {
+      return 'El número de documento es requerido'
+    }
+    if (!isValidDocument(value)) {
+      return 'El documento debe tener entre 6 y 11 dígitos'
+    }
+    return null
+  }
+
+  /**
+   * Validates password fields (password and confirm password)
+   * @param {string} password - Password value
+   * @param {string} confirmPassword - Confirm password value
+   * @returns {Object} Object with password and confirmPassword error messages
+   */
+  const validatePasswordFields = (password, confirmPassword) => {
+    const result = {
+      password: null,
+      confirmPassword: null
+    }
+
+    if (!password) {
+      result.password = 'La contraseña es requerida'
+      return result
+    }
+
+    const passwordChecks = validatePassword(password)
+    if (!passwordChecks.isValid) {
+      result.password = 'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número'
+      return result
+    }
+
+    if (!confirmPassword) {
+      result.confirmPassword = 'La confirmación de contraseña es requerida'
+      return result
+    }
+
+    if (password !== confirmPassword) {
+      result.confirmPassword = 'Las contraseñas no coinciden'
+      return result
+    }
+
+    return result
+  }
+
+  /**
+   * Validates birthdate field with error message
+   * @param {string} value - Birthdate value to validate
+   * @returns {string|null} Error message or null if valid
+   */
+  const validateBirthdateField = (value) => {
+    if (value && !isValidBirthdate(value)) {
+      return 'Debes tener al menos 14 años'
+    }
+    return null
+  }
+
+  /**
+   * Gets error message for a specific field
+   * @param {string} fieldName - Field name
+   * @returns {string|null} Error message or null
+   */
+  const getFieldError = (fieldName) => {
+    return errors[fieldName] || null
+  }
+
+  /**
+   * Checks if a specific field has an error
+   * @param {string} fieldName - Field name
+   * @returns {boolean} True if field has error
+   */
+  const hasFieldError = (fieldName) => {
+    return !!errors[fieldName]
+  }
+
+  /**
+   * Validation rule presets
+   */
+  const validationPresets = {
+    email: {
+      required: true,
+      validator: (value) => {
+        if (!value || !value.trim()) {
+          return 'El email es requerido'
+        }
+        if (!isValidEmail(value)) {
+          return 'Ingresa un email válido'
+        }
+        return null
+      }
+    },
+    password: {
+      required: true,
+      validator: (value) => {
+        if (!value) {
+          return 'La contraseña es requerida'
+        }
+        const checks = validatePassword(value)
+        if (!checks.isValid) {
+          return 'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número'
+        }
+        return null
+      }
+    },
+    phone: {
+      required: false,
+      validator: (value) => {
+        if (value && !isValidPhone(value)) {
+          return 'El teléfono debe tener entre 7 y 15 dígitos'
+        }
+        return null
+      }
+    },
+    document: {
+      required: true,
+      validator: (value) => {
+        if (!value || !value.trim()) {
+          return 'El número de documento es requerido'
+        }
+        if (!isValidDocument(value)) {
+          return 'El documento debe tener entre 6 y 11 dígitos'
+        }
+        return null
+      }
+    },
+    name: {
+      required: true,
+      validator: (value, fieldName = 'nombre') => {
+        return validateNameField(value, fieldName)
+      }
+    },
+    birthdate: {
+      required: false,
+      validator: (value) => {
+        return validateBirthdateField(value)
+      }
+    }
+  }
+
+  /**
+   * Validates a field using a preset
+   * @param {string} fieldName - Field name
+   * @param {*} value - Field value
+   * @param {string} preset - Preset name
+   * @returns {string|null} Error message or null
+   */
+  const validateWithPreset = (fieldName, value, preset) => {
+    const presetRule = validationPresets[preset]
+    if (!presetRule) {
+      throw new Error(`Preset "${preset}" not found`)
+    }
+
+    if (presetRule.required && (!value || (typeof value === 'string' && !value.trim()))) {
+      return `${fieldName} es requerido`
+    }
+
+    if (presetRule.validator) {
+      return presetRule.validator(value, fieldName)
+    }
+
+    return null
+  }
+
+  /**
+   * Async validation support
+   * @param {string} fieldName - Field name
+   * @param {Function} validatorFn - Async validator function
+   * @returns {Promise<void>}
+   */
+  const validateFieldAsync = async (fieldName, validatorFn) => {
+    validatingFields.value.add(fieldName)
+    removeError(fieldName)
+
+    try {
+      const errorMessage = await validatorFn()
+      if (errorMessage) {
+        setError(fieldName, errorMessage)
+      }
+    } catch (error) {
+      setError(fieldName, error.message || 'Error de validación')
+    } finally {
+      validatingFields.value.delete(fieldName)
+    }
+  }
+
+  /**
+   * Checks if a field is currently being validated
+   * @param {string} fieldName - Field name
+   * @returns {boolean} True if field is validating
+   */
+  const isFieldValidating = (fieldName) => {
+    return validatingFields.value.has(fieldName)
+  }
+
+  /**
+   * Cross-field validation
+   * @param {Object} fields - Object with field names as keys and values
+   * @param {Function} validatorFn - Validator function that receives all fields
+   * @returns {Object} Object with field names as keys and error messages as values
+   */
+  const validateCrossFields = (fields, validatorFn) => {
+    const crossFieldErrors = validatorFn(fields)
+    
+    if (crossFieldErrors && typeof crossFieldErrors === 'object') {
+      for (const [fieldName, errorMessage] of Object.entries(crossFieldErrors)) {
+        if (errorMessage) {
+          setError(fieldName, errorMessage)
+        } else {
+          removeError(fieldName)
+        }
+      }
+    }
+
+    return crossFieldErrors || {}
+  }
+
+  /**
+   * Marks a field as touched
+   * @param {string} fieldName - Field name
+   * @returns {void}
+   */
+  const markFieldTouched = (fieldName) => {
+    formState.touched[fieldName] = true
+    formState.dirty = true
+  }
+
+  /**
+   * Checks if a field has been touched
+   * @param {string} fieldName - Field name
+   * @returns {boolean} True if field has been touched
+   */
+  const isFieldTouched = (fieldName) => {
+    return !!formState.touched[fieldName]
+  }
+
+  /**
+   * Marks form as dirty
+   * @returns {void}
+   */
+  const markFormDirty = () => {
+    formState.dirty = true
+  }
+
+  /**
+   * Checks if form is dirty
+   * @returns {boolean} True if form is dirty
+   */
+  const isFormDirty = () => {
+    return formState.dirty
+  }
+
+  /**
+   * Validates entire form
+   * @param {Object} formData - Form data object
+   * @param {Object} rules - Validation rules object
+   * @returns {boolean} True if form is valid
+   */
+  const validateForm = (formData, rules) => {
+    clearErrors()
+    let isValid = true
+
+    for (const [fieldName, value] of Object.entries(formData)) {
+      const rule = rules[fieldName]
+      if (!rule) continue
+
+      let error = null
+
+      if (rule.preset) {
+        error = validateWithPreset(fieldName, value, rule.preset)
+      } else if (rule.validator) {
+        error = rule.validator(value, formData)
+      } else if (rule.required && (!value || (typeof value === 'string' && !value.trim()))) {
+        error = `${fieldName} es requerido`
+      }
+
+      if (error) {
+        setError(fieldName, error)
+        isValid = false
+      }
+    }
+
+    // Cross-field validation
+    if (rules._crossField) {
+      const crossFieldErrors = validateCrossFields(formData, rules._crossField)
+      if (Object.keys(crossFieldErrors).length > 0) {
+        isValid = false
+      }
+    }
+
+    formState.valid = isValid
+    return isValid
+  }
+
+  /**
+   * Resets form state
+   * @returns {void}
+   */
+  const resetFormState = () => {
+    clearErrors()
+    formState.dirty = false
+    formState.touched = {}
+    formState.valid = true
+    validatingFields.value.clear()
+  }
+
   return {
     errors,
     isValidEmail,
@@ -271,7 +661,31 @@ export function useFormValidation() {
     mapServerErrors,
     resetFormErrors,
     handleFormSubmit,
-    scrollToFirstError
+    scrollToFirstError,
+    // New helper methods
+    validateNameField,
+    validateEmailField,
+    validatePhoneField,
+    validateDocumentField,
+    validatePasswordFields,
+    validateBirthdateField,
+    getFieldError,
+    hasFieldError,
+    // New features
+    validationPresets,
+    validateWithPreset,
+    validateFieldAsync,
+    isFieldValidating,
+    validateCrossFields,
+    markFieldTouched,
+    isFieldTouched,
+    markFormDirty,
+    isFormDirty,
+    validateForm,
+    resetFormState,
+    // Form state
+    formState,
+    validatingFields
   }
 }
 

@@ -7,7 +7,11 @@
  * - KISS: Interfaces simples para operaciones complejas
  */
 
-// Importar funciones base para reutilizar (DRY)
+/**
+ * Servicio API especializado para funciones administrativas avanzadas
+ * Usa apiClient para reducir duplicación de código
+ * Mantiene funciones base de datasetApi para reutilización
+ */
 import { 
   trainRegressionModel as baseTrainRegression,
   trainVisionModel as baseTrainVision,
@@ -16,43 +20,11 @@ import {
   formatNumber
 } from './datasetApi.js';
 
-// Importar configuración centralizada del API
+import { fetchGet, fetchPost } from './apiClient';
 import { getApiBaseUrlWithPath } from '@/utils/apiConfig'
 
 // Reutilizar utilidades del archivo base (DRY)
 const API_BASE_URL = getApiBaseUrlWithPath();
-
-// Funciones utilitarias simples para este módulo (KISS)
-const makeRequest = async (url, options = {}) => {
-  try {
-    // Obtener token de autenticación
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    const response = await fetch(url, {
-      ...options,
-      headers
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error(`Error en petición a ${url}:`, error);
-    throw error;
-  }
-};
 
 // ==========================================
 // GESTIÓN AVANZADA DE ENTRENAMIENTO (SRP)
@@ -194,46 +166,13 @@ const startAdvancedTraining = async (modelType, config, dataFilters = {}, experi
  * @returns {Promise<Array>} Lista de entrenamientos históricos
  */
 const getTrainingHistory = async (filters = {}) => {
-  try {
-    // Obtener token de autenticación
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    
-    // Construir parámetros de consulta
-    const queryParams = new URLSearchParams();
-    if (filters.model_type) queryParams.append('job_type', filters.model_type);
-    if (filters.status) queryParams.append('status', filters.status);
-    
-    // API_BASE_URL ya incluye /api/v1, no duplicar
-    const url = `${API_BASE_URL}/train/jobs/?${queryParams}`;
-    
-    const headers = {
-      'Content-Type': 'application/json'
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    
-    // Retornar los resultados (el backend ya aplica filtros)
-    return data.results || data || [];
-    
-  } catch (error) {
-    console.error('Error obteniendo historial de entrenamiento:', error);
-    throw error;
-  }
-};
+  const params = {}
+  if (filters.model_type) params.job_type = filters.model_type
+  if (filters.status) params.status = filters.status
+  
+  const data = await fetchGet('/train/jobs/', params)
+  return data.results || data || []
+}
 
 /**
  * Obtiene estado detallado de múltiples jobs (DRY)
@@ -264,36 +203,8 @@ const getMultipleJobStatus = async (jobIds) => {
  * @returns {Promise<Object>} Resultado de la cancelación
  */
 const cancelTrainingJob = async (jobId) => {
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    
-    const headers = {
-      'Content-Type': 'application/json'
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    // API_BASE_URL ya incluye /api/v1
-    const url = `${API_BASE_URL}/train/jobs/${jobId}/cancel/`;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error cancelando job:', error);
-    throw error;
-  }
-};
+  return await fetchPost(`/train/jobs/${jobId}/cancel/`)
+}
 
 /**
  * Obtiene métricas detalladas de un modelo entrenado (SRP)
@@ -301,36 +212,8 @@ const cancelTrainingJob = async (jobId) => {
  * @returns {Promise<Object>} Métricas del modelo
  */
 const getModelMetrics = async (jobId) => {
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    
-    const headers = {
-      'Content-Type': 'application/json'
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    // API_BASE_URL ya incluye /api/v1
-    const url = `${API_BASE_URL}/train/jobs/${jobId}/metrics/`;
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error obteniendo métricas:', error);
-    throw error;
-  }
-};
+  return await fetchGet(`/train/jobs/${jobId}/metrics/`)
+}
 
 /**
  * Compara múltiples modelos entrenados (SRP)
@@ -338,37 +221,8 @@ const getModelMetrics = async (jobId) => {
  * @returns {Promise<Object>} Comparación de modelos
  */
 const compareModels = async (jobIds) => {
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    
-    const headers = {
-      'Content-Type': 'application/json'
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    // API_BASE_URL ya incluye /api/v1
-    const url = `${API_BASE_URL}/train/jobs/compare/`;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ job_ids: jobIds })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error comparando modelos:', error);
-    throw error;
-  }
-};
+  return await fetchPost('/train/jobs/compare/', { job_ids: jobIds })
+}
 
 // ==========================================
 // GESTIÓN DE EXPERIMENTOS (SRP)
@@ -380,36 +234,8 @@ const compareModels = async (jobIds) => {
  * @returns {Promise<Object>} Experimento creado
  */
 const createExperiment = async (experimentData) => {
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    
-    const headers = {
-      'Content-Type': 'application/json'
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    const url = `${API_BASE_URL}/images/admin/experiments/`;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(experimentData)
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error creando experimento:', error);
-    throw error;
-  }
-};
+  return await fetchPost('/images/admin/experiments/', experimentData)
+}
 
 /**
  * Obtiene lista de experimentos (SRP)
@@ -417,42 +243,8 @@ const createExperiment = async (experimentData) => {
  * @returns {Promise<Array>} Lista de experimentos
  */
 const getExperiments = async (filters = {}) => {
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    
-    const headers = {
-      'Content-Type': 'application/json'
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== null && value !== '') {
-        params.append(key, value);
-      }
-    });
-    
-    const url = `${API_BASE_URL}/images/admin/experiments/?${params}`;
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error obteniendo experimentos:', error);
-    throw error;
-  }
-};
+  return await fetchGet('/images/admin/experiments/', filters)
+}
 
 // ==========================================
 // UTILIDADES Y VALIDACIONES (DRY)
@@ -600,76 +392,47 @@ const ADMIN_TRAINING_CONFIG = {
  * @returns {Promise<Object>} Job de entrenamiento iniciado
  */
 const startMLTraining = async (config = {}) => {
-  try {
-    // Obtener token de autenticación del localStorage
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    
-    const headers = {
-      'Content-Type': 'application/json'
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+  // Configuración por defecto con las mejoras implementadas
+  const defaultConfig = {
+    job_type: 'regression',
+    model_name: 'cacao_regression_models',
+    dataset_size: 0, // Se calculará automáticamente
+    epochs: 150, // 150 épocas para mejor aprendizaje
+    batch_size: 16,
+    learning_rate: 0.001,
+    config_params: {
+      multi_head: false,
+      model_type: 'resnet18',
+      img_size: 224,
+      early_stopping_patience: 25,
+      // Mejoras avanzadas
+      scheduler_type: 'cosine_warmup',
+      warmup_epochs: 10,
+      loss_type: 'huber',
+      max_grad_norm: 1,
+      use_advanced_augmentation: true,
+      validate_crops_quality: true,
+      regenerate_bad_crops: true,
+      improvement_threshold: 1e-5,
+      min_epochs: 50
     }
-    
-    // Configuración por defecto con las mejoras implementadas
-    const defaultConfig = {
-      job_type: 'regression',
-      model_name: 'cacao_regression_models',
-      dataset_size: 0, // Se calculará automáticamente
-      epochs: 150, // 150 épocas para mejor aprendizaje
-      batch_size: 16,
-      learning_rate: 0.001,
-      config_params: {
-        multi_head: false,
-        model_type: 'resnet18',
-        img_size: 224,
-        early_stopping_patience: 25,
-        // Mejoras avanzadas
-        scheduler_type: 'cosine_warmup',
-        warmup_epochs: 10,
-        loss_type: 'huber',
-        max_grad_norm: 1,
-        use_advanced_augmentation: true,
-        validate_crops_quality: true,
-        regenerate_bad_crops: true,
-        improvement_threshold: 1e-5,
-        min_epochs: 50
-      }
-    };
-    
-    // Combinar con configuración proporcionada
-    const trainingConfig = {
-      ...defaultConfig,
-      ...config,
-      config_params: {
-        ...defaultConfig.config_params,
-        ...(config.config_params || {})
-      }
-    };
-    
-    console.log('Iniciando entrenamiento ML con configuración mejorada:', trainingConfig);
-    
-    const response = await fetch(`${API_BASE_URL}/ml/train/`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(trainingConfig)
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
-      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log('Entrenamiento iniciado exitosamente:', data);
-    return data;
-    
-  } catch (error) {
-    console.error('Error iniciando entrenamiento ML:', error);
-    throw error;
   }
-};
+  
+  // Combinar con configuración proporcionada
+  const trainingConfig = {
+    ...defaultConfig,
+    ...config,
+    config_params: {
+      ...defaultConfig.config_params,
+      ...(config.config_params || {})
+    }
+  }
+  
+  console.log('Iniciando entrenamiento ML con configuración mejorada:', trainingConfig)
+  const data = await fetchPost('/ml/train/', trainingConfig)
+  console.log('Entrenamiento iniciado exitosamente:', data)
+  return data
+}
 
 // Re-exportar funciones base necesarias para compatibilidad (DRY)
 export { 

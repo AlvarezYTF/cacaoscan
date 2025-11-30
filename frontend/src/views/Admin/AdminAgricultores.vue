@@ -116,7 +116,8 @@
 
 <script setup>
 // 1. Vue core
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { usePagination } from '@/composables/usePagination'
 
 // 2. Vue router
 import { useRouter, useRoute } from 'vue-router'
@@ -148,10 +149,12 @@ const authStore = useAuthStore()
 
 // Estado reactivo
 const searchQuery = ref('')
-const currentPage = ref(1)
 const loading = ref(false)
 const allFincas = ref([])
 const isSidebarCollapsed = ref(false)
+
+// Paginación usando composable
+const pagination = usePagination(1, 10)
 
 // Props para AdminSidebar
 const brandName = computed(() => 'CacaoScan')
@@ -349,16 +352,28 @@ const filteredFarmers = computed(() => {
   return filtered
 })
 
+// Actualizar totalItems en paginación cuando cambian los filteredFarmers
 const totalItems = computed(() => filteredFarmers.value.length)
-const itemsPerPage = ref(10)
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value))
+
+watch(totalItems, (newTotal) => {
+  pagination.updatePagination({
+    page: pagination.currentPage.value,
+    page_size: pagination.itemsPerPage.value,
+    count: newTotal
+  })
+}, { immediate: true })
 
 // Paginación en cliente: elementos mostrados en la página actual
 const displayedFarmers = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
+  const start = (pagination.currentPage.value - 1) * pagination.itemsPerPage.value
+  const end = start + pagination.itemsPerPage.value
   return filteredFarmers.value.slice(start, end)
 })
+
+// Computed para compatibilidad con el template
+const currentPage = computed(() => pagination.currentPage.value)
+const totalPages = computed(() => pagination.totalPages.value)
+const itemsPerPage = computed(() => pagination.itemsPerPage.value)
 
 // Métodos para AdminSidebar
 const handleMenuClick = (menuItem) => {
@@ -550,7 +565,7 @@ const handleToggleStatus = async (farmer) => {
 }
 
 const handlePageChange = (page) => {
-  currentPage.value = page
+  pagination.goToPage(page)
 }
 
 // Lifecycle

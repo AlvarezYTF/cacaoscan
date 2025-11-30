@@ -349,7 +349,9 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import fincasApi, { getAgricultores } from '@/services/fincasApi'
 import { useFincasStore } from '@/stores/fincas'
 import { useAuthStore } from '@/stores/auth'
-import Swal from 'sweetalert2'
+import { useFormValidation } from '@/composables/useFormValidation'
+import { useNotifications } from '@/composables/useNotifications'
+import { useFincas } from '@/composables/useFincas'
 
 const props = defineProps({
   finca: {
@@ -366,10 +368,20 @@ const emit = defineEmits(['close', 'saved'])
 
 const fincasStore = useFincasStore()
 const authStore = useAuthStore()
+const { errors, mapServerErrors, scrollToFirstError } = useFormValidation()
+const { showSuccess, showError } = useNotifications()
+const { create: createFincaComposable, update: updateFincaComposable, isLoading: isFincasLoading } = useFincas({
+  onFincaCreate: () => {
+    showSuccess('La finca se creó correctamente.')
+  },
+  onFincaUpdate: () => {
+    showSuccess('La finca se actualizó correctamente.')
+  }
+})
 
-// Estado reactivo
-const loading = ref(false)
-const errors = ref({})
+// Estado reactivo - combinar loading del composable con estado local del formulario
+const localLoading = ref(false)
+const loading = computed(() => localLoading.value || isFincasLoading.value)
 const municipios = ref([])
 const agricultores = ref([])
 
@@ -436,34 +448,106 @@ const onDepartamentoChange = () => {
   municipios.value = fincasApi.getMunicipiosByDepartamento(formData.departamento)
 }
 
+const mapValidationErrorToField = (error) => {
+  const errorMapping = {
+    'nombre': 'nombre',
+    'ubicación': 'ubicacion',
+    'municipio': 'municipio',
+    'departamento': 'departamento',
+    'hectáreas': 'hectareas',
+    'latitud': 'coordenadas_lat',
+    'longitud': 'coordenadas_lng',
+    'descripción': 'descripcion'
+  }
+  
+  for (const [key, field] of Object.entries(errorMapping)) {
+    if (error.includes(key)) {
+      return field
+    }
+  }
+  return null
+}
+
 const validateForm = () => {
   const formattedData = fincasApi.formatFincaData(formData)
   const validation = fincasApi.validateFincaData(formattedData)
   
   if (!validation.isValid) {
-    errors.value = {}
     for (const error of validation.errors) {
-      // Mapear errores a campos específicos
-      if (error.includes('nombre')) errors.value.nombre = error
-      else if (error.includes('ubicación')) errors.value.ubicacion = error
-      else if (error.includes('municipio')) errors.value.municipio = error
-      else if (error.includes('departamento')) errors.value.departamento = error
-      else if (error.includes('hectáreas')) errors.value.hectareas = error
-      else if (error.includes('latitud')) errors.value.coordenadas_lat = error
-      else if (error.includes('longitud')) errors.value.coordenadas_lng = error
-      else if (error.includes('descripción')) errors.value.descripcion = error
+      const field = mapValidationErrorToField(error)
+      if (field) {
+        errors[field] = error
+      }
     }
     return false
   }
   
-  errors.value = {}
   return true
+}
+
+// Helper functions to reduce complexity
+const getFieldMapping = () => ({
+  'nombre': 'nombre',
+  'ubicacion': 'ubicacion',
+  'municipio': 'municipio',
+  'departamento': 'departamento',
+  'hectareas': 'hectareas',
+  'coordenadas_lat': 'coordenadas_lat',
+  'coordenadas_lng': 'coordenadas_lng',
+  'descripcion': 'descripcion'
+})
+
+const saveFinca = async (formattedData) => {
+  if (props.isEditing) {
+    await fincasStore.update(props.finca.id, formattedData)
+    return 'Finca actualizada'
+  }
+  await fincasStore.create(formattedData)
+  return 'Finca creada'
+}
+
+// showSuccessNotification ya no es necesario - se maneja en los callbacks del composable
+
+const extractErrorMessageFromServerErrors = (serverErrors) => {
+  const nonFieldKeys = new Set(['error', 'status', 'error_detail'])
+  for (const [key, value] of Object.entries(serverErrors)) {
+    if (nonFieldKeys.has(key) && typeof value === 'string') {
+      return value
+    }
+  }
+  return null
+}
+
+const processServerErrors = (serverErrors) => {
+  const fieldMapping = getFieldMapping()
+  mapServerErrors(serverErrors, fieldMapping)
+  return extractErrorMessageFromServerErrors(serverErrors)
+}
+
+const showValidationErrorNotification = (errorMessage = 'Por favor revisa los campos marcados en rojo.') => {
+  showError(errorMessage)
+}
+
+const showGeneralErrorNotification = (errorMsg) => {
+  showError(errorMsg)
+}
+
+const handleServerError = (error) => {
+  if (error.response?.data) {
+    const serverErrors = error.response.data.details || error.response.data
+    const errorMessage = processServerErrors(serverErrors)
+    scrollToFirstError('finca-form')
+    showValidationErrorNotification(errorMessage)
+  } else {
+    const errorMsg = error.message || 'No se pudo guardar la finca. Intenta nuevamente.'
+    showGeneralErrorNotification(errorMsg)
+  }
 }
 
 const handleSubmit = async () => {
   if (!validateForm()) return
   
-  loading.value = true
+  localLoading.value = true
   
   try {
     const formattedData = fincasApi.formatFincaData(formData)
@@ -471,128 +555,17 @@ const handleSubmit = async () => {
     console.log('📤 [FincaForm] Datos a enviar:', formattedData)
     console.log('📤 [FincaForm] Datos originales del formulario:', JSON.stringify(formData, null, 2))
     
-    if (props.isEditing) {
-      await fincasStore.update(props.finca.id, formattedData)
-      // Notificación de éxito
-      Swal.fire({
-        icon: 'success',
-        title: 'Finca actualizada',
-        text: 'La finca se actualizó correctamente.',
-        timer: 3000,
-        showConfirmButton: false
-      })
-    } else {
-      await fincasStore.create(formattedData)
-      // Notificación de éxito
-      Swal.fire({
-        icon: 'success',
-        title: 'Finca creada',
-        text: 'La finca se creó correctamente.',
-        timer: 3000,
-        showConfirmButton: false
-      })
-    }
-    
+    const successMessage = await saveFinca(formattedData)
+    // showSuccessNotification ya se llama desde los callbacks del composable
     emit('saved')
   } catch (error) {
     console.error('❌ [FincaForm] Error saving finca:', error)
     console.error('❌ [FincaForm] Error completo:', JSON.stringify(error.response?.data, null, 2))
     console.error('❌ [FincaForm] Error response status:', error.response?.status)
     
-    // Manejar errores de validación del servidor
-    if (error.response?.data) {
-      // El backend devuelve errores en error.response.data.details o error.response.data directamente
-      const serverErrors = error.response.data.details || error.response.data
-      
-      console.log('Server errors:', serverErrors)
-      
-      errors.value = {}
-      
-      // Mapear nombres de campos del backend al frontend
-      const fieldMapping = {
-        'nombre': 'nombre',
-        'ubicacion': 'ubicacion',
-        'municipio': 'municipio',
-        'departamento': 'departamento',
-        'hectareas': 'hectareas',
-        'coordenadas_lat': 'coordenadas_lat',
-        'coordenadas_lng': 'coordenadas_lng',
-        'descripcion': 'descripcion'
-      }
-      
-      let errorMessage = ''
-      let firstErrorField = null
-      
-      for (const field of Object.keys(serverErrors)) {
-        // Evitar campos no relacionados como 'error', 'status', etc.
-        if (field === 'error' || field === 'status' || field === 'error_detail') {
-          if (!errorMessage && typeof serverErrors[field] === 'string') {
-            errorMessage = serverErrors[field]
-          }
-          continue
-        }
-        
-        const frontendField = fieldMapping[field] || field
-        const errorValue = serverErrors[field]
-        
-        // Manejar diferentes formatos de error
-        if (Array.isArray(errorValue) && errorValue.length > 0) {
-          errors.value[frontendField] = errorValue[0]
-          if (!errorMessage) errorMessage = errorValue[0]
-        } else if (typeof errorValue === 'string') {
-          errors.value[frontendField] = errorValue
-          if (!errorMessage) errorMessage = errorValue
-        } else if (errorValue && typeof errorValue === 'object') {
-          // Si es un objeto, extraer el primer mensaje
-          const firstKey = Object.keys(errorValue)[0]
-          if (firstKey && errorValue[firstKey]) {
-            const msg = Array.isArray(errorValue[firstKey]) ? errorValue[firstKey][0] : errorValue[firstKey]
-            errors.value[frontendField] = msg
-            if (!errorMessage) errorMessage = msg
-          }
-        }
-        
-        // Guardar el primer campo con error para hacer scroll
-        if (!firstErrorField && errors.value[frontendField]) {
-          firstErrorField = frontendField
-        }
-      }
-      
-      // Scroll al primer campo con error
-      if (firstErrorField) {
-        setTimeout(() => {
-          const errorElement = document.querySelector(`[name="${firstErrorField}"]`)
-          if (errorElement) {
-            errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            errorElement.focus()
-          }
-        }, 300)
-      }
-      
-      // Notificación de error con mensaje específico
-      Swal.fire({
-        icon: 'error',
-        title: 'Error de validación',
-        html: errorMessage 
-          ? `<p style="margin: 0; padding: 10px;">${errorMessage}</p>`
-          : '<p style="margin: 0; padding: 10px;">Por favor revisa los campos marcados en rojo.</p>',
-        timer: errorMessage ? 6000 : 4000,
-        showConfirmButton: true
-      })
-    } else {
-      // Error general
-      const errorMsg = error.message || 'No se pudo guardar la finca. Intenta nuevamente.'
-      console.error('General error:', errorMsg)
-      
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: errorMsg,
-        timer: 4000
-      })
-    }
+    handleServerError(error)
   } finally {
-    loading.value = false
+    localLoading.value = false
   }
 }
 

@@ -1,73 +1,33 @@
 /**
  * Guards de rutas para CacaoScan
  * Controla el acceso a rutas según autenticación, roles y verificación
+ * Usa factories para reducir duplicación
  */
 
 import { useAuthStore } from '@/stores/auth'
-
-// Función helper para obtener el store (ya no es async)
-const getAuthStore = () => {
-  return useAuthStore()
-}
+import {
+  createAuthGuard,
+  createRoleGuard,
+  createVerifiedGuard,
+  createPermissionGuard,
+  createCompositeGuard,
+  getRedirectPathByRole,
+  getErrorPathByRole
+} from './guardFactories'
 
 /**
  * Guard principal que verifica autenticación y validez del token
  */
-export const requireAuth = async (to, from, next) => {
-  const authStore = getAuthStore()
-
-  // Si no hay token, redirigir al login
-  if (!authStore.accessToken) {
-    console.warn('🚫 Acceso denegado: No hay token de acceso')
-    next({
-      name: 'Login',
-      query: { 
-        redirect: to.fullPath,
-        message: 'Debes iniciar sesión para acceder a esta página'
-      }
-    })
-    return
-  }
-
-  // Si hay token pero no hay usuario, intentar obtenerlo
-  if (!authStore.user) {
-    try {
-      console.log('🔄 Verificando token y obteniendo datos de usuario...')
-      await authStore.getCurrentUser()
-    } catch (error) {
-      console.warn('❌ Token inválido o expirado:', error)
-      // Limpiar estado de autenticación y redirigir al login
-      // Esto asegura que el usuario no tenga datos inconsistentes en el store
-      authStore.clearAll()
-      next({
-        name: 'Login',
-        query: { 
-          redirect: to.fullPath,
-          message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
-          expired: 'true'
-        }
-      })
-      return
-    }
-  }
-
-  // Verificar si la sesión ha expirado por inactividad
-  if (authStore.checkSessionTimeout()) {
-    console.warn('⏰ Sesión expirada por inactividad')
-    return
-  }
-
-  // Actualizar actividad del usuario
-  authStore.updateLastActivity()
-
-  next()
-}
+export const requireAuth = createAuthGuard({
+  checkSessionTimeout: true,
+  updateActivity: true
+})
 
 /**
  * Guard que requiere que el usuario NO esté autenticado
  */
 export const requireGuest = async (to, from, next) => {
-  const authStore = getAuthStore()
+  const authStore = useAuthStore()
 
   if (authStore.isAuthenticated) {
     console.log('👤 Usuario ya autenticado, redirigiendo...')
@@ -85,119 +45,26 @@ export const requireGuest = async (to, from, next) => {
  * Guard que requiere rol específico
  */
 export const requireRole = (allowedRoles) => {
-  return async (to, from, next) => {
-    const authStore = getAuthStore()
-
-    if (!authStore.isAuthenticated) {
-      console.warn('🚫 Acceso denegado: Usuario no autenticado')
-      next({
-        name: 'Login',
-        query: { 
-          redirect: to.fullPath,
-          message: 'Debes iniciar sesión para acceder a esta página'
-        }
-      })
-      return
-    }
-
-    const userRole = authStore.userRole
-    const hasRequiredRole = allowedRoles.includes(userRole)
-
-    if (!hasRequiredRole) {
-      console.warn(`🚫 Acceso denegado: Rol '${userRole}' no autorizado. Roles permitidos: ${allowedRoles.join(', ')}`)
-      
-      // Redirigir a página de error o dashboard según rol
-      const errorPath = getErrorPathByRole(userRole)
-      next({
-        path: errorPath,
-        replace: true,
-        query: {
-          error: 'access_denied',
-          message: 'No tienes permisos para acceder a esta página'
-        }
-      })
-      return
-    }
-
-    next()
-  }
+  return createRoleGuard(allowedRoles)
 }
 
 /**
  * Guard que requiere usuario verificado
  */
-export const requireVerified = async (to, from, next) => {
-  const authStore = getAuthStore()
-
-  if (!authStore.isAuthenticated) {
-    console.warn('🚫 Acceso denegado: Usuario no autenticado')
-    next({
-      name: 'Login',
-      query: { 
-        redirect: to.fullPath,
-        message: 'Debes iniciar sesión para acceder a esta página'
-      }
-    })
-    return
-  }
-
-  if (!authStore.isVerified) {
-    console.warn('📧 Acceso denegado: Usuario no verificado')
-    next({
-      name: 'EmailVerification',
-      query: {
-        message: 'Debes verificar tu email para acceder a esta funcionalidad'
-      }
-    })
-    return
-  }
-
-  next()
-}
+export const requireVerified = createVerifiedGuard()
 
 /**
  * Guard que requiere permiso específico
  */
 export const requirePermission = (permission) => {
-  return async (to, from, next) => {
-    const authStore = getAuthStore()
-
-    if (!authStore.isAuthenticated) {
-      console.warn('🚫 Acceso denegado: Usuario no autenticado')
-      next({
-        name: 'Login',
-        query: { 
-          redirect: to.fullPath,
-          message: 'Debes iniciar sesión para acceder a esta página'
-        }
-      })
-      return
-    }
-
-    if (!authStore.hasPermission(permission)) {
-      console.warn(`🚫 Acceso denegado: Sin permiso '${permission}'`)
-      
-      const errorPath = getErrorPathByRole(authStore.userRole)
-      next({
-        path: errorPath,
-        replace: true,
-        query: {
-          error: 'insufficient_permissions',
-          message: 'No tienes los permisos necesarios para acceder a esta página'
-        }
-      })
-      return
-    }
-
-    next()
-  }
+  return createPermissionGuard(permission)
 }
 
 /**
  * Guard combinado para agricultores (autenticado + verificado + rol farmer)
  */
 export const requireFarmer = async (to, from, next) => {
-  const authStore = getAuthStore()
+  const authStore = useAuthStore()
 
   // Verificar autenticación
   if (!authStore.isAuthenticated) {
@@ -240,64 +107,18 @@ export const requireFarmer = async (to, from, next) => {
 /**
  * Guard para analistas
  */
-export const requireAnalyst = async (to, from, next) => {
-  const authStore = getAuthStore()
-
-  if (!authStore.isAuthenticated) {
-    next({
-      name: 'Login',
-      query: { 
-        redirect: to.fullPath,
-        message: 'Debes iniciar sesión como analista'
-      }
-    })
-    return
-  }
-
-  if (!authStore.isAnalyst && !authStore.isAdmin) {
-    next({
-      path: '/acceso-denegado',
-      replace: true,
-      query: {
-        message: 'Esta área está destinada solo para analistas'
-      }
-    })
-    return
-  }
-
-  next()
-}
+export const requireAnalyst = createCompositeGuard(
+  createAuthGuard(),
+  createRoleGuard(['analyst', 'admin'])
+)
 
 /**
  * Guard para administradores
  */
-export const requireAdmin = async (to, from, next) => {
-  const authStore = getAuthStore()
-
-  if (!authStore.isAuthenticated) {
-    next({
-      name: 'Login',
-      query: { 
-        redirect: to.fullPath,
-        message: 'Debes iniciar sesión como administrador'
-      }
-    })
-    return
-  }
-
-  if (!authStore.isAdmin) {
-    next({
-      path: '/acceso-denegado',
-      replace: true,
-      query: {
-        message: 'Esta área está destinada solo para administradores'
-      }
-    })
-    return
-  }
-
-  next()
-}
+export const requireAdmin = createCompositeGuard(
+  createAuthGuard(),
+  createRoleGuard(['admin'])
+)
 
 /**
  * Guard para verificar si el usuario puede subir imágenes
@@ -361,7 +182,7 @@ export const updateActivity = async (to, from, next) => {
  * Guard que verifica el estado del token en tiempo real
  */
 export const checkTokenValidity = async (to, from, next) => {
-  const authStore = getAuthStore()
+  const authStore = useAuthStore()
 
   if (authStore.isAuthenticated && authStore.accessToken) {
     try {
@@ -388,83 +209,33 @@ export const checkTokenValidity = async (to, from, next) => {
     if (to.name === 'Login') {
       next()
     } else {
-        next({
-          name: 'Login',
-          replace: true,
-          query: {
-            message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
-            expired: 'true',
-            redirect: to.fullPath
-          }
-        })
-      } else {
-        next()
-      }
-    }
-  } else {
-    next()
-  }
-}
-
-// Funciones auxiliares
-
-/**
- * Obtiene la ruta de redirección según el rol del usuario
- */
-const getRedirectPathByRole = (role) => {
-  switch (role) {
-    case 'admin':
-      return '/admin/dashboard'
-    case 'analyst':
-      return '/analisis'
-    case 'farmer':
-      return '/agricultor-dashboard'
-    default:
-      return '/'
-  }
-}
-
-/**
- * Obtiene la ruta de error según el rol del usuario
- */
-const getErrorPathByRole = (role) => {
-  switch (role) {
-    case 'admin':
-      return '/admin/dashboard'
-    case 'analyst':
-      return '/analisis'
-    case 'farmer':
-      return '/agricultor-dashboard'
-    default:
-      return '/acceso-denegado'
-  }
-}
-
-/**
- * Guard compuesto que combina múltiples verificaciones
- */
-export const createCompositeGuard = (...guards) => {
-  return async (to, from, next) => {
-    for (const guard of guards) {
-      await new Promise((resolve) => {
-        guard(to, from, (result) => {
-          if (result === undefined || result === true) {
-            resolve()
-          } else {
-            next(result)
-            return
-          }
-        })
+      next({
+        name: 'Login',
+        replace: true,
+        query: {
+          message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+          expired: 'true',
+          redirect: to.fullPath
+        }
       })
     }
-    next()
   }
 }
 
 // Guards específicos combinados para casos comunes
-export const requireFarmerVerified = createCompositeGuard(requireAuth, requireRole(['farmer', 'admin']), requireVerified)
-export const requireAnalystAuth = createCompositeGuard(requireAuth, requireRole(['analyst', 'admin']))
-export const requireAdminAuth = createCompositeGuard(requireAuth, requireRole(['admin']))
+export const requireFarmerVerified = createCompositeGuard(
+  createAuthGuard(),
+  createRoleGuard(['farmer', 'admin']),
+  createVerifiedGuard()
+)
+export const requireAnalystAuth = createCompositeGuard(
+  createAuthGuard(),
+  createRoleGuard(['analyst', 'admin'])
+)
+export const requireAdminAuth = createCompositeGuard(
+  createAuthGuard(),
+  createRoleGuard(['admin'])
+)
 
 // Exportar configuraciones de guards por ruta
 export const ROUTE_GUARDS = {

@@ -1,22 +1,24 @@
 <template>
-  <div class="report-preview-modal" @click="closeModal">
-    <div class="modal-container" @click.stop>
-      <div class="modal-header">
-        <div class="header-content">
-          <div class="header-icon">
-            <i class="fas fa-file-alt"></i>
-          </div>
-          <div class="header-text">
-            <h3>{{ report.titulo }}</h3>
-            <p>Vista previa del reporte</p>
-          </div>
+  <BaseModal
+    :show="true"
+    :title="report.titulo"
+    subtitle="Vista previa del reporte"
+    max-width="6xl"
+    @close="closeModal"
+  >
+    <template #header>
+      <div class="flex items-center">
+        <div class="bg-blue-100 p-2 rounded-lg mr-3">
+          <i class="fas fa-file-alt text-blue-600"></i>
         </div>
-        <button class="close-btn" @click="closeModal">
-          <i class="fas fa-times"></i>
-        </button>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">{{ report.titulo }}</h3>
+          <p class="text-sm text-gray-600 mt-1">Vista previa del reporte</p>
+        </div>
       </div>
+    </template>
 
-      <div class="modal-body">
+    <div class="modal-body-content">
         <div v-if="loading" class="loading-state">
           <div class="loading-spinner">
             <i class="fas fa-spinner fa-spin"></i>
@@ -168,7 +170,7 @@
 
               <!-- JSON Preview -->
               <div v-else-if="report.formato === 'json'" class="json-preview">
-                <pre class="json-content">{{ formatJson(previewData.content) }}</pre>
+                <pre class="json-content">{{ formatJsonUtil(previewData.content) }}</pre>
               </div>
 
               <!-- Default Preview -->
@@ -194,34 +196,41 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <div class="footer-left">
-          <button
-            @click="$emit('download', report)"
-            class="btn btn-primary"
-            :disabled="report.estado !== 'completado'"
-          >
-            <i class="fas fa-download"></i>
-            Descargar Reporte
-          </button>
-        </div>
-
-        <div class="footer-right">
-          <button @click="closeModal" class="btn btn-outline">
-            Cerrar
-          </button>
-        </div>
-      </div>
     </div>
-  </div>
+
+    <template #footer>
+      <div class="flex justify-between items-center w-full">
+        <button
+          @click="$emit('download', report)"
+          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          :disabled="report.estado !== 'completado'"
+        >
+          <i class="fas fa-download"></i>
+          Descargar Reporte
+        </button>
+        <button 
+          @click="closeModal" 
+          class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Cerrar
+        </button>
+      </div>
+    </template>
+  </BaseModal>
 </template>
 
 <script>
 import { ref, onMounted } from 'vue'
 import { useReportsStore } from '@/stores/reports'
+import BaseModal from '@/components/common/BaseModal.vue'
+import { useAuditHelpers } from '@/composables/useAuditHelpers'
+import { formatDateTime, formatFileSize, formatDuration, formatNumber } from '@/utils/formatters'
 
 export default {
   name: 'ReportPreviewModal',
+  components: {
+    BaseModal
+  },
   props: {
     report: {
       type: Object,
@@ -231,6 +240,7 @@ export default {
   emits: ['close', 'download'],
   setup(props, { emit }) {
     const reportsStore = useReportsStore()
+    const { formatJson: formatJsonUtil } = useAuditHelpers()
     const loading = ref(false)
     const error = ref(null)
     const previewData = ref(null)
@@ -292,31 +302,7 @@ export default {
       return classes[status] || 'status-pending'
     }
 
-    const formatDateTime = (dateString) => {
-      if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleString('es-ES', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    }
-
-    const formatFileSize = (bytes) => {
-      if (!bytes) return 'N/A'
-      const sizes = ['B', 'KB', 'MB', 'GB']
-      const i = Math.floor(Math.log(bytes) / Math.log(1024))
-      return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
-    }
-
-    const formatDuration = (seconds) => {
-      if (!seconds) return 'N/A'
-      const minutes = Math.floor(seconds / 60)
-      const remainingSeconds = seconds % 60
-      return `${minutes}m ${remainingSeconds}s`
-    }
+    // Formatting functions are now imported from formatters.js
 
     // Función auxiliar para capitalizar palabras sin usar replace() con regex
     const capitalizeWords = (str) => {
@@ -376,7 +362,7 @@ export default {
 
     const formatFilterValue = (value) => {
       if (typeof value === 'number') {
-        return value.toLocaleString()
+        return formatNumber(value)
       }
       return value
     }
@@ -397,14 +383,6 @@ export default {
     // Reutilizar formatFilterValue en lugar de duplicar código
     const formatStatValue = formatFilterValue
 
-    const formatJson = (data) => {
-      try {
-        return JSON.stringify(data, null, 2)
-      } catch {
-        return data
-      }
-    }
-
     onMounted(() => {
       loadPreview()
     })
@@ -421,106 +399,23 @@ export default {
       formatDateTime,
       formatFileSize,
       formatDuration,
+      formatNumber,
       formatParameterLabel,
       formatParameterValue,
       formatFilterLabel,
       formatFilterValue,
       formatStatLabel,
       formatStatValue,
-      formatJson
+      formatJsonUtil
     }
   }
 }
 </script>
 
 <style scoped>
-.report-preview-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.modal-container {
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 1000px;
-  max-height: 90vh;
-  overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-header {
-  padding: 1.5rem 2rem;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  background: linear-gradient(135deg, #4c51bf 0%, #553c9a 100%);
-  color: #ffffff;
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.header-icon {
-  width: 3rem;
-  height: 3rem;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-}
-
-.header-text h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.header-text p {
-  margin: 0.25rem 0 0 0;
-  color: rgba(255, 255, 255, 0.95);
-  font-size: 0.875rem;
-}
-
-.close-btn {
-  background: rgba(0, 0, 0, 0.2);
-  border: none;
-  color: #ffffff;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-.modal-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 2rem;
+/* Modal structure styles removed - using BaseModal component */
+.modal-body-content {
+  padding: 1.5rem;
 }
 
 .loading-state,
@@ -755,20 +650,7 @@ export default {
   font-size: 0.875rem;
 }
 
-.modal-footer {
-  padding: 1.5rem 2rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #f8fafc;
-}
-
-.footer-left,
-.footer-right {
-  display: flex;
-  gap: 0.75rem;
-}
+/* Footer styles removed - using BaseModal footer slot */
 
 .btn {
   display: inline-flex;
