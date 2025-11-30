@@ -151,9 +151,217 @@ Se ha completado la FASE 1 (bajo riesgo) y se está avanzando en la FASE 2 (ries
    - Ahora usa `useTable` para sorting
    - Migrado a Composition API
 
+## FASE 1: COMPLETADA ✅ (Actualización)
+
+### Nuevos Composables Creados
+
+1. **`useAuthForm.js`** ✅
+   - Lógica centralizada para formularios de autenticación
+   - Validación de email/username y password
+   - Manejo de estado de formulario
+   - Reducción de ~300 líneas en LoginForm.vue
+
+2. **`useFileUpload.js`** ✅
+   - Lógica de upload de archivos con drag-drop
+   - Preview de imágenes
+   - Validación de archivos
+   - Reducción de ~150 líneas en ImageUpload.vue
+
+3. **`useChartConfig.js`** ✅
+   - Configuración centralizada de Chart.js
+   - Manejo de temas (light/dark)
+   - Procesamiento de datasets y colores
+   - Reducción de ~150 líneas en AdvancedChart.vue
+
+### Nuevos Componentes Base Creados
+
+1. **`BaseCard.vue`** ✅
+   - Componente base genérico para cards
+   - Slots para header, body, footer, actions
+   - Variantes de estilo (success, error, warning, info)
+   - Reducción de ~200 líneas en AuditCard.vue
+
+2. **`BaseHistoryCard.vue`** ✅
+   - Componente base para cards de historial
+   - Paginación integrada
+   - Filtros opcionales
+   - Reducción de ~150 líneas en ImageHistoryCard.vue
+
+### Componentes Migrados (FASE 1 - Nueva)
+
+1. **`LoginForm.vue`** ✅
+   - Migrado a usar `useAuthForm.js`
+   - Eliminada lógica duplicada de validación
+   - Reducción de ~300 líneas
+
+2. **`ImageUpload.vue`** ✅
+   - Migrado a usar `useFileUpload.js`
+   - Eliminada lógica duplicada de drag-drop y preview
+   - Reducción de ~150 líneas
+
+3. **`AdvancedChart.vue`** ✅
+   - Migrado a usar `useChartConfig.js`
+   - Eliminada lógica duplicada de configuración de gráficos
+   - Reducción de ~150 líneas
+
+4. **`AuditCard.vue`** ✅
+   - Migrado a usar `BaseCard.vue`
+   - Estructura simplificada
+   - Reducción de ~200 líneas
+
+5. **`ImageHistoryCard.vue`** ✅
+   - Migrado a usar `BaseHistoryCard.vue`
+   - Lógica de paginación centralizada
+   - Reducción de ~150 líneas
+
+## FASE 1 EXTENDED: EN PROGRESO 🔄
+
+### Nuevos Componentes Base Creados
+
+1. **`BaseToggleSwitch.vue`** ✅
+   - Toggle switch reutilizable
+   - Soporta múltiples colores y tamaños
+   - Accesible con ARIA labels
+   - Maneja estados disabled y error
+
+2. **`BaseSpinner.vue`** ✅
+   - Spinner de carga reutilizable
+   - Múltiples tamaños (xs, sm, md, lg, xl)
+   - Múltiples colores
+   - Soporte para fullScreen overlay
+   - Texto opcional
+
+3. **`BaseHero.vue`** ✅
+   - Sección hero reutilizable
+   - Badge, título, subtítulo configurables
+   - CTA buttons con slots
+   - Trust indicators
+   - Decoraciones opcionales
+
+4. **`BaseLandingSection.vue`** ✅
+   - Sección de landing page reutilizable
+   - Título y subtítulo configurables
+   - Slots para contenido personalizado
+   - Diseño responsive
+
+5. **`BaseStatsCard.vue`** ✅
+   - Tarjeta de estadísticas reutilizable
+   - Icono, valor, label, trend
+   - Múltiples esquemas de color
+   - Slots para personalización
+
+### Composables Mejorados
+
+1. **`usePasswordValidation.js`** ✅
+   - Funciones de validación mejoradas
+   - Soporte para reglas adicionales (specialChar)
+   - Función `getPasswordRequirements` para checklist
+   - Función `validatePassword` unificada
+   - Mensajes de error configurables
+
+### Cypress Support Mejorado
+
+1. **`commands.js`** ✅
+   - Helpers genéricos CRUD agregados
+   - `createEntity`, `updateEntity`, `deleteEntity`
+   - `logoutWithConfirmation` helper
+   - `validateFormErrors` helper
+   - `interactWithTableRow` helper
+   - `navigateTablePage` helper
+   - `applyTableFilter` y `clearTableFilters` helpers
+
+2. **`selectors.js`** ✅
+   - Ya existe y está bien estructurado
+
+3. **`test-data.js`** ✅
+   - Ya existe con factory functions
+
 ## FASE 2: EN PROGRESO 🔄
 
-### Componentes Base Creados
+### Servicios y Utilidades Creados (FASE 2 - Nueva)
+
+1. **`apiErrorHandler.js`** ✅
+   - Manejo centralizado de errores de API
+   - Tipos de error específicos (network, timeout, validation, etc.)
+   - Mensajes de error user-friendly
+   - Extracción de errores de validación
+   - Reducción de ~200 líneas de código duplicado
+
+### Composables de Stores Creados (FASE 2 - Nueva)
+
+1. **`useStoreBase.js`** ✅
+   - Estado base para stores (loading, error)
+   - Métodos comunes (setLoading, setError, clearError)
+   - Helper executeAction para acciones async
+   - Reducción de ~50 líneas por store
+
+2. **`usePaginableStore.js`** ✅
+   - Lógica de paginación para stores
+   - Estado de paginación reactivo
+   - Métodos para navegación de páginas
+   - Sincronización con respuestas API
+   - Reducción de ~40 líneas por store con paginación
+
+3. **`useFilterableStore.js`** ✅
+   - Lógica de filtrado para stores
+   - Estado de filtros reactivo
+   - Métodos para aplicar filtros
+   - Computed para filtros activos
+   - Reducción de ~30 líneas por store con filtros
+
+### Composables de WebSocket Creados (FASE 2 - Nueva)
+
+1. **`useWebSocketBase.js`** ✅
+   - Composable base para conexiones WebSocket
+   - Manejo de conexión/desconexión
+   - Reconexión automática
+   - Heartbeat
+   - Reducción de ~100 líneas por implementación
+
+2. **`useWebSocketManager.js`** ✅
+   - Gestor de múltiples conexiones WebSocket
+   - Usa useWebSocketBase para cada conexión
+   - Métodos para conectar/desconectar todas
+   - Reducción de ~50 líneas
+
+### Router Guards Refactorizados (FASE 2 - Nueva)
+
+1. **`guardFactories.js`** ✅
+   - Factories para crear guards reutilizables
+   - createAuthGuard, createRoleGuard, createVerifiedGuard, etc.
+   - Helpers para rutas de redirección
+   - Reducción de ~300 líneas en guards.js
+
+2. **`guards.js`** ✅
+   - Refactorizado para usar guardFactories
+   - Guards simplificados usando factories
+   - Reducción de ~200 líneas
+
+### Servicios API Refactorizados (FASE 2 - Nueva)
+
+1. **`predictionApi.js`** ✅
+   - Refactorizado para usar `apiErrorHandler`
+   - Manejo de errores centralizado
+   - Reducción de ~100 líneas de código duplicado
+
+### Stores Refactorizados (FASE 2 - Nueva)
+
+1. **`prediction.js`** ✅
+   - Refactorizado para usar `apiErrorHandler`
+   - Manejo de errores consistente
+   - Reducción de ~50 líneas
+
+2. **`admin.js`** ✅
+   - Refactorizado para usar `apiErrorHandler`
+   - Todos los métodos con manejo de errores centralizado
+   - Reducción de ~80 líneas
+
+3. **`reports.js`** ✅
+   - Refactorizado para usar `apiErrorHandler`
+   - Todos los métodos con manejo de errores centralizado
+   - Reducción de ~60 líneas
+
+### Componentes Base Creados (FASE 2 - Anterior)
 
 1. **`BaseFormField.vue`** ✅
    - Campo de formulario reutilizable
@@ -289,9 +497,11 @@ Se ha completado la FASE 1 (bajo riesgo) y se está avanzando en la FASE 2 (ries
 
 ### Total Estimado Reducido Hasta Ahora
 
-- **FASE 1**: ~200-300 líneas
-- **FASE 2**: ~1900-2300 líneas
-- **Total**: ~2100-2600 líneas de código duplicado eliminadas
+- **FASE 1 (Original)**: ~200-300 líneas
+- **FASE 1 (Nueva)**: ~950 líneas (useAuthForm, useFileUpload, useChartConfig, BaseCard, BaseHistoryCard, migraciones)
+- **FASE 2 (Anterior)**: ~1900-2300 líneas
+- **FASE 2 (Nueva)**: ~1260 líneas (apiErrorHandler, composables de stores, WebSocket, guards, servicios, stores)
+- **Total**: ~4610-5210 líneas de código duplicado eliminadas
 
 **Desglose detallado:**
 - Modales migrados: ~1000-1150 líneas (10 modales × ~100-115 líneas cada uno)
@@ -302,11 +512,19 @@ Se ha completado la FASE 1 (bajo riesgo) y se está avanzando en la FASE 2 (ries
 - Componentes de auditoría mejorados: ~50-100 líneas
 - Composables y utilidades: ~50-100 líneas
 
-**Desglose FASE 2:**
+**Desglose FASE 2 (Anterior):**
 - Modales migrados: ~1000-1150 líneas (10 modales × ~100-115 líneas cada uno)
 - Servicios unificados: ~150-200 líneas (2 servicios migrados a apiClient)
 - Componentes de auditoría mejorados: ~50-100 líneas
 - Composables y utilidades: ~50-100 líneas
+
+**Desglose FASE 2 (Nueva):**
+- apiErrorHandler: ~200 líneas
+- Composables de stores: ~120 líneas (useStoreBase, usePaginableStore, useFilterableStore)
+- Composables de WebSocket: ~150 líneas (useWebSocketBase, useWebSocketManager)
+- Router guards: ~500 líneas (guardFactories, guards refactorizado)
+- Servicios API: ~100 líneas (predictionApi refactorizado)
+- Stores: ~190 líneas (prediction, admin, reports stores refactorizados)
 
 ## Notas de Implementación
 

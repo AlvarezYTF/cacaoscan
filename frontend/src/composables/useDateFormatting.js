@@ -2,6 +2,7 @@
  * Composable for date formatting utilities
  * Provides reusable date formatting functions to eliminate code duplication
  */
+import { computed } from 'vue'
 
 /**
  * Format date and time to Spanish locale string
@@ -105,15 +106,121 @@ export function formatDuration(durationString) {
 }
 
 /**
- * Composable function that returns all date formatting utilities
- * @returns {Object} Object with all date formatting functions
+ * Calculate minimum birthdate (120 years ago)
+ * @returns {string} ISO date string for minimum birthdate
+ */
+export function getMinBirthdate() {
+  const today = new Date()
+  const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate())
+  return minDate.toISOString().split('T')[0]
+}
+
+/**
+ * Calculate maximum birthdate (14 years ago)
+ * @returns {string} ISO date string for maximum birthdate
+ */
+export function getMaxBirthdate() {
+  const today = new Date()
+  const maxDate = new Date(today.getFullYear() - 14, today.getMonth(), today.getDate())
+  return maxDate.toISOString().split('T')[0]
+}
+
+/**
+ * Calculate age from birthdate
+ * @param {string|Date} birthdate - Birthdate string or Date object
+ * @returns {number|null} Age in years or null if invalid
+ */
+export function calculateAge(birthdate) {
+  if (!birthdate) return null
+  
+  const birth = birthdate instanceof Date ? birthdate : new Date(birthdate)
+  if (Number.isNaN(birth.getTime())) return null
+  
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--
+  }
+  
+  return age
+}
+
+/**
+ * Validate if birthdate is within valid range (14-120 years)
+ * @param {string|Date} birthdate - Birthdate to validate
+ * @returns {Object} Validation result with isValid and message
+ */
+export function validateBirthdateRange(birthdate) {
+  if (!birthdate) {
+    return {
+      isValid: false,
+      message: 'La fecha de nacimiento es requerida'
+    }
+  }
+  
+  const birth = birthdate instanceof Date ? birthdate : new Date(birthdate)
+  if (Number.isNaN(birth.getTime())) {
+    return {
+      isValid: false,
+      message: 'Fecha de nacimiento inválida'
+    }
+  }
+  
+  const age = calculateAge(birth)
+  if (age === null) {
+    return {
+      isValid: false,
+      message: 'No se pudo calcular la edad'
+    }
+  }
+  
+  if (age < 14) {
+    return {
+      isValid: false,
+      message: 'Debes tener al menos 14 años'
+    }
+  }
+  
+  if (age > 120) {
+    return {
+      isValid: false,
+      message: 'La edad no puede ser mayor a 120 años'
+    }
+  }
+  
+  return {
+    isValid: true,
+    message: null
+  }
+}
+
+/**
+ * Composable function that returns all date formatting utilities and birthdate helpers
+ * @returns {Object} Object with all date formatting functions and birthdate utilities
  */
 export function useDateFormatting() {
   return {
     formatDateTime,
     formatDate,
     formatRelativeTime,
-    formatDuration
+    formatDuration,
+    getMinBirthdate,
+    getMaxBirthdate,
+    calculateAge,
+    validateBirthdateRange
+  }
+}
+
+/**
+ * Composable for birthdate range (maintains backward compatibility)
+ * @returns {Object} Computed birthdate range values
+ */
+export function useBirthdateRange() {
+  return {
+    maxBirthdate: computed(() => getMaxBirthdate()),
+    minBirthdate: computed(() => getMinBirthdate())
   }
 }
 

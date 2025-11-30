@@ -153,6 +153,7 @@
 import { useTable } from '@/composables/useTable'
 import { useAuditHelpers } from '@/composables/useAuditHelpers'
 import { useDateFormatting } from '@/composables/useDateFormatting'
+import { formatDate as formatDateUtil, formatDateTime as formatDateTimeUtil } from '@/utils/formatters'
 
 export default {
   name: 'AuditTable',
@@ -186,8 +187,8 @@ export default {
       getAuditActionMarkerClass
     } = useAuditHelpers()
 
-    // Use date formatting
-    const { formatDateTime: formatDateTimeUtil, formatDuration: formatDurationUtil } = useDateFormatting()
+    // Use date formatting (formatDateTime from centralized formatters, formatDuration from composable)
+    const { formatDuration: formatDurationUtil } = useDateFormatting()
 
     // Handle sort with emit
     const handleSortClick = (key) => {
@@ -277,12 +278,7 @@ export default {
 
     formatDate(dateString) {
       if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleDateString('es-ES', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
+      return formatDateUtil(dateString, { dateStyle: 'short' })
     },
 
     formatTime(dateString) {

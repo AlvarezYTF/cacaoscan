@@ -224,6 +224,7 @@ import { ref, onMounted } from 'vue'
 import { useReportsStore } from '@/stores/reports'
 import BaseModal from '@/components/common/BaseModal.vue'
 import { useAuditHelpers } from '@/composables/useAuditHelpers'
+import { formatDateTime, formatFileSize, formatDuration, formatNumber } from '@/utils/formatters'
 
 export default {
   name: 'ReportPreviewModal',
@@ -301,31 +302,7 @@ export default {
       return classes[status] || 'status-pending'
     }
 
-    const formatDateTime = (dateString) => {
-      if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleString('es-ES', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    }
-
-    const formatFileSize = (bytes) => {
-      if (!bytes) return 'N/A'
-      const sizes = ['B', 'KB', 'MB', 'GB']
-      const i = Math.floor(Math.log(bytes) / Math.log(1024))
-      return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
-    }
-
-    const formatDuration = (seconds) => {
-      if (!seconds) return 'N/A'
-      const minutes = Math.floor(seconds / 60)
-      const remainingSeconds = seconds % 60
-      return `${minutes}m ${remainingSeconds}s`
-    }
+    // Formatting functions are now imported from formatters.js
 
     // Función auxiliar para capitalizar palabras sin usar replace() con regex
     const capitalizeWords = (str) => {
@@ -385,7 +362,7 @@ export default {
 
     const formatFilterValue = (value) => {
       if (typeof value === 'number') {
-        return value.toLocaleString()
+        return formatNumber(value)
       }
       return value
     }
@@ -422,6 +399,7 @@ export default {
       formatDateTime,
       formatFileSize,
       formatDuration,
+      formatNumber,
       formatParameterLabel,
       formatParameterValue,
       formatFilterLabel,

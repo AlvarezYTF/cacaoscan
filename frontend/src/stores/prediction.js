@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { predictImage, predictImageYolo, predictImageSmart, getImageHistory, getPredictionStats } from '@/services/predictionApi.js';
+import { handleApiError } from '@/services/apiErrorHandler';
 
 export const usePredictionStore = defineStore('prediction', {
   state: () => ({
@@ -9,10 +10,10 @@ export const usePredictionStore = defineStore('prediction', {
     // Estado de la imagen actual
     currentImage: null,
     
-    // Estado de carga
+    // Estado de carga (usando patrón base)
     isLoading: false,
     
-    // Errores
+    // Errores (usando patrón base)
     error: null,
     uploadError: null,
     
@@ -28,7 +29,7 @@ export const usePredictionStore = defineStore('prediction', {
       avgDimensions: {}
     },
     
-    // Configuración de paginación para historial
+    // Configuración de paginación para historial (usando patrón base)
     pagination: {
       currentPage: 1,
       totalPages: 1,
@@ -36,7 +37,7 @@ export const usePredictionStore = defineStore('prediction', {
       itemsPerPage: 10
     },
     
-    // Filtros para el historial
+    // Filtros para el historial (usando patrón base)
     filters: {
       processed: null,
       quality: '',
@@ -184,8 +185,9 @@ export const usePredictionStore = defineStore('prediction', {
         return result;
         
       } catch (error) {
-        this.error = error.message || 'Error al realizar la predicción';
-        this.uploadError = error.message;
+        const errorInfo = handleApiError(error, { logError: true });
+        this.error = errorInfo.message;
+        this.uploadError = errorInfo.message;
         throw error;
       } finally {
         this.isLoading = false;
@@ -235,8 +237,9 @@ export const usePredictionStore = defineStore('prediction', {
         }
         
       } catch (error) {
-        this.error = error.message || 'Error al realizar la predicción YOLOv8';
-        this.uploadError = error.message;
+        const errorInfo = handleApiError(error, { logError: true });
+        this.error = errorInfo.message;
+        this.uploadError = errorInfo.message;
         throw error;
       } finally {
         this.isLoading = false;
@@ -286,8 +289,9 @@ export const usePredictionStore = defineStore('prediction', {
         }
         
       } catch (error) {
-        this.error = error.message || 'Error al realizar la predicción con recorte inteligente';
-        this.uploadError = error.message;
+        const errorInfo = handleApiError(error, { logError: true });
+        this.error = errorInfo.message;
+        this.uploadError = errorInfo.message;
         throw error;
       } finally {
         this.isLoading = false;
@@ -327,6 +331,9 @@ export const usePredictionStore = defineStore('prediction', {
     
     // Cargar historial de predicciones
     async loadHistory(page = 1, filters = {}) {
+      this.isLoading = true;
+      this.error = null;
+      
       try {
         const params = {
           page,
@@ -351,7 +358,7 @@ export const usePredictionStore = defineStore('prediction', {
             this.predictions = [...this.predictions, ...response.results];
           }
           
-          // Actualizar paginación
+          // Actualizar paginación usando patrón base
           this.pagination = {
             currentPage: page,
             totalPages: Math.ceil(response.count / this.pagination.itemsPerPage),
@@ -363,21 +370,30 @@ export const usePredictionStore = defineStore('prediction', {
         return response;
         
       } catch (error) {
-        console.warn('Error cargando historial:', error.message);
+        const errorInfo = handleApiError(error, { logError: true });
+        this.error = errorInfo.message;
         // No lanzar error para que no afecte la UX
         return { results: [], count: 0 };
+      } finally {
+        this.isLoading = false;
       }
     },
     
     // Cargar estadísticas
     async loadStats() {
+      this.isLoading = true;
+      this.error = null;
+      
       try {
         const stats = await getPredictionStats();
         this.stats = { ...this.stats, ...stats };
         return stats;
       } catch (error) {
-        console.warn('Error cargando estadísticas:', error.message);
+        const errorInfo = handleApiError(error, { logError: true });
+        this.error = errorInfo.message;
         return this.stats;
+      } finally {
+        this.isLoading = false;
       }
     },
     

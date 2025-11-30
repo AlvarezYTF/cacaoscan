@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/services/api'
+import { handleApiError } from '@/services/apiErrorHandler'
 
 export const useAdminStore = defineStore('admin', () => {
   // State
@@ -32,8 +33,8 @@ export const useAdminStore = defineStore('admin', () => {
       
       return response
     } catch (err) {
-      error.value = err.response?.data?.detail || 'Error al cargar estadísticas'
-      console.error('❌ [admin store] Error cargando stats:', err)
+      const errorInfo = handleApiError(err, { logError: true })
+      error.value = errorInfo.message
       throw err
     } finally {
       loading.value = false
@@ -56,7 +57,8 @@ export const useAdminStore = defineStore('admin', () => {
       
       return response
     } catch (err) {
-      error.value = err.response?.data?.detail || 'Error al cargar usuarios recientes'
+      const errorInfo = handleApiError(err, { logError: true })
+      error.value = errorInfo.message
       throw err
     } finally {
       loading.value = false
@@ -83,14 +85,16 @@ export const useAdminStore = defineStore('admin', () => {
       
       return response
     } catch (err) {
+      const errorInfo = handleApiError(err, { logError: false })
+      
       // Si es error 500 o el endpoint no está disponible, retornar vacío silenciosamente
       if (err.response?.status === 500) {
         console.warn('⚠️ [admin store] Activity logs endpoint returned 500, returning empty array')
         activities.value = []
         return { data: { results: [] } }
       }
-      error.value = err.response?.data?.detail || 'Error al cargar actividades recientes'
-      console.error('❌ [admin store] Error loading activities:', err)
+      
+      error.value = errorInfo.message
       // No lanzar el error para evitar notificaciones molestas
       activities.value = []
       return { data: { results: [] } }
@@ -125,14 +129,16 @@ export const useAdminStore = defineStore('admin', () => {
       
       return response
     } catch (err) {
+      const errorInfo = handleApiError(err, { logError: false })
+      
       // Si es error 500 o el endpoint no está disponible, retornar vacío silenciosamente
       if (err.response?.status === 500) {
         console.warn('⚠️ [admin store] Notifications endpoint returned 500, returning empty array')
         alerts.value = []
         return { data: { results: [] } }
       }
-      error.value = err.response?.data?.detail || 'Error al cargar alertas'
-      console.error('❌ [admin store] Error loading alerts:', err)
+      
+      error.value = errorInfo.message
       // No lanzar el error para evitar notificaciones molestas
       alerts.value = []
       return { data: { results: [] } }
@@ -151,7 +157,8 @@ export const useAdminStore = defineStore('admin', () => {
       
       return response
     } catch (err) {
-      error.value = err.response?.data?.detail || 'Error al cargar estadísticas de reportes'
+      const errorInfo = handleApiError(err, { logError: true })
+      error.value = errorInfo.message
       throw err
     } finally {
       loading.value = false
@@ -167,11 +174,14 @@ export const useAdminStore = defineStore('admin', () => {
       
       return response
     } catch (err) {
+      const errorInfo = handleApiError(err, { logError: false })
+      
       // Si es error 500 o el endpoint no está disponible, retornar vacío silenciosamente
       if (err.response?.status === 500) {
         return { data: { results: [] } }
       }
-      error.value = err.response?.data?.detail || 'Error al cargar datos de actividad'
+      
+      error.value = errorInfo.message
       // No lanzar el error para evitar notificaciones molestas
       return { data: { results: [] } }
     } finally {
@@ -189,7 +199,8 @@ export const useAdminStore = defineStore('admin', () => {
       
       return response
     } catch (err) {
-      error.value = err.response?.data?.detail || 'Error al cargar distribución de calidad'
+      const errorInfo = handleApiError(err, { logError: true })
+      error.value = errorInfo.message
       throw err
     } finally {
       loading.value = false
@@ -211,8 +222,8 @@ export const useAdminStore = defineStore('admin', () => {
       
       return response
     } catch (err) {
-      error.value = err.response?.data?.detail || 'Error al descartar alerta'
-      console.error('❌ [admin store] Error dismissing alert:', err)
+      const errorInfo = handleApiError(err, { logError: true })
+      error.value = errorInfo.message
       throw err
     } finally {
       loading.value = false
@@ -229,7 +240,8 @@ export const useAdminStore = defineStore('admin', () => {
       
       return response
     } catch (err) {
-      error.value = err.response?.data?.detail || 'Error al cargar usuarios'
+      const errorInfo = handleApiError(err, { logError: true })
+      error.value = errorInfo.message
       throw err
     } finally {
       loading.value = false

@@ -721,33 +721,35 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useReportsStore } from '@/stores/reports'
-import Swal from 'sweetalert2'
+import { useEmailValidation } from '@/composables/useEmailValidation'
+import { useNotifications } from '@/composables/useNotifications'
 import BaseModal from '@/components/common/BaseModal.vue'
 
 const emit = defineEmits(['close', 'created'])
 
 const reportsStore = useReportsStore()
-    const reportsStore = useReportsStore()
+const { isValidEmail } = useEmailValidation()
+const { showSuccess, showError } = useNotifications()
 
-    const loading = ref(false)
-    const errors = ref({})
-    const currentStep = ref(1)
-    const showAdvancedFilters = ref(false)
-    const fincas = ref([])
-    const lotes = ref([])
-    const users = ref([])
+const loading = ref(false)
+const errors = ref({})
+const currentStep = ref(1)
+const showAdvancedFilters = ref(false)
+const fincas = ref([])
+const lotes = ref([])
+const users = ref([])
 
-    const totalSteps = 5
+const totalSteps = 5
 
-    const steps = [
-      { label: 'Tipo y Formato' },
-      { label: 'Información' },
-      { label: 'Parámetros' },
-      { label: 'Filtros' },
-      { label: 'Programación' }
-    ]
+const steps = [
+  { label: 'Tipo y Formato' },
+  { label: 'Información' },
+  { label: 'Parámetros' },
+  { label: 'Filtros' },
+  { label: 'Programación' }
+]
 
-    const formatOptions = [
+const formatOptions = [
       {
         value: 'pdf',
         name: 'PDF',
@@ -774,8 +776,8 @@ const reportsStore = useReportsStore()
       }
     ]
 
-    // Form data
-    const formData = reactive({
+// Form data
+const formData = reactive({
       tipo_reporte: '',
       formato: '',
       titulo: '',
@@ -812,8 +814,8 @@ const reportsStore = useReportsStore()
       }
     })
 
-    // Computed
-    const canProceed = computed(() => {
+// Computed
+const canProceed = computed(() => {
       switch (currentStep.value) {
         case 1:
           return formData.tipo_reporte && formData.formato
@@ -833,8 +835,8 @@ const reportsStore = useReportsStore()
       }
     })
 
-    // Methods
-    const loadInitialData = async () => {
+// Methods
+const loadInitialData = async () => {
       try {
         const [fincasResponse, usersResponse] = await Promise.all([
           reportsStore.fetchFincas(),
@@ -848,287 +850,200 @@ const reportsStore = useReportsStore()
       }
     }
 
-    const loadLotes = async () => {
-      if (!formData.parametros.finca_id) {
-        lotes.value = []
-        return
-      }
+const loadLotes = async () => {
+  if (!formData.parametros.finca_id) {
+    lotes.value = []
+    return
+  }
 
-      try {
-        const response = await reportsStore.fetchLotesByFinca(formData.parametros.finca_id)
-        lotes.value = response.data.results || []
-      } catch (error) {
-        console.error('Error loading lotes:', error)
-        lotes.value = []
-      }
+  try {
+    const response = await reportsStore.fetchLotesByFinca(formData.parametros.finca_id)
+    lotes.value = response.data.results || []
+  } catch (error) {
+    console.error('Error loading lotes:', error)
+    lotes.value = []
+  }
+}
+
+const onTypeChange = () => {
+  // Reset parameters when type changes
+  formData.parametros = {
+    finca_id: '',
+    lote_id: '',
+    custom_type: 'calidad',
+    analysis_depth: 'intermediate',
+    model_type: '',
+    target_metric: '',
+    include_charts: true,
+    include_recommendations: true,
+    include_raw_data: false,
+    include_summary: true,
+    include_lotes: false,
+    scheduled: false,
+    schedule_frequency: 'monthly',
+    schedule_time: '09:00',
+    schedule_email: '',
+    schedule_retention: 30
+  }
+  
+  // Generate default title based on type
+  if (formData.tipo_reporte && !formData.titulo) {
+    const typeNames = {
+      'calidad': 'Reporte de Calidad',
+      'finca': 'Reporte de Finca',
+      'lote': 'Reporte de Lote',
+      'usuario': 'Reporte de Usuario',
+      'auditoria': 'Reporte de Auditoría',
+      'personalizado': 'Reporte Personalizado',
+      'metricas': 'Reporte de Métricas',
+      'entrenamiento': 'Reporte de Entrenamiento'
     }
+    formData.titulo = `${typeNames[formData.tipo_reporte]} - ${new Date().toLocaleDateString('es-ES')}`
+  }
+}
 
-    const onTypeChange = () => {
-      // Reset parameters when type changes
-      formData.parametros = {
-        finca_id: '',
-        lote_id: '',
-        custom_type: 'calidad',
-        analysis_depth: 'intermediate',
-        model_type: '',
-        target_metric: '',
-        include_charts: true,
-        include_recommendations: true,
-        include_raw_data: false,
-        include_summary: true,
-        include_lotes: false,
-        scheduled: false,
-        schedule_frequency: 'monthly',
-        schedule_time: '09:00',
-        schedule_email: '',
-        schedule_retention: 30
-      }
+const onScheduledChange = () => {
+  if (!formData.parametros.scheduled) {
+    formData.parametros.schedule_frequency = 'monthly'
+    formData.parametros.schedule_time = '09:00'
+    formData.parametros.schedule_email = ''
+    formData.parametros.schedule_retention = 30
+  }
+}
+
+const nextStep = () => {
+  if (canProceed.value && currentStep.value < totalSteps) {
+    currentStep.value++
+  }
+}
+
+const previousStep = () => {
+  if (currentStep.value > 1) {
+    currentStep.value--
+  }
+}
+
+// Email validation is now handled by useEmailValidation composable
+const hasValidScheduleEmailFormat = (value) => {
+  return isValidEmail(value)
+}
+
+const validateForm = () => {
+  errors.value = {}
+
+  // Required fields
+  if (!formData.tipo_reporte) {
+    errors.value.tipo_reporte = 'El tipo de reporte es requerido'
+  }
+
+  if (!formData.formato) {
+    errors.value.formato = 'El formato es requerido'
+  }
+
+  if (!formData.titulo.trim()) {
+    errors.value.titulo = 'El título es requerido'
+  }
+
+  // Specific validations
+  if (formData.tipo_reporte === 'finca' && !formData.parametros.finca_id) {
+    errors.value.finca_id = 'Debe seleccionar una finca'
+  }
+
+  // Date validations
+  if (formData.filtros.fecha_desde && formData.filtros.fecha_hasta) {
+    if (new Date(formData.filtros.fecha_desde) > new Date(formData.filtros.fecha_hasta)) {
+      errors.value.fecha_hasta = 'La fecha hasta debe ser posterior a la fecha desde'
+    }
+  }
+
+  // Email validation for scheduled reports
+  if (formData.parametros.scheduled && formData.parametros.schedule_email) {
+    const email = formData.parametros.schedule_email.trim()
+    
+    // Limit email length to prevent DoS attacks
+    if (email.length > 254) {
+      errors.value.schedule_email = 'El email es demasiado largo'
+    } else if (email.length === 0) {
+      errors.value.schedule_email = 'El email es requerido'
+    } else if (!hasValidScheduleEmailFormat(email)) {
+      errors.value.schedule_email = 'El email no es válido'
+    }
+  }
+
+  return Object.keys(errors.value).length === 0
+}
+
+const cleanEmptyValues = (obj) => {
+  const cleaned = { ...obj }
+  for (const key of Object.keys(cleaned)) {
+    if (cleaned[key] === '' || cleaned[key] === null) {
+      delete cleaned[key]
+    }
+  }
+  return cleaned
+}
+
+const buildReportData = () => {
+  return {
+    tipo_reporte: formData.tipo_reporte,
+    formato: formData.formato,
+    titulo: formData.titulo.trim(),
+    descripcion: formData.descripcion.trim(),
+    parametros: cleanEmptyValues(formData.parametros),
+    filtros: cleanEmptyValues(formData.filtros)
+  }
+}
+
+const processReportErrors = (errorData) => {
+  if (errorData.tipo_reporte) {
+    errors.value.tipo_reporte = Array.isArray(errorData.tipo_reporte) ? errorData.tipo_reporte[0] : errorData.tipo_reporte
+  }
+  if (errorData.formato) {
+    errors.value.formato = Array.isArray(errorData.formato) ? errorData.formato[0] : errorData.formato
+  }
+  if (errorData.titulo) {
+    errors.value.titulo = Array.isArray(errorData.titulo) ? errorData.titulo[0] : errorData.titulo
+  }
+}
+
+const generateReport = async () => {
+  if (!validateForm()) {
+    return
+  }
+
+  loading.value = true
+  errors.value = {}
+
+  try {
+    const reportData = buildReportData()
+    const response = await reportsStore.createReport(reportData)
+
+    showSuccess('El reporte ha sido enviado para generación. Te notificaremos cuando esté listo.')
+
+    emit('created', response.data)
+    closeModal()
+
+  } catch (error) {
+    console.error('Error creating report:', error)
+    
+    if (error.response?.data) {
+      const errorData = error.response.data
+      processReportErrors(errorData)
       
-      // Generate default title based on type
-      if (formData.tipo_reporte && !formData.titulo) {
-        const typeNames = {
-          'calidad': 'Reporte de Calidad',
-          'finca': 'Reporte de Finca',
-          'lote': 'Reporte de Lote',
-          'usuario': 'Reporte de Usuario',
-          'auditoria': 'Reporte de Auditoría',
-          'personalizado': 'Reporte Personalizado',
-          'metricas': 'Reporte de Métricas',
-          'entrenamiento': 'Reporte de Entrenamiento'
-        }
-        formData.titulo = `${typeNames[formData.tipo_reporte]} - ${new Date().toLocaleDateString('es-ES')}`
+      if (Object.keys(errors.value).length === 0) {
+        showError(errorData.detail || 'No se pudo crear el reporte')
       }
+    } else {
+      showError('No se pudo crear el reporte')
     }
+  } finally {
+    loading.value = false
+  }
+}
 
-    const onScheduledChange = () => {
-      if (!formData.parametros.scheduled) {
-        formData.parametros.schedule_frequency = 'monthly'
-        formData.parametros.schedule_time = '09:00'
-        formData.parametros.schedule_email = ''
-        formData.parametros.schedule_retention = 30
-      }
-    }
-
-    const nextStep = () => {
-      if (canProceed.value && currentStep.value < totalSteps) {
-        currentStep.value++
-      }
-    }
-
-    const previousStep = () => {
-      if (currentStep.value > 1) {
-        currentStep.value--
-      }
-    }
-
-    /**
-     * Validates schedule email format without relying on regex.
-     * @param {string} value
-     * @returns {boolean}
-     */
-    const hasValidScheduleEmailFormat = (value) => {
-      const parts = value.split('@')
-      if (parts.length !== 2) {
-        return false
-      }
-
-      const [localPart, domainPart] = parts
-
-      if (!localPart || localPart.length === 0 || localPart.length > 64) {
-        return false
-      }
-
-      if (localPart.includes('..') || localPart.startsWith('.') || localPart.endsWith('.')) {
-        return false
-      }
-
-      if (!domainPart || domainPart.length === 0 || domainPart.length > 253) {
-        return false
-      }
-
-      const domainParts = domainPart.split('.')
-      if (domainParts.length < 2 || domainParts.some((part) => part.length === 0)) {
-        return false
-      }
-
-      /**
-       * @param {string} char
-       * @returns {boolean}
-       */
-      const isValidLocalChar = (char) => {
-        const code = char.codePointAt(0)
-        if (code === undefined) {
-          return false
-        }
-
-        return (
-          (code >= 48 && code <= 57) ||
-          (code >= 65 && code <= 90) ||
-          (code >= 97 && code <= 122) ||
-          char === '.' ||
-          char === '_' ||
-          char === '+' ||
-          char === '-'
-        )
-      }
-
-      /**
-       * @param {string} char
-       * @returns {boolean}
-       */
-      const isValidDomainChar = (char) => {
-        const code = char.codePointAt(0)
-        if (code === undefined) {
-          return false
-        }
-
-        return (
-          (code >= 48 && code <= 57) ||
-          (code >= 65 && code <= 90) ||
-          (code >= 97 && code <= 122) ||
-          char === '.' ||
-          char === '-'
-        )
-      }
-
-      const hasInvalidLocalChar = Array.from(localPart).some((char) => !isValidLocalChar(char))
-      if (hasInvalidLocalChar) {
-        return false
-      }
-
-      const hasInvalidDomainChar = Array.from(domainPart).some((char) => !isValidDomainChar(char))
-      return !hasInvalidDomainChar
-    }
-
-    const validateForm = () => {
-      errors.value = {}
-
-      // Required fields
-      if (!formData.tipo_reporte) {
-        errors.value.tipo_reporte = 'El tipo de reporte es requerido'
-      }
-
-      if (!formData.formato) {
-        errors.value.formato = 'El formato es requerido'
-      }
-
-      if (!formData.titulo.trim()) {
-        errors.value.titulo = 'El título es requerido'
-      }
-
-      // Specific validations
-      if (formData.tipo_reporte === 'finca' && !formData.parametros.finca_id) {
-        errors.value.finca_id = 'Debe seleccionar una finca'
-      }
-
-      // Date validations
-      if (formData.filtros.fecha_desde && formData.filtros.fecha_hasta) {
-        if (new Date(formData.filtros.fecha_desde) > new Date(formData.filtros.fecha_hasta)) {
-          errors.value.fecha_hasta = 'La fecha hasta debe ser posterior a la fecha desde'
-        }
-      }
-
-      // Email validation for scheduled reports
-      if (formData.parametros.scheduled && formData.parametros.schedule_email) {
-        const email = formData.parametros.schedule_email.trim()
-        
-        // Limit email length to prevent DoS attacks
-        if (email.length > 254) {
-          errors.value.schedule_email = 'El email es demasiado largo'
-        } else if (email.length === 0) {
-          errors.value.schedule_email = 'El email es requerido'
-        } else if (!hasValidScheduleEmailFormat(email)) {
-          errors.value.schedule_email = 'El email no es válido'
-        }
-      }
-
-      return Object.keys(errors.value).length === 0
-    }
-
-    const cleanEmptyValues = (obj) => {
-      const cleaned = { ...obj }
-      for (const key of Object.keys(cleaned)) {
-        if (cleaned[key] === '' || cleaned[key] === null) {
-          delete cleaned[key]
-        }
-      }
-      return cleaned
-    }
-
-    const buildReportData = () => {
-      return {
-        tipo_reporte: formData.tipo_reporte,
-        formato: formData.formato,
-        titulo: formData.titulo.trim(),
-        descripcion: formData.descripcion.trim(),
-        parametros: cleanEmptyValues(formData.parametros),
-        filtros: cleanEmptyValues(formData.filtros)
-      }
-    }
-
-    const processReportErrors = (errorData) => {
-      if (errorData.tipo_reporte) {
-        errors.value.tipo_reporte = Array.isArray(errorData.tipo_reporte) ? errorData.tipo_reporte[0] : errorData.tipo_reporte
-      }
-      if (errorData.formato) {
-        errors.value.formato = Array.isArray(errorData.formato) ? errorData.formato[0] : errorData.formato
-      }
-      if (errorData.titulo) {
-        errors.value.titulo = Array.isArray(errorData.titulo) ? errorData.titulo[0] : errorData.titulo
-      }
-    }
-
-    const generateReport = async () => {
-      if (!validateForm()) {
-        return
-      }
-
-      loading.value = true
-      errors.value = {}
-
-      try {
-        const reportData = buildReportData()
-        const response = await reportsStore.createReport(reportData)
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Reporte Creado',
-          text: 'El reporte ha sido enviado para generación. Te notificaremos cuando esté listo.',
-          timer: 3000
-        })
-
-        emit('created', response.data)
-        closeModal()
-
-      } catch (error) {
-        console.error('Error creating report:', error)
-        
-        if (error.response?.data) {
-          const errorData = error.response.data
-          processReportErrors(errorData)
-          
-          if (Object.keys(errors.value).length === 0) {
-            Swal.fire({
-              icon: 'error',
-              title: 'Error',
-              text: errorData.detail || 'No se pudo crear el reporte'
-            })
-          }
-        } else {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo crear el reporte'
-          })
-        }
-      } finally {
-        loading.value = false
-      }
-    }
-
-    const closeModal = () => {
-      emit('close')
-    }
+const closeModal = () => {
+  emit('close')
+}
 
 // Lifecycle
 onMounted(() => {

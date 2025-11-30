@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia'
 import reportsService from '@/services/reportsService'
 import { downloadBlob } from '@/utils/fileExportUtils'
+import { handleApiError } from '@/services/apiErrorHandler'
 
 export const useReportsStore = defineStore('reports', {
   state: () => ({
@@ -97,8 +98,8 @@ export const useReportsStore = defineStore('reports', {
 
         return response
       } catch (error) {
-        this.error = error.message || 'Error al cargar reportes'
-        console.error('Error fetching reports:', error)
+        const errorInfo = handleApiError(error, { logError: true })
+        this.error = errorInfo.message
         throw error
       } finally {
         this.loading = false
@@ -123,7 +124,7 @@ export const useReportsStore = defineStore('reports', {
         }
         return response
       } catch (error) {
-        console.error('Error fetching stats:', error)
+        const errorInfo = handleApiError(error, { logError: true })
         throw error
       }
     },
@@ -148,8 +149,8 @@ export const useReportsStore = defineStore('reports', {
 
         return report
       } catch (error) {
-        this.error = error.message || 'Error al crear reporte'
-        console.error('Error creating report:', error)
+        const errorInfo = handleApiError(error, { logError: true })
+        this.error = errorInfo.message
         throw error
       } finally {
         this.loading = false
@@ -174,8 +175,8 @@ export const useReportsStore = defineStore('reports', {
 
         return this.reports[index]
       } catch (error) {
-        this.error = error.message || 'Error al actualizar reporte'
-        console.error('Error updating report:', error)
+        const errorInfo = handleApiError(error, { logError: true })
+        this.error = errorInfo.message
         throw error
       } finally {
         this.loading = false
@@ -202,8 +203,8 @@ export const useReportsStore = defineStore('reports', {
 
         return true
       } catch (error) {
-        this.error = error.message || 'Error al eliminar reporte'
-        console.error('Error deleting report:', error)
+        const errorInfo = handleApiError(error, { logError: true })
+        this.error = errorInfo.message
         throw error
       } finally {
         this.loading = false
@@ -231,8 +232,8 @@ export const useReportsStore = defineStore('reports', {
 
         return true
       } catch (error) {
-        this.error = error.message || 'Error al eliminar reportes'
-        console.error('Error bulk deleting reports:', error)
+        const errorInfo = handleApiError(error, { logError: true })
+        this.error = errorInfo.message
         throw error
       } finally {
         this.loading = false
@@ -263,7 +264,7 @@ export const useReportsStore = defineStore('reports', {
 
         return true
       } catch (error) {
-        console.error('Error downloading report:', error)
+        const errorInfo = handleApiError(error, { logError: true })
         throw error
       }
     },
@@ -286,7 +287,7 @@ export const useReportsStore = defineStore('reports', {
         
         return report
       } catch (error) {
-        console.error('Error getting report details:', error)
+        const errorInfo = handleApiError(error, { logError: true })
         throw error
       }
     },

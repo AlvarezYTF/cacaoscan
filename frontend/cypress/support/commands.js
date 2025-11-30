@@ -168,3 +168,157 @@ Cypress.Commands.add('mockApiResponse', (method, url, response, statusCode = 200
     body: response
   }).as(`mock-${method.toLowerCase()}-${url.replace(/\//g, '-')}`)
 })
+
+// Generic CRUD helpers
+
+// Create entity (generic)
+Cypress.Commands.add('createEntity', (entityType, data, options = {}) => {
+  const { useApi = false, waitForResponse = true } = options
+  
+  if (useApi) {
+    return cy.request({
+      method: 'POST',
+      url: `/api/${entityType}/`,
+      body: data,
+      headers: {
+        'Authorization': `Bearer ${globalThis.localStorage.getItem('auth_token')}`
+      }
+    }).then((response) => {
+      if (waitForResponse) {
+        cy.wait(500) // Wait for UI update
+      }
+      return response
+    })
+  }
+  
+  // UI-based creation
+  cy.get(`[data-cy="${entityType}-form"]`).within(() => {
+    helpers.fillForm(data, entityType)
+  })
+  cy.submitForm()
+  
+  if (waitForResponse) {
+    cy.waitForDataLoad()
+  }
+})
+
+// Update entity (generic)
+Cypress.Commands.add('updateEntity', (entityType, id, data, options = {}) => {
+  const { useApi = false } = options
+  
+  if (useApi) {
+    return cy.request({
+      method: 'PUT',
+      url: `/api/${entityType}/${id}/`,
+      body: data,
+      headers: {
+        'Authorization': `Bearer ${globalThis.localStorage.getItem('auth_token')}`
+      }
+    })
+  }
+  
+  // UI-based update
+  cy.get(`[data-cy="${entityType}-${id}"]`).within(() => {
+    cy.get(SELECTORS.buttons.edit).click()
+  })
+  cy.get(`[data-cy="${entityType}-form"]`).within(() => {
+    helpers.fillForm(data, entityType)
+  })
+  cy.submitForm()
+})
+
+// Delete entity (generic)
+Cypress.Commands.add('deleteEntity', (entityType, id, options = {}) => {
+  const { useApi = false, confirm = true } = options
+  
+  if (useApi) {
+    return cy.request({
+      method: 'DELETE',
+      url: `/api/${entityType}/${id}/`,
+      headers: {
+        'Authorization': `Bearer ${globalThis.localStorage.getItem('auth_token')}`
+      }
+    })
+  }
+  
+  // UI-based deletion
+  cy.get(`[data-cy="${entityType}-${id}"]`).within(() => {
+    cy.get(SELECTORS.buttons.delete).click()
+  })
+  
+  if (confirm) {
+    cy.get(SELECTORS.modals.delete).within(() => {
+      cy.get(SELECTORS.buttons.confirm).click()
+    })
+  }
+})
+
+// Generic logout helper with confirmation handling
+Cypress.Commands.add('logoutWithConfirmation', (options = {}) => {
+  const { skipConfirmation = false } = options
+  
+  cy.get(SELECTORS.navigation.menu).within(() => {
+    cy.get('[data-cy="user-menu"]').click()
+    cy.get(SELECTORS.buttons.logout).click()
+  })
+  
+  if (!skipConfirmation) {
+    cy.get('body').then(($body) => {
+      if ($body.find('[data-cy="confirm-logout"]').length > 0) {
+        cy.get('[data-cy="confirm-logout"]').click()
+      }
+    })
+  }
+  
+  cy.url().should('include', '/login')
+  
+  // Verify tokens are cleared
+  cy.window().then((win) => {
+    expect(win.localStorage.getItem('auth_token')).to.be.null
+    expect(win.localStorage.getItem('refresh_token')).to.be.null
+    expect(win.localStorage.getItem('user_data')).to.be.null
+  })
+})
+
+// Generic form validation helper
+Cypress.Commands.add('validateFormErrors', (formSelector, expectedErrors) => {
+  cy.get(formSelector).within(() => {
+    Object.keys(expectedErrors).forEach((field) => {
+      cy.get(`[data-cy="${field}-error"]`)
+        .should('be.visible')
+        .and('contain', expectedErrors[field])
+    })
+  })
+})
+
+// Generic table interaction helper
+Cypress.Commands.add('interactWithTableRow', (tableSelector, rowIndex, action) => {
+  cy.get(tableSelector).within(() => {
+    cy.get(SELECTORS.tables.tableRow).eq(rowIndex).within(() => {
+      cy.get(`[data-cy="${action}-button"]`).click()
+    })
+  })
+})
+
+// Generic pagination helper
+Cypress.Commands.add('navigateTablePage', (direction) => {
+  const buttonSelector = direction === 'next' 
+    ? SELECTORS.buttons.next 
+    : SELECTORS.buttons.previous
+  
+  cy.get(buttonSelector).click()
+  cy.waitForDataLoad()
+})
+
+// Generic search/filter helper
+Cypress.Commands.add('applyTableFilter', (filterType, value) => {
+  cy.get(`[data-cy="filter-${filterType}"]`).clear().type(value)
+  cy.get(SELECTORS.buttons.filter).click()
+  cy.waitForDataLoad()
+})
+
+// Clear all filters
+Cypress.Commands.add('clearTableFilters', () => {
+  cy.get(SELECTORS.buttons.clear).click()
+  cy.waitForDataLoad()
+})
