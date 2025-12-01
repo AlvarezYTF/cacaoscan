@@ -13,7 +13,7 @@
     />
     
     <!-- Contenido principal -->
-    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'">
+    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'" data-cy="admin-agricultores">
       <!-- Page Header -->
       <div class="mb-8">
         <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
