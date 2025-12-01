@@ -1,5 +1,8 @@
 import {
-  visitAndWaitForBody
+  visitAndWaitForBody,
+  verifyPageTitle,
+  navigateToPage,
+  verifyUrlContains
 } from '../../support/helpers'
 
 describe('Public Pages & Routing', () => {
@@ -22,14 +25,10 @@ describe('Public Pages & Routing', () => {
       const bodyText = $body.text().toLowerCase()
       if (bodyText.includes('iniciar sesión') || bodyText.includes('login')) {
         cy.contains('Iniciar Sesión', { matchCase: false }).first().click({ force: true })
-        cy.url({ timeout: 10000 }).should('satisfy', (url) => {
-          return url.includes('/login') || url.includes('/auth')
-        })
+        verifyUrlContains(['/login', '/auth'])
       } else {
         cy.visit('/login')
-        cy.url({ timeout: 10000 }).should('satisfy', (url) => {
-          return url.includes('/login') || url.includes('/auth')
-        })
+        verifyUrlContains(['/login', '/auth'])
       }
     })
   })
@@ -40,14 +39,10 @@ describe('Public Pages & Routing', () => {
       const bodyText = $body.text().toLowerCase()
       if (bodyText.includes('regístrate') || bodyText.includes('register') || bodyText.includes('crear cuenta')) {
         cy.contains('Regístrate', { matchCase: false }).first().click({ force: true })
-        cy.url({ timeout: 10000 }).should('satisfy', (url) => {
-          return url.includes('/registro') || url.includes('/register') || url.includes('/signup')
-        })
+        verifyUrlContains(['/registro', '/register', '/signup'])
       } else {
         cy.visit('/registro', { failOnStatusCode: false })
-        cy.url({ timeout: 10000 }).should('satisfy', (url) => {
-          return url.includes('/registro') || url.includes('/register') || url.includes('/signup') || url.includes('/login')
-        })
+        verifyUrlContains(['/registro', '/register', '/signup', '/login'])
       }
     })
   })
@@ -55,39 +50,29 @@ describe('Public Pages & Routing', () => {
   it('should load legal terms', () => {
     cy.visit('/legal/terms', { failOnStatusCode: false })
     cy.get('body', { timeout: 10000 }).should('be.visible')
-    cy.get('body').then(($body) => {
-      if ($body.find('h1, h2, .page-title, [data-cy="page-title"]').length > 0) {
-        cy.get('h1, h2, .page-title, [data-cy="page-title"]').first().should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('términos') || text.includes('terms') || text.includes('condiciones') || text.length > 0
-        })
-      }
-    })
+    verifyPageTitle(
+      ['h1', 'h2', '.page-title', '[data-cy="page-title"]'],
+      ['términos', 'terms', 'condiciones']
+    )
   })
 
   it('should load privacy policy', () => {
     cy.visit('/legal/privacy', { failOnStatusCode: false })
     cy.get('body', { timeout: 10000 }).should('be.visible')
-    cy.get('body').then(($body) => {
-      if ($body.find('h1, h2, .page-title, [data-cy="page-title"]').length > 0) {
-        cy.get('h1, h2, .page-title, [data-cy="page-title"]').first().should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('privacidad') || text.includes('privacy') || text.length > 0
-        })
-      }
-    })
+    verifyPageTitle(
+      ['h1', 'h2', '.page-title', '[data-cy="page-title"]'],
+      ['privacidad', 'privacy']
+    )
   })
 
   it('should show 404 for non-existent routes', () => {
     cy.visit('/ruta-inexistente-12345', { failOnStatusCode: false })
     cy.get('body', { timeout: 10000 }).should('be.visible')
+    verifyPageTitle(
+      ['h1', 'h2', '.page-title', '[data-cy="page-title"]'],
+      ['no encontrada', 'not found', '404']
+    )
     cy.get('body').then(($body) => {
-      if ($body.find('h1, h2, .page-title, [data-cy="page-title"]').length > 0) {
-        cy.get('h1, h2, .page-title, [data-cy="page-title"]').first().should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('no encontrada') || text.includes('not found') || text.includes('404') || text.length > 0
-        })
-      }
       const bodyText = $body.text().toLowerCase()
       if (bodyText.includes('volver') || bodyText.includes('inicio') || bodyText.includes('home')) {
         cy.contains('Volver', { matchCase: false }).should('be.visible')
@@ -117,9 +102,7 @@ describe('Public Pages & Routing', () => {
   it('should prevent logged-in users from accessing login page', () => {
     cy.login('farmer')
     visitAndWaitForBody('/login')
-    cy.url({ timeout: 10000 }).should('satisfy', (url) => {
-      return url.includes('dashboard') || url.includes('agricultor') || url.includes('/login')
-    })
+    verifyUrlContains(['dashboard', 'agricultor', '/login'])
   })
 
   it('should verify email page loads with token', () => {
@@ -145,4 +128,3 @@ describe('Public Pages & Routing', () => {
     })
   })
 })
-

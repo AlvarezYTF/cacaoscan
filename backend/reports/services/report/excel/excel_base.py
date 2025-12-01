@@ -11,6 +11,19 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
 logger = logging.getLogger("cacaoscan.services.report.excel.base")
 
+# Excel column constants (shared across all Excel generators)
+EXCEL_COL_METRIC = 'Métrica'
+EXCEL_COL_VALUE = 'Valor'
+EXCEL_TOTAL_ANALISIS = 'Total de Análisis'
+EXCEL_AVG_CONFIDENCE = 'Confianza Promedio'
+EXCEL_AVG_ALTO = 'Alto Promedio'
+EXCEL_AVG_ANCHO = 'Ancho Promedio'
+EXCEL_AVG_GROSOR = 'Grosor Promedio'
+EXCEL_AVG_PESO = 'Peso Promedio'
+EXCEL_TOTAL_LOTES = 'Total de Lotes'
+EXCEL_LOTES_ACTIVOS = 'Lotes Activos'
+DATE_TIME_FORMAT = '%d/%m/%Y %H:%M'
+
 
 class ExcelBaseGenerator:
     """

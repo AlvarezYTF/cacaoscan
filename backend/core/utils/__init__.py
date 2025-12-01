@@ -22,6 +22,7 @@ from .cache_helpers import (
     invalidate_model_metrics_cache,
     get_cache_key,
 )
+from .ml_validators import validate_target
 
 __all__ = [
     # Response helpers
@@ -45,6 +46,8 @@ __all__ = [
     'invalidate_user_related_cache',
     'invalidate_model_metrics_cache',
     'get_cache_key',
+    # ML validators
+    'validate_target',
 ]
 
 

@@ -2,7 +2,8 @@ import {
   getApiBaseUrl,
   visitAndWaitForBody,
   verifyErrorMessageWithSelectors,
-  uploadFileWithDataTransfer
+  uploadFileWithDataTransfer,
+  openModalAndExecute
 } from '../../support/helpers'
 
 describe('Manejo de Errores - Errores de Red', () => {
@@ -26,7 +27,6 @@ describe('Manejo de Errores - Errores de Red', () => {
   it('debe manejar error 403 - Acceso denegado', () => {
     cy.interceptError('GET', '/admin/**', 403, { error: 'Acceso denegado' }, 'forbidden')
     visitAndWaitForBody('/admin/agricultores')
-    cy.wait(1000)
     verifyErrorMessageWithSelectors(
       ['[data-cy="error-message"], .error-message, .swal2-error'],
       ['acceso', 'denegado', '403']
@@ -36,7 +36,6 @@ describe('Manejo de Errores - Errores de Red', () => {
   it('debe manejar error 401 - No autorizado', () => {
     cy.interceptError('GET', '/fincas/**', 401, { error: 'Token inválido' }, 'unauthorized')
     visitAndWaitForBody('/mis-fincas')
-    cy.wait(1000)
     cy.url({ timeout: 5000 }).should('satisfy', (url) => {
       return url.includes('/login') || url.includes('/auth') || url.includes('/mis-fincas') || url.length > 0
     })
@@ -49,7 +48,6 @@ describe('Manejo de Errores - Errores de Red', () => {
   it('debe manejar error de timeout', () => {
     cy.interceptError('GET', '/fincas/**', 408, { error: 'Timeout' }, 'timeoutError')
     visitAndWaitForBody('/mis-fincas')
-    cy.wait(1000)
     verifyErrorMessageWithSelectors(
       ['[data-cy="error-message"], .error-message, .swal2-error'],
       ['timeout', 'tiempo', '408']
@@ -62,7 +60,6 @@ describe('Manejo de Errores - Errores de Red', () => {
       forceNetworkError: true
     }).as('networkError')
     visitAndWaitForBody('/mis-fincas')
-    cy.wait(1000)
     verifyErrorMessageWithSelectors(
       ['[data-cy="error-message"], .error-message, .swal2-error'],
       ['conexión', 'conexion', 'network', 'error']
@@ -82,21 +79,16 @@ describe('Manejo de Errores - Errores de Red', () => {
       }
     }).as('validationError')
     visitAndWaitForBody('/mis-fincas')
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
-        cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="finca-nombre"], input').length > 0) {
-            cy.get('[data-cy="finca-nombre"], input').first().type('Finca Test', { force: true })
-            cy.get('[data-cy="finca-area"], input[type="number"]').first().type('-5', { force: true })
-            cy.get('[data-cy="save-finca"], button[type="submit"]').first().click({ force: true })
-            cy.wait('@validationError', { timeout: 10000 })
-            verifyErrorMessageWithSelectors(
-              ['[data-cy="validation-error"], .error-message, .swal2-error'],
-              ['validación', 'validacion', 'error']
-            )
-          }
-        })
+    openModalAndExecute('[data-cy="add-finca-button"], button', ($modal) => {
+      if ($modal.find('[data-cy="finca-nombre"], input').length > 0) {
+        cy.get('[data-cy="finca-nombre"], input').first().type('Finca Test', { force: true })
+        cy.get('[data-cy="finca-area"], input[type="number"]').first().type('-5', { force: true })
+        cy.get('[data-cy="save-finca"], button[type="submit"]').first().click({ force: true })
+        cy.wait('@validationError', { timeout: 10000 })
+        verifyErrorMessageWithSelectors(
+          ['[data-cy="validation-error"], .error-message, .swal2-error'],
+          ['validación', 'validacion', 'error']
+        )
       }
     })
   })
@@ -104,19 +96,14 @@ describe('Manejo de Errores - Errores de Red', () => {
   it('debe manejar error de límite de tasa', () => {
     cy.interceptError('POST', '/fincas/', 429, { error: 'Límite de tasa excedido' }, 'rateLimit')
     visitAndWaitForBody('/mis-fincas')
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
-        cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="save-finca"], button[type="submit"]').length > 0) {
-            cy.get('[data-cy="save-finca"], button[type="submit"]').first().click({ force: true })
-            cy.wait('@rateLimit', { timeout: 10000 })
-            verifyErrorMessageWithSelectors(
-              ['[data-cy="error-message"], .error-message, .swal2-error'],
-              ['límite', 'tasa', 'excedido', '429']
-            )
-          }
-        })
+    openModalAndExecute('[data-cy="add-finca-button"], button', ($modal) => {
+      if ($modal.find('[data-cy="save-finca"], button[type="submit"]').length > 0) {
+        cy.get('[data-cy="save-finca"], button[type="submit"]').first().click({ force: true })
+        cy.wait('@rateLimit', { timeout: 10000 })
+        verifyErrorMessageWithSelectors(
+          ['[data-cy="error-message"], .error-message, .swal2-error'],
+          ['límite', 'tasa', 'excedido', '429']
+        )
       }
     })
   })
@@ -124,7 +111,6 @@ describe('Manejo de Errores - Errores de Red', () => {
   it('debe manejar error de mantenimiento', () => {
     cy.interceptError('GET', '/fincas/**', 503, { error: 'Sistema en mantenimiento' }, 'maintenance')
     visitAndWaitForBody('/mis-fincas')
-    cy.wait(1000)
     verifyErrorMessageWithSelectors(
       ['[data-cy="maintenance-message"], .maintenance-message, .error-message'],
       ['mantenimiento', '503', 'sistema']
@@ -138,7 +124,6 @@ describe('Manejo de Errores - Errores de Red', () => {
       body: 'invalid json'
     }).as('malformedResponse')
     visitAndWaitForBody('/mis-fincas')
-    cy.wait(1000)
     verifyErrorMessageWithSelectors(
       ['[data-cy="error-message"], .error-message, .swal2-error'],
       ['procesar', 'respuesta', 'formato', 'error']
@@ -191,22 +176,17 @@ describe('Manejo de Errores - Errores de Red', () => {
     cy.login('analyst')
     cy.interceptError('POST', '/reportes/', 422, { error: 'No hay datos para el período seleccionado' }, 'reportError')
     visitAndWaitForBody('/reportes')
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="create-report-button"], button').length > 0) {
-        cy.get('[data-cy="create-report-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="report-type"], select').length > 0) {
-            cy.get('[data-cy="report-type"], select').first().select('analisis-periodo', { force: true })
-            cy.get('[data-cy="start-date"], input[type="date"]').first().type('2024-01-01', { force: true })
-            cy.get('[data-cy="end-date"], input[type="date"]').first().type('2024-01-31', { force: true })
-            cy.get('[data-cy="generate-report"], button[type="submit"]').first().click({ force: true })
-            cy.wait('@reportError', { timeout: 10000 })
-            verifyErrorMessageWithSelectors(
-              ['[data-cy="generation-error"], .error-message, .swal2-error'],
-              ['datos', 'período', 'seleccionado', '422']
-            )
-          }
-        })
+    openModalAndExecute('[data-cy="create-report-button"], button', ($modal) => {
+      if ($modal.find('[data-cy="report-type"], select').length > 0) {
+        cy.get('[data-cy="report-type"], select').first().select('analisis-periodo', { force: true })
+        cy.get('[data-cy="start-date"], input[type="date"]').first().type('2024-01-01', { force: true })
+        cy.get('[data-cy="end-date"], input[type="date"]').first().type('2024-01-31', { force: true })
+        cy.get('[data-cy="generate-report"], button[type="submit"]').first().click({ force: true })
+        cy.wait('@reportError', { timeout: 10000 })
+        verifyErrorMessageWithSelectors(
+          ['[data-cy="generation-error"], .error-message, .swal2-error'],
+          ['datos', 'período', 'seleccionado', '422']
+        )
       }
     })
   })

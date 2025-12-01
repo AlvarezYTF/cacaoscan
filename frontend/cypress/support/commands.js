@@ -1151,3 +1151,137 @@ Cypress.Commands.add('executeInModal', (buttonSelector, modalActions) => {
 Cypress.Commands.add('ifElementExists', (selector, actions, elseActions) => {
   return helpers.ifElementExists(selector, actions, elseActions)
 })
+
+// ============================================
+// Image History Management Commands
+// ============================================
+
+/**
+ * Navigates to images history page
+ * @param {string} userType - User type (default: 'farmer')
+ * @returns {Cypress.Chainable}
+ */
+Cypress.Commands.add('navigateToImagesHistory', (userType = 'farmer') => {
+  cy.login(userType)
+  return helpers.visitAndWaitForBody('/mis-imagenes')
+})
+
+/**
+ * Clicks on first image item if exists
+ * @returns {Cypress.Chainable<boolean>} True if clicked, false otherwise
+ */
+Cypress.Commands.add('clickFirstImageItem', () => {
+  return helpers.ifFoundInBody('[data-cy="image-item"], .image-item, .item', () => {
+    cy.get('[data-cy="image-item"], .image-item, .item').first().click({ force: true })
+    return cy.wrap(true)
+  }, () => cy.wrap(false))
+})
+
+/**
+ * Filters images by date range
+ * @param {string} startDate - Start date (YYYY-MM-DD)
+ * @param {string} endDate - End date (YYYY-MM-DD)
+ * @returns {Cypress.Chainable}
+ */
+Cypress.Commands.add('filterImagesByDate', (startDate, endDate) => {
+  return helpers.clickIfExists('[data-cy="date-filter"], button, .filter').then((clicked) => {
+    if (!clicked) return cy.wrap(null)
+    return cy.get('body', { timeout: 5000 }).then(() => {
+      helpers.typeIfExists('[data-cy="date-range-start"], input[type="date"]', startDate, { force: true })
+      helpers.typeIfExists('[data-cy="date-range-end"], input[type="date"]', endDate, { force: true })
+      helpers.clickIfExists('[data-cy="apply-date-filter"], button[type="submit"]')
+      return cy.get('body', { timeout: 5000 }).should('be.visible')
+    })
+  })
+})
+
+/**
+ * Filters images by quality
+ * @param {string} quality - Quality level to filter
+ * @returns {Cypress.Chainable}
+ */
+Cypress.Commands.add('filterImagesByQuality', (quality) => {
+  return helpers.clickIfExists('[data-cy="quality-filter"], button, .filter').then((clicked) => {
+    if (!clicked) return cy.wrap(null)
+    return cy.get('body', { timeout: 5000 }).then(() => {
+      helpers.checkCheckboxIfExists(`[data-cy="quality-${quality}"], input[type="checkbox"]`)
+      helpers.clickIfExists('[data-cy="apply-quality-filter"], button[type="submit"]')
+      return cy.get('body', { timeout: 5000 }).should('be.visible')
+    })
+  })
+})
+
+/**
+ * Sorts images by criteria
+ * @param {string} sortOption - Sort option value
+ * @returns {Cypress.Chainable}
+ */
+Cypress.Commands.add('sortImages', (sortOption) => {
+  return helpers.selectIfExists('[data-cy="sort-images"], select', sortOption, { force: true }).then(() => {
+    return cy.get('body', { timeout: 5000 }).should('be.visible')
+  })
+})
+
+/**
+ * Deletes image with confirmation
+ * @returns {Cypress.Chainable}
+ */
+Cypress.Commands.add('deleteImageWithConfirmation', () => {
+  return helpers.ifFoundInBody('[data-cy="image-item"], .image-item, .item', () => {
+    cy.get('[data-cy="image-item"], .image-item, .item').first().within(() => {
+      helpers.clickIfExists('[data-cy="delete-image"], button, .delete')
+    })
+    return cy.get('body', { timeout: 5000 }).then(() => {
+      helpers.clickIfExists('[data-cy="confirm-delete"], .swal2-confirm, button').then(() => {
+        return cy.get('body', { timeout: 5000 }).should('be.visible')
+      })
+    })
+  })
+})
+
+// ============================================
+// Reports Management Commands
+// ============================================
+
+/**
+ * Creates a new report with provided data
+ * @param {Object} reportData - Report data object
+ * @returns {Cypress.Chainable}
+ */
+Cypress.Commands.add('createReport', (reportData) => {
+  helpers.clickIfExists('[data-cy="create-report-button"]')
+  if (reportData.type) {
+    helpers.selectIfExists('[data-cy="report-type"]', reportData.type)
+  }
+  if (reportData.finca) {
+    helpers.selectIfExists('[data-cy="finca-select"]', reportData.finca)
+  }
+  if (reportData.title) {
+    helpers.typeIfExists('[data-cy="report-title"]', reportData.title)
+  }
+  if (reportData.description) {
+    helpers.typeIfExists('[data-cy="report-description"]', reportData.description)
+  }
+  if (reportData.format) {
+    helpers.selectIfExists('[data-cy="report-format"]', reportData.format)
+  }
+  return helpers.clickIfExists('[data-cy="generate-report"]')
+})
+
+/**
+ * Applies filter to reports list
+ * @param {string} filterType - Type of filter
+ * @param {string} value - Filter value
+ * @returns {Cypress.Chainable}
+ */
+Cypress.Commands.add('applyReportFilter', (filterType, value) => {
+  helpers.selectIfExists(`[data-cy="filter-${filterType}"]`, value)
+  return helpers.clickIfExists('[data-cy="apply-filters"]')
+})
+
+ * @param {Function} elseActions - Optional function to execute if element doesn't exist
+ * @returns {Cypress.Chainable}
+ */
+Cypress.Commands.add('ifElementExists', (selector, actions, elseActions) => {
+  return helpers.ifElementExists(selector, actions, elseActions)
+})

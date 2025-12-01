@@ -337,10 +337,66 @@ class RegressionEvaluator:
             results[target] = metrics
             
             logger.info(
-                f"{target}: MAE={mae:.4f}, RMSE={rmse:.4f}, R²={r2:.4f}"
+                f"{target}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, R²={metrics['r2']:.4f}"
             )
         
         return results
+    
+    def _setup_plot_style(self) -> None:
+        """Configure matplotlib and seaborn style for plots."""
+        # Lazy import to avoid MemoryError in Windows with multiprocessing
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        
+        plt.style.use('default')
+        sns.set_palette("husl")
+    
+    def _create_subplots_layout(
+        self,
+        n_targets: int,
+        figsize: Tuple[int, int] = (15, 12)
+    ) -> Tuple:
+        """Create subplots layout for plotting."""
+        import matplotlib.pyplot as plt
+        
+        _, axes = plt.subplots(2, 2, figsize=figsize)
+        axes = axes.flatten()
+        
+        # Hide unused subplots
+        for idx in range(n_targets, 4):
+            axes[idx].set_visible(False)
+        
+        return _, axes
+    
+    def _add_metrics_text(
+        self,
+        ax,
+        text: str,
+        position: Tuple[float, float] = (0.05, 0.95)
+    ) -> None:
+        """Add text with metrics to plot axis."""
+        props = {'boxstyle': 'round', 'facecolor': 'wheat', 'alpha': 0.8}
+        ax.text(
+            position[0], position[1], text,
+            transform=ax.transAxes,
+            fontsize=10,
+            verticalalignment='top',
+            bbox=props
+        )
+    
+    def _save_plot_if_specified(
+        self,
+        fig,
+        save_path: Optional[Path],
+        plot_type: str
+    ) -> None:
+        """Save plot to file if save_path is specified."""
+        import matplotlib.pyplot as plt
+        
+        if save_path:
+            ensure_dir_exists(save_path.parent)
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            logger.info(f"Gráficos de {plot_type} guardados en {save_path}")
     
     def plot_parity_plots(
         self,
@@ -358,18 +414,12 @@ class RegressionEvaluator:
             logger.warning("No hay resultados para graficar. Ejecutar evaluación primero.")
             return
         
-        # Importacin perezosa de matplotlib/seaborn (lazy import) para evitar MemoryError en Windows con multiprocessing
         import matplotlib.pyplot as plt
-        import seaborn as sns
         
-        # Configurar estilo
-        plt.style.use('default')
-        sns.set_palette("husl")
+        self._setup_plot_style()
         
-        # Crear figura
         n_targets = len(self.results)
-        _, axes = plt.subplots(2, 2, figsize=figsize)
-        axes = axes.flatten()
+        _, axes = self._create_subplots_layout(n_targets, figsize)
         
         for idx, (target, metrics) in enumerate(self.results.items()):
             if idx >= 4:  # Máximo 4 subplots
@@ -396,22 +446,10 @@ class RegressionEvaluator:
             
             # Añadir texto con métricas
             textstr = f'MAE: {metrics["mae"]:.3f}\\nRMSE: {metrics["rmse"]:.3f}\\nMAPE: {metrics["mape"]:.1f}%'
-            props = {'boxstyle': 'round', 'facecolor': 'wheat', 'alpha': 0.8}
-            ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=10,
-                   verticalalignment='top', bbox=props)
-        
-        # Ocultar subplots no utilizados
-        for idx in range(n_targets, 4):
-            axes[idx].set_visible(False)
+            self._add_metrics_text(ax, textstr)
         
         plt.tight_layout()
-        
-        # Guardar si se especifica
-        if save_path:
-            ensure_dir_exists(save_path.parent)
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Gráficos de paridad guardados en {save_path}")
-        
+        self._save_plot_if_specified(_, save_path, "paridad")
         plt.show()
     
     def plot_residual_plots(
@@ -430,18 +468,12 @@ class RegressionEvaluator:
             logger.warning("No hay resultados para graficar. Ejecutar evaluación primero.")
             return
         
-        # Importacin perezosa de matplotlib/seaborn (lazy import) para evitar MemoryError en Windows con multiprocessing
         import matplotlib.pyplot as plt
-        import seaborn as sns
         
-        # Configurar estilo
-        plt.style.use('default')
-        sns.set_palette("husl")
+        self._setup_plot_style()
         
-        # Crear figura
         n_targets = len(self.results)
-        _, axes = plt.subplots(2, 2, figsize=figsize)
-        axes = axes.flatten()
+        _, axes = self._create_subplots_layout(n_targets, figsize)
         
         for idx, (target, metrics) in enumerate(self.results.items()):
             if idx >= 4:  # Máximo 4 subplots
@@ -466,22 +498,10 @@ class RegressionEvaluator:
             mean_residual = np.mean(residuals)
             std_residual = np.std(residuals)
             textstr = f'Media: {mean_residual:.3f}\\nStd: {std_residual:.3f}'
-            props = {'boxstyle': 'round', 'facecolor': 'wheat', 'alpha': 0.8}
-            ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=10,
-                   verticalalignment='top', bbox=props)
-        
-        # Ocultar subplots no utilizados
-        for idx in range(n_targets, 4):
-            axes[idx].set_visible(False)
+            self._add_metrics_text(ax, textstr)
         
         plt.tight_layout()
-        
-        # Guardar si se especifica
-        if save_path:
-            ensure_dir_exists(save_path.parent)
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Gráficos de residuos guardados en {save_path}")
-        
+        self._save_plot_if_specified(_, save_path, "residuos")
         plt.show()
     
     def generate_report(

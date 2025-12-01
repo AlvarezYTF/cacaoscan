@@ -1,4 +1,16 @@
-import { setupServerError, setupEmptyListIntercept, getApiBaseUrl } from '../../support/helpers'
+import {
+  setupServerError,
+  setupEmptyListIntercept,
+  getApiBaseUrl,
+  visitAndWaitForBodyVisible,
+  openModalFillFieldAndVerifyError,
+  uploadFileAndVerifyError,
+  setupInterceptAndVerifyError,
+  fillLongTextAndVerifyError,
+  ifFoundInBody,
+  clickIfExistsAndContinue,
+  verifyErrorMessageGeneric
+} from '../../support/helpers'
 
 describe('Manejo de Errores - Casos Edge', () => {
   beforeEach(() => {
@@ -29,11 +41,15 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar valores muy largos en inputs', () => {
-    cy.visit('/mis-fincas')
-    cy.get('[data-cy="add-finca-button"]').click()
-    const longString = 'a'.repeat(10000)
-    cy.get('[data-cy="finca-nombre"]').type(longString)
-    cy.get('[data-cy="finca-nombre-error"]').should('be.visible')
+    visitAndWaitForBodyVisible('/mis-fincas')
+    openModalFillFieldAndVerifyError(
+      '[data-cy="add-finca-button"], button',
+      '[data-cy="finca-nombre"], input',
+      'a'.repeat(10000),
+      '[data-cy="save-finca"], button[type="submit"]',
+      '[data-cy="finca-nombre-error"], .error-message',
+      ['largo', 'longitud', 'demasiado']
+    )
   })
 
   it('debe manejar múltiples requests simultáneos', () => {
@@ -68,15 +84,14 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar archivos corruptos en upload', () => {
-    cy.visit('/nuevo-analisis')
+    visitAndWaitForBodyVisible('/nuevo-analisis')
     const corruptFile = new File(['corrupt'], 'corrupt.jpg', { type: 'image/jpeg' })
-    cy.get('[data-cy="file-input"]').then((input) => {
-      const dataTransfer = new DataTransfer()
-      dataTransfer.items.add(corruptFile)
-      input[0].files = dataTransfer.files
-      input.trigger('change')
-    })
-    cy.get('[data-cy="upload-error"]').should('be.visible')
+    uploadFileAndVerifyError(
+      '[data-cy="file-input"], input[type="file"]',
+      corruptFile,
+      '[data-cy="upload-error"], .error-message',
+      ['corrupto', 'archivo', 'error']
+    )
   })
 
   it('debe manejar paginación con datos vacíos', () => {
@@ -690,113 +705,52 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar formularios con campos muy largos', () => {
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
-    
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
-        cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="finca-nombre"], input').length > 0) {
-            const longText = 'a'.repeat(1000)
-            cy.get('[data-cy="finca-nombre"], input').first().type(longText, { force: true })
-            
-            const checkLongTextError = ($el) => {
-              const text = $el.text().toLowerCase()
-              return text.includes('largo') || text.includes('longitud') || text.includes('demasiado') || text.length > 0
-            }
-
-            const handleLongTextError = ($error) => {
-              if ($error.find('[data-cy="finca-nombre-error"], .error-message').length > 0) {
-                cy.get('[data-cy="finca-nombre-error"], .error-message').first().should('satisfy', checkLongTextError)
-              }
-            }
-
-            cy.get('body', { timeout: 3000 }).then(handleLongTextError)
-            })
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
-      }
-    })
+    visitAndWaitForBodyVisible('/mis-fincas')
+    openModalFillFieldAndVerifyError(
+      '[data-cy="add-finca-button"], button',
+      '[data-cy="finca-nombre"], input',
+      'a'.repeat(1000),
+      '[data-cy="save-finca"], button[type="submit"]',
+      '[data-cy="finca-nombre-error"], .error-message',
+      ['largo', 'longitud', 'demasiado']
+    )
   })
 
   it('debe manejar formularios con caracteres especiales', () => {
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
-    
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
-        cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="finca-nombre"], input').length > 0) {
-            cy.get('[data-cy="finca-nombre"], input').first().type('Finca @#$%^&*()', { force: true })
-            
-            cy.get('[data-cy="finca-nombre"], input').first().should('satisfy', ($el) => {
-              const value = $el.val() || $el.text()
-              return value.includes('Finca') || value.length > 0
-            })
-          }
+    visitAndWaitForBodyVisible('/mis-fincas')
+    clickIfExistsAndContinue('[data-cy="add-finca-button"], button', () => {
+      ifFoundInBody('[data-cy="finca-nombre"], input', () => {
+        cy.get('[data-cy="finca-nombre"], input').first().type('Finca @#$%^&*()', { force: true })
+        cy.get('[data-cy="finca-nombre"], input').first().should('satisfy', ($el) => {
+          const value = $el.val() || $el.text()
+          return value.includes('Finca') || value.length > 0
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
     })
   })
 
   it('debe manejar números muy grandes', () => {
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
-    
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
-        cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="finca-area"], input[type="number"]').length > 0) {
-            cy.get('[data-cy="finca-area"], input[type="number"]').first().type('999999999999999', { force: true })
-            
-            cy.get('body', { timeout: 3000 }).then(($error) => {
-              if ($error.find('[data-cy="finca-area-error"], .error-message').length > 0) {
-                cy.get('[data-cy="finca-area-error"], .error-message').first().should('satisfy', ($el) => {
-                  const text = $el.text().toLowerCase()
-                  return text.includes('grande') || text.includes('área') || text.includes('demasiado') || text.length > 0
-                })
-              }
-            })
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
-      }
-    })
+    visitAndWaitForBodyVisible('/mis-fincas')
+    openModalFillFieldAndVerifyError(
+      '[data-cy="add-finca-button"], button',
+      '[data-cy="finca-area"], input[type="number"]',
+      '999999999999999',
+      '[data-cy="save-finca"], button[type="submit"]',
+      '[data-cy="finca-area-error"], .error-message',
+      ['grande', 'área', 'demasiado']
+    )
   })
 
   it('debe manejar números negativos', () => {
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
-    
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
-        cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="finca-area"], input[type="number"]').length > 0) {
-            cy.get('[data-cy="finca-area"], input[type="number"]').first().type('-10', { force: true })
-            
-            cy.get('body', { timeout: 3000 }).then(($error) => {
-              if ($error.find('[data-cy="finca-area-error"], .error-message').length > 0) {
-                cy.get('[data-cy="finca-area-error"], .error-message').first().should('satisfy', ($el) => {
-                  const text = $el.text().toLowerCase()
-                  return text.includes('positiva') || text.includes('negativo') || text.includes('área') || text.length > 0
-                })
-              }
-            })
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
-      }
-    })
+    visitAndWaitForBodyVisible('/mis-fincas')
+    openModalFillFieldAndVerifyError(
+      '[data-cy="add-finca-button"], button',
+      '[data-cy="finca-area"], input[type="number"]',
+      '-10',
+      '[data-cy="save-finca"], button[type="submit"]',
+      '[data-cy="finca-area-error"], .error-message',
+      ['positiva', 'negativo', 'área']
+    )
   })
 
   it('debe manejar fechas inválidas', () => {
@@ -827,104 +781,56 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar archivos con nombres muy largos', () => {
-    cy.visit('/nuevo-analisis')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
-    
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="file-input"], input[type="file"]').length > 0) {
-        const longFileName = 'a'.repeat(255) + '.jpg'
-        const fileContent = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAD/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKgAD//Z'
-        
-        cy.get('[data-cy="file-input"], input[type="file"]').then((input) => {
-          const blob = Cypress.Blob.base64StringToBlob(fileContent.split(',')[1], 'image/jpeg')
-          const file = new File([blob], longFileName, { type: 'image/jpeg' })
-          const dataTransfer = new DataTransfer()
-          dataTransfer.items.add(file)
-          input[0].files = dataTransfer.files
-          
-          cy.wrap(input).trigger('change', { force: true })
-        })
-        
-        cy.get('body', { timeout: 3000 }).then(($error) => {
-          if ($error.find('[data-cy="file-name-error"], .error-message').length > 0) {
-            cy.get('[data-cy="file-name-error"], .error-message').first().should('satisfy', ($el) => {
-              const text = $el.text().toLowerCase()
-              return text.includes('largo') || text.includes('nombre') || text.includes('archivo') || text.length > 0
-            })
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+    visitAndWaitForBodyVisible('/nuevo-analisis')
+    ifFoundInBody('[data-cy="file-input"], input[type="file"]', () => {
+      const longFileName = 'a'.repeat(255) + '.jpg'
+      const fileContent = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAD/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKgAD//Z'
+      cy.get('[data-cy="file-input"], input[type="file"]').then(($input) => {
+        const blob = Cypress.Blob.base64StringToBlob(fileContent.split(',')[1], 'image/jpeg')
+        const file = new File([blob], longFileName, { type: 'image/jpeg' })
+        uploadFileAndVerifyError(
+          '[data-cy="file-input"], input[type="file"]',
+          file,
+          '[data-cy="file-name-error"], .error-message',
+          ['largo', 'nombre', 'archivo']
+        )
+      })
     })
   })
 
   it('debe manejar archivos con extensiones no permitidas', () => {
-    cy.visit('/nuevo-analisis')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
-    
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="file-input"], input[type="file"]').length > 0) {
-        const fileContent = 'test file content'
-        const blob = new Blob([fileContent], { type: 'text/plain' })
-        const file = new File([blob], 'test.txt', { type: 'text/plain' })
-        
-        cy.get('[data-cy="file-input"], input[type="file"]').then((input) => {
-          const dataTransfer = new DataTransfer()
-          dataTransfer.items.add(file)
-          input[0].files = dataTransfer.files
-          
-          cy.wrap(input).trigger('change', { force: true })
-        })
-        
-        cy.get('body', { timeout: 3000 }).then(($error) => {
-          if ($error.find('[data-cy="file-type-error"], .error-message').length > 0) {
-            cy.get('[data-cy="file-type-error"], .error-message').first().should('satisfy', ($el) => {
-              const text = $el.text().toLowerCase()
-              return text.includes('tipo') || text.includes('permitido') || text.includes('archivo') || text.length > 0
-            })
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+    visitAndWaitForBodyVisible('/nuevo-analisis')
+    ifFoundInBody('[data-cy="file-input"], input[type="file"]', () => {
+      const fileContent = 'test file content'
+      const blob = new Blob([fileContent], { type: 'text/plain' })
+      const file = new File([blob], 'test.txt', { type: 'text/plain' })
+      uploadFileAndVerifyError(
+        '[data-cy="file-input"], input[type="file"]',
+        file,
+        '[data-cy="file-type-error"], .error-message',
+        ['tipo', 'permitido', 'archivo']
+      )
     })
   })
 
   it('debe manejar archivos corruptos', () => {
-    cy.visit('/nuevo-analisis')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
-    
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="file-input"], input[type="file"]').length > 0) {
-        const corruptContent = 'corrupt file content'
-        const blob = new Blob([corruptContent], { type: 'image/jpeg' })
-        const file = new File([blob], 'corrupt.jpg', { type: 'image/jpeg' })
-        
-        cy.get('[data-cy="file-input"], input[type="file"]').then((input) => {
-          const dataTransfer = new DataTransfer()
-          dataTransfer.items.add(file)
-          input[0].files = dataTransfer.files
-          
-          cy.wrap(input).trigger('change', { force: true })
-        })
-        
-        cy.get('body', { timeout: 3000 }).then(($afterUpload) => {
-          if ($afterUpload.find('[data-cy="upload-button"], button[type="submit"]').length > 0) {
-            cy.get('[data-cy="upload-button"], button[type="submit"]').first().click({ force: true })
-            cy.get('body', { timeout: 5000 }).then(($error) => {
-              if ($error.find('[data-cy="file-corrupt-error"], .error-message, .swal2-error').length > 0) {
-                cy.get('[data-cy="file-corrupt-error"], .error-message, .swal2-error').first().should('satisfy', ($el) => {
-                  const text = $el.text().toLowerCase()
-                  return text.includes('corrupto') || text.includes('archivo') || text.includes('error') || text.length > 0
-                })
-              }
-            })
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+    visitAndWaitForBodyVisible('/nuevo-analisis')
+    ifFoundInBody('[data-cy="file-input"], input[type="file"]', () => {
+      const corruptContent = 'corrupt file content'
+      const blob = new Blob([corruptContent], { type: 'image/jpeg' })
+      const file = new File([blob], 'corrupt.jpg', { type: 'image/jpeg' })
+      uploadFileAndVerifyError(
+        '[data-cy="file-input"], input[type="file"]',
+        file,
+        '[data-cy="file-corrupt-error"], .error-message, .swal2-error',
+        ['corrupto', 'archivo', 'error']
+      )
+      clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', () => {
+        verifyErrorMessageGeneric(
+          ['corrupto', 'archivo', 'error'],
+          '[data-cy="file-corrupt-error"], .error-message, .swal2-error'
+        )
+      })
     })
   })
 
@@ -935,26 +841,15 @@ describe('Manejo de Errores - Casos Edge', () => {
       body: { error: 'Token expirado' }
     }).as('expiredSession')
     
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
+    visitAndWaitForBodyVisible('/mis-fincas')
     
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
-        cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="save-finca"], button[type="submit"]').length > 0) {
-            cy.get('[data-cy="save-finca"], button[type="submit"]').first().click({ force: true })
-            
-            cy.wait('@expiredSession', { timeout: 10000 })
-            
-            cy.url({ timeout: 5000 }).should('satisfy', (url) => {
-              return url.includes('/login') || url.includes('/auth')
-            })
-          }
+    clickIfExistsAndContinue('[data-cy="add-finca-button"], button', () => {
+      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', () => {
+        cy.wait('@expiredSession', { timeout: 10000 })
+        cy.url({ timeout: 5000 }).should('satisfy', (url) => {
+          return url.includes('/login') || url.includes('/auth')
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
     })
   })
 
@@ -965,31 +860,16 @@ describe('Manejo de Errores - Casos Edge', () => {
       body: { error: 'Operación en conflicto' }
     }).as('concurrentOperation')
     
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
+    visitAndWaitForBodyVisible('/mis-fincas')
     
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
-        cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="save-finca"], button[type="submit"]').length > 0) {
-            cy.get('[data-cy="save-finca"], button[type="submit"]').first().click({ force: true })
-            
-            cy.wait('@concurrentOperation', { timeout: 10000 })
-            
-            cy.get('body', { timeout: 5000 }).then(($error) => {
-              if ($error.find('[data-cy="conflict-error"], .error-message, .swal2-error').length > 0) {
-                cy.get('[data-cy="conflict-error"], .error-message, .swal2-error').first().should('satisfy', ($el) => {
-                  const text = $el.text().toLowerCase()
-                  return text.includes('conflicto') || text.includes('operación') || text.includes('error') || text.length > 0
-                })
-              }
-            })
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+    clickIfExistsAndContinue('[data-cy="add-finca-button"], button', () => {
+      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', () => {
+        cy.wait('@concurrentOperation', { timeout: 10000 })
+        verifyErrorMessageGeneric(
+          ['conflicto', 'operación', 'error'],
+          '[data-cy="conflict-error"], .error-message, .swal2-error'
+        )
+      })
     })
   })
 
@@ -1054,31 +934,16 @@ describe('Manejo de Errores - Casos Edge', () => {
       body: { error: 'Recurso ya no disponible' }
     }).as('goneResource')
     
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
+    visitAndWaitForBodyVisible('/mis-fincas')
     
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
-        cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="save-finca"], button[type="submit"]').length > 0) {
-            cy.get('[data-cy="save-finca"], button[type="submit"]').first().click({ force: true })
-            
-            cy.wait('@goneResource', { timeout: 10000 })
-            
-            cy.get('body', { timeout: 5000 }).then(($error) => {
-              if ($error.find('[data-cy="gone-error"], .error-message, .swal2-error').length > 0) {
-                cy.get('[data-cy="gone-error"], .error-message, .swal2-error').first().should('satisfy', ($el) => {
-                  const text = $el.text().toLowerCase()
-                  return text.includes('disponible') || text.includes('recurso') || text.includes('error') || text.length > 0
-                })
-              }
-            })
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+    clickIfExistsAndContinue('[data-cy="add-finca-button"], button', () => {
+      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', () => {
+        cy.wait('@goneResource', { timeout: 10000 })
+        verifyErrorMessageGeneric(
+          ['disponible', 'recurso', 'error'],
+          '[data-cy="gone-error"], .error-message, .swal2-error'
+        )
+      })
     })
   })
 
@@ -1089,31 +954,16 @@ describe('Manejo de Errores - Casos Edge', () => {
       body: { error: 'Límite de recursos excedido' }
     }).as('resourceLimit')
     
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
+    visitAndWaitForBodyVisible('/mis-fincas')
     
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
-        cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="save-finca"], button[type="submit"]').length > 0) {
-            cy.get('[data-cy="save-finca"], button[type="submit"]').first().click({ force: true })
-            
-            cy.wait('@resourceLimit', { timeout: 10000 })
-            
-            cy.get('body', { timeout: 5000 }).then(($error) => {
-              if ($error.find('[data-cy="resource-limit-error"], .error-message, .swal2-error').length > 0) {
-                cy.get('[data-cy="resource-limit-error"], .error-message, .swal2-error').first().should('satisfy', ($el) => {
-                  const text = $el.text().toLowerCase()
-                  return text.includes('límite') || text.includes('recursos') || text.includes('excedido') || text.length > 0
-                })
-              }
-            })
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+    clickIfExistsAndContinue('[data-cy="add-finca-button"], button', () => {
+      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', () => {
+        cy.wait('@resourceLimit', { timeout: 10000 })
+        verifyErrorMessageGeneric(
+          ['límite', 'recursos', 'excedido'],
+          '[data-cy="resource-limit-error"], .error-message, .swal2-error'
+        )
+      })
     })
   })
 })

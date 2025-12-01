@@ -2,13 +2,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CreateFarmerModal from '../CreateFarmerModal.vue'
-
-// Helper function to generate secure password dynamically
-// SECURITY: S2245 - Math.random() is safe here because it's only used for test data generation
-// NOSONAR S2245 - Test environment, not cryptographic use
-const generatePassword = () => {
-  return `Pass!${Date.now()}-${Math.random().toString(36).slice(2)}` // NOSONAR S2245
-}
+import { generatePassword } from '@/utils/testUtils'
+import {
+  createMockUseCatalogos,
+  createMockUseFormValidation,
+  createMockUseBirthdateRange,
+  createMockUseModal
+} from '@/test/mocks/composables'
 
 // Helper function to generate weak password for validation tests
 // Uses character codes to avoid static analysis detection
@@ -29,82 +29,19 @@ vi.mock('@/services/authApi', () => ({
 }))
 
 vi.mock('@/composables/useCatalogos', () => ({
-  useCatalogos: () => ({
-    tiposDocumento: { value: [{ codigo: 'CC', nombre: 'Cédula' }] },
-    generos: { value: [{ codigo: 'M', nombre: 'Masculino' }] },
-    departamentos: { value: [{ codigo: 'ANT', nombre: 'Antioquia' }] },
-    municipios: { value: [{ id: 1, nombre: 'Medellín' }] },
-    isLoadingCatalogos: { value: false },
-    cargarCatalogos: vi.fn(),
-    cargarMunicipios: vi.fn(),
-    limpiarMunicipios: vi.fn()
-  })
+  useCatalogos: () => createMockUseCatalogos()
 }))
 
 vi.mock('@/composables/useFormValidation', () => ({
-  useFormValidation: () => ({
-    errors: {},
-    isValidEmail: (email) => {
-      if (typeof email !== 'string') return false
-      const trimmed = email.trim()
-      return (
-        trimmed.length >= 5 &&
-        trimmed.includes('@') &&
-        trimmed.includes('.') &&
-        trimmed.indexOf('@') > 0 &&
-        trimmed.lastIndexOf('.') > trimmed.indexOf('@') + 1
-      )
-    },
-    isValidPhone: (phone) => {
-      // eslint-disable-next-line prefer-regex-literals
-      const digits = String(phone).replace(/\D/g, '')
-      return digits.length >= 7 && digits.length <= 15
-    },
-    isValidDocument: (doc) => {
-      // eslint-disable-next-line prefer-regex-literals
-      const digits = String(doc).replace(/\D/g, '')
-      return digits.length >= 6 && digits.length <= 11
-    },
-    isValidBirthdate: () => true,
-    validatePassword: (pwd) => {
-      if (typeof pwd !== 'string') {
-        return {
-          isValid: false,
-          length: false,
-          uppercase: false,
-          lowercase: false,
-          number: false
-        }
-      }
-      const length = pwd.length >= 8
-      const uppercase = /[A-Z]/.test(pwd)
-      const lowercase = /[a-z]/.test(pwd)
-      const number = /\d/.test(pwd)
-      return {
-        isValid: length && uppercase && lowercase && number,
-        length,
-        uppercase,
-        lowercase,
-        number
-      }
-    },
-    clearErrors: vi.fn()
-  })
+  useFormValidation: () => createMockUseFormValidation()
 }))
 
 vi.mock('@/composables/useBirthdateRange', () => ({
-  useBirthdateRange: () => ({
-    maxBirthdate: '2010-01-01',
-    minBirthdate: '1950-01-01'
-  })
+  useBirthdateRange: () => createMockUseBirthdateRange()
 }))
 
 vi.mock('@/composables/useModal', () => ({
-  useModal: () => ({
-    modalContainer: { value: null },
-    openModal: vi.fn(),
-    closeModal: vi.fn()
-  })
+  useModal: () => createMockUseModal()
 }))
 
 vi.mock('sweetalert2', () => ({

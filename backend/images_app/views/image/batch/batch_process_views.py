@@ -4,19 +4,22 @@ Handles ML prediction processing and statistics calculation.
 """
 import logging
 import time
-import io
 from PIL import Image
 
 from api.utils.model_imports import get_models_safely
-from training.services import MLService
+from api.utils.ml_helpers import (
+    get_predictor,
+    load_image_for_prediction,
+    create_prediction_from_result,
+    calculate_prediction_statistics,
+    process_image_prediction
+)
 
 # Import models safely
 models = get_models_safely({
-    'CacaoImage': 'images_app.models.CacaoImage',
-    'CacaoPrediction': 'images_app.models.CacaoPrediction'
+    'CacaoImage': 'images_app.models.CacaoImage'
 })
 CacaoImage = models['CacaoImage']
-CacaoPrediction = models['CacaoPrediction']
 
 logger = logging.getLogger("cacaoscan.api")
 
@@ -27,59 +30,6 @@ class BatchImageProcessor:
     Handles ML predictions and statistics calculation.
     """
     
-    @staticmethod
-    def _get_predictor():
-        """Obtiene el predictor ML."""
-        try:
-            ml_service = MLService()
-            predictor_result = ml_service.get_predictor()
-            
-            if not predictor_result.success:
-                logger.error(f"No se pudieron cargar los modelos ML: {predictor_result.error.message}")
-                return None
-            
-            return predictor_result.data
-        except Exception as e:
-            logger.error(f"Error obteniendo predictor: {e}", exc_info=True)
-            return None
-    
-    @staticmethod
-    def _load_image_for_prediction(image_file, cacao_image):
-        """Carga la imagen para predicción desde memoria o disco."""
-        try:
-            image_file.seek(0)
-            image_bytes = image_file.read()
-            if image_bytes:
-                return Image.open(io.BytesIO(image_bytes))
-        except (AttributeError, ValueError, IOError):
-            pass
-        
-        return Image.open(cacao_image.image.path)
-    
-    @staticmethod
-    def _create_prediction(cacao_image, result: dict, prediction_time_ms: int):
-        """Crea y guarda la predicción."""
-        device = result.get('debug', {}).get('device', 'cpu')
-        device_used = device.split(':')[0] if ':' in str(device) else 'cpu'
-        
-        cacao_prediction = CacaoPrediction(
-            image=cacao_image,
-            alto_mm=result['alto_mm'],
-            ancho_mm=result['ancho_mm'],
-            grosor_mm=result['grosor_mm'],
-            peso_g=result['peso_g'],
-            confidence_alto=result['confidences']['alto'],
-            confidence_ancho=result['confidences']['ancho'],
-            confidence_grosor=result['confidences']['grosor'],
-            confidence_peso=result['confidences']['peso'],
-            processing_time_ms=prediction_time_ms,
-            crop_url=result.get('crop_url', ''),
-            model_version=result.get('debug', {}).get('models_version', 'v1.0'),
-            device_used=device_used
-        )
-        cacao_prediction.save()
-        cacao_image.processed = True
-        cacao_image.save()
     
     @staticmethod
     def _process_single_image(request, image_file, lote, idx: int, predictor) -> dict:
@@ -106,18 +56,23 @@ class BatchImageProcessor:
                 }
             
             try:
-                pil_image = BatchImageProcessor._load_image_for_prediction(image_file, cacao_image)
+                pil_image = load_image_for_prediction(image_file, cacao_image)
                 prediction_start = time.time()
-                result = predictor.predict(pil_image)
-                prediction_time_ms = int((time.time() - prediction_start) * 1000)
+                result_dict, error = process_image_prediction(
+                    predictor,
+                    pil_image,
+                    cacao_image,
+                    prediction_start_time=prediction_start
+                )
                 
-                BatchImageProcessor._create_prediction(cacao_image, result, prediction_time_ms)
+                if error or not result_dict.get('success', False):
+                    return {
+                        'success': False,
+                        'image_id': cacao_image.id,
+                        'error': error or result_dict.get('error', 'Unknown error')
+                    }
                 
-                return {
-                    'success': True,
-                    'image_id': cacao_image.id,
-                    'prediction': result
-                }
+                return result_dict
             except Exception as pred_error:
                 logger.error(f"Error en predicción de imagen {idx + 1}: {pred_error}", exc_info=True)
                 return {
@@ -145,7 +100,10 @@ class BatchImageProcessor:
         Returns:
             List of processing results
         """
-        predictor = BatchImageProcessor._get_predictor()
+        predictor, error = get_predictor()
+        if error:
+            logger.error(f"Error obteniendo predictor: {error.get('error', 'Unknown error')}")
+            predictor = None
         results = []
         
         for idx, image_file in enumerate(images):
@@ -165,60 +123,5 @@ class BatchImageProcessor:
         Returns:
             Dictionary with statistics
         """
-        total_images = len(results)
-        processed_images = sum(1 for r in results if r.get('success', False))
-        failed_images = total_images - processed_images
-        
-        successful_results = [r for r in results if r.get('success', False)]
-        
-        # Calculate averages
-        avg_confidence = 0
-        avg_dimensions = {
-            'alto': 0,
-            'ancho': 0,
-            'grosor': 0
-        }
-        total_weight = 0
-        
-        if successful_results:
-            confidences = []
-            altos = []
-            anchos = []
-            grosor = []
-            pesos = []
-            
-            for r in successful_results:
-                pred = r.get('prediction', {})
-                conf = pred.get('confidences', {})
-                
-                # Average confidence
-                avg_conf = sum([
-                    conf.get('alto', 0),
-                    conf.get('ancho', 0),
-                    conf.get('grosor', 0),
-                    conf.get('peso', 0)
-                ]) / 4
-                confidences.append(avg_conf)
-                
-                altos.append(pred.get('alto_mm', 0))
-                anchos.append(pred.get('ancho_mm', 0))
-                grosor.append(pred.get('grosor_mm', 0))
-                pesos.append(pred.get('peso_g', 0))
-            
-            avg_confidence = sum(confidences) / len(confidences) if confidences else 0
-            avg_dimensions = {
-                'alto': sum(altos) / len(altos) if altos else 0,
-                'ancho': sum(anchos) / len(anchos) if anchos else 0,
-                'grosor': sum(grosor) / len(grosor) if grosor else 0
-            }
-            total_weight = sum(pesos)
-        
-        return {
-            'total_images': total_images,
-            'processed_images': processed_images,
-            'failed_images': failed_images,
-            'average_confidence': round(avg_confidence, 3),
-            'average_dimensions': avg_dimensions,
-            'total_weight': round(total_weight, 2)
-        }
+        return calculate_prediction_statistics(results)
 

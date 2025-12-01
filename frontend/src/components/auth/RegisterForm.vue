@@ -568,6 +568,14 @@ import { useCatalogos } from '@/composables/useCatalogos'
 import { useFormValidation } from '@/composables/useFormValidation'
 import { useBirthdateRange } from '@/composables/useBirthdateRange'
 
+// 6. Utils
+import {
+  buildPasswordType,
+  getPasswordFieldName,
+  getConfirmPasswordFieldName,
+  buildPasswordErrorMessages
+} from '@/utils/formHelpers'
+
 // Router y store
 const router = useRouter()
 const authStore = useAuthStore()

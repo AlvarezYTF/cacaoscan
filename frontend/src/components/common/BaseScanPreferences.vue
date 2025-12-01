@@ -1,5 +1,5 @@
 <template>
-  <BasePreferencesWrapper
+  <BasePreferencesComponent
     :model-value="modelValue"
     :title="title"
     :show-header="showHeader"
@@ -24,11 +24,11 @@
     <template #actions>
       <slot name="actions"></slot>
     </template>
-  </BasePreferencesWrapper>
+  </BasePreferencesComponent>
 </template>
 
 <script setup>
-import BasePreferencesWrapper from './BasePreferencesWrapper.vue'
+import BasePreferencesComponent from './BasePreferencesComponent.vue'
 
 defineProps({
   modelValue: {
