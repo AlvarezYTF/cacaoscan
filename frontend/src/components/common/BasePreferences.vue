@@ -46,6 +46,8 @@
 </template>
 
 <script setup>
+import { usePreferences } from '@/composables/usePreferences'
+
 const props = defineProps({
   modelValue: {
     type: Object,
@@ -88,18 +90,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'save', 'reset'])
 
-const updateValue = (key, value) => {
-  const updated = { ...props.modelValue, [key]: value }
-  emit('update:modelValue', updated)
-}
-
-const handleSave = () => {
-  emit('save', props.modelValue)
-}
-
-const handleReset = () => {
-  emit('reset')
-}
+const { updateValue, handleSave, handleReset } = usePreferences(props, emit)
 </script>
 
 <style scoped>

@@ -177,7 +177,7 @@ class RegressionEvaluator:
         self.targets[target] = all_targets
         self.results[target] = metrics
         
-        logger.info(f"Métricas para {target}: MAE={mae:.4f}, RMSE={rmse:.4f}, R²={r2:.4f}")
+        logger.info(f"Métricas para {target}: MAE={metrics['mae']:.4f}, RMSE={metrics['rmse']:.4f}, R²={metrics['r2']:.4f}")
         
         return metrics
     
@@ -386,7 +386,6 @@ class RegressionEvaluator:
     
     def _save_plot_if_specified(
         self,
-        fig,
         save_path: Optional[Path],
         plot_type: str
     ) -> None:
@@ -449,7 +448,7 @@ class RegressionEvaluator:
             self._add_metrics_text(ax, textstr)
         
         plt.tight_layout()
-        self._save_plot_if_specified(_, save_path, "paridad")
+        self._save_plot_if_specified(save_path, "paridad")
         plt.show()
     
     def plot_residual_plots(
@@ -501,7 +500,7 @@ class RegressionEvaluator:
             self._add_metrics_text(ax, textstr)
         
         plt.tight_layout()
-        self._save_plot_if_specified(_, save_path, "residuos")
+        self._save_plot_if_specified(save_path, "residuos")
         plt.show()
     
     def generate_report(

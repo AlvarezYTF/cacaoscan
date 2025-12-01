@@ -284,4 +284,50 @@ class ExcelBaseGenerator:
                 col_letter = chr(64 + i)
                 width_dict[col_letter] = width
             self._adjust_column_widths(width_dict)
+    
+    def _apply_date_filters(self, queryset, filtros, date_field_name: str):
+        """
+        Applies date filters to a queryset.
+        
+        Args:
+            queryset: Django queryset to filter
+            filtros: Filters dictionary
+            date_field_name: Name of the date field in the model (e.g., 'timestamp', 'created_at', 'login_time')
+            
+        Returns:
+            Filtered queryset
+        """
+        if not filtros:
+            return queryset
+        
+        if filtros.get('fecha_desde'):
+            queryset = queryset.filter(**{f"{date_field_name}__date__gte": filtros['fecha_desde']})
+        if filtros.get('fecha_hasta'):
+            queryset = queryset.filter(**{f"{date_field_name}__date__lte": filtros['fecha_hasta']})
+        
+        return queryset
+    
+    def _create_sheet_with_title(self, sheet_name: str, title: str, merge_range: str = 'A1:F1'):
+        """
+        Creates a new sheet with a formatted title.
+        
+        Args:
+            sheet_name: Name of the new sheet
+            title: Title text to display
+            merge_range: Cell range to merge for title (default: 'A1:F1')
+            
+        Returns:
+            Tuple of (new_worksheet, original_worksheet)
+        """
+        new_ws = self.workbook.create_sheet(sheet_name)
+        original_ws = self.ws
+        self.ws = new_ws
+        
+        # Title
+        new_ws['A1'] = title
+        new_ws['A1'].font = Font(size=16, bold=True, color="2F4F4F")
+        new_ws['A1'].alignment = Alignment(horizontal='center')
+        new_ws.merge_cells(merge_range)
+        
+        return new_ws, original_ws
 

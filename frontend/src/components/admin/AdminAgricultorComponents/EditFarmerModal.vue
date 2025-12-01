@@ -405,9 +405,7 @@ import authApi from '@/services/authApi'
 import { personasApi } from '@/services'
 
 // 3. Composables
-import { useCatalogos } from '@/composables/useCatalogos'
-import { useFormValidation } from '@/composables/useFormValidation'
-import { useBirthdateRange } from '@/composables/useBirthdateRange'
+import { usePersonForm } from '@/composables/usePersonForm'
 import { useNotifications } from '@/composables/useNotifications'
 import BaseModal from '@/components/common/BaseModal.vue'
 
@@ -441,11 +439,16 @@ const {
   isLoadingCatalogos,
   cargarCatalogos,
   cargarMunicipios,
-  limpiarMunicipios
-} = useCatalogos()
-
-const { errors, isValidEmail, isValidPhone, isValidDocument, clearErrors } = useFormValidation()
-const { maxBirthdate, minBirthdate } = useBirthdateRange()
+  limpiarMunicipios,
+  errors,
+  isValidEmail,
+  isValidPhone,
+  isValidDocument,
+  clearErrors,
+  maxBirthdate,
+  minBirthdate,
+  onDepartamentoChange: baseOnDepartamentoChange
+} = usePersonForm()
 const { showSuccess, showError } = useNotifications()
 
 // State
@@ -692,7 +695,7 @@ const handleUpdate = async () => {
 
 const onDepartamentoChange = async () => {
   personaForm.municipio = null
-  limpiarMunicipios()
+  await baseOnDepartamentoChange()
   if (personaForm.departamento) {
     await cargarMunicipios(personaForm.departamento)
   }

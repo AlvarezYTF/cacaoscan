@@ -345,7 +345,7 @@ import AuditStatsModal from '@/components/audit/AuditStatsModal.vue';
 import ConfirmModal from '@/components/common/ConfirmModal.vue';
 import { useAuditStore } from '@/stores/audit';
 import { useAuthStore } from '@/stores/auth';
-import { usePagination } from '@/composables/usePagination';
+import { useAdminView } from '@/composables/useAdminView';
 import { calculatePeriodDates } from '@/composables/usePeriodDates';
 import Swal from 'sweetalert2';
 
@@ -367,14 +367,10 @@ export default {
     const auditStore = useAuditStore();
     const authStore = useAuthStore();
 
-    // Estado reactivo
-    const loading = ref(false);
-    const showFilters = ref(false);
+    // Estado específico de AuditoriaView
     const showDetailsModal = ref(false);
     const showStatsModal = ref(false);
     const showExportConfirm = ref(false);
-    const viewMode = ref('table');
-    const selectedPeriod = ref('week');
     const realTimeEnabled = ref(false);
     const selectedItem = ref(null);
     const selectedAuditType = ref('activity');
@@ -401,8 +397,8 @@ export default {
     const searchPlaceholder = ref('Buscar en auditoría...');
     const refreshButtonText = ref('Actualizar');
 
-    // Filtros
-    const filters = ref({
+    // Filtros iniciales
+    const initialFilters = {
       auditType: 'activity',
       usuario: '',
       accion: '',
@@ -411,112 +407,19 @@ export default {
       success: '',
       fecha_desde: '',
       fecha_hasta: ''
-    });
-
-    // Estadísticas
-    const stats = computed(() => auditStore.stats);
-
-    // Datos filtrados
-    const filteredData = computed(() => {
-      if (filters.value.auditType === 'activity') {
-        return auditStore.activityLogs;
-      } else if (filters.value.auditType === 'login') {
-        return auditStore.loginHistory;
-      } else {
-        // Combinar ambos tipos
-        return [...auditStore.activityLogs, ...auditStore.loginHistory]
-          .sort((a, b) => new Date(b.timestamp || b.login_time) - new Date(a.timestamp || a.login_time));
-      }
-    });
-
-    // Paginación - using composable
-    const paginationComposable = usePagination({
-      initialPage: 1,
-      initialItemsPerPage: 50
-    });
-
-    // Sync composable with store pagination
-    watch(() => auditStore.pagination, (storePagination) => {
-      if (storePagination) {
-        paginationComposable.updateFromApiResponse({
-          page: storePagination.currentPage,
-          page_size: storePagination.itemsPerPage,
-          count: storePagination.totalItems,
-          total_pages: storePagination.totalPages
-        });
-      }
-    }, { immediate: true });
-
-    // Computed pagination for component (backward compatibility)
-    const pagination = computed(() => ({
-      currentPage: paginationComposable.currentPage.value,
-      totalPages: paginationComposable.totalPages.value,
-      totalItems: paginationComposable.totalItems.value,
-      itemsPerPage: paginationComposable.itemsPerPage.value
-    }));
-
-    // Métodos para AdminSidebar y AdminNavbar
-    const handleMenuClick = (menuItem) => {
-      if (menuItem.route) {
-        router.push(menuItem.route);
-      }
     };
 
-    const handleLogout = async () => {
+    // Load audit data function
+    const loadAuditData = async (filterValues) => {
       try {
-        await authStore.logout();
-        router.push('/login');
-      } catch (error) {
-        console.error('Error al cerrar sesión:', error);
-      }
-    };
-
-    const handleSearch = (query) => {
-      filters.value.search = query;
-      loadAuditData();
-    };
-
-    const handleRefresh = async () => {
-      await loadInitialData();
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: 'Datos actualizados',
-        showConfirmButton: false,
-        timer: 2000
-      });
-    };
-
-    const loadInitialData = async () => {
-      try {
-        loading.value = true;
-        await Promise.all([
-          auditStore.fetchStats(),
-          loadAuditData()
-        ]);
-      } catch (error) {
-        console.error('Error loading initial data:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudieron cargar los datos de auditoría'
-        });
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    const loadAuditData = async () => {
-      try {
-        if (filters.value.auditType === 'activity') {
-          await auditStore.fetchActivityLogs(filters.value);
-        } else if (filters.value.auditType === 'login') {
-          await auditStore.fetchLoginHistory(filters.value);
+        if (filterValues.auditType === 'activity') {
+          await auditStore.fetchActivityLogs(filterValues);
+        } else if (filterValues.auditType === 'login') {
+          await auditStore.fetchLoginHistory(filterValues);
         } else {
           await Promise.all([
-            auditStore.fetchActivityLogs(filters.value),
-            auditStore.fetchLoginHistory(filters.value)
+            auditStore.fetchActivityLogs(filterValues),
+            auditStore.fetchLoginHistory(filterValues)
           ]);
         }
       } catch (error) {
@@ -525,51 +428,77 @@ export default {
       }
     };
 
+    // Get filtered data function
+    const getFilteredData = (filterValues, store) => {
+      if (filterValues.auditType === 'activity') {
+        return store.activityLogs;
+      } else if (filterValues.auditType === 'login') {
+        return store.loginHistory;
+      } else {
+        return [...store.activityLogs, ...store.loginHistory]
+          .sort((a, b) => new Date(b.timestamp || b.login_time) - new Date(a.timestamp || a.login_time));
+      }
+    };
+
+    // Use shared admin view composable
+    const {
+      loading,
+      showFilters,
+      viewMode,
+      selectedPeriod,
+      filters,
+      stats,
+      filteredData,
+      pagination,
+      paginationComposable,
+      handleMenuClick,
+      handleLogout,
+      handleRefresh,
+      loadInitialData: baseLoadInitialData,
+      applyFilters: baseApplyFilters,
+      clearFilters: baseClearFilters,
+      handlePageChange: baseHandlePageChange
+    } = useAdminView({
+      store: auditStore,
+      initialFilters,
+      initialItemsPerPage: 50,
+      initialPeriod: 'week',
+      loadData: loadAuditData,
+      loadStats: () => auditStore.fetchStats(),
+      getFilteredData
+    });
+
+    // Override loadInitialData to include audit-specific logic
+    const loadInitialData = async () => {
+      await baseLoadInitialData();
+    };
+
+    const handleSearch = (query) => {
+      filters.value.search = query;
+      loadAuditData(filters.value);
+    };
+
     const handleAuditTypeChange = async () => {
       await loadAuditData();
     };
 
     const handlePeriodChange = async () => {
       if (selectedPeriod.value === 'custom') {
-        // No cambiar fechas, usar las que ya están en los filtros
         return;
       }
 
       const dates = calculatePeriodDates(selectedPeriod.value);
       filters.value.fecha_desde = dates.fecha_desde;
       filters.value.fecha_hasta = dates.fecha_hasta;
-      await applyFilters();
+      await baseApplyFilters();
     };
 
-    const applyFilters = async () => {
-      try {
-        loading.value = true;
-        await loadAuditData();
-      } catch (error) {
-        console.error('Error applying filters:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudieron aplicar los filtros'
-        });
-      } finally {
-        loading.value = false;
-      }
-    };
+    const applyFilters = baseApplyFilters;
 
     const clearFilters = () => {
-      filters.value = {
-        auditType: 'activity',
-        usuario: '',
-        accion: '',
-        modelo: '',
-        ip_address: '',
-        success: '',
-        fecha_desde: '',
-        fecha_hasta: ''
-      };
+      filters.value = { ...initialFilters };
       selectedPeriod.value = 'week';
-      applyFilters();
+      baseClearFilters();
     };
 
     const handleViewDetails = (item, auditType) => {
@@ -592,15 +521,8 @@ export default {
 
     const handlePageChange = async (page) => {
       try {
-        // Update composable first
         paginationComposable.goToPage(page);
-        
-        // Then fetch data with new page
-        if (filters.value.auditType === 'activity') {
-          await auditStore.fetchActivityLogs({ ...filters.value, page });
-        } else if (filters.value.auditType === 'login') {
-          await auditStore.fetchLoginHistory({ ...filters.value, page });
-        }
+        await loadAuditData({ ...filters.value, page });
       } catch (error) {
         console.error('Error changing page:', error);
       }
@@ -618,7 +540,7 @@ export default {
         realTimeInterval.value = setInterval(async () => {
           try {
             await auditStore.fetchStats();
-            await loadAuditData();
+            await loadAuditData(filters.value);
           } catch (error) {
             console.error('Error in real-time update:', error);
           }
