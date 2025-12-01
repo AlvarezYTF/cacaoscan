@@ -12,7 +12,7 @@ with proper fixtures and coverage of branches, conditions, and exceptions.
 import os
 import tempfile
 from typing import Dict, Any
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from decimal import Decimal
 from PIL import Image
 from io import BytesIO

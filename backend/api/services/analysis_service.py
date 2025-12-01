@@ -10,7 +10,6 @@ from django.contrib.auth.models import User
 
 from .base import BaseService, ServiceResult, ValidationServiceError
 from images_app.services import ImageProcessingService, ImageStorageService
-from training.services import PredictionService
 
 logger = logging.getLogger("cacaoscan.services.analysis")
 
@@ -37,6 +36,8 @@ class AnalysisService(BaseService):
         super().__init__()
         self.processing_service = ImageProcessingService()
         self.storage_service = ImageStorageService()
+        # Lazy import to avoid circular dependency
+        from training.services import PredictionService
         self.prediction_service = PredictionService()
     
     def process_image_with_segmentation(self, image_file: UploadedFile, user: User) -> ServiceResult:
