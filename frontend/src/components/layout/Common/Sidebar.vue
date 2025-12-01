@@ -256,17 +256,20 @@ const userInitials = computed(() => {
 })
 
 // Methods
-const getMenuItemClass = (item) => {
-  let isActive = false
-  
+// Base function to check if menu item is active (extracted common logic)
+const isMenuItemActive = (item) => {
   if (props.userRole === 'admin') {
     // For admin role, check route
-    isActive = props.currentRoute === item.route || 
-               (item.route !== '/admin/dashboard' && props.currentRoute.startsWith(item.route))
+    return props.currentRoute === item.route || 
+           (item.route !== '/admin/dashboard' && props.currentRoute.startsWith(item.route))
   } else {
     // For agricultor role, check activeSection
-    isActive = props.activeSection === item.id
+    return props.activeSection === item.id
   }
+}
+
+const getMenuItemClass = (item) => {
+  const isActive = isMenuItemActive(item)
   
   if (isActive) {
     return 'text-green-700 bg-green-100 border-r-3 border-green-600 shadow-sm'
@@ -276,16 +279,7 @@ const getMenuItemClass = (item) => {
 }
 
 const getIconClass = (item) => {
-  let isActive = false
-  
-  if (props.userRole === 'admin') {
-    // For admin role, check route
-    isActive = props.currentRoute === item.route || 
-               (item.route !== '/admin/dashboard' && props.currentRoute.startsWith(item.route))
-  } else {
-    // For agricultor role, check activeSection
-    isActive = props.activeSection === item.id
-  }
+  const isActive = isMenuItemActive(item)
   
   if (isActive) {
     return 'text-green-700'

@@ -3,78 +3,51 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import EditFarmerModal from '../EditFarmerModal.vue'
-import { getFincas, createFinca } from '@/services/fincasApi'
+import {
+  createMockAuthApi,
+  createMockPersonasApi,
+  createMockFincasApi,
+  createMockUseCatalogos,
+  createMockUseFormValidation,
+  createMockUseBirthdateRange,
+  createMockUseModal
+} from '@/test/mocks'
+
+const mockAuthApi = createMockAuthApi()
+const mockPersonasApi = createMockPersonasApi()
+const mockFincasApi = createMockFincasApi()
+const mockUseCatalogos = createMockUseCatalogos()
+const mockUseFormValidation = createMockUseFormValidation()
+const mockUseBirthdateRange = createMockUseBirthdateRange()
+const mockUseModal = createMockUseModal()
 
 vi.mock('@/services/authApi', () => ({
-  default: {
-    updateUser: vi.fn()
-  }
+  default: mockAuthApi
 }))
 
 vi.mock('@/services', () => ({
-  personasApi: {
-    getPersonaByUserId: vi.fn().mockResolvedValue({ primer_nombre: '', primer_apellido: '', tipo_documento_info: { codigo: 'CC' }, numero_documento: '' }),
-    updatePersonaByUserId: vi.fn()
-  }
+  personasApi: mockPersonasApi
 }))
 
 vi.mock('@/services/fincasApi', () => ({
-  createFinca: vi.fn(),
-  getFincas: vi.fn().mockResolvedValue({ results: [] })
+  getFincas: mockFincasApi.getFincas,
+  createFinca: mockFincasApi.createFinca
 }))
 
 vi.mock('@/composables/useCatalogos', () => ({
-  useCatalogos: () => ({
-    tiposDocumento: { value: [{ codigo: 'CC', nombre: 'Cédula' }] },
-    generos: { value: [{ codigo: 'M', nombre: 'Masculino' }] },
-    departamentos: { value: [{ id: 1, nombre: 'Antioquia' }] },
-    municipios: { value: [{ id: 1, nombre: 'Medellín' }] },
-    isLoadingCatalogos: { value: false },
-    cargarCatalogos: vi.fn(),
-    cargarMunicipios: vi.fn(),
-    limpiarMunicipios: vi.fn()
-  })
+  useCatalogos: () => mockUseCatalogos
 }))
 
 vi.mock('@/composables/useFormValidation', () => ({
-  useFormValidation: () => ({
-    errors: {},
-    isValidEmail: (email) => {
-      if (typeof email !== 'string') return false
-      const trimmed = email.trim()
-      return (
-        trimmed.length >= 5 &&
-        trimmed.includes('@') &&
-        trimmed.includes('.') &&
-        trimmed.indexOf('@') > 0 &&
-        trimmed.lastIndexOf('.') > trimmed.indexOf('@') + 1
-      )
-    },
-    isValidPhone: (phone) => {
-      const digits = String(phone).replace(/\D/g, '')
-      return digits.length >= 7 && digits.length <= 15
-    },
-    isValidDocument: (doc) => {
-      const digits = String(doc).replace(/\D/g, '')
-      return digits.length >= 6 && digits.length <= 11
-    },
-    clearErrors: vi.fn()
-  })
+  useFormValidation: () => mockUseFormValidation
 }))
 
 vi.mock('@/composables/useBirthdateRange', () => ({
-  useBirthdateRange: () => ({
-    maxBirthdate: '2010-01-01',
-    minBirthdate: '1950-01-01'
-  })
+  useBirthdateRange: () => mockUseBirthdateRange
 }))
 
 vi.mock('@/composables/useModal', () => ({
-  useModal: () => ({
-    modalContainer: { value: null },
-    openModal: vi.fn(),
-    closeModal: vi.fn()
-  })
+  useModal: () => mockUseModal
 }))
 
 vi.mock('sweetalert2', () => ({
@@ -100,8 +73,8 @@ describe('EditFarmerModal', () => {
   beforeEach(async () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    authApi = (await import('@/services/authApi')).default
-    personasApi = (await import('@/services')).personasApi
+    authApi = mockAuthApi
+    personasApi = mockPersonasApi
   })
 
   it('should render modal', () => {
@@ -119,14 +92,14 @@ describe('EditFarmerModal', () => {
   })
 
   it('should load farmer data when prop changes', async () => {
-    personasApi.getPersonaByUserId.mockResolvedValue({
+    mockPersonasApi.getPersonaByUserId.mockResolvedValue({
       primer_nombre: 'Juan',
       primer_apellido: 'Pérez',
       tipo_documento_info: { codigo: 'CC' },
       numero_documento: '1234567890'
     })
 
-    getFincas.mockResolvedValue({
+    mockFincasApi.getFincas.mockResolvedValue({
       results: []
     })
 
@@ -142,7 +115,7 @@ describe('EditFarmerModal', () => {
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 100))
 
-    expect(personasApi.getPersonaByUserId).toHaveBeenCalledWith(1)
+    expect(mockPersonasApi.getPersonaByUserId).toHaveBeenCalledWith(1)
   })
 
   it('should switch between tabs', async () => {
@@ -164,7 +137,7 @@ describe('EditFarmerModal', () => {
   })
 
   it('should update farmer data', async () => {
-    authApi.updateUser.mockResolvedValue({
+    mockAuthApi.updateUser.mockResolvedValue({
       user: { id: 1, ...mockFarmer }
     })
 
@@ -184,11 +157,11 @@ describe('EditFarmerModal', () => {
     await wrapper.vm.handleUpdate()
     await wrapper.vm.$nextTick()
 
-    expect(authApi.updateUser).toHaveBeenCalled()
+    expect(mockAuthApi.updateUser).toHaveBeenCalled()
   })
 
   it('should create finca', async () => {
-    createFinca.mockResolvedValue({
+    mockFincasApi.createFinca.mockResolvedValue({
       id: 1,
       nombre: 'Nueva Finca'
     })
@@ -210,7 +183,7 @@ describe('EditFarmerModal', () => {
     await wrapper.vm.handleCreateFinca()
     await wrapper.vm.$nextTick()
 
-    expect(createFinca).toHaveBeenCalled()
+    expect(mockFincasApi.createFinca).toHaveBeenCalled()
   })
 
   it('should validate finca creation', async () => {
@@ -231,7 +204,7 @@ describe('EditFarmerModal', () => {
     await wrapper.vm.handleCreateFinca()
     await wrapper.vm.$nextTick()
 
-    expect(createFinca).not.toHaveBeenCalled()
+    expect(mockFincasApi.createFinca).not.toHaveBeenCalled()
   })
 
   it('should close modal', async () => {
@@ -251,7 +224,7 @@ describe('EditFarmerModal', () => {
   })
 
   it('should load fincas for farmer', async () => {
-    getFincas.mockResolvedValue({
+    mockFincasApi.getFincas.mockResolvedValue({
       results: [
         { id: 1, nombre: 'Finca 1' },
         { id: 2, nombre: 'Finca 2' }
@@ -270,7 +243,7 @@ describe('EditFarmerModal', () => {
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 100))
 
-    expect(getFincas).toHaveBeenCalled()
+    expect(mockFincasApi.getFincas).toHaveBeenCalled()
   })
 })
 

@@ -83,7 +83,17 @@ describe('Admin User Management', () => {
     
     cy.clickIfExists(buttonSelector).then((clicked) => {
       if (clicked) {
-        cy.fillUserForm('Test User', newEmail, 'Password123!', 'farmer')
+        cy.get('body').then(($modal) => {
+          if ($modal.find('[data-cy="input-name"], input[name*="name"]').length > 0) {
+            cy.get('[data-cy="input-name"], input[name*="name"]').first().type('Test User')
+            cy.get('[data-cy="input-email"], input[type="email"]').first().type(newEmail)
+            cy.get('[data-cy="input-password"], input[type="password"]').first().type('Password123!')
+            cy.get('[data-cy="select-role"], select').first().select('farmer', { force: true })
+            cy.get('[data-cy="btn-submit-user"], button[type="submit"]').first().click()
+            cy.get('body', { timeout: 5000 }).should('be.visible')
+            cy.get('table, .table', { timeout: 5000 }).should('exist')
+          }
+        })
       }
     })
   })

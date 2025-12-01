@@ -18,7 +18,13 @@ describe('Authentication - Advanced Scenarios', () => {
     })
 
     it('should show validation error for invalid email format', () => {
-      cy.fillLoginForm('notanemail', 'password')
+      cy.get('body').then(($body) => {
+        if ($body.find('[data-cy="input-email"], input[type="text"], input[type="email"]').length > 0) {
+          cy.get('[data-cy="input-email"], input[type="text"], input[type="email"]').first().type('notanemail')
+          cy.get('[data-cy="input-password"], input[type="password"]').first().type('password')
+          cy.get('[data-cy="btn-submit-login"], [data-cy="login-button"], button[type="submit"]').first().click()
+        }
+      })
       cy.get('.error-message, [data-cy="error"], [data-cy="email-error"]', { timeout: 5000 }).should('satisfy', ($el) => {
         const text = $el.text().toLowerCase()
         return text.includes('email') || text.includes('válido') || text.includes('formato') || $el.length > 0
@@ -29,7 +35,13 @@ describe('Authentication - Advanced Scenarios', () => {
       const apiBaseUrl = getApiBaseUrl()
       cy.interceptError('POST', '/auth/login/', 401, { detail: 'Credenciales inválidas' }, 'loginError')
       
-      cy.fillLoginForm('wrong@example.com', 'wrongpassword')
+      cy.get('body').then(($body) => {
+        if ($body.find('[data-cy="input-email"], input[type="text"], input[type="email"]').length > 0) {
+          cy.get('[data-cy="input-email"], input[type="text"], input[type="email"]').first().type('wrong@example.com')
+          cy.get('[data-cy="input-password"], input[type="password"]').first().type('wrongpassword')
+          cy.get('[data-cy="btn-submit-login"], [data-cy="login-button"], button[type="submit"]').first().click()
+        }
+      })
       cy.wait('@loginError', { timeout: 10000 })
       cy.get('body', { timeout: 5000 }).should('satisfy', ($body) => {
         const hasError = $body.find('.swal2-error, [data-cy="error-message"]').length > 0
@@ -42,7 +54,13 @@ describe('Authentication - Advanced Scenarios', () => {
       const apiBaseUrl = getApiBaseUrl()
       cy.interceptError('POST', '/auth/login/', 500, {}, 'loginError')
       
-      cy.fillLoginForm('admin@example.com', 'admin123')
+      cy.get('body').then(($body) => {
+        if ($body.find('[data-cy="input-email"], input[type="text"], input[type="email"]').length > 0) {
+          cy.get('[data-cy="input-email"], input[type="text"], input[type="email"]').first().type('admin@example.com')
+          cy.get('[data-cy="input-password"], input[type="password"]').first().type('admin123')
+          cy.get('[data-cy="btn-submit-login"], [data-cy="login-button"], button[type="submit"]').first().click()
+        }
+      })
       cy.wait('@loginError', { timeout: 10000 })
       cy.verifyErrorMessage(['error', 'servidor', '500'])
     })

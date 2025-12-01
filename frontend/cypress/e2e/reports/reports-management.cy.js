@@ -83,7 +83,7 @@ describe('Gestión de Reportes - ReportsManagement', () => {
       cy.get('[data-cy="delete-report"]').click()
     })
     
-    cy.get('[data-cy="confirm-delete"]').click()
+    cy.confirmAction()
     
     cy.checkNotification('Reporte eliminado exitosamente', 'success')
   })
@@ -112,4 +112,3 @@ describe('Gestión de Reportes - ReportsManagement', () => {
     cy.get('[data-cy="empty-state"]').should('contain', 'No se encontraron reportes')
   })
 })
-

@@ -76,7 +76,7 @@ describe('Gestión de Lotes - LotesView y LoteDetailView', () => {
     cy.get('[data-cy="lote-item"]').first().click()
     cy.get('[data-cy="delete-lote"]').click()
     
-    cy.get('[data-cy="confirm-delete"]').click()
+    cy.confirmAction()
     
     cy.checkNotification('Lote eliminado exitosamente', 'success')
     cy.url().should('include', '/lotes')
@@ -118,4 +118,3 @@ describe('Gestión de Lotes - LotesView y LoteDetailView', () => {
     cy.get('[data-cy="empty-state"]').should('contain', 'No se encontraron lotes')
   })
 })
-

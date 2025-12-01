@@ -146,14 +146,14 @@ export const usePredictionStore = defineStore('prediction', {
   },
 
   actions: {
-    // Realizar una nueva predicción
-    async makePrediction(formData) {
+    // Base function for prediction logic (extracted common code)
+    async _executePrediction(formData, predictionFn, options = {}) {
       this.isLoading = true;
       this.error = null;
       this.uploadError = null;
       
       try {
-        // Obtener información de la imagen del FormData
+        // Extract image information from FormData
         const imageFile = formData.get('image');
         if (imageFile) {
           this.lastUpload = {
@@ -164,25 +164,29 @@ export const usePredictionStore = defineStore('prediction', {
           this.currentImage = imageFile;
         }
         
-        // Realizar la predicción
-        const result = await predictImage(formData);
+        // Execute prediction function
+        const result = await predictionFn(formData, options);
         
-        // Actualizar el estado con el resultado
-        this.currentPrediction = result;
+        // Handle different response formats
+        const predictionData = result.success ? result.data : result;
         
-        // Agregar al historial (al principio)
-        this.predictions.unshift(result);
+        // Update state with result
+        this.currentPrediction = predictionData;
         
-        // Mantener solo los últimos 50 en memoria
+        // Add to history (at the beginning)
+        this.predictions.unshift(predictionData);
+        
+        // Keep only last 50 in memory
         if (this.predictions.length > 50) {
           this.predictions = this.predictions.slice(0, 50);
         }
         
-        // Actualizar estadísticas
+        // Update statistics
         this.stats.totalPredictions = this.predictions.length;
         this.updateTodayStats();
         
-        return result;
+        // Return appropriate format
+        return result.success ? result.data : result;
         
       } catch (error) {
         const errorInfo = handleApiError(error, { logError: true });
@@ -192,110 +196,21 @@ export const usePredictionStore = defineStore('prediction', {
       } finally {
         this.isLoading = false;
       }
+    },
+    
+    // Realizar una nueva predicción
+    async makePrediction(formData) {
+      return this._executePrediction(formData, predictImage);
     },
     
     // Realizar predicción con YOLOv8
     async makePredictionYolo(formData) {
-      this.isLoading = true;
-      this.error = null;
-      this.uploadError = null;
-      
-      try {
-        // Obtener información de la imagen del FormData
-        const imageFile = formData.get('image');
-        if (imageFile) {
-          this.lastUpload = {
-            fileName: imageFile.name,
-            fileSize: imageFile.size,
-            uploadTime: new Date().toISOString()
-          };
-          this.currentImage = imageFile;
-        }
-        
-        // Realizar la predicción YOLOv8
-        const result = await predictImageYolo(formData);
-        
-        if (result.success) {
-          // Actualizar el estado con el resultado
-          this.currentPrediction = result.data;
-          
-          // Agregar al historial (al principio)
-          this.predictions.unshift(result.data);
-          
-          // Mantener solo los últimos 50 en memoria
-          if (this.predictions.length > 50) {
-            this.predictions = this.predictions.slice(0, 50);
-          }
-          
-          // Actualizar estadísticas
-          this.stats.totalPredictions = this.predictions.length;
-          this.updateTodayStats();
-          
-          return result.data;
-        } else {
-          throw new Error(result.error);
-        }
-        
-      } catch (error) {
-        const errorInfo = handleApiError(error, { logError: true });
-        this.error = errorInfo.message;
-        this.uploadError = errorInfo.message;
-        throw error;
-      } finally {
-        this.isLoading = false;
-      }
+      return this._executePrediction(formData, predictImageYolo);
     },
     
     // Realizar predicción con recorte inteligente
     async makePredictionSmart(formData, options = {}) {
-      this.isLoading = true;
-      this.error = null;
-      this.uploadError = null;
-      
-      try {
-        // Obtener información de la imagen del FormData
-        const imageFile = formData.get('image');
-        if (imageFile) {
-          this.lastUpload = {
-            fileName: imageFile.name,
-            fileSize: imageFile.size,
-            uploadTime: new Date().toISOString()
-          };
-          this.currentImage = imageFile;
-        }
-        
-        // Realizar la predicción con recorte inteligente
-        const result = await predictImageSmart(formData, options);
-        
-        if (result.success) {
-          // Actualizar el estado con el resultado
-          this.currentPrediction = result.data;
-          
-          // Agregar al historial (al principio)
-          this.predictions.unshift(result.data);
-          
-          // Mantener solo los últimos 50 en memoria
-          if (this.predictions.length > 50) {
-            this.predictions = this.predictions.slice(0, 50);
-          }
-          
-          // Actualizar estadísticas
-          this.stats.totalPredictions = this.predictions.length;
-          this.updateTodayStats();
-          
-          return result.data;
-        } else {
-          throw new Error(result.error);
-        }
-        
-      } catch (error) {
-        const errorInfo = handleApiError(error, { logError: true });
-        this.error = errorInfo.message;
-        this.uploadError = errorInfo.message;
-        throw error;
-      } finally {
-        this.isLoading = false;
-      }
+      return this._executePrediction(formData, predictImageSmart, options);
     },
     
     // Actualizar los resultados de predicción

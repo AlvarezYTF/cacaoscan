@@ -30,7 +30,7 @@ describe('Basic Performance Metrics', () => {
         id: i + 1,
         nombre: `Finca ${i + 1}`,
         ubicacion: `Ubicación ${i + 1}`,
-        area: Math.random() * 100,
+        area: ((i % 50) + 1) * 2,
         estado: i % 2 === 0 ? 'activa' : 'inactiva',
         created_at: new Date().toISOString()
       })),

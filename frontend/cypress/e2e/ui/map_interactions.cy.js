@@ -3,12 +3,7 @@ describe('Map Component Interactions', () => {
     cy.login('farmer')
     cy.visit('/fincas')
     cy.get('body', { timeout: 10000 }).should('be.visible')
-    // Assuming map view is available or inside a detail
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="btn-view-map"], button, a').length > 0) {
-        cy.get('[data-cy="btn-view-map"], button, a').first().click({ force: true })
-      }
-    })
+    cy.clickIfExists('[data-cy="btn-view-map"], button, a')
   })
 
   it('should load the map', () => {
@@ -46,21 +41,15 @@ describe('Map Component Interactions', () => {
     })
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="btn-locate-me"], .btn-locate-me, button').length > 0) {
-        cy.get('[data-cy="btn-locate-me"], .btn-locate-me, button').first().click({ force: true })
-        cy.get('body', { timeout: 3000 }).then(($afterClick) => {
-          // Verificar mensaje de error si existe
-          if ($afterClick.find('.swal2-warning, .error-message, .warning').length > 0) {
-            cy.get('.swal2-warning, .error-message, .warning').first().should('satisfy', ($el) => {
-              const text = $el.text().toLowerCase()
-              return text.includes('permiso') || text.includes('denegado') || text.includes('geolocation') || text.length > 0
-            })
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+    cy.clickIfExists('[data-cy="btn-locate-me"], .btn-locate-me, button').then(() => {
+      cy.get('body', { timeout: 3000 }).then(($afterClick) => {
+        if ($afterClick.find('.swal2-warning, .error-message, .warning').length > 0) {
+          cy.get('.swal2-warning, .error-message, .warning').first().should('satisfy', ($el) => {
+            const text = $el.text().toLowerCase()
+            return text.includes('permiso') || text.includes('denegado') || text.includes('geolocation') || text.length > 0
+          })
+        }
+      })
     })
   })
 
@@ -74,7 +63,6 @@ describe('Map Component Interactions', () => {
           if ($afterHover.find('text:contains("Satélite"), button:contains("Satélite"), a:contains("Satélite")').length > 0) {
             cy.contains('Satélite').click({ force: true })
             cy.get('body', { timeout: 3000 }).then(($afterClick) => {
-              // Verify tile layer change via src attribute check on tiles if they exist
               if ($afterClick.find('.leaflet-tile-pane img, .map-tile').length > 0) {
                 cy.get('.leaflet-tile-pane img, .map-tile').first().should('satisfy', ($el) => {
                   const src = $el.attr('src') || ''
@@ -84,10 +72,7 @@ describe('Map Component Interactions', () => {
             })
           }
         })
-      } else {
-        cy.get('body').should('be.visible')
       }
     })
   })
 })
-

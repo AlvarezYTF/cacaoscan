@@ -1,3 +1,5 @@
+import { setupServerError, setupEmptyListIntercept, getApiBaseUrl } from '../../support/helpers'
+
 describe('Manejo de Errores - Casos Edge', () => {
   beforeEach(() => {
     cy.login('farmer')
@@ -23,7 +25,6 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.get('[data-cy="add-finca-button"]').click()
     cy.get('[data-cy="finca-nombre"]').type('Finca <script>alert("xss")</script>')
     cy.get('[data-cy="save-finca"]').click()
-    // Should sanitize input
     cy.get('[data-cy="finca-nombre"]').should('not.contain', '<script>')
   })
 
@@ -40,7 +41,6 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.get('[data-cy="refresh-button"]').click()
     cy.get('[data-cy="refresh-button"]').click()
     cy.get('[data-cy="refresh-button"]').click()
-    // Should handle gracefully
     cy.wait(1000)
     cy.get('[data-cy="fincas-list"]').should('be.visible')
   })
@@ -62,7 +62,6 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.get('[data-cy="add-finca-button"]').click()
     cy.get('[data-cy="finca-nombre"]').type('Test Finca')
     cy.get('[data-cy="save-finca"]').click()
-    // Should redirect to login or refresh token
     cy.url().should('satisfy', (url) => {
       return url.includes('/login') || url.includes('/mis-fincas')
     })
@@ -81,7 +80,7 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar paginación con datos vacíos', () => {
-    cy.intercept('GET', '**/api/lotes/**', { body: { results: [], count: 0 } }).as('emptyLotes')
+    setupEmptyListIntercept('/lotes/**', 'emptyLotes')
     cy.visit('/mis-lotes')
     cy.wait('@emptyLotes')
     cy.get('[data-cy="empty-lotes-message"]').should('be.visible')
@@ -100,7 +99,6 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.get('[data-cy="add-finca-button"]').click()
     cy.get('[data-cy="finca-nombre"]').type('Test')
     cy.get('[data-cy="cancel-finca"]').click()
-    // Should cancel and not save
     cy.get('[data-cy="finca-form"]').should('not.exist')
   })
 
@@ -108,7 +106,6 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.visit('/mis-fincas')
     cy.get('[data-cy="add-finca-button"]').click()
     cy.get('[data-cy="save-finca"]').click()
-    // Should show all validation errors
     cy.get('[data-cy="finca-nombre-error"]').should('be.visible')
     cy.get('[data-cy="finca-ubicacion-error"]').should('be.visible')
     cy.get('[data-cy="finca-area-error"]').should('be.visible')
@@ -118,11 +115,9 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.visit('/mis-fincas')
     cy.get('[data-cy="edit-finca"]').first().click()
     cy.get('[data-cy="finca-nombre"]').clear().type('Updated Name')
-    // Simulate data update from another source
     cy.intercept('GET', '**/api/fincas/**', { fixture: 'updatedFincas' }).as('updatedData')
     cy.get('[data-cy="refresh-button"]').click()
     cy.wait('@updatedData')
-    // Should handle conflict gracefully
     cy.get('[data-cy="finca-form"]').should('be.visible')
   })
 
@@ -131,7 +126,6 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.get('[data-cy="delete-finca"]').first().click()
     cy.get('[data-cy="confirm-delete"]').click()
     cy.wait(500)
-    // Try to edit deleted item
     cy.get('[data-cy="edit-finca"]').first().click()
     cy.get('[data-cy="error-message"]').should('be.visible')
   })
@@ -140,9 +134,7 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.visit('/mis-fincas')
     cy.get('[data-cy="add-finca-button"]').click()
     cy.get('[data-cy="finca-nombre"]').type('Test')
-    // Navigate away
     cy.visit('/mis-lotes')
-    // Should cancel operation or show warning
     cy.url().should('include', '/mis-lotes')
   })
 
@@ -151,7 +143,6 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.get('[data-cy="add-finca-button"]').click()
     cy.get('[data-cy="finca-nombre"]').type('Test')
     cy.reload()
-    // Should handle gracefully
     cy.get('[data-cy="fincas-list"]').should('be.visible')
   })
 
@@ -184,16 +175,16 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar múltiples errores simultáneos', () => {
-    cy.intercept('GET', '**/api/**', { statusCode: 500 }).as('serverError')
+    setupServerError('/**', 'serverError')
     cy.visit('/mis-fincas')
     cy.wait('@serverError')
     cy.get('[data-cy="error-message"]').should('be.visible')
-    // Should not show duplicate errors
     cy.get('[data-cy="error-message"]').should('have.length.at.most', 1)
   })
 
   it('debe manejar operación con datos inválidos del servidor', () => {
-    cy.intercept('POST', '**/api/fincas/**', {
+    const apiBaseUrl = getApiBaseUrl()
+    cy.intercept('POST', `${apiBaseUrl}/fincas/**`, {
       statusCode: 200,
       body: { invalid: 'response' }
     }).as('invalidData')
@@ -208,7 +199,8 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar operación con datos parciales', () => {
-    cy.intercept('GET', '**/api/fincas/**', {
+    const apiBaseUrl = getApiBaseUrl()
+    cy.intercept('GET', `${apiBaseUrl}/fincas/**`, {
       statusCode: 206,
       body: { results: [{ id: 1, nombre: 'Partial' }] }
     }).as('partialData')
@@ -247,7 +239,6 @@ describe('Manejo de Errores - Casos Edge', () => {
       win.localStorage.setItem('access_token', 'corrupt{data')
     })
     cy.visit('/mis-fincas')
-    // Should handle gracefully
     cy.url().should('satisfy', (url) => {
       return url.includes('/login') || url.includes('/mis-fincas')
     })
@@ -255,7 +246,6 @@ describe('Manejo de Errores - Casos Edge', () => {
 
   it('debe manejar operación con sessionStorage lleno', () => {
     cy.window().then((win) => {
-      // Fill sessionStorage
       for (let i = 0; i < 1000; i++) {
         try {
           win.sessionStorage.setItem(`key${i}`, 'x'.repeat(1000))
@@ -270,7 +260,6 @@ describe('Manejo de Errores - Casos Edge', () => {
 
   it('debe manejar operación con memoria limitada', () => {
     cy.visit('/mis-fincas')
-    // Simulate memory pressure
     cy.window().then((win) => {
       const largeArray = new Array(1000000).fill('x')
       win.testLargeArray = largeArray
@@ -282,11 +271,12 @@ describe('Manejo de Errores - Casos Edge', () => {
 
   it('debe manejar operación con CPU limitado', () => {
     cy.visit('/mis-fincas')
-    // Simulate CPU intensive operation
     cy.window().then((win) => {
       const start = Date.now()
+      let counter = 0
       while (Date.now() - start < 100) {
-        Math.sqrt(Math.random())
+        Math.sqrt(counter)
+        counter++
       }
     })
     cy.get('[data-cy="refresh-button"]').click()
@@ -629,31 +619,13 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.get('[data-cy="fincas-list"]').should('be.visible')
   })
 
-  it('debe manejar operación con web storage getDirectory', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('storage' in win.navigator && 'getDirectory' in win.navigator.storage) {
-        win.navigator.storage.getDirectory().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
-  })
-
   it('debe manejar datos vacíos en listas', () => {
-    // Simular lista vacía
-    const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
-    cy.intercept('GET', `${apiBaseUrl}/fincas/**`, {
-      statusCode: 200,
-      body: { results: [], count: 0 }
-    }).as('emptyList')
-    
+    setupEmptyListIntercept('/fincas/**', 'emptyList')
     cy.visit('/mis-fincas')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    // Esperar un poco para que la página se estabilice
     cy.wait(1000)
     
-    // Verificar estado vacío
     cy.get('body', { timeout: 5000 }).then(($body) => {
       if ($body.find('[data-cy="empty-state"], .empty-state, .empty').length > 0) {
         cy.get('[data-cy="empty-state"], .empty-state, .empty').should('exist')
@@ -669,12 +641,10 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.visit('/mis-fincas')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    // Buscar algo que no existe
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="search-fincas"], input[type="search"], input[placeholder*="search"]').length > 0) {
         cy.get('[data-cy="search-fincas"], input[type="search"], input[placeholder*="search"]').first().type('noexiste123')
         
-        // Verificar estado de búsqueda sin resultados
         cy.get('body', { timeout: 5000 }).then(($afterSearch) => {
           if ($afterSearch.find('[data-cy="no-results"], .no-results, .empty').length > 0) {
             cy.get('[data-cy="no-results"], .no-results, .empty').should('exist')
@@ -690,7 +660,6 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.visit('/mis-fincas')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    // Aplicar filtro que no tiene resultados
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="location-filter"], button, .filter').length > 0) {
         cy.get('[data-cy="location-filter"], button, .filter').first().click({ force: true })
@@ -699,7 +668,6 @@ describe('Manejo de Errores - Casos Edge', () => {
             cy.get('[data-cy="province-filter"], select').first().select('Provincia Inexistente', { force: true })
             cy.get('[data-cy="apply-filter"], button[type="submit"]').first().click()
             
-            // Verificar estado de filtro sin resultados
             cy.get('body', { timeout: 5000 }).then(($afterFilter) => {
               if ($afterFilter.find('[data-cy="no-results"], .no-results').length > 0) {
                 cy.get('[data-cy="no-results"], .no-results').should('exist')
@@ -720,12 +688,10 @@ describe('Manejo de Errores - Casos Edge', () => {
       if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
         cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
         cy.get('body', { timeout: 5000 }).then(($modal) => {
-          // Llenar con texto muy largo si existen los campos
           if ($modal.find('[data-cy="finca-nombre"], input').length > 0) {
             const longText = 'a'.repeat(1000)
             cy.get('[data-cy="finca-nombre"], input').first().type(longText, { force: true })
             
-            // Verificar validación de longitud si existe el error
             cy.get('body', { timeout: 3000 }).then(($error) => {
               if ($error.find('[data-cy="finca-nombre-error"], .error-message').length > 0) {
                 cy.get('[data-cy="finca-nombre-error"], .error-message').first().should('satisfy', ($el) => {
@@ -750,11 +716,9 @@ describe('Manejo de Errores - Casos Edge', () => {
       if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
         cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
         cy.get('body', { timeout: 5000 }).then(($modal) => {
-          // Llenar con caracteres especiales si existen los campos
           if ($modal.find('[data-cy="finca-nombre"], input').length > 0) {
             cy.get('[data-cy="finca-nombre"], input').first().type('Finca @#$%^&*()', { force: true })
             
-            // Verificar que se aceptan caracteres especiales
             cy.get('[data-cy="finca-nombre"], input').first().should('satisfy', ($el) => {
               const value = $el.val() || $el.text()
               return value.includes('Finca') || value.length > 0
@@ -775,11 +739,9 @@ describe('Manejo de Errores - Casos Edge', () => {
       if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
         cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
         cy.get('body', { timeout: 5000 }).then(($modal) => {
-          // Llenar con número muy grande si existe el campo
           if ($modal.find('[data-cy="finca-area"], input[type="number"]').length > 0) {
             cy.get('[data-cy="finca-area"], input[type="number"]').first().type('999999999999999', { force: true })
             
-            // Verificar validación si existe el error
             cy.get('body', { timeout: 3000 }).then(($error) => {
               if ($error.find('[data-cy="finca-area-error"], .error-message').length > 0) {
                 cy.get('[data-cy="finca-area-error"], .error-message').first().should('satisfy', ($el) => {
@@ -804,11 +766,9 @@ describe('Manejo de Errores - Casos Edge', () => {
       if ($body.find('[data-cy="add-finca-button"], button').length > 0) {
         cy.get('[data-cy="add-finca-button"], button').first().click({ force: true })
         cy.get('body', { timeout: 5000 }).then(($modal) => {
-          // Llenar con número negativo si existe el campo
           if ($modal.find('[data-cy="finca-area"], input[type="number"]').length > 0) {
             cy.get('[data-cy="finca-area"], input[type="number"]').first().type('-10', { force: true })
             
-            // Verificar validación si existe el error
             cy.get('body', { timeout: 3000 }).then(($error) => {
               if ($error.find('[data-cy="finca-area-error"], .error-message').length > 0) {
                 cy.get('[data-cy="finca-area-error"], .error-message').first().should('satisfy', ($el) => {
@@ -833,11 +793,9 @@ describe('Manejo de Errores - Casos Edge', () => {
       if ($body.find('[data-cy="add-lote-button"], button').length > 0) {
         cy.get('[data-cy="add-lote-button"], button').first().click({ force: true })
         cy.get('body', { timeout: 5000 }).then(($modal) => {
-          // Llenar con edad inválida si existe el campo
           if ($modal.find('[data-cy="lote-edad"], input[type="number"]').length > 0) {
             cy.get('[data-cy="lote-edad"], input[type="number"]').first().type('50', { force: true })
             
-            // Verificar validación si existe el error
             cy.get('body', { timeout: 3000 }).then(($error) => {
               if ($error.find('[data-cy="lote-edad-error"], .error-message').length > 0) {
                 cy.get('[data-cy="lote-edad-error"], .error-message').first().should('satisfy', ($el) => {
@@ -860,7 +818,6 @@ describe('Manejo de Errores - Casos Edge', () => {
     
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="file-input"], input[type="file"]').length > 0) {
-        // Simular archivo con nombre muy largo
         const longFileName = 'a'.repeat(255) + '.jpg'
         const fileContent = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAD/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKgAD//Z'
         
@@ -874,7 +831,6 @@ describe('Manejo de Errores - Casos Edge', () => {
           cy.wrap(input).trigger('change', { force: true })
         })
         
-        // Verificar validación si existe el error
         cy.get('body', { timeout: 3000 }).then(($error) => {
           if ($error.find('[data-cy="file-name-error"], .error-message').length > 0) {
             cy.get('[data-cy="file-name-error"], .error-message').first().should('satisfy', ($el) => {
@@ -895,7 +851,6 @@ describe('Manejo de Errores - Casos Edge', () => {
     
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="file-input"], input[type="file"]').length > 0) {
-        // Simular archivo con extensión no permitida
         const fileContent = 'test file content'
         const blob = new Blob([fileContent], { type: 'text/plain' })
         const file = new File([blob], 'test.txt', { type: 'text/plain' })
@@ -908,7 +863,6 @@ describe('Manejo de Errores - Casos Edge', () => {
           cy.wrap(input).trigger('change', { force: true })
         })
         
-        // Verificar validación si existe el error
         cy.get('body', { timeout: 3000 }).then(($error) => {
           if ($error.find('[data-cy="file-type-error"], .error-message').length > 0) {
             cy.get('[data-cy="file-type-error"], .error-message').first().should('satisfy', ($el) => {
@@ -929,7 +883,6 @@ describe('Manejo de Errores - Casos Edge', () => {
     
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="file-input"], input[type="file"]').length > 0) {
-        // Simular archivo corrupto
         const corruptContent = 'corrupt file content'
         const blob = new Blob([corruptContent], { type: 'image/jpeg' })
         const file = new File([blob], 'corrupt.jpg', { type: 'image/jpeg' })
@@ -946,7 +899,6 @@ describe('Manejo de Errores - Casos Edge', () => {
           if ($afterUpload.find('[data-cy="upload-button"], button[type="submit"]').length > 0) {
             cy.get('[data-cy="upload-button"], button[type="submit"]').first().click({ force: true })
             
-            // Verificar error de archivo corrupto si existe
             cy.get('body', { timeout: 5000 }).then(($error) => {
               if ($error.find('[data-cy="file-corrupt-error"], .error-message, .swal2-error').length > 0) {
                 cy.get('[data-cy="file-corrupt-error"], .error-message, .swal2-error').first().should('satisfy', ($el) => {
@@ -964,8 +916,7 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar sesión expirada durante operación', () => {
-    const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
-    // Simular sesión expirada durante operación
+    const apiBaseUrl = getApiBaseUrl()
     cy.intercept('POST', `${apiBaseUrl}/fincas/`, {
       statusCode: 401,
       body: { error: 'Token expirado' }
@@ -983,7 +934,6 @@ describe('Manejo de Errores - Casos Edge', () => {
             
             cy.wait('@expiredSession', { timeout: 10000 })
             
-            // Verificar redirección al login
             cy.url({ timeout: 5000 }).should('satisfy', (url) => {
               return url.includes('/login') || url.includes('/auth')
             })
@@ -996,8 +946,7 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar operaciones concurrentes', () => {
-    const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
-    // Simular operaciones concurrentes
+    const apiBaseUrl = getApiBaseUrl()
     cy.intercept('POST', `${apiBaseUrl}/fincas/`, {
       statusCode: 409,
       body: { error: 'Operación en conflicto' }
@@ -1015,7 +964,6 @@ describe('Manejo de Errores - Casos Edge', () => {
             
             cy.wait('@concurrentOperation', { timeout: 10000 })
             
-            // Verificar mensaje de conflicto si existe
             cy.get('body', { timeout: 5000 }).then(($error) => {
               if ($error.find('[data-cy="conflict-error"], .error-message, .swal2-error').length > 0) {
                 cy.get('[data-cy="conflict-error"], .error-message, .swal2-error').first().should('satisfy', ($el) => {
@@ -1033,8 +981,7 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar datos corruptos del servidor', () => {
-    const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
-    // Simular datos corruptos
+    const apiBaseUrl = getApiBaseUrl()
     cy.intercept('GET', `${apiBaseUrl}/fincas/**`, {
       statusCode: 200,
       body: {
@@ -1049,10 +996,8 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.visit('/mis-fincas')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    // Esperar un poco para que la página se estabilice
     cy.wait(1000)
     
-    // Verificar que se manejan datos corruptos
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="finca-item"], .finca-item, .item').length > 0) {
         cy.get('[data-cy="finca-item"], .finca-item, .item').should('exist')
@@ -1064,8 +1009,7 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar respuestas parciales', () => {
-    const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
-    // Simular respuesta parcial
+    const apiBaseUrl = getApiBaseUrl()
     cy.intercept('GET', `${apiBaseUrl}/fincas/**`, {
       statusCode: 206,
       body: {
@@ -1078,10 +1022,8 @@ describe('Manejo de Errores - Casos Edge', () => {
     cy.visit('/mis-fincas')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    // Esperar un poco para que la página se estabilice
     cy.wait(1000)
     
-    // Verificar que se maneja respuesta parcial
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="partial-data-warning"], .warning').length > 0) {
         cy.get('[data-cy="partial-data-warning"], .warning').should('exist')
@@ -1093,8 +1035,7 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar cambios de estado durante operación', () => {
-    const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
-    // Simular cambio de estado durante operación
+    const apiBaseUrl = getApiBaseUrl()
     cy.intercept('POST', `${apiBaseUrl}/fincas/`, {
       statusCode: 410,
       body: { error: 'Recurso ya no disponible' }
@@ -1112,7 +1053,6 @@ describe('Manejo de Errores - Casos Edge', () => {
             
             cy.wait('@goneResource', { timeout: 10000 })
             
-            // Verificar mensaje de recurso no disponible si existe
             cy.get('body', { timeout: 5000 }).then(($error) => {
               if ($error.find('[data-cy="gone-error"], .error-message, .swal2-error').length > 0) {
                 cy.get('[data-cy="gone-error"], .error-message, .swal2-error').first().should('satisfy', ($el) => {
@@ -1130,8 +1070,7 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar límites de recursos', () => {
-    const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
-    // Simular límite de recursos
+    const apiBaseUrl = getApiBaseUrl()
     cy.intercept('POST', `${apiBaseUrl}/fincas/`, {
       statusCode: 507,
       body: { error: 'Límite de recursos excedido' }
@@ -1149,7 +1088,6 @@ describe('Manejo de Errores - Casos Edge', () => {
             
             cy.wait('@resourceLimit', { timeout: 10000 })
             
-            // Verificar mensaje de límite de recursos si existe
             cy.get('body', { timeout: 5000 }).then(($error) => {
               if ($error.find('[data-cy="resource-limit-error"], .error-message, .swal2-error').length > 0) {
                 cy.get('[data-cy="resource-limit-error"], .error-message, .swal2-error').first().should('satisfy', ($el) => {

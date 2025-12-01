@@ -19,6 +19,43 @@ const API_ENDPOINTS = {
 }
 
 /**
+ * Normalizes paginated API response (extracted common logic)
+ * @param {Object} data - API response data
+ * @param {Object} params - Request parameters
+ * @returns {Object} Normalized paginated response
+ */
+function normalizePaginatedResponse(data, params = {}) {
+  return {
+    success: true,
+    data: {
+      results: data.results || [],
+      count: data.count || 0,
+      current_page: data.current_page || params.page || 1,
+      total_pages: data.total_pages || Math.ceil((data.count || 0) / (params.page_size || 50)),
+      page_size: data.page_size || params.page_size || 50
+    }
+  }
+}
+
+/**
+ * Handles API errors consistently (extracted common logic)
+ * @param {Error} error - Error object
+ * @param {string} defaultMessage - Default error message
+ * @param {string} logContext - Context for logging
+ * @returns {Error} Formatted error
+ */
+function handleApiError(error, defaultMessage, logContext) {
+  console.error(`Error ${logContext}:`, error)
+  
+  const errorMessage = error.response?.data?.detail || 
+                      error.response?.data?.error || 
+                      error.message || 
+                      defaultMessage
+
+  return new Error(errorMessage)
+}
+
+/**
  * Obtiene lista de logs de actividad
  * @param {Object} params - Parámetros de consulta
  * @param {number} params.page - Página actual
@@ -32,27 +69,9 @@ const API_ENDPOINTS = {
 export async function getActivityLogs(params = {}) {
   try {
     const data = await apiGet(API_ENDPOINTS.activityLogs, params)
-    
-    // Normalize response
-    return {
-      success: true,
-      data: {
-        results: data.results || [],
-        count: data.count || 0,
-        current_page: data.current_page || params.page || 1,
-        total_pages: data.total_pages || Math.ceil((data.count || 0) / (params.page_size || 50)),
-        page_size: data.page_size || params.page_size || 50
-      }
-    }
+    return normalizePaginatedResponse(data, params)
   } catch (error) {
-    console.error('Error obteniendo logs de actividad:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al obtener los logs de actividad'
-
-    throw new Error(errorMessage)
+    throw handleApiError(error, 'Error al obtener los logs de actividad', 'obteniendo logs de actividad')
   }
 }
 
@@ -70,27 +89,9 @@ export async function getActivityLogs(params = {}) {
 export async function getLoginHistory(params = {}) {
   try {
     const data = await apiGet(API_ENDPOINTS.loginHistory, params)
-    
-    // Normalize response
-    return {
-      success: true,
-      data: {
-        results: data.results || [],
-        count: data.count || 0,
-        current_page: data.current_page || params.page || 1,
-        total_pages: data.total_pages || Math.ceil((data.count || 0) / (params.page_size || 50)),
-        page_size: data.page_size || params.page_size || 50
-      }
-    }
+    return normalizePaginatedResponse(data, params)
   } catch (error) {
-    console.error('Error obteniendo historial de logins:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al obtener el historial de logins'
-
-    throw new Error(errorMessage)
+    throw handleApiError(error, 'Error al obtener el historial de logins', 'obteniendo historial de logins')
   }
 }
 
@@ -118,14 +119,7 @@ export async function getAuditStats(params = {}) {
       }
     }
   } catch (error) {
-    console.error('Error obteniendo estadísticas de auditoría:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al obtener las estadísticas de auditoría'
-
-    throw new Error(errorMessage)
+    throw handleApiError(error, 'Error al obtener las estadísticas de auditoría', 'obteniendo estadísticas de auditoría')
   }
 }
 
