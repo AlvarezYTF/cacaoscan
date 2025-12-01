@@ -15,14 +15,14 @@ describe('Gestión de Lotes - CRUD', () => {
   const FINCA_SELECT = '[data-cy="finca-select"], select'
   const ERROR_MESSAGE_SELECTOR = '[data-cy="error-message"], .error-message, .swal2-error'
   
-  const openLoteForm = (action) => {
-    return clickIfExistsAndContinue(ADD_LOTE_BUTTON, action)
+  const openLoteForm = (action, fallback) => {
+    return clickIfExistsAndContinue(ADD_LOTE_BUTTON, action, fallback)
   }
   
-  const openLoteFormWithFinca = (fincaValue, action) => {
+  const openLoteFormWithFinca = (fincaValue, action, fallback) => {
     return openLoteForm(() => {
       return selectIfExistsAndContinue(FINCA_SELECT, fincaValue, action)
-    })
+    }, fallback)
   }
   
   const interactWithLoteItem = (action, fallback) => {

@@ -2,7 +2,6 @@ import {
   setupAuth,
   ifFoundInBody,
   clickIfExistsAndContinue,
-  fillFormFieldsSequence,
   typeIfExistsAndContinue
 } from '../../support/helpers'
 
@@ -35,97 +34,125 @@ describe('Navegación - Flujos Completos', () => {
   })
 
   it('debe completar flujo completo de análisis de imagen', () => {
-    visitAndWait('/nuevo-analisis')
+    const saveAnalysis = () => {
+      ifFoundInBody('[data-cy="save-analysis"], button', () => {
+        cy.get('[data-cy="save-analysis"], button').first().click()
+        cy.get('body', { timeout: 5000 }).should('be.visible')
+      })
+    }
     
+    const verifyResults = () => {
+      cy.get('[data-cy="analysis-results"], .results, .result', { timeout: 30000 }).should('exist')
+      cy.get('[data-cy="quality-score"], .quality, .score', { timeout: 5000 }).should('exist')
+      saveAnalysis()
+    }
+    
+    const checkHistory = () => {
+      visitAndWait('/mis-analisis')
+      cy.get('[data-cy="analysis-history"], .history, .list', { timeout: 5000 }).should('exist')
+    }
+    
+    visitAndWait('/nuevo-analisis')
     ifFoundInBody('input[type="file"]', () => {
       cy.uploadTestImage('test-cacao.jpg')
-      return clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', () => {
-        cy.get('[data-cy="analysis-results"], .results, .result', { timeout: 30000 }).should('exist')
-        cy.get('[data-cy="quality-score"], .quality, .score', { timeout: 5000 }).should('exist')
-        
-        return ifFoundInBody('[data-cy="save-analysis"], button', () => {
-          cy.get('[data-cy="save-analysis"], button').first().click()
-          cy.get('body', { timeout: 5000 }).should('be.visible')
-        })
-      }).then(() => {
-        visitAndWait('/mis-analisis')
-        cy.get('[data-cy="analysis-history"], .history, .list', { timeout: 5000 }).should('exist')
-      })
+      clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', verifyResults).then(checkHistory)
     })
   })
 
   it('debe completar flujo de gestión de finca y lotes', () => {
-    visitAndWait('/mis-fincas')
+    const verifyLotes = () => {
+      ifFoundInBody('[data-cy="finca-lotes"], .lotes', () => {
+        cy.get('[data-cy="finca-lotes"], .lotes', { timeout: 5000 }).should('exist')
+      })
+    }
     
-    clickIfExistsAndContinue('[data-cy="add-finca-button"], button', () => {
+    const createLote = () => {
+      ifFoundInBody('[data-cy="add-lote-button"], button', () => {
+        cy.get('[data-cy="add-lote-button"], button').first().click({ force: true })
+        cy.get('[data-cy="save-lote"], button[type="submit"]').first().click()
+        cy.get('body', { timeout: 5000 }).should('be.visible')
+        verifyLotes()
+      })
+    }
+    
+    const openFinca = () => {
+      ifFoundInBody('[data-cy="finca-item"], .finca-item, .item', () => {
+        cy.get('[data-cy="finca-item"], .finca-item, .item').first().click({ force: true })
+        createLote()
+      })
+    }
+    
+    const saveFinca = () => {
       ifFoundInBody('[data-cy="map-container"], .map, canvas', () => {
         cy.get('[data-cy="map-container"], .map, canvas').first().click(300, 200, { force: true })
       })
       cy.get('[data-cy="save-finca"], button[type="submit"]').first().click()
       cy.get('body', { timeout: 5000 }).should('be.visible')
-      
-      return ifFoundInBody('[data-cy="finca-item"], .finca-item, .item', () => {
-        cy.get('[data-cy="finca-item"], .finca-item, .item').first().click({ force: true })
-        return ifFoundInBody('[data-cy="add-lote-button"], button', () => {
-          cy.get('[data-cy="add-lote-button"], button').first().click({ force: true })
-          cy.get('[data-cy="save-lote"], button[type="submit"]').first().click()
-          cy.get('body', { timeout: 5000 }).should('be.visible')
-          
-          return ifFoundInBody('[data-cy="finca-lotes"], .lotes', () => {
-            cy.get('[data-cy="finca-lotes"], .lotes', { timeout: 5000 }).should('exist')
-          })
-        })
-      })
-    })
+      openFinca()
+    }
+    
+    visitAndWait('/mis-fincas')
+    clickIfExistsAndContinue('[data-cy="add-finca-button"], button', saveFinca)
   })
 
   it('debe completar flujo de generación de reporte', () => {
-    cy.login('analyst')
-    visitAndWait('/reportes')
+    const viewReportDetails = () => {
+      ifFoundInBody('[data-cy="report-item"], .report-item, .item', () => {
+        cy.get('[data-cy="report-item"], .report-item, .item').first().click({ force: true })
+        cy.get('[data-cy="report-details"], .details', { timeout: 5000 }).should('exist')
+      })
+    }
     
-    clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
-      return ifFoundInBody('[data-cy="report-type"], select', () => {
+    const fillReportForm = () => {
+      ifFoundInBody('[data-cy="report-type"], select', () => {
         cy.get('[data-cy="report-type"], select').first().select('analisis-periodo', { force: true })
         cy.get('[data-cy="start-date"], input[type="date"]').first().type('2024-01-01', { force: true })
         cy.get('[data-cy="end-date"], input[type="date"]').first().type('2024-01-31', { force: true })
         cy.get('[data-cy="include-charts"], input[type="checkbox"]').first().check({ force: true })
         cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
         cy.get('body', { timeout: 30000 }).should('be.visible')
-        
-        return ifFoundInBody('[data-cy="report-item"], .report-item, .item', () => {
-          cy.get('[data-cy="report-item"], .report-item, .item').first().click({ force: true })
-          cy.get('[data-cy="report-details"], .details', { timeout: 5000 }).should('exist')
-        })
+        viewReportDetails()
       })
-    })
+    }
+    
+    cy.login('analyst')
+    visitAndWait('/reportes')
+    clickIfExistsAndContinue('[data-cy="create-report-button"], button', fillReportForm)
   })
 
   it('debe completar flujo de administración de usuarios', () => {
-    cy.login('admin')
-    visitAndWait('/admin/agricultores')
-    
-    ifFoundInBody('[data-cy="users-list"], .users-list, .list', () => {
-      cy.get('[data-cy="users-list"], .users-list, .list', { timeout: 5000 }).should('exist')
-      
-      return ifFoundInBody('[data-cy="user-item"], .user-item, .item', () => {
-        cy.get('[data-cy="user-item"], .user-item, .item').first().click({ force: true })
-        cy.get('[data-cy="user-details"], .details', { timeout: 5000 }).should('exist')
-        
-        return clickIfExistsAndContinue('[data-cy="edit-user"], button', () => {
-          return ifFoundInBody('[data-cy="user-first-name"], input[name*="first"]', () => {
-            cy.get('[data-cy="user-first-name"], input[name*="first"]').first().clear().type('Usuario Editado')
-            cy.get('[data-cy="save-user"], button[type="submit"]').first().click()
-            cy.get('body', { timeout: 5000 }).should('be.visible')
-          })
-        })
-      })
-    }).then(() => {
+    const verifyAdminStats = () => {
       visitAndWait('/admin/dashboard')
       ifFoundInBody('[data-cy="admin-stats"], .stats', () => {
         cy.get('[data-cy="admin-stats"], .stats', { timeout: 5000 }).should('exist')
         cy.get('[data-cy="total-users"], .total-users', { timeout: 5000 }).should('exist')
       })
-    })
+    }
+    
+    const editUser = () => {
+      clickIfExistsAndContinue('[data-cy="edit-user"], button', () => {
+        ifFoundInBody('[data-cy="user-first-name"], input[name*="first"]', () => {
+          cy.get('[data-cy="user-first-name"], input[name*="first"]').first().clear().type('Usuario Editado')
+          cy.get('[data-cy="save-user"], button[type="submit"]').first().click()
+          cy.get('body', { timeout: 5000 }).should('be.visible')
+        })
+      })
+    }
+    
+    const openUserDetails = () => {
+      ifFoundInBody('[data-cy="user-item"], .user-item, .item', () => {
+        cy.get('[data-cy="user-item"], .user-item, .item').first().click({ force: true })
+        cy.get('[data-cy="user-details"], .details', { timeout: 5000 }).should('exist')
+        editUser()
+      })
+    }
+    
+    cy.login('admin')
+    visitAndWait('/admin/agricultores')
+    ifFoundInBody('[data-cy="users-list"], .users-list, .list', () => {
+      cy.get('[data-cy="users-list"], .users-list, .list', { timeout: 5000 }).should('exist')
+      openUserDetails()
+    }).then(verifyAdminStats)
   })
 
   it('debe completar flujo de verificación de email', () => {
@@ -164,35 +191,42 @@ describe('Navegación - Flujos Completos', () => {
     
     visitAndWait('/login')
     
+    const resendVerification = () => {
+      clickIfExistsAndContinue('[data-cy="resend-verification-button"], button', () => {
+        cy.get('body', { timeout: 5000 }).should('be.visible')
+      })
+    }
+    
+    const verifyMessage = ($el) => {
+      cy.wrap($el).first().should('satisfy', ($element) => {
+        const text = $element.text().toLowerCase()
+        return text.includes('verifica') || text.includes('email') || text.length > 0
+      })
+      resendVerification()
+    }
+    
     ifFoundInBody('[data-cy="email-input"], input[type="email"]', () => {
       cy.get('[data-cy="email-input"], input[type="email"]').first().type(newUser.email, { force: true })
       cy.get('[data-cy="password-input"], input[type="password"]').first().type(newUser.password, { force: true })
       cy.get('[data-cy="login-button"], button[type="submit"]').first().click({ force: true })
-      
-      return ifFoundInBody('[data-cy="verification-message"], .verification-message', ($el) => {
-        cy.wrap($el).first().should('satisfy', ($element) => {
-          const text = $element.text().toLowerCase()
-          return text.includes('verifica') || text.includes('email') || text.length > 0
-        })
-        
-        return clickIfExistsAndContinue('[data-cy="resend-verification-button"], button', () => {
-          cy.get('body', { timeout: 5000 }).should('be.visible')
-        })
-      })
+      ifFoundInBody('[data-cy="verification-message"], .verification-message', verifyMessage)
     })
   })
 
   it('debe completar flujo de recuperación de contraseña', () => {
     visitAndWait('/login')
     
+    const sendResetEmail = (user) => {
+      ifFoundInBody('[data-cy="email-input"], input[type="email"]', () => {
+        cy.get('[data-cy="email-input"], input[type="email"]').first().type(user.email, { force: true })
+        cy.get('[data-cy="send-reset-button"], button[type="submit"]').first().click({ force: true })
+        cy.get('body', { timeout: 5000 }).should('be.visible')
+      })
+    }
+    
     clickIfExistsAndContinue('[data-cy="forgot-password-link"], a[href*="password"], a[href*="forgot"]', () => {
-      return cy.fixture('users').then((users) => {
-        const user = users.farmer
-        return ifFoundInBody('[data-cy="email-input"], input[type="email"]', () => {
-          cy.get('[data-cy="email-input"], input[type="email"]').first().type(user.email, { force: true })
-          cy.get('[data-cy="send-reset-button"], button[type="submit"]').first().click({ force: true })
-          cy.get('body', { timeout: 5000 }).should('be.visible')
-        })
+      cy.fixture('users').then((users) => {
+        sendResetEmail(users.farmer)
       })
     })
     
@@ -238,13 +272,17 @@ describe('Navegación - Flujos Completos', () => {
     cy.login('farmer')
     visitAndWait('/agricultor-dashboard')
     
-    clickIfExistsAndContinue('[data-cy="user-menu"], .user-menu, button', () => {
-      return clickIfExistsAndContinue('[data-cy="logout-button"], button, a', () => {
-        return clickIfExistsAndContinue('[data-cy="confirm-logout"], button[type="submit"]', () => {
-          cy.wrap(null)
-        })
+    const confirmLogout = () => {
+      clickIfExistsAndContinue('[data-cy="confirm-logout"], button[type="submit"]', () => {
+        cy.wrap(null)
       })
-    })
+    }
+    
+    const clickLogout = () => {
+      clickIfExistsAndContinue('[data-cy="logout-button"], button, a', confirmLogout)
+    }
+    
+    clickIfExistsAndContinue('[data-cy="user-menu"], .user-menu, button', clickLogout)
     
     cy.wait(2000)
     verifyUrlPatterns(['/login', '/auth', '/agricultor-dashboard'], 10000)
@@ -271,20 +309,27 @@ describe('Navegación - Flujos Completos', () => {
         cy.get('[data-cy="breadcrumb-fincas"], .breadcrumb').should('exist')
       })
       
-      return ifFoundInBody('[data-cy="lote-item"], .lote-item, .item', () => {
-        cy.get('[data-cy="lote-item"], .lote-item, .item').first().click({ force: true })
-        ifFoundInBody('[data-cy="breadcrumb-lotes"], .breadcrumb', () => {
-          cy.get('[data-cy="breadcrumb-lotes"], .breadcrumb').should('exist')
-        })
-        
-        return clickIfExistsAndContinue('[data-cy="breadcrumb-fincas"], .breadcrumb', () => {
+      const navigateBreadcrumbs = () => {
+        clickIfExistsAndContinue('[data-cy="breadcrumb-fincas"], .breadcrumb', () => {
           cy.get('body', { timeout: 5000 }).should('be.visible')
         }).then(() => {
-          return clickIfExistsAndContinue('[data-cy="breadcrumb-home"], .breadcrumb, a[href*="dashboard"]', () => {
+          clickIfExistsAndContinue('[data-cy="breadcrumb-home"], .breadcrumb, a[href*="dashboard"]', () => {
             verifyUrlPatterns(['/agricultor-dashboard', '/dashboard'], 10000)
           })
         })
-      })
+      }
+      
+      const openLote = () => {
+        ifFoundInBody('[data-cy="lote-item"], .lote-item, .item', () => {
+          cy.get('[data-cy="lote-item"], .lote-item, .item').first().click({ force: true })
+          ifFoundInBody('[data-cy="breadcrumb-lotes"], .breadcrumb', () => {
+            cy.get('[data-cy="breadcrumb-lotes"], .breadcrumb').should('exist')
+          })
+          navigateBreadcrumbs()
+        })
+      }
+      
+      return openLote()
     })
   })
 
@@ -326,23 +371,27 @@ describe('Navegación - Flujos Completos', () => {
     cy.visit('/agricultor-dashboard')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    // Ver notificaciones
-    clickIfExistsAndContinue('[data-cy="notifications-bell"], .notifications-bell, button', () => {
-      return ifFoundInBody('[data-cy="notifications-list"], .notifications-list', () => {
-        cy.get('[data-cy="notifications-list"], .notifications-list').should('exist')
-        
-        // Marcar como leída si existe
-        return clickIfExistsAndContinue('[data-cy="notification-item"], .notification-item', () => {
-          return clickIfExistsAndContinue('[data-cy="mark-read"], button', () => {
-            cy.wrap(null)
-          })
-        }).then(() => {
-          // Marcar todas como leídas si existe
-          return clickIfExistsAndContinue('[data-cy="mark-all-read"], button', () => {
-            cy.get('body', { timeout: 5000 }).should('be.visible')
-          })
-        })
+    const markAllRead = () => {
+      clickIfExistsAndContinue('[data-cy="mark-all-read"], button', () => {
+        cy.get('body', { timeout: 5000 }).should('be.visible')
       })
-    })
+    }
+    
+    const markAsRead = () => {
+      clickIfExistsAndContinue('[data-cy="notification-item"], .notification-item', () => {
+        clickIfExistsAndContinue('[data-cy="mark-read"], button', () => {
+          cy.wrap(null)
+        })
+      }).then(markAllRead)
+    }
+    
+    const openNotifications = () => {
+      ifFoundInBody('[data-cy="notifications-list"], .notifications-list', () => {
+        cy.get('[data-cy="notifications-list"], .notifications-list').should('exist')
+        markAsRead()
+      })
+    }
+    
+    clickIfExistsAndContinue('[data-cy="notifications-bell"], .notifications-bell, button', openNotifications)
   })
 })

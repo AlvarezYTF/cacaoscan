@@ -22,17 +22,14 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
               '[data-cy="lote-area"]',
               '[data-cy="lote-variedad"]'
             ]
-          verifySelectorsExist(loteSelectors, $alerts, 3000)
-            })
-          } else {
-            cy.get('body').should('be.visible')
-          }
+            verifySelectorsExist(loteSelectors, $item, 3000)
+          })
         })
       } else {
         cy.get('body').should('be.visible')
       }
     })
-  })
+  }
 
   it('debe permitir exportar reporte completo de finca con lotes', () => {
     cy.visit('/mis-fincas')
@@ -145,8 +142,9 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
     cy.visit('/mis-fincas')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    clickFincaIfExists().then((clicked) => {
-      if (clicked) {
+    cy.get('body').then(($body) => {
+      if ($body.find('[data-cy="finca-item"], .finca-item, .item, tbody tr').length > 0) {
+        cy.get('[data-cy="finca-item"], .finca-item, .item, tbody tr').first().click({ force: true })
         cy.get('body', { timeout: 5000 }).then(($details) => {
           const productionSelectors = [
             '[data-cy="production-summary"]',

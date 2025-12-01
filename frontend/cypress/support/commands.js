@@ -31,7 +31,7 @@ Cypress.Commands.add('login', (userType = 'admin') => {
           const data = body.data || body
           
           // Guardar tokens en localStorage
-          return cy.window().then((win) => {
+          const saveTokens = (win) => {
             const token = data.access || data.token || data.access_token || body.access
             const refresh = data.refresh || data.refresh_token || body.refresh
             const userData = data.user || body.user || data
@@ -45,13 +45,13 @@ Cypress.Commands.add('login', (userType = 'admin') => {
             if (userData) {
               win.localStorage.setItem('user_data', JSON.stringify(userData))
             }
-          })
+          }
+          return cy.window().then(saveTokens)
         } else if (response.status === 404) {
           // Si el endpoint no existe, usar mock para permitir que los tests continúen
           cy.log('⚠️ Login endpoint not found (404). Using mock authentication for testing.')
-          return cy.window().then((win) => {
-            // Crear un token mock para permitir que los tests continúen
-            const userTypeStr = String(userType)
+          const createMockSession = (win) => {
+            const userTypeStr = typeof userType === 'object' ? JSON.stringify(userType) : String(userType)
             const mockToken = `mock_token_${userTypeStr}_${Date.now()}`
             win.localStorage.setItem('access_token', mockToken)
             win.localStorage.setItem('refresh_token', `mock_refresh_${userTypeStr}`)
@@ -61,7 +61,8 @@ Cypress.Commands.add('login', (userType = 'admin') => {
               last_name: user.lastName,
               role: user.role
             }))
-          })
+          }
+          return cy.window().then(createMockSession)
         } else {
           // Si el login falla, lanzar error con información útil
           const errorMsg = response.body?.message || response.body?.detail || JSON.stringify(response.body)
@@ -512,7 +513,7 @@ Cypress.Commands.add('createLote', (loteData) => {
 
 // Edit lote
 Cypress.Commands.add('editLote', (loteId, updates) => {
-  const loteIdStr = String(loteId)
+  const loteIdStr = typeof loteId === 'object' ? JSON.stringify(loteId) : String(loteId)
   cy.get(`[data-cy="lote-${loteIdStr}"]`).first().click({ force: true })
   cy.get('[data-cy="edit-lote"], button').first().click({ force: true })
   cy.get('body', { timeout: 5000 }).should('be.visible')
@@ -528,7 +529,7 @@ Cypress.Commands.add('editLote', (loteId, updates) => {
 
 // Delete lote
 Cypress.Commands.add('deleteLote', (loteId) => {
-  const loteIdStr = String(loteId)
+  const loteIdStr = typeof loteId === 'object' ? JSON.stringify(loteId) : String(loteId)
   cy.get(`[data-cy="lote-${loteIdStr}"]`).first().click({ force: true })
   cy.get('[data-cy="delete-lote"], button').first().click({ force: true })
   cy.get('[data-cy="confirm-delete"], .swal2-confirm, button').first().click({ force: true })
@@ -830,7 +831,7 @@ Cypress.Commands.add('requestPasswordRecovery', (email) => {
  * @returns {Cypress.Chainable}
  */
 Cypress.Commands.add('resetPassword', (token, newPassword, confirmPassword) => {
-  const tokenStr = String(token)
+  const tokenStr = typeof token === 'object' ? JSON.stringify(token) : String(token)
   cy.visit(`/reset-password?token=${tokenStr}`)
   cy.get('body', { timeout: 10000 }).should('be.visible')
   
@@ -920,19 +921,21 @@ Cypress.Commands.add('exportReport', (format, options = {}) => {
 Cypress.Commands.add('shareReport', (method, options = {}) => {
   const { reportIndex = 0, email, subject, attachmentFormat } = options
   
+  const fillEmailFields = () => {
+    ifFoundInBody('[data-cy="email-subject"], input', () => {
+      cy.get('[data-cy="email-subject"], input').first().type(subject || 'Reporte de Análisis de Cacao')
+    })
+    ifFoundInBody('[data-cy="attachment-format"], select', () => {
+      cy.get('[data-cy="attachment-format"], select').first().select(attachmentFormat || 'pdf', { force: true })
+    })
+    clickIfExistsAndContinue('[data-cy="send-email"], button[type="submit"]', () => {
+      cy.wrap(null)
+    })
+  }
+  
   const shareViaEmail = () => {
     return clickIfExistsAndContinue('[data-cy="share-email"], button', () => {
-      return typeIfExistsAndContinue('[data-cy="email-recipients"], input[type="email"], input', email || 'test@example.com', () => {
-        ifFoundInBody('[data-cy="email-subject"], input', () => {
-          cy.get('[data-cy="email-subject"], input').first().type(subject || 'Reporte de Análisis de Cacao')
-        })
-        ifFoundInBody('[data-cy="attachment-format"], select', () => {
-          cy.get('[data-cy="attachment-format"], select').first().select(attachmentFormat || 'pdf', { force: true })
-        })
-        return clickIfExistsAndContinue('[data-cy="send-email"], button[type="submit"]', () => {
-          cy.wrap(null)
-        })
-      })
+      return typeIfExistsAndContinue('[data-cy="email-recipients"], input[type="email"], input', email || 'test@example.com', fillEmailFields)
     })
   }
   
@@ -1079,7 +1082,7 @@ Cypress.Commands.add('navigateToAdminAuditLogs', (userType = 'admin') => {
  * @param {Function} [callback] - Optional callback after analysis starts
  * @returns {Cypress.Chainable}
  */
-Cypress.Commands.add('performImageAnalysis', (imageName, options = {}, callback) => {
+Cypress.Commands.add('performImageAnalysis', (imageName, callback, options = {}) => {
   cy.get('body').then(($body) => {
     if ($body.find('input[type="file"]').length > 0) {
       cy.uploadTestImage(imageName)

@@ -142,11 +142,6 @@ describe('Autenticación - Login', () => {
     cy.get('body', { timeout: 10000 }).then(handleLoginButton)
   })
 
-        cy.get('body', { timeout: 3000 }).then(verifyErrorsExist)
-      }
-    })
-  })
-
   it('debe validar formato de email', () => {
     const emailSelector = '[data-cy="email-input"], input[type="text"], input[type="email"]'
     cy.get('body').then(($body) => {

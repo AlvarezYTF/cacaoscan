@@ -33,16 +33,24 @@ describe('Reportes - Exportación y Compartir', () => {
       cy.get('[data-cy="report-checkbox"], input[type="checkbox"]').first().check({ force: true })
       cy.get('[data-cy="report-checkbox"], input[type="checkbox"]').eq(1).check({ force: true })
       
-      return clickIfExistsAndContinue('[data-cy="bulk-export"], button', () => {
-        return ifFoundInBody('[data-cy="bulk-export-options"], .bulk-export-options', () => {
-          cy.get('[data-cy="bulk-export-options"], .bulk-export-options').should('exist')
-          selectIfExistsAndContinue('[data-cy="export-format"], select', 'zip', () => {
-            return clickIfExistsAndContinue('[data-cy="confirm-bulk-export"], button[type="submit"]', () => {
-              cy.verifyDownload('reportes-lote.zip')
-            })
-          })
+      const confirmBulkExport = () => {
+        clickIfExistsAndContinue('[data-cy="confirm-bulk-export"], button[type="submit"]', () => {
+          cy.verifyDownload('reportes-lote.zip')
         })
-      })
+      }
+      
+      const selectExportFormat = () => {
+        selectIfExistsAndContinue('[data-cy="export-format"], select', 'zip', confirmBulkExport)
+      }
+      
+      const openBulkExportOptions = () => {
+        ifFoundInBody('[data-cy="bulk-export-options"], .bulk-export-options', () => {
+          cy.get('[data-cy="bulk-export-options"], .bulk-export-options').should('exist')
+          selectExportFormat()
+        })
+      }
+      
+      clickIfExistsAndContinue('[data-cy="bulk-export"], button', openBulkExportOptions)
     }, () => {
       cy.get('body').should('be.visible')
     })
@@ -73,60 +81,87 @@ describe('Reportes - Exportación y Compartir', () => {
   })
 
   it('debe programar envío automático de reportes', () => {
-    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
-      return clickIfExistsAndContinue('[data-cy="schedule-sharing"], button', () => {
-        return selectIfExistsAndContinue('[data-cy="schedule-frequency"], select', 'mensual', () => {
-          typeIfExistsAndContinue('[data-cy="schedule-day"], input[type="number"]', '1', () => {
-            typeIfExistsAndContinue('[data-cy="schedule-time"], input[type="time"]', '09:00', () => {
-              typeIfExistsAndContinue('[data-cy="schedule-recipients"], input[type="email"]', 'admin@cacaoscan.com', () => {
-                return clickIfExistsAndContinue('[data-cy="save-schedule"], button[type="submit"]', () => {
-                  return ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
-                    cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-                  })
-                })
-              })
-            })
-          })
-        })
+    const verifySuccess = () => {
+      ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
+        cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
       })
-    }, () => {
+    }
+    
+    const saveSchedule = () => {
+      clickIfExistsAndContinue('[data-cy="save-schedule"], button[type="submit"]', verifySuccess)
+    }
+    
+    const fillRecipients = () => {
+      typeIfExistsAndContinue('[data-cy="schedule-recipients"], input[type="email"]', 'admin@cacaoscan.com', saveSchedule)
+    }
+    
+    const fillTime = () => {
+      typeIfExistsAndContinue('[data-cy="schedule-time"], input[type="time"]', '09:00', fillRecipients)
+    }
+    
+    const fillDay = () => {
+      typeIfExistsAndContinue('[data-cy="schedule-day"], input[type="number"]', '1', fillTime)
+    }
+    
+    const selectFrequency = () => {
+      selectIfExistsAndContinue('[data-cy="schedule-frequency"], select', 'mensual', fillDay)
+    }
+    
+    const openSchedule = () => {
+      clickIfExistsAndContinue('[data-cy="schedule-sharing"], button', selectFrequency)
+    }
+    
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', openSchedule, () => {
       cy.get('body').should('be.visible')
     })
   })
 
   it('debe mostrar historial de compartir', () => {
-    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
-      return ifFoundInBody('[data-cy="sharing-history"], .sharing-history', () => {
+    const verifySharingItems = ($item) => {
+      cy.get('[data-cy="sharing-item"], .sharing-item').should('have.length.greaterThan', 0)
+      const sharingSelectors = [
+        '[data-cy="sharing-date"]',
+        '[data-cy="sharing-method"]',
+        '[data-cy="sharing-recipients"]'
+      ]
+      verifySelectorsExist(sharingSelectors, $item, 3000)
+    }
+    
+    const verifySharingHistory = () => {
+      ifFoundInBody('[data-cy="sharing-history"], .sharing-history', () => {
         cy.get('[data-cy="sharing-history"], .sharing-history').should('be.visible')
-        
-        return ifFoundInBody('[data-cy="sharing-item"], .sharing-item', ($item) => {
-          cy.get('[data-cy="sharing-item"], .sharing-item').should('have.length.greaterThan', 0)
-          const sharingSelectors = [
-            '[data-cy="sharing-date"]',
-            '[data-cy="sharing-method"]',
-            '[data-cy="sharing-recipients"]'
-          ]
-          verifySelectorsExist(sharingSelectors, $item, 3000)
-        })
+        ifFoundInBody('[data-cy="sharing-item"], .sharing-item', verifySharingItems)
       }, () => {
         cy.get('body').should('be.visible')
       })
-    }, () => {
+    }
+    
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', verifySharingHistory, () => {
       cy.get('body').should('be.visible')
     })
   })
 
   it('debe permitir revocar acceso a reporte compartido', () => {
+    const verifyRevokeSuccess = () => {
+      ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
+        cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
+      })
+    }
+    
+    const confirmRevoke = () => {
+      clickIfExistsAndContinue('[data-cy="confirm-revoke"], .swal2-confirm, button', verifyRevokeSuccess)
+    }
+    
+    const revokeAccess = () => {
+      clickIfExistsAndContinue('[data-cy="revoke-access"], button', confirmRevoke)
+    }
+    
+    const openSharingItem = ($item) => {
+      revokeAccess()
+    }
+    
     clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
-      return ifFoundInBody('[data-cy="sharing-item"], .sharing-item', ($item) => {
-        return clickIfExistsAndContinue('[data-cy="revoke-access"], button', () => {
-          return clickIfExistsAndContinue('[data-cy="confirm-revoke"], .swal2-confirm, button', () => {
-            return ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
-              cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-            })
-          })
-        })
-      }, () => {
+      ifFoundInBody('[data-cy="sharing-item"], .sharing-item', openSharingItem, () => {
         cy.get('body').should('be.visible')
       })
     }, () => {
@@ -135,37 +170,57 @@ describe('Reportes - Exportación y Compartir', () => {
   })
 
   it('debe exportar reporte con marca de agua', () => {
-    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
-      return clickIfExistsAndContinue('[data-cy="download-pdf"], button, a', () => {
-        return typeIfExistsAndContinue('[data-cy="watermark-text"], input', 'CONFIDENCIAL', () => {
-          selectIfExistsAndContinue('[data-cy="watermark-position"], select', 'center', () => {
-            typeIfExistsAndContinue('[data-cy="watermark-opacity"], input[type="number"]', '0.3', () => {
-              return clickIfExistsAndContinue('[data-cy="confirm-download"], button[type="submit"]', () => {
-                cy.verifyDownload('reporte-marcado.pdf')
-              })
-            })
-          })
-        })
+    const confirmDownload = () => {
+      clickIfExistsAndContinue('[data-cy="confirm-download"], button[type="submit"]', () => {
+        cy.verifyDownload('reporte-marcado.pdf')
       })
-    }, () => {
+    }
+    
+    const setOpacity = () => {
+      typeIfExistsAndContinue('[data-cy="watermark-opacity"], input[type="number"]', '0.3', confirmDownload)
+    }
+    
+    const setPosition = () => {
+      selectIfExistsAndContinue('[data-cy="watermark-position"], select', 'center', setOpacity)
+    }
+    
+    const setWatermarkText = () => {
+      typeIfExistsAndContinue('[data-cy="watermark-text"], input', 'CONFIDENCIAL', setPosition)
+    }
+    
+    const openDownload = () => {
+      clickIfExistsAndContinue('[data-cy="download-pdf"], button, a', setWatermarkText)
+    }
+    
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', openDownload, () => {
       cy.get('body').should('be.visible')
     })
   })
 
   it('debe exportar reporte con firma digital', () => {
-    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
-      return clickIfExistsAndContinue('[data-cy="download-pdf"], button, a', () => {
-        return clickIfExistsAndContinue('[data-cy="digital-signature"], input[type="checkbox"]', () => {
-          selectIfExistsAndContinue('[data-cy="signature-certificate"], select', 'certificado-valido', () => {
-            typeIfExistsAndContinue('[data-cy="signature-reason"], input, textarea', 'Aprobación del reporte', () => {
-              return clickIfExistsAndContinue('[data-cy="confirm-download"], button[type="submit"]', () => {
-                cy.verifyDownload('reporte-firmado.pdf')
-              })
-            })
-          })
-        })
+    const confirmSignedDownload = () => {
+      clickIfExistsAndContinue('[data-cy="confirm-download"], button[type="submit"]', () => {
+        cy.verifyDownload('reporte-firmado.pdf')
       })
-    }, () => {
+    }
+    
+    const fillReason = () => {
+      typeIfExistsAndContinue('[data-cy="signature-reason"], input, textarea', 'Aprobación del reporte', confirmSignedDownload)
+    }
+    
+    const selectCertificate = () => {
+      selectIfExistsAndContinue('[data-cy="signature-certificate"], select', 'certificado-valido', fillReason)
+    }
+    
+    const enableSignature = () => {
+      clickIfExistsAndContinue('[data-cy="digital-signature"], input[type="checkbox"]', selectCertificate)
+    }
+    
+    const openDownload = () => {
+      clickIfExistsAndContinue('[data-cy="download-pdf"], button, a', enableSignature)
+    }
+    
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', openDownload, () => {
       cy.get('body').should('be.visible')
     })
   })

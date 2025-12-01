@@ -13,7 +13,7 @@ from typing import Tuple
 ERROR_IMAGE_CANNOT_BE_NONE = "image cannot be None"
 
 # ======================================================
-#  MODELO: U-Net ligero para segmentacin de fondo
+#  MODELO: U-Net ligero para segmentacion de fondo
 # ======================================================
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -62,7 +62,7 @@ class UNet(nn.Module):
 
 
 # ======================================================
-#  DATASET AUTOMTICO (crea mscaras si no existen)
+#  DATASET AUTOMATICO (crea mascaras si no existen)
 # ======================================================
 class CacaoDataset(Dataset):
     def __init__(self, img_dir, mask_dir, transform=None, auto_generate=False):
@@ -79,10 +79,10 @@ class CacaoDataset(Dataset):
                 if not os.path.exists(mask_path):
                     mask = self._auto_mask(os.path.join(img_dir, img))
                     cv2.imwrite(mask_path, mask)
-                    print(f" Mscara creada: {mask_path}")
+                    print(f" Mascara creada: {mask_path}")
 
     def _auto_mask(self, image_path):
-        """Usa OpenCV (grabCut) para generar mscara base automtica."""
+        """Usa OpenCV (grabCut) para generar mascara base automatica."""
         img = cv2.imread(image_path)
         mask = np.zeros(img.shape[:2], np.uint8)
         rect = (10, 10, img.shape[1]-20, img.shape[0]-20)
@@ -146,7 +146,7 @@ def train_background_ai(image_dir="ml/data/dataset/images", mask_dir="ml/data/da
 def remove_background_ai(image_path: str) -> Image.Image:
     """
     Quita el fondo usando el modelo IA entrenado (U-Net) con refinamiento OpenCV.
-    Elimina bordes blancos, recorta tight el grano y detecta cada pxel del cacao con precisin.
+    Elimina bordes blancos, recorta tight el grano y detecta cada pixel del cacao con precision.
     """
     model_path = "ml/segmentation/cacao_unet.pth"
     if not os.path.exists(model_path):

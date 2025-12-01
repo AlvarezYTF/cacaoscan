@@ -470,7 +470,6 @@ describe('Object Utilities', () => {
             target[key] = source[key]
           }
         }
-        }
       }
     }
     return target

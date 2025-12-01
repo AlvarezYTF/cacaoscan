@@ -1,0 +1,60 @@
+[run]
+source = .
+omit = 
+    */venv/*
+    */env/*
+    */migrations/*
+    */__pycache__/*
+    */tests/*
+    */test_*.py
+    */conftest.py
+    */manage.py
+    */settings.py
+    */wsgi.py
+    */asgi.py
+    */celery.py
+    */check_test_imports.py
+    */run_tests.py
+    */run_tests.sh
+    */run_tests.bat
+    */verify_python_version.py
+    */analyze_sonar_issues.py
+    */test_corrected.py
+    */scripts/*
+    */k8s/*
+    */docker-entrypoint.sh
+    */Dockerfile
+    */docker-compose.yml
+    */env.example
+    */runtime.txt
+    */media/*
+    */logs/*
+    */ml/artifacts/*
+    */ml/data/dataset/*
+    */ml/data/incremental/*
+    */ml/segmentation/*.pth
+    */ml/regression/*.pt
+    */ml/regression/*.pth
+    */ml/pipeline/train_all.py
+    */training/tests.py
+    */api/tests/test_sonarqube/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+    class .*\bProtocol\):
+    @(abc\.)?abstractmethod
+
+precision = 2
+show_missing = True
+skip_covered = False
+
+[xml]
+output = coverage.xml
+
