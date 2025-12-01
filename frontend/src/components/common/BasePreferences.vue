@@ -47,46 +47,9 @@
 
 <script setup>
 import { usePreferences } from '@/composables/usePreferences'
+import { basePreferencesProps } from '@/composables/usePreferencesProps'
 
-const props = defineProps({
-  modelValue: {
-    type: Object,
-    required: true,
-    default: () => ({})
-  },
-  title: {
-    type: String,
-    required: true
-  },
-  showHeader: {
-    type: Boolean,
-    default: true
-  },
-  showActions: {
-    type: Boolean,
-    default: true
-  },
-  showSaveButton: {
-    type: Boolean,
-    default: true
-  },
-  showResetButton: {
-    type: Boolean,
-    default: false
-  },
-  saveButtonText: {
-    type: String,
-    default: 'Guardar'
-  },
-  resetButtonText: {
-    type: String,
-    default: 'Restablecer'
-  },
-  containerClass: {
-    type: String,
-    default: 'bg-white rounded-2xl border-2 border-gray-200 p-8 shadow-lg'
-  }
-})
+const props = defineProps(basePreferencesProps)
 
 const emit = defineEmits(['update:modelValue', 'save', 'reset'])
 

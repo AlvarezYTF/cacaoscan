@@ -106,7 +106,7 @@ const ariaLabel = computed(() => {
 })
 
 const ariaChecked = computed(() => {
-  return props.modelValue === true ? 'true' : 'false'
+  return Boolean(props.modelValue) ? 'true' : 'false'
 })
 
 const activeClasses = computed(() => {

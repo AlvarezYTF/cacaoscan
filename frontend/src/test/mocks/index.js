@@ -27,6 +27,7 @@ import {
 export * from './stores'
 export * from './composables'
 export * from './services'
+export * from './components'
 
 /**
  * Creates all common mocks for component tests

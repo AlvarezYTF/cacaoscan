@@ -79,6 +79,19 @@ describe('Carga de Imágenes - Upload', () => {
   })
 
   it('debe cargar imagen exitosamente', () => {
+    const verifySuccessText = ($element) => {
+      const text = $element.text().toLowerCase()
+      return SUCCESS_TEXT_PATTERNS.some(pattern => text.includes(pattern)) || text.length > 0
+    }
+
+    const handleUploadSuccess = ($el) => {
+      cy.wrap($el).should('satisfy', verifySuccessText)
+    }
+
+    const handleUploadButtonClick = () => {
+      return ifFoundInBody('[data-cy="upload-success"], .success-message', handleUploadSuccess)
+    }
+
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
     
     ifFoundInBody(IMAGE_PREVIEW_SELECTOR, () => {
@@ -86,14 +99,7 @@ describe('Carga de Imágenes - Upload', () => {
     })
     verifyImageInfo('test-cacao')
     
-    clickIfExistsAndContinue(UPLOAD_BUTTON_SELECTOR, () => {
-      return ifFoundInBody('[data-cy="upload-success"], .success-message', ($el) => {
-        cy.wrap($el).should('satisfy', ($element) => {
-          const text = $element.text().toLowerCase()
-          return SUCCESS_TEXT_PATTERNS.some(pattern => text.includes(pattern)) || text.length > 0
-        })
-      })
-    })
+    clickIfExistsAndContinue(UPLOAD_BUTTON_SELECTOR, handleUploadButtonClick)
   })
 
   it('debe validar tipos de archivo permitidos', () => {
@@ -134,18 +140,26 @@ describe('Carga de Imágenes - Upload', () => {
   })
 
   it('debe permitir cancelar carga en progreso', () => {
+    const verifyCancelledText = ($el) => {
+      const text = $el.text().toLowerCase()
+      return text.includes('cancelada') || text.includes('cancel') || text.length > 0
+    }
+
+    const handleCancelledMessage = () => {
+      cy.get('[data-cy="upload-cancelled"], .cancelled-message').should('satisfy', verifyCancelledText)
+    }
+
+    const handleCancelUploadClick = () => {
+      return ifFoundInBody('[data-cy="upload-cancelled"], .cancelled-message', handleCancelledMessage)
+    }
+
+    const handleUploadButtonClick = () => {
+      return clickIfExistsAndContinue('[data-cy="cancel-upload"], button', handleCancelUploadClick)
+    }
+
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
     
-    clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', () => {
-      return clickIfExistsAndContinue('[data-cy="cancel-upload"], button', () => {
-        return ifFoundInBody('[data-cy="upload-cancelled"], .cancelled-message', () => {
-          cy.get('[data-cy="upload-cancelled"], .cancelled-message').should('satisfy', ($el) => {
-            const text = $el.text().toLowerCase()
-            return text.includes('cancelada') || text.includes('cancel') || text.length > 0
-          })
-        })
-      })
-    })
+    clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', handleUploadButtonClick)
   })
 
   it('debe manejar errores de red durante la carga', () => {
@@ -164,16 +178,22 @@ describe('Carga de Imágenes - Upload', () => {
   })
 
   it('debe permitir arrastrar y soltar archivos', () => {
-    ifFoundInBody('[data-cy="drop-zone"], .drop-zone, [data-cy*="drop"]', () => {
-      performDragAndDrop('test-cacao.jpg', 'image/jpeg').then(() => {
-        ifFoundInBody(IMAGE_PREVIEW_SELECTOR, () => {
-          cy.get(IMAGE_PREVIEW_SELECTOR).should('be.visible')
-        })
-        verifyImageInfo('test-cacao')
+    const handleDragAndDropSuccess = () => {
+      ifFoundInBody(IMAGE_PREVIEW_SELECTOR, () => {
+        cy.get(IMAGE_PREVIEW_SELECTOR).should('be.visible')
       })
-    }, () => {
+      verifyImageInfo('test-cacao')
+    }
+
+    const handleDropZoneFound = () => {
+      performDragAndDrop('test-cacao.jpg', 'image/jpeg').then(handleDragAndDropSuccess)
+    }
+
+    const handleDropZoneNotFound = () => {
       cy.get('body').should('be.visible')
-    })
+    }
+
+    ifFoundInBody('[data-cy="drop-zone"], .drop-zone, [data-cy*="drop"]', handleDropZoneFound, handleDropZoneNotFound)
   })
 
   it('debe mostrar información de la imagen cargada', () => {
@@ -187,18 +207,24 @@ describe('Carga de Imágenes - Upload', () => {
   })
 
   it('debe permitir eliminar imagen antes de subir', () => {
+    const verifyImageRemoved = ($afterRemove) => {
+      if ($afterRemove.find(IMAGE_PREVIEW_SELECTOR).length === 0) {
+        cy.get(IMAGE_PREVIEW_SELECTOR).should('not.exist')
+      }
+    }
+
+    const handleRemoveButtonClick = () => {
+      return cy.get('body', { timeout: 3000 }).then(verifyImageRemoved)
+    }
+
+    const handlePreviewFound = () => {
+      cy.get(IMAGE_PREVIEW_SELECTOR).should('be.visible')
+      return clickIfExistsAndContinue('[data-cy="remove-image"], button', handleRemoveButtonClick)
+    }
+
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
     
-    ifFoundInBody(IMAGE_PREVIEW_SELECTOR, () => {
-      cy.get(IMAGE_PREVIEW_SELECTOR).should('be.visible')
-      return clickIfExistsAndContinue('[data-cy="remove-image"], button', () => {
-        return cy.get('body', { timeout: 3000 }).then(($afterRemove) => {
-          if ($afterRemove.find(IMAGE_PREVIEW_SELECTOR).length === 0) {
-            cy.get(IMAGE_PREVIEW_SELECTOR).should('not.exist')
-          }
-        })
-      })
-    })
+    ifFoundInBody(IMAGE_PREVIEW_SELECTOR, handlePreviewFound)
   })
 
   it('debe permitir cargar múltiples imágenes', () => {

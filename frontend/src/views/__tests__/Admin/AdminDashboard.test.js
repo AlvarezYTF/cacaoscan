@@ -2,7 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AdminDashboard from '../../Admin/AdminDashboard.vue'
-import { createCommonMocks } from '@/test/mocks'
+import { 
+  createCommonMocks, 
+  adminDashboardComponentMocks,
+  composableMocks,
+  sweetAlert2Mock,
+  createDefaultStubs
+} from '@/test/mocks'
 
 const mocks = createCommonMocks({
   authStore: {
@@ -25,55 +31,22 @@ vi.mock('@/stores/config', () => ({
 }))
 
 // Mock components
-vi.mock('@/components/layout/Common/Sidebar.vue', () => ({
-  default: { name: 'AdminSidebar', template: '<div>Sidebar</div>' }
-}))
-
-vi.mock('@/components/admin/AdminDashboardComponents/KPICards.vue', () => ({
-  default: { name: 'KPICards', template: '<div>KPI Cards</div>' }
-}))
-
-vi.mock('@/components/admin/AdminDashboardComponents/DashboardCharts.vue', () => ({
-  default: { name: 'DashboardCharts', template: '<div>Charts</div>' }
-}))
-
-vi.mock('@/components/admin/AdminDashboardComponents/DashboardTables.vue', () => ({
-  default: { name: 'DashboardTables', template: '<div>Tables</div>' }
-}))
-
-vi.mock('@/components/admin/AdminDashboardComponents/DashboardAlerts.vue', () => ({
-  default: { name: 'DashboardAlerts', template: '<div>Alerts</div>' }
-}))
+vi.mock('@/components/layout/Common/Sidebar.vue', () => adminDashboardComponentMocks.Sidebar)
+vi.mock('@/components/admin/AdminDashboardComponents/KPICards.vue', () => adminDashboardComponentMocks.KPICards)
+vi.mock('@/components/admin/AdminDashboardComponents/DashboardCharts.vue', () => adminDashboardComponentMocks.DashboardCharts)
+vi.mock('@/components/admin/AdminDashboardComponents/DashboardTables.vue', () => adminDashboardComponentMocks.DashboardTables)
+vi.mock('@/components/admin/AdminDashboardComponents/DashboardAlerts.vue', () => adminDashboardComponentMocks.DashboardAlerts)
 
 // Mock composables
 vi.mock('@/composables/useWebSocket', () => ({
-  useWebSocket: vi.fn(() => ({
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-    send: vi.fn()
-  }))
+  useWebSocket: vi.fn(() => composableMocks.useWebSocket.useWebSocket())
 }))
 
 // Mock sweetalert2
-vi.mock('sweetalert2', () => ({
-  default: {
-    fire: vi.fn(),
-    Swal: {
-      fire: vi.fn()
-    }
-  }
-}))
+vi.mock('sweetalert2', () => sweetAlert2Mock)
 
 // Common stubs configuration
-const defaultStubs = {
-  'router-link': true,
-  'router-view': true,
-  'AdminSidebar': true,
-  'KPICards': true,
-  'DashboardCharts': true,
-  'DashboardTables': true,
-  'DashboardAlerts': true
-}
+const defaultStubs = createDefaultStubs()
 
 // Helper function to mount component with default stubs
 const mountWithDefaults = (options = {}) => {

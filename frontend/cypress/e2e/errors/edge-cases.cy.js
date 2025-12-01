@@ -642,44 +642,67 @@ describe('Manejo de Errores - Casos Edge', () => {
     setupEmptyListIntercept('/fincas/**', 'emptyList')
     visitAndWaitForBodyVisible('/mis-fincas')
     
-    ifFoundInBody('[data-cy="empty-state"], .empty-state, .empty', () => {
-      cy.get('[data-cy="empty-state"], .empty-state, .empty').should('exist')
+    const verifyEmptyMessage = () => {
       ifFoundInBody('[data-cy="empty-message"], .empty-message', () => {
         cy.get('[data-cy="empty-message"], .empty-message').should('exist')
       })
+    }
+
+    const verifyEmptyAction = () => {
       ifFoundInBody('[data-cy="empty-action"], .empty-action, button', () => {
         cy.get('[data-cy="empty-action"], .empty-action, button').should('exist')
       })
+    }
+
+    ifFoundInBody('[data-cy="empty-state"], .empty-state, .empty', () => {
+      cy.get('[data-cy="empty-state"], .empty-state, .empty').should('exist')
+      verifyEmptyMessage()
+      verifyEmptyAction()
     })
   })
 
   it('debe manejar búsqueda sin resultados', () => {
     visitAndWaitForBodyVisible('/mis-fincas')
     
-    ifFoundInBody('[data-cy="search-fincas"], input[type="search"], input[placeholder*="search"]', () => {
-      cy.get('[data-cy="search-fincas"], input[type="search"], input[placeholder*="search"]').first().type('noexiste123')
-      
+    const verifyNoResultsMessage = () => {
+      ifFoundInBody('[data-cy="no-results-message"], .no-results-message', () => {
+        cy.get('[data-cy="no-results-message"], .no-results-message').should('exist')
+      })
+    }
+
+    const verifyClearSearch = () => {
+      ifFoundInBody('[data-cy="clear-search"], button, .clear', () => {
+        cy.get('[data-cy="clear-search"], button, .clear').should('exist')
+      })
+    }
+
+    const verifyNoResults = () => {
       ifFoundInBody('[data-cy="no-results"], .no-results, .empty', () => {
         cy.get('[data-cy="no-results"], .no-results, .empty').should('exist')
-        ifFoundInBody('[data-cy="no-results-message"], .no-results-message', () => {
-          cy.get('[data-cy="no-results-message"], .no-results-message').should('exist')
-        })
-        ifFoundInBody('[data-cy="clear-search"], button, .clear', () => {
-          cy.get('[data-cy="clear-search"], button, .clear').should('exist')
-        })
+        verifyNoResultsMessage()
+        verifyClearSearch()
       })
+    }
+
+    ifFoundInBody('[data-cy="search-fincas"], input[type="search"], input[placeholder*="search"]', () => {
+      cy.get('[data-cy="search-fincas"], input[type="search"], input[placeholder*="search"]').first().type('noexiste123')
+      verifyNoResults()
     })
   })
 
   it('debe manejar filtros sin resultados', () => {
     visitAndWaitForBodyVisible('/mis-fincas')
     
+    const verifyClearFilters = () => {
+      ifFoundInBody('[data-cy="clear-filters"], button', () => {
+        cy.get('[data-cy="clear-filters"], button').should('exist')
+      })
+    }
+
     const handleNoResults = () => {
       ifFoundInBody('[data-cy="no-results"], .no-results', () => {
         cy.get('[data-cy="no-results"], .no-results').should('exist')
-        ifFoundInBody('[data-cy="clear-filters"], button', () => {
-          cy.get('[data-cy="clear-filters"], button').should('exist')
-        })
+        verifyClearFilters()
       })
     }
 
@@ -713,14 +736,23 @@ describe('Manejo de Errores - Casos Edge', () => {
 
   it('debe manejar formularios con caracteres especiales', () => {
     visitAndWaitForBodyVisible('/mis-fincas')
-    clickIfExistsAndContinue('[data-cy="add-finca-button"], button', () => {
+    
+    const verifyFieldValue = () => {
+      cy.get('[data-cy="finca-nombre"], input').first().should('satisfy', ($el) => {
+        const value = $el.val() || $el.text()
+        return value.includes('Finca') || value.length > 0
+      })
+    }
+
+    const fillSpecialCharactersField = () => {
       ifFoundInBody('[data-cy="finca-nombre"], input', () => {
         cy.get('[data-cy="finca-nombre"], input').first().type('Finca @#$%^&*()', { force: true })
-        cy.get('[data-cy="finca-nombre"], input').first().should('satisfy', ($el) => {
-          const value = $el.val() || $el.text()
-          return value.includes('Finca') || value.length > 0
-        })
+        verifyFieldValue()
       })
+    }
+
+    clickIfExistsAndContinue('[data-cy="add-finca-button"], button', () => {
+      fillSpecialCharactersField()
     })
   })
 
@@ -797,7 +829,15 @@ describe('Manejo de Errores - Casos Edge', () => {
 
   it('debe manejar archivos corruptos', () => {
     visitAndWaitForBodyVisible('/nuevo-analisis')
-    ifFoundInBody('[data-cy="file-input"], input[type="file"]', () => {
+    
+    const verifyCorruptFileError = () => {
+      verifyErrorMessageGeneric(
+        ['corrupto', 'archivo', 'error'],
+        '[data-cy="file-corrupt-error"], .error-message, .swal2-error'
+      )
+    }
+
+    const handleCorruptFileUpload = () => {
       const corruptContent = 'corrupt file content'
       const blob = new Blob([corruptContent], { type: 'image/jpeg' })
       const file = new File([blob], 'corrupt.jpg', { type: 'image/jpeg' })
@@ -808,11 +848,12 @@ describe('Manejo de Errores - Casos Edge', () => {
         ['corrupto', 'archivo', 'error']
       )
       clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', () => {
-        verifyErrorMessageGeneric(
-          ['corrupto', 'archivo', 'error'],
-          '[data-cy="file-corrupt-error"], .error-message, .swal2-error'
-        )
+        verifyCorruptFileError()
       })
+    }
+
+    ifFoundInBody('[data-cy="file-input"], input[type="file"]', () => {
+      handleCorruptFileUpload()
     })
   })
 
@@ -825,13 +866,17 @@ describe('Manejo de Errores - Casos Edge', () => {
     
     visitAndWaitForBodyVisible('/mis-fincas')
     
+    const isLoginOrAuthUrl = (url) => {
+      return url.includes('/login') || url.includes('/auth')
+    }
+
+    const verifyRedirectToLogin = () => {
+      cy.wait('@expiredSession', { timeout: 10000 })
+      cy.url({ timeout: 5000 }).should('satisfy', isLoginOrAuthUrl)
+    }
+
     clickIfExistsAndContinue('[data-cy="add-finca-button"], button', () => {
-      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', () => {
-        cy.wait('@expiredSession', { timeout: 10000 })
-        cy.url({ timeout: 5000 }).should('satisfy', (url) => {
-          return url.includes('/login') || url.includes('/auth')
-        })
-      })
+      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', verifyRedirectToLogin)
     })
   })
 
@@ -844,14 +889,16 @@ describe('Manejo de Errores - Casos Edge', () => {
     
     visitAndWaitForBodyVisible('/mis-fincas')
     
+    const verifyConflictError = () => {
+      cy.wait('@concurrentOperation', { timeout: 10000 })
+      verifyErrorMessageGeneric(
+        ['conflicto', 'operación', 'error'],
+        '[data-cy="conflict-error"], .error-message, .swal2-error'
+      )
+    }
+
     clickIfExistsAndContinue('[data-cy="add-finca-button"], button', () => {
-      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', () => {
-        cy.wait('@concurrentOperation', { timeout: 10000 })
-        verifyErrorMessageGeneric(
-          ['conflicto', 'operación', 'error'],
-          '[data-cy="conflict-error"], .error-message, .swal2-error'
-        )
-      })
+      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', verifyConflictError)
     })
   })
 
@@ -908,14 +955,16 @@ describe('Manejo de Errores - Casos Edge', () => {
     
     visitAndWaitForBodyVisible('/mis-fincas')
     
+    const verifyGoneError = () => {
+      cy.wait('@goneResource', { timeout: 10000 })
+      verifyErrorMessageGeneric(
+        ['disponible', 'recurso', 'error'],
+        '[data-cy="gone-error"], .error-message, .swal2-error'
+      )
+    }
+
     clickIfExistsAndContinue('[data-cy="add-finca-button"], button', () => {
-      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', () => {
-        cy.wait('@goneResource', { timeout: 10000 })
-        verifyErrorMessageGeneric(
-          ['disponible', 'recurso', 'error'],
-          '[data-cy="gone-error"], .error-message, .swal2-error'
-        )
-      })
+      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', verifyGoneError)
     })
   })
 
@@ -928,14 +977,16 @@ describe('Manejo de Errores - Casos Edge', () => {
     
     visitAndWaitForBodyVisible('/mis-fincas')
     
+    const verifyResourceLimitError = () => {
+      cy.wait('@resourceLimit', { timeout: 10000 })
+      verifyErrorMessageGeneric(
+        ['límite', 'recursos', 'excedido'],
+        '[data-cy="resource-limit-error"], .error-message, .swal2-error'
+      )
+    }
+
     clickIfExistsAndContinue('[data-cy="add-finca-button"], button', () => {
-      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', () => {
-        cy.wait('@resourceLimit', { timeout: 10000 })
-        verifyErrorMessageGeneric(
-          ['límite', 'recursos', 'excedido'],
-          '[data-cy="resource-limit-error"], .error-message, .swal2-error'
-        )
-      })
+      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', verifyResourceLimitError)
     })
   })
 })

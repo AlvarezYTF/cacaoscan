@@ -9,6 +9,14 @@ import {
   ifFoundInBody,
   clickIfExistsAndContinue
 } from '../../support/helpers'
+import {
+  validateFieldInModal,
+  validateRequiredFieldsInModal,
+  validateFieldFormat,
+  validateMultipleFieldsInModal,
+  validateConditionalFieldInModal,
+  validatePasswordMatch
+} from '../../support/validation-helpers'
 
 describe('Manejo de Errores - Validación y Formularios', () => {
   beforeEach(() => {
@@ -17,27 +25,21 @@ describe('Manejo de Errores - Validación y Formularios', () => {
   })
 
   it('debe validar campos requeridos en formulario de finca', () => {
-    visitAndWaitForBody('/mis-fincas')
-    
-    openModalAndExecute('[data-cy="add-finca-button"], button', ($modal) => {
-      if ($modal.find('[data-cy="save-finca"], button[type="submit"]').length > 0) {
-        cy.get('[data-cy="save-finca"], button[type="submit"]').first().click()
-        cy.get('body', { timeout: 5000 }).then(($afterSubmit) => {
-          const errorSelectors = [
-            '[data-cy="finca-nombre-error"]',
-            '[data-cy="finca-ubicacion-error"]',
-            '[data-cy="finca-area-error"]'
-          ]
-          verifySelectorsExist(errorSelectors, $afterSubmit, 3000)
-        })
-      }
-    })
+    validateRequiredFieldsInModal(
+      '/mis-fincas',
+      '[data-cy="add-finca-button"], button',
+      '[data-cy="save-finca"], button[type="submit"]',
+      [
+        '[data-cy="finca-nombre-error"]',
+        '[data-cy="finca-ubicacion-error"]',
+        '[data-cy="finca-area-error"]'
+      ]
+    )
   })
 
   it('debe validar formato de email en registro', () => {
-    visitAndWaitForBody('/registro')
-    
-    fillFieldSubmitAndVerifyError(
+    validateFieldFormat(
+      '/registro',
       '[data-cy="email-input"], input[type="email"], input[type="text"]',
       'email-invalido',
       '[data-cy="register-button"], button[type="submit"]',
@@ -52,67 +54,52 @@ describe('Manejo de Errores - Validación y Formularios', () => {
   })
 
   it('debe validar coincidencia de contraseñas', () => {
-    visitAndWaitForBody('/registro')
-    ifFoundInBody('[data-cy="password-input"], input[type="password"]', () => {
-      cy.get('[data-cy="password-input"], input[type="password"]').first().type('Password123!', { force: true })
-      ifFoundInBody('[data-cy="confirm-password-input"], input[type="password"]', () => {
-        cy.get('[data-cy="confirm-password-input"], input[type="password"]').first().type('DifferentPassword123!', { force: true })
-        clickIfExistsAndContinue('[data-cy="register-button"], button[type="submit"]', () => {
-          verifyErrorMessageWithSelectors(
-            ['[data-cy="password-match-error"], .error-message'],
-            ['coinciden', 'match', 'contraseña']
-          )
-        })
-      })
-    })
+    validatePasswordMatch(
+      '/registro',
+      '[data-cy="password-input"], input[type="password"]',
+      'Password123!',
+      '[data-cy="confirm-password-input"], input[type="password"]',
+      'DifferentPassword123!',
+      '[data-cy="register-button"], button[type="submit"]',
+      ['[data-cy="password-match-error"], .error-message'],
+      ['coinciden', 'match', 'contraseña']
+    )
   })
 
   it('debe validar longitud de campos de texto', () => {
-    visitAndWaitForBody('/mis-fincas')
-    
-    openModalAndExecute('[data-cy="add-finca-button"], button', ($modal) => {
-      if ($modal.find('[data-cy="finca-nombre"], input').length > 0) {
-        fillFieldSubmitAndVerifyError(
-          '[data-cy="finca-nombre"], input',
-          'A',
-          '[data-cy="save-finca"], button[type="submit"]',
-          '[data-cy="finca-nombre-error"], .error-message',
-          ['caracteres', 'al menos', '3']
-        )
-      }
-    })
+    validateFieldInModal(
+      '/mis-fincas',
+      '[data-cy="add-finca-button"], button',
+      '[data-cy="finca-nombre"], input',
+      'A',
+      '[data-cy="save-finca"], button[type="submit"]',
+      '[data-cy="finca-nombre-error"], .error-message',
+      ['caracteres', 'al menos', '3']
+    )
   })
 
   it('debe validar rangos numéricos', () => {
-    visitAndWaitForBody('/mis-fincas')
-    
-    openModalAndExecute('[data-cy="add-finca-button"], button', ($modal) => {
-      if ($modal.find('[data-cy="finca-area"], input[type="number"]').length > 0) {
-        fillFieldSubmitAndVerifyError(
-          '[data-cy="finca-area"], input[type="number"]',
-          '-10',
-          '[data-cy="save-finca"], button[type="submit"]',
-          '[data-cy="finca-area-error"], .error-message',
-          ['positiva', 'negativo', 'área']
-        )
-      }
-    })
+    validateFieldInModal(
+      '/mis-fincas',
+      '[data-cy="add-finca-button"], button',
+      '[data-cy="finca-area"], input[type="number"]',
+      '-10',
+      '[data-cy="save-finca"], button[type="submit"]',
+      '[data-cy="finca-area-error"], .error-message',
+      ['positiva', 'negativo', 'área']
+    )
   })
 
   it('debe validar fechas', () => {
-    visitAndWaitForBody('/mis-lotes')
-    
-    openModalAndExecute('[data-cy="add-lote-button"], button', ($modal) => {
-      if ($modal.find('[data-cy="lote-fecha-plantacion"], input[type="date"]').length > 0) {
-        fillFieldSubmitAndVerifyError(
-          '[data-cy="lote-fecha-plantacion"], input[type="date"]',
-          '2030-01-01',
-          '[data-cy="save-lote"], button[type="submit"]',
-          '[data-cy="lote-fecha-error"], .error-message',
-          ['futura', 'fecha', 'no puede']
-        )
-      }
-    })
+    validateFieldInModal(
+      '/mis-lotes',
+      '[data-cy="add-lote-button"], button',
+      '[data-cy="lote-fecha-plantacion"], input[type="date"]',
+      '2030-01-01',
+      '[data-cy="save-lote"], button[type="submit"]',
+      '[data-cy="lote-fecha-error"], .error-message',
+      ['futura', 'fecha', 'no puede']
+    )
   })
 
   it('debe validar archivos', () => {
@@ -132,7 +119,6 @@ describe('Manejo de Errores - Validación y Formularios', () => {
 
   it('debe validar selecciones requeridas', () => {
     visitAndWaitForBody('/mis-lotes')
-    
     openModalAndExecute('[data-cy="add-lote-button"], button', ($modal) => {
       if ($modal.find('[data-cy="save-lote"], button[type="submit"]').length > 0) {
         cy.get('[data-cy="save-lote"], button[type="submit"]').first().click({ force: true })
@@ -169,145 +155,113 @@ describe('Manejo de Errores - Validación y Formularios', () => {
   })
 
   it('debe validar formularios complejos', () => {
-    visitAndWaitForBody('/mis-lotes')
-    
-    openModalAndExecute('[data-cy="add-lote-button"], button', ($modal) => {
-      if ($modal.find('[data-cy="lote-nombre"], input').length > 0) {
-        cy.get('[data-cy="lote-nombre"], input').first().type('Lote Test', { force: true })
-        cy.get('[data-cy="lote-area"], input[type="number"]').first().type('5', { force: true })
-        cy.get('[data-cy="save-lote"], button[type="submit"]').first().click({ force: true })
-        verifyErrorMessageWithSelectors(
-          ['[data-cy="lote-variedad-error"], .error-message'],
-          ['requerido', 'campo', 'variedad']
-        )
-      }
-    })
+    validateMultipleFieldsInModal(
+      '/mis-lotes',
+      '[data-cy="add-lote-button"], button',
+      [
+        { selector: '[data-cy="lote-nombre"], input', value: 'Lote Test' },
+        { selector: '[data-cy="lote-area"], input[type="number"]', value: '5' }
+      ],
+      '[data-cy="save-lote"], button[type="submit"]',
+      ['[data-cy="lote-variedad-error"], .error-message']
+    )
   })
 
   it('debe validar dependencias entre campos', () => {
-    visitAndWaitForBody('/mis-lotes')
-    
-    openModalAndExecute('[data-cy="add-lote-button"], button', ($modal) => {
-      if ($modal.find('[data-cy="finca-select"], select').length > 0) {
-        cy.get('[data-cy="finca-select"], select').first().select('1', { force: true })
-        cy.get('[data-cy="lote-area"], input[type="number"]').first().type('100', { force: true })
-        cy.get('[data-cy="save-lote"], button[type="submit"]').first().click({ force: true })
-        verifyErrorMessageWithSelectors(
-          ['[data-cy="lote-area-error"], .error-message'],
-          ['exceder', 'área', 'finca']
-        )
-      }
-    })
+    validateMultipleFieldsInModal(
+      '/mis-lotes',
+      '[data-cy="add-lote-button"], button',
+      [
+        { selector: '[data-cy="finca-select"], select', value: '1' },
+        { selector: '[data-cy="lote-area"], input[type="number"]', value: '100' }
+      ],
+      '[data-cy="save-lote"], button[type="submit"]',
+      ['[data-cy="lote-area-error"], .error-message']
+    )
   })
 
   it('debe validar formatos específicos', () => {
-    visitAndWaitForBody('/mis-fincas')
-    
-    openModalAndExecute('[data-cy="add-finca-button"], button', ($modal) => {
-      if ($modal.find('[data-cy="finca-codigo-postal"], input').length > 0) {
-        fillFieldSubmitAndVerifyError(
-          '[data-cy="finca-codigo-postal"], input',
-          '123',
-          '[data-cy="save-finca"], button[type="submit"]',
-          '[data-cy="codigo-postal-error"], .error-message',
-          ['código', 'postal', 'inválido', 'formato']
-        )
-      }
-    })
+    validateFieldInModal(
+      '/mis-fincas',
+      '[data-cy="add-finca-button"], button',
+      '[data-cy="finca-codigo-postal"], input',
+      '123',
+      '[data-cy="save-finca"], button[type="submit"]',
+      '[data-cy="codigo-postal-error"], .error-message',
+      ['código', 'postal', 'inválido', 'formato']
+    )
   })
 
   it('debe validar unicidad de datos', () => {
-    visitAndWaitForBody('/mis-fincas')
-    
-    openModalAndExecute('[data-cy="add-finca-button"], button', ($modal) => {
-      if ($modal.find('[data-cy="finca-nombre"], input').length > 0) {
-        fillFieldSubmitAndVerifyError(
-          '[data-cy="finca-nombre"], input',
-          'Finca Existente',
-          '[data-cy="save-finca"], button[type="submit"]',
-          '[data-cy="finca-nombre-error"], .error-message',
-          ['existe', 'duplicado', 'nombre']
-        )
-      }
-    })
+    validateFieldInModal(
+      '/mis-fincas',
+      '[data-cy="add-finca-button"], button',
+      '[data-cy="finca-nombre"], input',
+      'Finca Existente',
+      '[data-cy="save-finca"], button[type="submit"]',
+      '[data-cy="finca-nombre-error"], .error-message',
+      ['existe', 'duplicado', 'nombre']
+    )
   })
 
   it('debe validar caracteres especiales', () => {
-    visitAndWaitForBody('/mis-fincas')
-    
-    openModalAndExecute('[data-cy="add-finca-button"], button', ($modal) => {
-      if ($modal.find('[data-cy="finca-nombre"], input').length > 0) {
-        fillFieldSubmitAndVerifyError(
-          '[data-cy="finca-nombre"], input',
-          'Finca<script>alert("xss")</script>',
-          '[data-cy="save-finca"], button[type="submit"]',
-          '[data-cy="finca-nombre-error"], .error-message',
-          ['permitidos', 'caracteres', 'inválido']
-        )
-      }
-    })
+    validateFieldInModal(
+      '/mis-fincas',
+      '[data-cy="add-finca-button"], button',
+      '[data-cy="finca-nombre"], input',
+      'Finca<script>alert("xss")</script>',
+      '[data-cy="save-finca"], button[type="submit"]',
+      '[data-cy="finca-nombre-error"], .error-message',
+      ['permitidos', 'caracteres', 'inválido']
+    )
   })
 
   it('debe validar límites de caracteres en textarea', () => {
-    visitAndWaitForBody('/mis-fincas')
-    
-    openModalAndExecute('[data-cy="add-finca-button"], button', ($modal) => {
-      if ($modal.find('[data-cy="finca-descripcion"], textarea').length > 0) {
-        const longDescription = 'A'.repeat(1001)
-        fillFieldSubmitAndVerifyError(
-          '[data-cy="finca-descripcion"], textarea',
-          longDescription,
-          '[data-cy="save-finca"], button[type="submit"]',
-          '[data-cy="finca-descripcion-error"], .error-message',
-          ['larga', 'descripción', 'demasiado']
-        )
-      }
-    })
+    const longDescription = 'A'.repeat(1001)
+    validateFieldInModal(
+      '/mis-fincas',
+      '[data-cy="add-finca-button"], button',
+      '[data-cy="finca-descripcion"], textarea',
+      longDescription,
+      '[data-cy="save-finca"], button[type="submit"]',
+      '[data-cy="finca-descripcion-error"], .error-message',
+      ['larga', 'descripción', 'demasiado']
+    )
   })
 
   it('debe validar múltiples errores simultáneos', () => {
-    visitAndWaitForBody('/mis-fincas')
-    
-    openModalAndExecute('[data-cy="add-finca-button"], button', ($modal) => {
-      if ($modal.find('[data-cy="finca-nombre"], input').length > 0) {
-        cy.get('[data-cy="finca-nombre"], input').first().type('A', { force: true })
-        cy.get('[data-cy="finca-area"], input[type="number"]').first().type('-5', { force: true })
-        cy.get('[data-cy="save-finca"], button[type="submit"]').first().click({ force: true })
-        cy.get('body', { timeout: 3000 }).then(($error) => {
-          const errorSelectors = [
-            '[data-cy="finca-nombre-error"]',
-            '[data-cy="finca-area-error"]',
-            '[data-cy="finca-ubicacion-error"]'
-          ]
-          verifySelectorsExist(errorSelectors, $error, 3000)
-        })
-      }
-    })
+    validateMultipleFieldsInModal(
+      '/mis-fincas',
+      '[data-cy="add-finca-button"], button',
+      [
+        { selector: '[data-cy="finca-nombre"], input', value: 'A' },
+        { selector: '[data-cy="finca-area"], input[type="number"]', value: '-5' }
+      ],
+      '[data-cy="save-finca"], button[type="submit"]',
+      [
+        '[data-cy="finca-nombre-error"]',
+        '[data-cy="finca-area-error"]',
+        '[data-cy="finca-ubicacion-error"]'
+      ]
+    )
   })
 
   it('debe validar formularios con campos condicionales', () => {
-    visitAndWaitForBody('/mis-lotes')
-    openModalAndExecute('[data-cy="add-lote-button"], button', ($modal) => {
-      if ($modal.find('[data-cy="lote-tipo-cultivo"], select').length > 0) {
-        cy.get('[data-cy="lote-tipo-cultivo"], select').first().select('organico', { force: true })
-        cy.get('body', { timeout: 3000 }).then(($afterSelect) => {
-          ifFoundInBody('[data-cy="certificacion-organica"], input, select', () => {
-            cy.get('[data-cy="certificacion-organica"], input, select').should('exist')
-          })
-          clickIfExistsAndContinue('[data-cy="save-lote"], button[type="submit"]', () => {
-            verifyErrorMessageWithSelectors(
-              ['[data-cy="certificacion-error"], .error-message'],
-              ['requerido', 'orgánicos', 'certificación']
-            )
-          })
-        })
-      }
-    })
+    validateConditionalFieldInModal(
+      '/mis-lotes',
+      '[data-cy="add-lote-button"], button',
+      '[data-cy="lote-tipo-cultivo"], select',
+      'organico',
+      '[data-cy="certificacion-organica"], input, select',
+      '[data-cy="save-lote"], button[type="submit"]',
+      '[data-cy="certificacion-error"], .error-message',
+      ['requerido', 'orgánicos', 'certificación']
+    )
   })
 
   it('debe validar formato de teléfono', () => {
-    visitAndWaitForBody('/registro')
-    fillFieldSubmitAndVerifyError(
+    validateFieldFormat(
+      '/registro',
       '[data-cy="phone-input"]',
       '123',
       '[data-cy="register-button"]',
@@ -317,8 +271,8 @@ describe('Manejo de Errores - Validación y Formularios', () => {
   })
 
   it('debe validar formato de documento', () => {
-    visitAndWaitForBody('/registro')
-    fillFieldSubmitAndVerifyError(
+    validateFieldFormat(
+      '/registro',
       '[data-cy="document-input"]',
       '123',
       '[data-cy="register-button"]',
@@ -328,11 +282,11 @@ describe('Manejo de Errores - Validación y Formularios', () => {
   })
 
   it('debe validar edad mínima en fecha de nacimiento', () => {
-    visitAndWaitForBody('/registro')
     const futureDate = new Date()
     futureDate.setFullYear(futureDate.getFullYear() - 10)
     const dateString = futureDate.toISOString().split('T')[0]
-    fillFieldSubmitAndVerifyError(
+    validateFieldFormat(
+      '/registro',
       '[data-cy="birthdate-input"]',
       dateString,
       '[data-cy="register-button"]',
@@ -342,16 +296,15 @@ describe('Manejo de Errores - Validación y Formularios', () => {
   })
 
   it('debe validar campos de dirección', () => {
-    visitAndWaitForBody('/mis-fincas')
-    openModalAndExecute('[data-cy="add-finca-button"]', ($modal) => {
-      fillFieldSubmitAndVerifyError(
-        '[data-cy="finca-direccion"]',
-        'A'.repeat(501),
-        '[data-cy="save-finca"]',
-        '[data-cy="direccion-error"]',
-        ['dirección', 'demasiado', 'larga']
-      )
-    })
+    validateFieldInModal(
+      '/mis-fincas',
+      '[data-cy="add-finca-button"]',
+      '[data-cy="finca-direccion"]',
+      'A'.repeat(501),
+      '[data-cy="save-finca"]',
+      '[data-cy="direccion-error"]',
+      ['dirección', 'demasiado', 'larga']
+    )
   })
 
   it('debe validar coordenadas GPS', () => {

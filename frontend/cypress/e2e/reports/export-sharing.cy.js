@@ -1,5 +1,6 @@
 import { 
   verifySelectorsExist,
+  verifySelectorsInBody,
   ifFoundInBody,
   clickIfExistsAndContinue,
   selectIfExistsAndContinue,
@@ -15,6 +16,167 @@ describe('Reportes - Exportación y Compartir', () => {
     cy.visit('/reportes')
     cy.get('body', { timeout: 10000 }).should('be.visible')
   })
+
+  /**
+   * Helper functions to reduce nesting
+   * Extracted from tests to improve maintainability
+   */
+
+  /**
+   * Executes bulk export flow
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const executeBulkExportFlow = () => {
+    return clickIfExistsAndContinue('[data-cy="bulk-export"], button', handleBulkExportOptions)
+  }
+
+  /**
+   * Handles bulk export options
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const handleBulkExportOptions = () => {
+    return ifFoundInBody('[data-cy="bulk-export-options"], .bulk-export-options', handleExportFormatSelection)
+  }
+
+  /**
+   * Handles export format selection
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const handleExportFormatSelection = () => {
+    cy.get('[data-cy="bulk-export-options"], .bulk-export-options').should('exist')
+    return selectIfExistsAndContinue('[data-cy="export-format"], select', 'zip', confirmBulkExport)
+  }
+
+  /**
+   * Confirms bulk export and verifies download
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const confirmBulkExport = () => {
+    return clickIfExistsAndContinue('[data-cy="confirm-bulk-export"], button[type="submit"]', () => {
+      cy.verifyDownload('reportes-lote.zip')
+    })
+  }
+
+  /**
+   * Handles preview export flow
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const handlePreviewExport = () => {
+    return clickIfExistsAndContinue('[data-cy="preview-export"], button', handlePreviewContent)
+  }
+
+  /**
+   * Handles preview content verification
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const handlePreviewContent = () => {
+    return ifFoundInBody('[data-cy="export-preview"], .preview', verifyPreviewAndNavigate, () => {
+      cy.get('body').should('be.visible')
+    })
+  }
+
+  /**
+   * Verifies preview and navigates pages
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const verifyPreviewAndNavigate = () => {
+    cy.get('[data-cy="export-preview"], .preview').should('be.visible')
+    const previewSelectors = [
+      '[data-cy="preview-content"]',
+      '[data-cy="preview-pages"]'
+    ]
+    verifySelectorsInBody(previewSelectors, 3000)
+    return navigatePreviewPages()
+  }
+
+  /**
+   * Navigates preview pages
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const navigatePreviewPages = () => {
+    return clickIfExistsAndContinue('[data-cy="next-page"], button', () => {
+      return clickIfExistsAndContinue('[data-cy="previous-page"], button', () => {
+        return cy.wrap(null)
+      })
+    })
+  }
+
+  /**
+   * Handles export error flow
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const handleExportErrorFlow = () => {
+    return clickIfExistsAndContinue('[data-cy="download-pdf"], button, a', handleExportConfirmation)
+  }
+
+  /**
+   * Handles export confirmation and error verification
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const handleExportConfirmation = () => {
+    return clickIfExistsAndContinue('[data-cy="confirm-download"], button[type="submit"]', verifyExportError)
+  }
+
+  /**
+   * Verifies export error message
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const verifyExportError = () => {
+    cy.wait('@exportError', { timeout: 10000 })
+    return ifFoundInBody('[data-cy="export-error"], .error-message, .swal2-error', () => {
+      verifyErrorMessageGeneric(['error', 'exportar', 'reporte'], '[data-cy="export-error"], .error-message, .swal2-error')
+    })
+  }
+
+  /**
+   * Handles export progress flow
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const handleExportProgressFlow = () => {
+    return clickIfExistsAndContinue('[data-cy="download-pdf"], button, a', handleProgressConfirmation)
+  }
+
+  /**
+   * Handles progress confirmation
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const handleProgressConfirmation = () => {
+    return clickIfExistsAndContinue('[data-cy="confirm-download"], button[type="submit"]', verifyExportProgress)
+  }
+
+  /**
+   * Verifies export progress display
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const verifyExportProgress = () => {
+    return ifFoundInBody('[data-cy="export-progress"], .progress', verifyProgressDetails)
+  }
+
+  /**
+   * Verifies progress details
+   * Extracted to reduce nesting
+   * @returns {Cypress.Chainable} Cypress chainable
+   */
+  const verifyProgressDetails = () => {
+    cy.get('[data-cy="export-progress"], .progress').should('be.visible')
+    return ifFoundInBody('[data-cy="progress-percentage"], .progress-percentage', () => {
+      verifyErrorMessageGeneric(['%'], '[data-cy="progress-percentage"], .progress-percentage')
+    })
+  }
 
   it('debe exportar reporte como PDF', () => {
     cy.exportReport('pdf', { reportIndex: 0, verifyDownload: false })
@@ -32,25 +194,7 @@ describe('Reportes - Exportación y Compartir', () => {
     ifFoundInBody('[data-cy="report-checkbox"], input[type="checkbox"]', () => {
       cy.get('[data-cy="report-checkbox"], input[type="checkbox"]').first().check({ force: true })
       cy.get('[data-cy="report-checkbox"], input[type="checkbox"]').eq(1).check({ force: true })
-      
-      const confirmBulkExport = () => {
-        clickIfExistsAndContinue('[data-cy="confirm-bulk-export"], button[type="submit"]', () => {
-          cy.verifyDownload('reportes-lote.zip')
-        })
-      }
-      
-      const selectExportFormat = () => {
-        selectIfExistsAndContinue('[data-cy="export-format"], select', 'zip', confirmBulkExport)
-      }
-      
-      const openBulkExportOptions = () => {
-        ifFoundInBody('[data-cy="bulk-export-options"], .bulk-export-options', () => {
-          cy.get('[data-cy="bulk-export-options"], .bulk-export-options').should('exist')
-          selectExportFormat()
-        })
-      }
-      
-      clickIfExistsAndContinue('[data-cy="bulk-export"], button', openBulkExportOptions)
+      executeBulkExportFlow()
     }, () => {
       cy.get('body').should('be.visible')
     })
@@ -220,27 +364,7 @@ describe('Reportes - Exportación y Compartir', () => {
   })
 
   it('debe mostrar vista previa antes de exportar', () => {
-    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
-      return clickIfExistsAndContinue('[data-cy="preview-export"], button', () => {
-        return ifFoundInBody('[data-cy="export-preview"], .preview', () => {
-          cy.get('[data-cy="export-preview"], .preview').should('be.visible')
-          
-          const previewSelectors = [
-            '[data-cy="preview-content"]',
-            '[data-cy="preview-pages"]'
-          ]
-          verifySelectorsInBody(previewSelectors, 3000)
-          
-          return clickIfExistsAndContinue('[data-cy="next-page"], button', () => {
-            return clickIfExistsAndContinue('[data-cy="previous-page"], button', () => {
-              cy.wrap(null)
-            })
-          })
-        }, () => {
-          cy.get('body').should('be.visible')
-        })
-      })
-    }, () => {
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', handlePreviewExport, () => {
       cy.get('body').should('be.visible')
     })
   })
@@ -252,34 +376,13 @@ describe('Reportes - Exportación y Compartir', () => {
       body: { error: 'Error al exportar reporte' }
     }).as('exportError')
     
-    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
-      return clickIfExistsAndContinue('[data-cy="download-pdf"], button, a', () => {
-        return clickIfExistsAndContinue('[data-cy="confirm-download"], button[type="submit"]', () => {
-          cy.wait('@exportError', { timeout: 10000 })
-          
-          return ifFoundInBody('[data-cy="export-error"], .error-message, .swal2-error', () => {
-            verifyErrorMessageGeneric(['error', 'exportar', 'reporte'], '[data-cy="export-error"], .error-message, .swal2-error')
-          })
-        })
-      })
-    }, () => {
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', handleExportErrorFlow, () => {
       cy.get('body').should('be.visible')
     })
   })
 
   it('debe mostrar progreso de exportación', () => {
-    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
-      return clickIfExistsAndContinue('[data-cy="download-pdf"], button, a', () => {
-        return clickIfExistsAndContinue('[data-cy="confirm-download"], button[type="submit"]', () => {
-          return ifFoundInBody('[data-cy="export-progress"], .progress', () => {
-            cy.get('[data-cy="export-progress"], .progress').should('be.visible')
-            ifFoundInBody('[data-cy="progress-percentage"], .progress-percentage', () => {
-              verifyErrorMessageGeneric(['%'], '[data-cy="progress-percentage"], .progress-percentage')
-            })
-          })
-        })
-      })
-    }, () => {
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', handleExportProgressFlow, () => {
       cy.get('body').should('be.visible')
     })
   })

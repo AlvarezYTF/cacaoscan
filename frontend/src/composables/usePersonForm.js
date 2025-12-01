@@ -2,7 +2,7 @@
  * Composable for person form logic (catalogos, validation, etc.)
  * Used by CreateFarmerModal, EditFarmerModal, and other person forms
  */
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useCatalogos } from '@/composables/useCatalogos'
 import { useFormValidation } from '@/composables/useFormValidation'
 import { useBirthdateRange } from '@/composables/useBirthdateRange'

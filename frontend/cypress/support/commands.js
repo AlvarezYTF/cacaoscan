@@ -1279,6 +1279,46 @@ Cypress.Commands.add('applyReportFilter', (filterType, value) => {
   return helpers.clickIfExists('[data-cy="apply-filters"]')
 })
 
+/**
+ * Applies filter to list (generic)
+ * @param {string} filterType - Type of filter
+ * @param {string} value - Filter value
+ * @returns {Cypress.Chainable}
+ */
+Cypress.Commands.add('applyFilter', (filterType, value) => {
+  helpers.selectIfExists(`[data-cy="filter-${filterType}"]`, value)
+  return helpers.clickIfExists('[data-cy="apply-filters"], [data-cy="apply-filter"], button[type="submit"]')
+})
+
+/**
+ * Executes action within first item of a list
+ * @param {string} itemSelector - Selector for list items
+ * @param {Function} action - Function to execute within the item
+ * @returns {Cypress.Chainable}
+ */
+Cypress.Commands.add('executeInFirstItem', (itemSelector, action) => {
+  return helpers.executeInFirstItem(itemSelector, action)
+})
+
+/**
+ * Verifies multiple elements are visible
+ * @param {Array<string>} selectors - Array of CSS selectors to verify
+ * @returns {Cypress.Chainable}
+ */
+Cypress.Commands.add('verifyElementsVisible', (selectors) => {
+  return helpers.verifyElementsVisible(selectors)
+})
+
+/**
+ * Verifies empty state message
+ * @param {string} emptyStateSelector - Selector for empty state element
+ * @param {string} expectedText - Expected text in empty state
+ * @returns {Cypress.Chainable}
+ */
+Cypress.Commands.add('verifyEmptyStateMessage', (emptyStateSelector, expectedText) => {
+  return helpers.verifyEmptyStateMessage(emptyStateSelector, expectedText)
+})
+
  * @param {Function} elseActions - Optional function to execute if element doesn't exist
  * @returns {Cypress.Chainable}
  */

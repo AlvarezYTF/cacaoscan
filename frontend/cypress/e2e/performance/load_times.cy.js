@@ -1,3 +1,5 @@
+import { ifFoundInBody } from '../../support/helpers'
+
 describe('Basic Performance Metrics', () => {
   
   it('should load the dashboard within acceptable time threshold', () => {
@@ -62,18 +64,24 @@ describe('Basic Performance Metrics', () => {
     expect(endTime - startTime).to.be.lessThan(10000)
   })
 
+  const isValidLazyLoading = ($el) => {
+    return $el.attr('loading') === 'lazy' || $el.attr('loading') === undefined || $el.length > 0
+  }
+
+  const checkImageLazyLoading = ($img) => {
+    cy.wrap($img).should('satisfy', isValidLazyLoading)
+  }
+
+  const verifyImagesHaveLazyLoading = ($body) => {
+    if ($body.find('img').length > 0) {
+      cy.get('img').each(checkImageLazyLoading)
+    }
+  }
+
   it('should have lazy loading for images implemented', () => {
     cy.visit('/')
     cy.get('body', { timeout: 10000 }).should('be.visible')
-    cy.get('body').then(($body) => {
-      if ($body.find('img').length > 0) {
-        cy.get('img').each(($img) => {
-          cy.wrap($img).should('satisfy', ($el) => {
-            return $el.attr('loading') === 'lazy' || $el.attr('loading') === undefined || $el.length > 0
-          })
-        })
-      }
-    })
+    cy.get('body').then(verifyImagesHaveLazyLoading)
   })
 })
 

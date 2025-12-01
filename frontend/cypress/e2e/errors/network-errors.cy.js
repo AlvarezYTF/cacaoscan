@@ -3,7 +3,11 @@ import {
   visitAndWaitForBody,
   verifyErrorMessageWithSelectors,
   uploadFileWithDataTransfer,
-  openModalAndExecute
+  openModalAndExecute,
+  setupErrorInterceptAndVerify,
+  uploadFileAndVerifyErrorAfterIntercept,
+  setupDirectInterceptAndVerify,
+  ifFoundInBody
 } from '../../support/helpers'
 
 describe('Manejo de Errores - Errores de Red', () => {
@@ -12,22 +16,40 @@ describe('Manejo de Errores - Errores de Red', () => {
   })
 
   it('debe manejar error 500 del servidor', () => {
-    cy.interceptError('GET', '/fincas/**', 500, { error: 'Error interno del servidor' }, 'serverError')
-    visitAndWaitForBody('/mis-fincas')
-    cy.verifyErrorMessage(['error', 'servidor', '500'])
+    setupErrorInterceptAndVerify(
+      'GET',
+      '/fincas/**',
+      500,
+      { error: 'Error interno del servidor' },
+      'serverError',
+      '/mis-fincas',
+      ['[data-cy="error-message"], .error-message, .swal2-error'],
+      ['error', 'servidor', '500']
+    )
     cy.retryIfAvailable()
   })
 
   it('debe manejar error 404 - Recurso no encontrado', () => {
-    cy.interceptError('GET', '/fincas/**/', 404, { error: 'Finca no encontrada' }, 'notFound')
-    visitAndWaitForBody('/mis-fincas')
-    cy.verifyErrorMessage(['no encontrado', '404', 'not found'])
+    setupErrorInterceptAndVerify(
+      'GET',
+      '/fincas/**/',
+      404,
+      { error: 'Finca no encontrada' },
+      'notFound',
+      '/mis-fincas',
+      ['[data-cy="error-message"], .error-message, .swal2-error'],
+      ['no encontrado', '404', 'not found']
+    )
   })
 
   it('debe manejar error 403 - Acceso denegado', () => {
-    cy.interceptError('GET', '/admin/**', 403, { error: 'Acceso denegado' }, 'forbidden')
-    visitAndWaitForBody('/admin/agricultores')
-    verifyErrorMessageWithSelectors(
+    setupErrorInterceptAndVerify(
+      'GET',
+      '/admin/**',
+      403,
+      { error: 'Acceso denegado' },
+      'forbidden',
+      '/admin/agricultores',
       ['[data-cy="error-message"], .error-message, .swal2-error'],
       ['acceso', 'denegado', '403']
     )
@@ -46,9 +68,13 @@ describe('Manejo de Errores - Errores de Red', () => {
   })
 
   it('debe manejar error de timeout', () => {
-    cy.interceptError('GET', '/fincas/**', 408, { error: 'Timeout' }, 'timeoutError')
-    visitAndWaitForBody('/mis-fincas')
-    verifyErrorMessageWithSelectors(
+    setupErrorInterceptAndVerify(
+      'GET',
+      '/fincas/**',
+      408,
+      { error: 'Timeout' },
+      'timeoutError',
+      '/mis-fincas',
       ['[data-cy="error-message"], .error-message, .swal2-error'],
       ['timeout', 'tiempo', '408']
     )
@@ -133,43 +159,31 @@ describe('Manejo de Errores - Errores de Red', () => {
   it('debe manejar error de carga de archivo', () => {
     cy.interceptError('POST', '/images/**', 413, { error: 'Archivo demasiado grande' }, 'fileTooLarge')
     visitAndWaitForBody('/nuevo-analisis')
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="file-input"], input[type="file"]').length > 0) {
-        const fileContent = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAD/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKgAD//Z'
-        uploadFileWithDataTransfer('[data-cy="file-input"], input[type="file"]', fileContent, 'test-cacao.jpg')
-        cy.get('body', { timeout: 3000 }).then(($afterUpload) => {
-          if ($afterUpload.find('[data-cy="upload-button"], button[type="submit"]').length > 0) {
-            cy.get('[data-cy="upload-button"], button[type="submit"]').first().click({ force: true })
-            cy.wait('@fileTooLarge', { timeout: 10000 })
-            verifyErrorMessageWithSelectors(
-              ['[data-cy="upload-error"], .error-message, .swal2-error'],
-              ['grande', 'archivo', 'demasiado', '413']
-            )
-          }
-        })
-      }
-    })
+    const fileContent = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAD/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKgAD//Z'
+    uploadFileAndVerifyErrorAfterIntercept(
+      '[data-cy="file-input"], input[type="file"]',
+      fileContent,
+      'test-cacao.jpg',
+      '[data-cy="upload-button"], button[type="submit"]',
+      'fileTooLarge',
+      ['[data-cy="upload-error"], .error-message, .swal2-error'],
+      ['grande', 'archivo', 'demasiado', '413']
+    )
   })
 
   it('debe manejar error de análisis de imagen', () => {
     cy.interceptError('POST', '/scan/**', 422, { error: 'Imagen no válida para análisis' }, 'analysisError')
     visitAndWaitForBody('/nuevo-analisis')
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="file-input"], input[type="file"]').length > 0) {
-        const fileContent = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAD/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKgAD//Z'
-        uploadFileWithDataTransfer('[data-cy="file-input"], input[type="file"]', fileContent, 'test-cacao.jpg')
-        cy.get('body', { timeout: 3000 }).then(($afterUpload) => {
-          if ($afterUpload.find('[data-cy="upload-button"], button[type="submit"]').length > 0) {
-            cy.get('[data-cy="upload-button"], button[type="submit"]').first().click({ force: true })
-            cy.wait('@analysisError', { timeout: 10000 })
-            verifyErrorMessageWithSelectors(
-              ['[data-cy="analysis-error"], .error-message, .swal2-error'],
-              ['válida', 'análisis', 'imagen', '422']
-            )
-          }
-        })
-      }
-    })
+    const fileContent = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAD/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKgAD//Z'
+    uploadFileAndVerifyErrorAfterIntercept(
+      '[data-cy="file-input"], input[type="file"]',
+      fileContent,
+      'test-cacao.jpg',
+      '[data-cy="upload-button"], button[type="submit"]',
+      'analysisError',
+      ['[data-cy="analysis-error"], .error-message, .swal2-error'],
+      ['válida', 'análisis', 'imagen', '422']
+    )
   })
 
   it('debe manejar error de generación de reporte', () => {
@@ -192,42 +206,47 @@ describe('Manejo de Errores - Errores de Red', () => {
   })
 
   it('debe manejar error de servicio no disponible', () => {
-    cy.intercept('GET', '/api/fincas/', {
-      statusCode: 503,
-      body: { error: 'Servicio no disponible' }
-    }).as('serviceUnavailable')
-    visitAndWaitForBody('/mis-fincas')
-    cy.wait('@serviceUnavailable')
-    cy.get('[data-cy="error-message"]')
-      .should('be.visible')
-      .and('contain', 'Servicio no disponible')
+    const apiBaseUrl = getApiBaseUrl()
+    setupDirectInterceptAndVerify(
+      'GET',
+      `${apiBaseUrl}/fincas/`,
+      503,
+      { error: 'Servicio no disponible' },
+      'serviceUnavailable',
+      '/mis-fincas',
+      '[data-cy="error-message"]',
+      'Servicio no disponible'
+    )
   })
 
   it('debe manejar error de gateway', () => {
-    cy.intercept('GET', '/api/fincas/', {
-      statusCode: 502,
-      body: { error: 'Bad Gateway' }
-    }).as('badGateway')
-    visitAndWaitForBody('/mis-fincas')
-    cy.wait('@badGateway')
-    cy.get('[data-cy="error-message"]')
-      .should('be.visible')
-      .and('contain', 'Error del servidor')
+    const apiBaseUrl = getApiBaseUrl()
+    setupDirectInterceptAndVerify(
+      'GET',
+      `${apiBaseUrl}/fincas/`,
+      502,
+      { error: 'Bad Gateway' },
+      'badGateway',
+      '/mis-fincas',
+      '[data-cy="error-message"]',
+      'Error del servidor'
+    )
   })
 
   it('debe manejar error de versión no soportada', () => {
-    cy.intercept('GET', '/api/fincas/', {
+    const apiBaseUrl = getApiBaseUrl()
+    cy.intercept('GET', `${apiBaseUrl}/fincas/`, {
       statusCode: 505,
       body: { error: 'Versión HTTP no soportada' }
     }).as('versionError')
     visitAndWaitForBody('/mis-fincas')
     cy.wait('@versionError')
-    cy.get('[data-cy="error-message"]')
-      .should('be.visible')
+    cy.get('[data-cy="error-message"]').should('be.visible')
   })
 
   it('debe manejar error de payload demasiado grande', () => {
-    cy.intercept('POST', '/api/images/', {
+    const apiBaseUrl = getApiBaseUrl()
+    cy.intercept('POST', `${apiBaseUrl}/images/`, {
       statusCode: 413,
       body: { error: 'Payload demasiado grande' }
     }).as('payloadTooLarge')
@@ -240,13 +259,13 @@ describe('Manejo de Errores - Errores de Red', () => {
   })
 
   it('debe manejar error de método no permitido', () => {
-    cy.intercept('PATCH', '/api/fincas/1/', {
+    const apiBaseUrl = getApiBaseUrl()
+    cy.intercept('PATCH', `${apiBaseUrl}/fincas/1/`, {
       statusCode: 405,
       body: { error: 'Método no permitido' }
     }).as('methodNotAllowed')
     visitAndWaitForBody('/mis-fincas')
     cy.wait('@methodNotAllowed')
-    cy.get('[data-cy="error-message"]')
-      .should('be.visible')
+    cy.get('[data-cy="error-message"]').should('be.visible')
   })
 })

@@ -3,8 +3,7 @@ import {
   visitAndWaitForBody,
   getApiBaseUrl,
   ifFoundInBody,
-  clickIfExistsAndContinue,
-  verifyErrorMessageGeneric
+  clickIfExistsAndContinue
 } from '../../support/helpers'
 
 describe('Análisis de Imágenes - Procesamiento', () => {
@@ -49,40 +48,72 @@ describe('Análisis de Imágenes - Procesamiento', () => {
   })
 
   it('debe mostrar recomendaciones basadas en el análisis', () => {
-    cy.performImageAnalysis('test-cacao.jpg')
-    cy.get('body', { timeout: 5000 }).then(($results) => {
-      ifFoundInBody('[data-cy="recommendations-list"], .recommendations', () => {
-        cy.get('[data-cy="recommendations-list"], .recommendations', { timeout: 5000 }).should('exist')
-        ifFoundInBody('[data-cy="recommendation-item"], .recommendation-item', () => {
-          cy.get('[data-cy="recommendation-item"], .recommendation-item', { timeout: 5000 }).should('have.length.at.least', 0)
-        })
-        const recommendationSelectors = [
-          '[data-cy="harvest-recommendation"], .harvest',
-          '[data-cy="treatment-recommendation"], .treatment'
-        ]
-        verifySelectorsExist(recommendationSelectors, $results, 3000)
+    const verifyRecommendationItems = () => {
+      ifFoundInBody('[data-cy="recommendation-item"], .recommendation-item', () => {
+        cy.get('[data-cy="recommendation-item"], .recommendation-item', { timeout: 5000 }).should('have.length.at.least', 0)
       })
-    })
+    }
+
+    const verifyRecommendationSelectors = ($results) => {
+      const recommendationSelectors = [
+        '[data-cy="harvest-recommendation"], .harvest',
+        '[data-cy="treatment-recommendation"], .treatment'
+      ]
+      verifySelectorsExist(recommendationSelectors, $results, 3000)
+    }
+
+    const handleRecommendationsList = ($results) => {
+      cy.get('[data-cy="recommendations-list"], .recommendations', { timeout: 5000 }).should('exist')
+      verifyRecommendationItems()
+      verifyRecommendationSelectors($results)
+    }
+
+    const handleResultsBody = ($results) => {
+      ifFoundInBody('[data-cy="recommendations-list"], .recommendations', () => {
+        handleRecommendationsList($results)
+      })
+    }
+
+    cy.performImageAnalysis('test-cacao.jpg')
+    cy.get('body', { timeout: 5000 }).then(handleResultsBody)
   })
 
   it('debe permitir ver imagen procesada con anotaciones', () => {
-    cy.performImageAnalysis('test-cacao.jpg')
-    cy.get('body', { timeout: 5000 }).then(($results) => {
-      ifFoundInBody('[data-cy="processed-image"], .processed-image, img', () => {
-        const imageSelectors = [
-          '[data-cy="processed-image"], .processed-image, img',
-          '[data-cy="image-annotations"], .annotations',
-          '[data-cy="defect-markers"], .markers'
-        ]
-        verifySelectorsExist(imageSelectors, $results, 5000)
-        ifFoundInBody('[data-cy="defect-marker"], .marker', () => {
-          cy.get('[data-cy="defect-marker"], .marker').first().click({ force: true })
-          ifFoundInBody('[data-cy="defect-details"], .details', () => {
-            cy.get('[data-cy="defect-details"], .details', { timeout: 5000 }).should('exist')
-          })
-        })
+    const verifyDefectDetails = () => {
+      ifFoundInBody('[data-cy="defect-details"], .details', () => {
+        cy.get('[data-cy="defect-details"], .details', { timeout: 5000 }).should('exist')
       })
-    })
+    }
+
+    const handleDefectMarkerClick = () => {
+      cy.get('[data-cy="defect-marker"], .marker').first().click({ force: true })
+      verifyDefectDetails()
+    }
+
+    const verifyDefectMarkers = () => {
+      ifFoundInBody('[data-cy="defect-marker"], .marker', () => {
+        handleDefectMarkerClick()
+      })
+    }
+
+    const verifyImageSelectors = ($results) => {
+      const imageSelectors = [
+        '[data-cy="processed-image"], .processed-image, img',
+        '[data-cy="image-annotations"], .annotations',
+        '[data-cy="defect-markers"], .markers'
+      ]
+      verifySelectorsExist(imageSelectors, $results, 5000)
+      verifyDefectMarkers()
+    }
+
+    const handleProcessedImage = ($results) => {
+      ifFoundInBody('[data-cy="processed-image"], .processed-image, img', () => {
+        verifyImageSelectors($results)
+      })
+    }
+
+    cy.performImageAnalysis('test-cacao.jpg')
+    cy.get('body', { timeout: 5000 }).then(handleProcessedImage)
   })
 
   it('debe manejar errores durante el análisis', () => {
@@ -130,16 +161,26 @@ describe('Análisis de Imágenes - Procesamiento', () => {
   })
 
   it('debe permitir cancelar análisis en progreso', () => {
-    cy.performImageAnalysis('test-cacao.jpg', { waitForResults: false })
-    cy.get('body', { timeout: 5000 }).then(($analysis) => {
-      clickIfExistsAndContinue('[data-cy="cancel-analysis"], button', () => {
-        clickIfExistsAndContinue('[data-cy="confirm-cancel"], .swal2-confirm, button', () => {
-          ifFoundInBody('[data-cy="analysis-cancelled"], .cancelled', () => {
-            cy.get('[data-cy="analysis-cancelled"], .cancelled', { timeout: 5000 }).should('exist')
-          })
-        })
+    const verifyAnalysisCancelled = () => {
+      ifFoundInBody('[data-cy="analysis-cancelled"], .cancelled', () => {
+        cy.get('[data-cy="analysis-cancelled"], .cancelled', { timeout: 5000 }).should('exist')
       })
-    })
+    }
+
+    const handleConfirmCancel = () => {
+      clickIfExistsAndContinue('[data-cy="confirm-cancel"], .swal2-confirm, button', () => {
+        verifyAnalysisCancelled()
+      })
+    }
+
+    const handleCancelAnalysis = () => {
+      clickIfExistsAndContinue('[data-cy="cancel-analysis"], button', () => {
+        handleConfirmCancel()
+      })
+    }
+
+    cy.performImageAnalysis('test-cacao.jpg', { waitForResults: false })
+    cy.get('body', { timeout: 5000 }).then(handleCancelAnalysis)
   })
 
   it('debe guardar resultados del análisis', () => {

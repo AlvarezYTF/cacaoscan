@@ -15,6 +15,7 @@ from typing import Dict, List, Any
 
 from ...services import analysis_service
 from core.utils import create_error_response, create_success_response, validate_target
+from .mixins.incremental_mixin import IncrementalViewMixin
 # Importar desde apps modulares
 from ...utils.model_imports import get_models_safely
 
@@ -31,7 +32,7 @@ CacaoImage = models['CacaoImage']
 logger = logging.getLogger("cacaoscan.api")
 
 
-class IncrementalTrainingStatusView(APIView):
+class IncrementalTrainingStatusView(IncrementalViewMixin, APIView):
     """
     Endpoint para obtener el estado del sistema de entrenamiento incremental.
     """
@@ -72,15 +73,10 @@ class IncrementalTrainingStatusView(APIView):
             )
             
         except Exception as e:
-            logger.error(f"Error obteniendo estado incremental: {str(e)}")
-            return create_error_response(
-                message="Error interno obteniendo estado incremental",
-                details={"error": str(e)},
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return self.handle_incremental_error(e, "obteniendo estado incremental")
 
 
-class IncrementalTrainingView(APIView):
+class IncrementalTrainingView(IncrementalViewMixin, APIView):
     """
     Endpoint para ejecutar entrenamiento incremental.
     """
@@ -153,10 +149,7 @@ class IncrementalTrainingView(APIView):
             target = request.data.get('target', 'alto')
             
             if not new_data:
-                return create_error_response(
-                    message="new_data es requerido",
-                    status_code=status.HTTP_400_BAD_REQUEST
-                )
+                return self.handle_validation_error("new_data es requerido")
             
             validation_error = validate_target(target)
             if validation_error:
@@ -165,17 +158,13 @@ class IncrementalTrainingView(APIView):
             # Validar estructura de datos
             for i, record in enumerate(new_data):
                 if not isinstance(record, dict):
-                    return create_error_response(
-                        message=f"Registro {i} debe ser un diccionario",
-                        status_code=status.HTTP_400_BAD_REQUEST
-                    )
+                    return self.handle_validation_error(f"Registro {i} debe ser un diccionario")
                 
                 required_fields = ['id', 'image_path', target]
                 missing_fields = [field for field in required_fields if field not in record]
                 if missing_fields:
-                    return create_error_response(
-                        message=f"Registro {i} faltan campos: {', '.join(missing_fields)}",
-                        status_code=status.HTTP_400_BAD_REQUEST
+                    return self.handle_validation_error(
+                        f"Registro {i} faltan campos: {', '.join(missing_fields)}"
                     )
             
             # Crear job de entrenamiento
@@ -241,14 +230,9 @@ class IncrementalTrainingView(APIView):
                     status_code=status.HTTP_200_OK
                 )
             else:
-                return create_error_response(
-                    message="Error en entrenamiento incremental",
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+                return self.handle_validation_error("Error en entrenamiento incremental")
                 
         except Exception as e:
-            logger.error(f"Error en entrenamiento incremental: {str(e)}")
-            
             # Actualizar job si existe
             if 'training_job' in locals():
                 training_job.status = 'failed'
@@ -256,14 +240,10 @@ class IncrementalTrainingView(APIView):
                 training_job.results = {'success': False, 'error': str(e)}
                 training_job.save()
             
-            return create_error_response(
-                message="Error interno en entrenamiento incremental",
-                details={"error": str(e)},
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return self.handle_incremental_error(e, "entrenamiento incremental")
 
 
-class IncrementalDataUploadView(APIView):
+class IncrementalDataUploadView(IncrementalViewMixin, APIView):
     """
     Endpoint para subir datos para entrenamiento incremental.
     """
@@ -325,10 +305,7 @@ class IncrementalDataUploadView(APIView):
             target = request.POST.get('target', 'alto')
             
             if not csv_file:
-                return create_error_response(
-                    message="csv_file es requerido",
-                    status_code=status.HTTP_400_BAD_REQUEST
-                )
+                return self.handle_validation_error("csv_file es requerido")
             
             validation_error = validate_target(target)
             if validation_error:
@@ -347,9 +324,8 @@ class IncrementalDataUploadView(APIView):
             missing_columns = [col for col in required_columns if col not in df.columns]
             
             if missing_columns:
-                return create_error_response(
-                    message=f"Columnas faltantes en CSV: {', '.join(missing_columns)}",
-                    status_code=status.HTTP_400_BAD_REQUEST
+                return self.handle_validation_error(
+                    f"Columnas faltantes en CSV: {', '.join(missing_columns)}"
                 )
             
             # Convertir a formato esperado
@@ -404,15 +380,10 @@ class IncrementalDataUploadView(APIView):
             )
             
         except Exception as e:
-            logger.error(f"Error subiendo datos incrementales: {str(e)}")
-            return create_error_response(
-                message="Error interno subiendo datos",
-                details={"error": str(e)},
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return self.handle_incremental_error(e, "subiendo datos incrementales")
 
 
-class IncrementalModelVersionsView(APIView):
+class IncrementalModelVersionsView(IncrementalViewMixin, APIView):
     """
     Endpoint para obtener versiones de modelos incrementales.
     """
@@ -489,15 +460,10 @@ class IncrementalModelVersionsView(APIView):
             )
             
         except Exception as e:
-            logger.error(f"Error obteniendo versiones de modelos: {str(e)}")
-            return create_error_response(
-                message="Error interno obteniendo versiones",
-                details={"error": str(e)},
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return self.handle_incremental_error(e, "obteniendo versiones de modelos")
 
 
-class IncrementalDataVersionsView(APIView):
+class IncrementalDataVersionsView(IncrementalViewMixin, APIView):
     """
     Endpoint para obtener versiones de datos incrementales.
     """
@@ -558,11 +524,6 @@ class IncrementalDataVersionsView(APIView):
             )
             
         except Exception as e:
-            logger.error(f"Error obteniendo versiones de datos: {str(e)}")
-            return create_error_response(
-                message="Error interno obteniendo versiones",
-                details={"error": str(e)},
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return self.handle_incremental_error(e, "obteniendo versiones de datos")
 
 

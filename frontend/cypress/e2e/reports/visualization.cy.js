@@ -126,10 +126,14 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
     cy.get('body', { timeout: 5000 }).then(handleDownloadOptions)
   })
 
-  const verifyShareSuccess = ($success) => {
+  const verifyNotificationSuccess = ($success) => {
     if ($success.find('[data-cy="notification-success"], .swal2-success').length > 0) {
       cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
     }
+  }
+
+  const verifyShareSuccess = ($success) => {
+    verifyNotificationSuccess($success)
   }
 
   const sendShareEmail = ($send) => {
@@ -314,9 +318,7 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
   })
 
   const verifyDeleteSuccess = ($success) => {
-    if ($success.find('[data-cy="notification-success"], .swal2-success').length > 0) {
-      cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-    }
+    verifyNotificationSuccess($success)
   }
 
   const confirmDelete = ($confirm) => {

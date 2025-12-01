@@ -332,7 +332,6 @@
 
 <script>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue';
 import PeriodSelector from '@/components/reportes/PeriodSelector.vue';
 import StatsCard from '@/components/reportes/StatsCard.vue';
@@ -363,7 +362,6 @@ export default {
     ConfirmModal
   },
   setup() {
-    const router = useRouter();
     const reportsStore = useReportsStore();
     const authStore = useAuthStore();
 
@@ -480,11 +478,8 @@ export default {
       paginationComposable,
       handleMenuClick,
       handleLogout,
-      handleRefresh: baseHandleRefresh,
-      loadInitialData: baseLoadInitialData,
       applyFilters: baseApplyFilters,
-      clearFilters: baseClearFilters,
-      handlePageChange: baseHandlePageChange
+      clearFilters: baseClearFilters
     } = useAdminView({
       store: reportsStore,
       initialFilters,

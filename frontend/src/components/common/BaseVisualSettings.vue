@@ -9,7 +9,7 @@
     :save-button-text="saveButtonText"
     :reset-button-text="resetButtonText"
     :container-class="containerClass"
-    icon-path="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+    :icon-path="VISUAL_ICON_PATH"
     content-slot-name="settings"
     @update:model-value="$emit('update:modelValue', $event)"
     @save="$emit('save', $event)"
@@ -29,6 +29,8 @@
 
 <script setup>
 import BasePreferencesWrapper from './BasePreferencesWrapper.vue'
+
+const VISUAL_ICON_PATH = 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01'
 
 defineProps({
   modelValue: {
