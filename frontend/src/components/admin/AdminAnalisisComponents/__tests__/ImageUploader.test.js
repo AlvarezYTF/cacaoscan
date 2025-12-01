@@ -1,8 +1,18 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ImageUploader from '../ImageUploader.vue'
 
+// Mock URL.createObjectURL
+global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+
 describe('ImageUploader', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
   it('should render image uploader', () => {
     const wrapper = mount(ImageUploader, {
       props: {

@@ -18,7 +18,23 @@ const mockNotificationStore = {
 }
 
 vi.mock('@/stores/notifications', () => ({
+  useNotificationsStore: () => mockNotificationStore,
   useNotificationStore: () => mockNotificationStore
+}))
+
+vi.mock('@/composables/useNotifications', () => ({
+  useNotifications: () => ({
+    showSuccess: vi.fn(),
+    showError: vi.fn(),
+    showWarning: vi.fn(),
+    showInfo: vi.fn(),
+    clearAll: vi.fn(),
+    notifications: { value: [] },
+    unreadCount: { value: 0 },
+    loading: { value: false },
+    error: { value: null },
+    store: mockNotificationStore
+  })
 }))
 
 vi.mock('sweetalert2', () => ({

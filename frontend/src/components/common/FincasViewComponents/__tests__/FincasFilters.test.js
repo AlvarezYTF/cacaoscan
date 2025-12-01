@@ -32,6 +32,10 @@ describe('FincasFilters', () => {
 
     const input = wrapper.find('input')
     await input.setValue('test search')
+    
+    // Wait for debounce (500ms)
+    await new Promise(resolve => setTimeout(resolve, 600))
+    await wrapper.vm.$nextTick()
 
     expect(wrapper.emitted('update:searchQuery')).toBeTruthy()
   })

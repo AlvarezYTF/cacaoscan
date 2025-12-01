@@ -30,6 +30,43 @@ vi.mock('@/services/api.js', () => ({
   createPredictionFormData: vi.fn()
 }))
 
+// Mock composables
+const mockFileUpload = {
+  isDragging: { value: false },
+  selectedFile: { value: null },
+  imagePreview: { value: null },
+  error: { value: '' },
+  fileInput: { value: null },
+  hasFile: { value: false },
+  canSubmit: { value: false },
+  formatFileSize: vi.fn((bytes) => `${bytes} bytes`),
+  processFile: vi.fn(),
+  handleDragOver: vi.fn(),
+  handleDragLeave: vi.fn(),
+  handleDrop: vi.fn(),
+  openFileSelector: vi.fn(),
+  handleFileSelect: vi.fn(),
+  removeSelectedFile: vi.fn(),
+  reset: vi.fn(),
+  getFormData: vi.fn()
+}
+
+const mockPrediction = {
+  isLoading: { value: false },
+  error: { value: null },
+  result: { value: null },
+  executePrediction: vi.fn().mockResolvedValue({}),
+  reset: vi.fn()
+}
+
+vi.mock('@/composables/useFileUpload', () => ({
+  useFileUpload: () => mockFileUpload
+}))
+
+vi.mock('@/composables/usePrediction', () => ({
+  usePrediction: () => mockPrediction
+}))
+
 describe('ImageUpload', () => {
   let wrapper
   let router

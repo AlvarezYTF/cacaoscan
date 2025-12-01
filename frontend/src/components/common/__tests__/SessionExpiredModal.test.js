@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createMemoryHistory } from 'vue-router'
 import SessionExpiredModal from '../SessionExpiredModal.vue'
 
 vi.mock('@/stores/auth', () => ({
@@ -16,13 +16,14 @@ describe('SessionExpiredModal', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia())
+    vi.useFakeTimers()
+    // Create router with memory history to avoid $route redefinition issues
     router = createRouter({
-      history: createWebHistory(),
+      history: createMemoryHistory(),
       routes: [
         { path: '/login', component: { template: '<div>Login</div>' } }
       ]
     })
-    vi.useFakeTimers()
   })
 
   afterEach(() => {
