@@ -1,0 +1,243 @@
+"""
+Unit tests for admin config views.
+"""
+from unittest.mock import Mock, patch
+from django.test import TestCase
+from django.contrib.auth.models import User
+from django.urls import reverse
+from rest_framework.test import APITestCase
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from api.tests.test_constants import (
+    TEST_USER_PASSWORD,
+    TEST_USER_USERNAME,
+    TEST_USER_EMAIL,
+    TEST_ADMIN_USERNAME,
+    TEST_ADMIN_EMAIL,
+    TEST_ADMIN_PASSWORD,
+)
+
+
+class SystemSettingsViewTest(APITestCase):
+    """Tests for SystemSettingsView."""
+    
+    def setUp(self):
+        """Set up test data."""
+        self.user = User.objects.create_user(
+            username=TEST_USER_USERNAME,
+            email=TEST_USER_EMAIL,
+            password=TEST_USER_PASSWORD
+        )
+        self.admin_user = User.objects.create_superuser(
+            username=TEST_ADMIN_USERNAME,
+            email=TEST_ADMIN_EMAIL,
+            password=TEST_ADMIN_PASSWORD
+        )
+        self.url = reverse('admin-system-settings')
+    
+    def test_system_settings_get_requires_authentication(self):
+        """Test that system settings GET requires authentication."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+    @patch('api.views.admin.config_views.SystemSettings')
+    def test_system_settings_get_success(self, mock_settings):
+        """Test successful system settings retrieval."""
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
+        
+        mock_instance = Mock()
+        mock_settings.get_singleton.return_value = mock_instance
+        
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+    
+    def test_system_settings_put_requires_admin(self):
+        """Test that system settings PUT requires admin."""
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
+        
+        response = self.client.put(self.url, {})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    
+    @patch('api.views.admin.config_views.SystemSettings')
+    def test_system_settings_put_success(self, mock_settings):
+        """Test successful system settings update."""
+        token = RefreshToken.for_user(self.admin_user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
+        
+        mock_instance = Mock()
+        mock_settings.get_singleton.return_value = mock_instance
+        
+        response = self.client.put(self.url, {
+            'nombre_sistema': 'Test System'
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class SystemGeneralConfigViewTest(APITestCase):
+    """Tests for SystemGeneralConfigView."""
+    
+    def setUp(self):
+        """Set up test data."""
+        self.admin_user = User.objects.create_superuser(
+            username=TEST_ADMIN_USERNAME,
+            email=TEST_ADMIN_EMAIL,
+            password=TEST_ADMIN_PASSWORD
+        )
+        self.url = reverse('admin-system-general-config')
+    
+    def test_system_general_config_get_public_access(self):
+        """Test that general config GET is publicly accessible."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('nombre_sistema', response.data)
+    
+    @patch('api.views.admin.config_views.SystemSettings')
+    def test_system_general_config_put_requires_admin(self, mock_settings):
+        """Test that general config PUT requires admin."""
+        user = User.objects.create_user(
+            username=TEST_USER_USERNAME,
+            email=TEST_USER_EMAIL,
+            password=TEST_USER_PASSWORD
+        )
+        token = RefreshToken.for_user(user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
+        
+        response = self.client.put(self.url, {})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    
+    @patch('api.views.admin.config_views.SystemSettings')
+    def test_system_general_config_put_success(self, mock_settings):
+        """Test successful general config update."""
+        token = RefreshToken.for_user(self.admin_user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
+        
+        mock_instance = Mock()
+        mock_instance.logo = None
+        mock_settings.get_singleton.return_value = mock_instance
+        
+        response = self.client.put(self.url, {
+            'nombre_sistema': 'Updated System'
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class SystemSecurityConfigViewTest(APITestCase):
+    """Tests for SystemSecurityConfigView."""
+    
+    def setUp(self):
+        """Set up test data."""
+        self.user = User.objects.create_user(
+            username=TEST_USER_USERNAME,
+            email=TEST_USER_EMAIL,
+            password=TEST_USER_PASSWORD
+        )
+        self.admin_user = User.objects.create_superuser(
+            username=TEST_ADMIN_USERNAME,
+            email=TEST_ADMIN_EMAIL,
+            password=TEST_ADMIN_PASSWORD
+        )
+        self.url = reverse('admin-system-security-config')
+    
+    def test_security_config_get_requires_authentication(self):
+        """Test that security config GET requires authentication."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+    @patch('api.views.admin.config_views.SystemSettings')
+    def test_security_config_get_success(self, mock_settings):
+        """Test successful security config retrieval."""
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
+        
+        mock_instance = Mock()
+        mock_settings.get_singleton.return_value = mock_instance
+        
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('recaptcha_enabled', response.data)
+    
+    @patch('api.views.admin.config_views.SystemSettings')
+    def test_security_config_put_success(self, mock_settings):
+        """Test successful security config update."""
+        token = RefreshToken.for_user(self.admin_user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
+        
+        mock_instance = Mock()
+        mock_settings.get_singleton.return_value = mock_instance
+        
+        response = self.client.put(self.url, {
+            'recaptcha_enabled': True,
+            'session_timeout': 60
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class SystemMLConfigViewTest(APITestCase):
+    """Tests for SystemMLConfigView."""
+    
+    def setUp(self):
+        """Set up test data."""
+        self.user = User.objects.create_user(
+            username=TEST_USER_USERNAME,
+            email=TEST_USER_EMAIL,
+            password=TEST_USER_PASSWORD
+        )
+        self.url = reverse('admin-system-ml-config')
+    
+    def test_ml_config_get_requires_authentication(self):
+        """Test that ML config GET requires authentication."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+    @patch('api.views.admin.config_views.SystemSettings')
+    def test_ml_config_get_success(self, mock_settings):
+        """Test successful ML config retrieval."""
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
+        
+        mock_instance = Mock()
+        mock_settings.get_singleton.return_value = mock_instance
+        
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('active_model', response.data)
+    
+    @patch('api.views.admin.config_views.SystemSettings')
+    def test_ml_config_put_success(self, mock_settings):
+        """Test successful ML config update."""
+        admin_user = User.objects.create_superuser(
+            username=TEST_ADMIN_USERNAME,
+            email=TEST_ADMIN_EMAIL,
+            password=TEST_ADMIN_PASSWORD
+        )
+        token = RefreshToken.for_user(admin_user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
+        
+        mock_instance = Mock()
+        mock_instance.last_training = None
+        mock_settings.get_singleton.return_value = mock_instance
+        
+        response = self.client.put(self.url, {
+            'active_model': 'yolov8'
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class SystemInfoViewTest(APITestCase):
+    """Tests for SystemInfoView."""
+    
+    def setUp(self):
+        """Set up test data."""
+        self.url = reverse('admin-system-info')
+    
+    def test_system_info_public_access(self):
+        """Test that system info is publicly accessible."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('system', response.data)
+        self.assertIn('status', response.data)
+        self.assertEqual(response.data['system'], 'CacaoScan')
+

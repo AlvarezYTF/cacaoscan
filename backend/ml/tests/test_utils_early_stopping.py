@@ -3,12 +3,13 @@ Tests for utils early_stopping module.
 """
 import torch
 import torch.optim as optim
+from unittest import TestCase
 from unittest.mock import MagicMock
 
 from ml.utils.early_stopping import IntelligentEarlyStopping
 
 
-class IntelligentEarlyStoppingTest:
+class IntelligentEarlyStoppingTest(TestCase):
     """Tests for IntelligentEarlyStopping class."""
 
     def test_early_stopping_initialization(self):

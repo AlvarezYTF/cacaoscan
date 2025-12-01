@@ -3,6 +3,7 @@ Tests for regression augmentation module.
 """
 import torch
 import torch.nn as nn
+from unittest import TestCase
 from unittest.mock import patch, MagicMock
 import numpy as np
 from PIL import Image
@@ -16,7 +17,7 @@ from ml.regression.augmentation import (
 )
 
 
-class MixUpTest:
+class MixUpTest(TestCase):
     """Tests for MixUp augmentation."""
 
     def test_mixup_initialization(self):
@@ -50,7 +51,7 @@ class MixUpTest:
             self.assertTrue(torch.equal(mixed_targets, targets))
 
 
-class CutMixTest:
+class CutMixTest(TestCase):
     """Tests for CutMix augmentation."""
 
     def test_cutmix_initialization(self):
@@ -71,7 +72,7 @@ class CutMixTest:
         self.assertEqual(mixed_targets.shape, targets.shape)
 
 
-class RandomErasingTest:
+class RandomErasingTest(TestCase):
     """Tests for RandomErasing augmentation."""
 
     def test_random_erasing_initialization(self):
@@ -92,7 +93,7 @@ class RandomErasingTest:
         self.assertEqual(result.shape, image.shape)
 
 
-class TransformTest:
+class TransformTest(TestCase):
     """Tests for transform creation functions."""
 
     def test_create_advanced_train_transform(self):

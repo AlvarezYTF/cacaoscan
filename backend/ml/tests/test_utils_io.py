@@ -4,6 +4,7 @@ Tests for utils io module.
 import json
 import pickle
 import tempfile
+from unittest import TestCase
 from pathlib import Path
 from PIL import Image
 import pandas as pd
@@ -25,7 +26,7 @@ from ml.utils.io import (
 )
 
 
-class IOUtilsTest:
+class IOUtilsTest(TestCase):
     """Tests for IO utility functions."""
 
     def test_save_and_load_json(self):

@@ -3,10 +3,11 @@ Tests for regression optimized_models module.
 """
 import torch
 import torch.nn as nn
+from unittest import TestCase
 from unittest.mock import MagicMock
 
 
-class OptimizedModelsTest:
+class OptimizedModelsTest(TestCase):
     """Tests for optimized models."""
 
     def test_optimized_models_import(self):

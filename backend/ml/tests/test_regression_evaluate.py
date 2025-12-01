@@ -4,6 +4,7 @@ Tests for regression evaluate module.
 import torch
 import torch.nn as nn
 import numpy as np
+from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from ml.regression.evaluate import (
@@ -12,7 +13,7 @@ from ml.regression.evaluate import (
 )
 
 
-class ComputeRegressionMetricsTest:
+class ComputeRegressionMetricsTest(TestCase):
     """Tests for compute_regression_metrics function."""
 
     def test_compute_regression_metrics_basic(self):
@@ -45,7 +46,7 @@ class ComputeRegressionMetricsTest:
         self.assertEqual(metrics['relative_error'], 0.0)
 
 
-class RegressionEvaluatorTest:
+class RegressionEvaluatorTest(TestCase):
     """Tests for RegressionEvaluator class."""
 
     def test_regression_evaluator_initialization(self):

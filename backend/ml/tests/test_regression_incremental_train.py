@@ -3,11 +3,12 @@ Tests for regression incremental_train module.
 """
 import torch
 import torch.nn as nn
+from unittest import TestCase
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 
 
-class IncrementalTrainTest:
+class IncrementalTrainTest(TestCase):
     """Tests for incremental training functionality."""
 
     def test_incremental_train_import(self):

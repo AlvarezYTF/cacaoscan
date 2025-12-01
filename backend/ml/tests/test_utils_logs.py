@@ -1,12 +1,13 @@
 """
 Tests for utils logs module.
 """
+from unittest import TestCase
 from unittest.mock import patch
 
 from ml.utils.logs import get_ml_logger
 
 
-class LogsUtilsTest:
+class LogsUtilsTest(TestCase):
     """Tests for logs utility functions."""
 
     def test_get_ml_logger(self):

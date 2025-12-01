@@ -3,13 +3,14 @@ Tests for regression hybrid_trainer module.
 """
 import torch
 import torch.nn as nn
+from unittest import TestCase
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 
 from ml.regression.hybrid_trainer import HybridTrainer
 
 
-class HybridTrainerTest:
+class HybridTrainerTest(TestCase):
     """Tests for HybridTrainer class."""
 
     def test_hybrid_trainer_initialization(self):
