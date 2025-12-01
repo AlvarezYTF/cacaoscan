@@ -10,7 +10,7 @@ from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from api.views.mixins import PaginationMixin
+from api.views.mixins.pagination_mixin import PaginationMixin
 from api.serializers import (
     ErrorResponseSerializer,
     CacaoImageSerializer

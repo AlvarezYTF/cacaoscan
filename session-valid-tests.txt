@@ -1,0 +1,623 @@
+🟥 BLOQUE 1 — INIT FILES (NO TESTEABLES O TEST MÍNIMO)
+
+Estos archivos no deben tener tests. Cursor debe marcarlos como "no testeables".
+
+backend/api/services/__init__.py
+backend/api/services/auth/__init__.py
+backend/api/services/stats/__init__.py
+backend/api/services/email/__init__.py
+backend/api/views/ml/mixins/__init__.py
+backend/api/tasks/__init__.py
+backend/api/serializers/__init__.py
+backend/api/views/admin/__init__.py
+backend/api/views/notifications/__init__.py
+backend/api/views/mixins/__init__.py
+backend/api/views/ml/__init__.py
+backend/api/views/__init__.py
+backend/api/utils/__init__.py
+backend/core/utils/__init__.py
+backend/fincas_app/views/finca/__init__.py
+backend/fincas_app/views/__init__.py
+backend/fincas_app/services/finca/__init__.py
+backend/fincas_app/services/__init__.py
+backend/images_app/views/image/user/__init__.py
+backend/images_app/views/image/export/__init__.py
+backend/images_app/views/image/batch/__init__.py
+backend/images_app/views/image/admin/__init__.py
+backend/images_app/views/image/__init__.py
+backend/images_app/views/__init__.py
+backend/images_app/services/image/__init__.py
+backend/images_app/services/__init__.py
+backend/auth_app/views/auth/__init__.py
+backend/auth_app/views/__init__.py
+backend/reports/views/reports/__init__.py
+backend/reports/views/__init__.py
+backend/reports/services/report/excel/__init__.py
+backend/reports/services/report/__init__.py
+backend/reports/services/__init__.py
+backend/training/services/ml/__init__.py
+backend/training/services/__init__.py
+backend/fincas_app/views/finca/mixins/__init__.py
+
+🟦 BLOQUE 2 — BACKEND: API SERVICES (TESTS UNITARIOS PUROS)
+backend/api/services/analysis_service.py
+backend/api/services/base.py
+backend/api/services/email/email_service.py
+backend/api/services/auth/login_service.py
+backend/api/services/auth/password_service.py
+backend/api/services/auth/profile_service.py
+backend/api/services/auth/registration_service.py
+backend/api/services/auth/stats_service.py
+backend/api/services/stats/stats_service.py
+backend/api/services/auth/registration_service.py
+backend/api/services/auth/login_service.py
+backend/api/services/auth/password_service.py
+backend/api/services/auth/profile_service.py
+backend/api/services/auth/registration_service.py
+backend/api/services/base.py
+backend/api/services/email/email_service.py
+
+🟩 BLOQUE 3 — BACKEND: API VIEWS (DJANGO REST FRAMEWORK)
+backend/api/views/admin/audit_views.py
+backend/api/views/admin/config_views.py
+backend/api/views/admin/email_views.py
+backend/api/views/admin/task_status_views.py
+backend/api/views/notifications/notification_views.py
+backend/api/views/ml/calibration_views.py
+backend/api/views/ml/incremental_views.py
+backend/api/views/ml/metrics_analysis_views.py
+backend/api/views/ml/metrics_comparison_views.py
+backend/api/views/ml/metrics_crud_views.py
+backend/api/views/ml/model_views.py
+
+🟧 BLOQUE 4 — BACKEND: SERIALIZERS
+backend/api/serializers/auth_serializers.py
+backend/api/serializers/common_serializers.py
+backend/api/serializers/finca_serializers.py
+backend/api/serializers/image_serializers.py
+backend/api/serializers/ml_serializers.py
+backend/api/serializers/serializers.py
+backend/personas/serializers.py
+
+🟨 BLOQUE 5 — BACKEND: COMMANDS
+backend/api/management/commands/cancel_training.py
+backend/api/management/commands/check_fk_lotes.py
+backend/api/management/commands/check_training.py
+backend/api/management/commands/clean_dataset.py
+backend/api/management/commands/convert_cacao_images.py
+backend/api/management/commands/create_admin_user.py
+backend/api/management/commands/make_cacao_crops.py
+backend/api/management/commands/test_model.py
+backend/fincas_app/management/commands/clean_orphaned_lotes.py
+backend/fincas_app/management/commands/fix_lote_foreign_key.py
+backend/catalogos/management/commands/seed_colombia.py
+backend/training/management/commands/calibrate_dataset_pixels.py
+backend/training/management/commands/convert_cacao_images.py
+backend/training/management/commands/init_api.py
+
+🟫 BLOQUE 6 — BACKEND: MODELS (DJANGO)
+backend/fincas_app/models.py
+backend/ml/regression/models.py
+backend/core/models.py
+backend/auth_app/models.py
+backend/reports/models.py
+backend/training/models.py
+backend/audit/models.py
+backend/images_app/models.py
+backend/personas/models.py
+backend/api/models.py
+backend/catalogos/models.py
+
+🟪 BLOQUE 7 — BACKEND: ML PIPELINE (MODEL, REGRESSION, PREDICTION, SEGMENTATION)
+backend/ml/regression/augmentation.py
+backend/ml/regression/evaluate.py
+backend/ml/regression/hybrid_trainer.py
+backend/ml/regression/incremental_train.py
+backend/ml/regression/models.py
+backend/ml/regression/optimized_models.py
+backend/ml/regression/predict.py
+backend/ml/regression/scalers.py
+
+backend/ml/prediction/calibrated_predict.py
+backend/ml/prediction/predict.py
+
+backend/ml/segmentation/cropper.py
+backend/ml/segmentation/infer_yolo_seg.py
+backend/ml/segmentation/processor.py
+
+backend/ml/data/cacao_dataset.py
+backend/ml/data/dataset_loader.py
+backend/ml/data/improved_dataloader.py
+backend/ml/data/pixel_feature_extractor.py
+backend/ml/data/pixel_features_loader.py
+backend/ml/data/measurement/calibration.py
+
+backend/ml/pipeline/hybrid_training.py
+
+backend/ml/utils/early_stopping.py
+backend/ml/utils/io.py
+backend/ml/utils/logs.py
+backend/ml/utils/losses.py
+backend/ml/utils/ml_validators.py
+backend/ml/utils/model_imports.py
+
+🟫 BLOQUE 8 — BACKEND: UTILS + MIDDLEWARE + HELPERS
+backend/core/utils/cache_helpers.py
+backend/core/utils/response_helpers.py
+backend/core/utils/security.py
+
+backend/api/utils/decorators.py
+backend/api/utils/error_messages.py
+backend/api/utils/ml_helpers.py
+backend/api/utils/pagination.py
+backend/api/utils/model_imports.py
+
+backend/api/middleware.py
+backend/api/realtime_middleware.py
+backend/api/realtime_service.py
+backend/api/cache_config.py
+
+🟧 BLOQUE 9 — BACKEND: TASKS (CELERY)
+backend/api/tasks/image_tasks.py
+backend/api/tasks/ml_tasks.py
+backend/api/tasks/stats_tasks.py
+
+🟥 BLOQUE 10 — BACKEND: VIEWS IMÁGENES
+backend/images_app/views/image/batch/batch_process_views.py
+backend/images_app/views/image/batch/batch_upload_views.py
+backend/images_app/views/image/admin/bulk_views.py
+backend/images_app/views/image/admin/crud_views.py
+backend/images_app/views/image/admin/list_views.py
+backend/images_app/views/image/user/crud_views.py
+backend/images_app/views/image/user/list_views.py
+backend/images_app/views/image/user/scan_views.py
+backend/images_app/views/image/export/export_views.py
+backend/images_app/views/image/user/stats_views.py
+backend/images_app/views/image/admin/stats_views.py
+backend/images_app/views/image/mixins.py
+
+🟦 BLOQUE 11 — CYPRESS (FRONTEND E2E)
+frontend/cypress/e2e/accessibility/basic_checks.cy.js
+frontend/cypress/e2e/auth/login.cy.js
+frontend/cypress/e2e/auth/logout.cy.js
+frontend/cypress/e2e/auth/password-recovery.cy.js
+frontend/cypress/e2e/auth/register.cy.js
+frontend/cypress/e2e/auth/detailed_flows.cy.js
+
+frontend/cypress/e2e/navigation/complete-flows.cy.js
+frontend/cypress/e2e/navigation/ui-ux.cy.js
+frontend/cypress/e2e/ui/advanced_forms.cy.js
+frontend/cypress/e2e/ui/notifications.cy.js
+frontend/cypress/e2e/ui/mobile_responsiveness.cy.js
+frontend/cypress/e2e/ui/map_interactions.cy.js
+
+frontend/cypress/e2e/performance/load_times.cy.js
+
+frontend/cypress/e2e/public/general_access.cy.js
+
+frontend/cypress/e2e/fincas/fincas-crud.cy.js
+frontend/cypress/e2e/fincas/fincas-lotes-relations.cy.js
+frontend/cypress/e2e/fincas/advanced_management.cy.js
+frontend/cypress/e2e/fincas/lotes-view.cy.js
+
+frontend/cypress/e2e/reports/generation.cy.js
+frontend/cypress/e2e/reports/filtering.cy.js
+frontend/cypress/e2e/reports/export-sharing.cy.js
+frontend/cypress/e2e/reports/reportes-view.cy.js
+frontend/cypress/e2e/reports/reports-management.cy.js
+
+frontend/cypress/e2e/errors/edge-cases.cy.js
+frontend/cypress/e2e/errors/validation-forms.cy.js
+frontend/cypress/e2e/errors/network-errors.cy.js
+frontend/cypress/e2e/errors/global_handling.cy.js
+
+frontend/cypress/e2e/admin/admin-agricultores.cy.js
+frontend/cypress/e2e/admin/admin-dashboard.cy.js
+frontend/cypress/e2e/admin/admin-training.cy.js
+frontend/cypress/e2e/admin/admin-usuarios.cy.js
+frontend/cypress/e2e/admin/analytics_dashboard.cy.js
+frontend/cypress/e2e/admin/farmer_management.cy.js
+frontend/cypress/e2e/admin/system_config.cy.js
+
+frontend/cypress/e2e/audit/audit-view.cy.js
+frontend/cypress/e2e/audit/auditoria-view.cy.js
+
+frontend/cypress/e2e/analysis/details_interaction.cy.js
+frontend/cypress/e2e/analysis/prediction_flow.cy.js
+
+frontend/cypress/e2e/agricultor/configuracion.cy.js
+frontend/cypress/e2e/agricultor/incremental_training.cy.js
+frontend/cypress/e2e/agricultor/dashboard.cy.js
+
+frontend/cypress/e2e/images/analysis.cy.js
+frontend/cypress/e2e/images/history.cy.js
+
+frontend/cypress/e2e/integration/full_user_journey.cy.js
+
+frontend/cypress/e2e/security/input_sanitization.cy.js
+
+🟩 BLOQUE 12 — FRONTEND: VUE COMPONENTS
+
+⚠ Muy grande. Dividido en 5 subbloques:
+
+12A — Componentes base comunes
+frontend/src/components/common/BaseAlert.vue
+frontend/src/components/common/BaseAnalysisActions.vue
+frontend/src/components/common/BaseAnalysisHeader.vue
+frontend/src/components/common/BaseAnalysisSummaryCard.vue
+frontend/src/components/common/BaseAppLayout.vue
+frontend/src/components/common/BaseAuthForm.vue
+frontend/src/components/common/BaseBatchInfoCard.vue
+frontend/src/components/common/BaseCard.vue
+frontend/src/components/common/BaseChart.vue
+frontend/src/components/charts/BaseChart.vue
+frontend/src/components/common/BaseConfirmModal.vue
+frontend/src/components/common/BaseDashboardHeader.vue
+frontend/src/components/common/BaseDashboardWidget.vue
+frontend/src/components/common/BaseDataTable.vue
+frontend/src/components/common/BaseDetailView.vue
+frontend/src/components/common/BaseFincaCard.vue
+frontend/src/components/common/BaseFincaFilters.vue
+frontend/src/components/common/BaseFincaList.vue
+frontend/src/components/common/BaseFincasHeader.vue
+frontend/src/components/common/BaseFincasSection.vue
+frontend/src/components/common/BaseForm.vue
+frontend/src/components/common/BaseFormField.vue
+frontend/src/components/common/BaseHeader.vue
+frontend/src/components/common/BaseHero.vue
+frontend/src/components/common/BaseHistoryCard.vue
+frontend/src/components/common/BaseHomeLayout.vue
+frontend/src/components/common/BaseImageModal.vue
+frontend/src/components/common/BaseInputField.vue
+frontend/src/components/common/BaseLandingSection.vue
+frontend/src/components/common/BaseLoadingSkeleton.vue
+frontend/src/components/common/BaseLocationMap.vue
+frontend/src/components/common/BaseModal.vue
+frontend/src/components/common/BasePreferences.vue
+frontend/src/components/common/BasePreferencesWrapper.vue
+frontend/src/components/common/BaseProgressIndicator.vue
+frontend/src/components/common/BaseQuickActions.vue
+frontend/src/components/common/BaseScanPreferences.vue
+frontend/src/components/common/BaseSearchBar.vue
+frontend/src/components/common/BaseSearchInput.vue
+frontend/src/components/common/BaseSection.vue
+frontend/src/components/common/BaseSectionCard.vue
+frontend/src/components/common/BaseSelectField.vue
+frontend/src/components/common/BaseSpinner.vue
+frontend/src/components/common/BaseStaticPage.vue
+frontend/src/components/common/BaseStatsCard.vue
+frontend/src/components/common/BaseTable.vue
+frontend/src/components/common/BaseTimeline.vue
+frontend/src/components/common/BaseToggleSwitch.vue
+frontend/src/components/common/BaseUploadSection.vue
+frontend/src/components/common/BaseVisualSettings.vue
+
+12B — Components Admin + Agricultor
+frontend/src/components/admin/AdminAgricultorComponents/CreateFarmerModal.vue
+frontend/src/components/admin/AdminAgricultorComponents/EditFarmerModal.vue
+frontend/src/components/admin/AdminAgricultorComponents/FarmersSearchBar.vue
+frontend/src/components/admin/AdminAgricultorComponents/FarmersStatsCards.vue
+frontend/src/components/admin/AdminUserComponents/UserFormModal.vue
+frontend/src/components/admin/AdminAnalisisComponents/ImageUploader.vue
+frontend/src/components/admin/AdminAnalisisComponents/CameraCapture.vue
+frontend/src/components/admin/AdminAnalisisComponents/ProgressIndicator.vue
+frontend/src/components/admin/AdminDashboardComponents/KPICards.vue
+frontend/src/components/admin/AdminDashboardComponents/DashboardCharts.vue
+frontend/src/components/admin/AdminGeneralComponents/LoadingSpinner.vue
+
+12C — Analysis + Reports
+frontend/src/components/analysis/AnalysisActions.vue
+frontend/src/components/analysis/AnalysisHeader.vue
+frontend/src/components/user/PredictionResults.vue
+
+frontend/src/components/reportes/ReportCard.vue
+frontend/src/components/reportes/ReportDownloadButton.vue
+frontend/src/components/reportes/ReportGenerator.vue
+frontend/src/components/reports/ReportGeneratorModal.vue
+frontend/src/components/reports/ReportPreviewModal.vue
+frontend/src/components/reportes/ReportsTable.vue
+frontend/src/components/reportes/PeriodSelector.vue
+frontend/src/components/reportes/StatsCard.vue
+
+12D — Dashboard Components
+frontend/src/components/dashboard/DashboardHeader.vue
+frontend/src/components/dashboard/ImageHistoryCard.vue
+frontend/src/components/dashboard/StatsOverview.vue
+frontend/src/components/dashboard/SummaryCard.vue
+
+12E — Other components
+frontend/src/components/user/ImageUpload.vue
+frontend/src/components/training/ImageUploadCard.vue
+frontend/src/components/charts/AdvancedChart.vue
+frontend/src/components/charts/BarChart.vue
+frontend/src/components/charts/LineChart.vue
+frontend/src/components/charts/PieChart.vue
+frontend/src/components/notifications/NotificationBell.vue
+frontend/src/components/notifications/NotificationCenter.vue
+frontend/src/components/fincas/FincaLocationMap.vue
+frontend/src/components/LoteForm.vue
+frontend/src/components/common/FincasViewComponents/FincaForm.vue
+frontend/src/components/common/FincasViewComponents/FincaDetailModal.vue
+frontend/src/components/common/FincasViewComponents/FincaCardActions.vue
+
+🟧 BLOQUE 13 — FRONTEND STORES
+frontend/src/stores/admin.js
+frontend/src/stores/auth.js
+frontend/src/stores/analysis.js
+frontend/src/stores/audit.js
+frontend/src/stores/notifications.js
+frontend/src/stores/prediction.js
+frontend/src/stores/reports.js
+frontend/src/stores/config.js
+frontend/src/stores/fincas.js
+
+🟫 BLOQUE 14 — FRONTEND SERVICES
+frontend/src/services/api.js
+frontend/src/services/apiClient.js
+frontend/src/services/apiErrorHandler.js
+frontend/src/services/auditApi.js
+frontend/src/services/authApi.js
+frontend/src/services/catalogosApi.js
+frontend/src/services/datasetApi.js
+frontend/src/services/dashboardStatsService.js
+frontend/src/services/fincasApi.js
+frontend/src/services/lotesApi.js
+frontend/src/services/personasApi.js
+frontend/src/services/predictionApi.js
+frontend/src/services/reportsApi.js
+frontend/src/services/reportsService.js
+frontend/src/services/reports/reportDTOs.js
+frontend/src/services/security.js
+
+🟦 BLOQUE 15 — FRONTEND UTILS + HELPERS
+frontend/src/utils/apiConfig.js
+frontend/src/utils/apiErrorHandler.js
+frontend/src/utils/apiResponseFormatter.js
+frontend/src/utils/errorMessages.js
+frontend/src/utils/fileExportUtils.js
+frontend/src/utils/formatters.js
+frontend/src/utils/formDataUtils.js
+frontend/src/utils/formFieldConfigs.js
+frontend/src/utils/formHelpers.js
+frontend/src/utils/idGenerator.js
+frontend/src/utils/imageValidationUtils.js
+frontend/src/utils/logger.js
+frontend/src/utils/personaDataMapper.js
+frontend/src/utils/roleUtils.js
+frontend/src/utils/routeHelpers.js
+frontend/src/utils/security.js
+
+🟫 BLOQUE 16 — FRONTEND ROUTER
+frontend/src/router/index.js
+frontend/src/router/guards.js
+frontend/src/router/guardFactories.js
+
+🟧 BLOQUE 17 — FRONTEND COPYRIGHT MISC
+frontend/src/main.js
+frontend/src/test/setup.js
+frontend/src/test/helpers/serviceTestHelpers.js
+frontend/src/test/mocks/components.js
+frontend/src/test/mocks/composables.js
+frontend/src/test/mocks/services.js
+frontend/src/test/mocks/stores.js
+
+🟥 BLOQUE 18 — TEMPLATES EMAIL (BACKEND)
+backend/api/templates/emails/training_complete.html
+backend/api/templates/emails/welcome.html
+backend/api/templates/emails/analysis_complete.html
+backend/api/templates/emails/reset_request.html
+backend/api/templates/emails/report_ready.html
+
+🟦 BLOQUE 19 — DJANGO ADMIN FILES
+backend/reports/admin.py
+backend/training/admin.py
+backend/audit/admin.py
+backend/api/admin.py
+
+🟩 BLOQUE 20 — BACKEND TEST FILES A MEJORAR
+backend/api/tests/test_constants.py
+backend/api/tests/test_corrected.py
+backend/api/tests/test_fincas.py
+backend/api/tests/test_images_endpoints.py
+backend/api/tests/test_integration.py
+backend/api/tests/test_sonarqube/test_model_metrics_error_response.py
+backend/api/tests/test_sonarqube/test_error_response_details.py
+backend/scripts/test_model.py
+backend/api/management/commands/test_model.py
+
+🟪 BLOQUE 21 — FRONTEND TEST FILES (VITEST)
+frontend/src/views/__tests__/AccessDenied.test.js
+frontend/src/views/__tests__/Admin/AdminAgricultores.test.js
+frontend/src/views/__tests__/Admin/AdminConfiguracion.test.js
+frontend/src/views/__tests__/Admin/AdminDashboard.test.js
+frontend/src/views/__tests__/Admin/AdminTraining.test.js
+frontend/src/views/__tests__/Admin/AdminUsuarios.test.js
+frontend/src/views/__tests__/Agricultor/AgricultorConfiguracion.test.js
+frontend/src/views/__tests__/Agricultor/AgricultorHistorial.test.js
+frontend/src/views/__tests__/Agricultor/AgricultorReportes.test.js
+
+frontend/src/views/__tests__/common/Analisis.test.js
+frontend/src/views/__tests__/common/FincaDetailView.test.js
+
+frontend/src/views/__tests__/Pages/NotFound.test.js
+frontend/src/views/__tests__/PredictionView.test.js
+frontend/src/views/__tests__/Reportes.test.js
+frontend/src/views/__tests__/Auth/PasswordResetConfirm.test.js
+
+✅ SESIÓN 1 — Tests del Backend (API + Services + Commands + Views + Models)
+
+Todo lo relacionado con lógica backend, API, comandos, ML pipeline, tasks, serializers, utils, models y vistas del backend.
+
+SESSION_BACKEND_TESTS = [
+  "backend/api/tests/test_models.py",
+  "backend/api/tests/test_services.py",
+  "backend/api/tests/test_views.py",
+  "backend/api/tests/test_fincas.py",
+  "backend/api/tests/test_images_endpoints.py",
+  "backend/api/tests/test_integration.py",
+  "backend/api/tests/test_constants.py",
+  "backend/api/tests/test_sonarqube/test_error_response_details.py",
+  "backend/api/tests/test_sonarqube/test_redundant_elif.py",
+  "backend/api/tests/test_sonarqube/test_simple_verification.py",
+  "backend/api/management/commands/test_model.py",
+  "backend/scripts/test_model.py",
+  "backend/api/management/commands/test_predictions.py",
+  "backend/scripts/test_predictions.py"
+]
+
+✅ SESIÓN 2 — Tests Cypress (E2E) Agrupados por Dominios
+
+Te los separo por área funcional para que Cursor pueda manejar cada batch.
+
+🟦 2A — Cypress: Administración
+frontend/cypress/e2e/admin/admin-agricultores.cy.js
+frontend/cypress/e2e/admin/admin-dashboard.cy.js
+frontend/cypress/e2e/admin/admin-training.cy.js
+frontend/cypress/e2e/admin/admin-usuarios.cy.js
+frontend/cypress/e2e/admin/training.cy.js
+frontend/cypress/e2e/admin/users_management.cy.js
+frontend/cypress/e2e/admin/audit_logs.cy.js
+frontend/cypress/e2e/admin/farmer_management.cy.js
+frontend/cypress/e2e/admin/system_config.cy.js
+
+🟩 2B — Cypress: Agricultor
+frontend/cypress/e2e/agricultor/dashboard.cy.js
+frontend/cypress/e2e/agricultor/configuracion.cy.js
+frontend/cypress/e2e/agricultor/incremental_training.cy.js
+frontend/cypress/e2e/fincas/fincas-crud.cy.js
+frontend/cypress/e2e/fincas/fincas-lotes-relations.cy.js
+frontend/cypress/e2e/fincas/lotes-crud.cy.js
+frontend/cypress/e2e/lotes/lotes-view.cy.js
+
+🟧 2C — Cypress: Reports
+frontend/cypress/e2e/reports/reports-management.cy.js
+frontend/cypress/e2e/reports/generation.cy.js
+frontend/cypress/e2e/reports/export-sharing.cy.js
+frontend/cypress/e2e/reports/reportes-view.cy.js
+frontend/cypress/e2e/reports/filtering.cy.js
+frontend/cypress/e2e/reports/visualization.cy.js
+
+🟥 2D — Cypress: Errors, Stress & Edge cases
+frontend/cypress/e2e/errors/validation-forms.cy.js
+frontend/cypress/e2e/errors/network-errors.cy.js
+frontend/cypress/e2e/errors/global_handling.cy.js
+frontend/cypress/e2e/errors/edge-cases.cy.js
+frontend/cypress/e2e/errors/example.cy.js
+
+🟪 2E — Cypress: Images
+frontend/cypress/e2e/images/upload.cy.js
+frontend/cypress/e2e/images/history.cy.js
+frontend/cypress/e2e/images/analysis.cy.js
+
+🟫 2F — Cypress: Navigation & UI
+frontend/cypress/e2e/navigation/ui-ux.cy.js
+frontend/cypress/e2e/navigation/complete-flows.cy.js
+frontend/cypress/e2e/ui/advanced_forms.cy.js
+frontend/cypress/e2e/ui/map_interactions.cy.js
+frontend/cypress/e2e/ui/mobile_responsiveness.cy.js
+frontend/cypress/e2e/ui/notifications.cy.js
+
+🟨 2G — Cypress: Auth
+frontend/cypress/e2e/auth/login.cy.js
+frontend/cypress/e2e/auth/logout.cy.js
+frontend/cypress/e2e/auth/register.cy.js
+frontend/cypress/e2e/auth/password-recovery.cy.js
+frontend/cypress/e2e/auth/detailed_flows.cy.js
+
+🟩 2H — Cypress: Audit
+frontend/cypress/e2e/audit/audit-view.cy.js
+frontend/cypress/e2e/audit/auditoria-view.cy.js
+
+🟦 2I — Cypress: Performance
+frontend/cypress/e2e/performance/load_times.cy.js
+
+✅ SESIÓN 3 — Tests del Frontend (Unit + Component Tests)
+🟢 3A — Tests de Vistas
+frontend/src/views/__tests__/AccessDenied.test.js
+frontend/src/views/__tests__/Admin/AdminAgricultores.test.js
+frontend/src/views/__tests__/Admin/AdminConfiguracion.test.js
+frontend/src/views/__tests__/Admin/AdminDashboard.test.js
+frontend/src/views/__tests__/Admin/AdminTraining.test.js
+frontend/src/views/__tests__/Admin/AdminUsuarios.test.js
+frontend/src/views/__tests__/Agricultor/AgricultorHistorial.test.js
+frontend/src/views/__tests__/Agricultor/AgricultorReportes.test.js
+frontend/src/views/__tests__/common/Analisis.test.js
+frontend/src/views/__tests__/FincaDetailView.test.js
+frontend/src/views/__tests__/LoteAnalisisView.test.js
+frontend/src/views/__tests__/Pages/NotFound.test.js
+frontend/src/views/__tests__/PredictionView.test.js
+frontend/src/views/__tests__/Reportes.test.js
+frontend/src/views/__tests__/UploadImagesView.test.js
+frontend/src/views/__tests__/UserPrediction.test.js
+frontend/src/views/__tests__/VerifyPrompt.test.js
+frontend/src/views/__tests__/SubirDatosEntrenamiento.test.js
+
+🟣 3B — Tests de Componentes Comunes
+frontend/src/components/common/__tests__/GlobalLoader.test.js
+frontend/src/components/common/__tests__/ConfirmModal.test.js
+frontend/src/components/common/__tests__/Pagination.test.js
+frontend/src/components/common/__tests__/SessionExpiredModal.test.js
+frontend/src/components/common/FincasViewComponents/FincaCard.test.js
+frontend/src/components/common/FincasViewComponents/FincaDetailModal.test.js
+frontend/src/components/common/FincasViewComponents/FincaList.test.js
+frontend/src/components/common/FincasViewComponents/FincasFilters.test.js
+frontend/src/components/common/FincasViewComponents/FincasHeader.test.js
+
+🟠 3C — Tests de Componentes Admin
+frontend/src/components/admin/AdminAgricultorComponents/CreateFarmerModal.test.js
+frontend/src/components/admin/AdminAgricultorComponents/EditFarmerModal.test.js
+frontend/src/components/admin/AdminUserComponents/UserFormModal.test.js
+frontend/src/components/admin/AdminAnalisisComponents/BatchInfoForm.test.js
+frontend/src/components/admin/AdminAnalisisComponents/CameraCapture.test.js
+frontend/src/components/admin/AdminAnalisisComponents/ImageUploader.test.js
+frontend/src/components/admin/AdminUserComponents/UserFormModal.test.js
+
+🔵 3D — Tests de análisis
+frontend/src/components/analysis/YoloResultsCard.vue
+frontend/src/components/analysis/DetalleAnalisis.vue
+frontend/src/components/analysis/AnalysisActions.vue
+frontend/src/components/analysis/AnalysisHeader.vue
+
+🔶 3E — Tests de Gráficas
+frontend/src/components/charts/__tests__/AdvancedChart.test.js
+frontend/src/components/charts/AdvancedChart.vue
+frontend/src/components/charts/BarChart.vue
+frontend/src/components/charts/LineChart.vue
+frontend/src/components/charts/PieChart.vue
+frontend/src/components/charts/TrendChart.vue
+frontend/src/components/charts/StatsGrid.vue
+
+✅ SESIÓN 4 — Tests de Stores
+frontend/src/stores/__tests__/admin.test.js
+frontend/src/stores/__tests__/analysis.test.js
+frontend/src/stores/__tests__/audit.test.js
+frontend/src/stores/__tests__/config.test.js
+frontend/src/stores/__tests__/fincas.test.js
+frontend/src/stores/__tests__/notifications.test.js
+frontend/src/stores/__tests__/prediction.test.js
+frontend/src/stores/__tests__/reports.test.js
+
+✅ SESIÓN 5 — Tests de Servicios (frontend + backend)
+frontend/src/services/__tests__/api.test.js
+frontend/src/services/__tests__/auditApi.test.js
+frontend/src/services/__tests__/authApi.test.js
+frontend/src/services/__tests__/catalogosApi.test.js
+frontend/src/services/__tests__/configApi.test.js
+frontend/src/services/__tests__/datasetApi.test.js
+frontend/src/services/__tests__/fincasApi.test.js
+frontend/src/services/__tests__/lotesApi.test.js
+frontend/src/services/__tests__/personasApi.test.js
+frontend/src/services/__tests__/predictionApi.test.js
+frontend/src/services/__tests__/reportsApi.test.js
+frontend/src/services/__tests__/services.test.js
+frontend/src/services/__tests__/servicioAnalisis.test.js
+frontend/src/services/__tests__/reportsService.test.js
+
+✅ SESIÓN 6 — Tests de Utils & Helpers
+frontend/src/utils/__tests__/apiConfig.test.js
+frontend/src/utils/__tests__/apiResponse.test.js
+frontend/src/utils/__tests__/utils.test.js
+frontend/src/test/helpers/serviceTestHelpers.js
+frontend/cypress/support/validation-helpers.js
+frontend/cypress/support/test-data.js
+frontend/cypress/support/test-helpers.js

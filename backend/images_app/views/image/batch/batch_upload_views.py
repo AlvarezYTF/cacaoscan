@@ -20,7 +20,7 @@ from drf_yasg import openapi
 from api.utils.model_imports import get_models_safely
 from api.tasks.image_tasks import process_batch_analysis_task
 from api.serializers import ErrorResponseSerializer
-from api.views.mixins import AdminPermissionMixin
+from api.views.mixins.admin_mixin import AdminPermissionMixin
 
 # Import models safely
 models = get_models_safely({

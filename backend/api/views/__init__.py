@@ -27,24 +27,9 @@ from auth_app.views import (
     UserDetailView,
 )
 
-from images_app.views import (
-    ScanMeasureView,
-    ImagesListView,
-    ImageDetailView,
-    ImagesStatsView,
-    ImageUpdateView,
-    ImageDeleteView,
-    ImageDownloadView,
-    ImagesExportView,
-    AdminImagesListView,
-    AdminImageDetailView,
-    AdminImageUpdateView,
-    AdminImageDeleteView,
-    AdminBulkUpdateView,
-    AdminDatasetStatsView,
-    ImagePermissionMixin,
-    BatchAnalysisView,
-)
+# Images app views imported lazily to avoid circular dependency
+# They are available in __all__ but imported on demand via __getattr__
+_images_views = None
 
 from fincas_app.views import (
     FincaListCreateView,
@@ -221,4 +206,55 @@ __all__ = [
     # Image batch views
     'BatchAnalysisView',
 ]
+
+
+def _lazy_import_images_views():
+    """Lazy import of images app views to avoid circular dependency."""
+    global _images_views
+    if _images_views is None:
+        from images_app.views import (
+            ScanMeasureView,
+            ImagesListView,
+            ImageDetailView,
+            ImagesStatsView,
+            ImageUpdateView,
+            ImageDeleteView,
+            ImageDownloadView,
+            ImagesExportView,
+            AdminImagesListView,
+            AdminImageDetailView,
+            AdminImageUpdateView,
+            AdminImageDeleteView,
+            AdminBulkUpdateView,
+            AdminDatasetStatsView,
+            ImagePermissionMixin,
+            BatchAnalysisView,
+        )
+        _images_views = {
+            'ScanMeasureView': ScanMeasureView,
+            'ImagesListView': ImagesListView,
+            'ImageDetailView': ImageDetailView,
+            'ImagesStatsView': ImagesStatsView,
+            'ImageUpdateView': ImageUpdateView,
+            'ImageDeleteView': ImageDeleteView,
+            'ImageDownloadView': ImageDownloadView,
+            'ImagesExportView': ImagesExportView,
+            'AdminImagesListView': AdminImagesListView,
+            'AdminImageDetailView': AdminImageDetailView,
+            'AdminImageUpdateView': AdminImageUpdateView,
+            'AdminImageDeleteView': AdminImageDeleteView,
+            'AdminBulkUpdateView': AdminBulkUpdateView,
+            'AdminDatasetStatsView': AdminDatasetStatsView,
+            'ImagePermissionMixin': ImagePermissionMixin,
+            'BatchAnalysisView': BatchAnalysisView,
+        }
+    return _images_views
+
+
+def __getattr__(name: str):
+    """Lazy import for images app views to avoid circular dependency."""
+    images_views = _lazy_import_images_views()
+    if name in images_views:
+        return images_views[name]
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
