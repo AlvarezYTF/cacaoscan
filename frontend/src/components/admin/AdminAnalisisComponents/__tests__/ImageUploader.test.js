@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import ImageUploader from '../ImageUploader.vue'
 
 // Mock URL.createObjectURL
-global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+globalThis.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
 
 describe('ImageUploader', () => {
   beforeEach(() => {

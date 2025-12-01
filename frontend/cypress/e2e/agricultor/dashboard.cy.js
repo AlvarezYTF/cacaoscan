@@ -118,34 +118,38 @@ describe('Farmer Profile Settings', () => {
   })
 
   it('should validate password change mismatch', () => {
-    cy.clickIfExists('[data-cy="tab-security"], [role="tab"]').then(() => {
-      const changePasswordWithMismatch = ($security) => {
-        if ($security.find('[data-cy="input-new-pass"], input[type="password"]').length > 0) {
-          cy.typeIfExists('[data-cy="input-new-pass"], input[type="password"]', 'NewPass123!')
-          cy.typeIfExists('[data-cy="input-confirm-pass"], input[type="password"]', 'DifferentPass!')
-          cy.clickIfExists('[data-cy="btn-change-pass"], button[type="submit"]')
-          cy.get('.error-message, [data-cy="error"]', { timeout: 5000 }).should('exist')
-        }
+    const changePasswordWithMismatch = ($security) => {
+      if ($security.find('[data-cy="input-new-pass"], input[type="password"]').length > 0) {
+        cy.typeIfExists('[data-cy="input-new-pass"], input[type="password"]', 'NewPass123!')
+        cy.typeIfExists('[data-cy="input-confirm-pass"], input[type="password"]', 'DifferentPass!')
+        cy.clickIfExists('[data-cy="btn-change-pass"], button[type="submit"]')
+        cy.get('.error-message, [data-cy="error"]', { timeout: 5000 }).should('exist')
       }
+    }
 
+    const afterSecurityTab = () => {
       cy.get('body', { timeout: 5000 }).then(changePasswordWithMismatch)
-    })
+    }
+
+    cy.clickIfExists('[data-cy="tab-security"], [role="tab"]').then(afterSecurityTab)
   })
 
   it('should change password successfully', () => {
-    cy.clickIfExists('[data-cy="tab-security"], [role="tab"]').then(() => {
-      const changePasswordSuccessfully = ($security) => {
-        if ($security.find('[data-cy="input-current-pass"], input[type="password"]').length >= 3) {
-          cy.typeIfExists('[data-cy="input-current-pass"], input[type="password"]', 'OldPass123!')
-          cy.get('[data-cy="input-new-pass"], input[type="password"]').eq(1).type('NewPass123!')
-          cy.typeIfExists('[data-cy="input-confirm-pass"], input[type="password"]', 'NewPass123!')
-          cy.clickIfExists('[data-cy="btn-change-pass"], button[type="submit"]')
-          cy.get('body', { timeout: 5000 }).should('be.visible')
-        }
+    const changePasswordSuccessfully = ($security) => {
+      if ($security.find('[data-cy="input-current-pass"], input[type="password"]').length >= 3) {
+        cy.typeIfExists('[data-cy="input-current-pass"], input[type="password"]', 'OldPass123!')
+        cy.get('[data-cy="input-new-pass"], input[type="password"]').eq(1).type('NewPass123!')
+        cy.typeIfExists('[data-cy="input-confirm-pass"], input[type="password"]', 'NewPass123!')
+        cy.clickIfExists('[data-cy="btn-change-pass"], button[type="submit"]')
+        cy.get('body', { timeout: 5000 }).should('be.visible')
       }
+    }
 
+    const afterSecurityTabForSuccess = () => {
       cy.get('body', { timeout: 5000 }).then(changePasswordSuccessfully)
-    })
+    }
+
+    cy.clickIfExists('[data-cy="tab-security"], [role="tab"]').then(afterSecurityTabForSuccess)
   })
 })
 

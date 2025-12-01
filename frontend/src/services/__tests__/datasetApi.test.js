@@ -106,7 +106,7 @@ describe('Dataset API Service', () => {
     it('should update image successfully', async () => {
       const imageId = 1
       const updateData = {
-        quality_score: 90.0,
+        quality_score: 90,
         notes: 'Updated notes'
       }
 
@@ -177,7 +177,7 @@ describe('Dataset API Service', () => {
     it('should bulk update images successfully', async () => {
       const imageIds = [1, 2, 3]
       const updateData = {
-        quality_score: 90.0
+        quality_score: 90
       }
 
       const mockResponse = {

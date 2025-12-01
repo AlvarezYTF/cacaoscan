@@ -13,7 +13,7 @@ describe('Autenticación - Login', () => {
   }
 
   const performLoginAction = (email, password, expectedRoutes) => {
-    cy.get('body').then(($body) => {
+    const submitLogin = ($body) => {
       if ($body.find('[data-cy="email-input"], input[type="text"], input[type="email"]').length > 0) {
         cy.get('[data-cy="email-input"], input[type="text"], input[type="email"]').first().type(email)
         cy.get('[data-cy="password-input"], input[type="password"]').first().type(password)
@@ -25,7 +25,9 @@ describe('Autenticación - Login', () => {
         })
         cy.get('body', { timeout: 10000 }).should('be.visible')
       }
-    })
+    }
+
+    cy.get('body', { timeout: 10000 }).then(submitLogin)
   }
 
   const verifyErrorExists = () => {
@@ -100,7 +102,7 @@ describe('Autenticación - Login', () => {
       const invalidUser = users.invalidUser
       const emailSelector = '[data-cy="email-input"], input[type="text"], input[type="email"]'
       
-      cy.get('body').then(($body) => {
+      const submitInvalidLogin = ($body) => {
         if ($body.find(emailSelector).length > 0) {
           cy.get(emailSelector).first().type(invalidUser.email)
           cy.get('[data-cy="password-input"], input[type="password"]').first().type(invalidUser.password)
@@ -111,24 +113,34 @@ describe('Autenticación - Login', () => {
             return url.includes('/login') || url.length > 0
           })
         }
-      })
+      }
+
+      cy.get('body', { timeout: 10000 }).then(submitInvalidLogin)
     })
   })
 
   it('debe validar campos requeridos', () => {
     const buttonSelector = '[data-cy="login-button"], button[type="submit"]'
-    cy.get('body').then(($body) => {
+    
+    const verifyErrorsExist = ($errors) => {
+      if ($errors.find('[data-cy="email-error"], [data-cy="password-error"]').length > 0) {
+        cy.get('[data-cy="email-error"], [data-cy="password-error"]').first().should('exist')
+      }
+    }
+
+    const handleLoginButton = ($body) => {
       if ($body.find(buttonSelector).length > 0) {
         cy.get(buttonSelector).first().click()
         
         verifyRequiredField('[data-cy="email-input"], input[type="text"], input[type="email"]')
         verifyRequiredField('[data-cy="password-input"], input[type="password"]')
         
-        const verifyErrorsExist = ($errors) => {
-          if ($errors.find('[data-cy="email-error"], [data-cy="password-error"]').length > 0) {
-            cy.get('[data-cy="email-error"], [data-cy="password-error"]').first().should('exist')
-          }
-        }
+        cy.get('body', { timeout: 3000 }).then(verifyErrorsExist)
+      }
+    }
+
+    cy.get('body', { timeout: 10000 }).then(handleLoginButton)
+  })
 
         cy.get('body', { timeout: 3000 }).then(verifyErrorsExist)
       }
@@ -152,12 +164,14 @@ describe('Autenticación - Login', () => {
     cy.fixture('users').then((users) => {
       const admin = users.admin
       
-      cy.get('body').then(($body) => {
+      const checkRememberMe = ($body) => {
         if ($body.find('[data-cy="remember-me"], input[type="checkbox"]').length > 0) {
           cy.get('[data-cy="remember-me"], input[type="checkbox"]').first().check({ force: true })
         }
         performLoginAction(admin.email, admin.password, ['/admin', '/dashboard'])
-      }).then(() => {
+      }
+
+      cy.get('body', { timeout: 10000 }).then(checkRememberMe).then(() => {
         cy.url({ timeout: 10000 }).should('satisfy', (url) => {
           return !url.includes('/login') || url.length > 0
         })
@@ -174,7 +188,13 @@ describe('Autenticación - Login', () => {
           }
         }
 
-        cy.get('body', { timeout: 5000 }).then(verifyLoginForm)
+        const afterLogout = () => {
+          cy.get('body', { timeout: 5000 }).then(verifyLoginForm)
+        }
+
+        cy.logout()
+        cy.visit('/login')
+        afterLogout()
       })
     })
   })

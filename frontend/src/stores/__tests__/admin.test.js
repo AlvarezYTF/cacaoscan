@@ -67,7 +67,7 @@ describe('Admin Store', () => {
 
       vi.mocked(api.get).mockResolvedValue(mockResponse)
 
-      const result = await store.getGeneralStats()
+      await store.getGeneralStats()
 
       expect(api.get).toHaveBeenCalledWith('/auth/admin/stats/')
       expect(store.stats).toEqual(mockResponse.data)
@@ -151,7 +151,7 @@ describe('Admin Store', () => {
 
       vi.mocked(api.get).mockRejectedValue(mockError)
 
-      const result = await store.getRecentActivities()
+      await store.getRecentActivities()
 
       expect(store.activities).toEqual([])
       expect(result.data.results).toEqual([])
@@ -198,7 +198,7 @@ describe('Admin Store', () => {
 
       vi.mocked(api.get).mockRejectedValue(mockError)
 
-      const result = await store.getSystemAlerts()
+      await store.getSystemAlerts()
 
       expect(store.alerts).toEqual([])
       expect(result.data.results).toEqual([])
@@ -260,7 +260,7 @@ describe('Admin Store', () => {
 
       vi.mocked(api.get).mockResolvedValue(mockResponse)
 
-      const result = await store.getUserById(userId)
+      await store.getUserById(userId)
 
       expect(api.get).toHaveBeenCalledWith(`/auth/users/${userId}/`)
       expect(result).toEqual(mockResponse)
@@ -285,7 +285,7 @@ describe('Admin Store', () => {
       store.users = [{ id: 1, email: 'user@example.com' }]
       vi.mocked(api.patch).mockResolvedValue(mockResponse)
 
-      const result = await store.updateUser(userId, userData)
+      await store.updateUser(userId, userData)
 
       expect(api.patch).toHaveBeenCalledWith(`/auth/users/${userId}/update/`, userData)
       expect(store.users[0]).toEqual(mockResponse.data)
@@ -303,7 +303,7 @@ describe('Admin Store', () => {
 
       vi.mocked(api.delete).mockResolvedValue({})
 
-      const result = await store.deleteUser(userId)
+      await store.deleteUser(userId)
 
       expect(api.delete).toHaveBeenCalledWith(`/auth/users/${userId}/delete/`)
       expect(store.users).toHaveLength(1)
@@ -324,7 +324,7 @@ describe('Admin Store', () => {
 
       vi.mocked(api.get).mockResolvedValue(mockResponse)
 
-      const result = await store.getAllReports({ page: 1 })
+      await store.getAllReports({ page: 1 })
 
       expect(api.get).toHaveBeenCalledWith('/reportes/', {
         params: { page: 1 }
@@ -351,7 +351,7 @@ describe('Admin Store', () => {
 
       vi.mocked(api.post).mockResolvedValue(mockResponse)
 
-      const result = await store.createReport(reportData)
+      await store.createReport(reportData)
 
       expect(api.post).toHaveBeenCalledWith('/reportes/', reportData)
       expect(store.reports).toContainEqual(mockResponse.data)
@@ -369,7 +369,7 @@ describe('Admin Store', () => {
 
       vi.mocked(api.delete).mockResolvedValue({})
 
-      const result = await store.deleteReport(reportId)
+      await store.deleteReport(reportId)
 
       expect(api.delete).toHaveBeenCalledWith(`/reportes/${reportId}/delete/`)
       expect(store.reports).toHaveLength(1)
@@ -387,7 +387,7 @@ describe('Admin Store', () => {
 
       vi.mocked(api.post).mockResolvedValue({})
 
-      const result = await store.dismissAlert(alertId)
+      await store.dismissAlert(alertId)
 
       expect(api.post).toHaveBeenCalledWith(`/notifications/${alertId}/read/`)
       expect(store.alerts).toHaveLength(1)
@@ -438,7 +438,7 @@ describe('Admin Store', () => {
 
       vi.mocked(api.get).mockResolvedValue(mockResponse)
 
-      const result = await store.getActivityData('7')
+      await store.getActivityData('7')
 
       expect(api.get).toHaveBeenCalledWith('/audit/activity-logs/')
       expect(result).toEqual(mockResponse)
@@ -458,7 +458,7 @@ describe('Admin Store', () => {
 
       vi.mocked(api.get).mockResolvedValue(mockResponse)
 
-      const result = await store.getQualityDistribution()
+      await store.getQualityDistribution()
 
       expect(api.get).toHaveBeenCalledWith('/images/stats/')
       expect(result).toEqual(mockResponse)

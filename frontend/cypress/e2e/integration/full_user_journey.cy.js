@@ -1,9 +1,13 @@
+import { generatePassword } from '../../support/helpers'
+
 describe('E2E: Complete Farmer Journey', () => {
   const timestamp = Date.now()
   const userEmail = `farmer_journey_${timestamp}@example.com`
   const fincaName = `Finca Journey ${timestamp}`
 
   it('should complete the full cycle from registration to analysis', () => {
+    const password = generatePassword()
+    
     // 1. Registration
     cy.visit('/registro')
     cy.get('body', { timeout: 10000 }).should('be.visible')
@@ -11,8 +15,8 @@ describe('E2E: Complete Farmer Journey', () => {
       firstName: 'Journey',
       lastName: 'Farmer',
       email: userEmail,
-      password: 'SecurePass123!',
-      confirmPassword: 'SecurePass123!'
+      password: password,
+      confirmPassword: password
     })
     cy.submitRegisterForm()
     cy.get('body', { timeout: 5000 }).should('be.visible')
@@ -23,7 +27,7 @@ describe('E2E: Complete Farmer Journey', () => {
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="input-email"], input[type="email"], input[type="text"]').length > 0) {
         cy.get('[data-cy="input-email"], input[type="email"], input[type="text"]').first().type(userEmail)
-        cy.get('[data-cy="input-password"], input[type="password"]').first().type('SecurePass123!')
+        cy.get('[data-cy="input-password"], input[type="password"]').first().type(password)
         cy.get('[data-cy="btn-submit-login"], [data-cy="login-button"], button[type="submit"]').first().click()
         cy.url({ timeout: 10000 }).should('satisfy', (url) => {
           return url.includes('/agricultor-dashboard') || url.includes('/dashboard') || url.includes('/login')

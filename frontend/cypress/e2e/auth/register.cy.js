@@ -156,38 +156,40 @@ describe('Autenticación - Registro', () => {
     const credentials = this.credentials
     const weakPasswords = credentials.weakPasswords
 
-    cy.get('body').then(($body) => {
+    const verifyWeakPassword = ($strength) => {
+      if ($strength.find('[data-cy="password-strength"], .password-strength-meter').length > 0) {
+        cy.get('[data-cy="password-strength"], .password-strength-meter').should('satisfy', ($el) => {
+          const text = $el.text().toLowerCase()
+          return text.includes('débil') || text.includes('weak') || text.length > 0
+        })
+      }
+    }
+
+    const verifyStrongPassword = ($strong) => {
+      if ($strong.find('[data-cy="password-strength"], .password-strength-meter').length > 0) {
+        cy.get('[data-cy="password-strength"], .password-strength-meter').should('satisfy', ($el) => {
+          const text = $el.text().toLowerCase()
+          return text.includes('fuerte') || text.includes('strong') || text.length > 0
+        })
+      }
+    }
+
+    const handlePasswordInput = ($body) => {
       if ($body.find('[data-cy="password-input"], [data-cy="input-password"], input[type="password"]').length > 0) {
         for (const password of weakPasswords) {
           cy.get('[data-cy="password-input"], [data-cy="input-password"], input[type="password"]').first().clear().type(password)
-          const verifyWeakPassword = ($strength) => {
-            if ($strength.find('[data-cy="password-strength"], .password-strength-meter').length > 0) {
-              cy.get('[data-cy="password-strength"], .password-strength-meter').should('satisfy', ($el) => {
-                const text = $el.text().toLowerCase()
-                return text.includes('débil') || text.includes('weak') || text.length > 0
-              })
-            }
-          }
-
           cy.get('body', { timeout: 3000 }).then(verifyWeakPassword)
         }
 
         const strongPassword = generatePassword()
         cy.get('[data-cy="password-input"], [data-cy="input-password"], input[type="password"]').first().clear().type(strongPassword)
-        const verifyStrongPassword = ($strong) => {
-          if ($strong.find('[data-cy="password-strength"], .password-strength-meter').length > 0) {
-            cy.get('[data-cy="password-strength"], .password-strength-meter').should('satisfy', ($el) => {
-              const text = $el.text().toLowerCase()
-              return text.includes('fuerte') || text.includes('strong') || text.length > 0
-            })
-          }
-        }
-
         cy.get('body', { timeout: 3000 }).then(verifyStrongPassword)
       } else {
         cy.get('body').should('be.visible')
       }
-    })
+    }
+
+    cy.get('body', { timeout: 10000 }).then(handlePasswordInput)
   })
 
   it('debe requerir aceptar términos y condiciones', () => {
@@ -197,26 +199,23 @@ describe('Autenticación - Registro', () => {
       const passwordInput = $body.find('[data-cy="password-input"], [data-cy="input-password"], input[type="password"]')
       
       if (nameInput.length > 0 && emailInput.length > 0 && passwordInput.length > 0) {
-        cy.get('[data-cy="first-name-input"], [data-cy="input-name"], input[name*="name"]').first().type('Juan')
-        cy.get('body').then(($last) => {
+        const fillLastName = ($last) => {
           if ($last.find('[data-cy="last-name-input"], input[name*="last"]').length > 0) {
             cy.get('[data-cy="last-name-input"], input[name*="last"]').first().type('Pérez')
           }
-        })
-        cy.get('[data-cy="email-input"], [data-cy="input-email"], input[type="email"]').first().type('juan@test.com')
-        const password = generatePassword()
-        cy.get('[data-cy="password-input"], [data-cy="input-password"], input[type="password"]').first().type(password)
-        cy.get('body').then(($confirm) => {
+        }
+
+        const fillConfirmPassword = ($confirm) => {
           if ($confirm.find('[data-cy="confirm-password-input"], input[type="password"]').length > 1) {
             cy.get('[data-cy="confirm-password-input"], input[type="password"]').last().type(password)
           }
-        })
-        cy.get('body').then(($role) => {
+        }
+
+        const selectRole = ($role) => {
           if ($role.find('[data-cy="role-select"], select').length > 0) {
             cy.get('[data-cy="role-select"], select').first().select('farmer', { force: true })
           }
-        })
-        cy.get('[data-cy="register-button"], [data-cy="btn-submit-register"], button[type="submit"]').first().click()
+        }
 
         const verifyTermsError = ($error) => {
           if ($error.find('[data-cy="terms-error"], .error-message').length > 0) {
@@ -227,6 +226,14 @@ describe('Autenticación - Registro', () => {
           }
         }
 
+        cy.get('[data-cy="first-name-input"], [data-cy="input-name"], input[name*="name"]').first().type('Juan')
+        cy.get('body', { timeout: 3000 }).then(fillLastName)
+        cy.get('[data-cy="email-input"], [data-cy="input-email"], input[type="email"]').first().type('juan@test.com')
+        const password = generatePassword()
+        cy.get('[data-cy="password-input"], [data-cy="input-password"], input[type="password"]').first().type(password)
+        cy.get('body', { timeout: 3000 }).then(fillConfirmPassword)
+        cy.get('body', { timeout: 3000 }).then(selectRole)
+        cy.get('[data-cy="register-button"], [data-cy="btn-submit-register"], button[type="submit"]').first().click()
         cy.get('body', { timeout: 5000 }).then(verifyTermsError)
       } else {
         cy.get('body').should('be.visible')

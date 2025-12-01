@@ -98,10 +98,10 @@ describe('Notifications Store', () => {
       // The getter compares dates using toDateString(), so all notifications from 2024-01-15 should match
       expect(byDate.length).toBe(2)
       // Verify that the returned notifications are from the correct date
-      byDate.forEach(notification => {
+      for (const notification of byDate) {
         const notificationDate = new Date(notification.fecha_creacion).toDateString()
         expect(notificationDate).toBe(targetDate.toDateString())
-      })
+      }
     })
   })
 
@@ -269,7 +269,9 @@ describe('Notifications Store', () => {
         leida: false
       }))
 
-      notifications.forEach(n => store.addRealtimeNotification(n))
+      for (const n of notifications) {
+        store.addRealtimeNotification(n)
+      }
 
       expect(store.notifications).toHaveLength(100)
     })

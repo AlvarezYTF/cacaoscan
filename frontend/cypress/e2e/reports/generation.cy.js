@@ -1,3 +1,11 @@
+import { 
+  ifFoundInBody,
+  clickIfExistsAndContinue,
+  selectIfExistsAndContinue,
+  checkCheckboxIfExists,
+  typeIfExistsAndContinue
+} from '../../support/helpers'
+
 describe('Generación de Reportes - Creación', () => {
   beforeEach(() => {
     cy.navigateToReports('analyst')
@@ -21,54 +29,42 @@ describe('Generación de Reportes - Creación', () => {
   })
 
   it('debe crear reporte de análisis por período', () => {
-    cy.clickIfExists('[data-cy="create-report-button"], button').then((clicked) => {
-      if (clicked) {
-        cy.wait(500)
-        cy.selectOptionIfExists('[data-cy="report-type"], select', 'analisis-periodo').then((selected) => {
-          if (selected) {
-            cy.fillFieldIfExists('[data-cy="start-date"], input[type="date"]', '2024-01-01')
-            cy.fillFieldIfExists('[data-cy="end-date"], input[type="date"]', '2024-01-31')
-            cy.checkCheckboxIfExists('[data-cy="fincas-select"], input[type="checkbox"]')
-            cy.checkCheckboxIfExists('[data-cy="include-charts"], input[type="checkbox"]')
-            cy.checkCheckboxIfExists('[data-cy="include-recommendations"], input[type="checkbox"]')
-            cy.clickIfExists('[data-cy="generate-report"], button[type="submit"]')
-            cy.get('body', { timeout: 5000 }).should('be.visible')
-          }
-        })
-      }
+    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
+      cy.wait(500)
+      return selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', () => {
+        cy.fillFieldIfExists('[data-cy="start-date"], input[type="date"]', '2024-01-01')
+        cy.fillFieldIfExists('[data-cy="end-date"], input[type="date"]', '2024-01-31')
+        cy.checkCheckboxIfExists('[data-cy="fincas-select"], input[type="checkbox"]')
+        cy.checkCheckboxIfExists('[data-cy="include-charts"], input[type="checkbox"]')
+        cy.checkCheckboxIfExists('[data-cy="include-recommendations"], input[type="checkbox"]')
+        cy.clickIfExists('[data-cy="generate-report"], button[type="submit"]')
+        cy.get('body', { timeout: 5000 }).should('be.visible')
+      })
     })
   })
 
   it('debe crear reporte de calidad por finca', () => {
-    cy.clickIfExists('[data-cy="create-report-button"], button').then((clicked) => {
-      if (clicked) {
+    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
+      cy.wait(500)
+      return selectIfExistsAndContinue('[data-cy="report-type"], select', 'calidad-finca', () => {
         cy.wait(500)
-        cy.selectOptionIfExists('[data-cy="report-type"], select', 'calidad-finca').then((selected) => {
-          if (selected) {
-            cy.wait(500)
-            cy.selectOptionIfExists('[data-cy="finca-select"], select', 'Finca El Paraíso').then((fincaSelected) => {
-              if (fincaSelected) {
-                cy.checkCheckboxIfExists('[data-cy="include-trends"], input[type="checkbox"]')
-                cy.checkCheckboxIfExists('[data-cy="include-comparisons"], input[type="checkbox"]')
-                cy.clickIfExists('[data-cy="generate-report"], button[type="submit"]').then((submitted) => {
-                  if (submitted) {
-                    cy.get('body', { timeout: 30000 }).then(($completed) => {
-                      if ($completed.find('[data-cy="report-completed"], .completed').length > 0) {
-                        cy.get('[data-cy="report-completed"], .completed').should('be.visible')
-                      }
-                      if ($completed.find('[data-cy="notification-success"], .swal2-success').length > 0) {
-                        cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-                      }
-                    })
-                  }
-                })
-              }
+        return selectIfExistsAndContinue('[data-cy="finca-select"], select', 'Finca El Paraíso', () => {
+          checkCheckboxIfExists('[data-cy="include-trends"], input[type="checkbox"]')
+          checkCheckboxIfExists('[data-cy="include-comparisons"], input[type="checkbox"]')
+          return clickIfExistsAndContinue('[data-cy="generate-report"], button[type="submit"]', () => {
+            return cy.get('body', { timeout: 30000 }).then(($completed) => {
+              ifFoundInBody('[data-cy="report-completed"], .completed', () => {
+                cy.get('[data-cy="report-completed"], .completed').should('be.visible')
+              })
+              ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
+                cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
+              })
             })
-          }
+          })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
@@ -76,26 +72,21 @@ describe('Generación de Reportes - Creación', () => {
     cy.clickIfExists('[data-cy="create-report-button"], button').then((clicked) => {
       if (clicked) {
         cy.wait(500)
-        cy.selectOptionIfExists('[data-cy="report-type"], select', 'comparativo-lotes').then((selected) => {
-          if (selected) {
-            cy.wait(500)
-            cy.checkCheckboxIfExists('[data-cy="lotes-select"], input[type="checkbox"]').then(() => {
-              cy.checkCheckboxIfExists('[data-cy="compare-quality"], input[type="checkbox"]')
-              cy.checkCheckboxIfExists('[data-cy="compare-production"], input[type="checkbox"]')
-              cy.clickIfExists('[data-cy="generate-report"], button[type="submit"]').then((submitted) => {
-                if (submitted) {
-                  cy.get('body', { timeout: 30000 }).then(($completed) => {
-                    if ($completed.find('[data-cy="report-completed"], .completed').length > 0) {
-                      cy.get('[data-cy="report-completed"], .completed').should('be.visible')
-                    }
-                    if ($completed.find('[data-cy="notification-success"], .swal2-success').length > 0) {
-                      cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-                    }
-                  })
-                }
+        return selectIfExistsAndContinue('[data-cy="report-type"], select', 'comparativo-lotes', () => {
+          cy.wait(500)
+          checkCheckboxIfExists('[data-cy="lotes-select"], input[type="checkbox"]')
+          checkCheckboxIfExists('[data-cy="compare-quality"], input[type="checkbox"]')
+          checkCheckboxIfExists('[data-cy="compare-production"], input[type="checkbox"]')
+          return clickIfExistsAndContinue('[data-cy="generate-report"], button[type="submit"]', () => {
+            return cy.get('body', { timeout: 30000 }).then(($completed) => {
+              ifFoundInBody('[data-cy="report-completed"], .completed', () => {
+                cy.get('[data-cy="report-completed"], .completed').should('be.visible')
+              })
+              ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
+                cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
               })
             })
-          }
+          })
         })
       } else {
         cy.get('body').should('be.visible')
@@ -106,41 +97,23 @@ describe('Generación de Reportes - Creación', () => {
   it('debe crear reporte de recomendaciones', () => {
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="create-report-button"], button').length > 0) {
-        cy.get('[data-cy="create-report-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="report-type"], select').length > 0) {
-            cy.get('[data-cy="report-type"], select').first().select('recomendaciones', { force: true })
-            cy.get('body', { timeout: 5000 }).then(($afterSelect) => {
-              if ($afterSelect.find('[data-cy="scope-all-fincas"], input[type="checkbox"]').length > 0) {
-                cy.get('[data-cy="scope-all-fincas"], input[type="checkbox"]').first().check({ force: true })
-                cy.get('body').then(($recs) => {
-                  if ($recs.find('[data-cy="fertilization-rec"], input[type="checkbox"]').length > 0) {
-                    cy.get('[data-cy="fertilization-rec"], input[type="checkbox"]').first().check({ force: true })
-                  }
-                  if ($recs.find('[data-cy="irrigation-rec"], input[type="checkbox"]').length > 0) {
-                    cy.get('[data-cy="irrigation-rec"], input[type="checkbox"]').first().check({ force: true })
-                  }
+        return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
+          return selectIfExistsAndContinue('[data-cy="report-type"], select', 'recomendaciones', () => {
+            checkCheckboxIfExists('[data-cy="scope-all-fincas"], input[type="checkbox"]')
+            checkCheckboxIfExists('[data-cy="fertilization-rec"], input[type="checkbox"]')
+            checkCheckboxIfExists('[data-cy="irrigation-rec"], input[type="checkbox"]')
+            
+            return clickIfExistsAndContinue('[data-cy="generate-report"], button[type="submit"]', () => {
+              return cy.get('body', { timeout: 30000 }).then(($completed) => {
+                ifFoundInBody('[data-cy="report-completed"], .completed', () => {
+                  cy.get('[data-cy="report-completed"], .completed').should('be.visible')
                 })
-                
-                // Generar reporte
-                cy.get('body').then(($generate) => {
-                  if ($generate.find('[data-cy="generate-report"], button[type="submit"]').length > 0) {
-                    cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
-                    
-                    // Esperar completación si existe
-                    cy.get('body', { timeout: 30000 }).then(($completed) => {
-                      if ($completed.find('[data-cy="report-completed"], .completed').length > 0) {
-                        cy.get('[data-cy="report-completed"], .completed').should('be.visible')
-                      }
-                      if ($completed.find('[data-cy="notification-success"], .swal2-success').length > 0) {
-                        cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-                      }
-                    })
-                  }
+                ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
+                  cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
                 })
-              }
+              })
             })
-          }
+          })
         })
       } else {
         cy.get('body').should('be.visible')
@@ -157,17 +130,15 @@ describe('Generación de Reportes - Creación', () => {
             cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
             
             // Verificar errores de validación si existen
-            cy.get('body', { timeout: 3000 }).then(($errors) => {
-              const errorSelectors = [
-                '[data-cy="report-type-error"]',
-                '[data-cy="date-range-error"]'
-              ]
-              for (const selector of errorSelectors) {
-                if ($errors.find(selector).length > 0) {
-                  cy.get(selector, { timeout: 3000 }).should('exist')
-                }
-              }
-            })
+            const errorSelectors = [
+              '[data-cy="report-type-error"]',
+              '[data-cy="date-range-error"]'
+            ]
+            for (const selector of errorSelectors) {
+              ifFoundInBody(selector, () => {
+                cy.get(selector, { timeout: 3000 }).should('exist')
+              })
+            }
           }
         })
       } else {
@@ -177,148 +148,96 @@ describe('Generación de Reportes - Creación', () => {
   })
 
   it('debe validar rango de fechas', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="create-report-button"], button').length > 0) {
-        cy.get('[data-cy="create-report-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          // Fecha de inicio mayor que fecha de fin
-          if ($modal.find('[data-cy="start-date"], input[type="date"]').length > 0) {
-            cy.get('[data-cy="start-date"], input[type="date"]').first().type('2024-01-31', { force: true })
-            cy.get('[data-cy="end-date"], input[type="date"]').first().type('2024-01-01', { force: true })
-            cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
-            
-            cy.get('body', { timeout: 3000 }).then(($error) => {
-              if ($error.find('[data-cy="date-range-error"], .error-message').length > 0) {
-                cy.get('[data-cy="date-range-error"], .error-message').first().should('satisfy', ($el) => {
-                  const text = $el.text().toLowerCase()
-                  return text.includes('fecha') || text.includes('inicio') || text.includes('anterior') || text.length > 0
-                })
-              }
+    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
+      return typeIfExistsAndContinue('[data-cy="start-date"], input[type="date"]', '2024-01-31', () => {
+        return typeIfExistsAndContinue('[data-cy="end-date"], input[type="date"]', '2024-01-01', () => {
+          cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
+          
+          return ifFoundInBody('[data-cy="date-range-error"], .error-message', () => {
+            cy.get('[data-cy="date-range-error"], .error-message').first().should('satisfy', ($el) => {
+              const text = $el.text().toLowerCase()
+              return text.includes('fecha') || text.includes('inicio') || text.includes('anterior') || text.length > 0
             })
-          }
+          })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
   it('debe permitir cancelar generación de reporte', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="create-report-button"], button').length > 0) {
-        cy.get('[data-cy="create-report-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="report-type"], select').length > 0) {
-            cy.get('[data-cy="report-type"], select').first().select('analisis-periodo', { force: true })
-            cy.get('body').then(($afterSelect) => {
-              if ($afterSelect.find('[data-cy="start-date"], input[type="date"]').length > 0) {
-                cy.get('[data-cy="start-date"], input[type="date"]').first().type('2024-01-01', { force: true })
-                cy.get('[data-cy="end-date"], input[type="date"]').first().type('2024-01-31', { force: true })
-                cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
-                
-                // Cancelar generación si existe el botón
-                cy.get('body', { timeout: 5000 }).then(($cancel) => {
-                  if ($cancel.find('[data-cy="cancel-generation"], button').length > 0) {
-                    cy.get('[data-cy="cancel-generation"], button').first().click({ force: true })
-                    
-                    // Confirmar cancelación si existe
-                    cy.get('body', { timeout: 5000 }).then(($confirm) => {
-                      if ($confirm.find('[data-cy="confirm-cancel"], .swal2-confirm, button').length > 0) {
-                        cy.get('[data-cy="confirm-cancel"], .swal2-confirm, button').first().click()
-                        
-                        // Verificar que se canceló si existe el mensaje
-                        cy.get('body', { timeout: 5000 }).then(($cancelled) => {
-                          if ($cancelled.find('[data-cy="generation-cancelled"], .cancelled-message').length > 0) {
-                            cy.get('[data-cy="generation-cancelled"], .cancelled-message').should('satisfy', ($el) => {
-                              const text = $el.text().toLowerCase()
-                              return text.includes('cancelada') || text.includes('cancel') || text.length > 0
-                            })
-                          }
-                        })
-                      }
-                    })
-                  }
+    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
+      return selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', () => {
+        return typeIfExistsAndContinue('[data-cy="start-date"], input[type="date"]', '2024-01-01', () => {
+          return typeIfExistsAndContinue('[data-cy="end-date"], input[type="date"]', '2024-01-31', () => {
+            cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
+            
+            return clickIfExistsAndContinue('[data-cy="cancel-generation"], button', () => {
+              return clickIfExistsAndContinue('[data-cy="confirm-cancel"], .swal2-confirm, button', () => {
+                return ifFoundInBody('[data-cy="generation-cancelled"], .cancelled-message', () => {
+                  cy.get('[data-cy="generation-cancelled"], .cancelled-message').should('satisfy', ($el) => {
+                    const text = $el.text().toLowerCase()
+                    return text.includes('cancelada') || text.includes('cancel') || text.length > 0
+                  })
                 })
-              }
+              })
             })
-          }
+          })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
   it('debe mostrar progreso detallado de generación', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="create-report-button"], button').length > 0) {
-        cy.get('[data-cy="create-report-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="report-type"], select').length > 0) {
-            cy.get('[data-cy="report-type"], select').first().select('analisis-periodo', { force: true })
-            cy.get('body').then(($afterSelect) => {
-              if ($afterSelect.find('[data-cy="start-date"], input[type="date"]').length > 0) {
-                cy.get('[data-cy="start-date"], input[type="date"]').first().type('2024-01-01', { force: true })
-                cy.get('[data-cy="end-date"], input[type="date"]').first().type('2024-01-31', { force: true })
-                cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
-                
-                // Verificar etapas del progreso si existen
-                cy.get('body', { timeout: 10000 }).then(($progress) => {
-                  if ($progress.find('[data-cy="progress-stage"], .progress-stage').length > 0) {
-                    cy.get('[data-cy="progress-stage"], .progress-stage').should('satisfy', ($el) => {
-                      const text = $el.text().toLowerCase()
-                      return text.includes('recopilando') || text.includes('procesando') || text.includes('generando') || text.includes('finalizando') || text.length > 0
-                    })
-                  }
-                })
-              }
+    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
+      return selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', () => {
+        return typeIfExistsAndContinue('[data-cy="start-date"], input[type="date"]', '2024-01-01', () => {
+          return typeIfExistsAndContinue('[data-cy="end-date"], input[type="date"]', '2024-01-31', () => {
+            cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
+            
+            return ifFoundInBody('[data-cy="progress-stage"], .progress-stage', () => {
+              cy.get('[data-cy="progress-stage"], .progress-stage').should('satisfy', ($el) => {
+                const text = $el.text().toLowerCase()
+                return text.includes('recopilando') || text.includes('procesando') || text.includes('generando') || text.includes('finalizando') || text.length > 0
+              })
             })
-          }
+          })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
   it('debe manejar errores durante la generación', () => {
     const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
-    // Simular error del servidor
     cy.intercept('POST', `${apiBaseUrl}/reportes/`, {
       statusCode: 500,
       body: { error: 'Error del servidor' }
     }).as('reportError')
     
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="create-report-button"], button').length > 0) {
-        cy.get('[data-cy="create-report-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="report-type"], select').length > 0) {
-            cy.get('[data-cy="report-type"], select').first().select('analisis-periodo', { force: true })
-            cy.get('body').then(($afterSelect) => {
-              if ($afterSelect.find('[data-cy="start-date"], input[type="date"]').length > 0) {
-                cy.get('[data-cy="start-date"], input[type="date"]').first().type('2024-01-01', { force: true })
-                cy.get('[data-cy="end-date"], input[type="date"]').first().type('2024-01-31', { force: true })
-                cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
-                
-                cy.wait('@reportError', { timeout: 10000 })
-                
-                // Verificar mensaje de error si existe
-                cy.get('body', { timeout: 5000 }).then(($error) => {
-                  if ($error.find('[data-cy="generation-error"], .error-message, .swal2-error').length > 0) {
-                    cy.get('[data-cy="generation-error"], .error-message, .swal2-error').first().should('satisfy', ($el) => {
-                      const text = $el.text().toLowerCase()
-                      return text.includes('error') || text.includes('generar') || text.includes('reporte') || text.length > 0
-                    })
-                  }
-                })
-              }
+    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
+      return selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', () => {
+        return typeIfExistsAndContinue('[data-cy="start-date"], input[type="date"]', '2024-01-01', () => {
+          return typeIfExistsAndContinue('[data-cy="end-date"], input[type="date"]', '2024-01-31', () => {
+            cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
+            
+            cy.wait('@reportError', { timeout: 10000 })
+            
+            return ifFoundInBody('[data-cy="generation-error"], .error-message, .swal2-error', () => {
+              cy.get('[data-cy="generation-error"], .error-message, .swal2-error').first().should('satisfy', ($el) => {
+                const text = $el.text().toLowerCase()
+                return text.includes('error') || text.includes('generar') || text.includes('reporte') || text.length > 0
+              })
             })
-          }
+          })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
@@ -326,42 +245,20 @@ describe('Generación de Reportes - Creación', () => {
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="create-report-button"], button').length > 0) {
         cy.get('[data-cy="create-report-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="report-type"], select').length > 0) {
-            cy.get('[data-cy="report-type"], select').first().select('analisis-periodo', { force: true })
-            cy.get('body').then(($afterSelect) => {
-              if ($afterSelect.find('[data-cy="schedule-report"], input[type="checkbox"]').length > 0) {
-                cy.get('[data-cy="schedule-report"], input[type="checkbox"]').first().check({ force: true })
-                cy.get('body', { timeout: 5000 }).then(($schedule) => {
-                  if ($schedule.find('[data-cy="schedule-frequency"], select').length > 0) {
-                    cy.get('[data-cy="schedule-frequency"], select').first().select('mensual', { force: true })
-                    cy.get('body').then(($fields) => {
-                      if ($fields.find('[data-cy="schedule-day"], input[type="number"]').length > 0) {
-                        cy.get('[data-cy="schedule-day"], input[type="number"]').first().type('1')
-                      }
-                      if ($fields.find('[data-cy="schedule-time"], input[type="time"]').length > 0) {
-                        cy.get('[data-cy="schedule-time"], input[type="time"]').first().type('09:00')
-                      }
+        return selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', () => {
+          return clickIfExistsAndContinue('[data-cy="schedule-report"], input[type="checkbox"]', () => {
+            return selectIfExistsAndContinue('[data-cy="schedule-frequency"], select', 'mensual', () => {
+              typeIfExistsAndContinue('[data-cy="schedule-day"], input[type="number"]', '1', () => {
+                typeIfExistsAndContinue('[data-cy="schedule-time"], input[type="time"]', '09:00', () => {
+                  return clickIfExistsAndContinue('[data-cy="save-schedule"], button[type="submit"]', () => {
+                    return ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
+                      cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
                     })
-                  }
-                  
-                  // Guardar programación si existe el botón
-                  cy.get('body').then(($save) => {
-                    if ($save.find('[data-cy="save-schedule"], button[type="submit"]').length > 0) {
-                      cy.get('[data-cy="save-schedule"], button[type="submit"]').first().click()
-                      
-                      // Verificar éxito si existe la notificación
-                      cy.get('body', { timeout: 5000 }).then(($success) => {
-                        if ($success.find('[data-cy="notification-success"], .swal2-success').length > 0) {
-                          cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-                        }
-                      })
-                    }
                   })
                 })
-              }
+              })
             })
-          }
+          })
         })
       } else {
         cy.get('body').should('be.visible')
@@ -370,38 +267,20 @@ describe('Generación de Reportes - Creación', () => {
   })
 
   it('debe permitir personalizar formato de reporte', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="create-report-button"], button').length > 0) {
-        cy.get('[data-cy="create-report-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          // Configurar formato si existen los campos
-          if ($modal.find('[data-cy="report-format"], select').length > 0) {
-            cy.get('[data-cy="report-format"], select').first().select('pdf', { force: true })
-            cy.get('body').then(($format) => {
-              if ($format.find('[data-cy="include-cover"], input[type="checkbox"]').length > 0) {
-                cy.get('[data-cy="include-cover"], input[type="checkbox"]').first().check({ force: true })
-              }
-              if ($format.find('[data-cy="include-summary"], input[type="checkbox"]').length > 0) {
-                cy.get('[data-cy="include-summary"], input[type="checkbox"]').first().check({ force: true })
-              }
-              if ($format.find('[data-cy="color-scheme"], select').length > 0) {
-                cy.get('[data-cy="color-scheme"], select').first().select('corporate', { force: true })
-              }
-            })
-          }
-          
-          // Verificar preview si existe
-          cy.get('body').then(($preview) => {
-            if ($preview.find('[data-cy="format-preview"], .preview').length > 0) {
-              cy.get('[data-cy="format-preview"], .preview').should('be.visible')
-            } else {
-              cy.get('body').should('be.visible')
-            }
+    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
+      return selectIfExistsAndContinue('[data-cy="report-format"], select', 'pdf', () => {
+        checkCheckboxIfExists('[data-cy="include-cover"], input[type="checkbox"]')
+        checkCheckboxIfExists('[data-cy="include-summary"], input[type="checkbox"]')
+        selectIfExistsAndContinue('[data-cy="color-scheme"], select', 'corporate', () => {
+          return ifFoundInBody('[data-cy="format-preview"], .preview', () => {
+            cy.get('[data-cy="format-preview"], .preview').should('be.visible')
+          }, () => {
+            cy.get('body').should('be.visible')
           })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 

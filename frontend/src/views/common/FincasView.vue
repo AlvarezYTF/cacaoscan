@@ -74,7 +74,7 @@
 
 <script setup>
 // 1. Vue core
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 
 // 2. Vue router
 import { useRoute, useRouter } from 'vue-router'

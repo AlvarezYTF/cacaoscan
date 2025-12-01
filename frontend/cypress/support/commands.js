@@ -4,6 +4,7 @@
 
 import { SELECTORS } from './selectors'
 import * as helpers from './helpers'
+import { ifFoundInBody, clickIfExistsAndContinue, typeIfExistsAndContinue } from './helpers'
 
 // Comando para login con diferentes roles
 Cypress.Commands.add('login', (userType = 'admin') => {
@@ -30,7 +31,7 @@ Cypress.Commands.add('login', (userType = 'admin') => {
           const data = body.data || body
           
           // Guardar tokens en localStorage
-          cy.window().then((win) => {
+          return cy.window().then((win) => {
             const token = data.access || data.token || data.access_token || body.access
             const refresh = data.refresh || data.refresh_token || body.refresh
             const userData = data.user || body.user || data
@@ -48,11 +49,12 @@ Cypress.Commands.add('login', (userType = 'admin') => {
         } else if (response.status === 404) {
           // Si el endpoint no existe, usar mock para permitir que los tests continúen
           cy.log('⚠️ Login endpoint not found (404). Using mock authentication for testing.')
-          cy.window().then((win) => {
+          return cy.window().then((win) => {
             // Crear un token mock para permitir que los tests continúen
-            const mockToken = `mock_token_${userType}_${Date.now()}`
+            const userTypeStr = String(userType)
+            const mockToken = `mock_token_${userTypeStr}_${Date.now()}`
             win.localStorage.setItem('access_token', mockToken)
-            win.localStorage.setItem('refresh_token', `mock_refresh_${userType}`)
+            win.localStorage.setItem('refresh_token', `mock_refresh_${userTypeStr}`)
             win.localStorage.setItem('user_data', JSON.stringify({
               email: user.email,
               first_name: user.firstName,
@@ -423,7 +425,10 @@ Cypress.Commands.add('confirmAction', (confirmSelector = '[data-cy="confirm-butt
 })
 
 // Perform image analysis
-Cypress.Commands.add('performImageAnalysis', (imageName = 'test-cacao.jpg', options = {}) => {
+Cypress.Commands.add('performImageAnalysis', (imageName, options = {}) => {
+  if (!imageName) {
+    imageName = 'test-cacao.jpg'
+  }
   const { waitForResults = true, timeout = 30000 } = options
   
   cy.get('body').then(($body) => {
@@ -513,7 +518,8 @@ Cypress.Commands.add('createLote', (loteData) => {
 
 // Edit lote
 Cypress.Commands.add('editLote', (loteId, updates) => {
-  cy.get(`[data-cy="lote-${loteId}"]`).first().click({ force: true })
+  const loteIdStr = String(loteId)
+  cy.get(`[data-cy="lote-${loteIdStr}"]`).first().click({ force: true })
   cy.get('[data-cy="edit-lote"], button').first().click({ force: true })
   cy.get('body', { timeout: 5000 }).should('be.visible')
   
@@ -528,7 +534,8 @@ Cypress.Commands.add('editLote', (loteId, updates) => {
 
 // Delete lote
 Cypress.Commands.add('deleteLote', (loteId) => {
-  cy.get(`[data-cy="lote-${loteId}"]`).first().click({ force: true })
+  const loteIdStr = String(loteId)
+  cy.get(`[data-cy="lote-${loteIdStr}"]`).first().click({ force: true })
   cy.get('[data-cy="delete-lote"], button').first().click({ force: true })
   cy.get('[data-cy="confirm-delete"], .swal2-confirm, button').first().click({ force: true })
   cy.get('body', { timeout: 5000 }).should('be.visible')
@@ -857,7 +864,8 @@ Cypress.Commands.add('requestPasswordRecovery', (email) => {
  * @returns {Cypress.Chainable}
  */
 Cypress.Commands.add('resetPassword', (token, newPassword, confirmPassword) => {
-  cy.visit(`/reset-password?token=${token}`)
+  const tokenStr = String(token)
+  cy.visit(`/reset-password?token=${tokenStr}`)
   cy.get('body', { timeout: 10000 }).should('be.visible')
   
   cy.get('body').then(($body) => {
@@ -946,53 +954,43 @@ Cypress.Commands.add('exportReport', (format, options = {}) => {
 Cypress.Commands.add('shareReport', (method, options = {}) => {
   const { reportIndex = 0, email, subject, attachmentFormat } = options
   
-  cy.get('body').then(($body) => {
-    if ($body.find('[data-cy="report-item"], .report-item, .item').length > 0) {
-      cy.get('[data-cy="report-item"], .report-item, .item').eq(reportIndex).click({ force: true })
-      cy.get('body', { timeout: 5000 }).then(($details) => {
-        if (method === 'email') {
-          if ($details.find('[data-cy="share-email"], button').length > 0) {
-            cy.get('[data-cy="share-email"], button').first().click({ force: true })
-            
-            cy.get('body', { timeout: 5000 }).then(($email) => {
-              if ($email.find('[data-cy="email-recipients"], input[type="email"], input').length > 0) {
-                cy.get('[data-cy="email-recipients"], input[type="email"], input').first().type(email || 'test@example.com')
-                cy.get('body').then(($subject) => {
-                  if ($subject.find('[data-cy="email-subject"], input').length > 0) {
-                    cy.get('[data-cy="email-subject"], input').first().type(subject || 'Reporte de Análisis de Cacao')
-                  }
-                  if ($subject.find('[data-cy="attachment-format"], select').length > 0) {
-                    cy.get('[data-cy="attachment-format"], select').first().select(attachmentFormat || 'pdf', { force: true })
-                  }
-                })
-                
-                cy.get('body').then(($send) => {
-                  if ($send.find('[data-cy="send-email"], button[type="submit"]').length > 0) {
-                    cy.get('[data-cy="send-email"], button[type="submit"]').first().click()
-                  }
-                })
-              }
-            })
-          }
-        } else if (method === 'link') {
-          if ($details.find('[data-cy="share-link"], button').length > 0) {
-            cy.get('[data-cy="share-link"], button').first().click({ force: true })
-            
-            cy.get('body', { timeout: 5000 }).then(($link) => {
-              if ($link.find('[data-cy="link-expiration"], select').length > 0) {
-                cy.get('[data-cy="link-expiration"], select').first().select('7-days', { force: true })
-              }
-              
-              cy.get('body').then(($generate) => {
-                if ($generate.find('[data-cy="generate-link"], button[type="submit"]').length > 0) {
-                  cy.get('[data-cy="generate-link"], button[type="submit"]').first().click()
-                }
-              })
-            })
-          }
-        }
+  const shareViaEmail = () => {
+    return clickIfExistsAndContinue('[data-cy="share-email"], button', () => {
+      return typeIfExistsAndContinue('[data-cy="email-recipients"], input[type="email"], input', email || 'test@example.com', () => {
+        ifFoundInBody('[data-cy="email-subject"], input', () => {
+          cy.get('[data-cy="email-subject"], input').first().type(subject || 'Reporte de Análisis de Cacao')
+        })
+        ifFoundInBody('[data-cy="attachment-format"], select', () => {
+          cy.get('[data-cy="attachment-format"], select').first().select(attachmentFormat || 'pdf', { force: true })
+        })
+        return clickIfExistsAndContinue('[data-cy="send-email"], button[type="submit"]', () => {
+          cy.wrap(null)
+        })
       })
+    })
+  }
+  
+  const shareViaLink = () => {
+    return clickIfExistsAndContinue('[data-cy="share-link"], button', () => {
+      ifFoundInBody('[data-cy="link-expiration"], select', () => {
+        cy.get('[data-cy="link-expiration"], select').first().select('7-days', { force: true })
+      })
+      return clickIfExistsAndContinue('[data-cy="generate-link"], button[type="submit"]', () => {
+        cy.wrap(null)
+      })
+    })
+  }
+  
+  ifFoundInBody('[data-cy="report-item"], .report-item, .item', () => {
+    cy.get('[data-cy="report-item"], .report-item, .item').eq(reportIndex).click({ force: true })
+    cy.get('body', { timeout: 5000 }).should('be.visible')
+    
+    if (method === 'email') {
+      return shareViaEmail()
+    } else if (method === 'link') {
+      return shareViaLink()
     }
+    return cy.wrap(null)
   })
 })
 
@@ -1112,7 +1110,7 @@ Cypress.Commands.add('navigateToAdminAuditLogs', (userType = 'admin') => {
  * Performs complete image analysis flow
  * @param {string} imageName - Name of the image file to upload
  * @param {Object} options - Options for analysis
- * @param {Function} callback - Optional callback after analysis starts
+ * @param {Function} [callback] - Optional callback after analysis starts
  * @returns {Cypress.Chainable}
  */
 Cypress.Commands.add('performImageAnalysis', (imageName, options = {}, callback) => {

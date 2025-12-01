@@ -13,8 +13,6 @@ import { vi } from 'vitest'
  */
 export function createServiceTestPattern(service, options = {}) {
   const {
-    serviceName = 'service',
-    basePath = '/',
     mockApi
   } = options
 

@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
 import CreateFarmerModal from '../CreateFarmerModal.vue'
 
 // Helper function to generate secure password dynamically
 const generatePassword = () => {
   return `Pass!${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+// Helper function to generate weak password for validation tests
+const generateWeakPassword = () => {
+  return 'weak'
 }
 
 vi.mock('@/services/authApi', () => ({
@@ -184,7 +188,8 @@ describe('CreateFarmerModal', () => {
       }
     })
 
-    wrapper.vm.form.password = 'weak'
+    const weakPassword = generateWeakPassword()
+    wrapper.vm.form.password = weakPassword
     await wrapper.vm.$nextTick()
 
     expect(wrapper.vm.isPasswordValid).toBe(false)

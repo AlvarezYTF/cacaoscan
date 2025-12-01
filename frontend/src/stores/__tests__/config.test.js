@@ -165,7 +165,8 @@ describe('ConfigStore', () => {
 
     it('should set loading state correctly', async () => {
       mockAuthStore.isAdmin = false
-      configApi.getSystemConfig.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
+      const delayedPromise = new Promise((resolve) => setTimeout(resolve, 100))
+      configApi.getSystemConfig.mockImplementation(() => delayedPromise)
 
       const loadPromise = configStore.loadAll()
 
@@ -187,7 +188,7 @@ describe('ConfigStore', () => {
 
       configApi.saveGeneralConfig.mockResolvedValue(data)
 
-      const result = await configStore.saveGeneral(data)
+      await configStore.saveGeneral(data)
 
       expect(configApi.saveGeneralConfig).toHaveBeenCalledWith(data)
       expect(configStore.general.nombre_sistema).toBe('New System')
@@ -215,7 +216,7 @@ describe('ConfigStore', () => {
 
       configApi.saveSecurityConfig.mockResolvedValue(data)
 
-      const result = await configStore.saveSecurity(data)
+      await configStore.saveSecurity(data)
 
       expect(configApi.saveSecurityConfig).toHaveBeenCalledWith(data)
       expect(configStore.security.session_timeout).toBe(120)
@@ -243,7 +244,7 @@ describe('ConfigStore', () => {
 
       configApi.saveMLConfig.mockResolvedValue(data)
 
-      const result = await configStore.saveML(data)
+      await configStore.saveML(data)
 
       expect(configApi.saveMLConfig).toHaveBeenCalledWith(data)
       expect(configStore.ml.active_model).toBe('yolov9')

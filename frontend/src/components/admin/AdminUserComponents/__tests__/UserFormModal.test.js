@@ -29,7 +29,9 @@ const mockSetError = vi.fn((field, message) => {
   mockErrors[field] = message
 })
 const mockClearErrors = vi.fn(() => {
-  Object.keys(mockErrors).forEach(key => delete mockErrors[key])
+  for (const key of Object.keys(mockErrors)) {
+    delete mockErrors[key]
+  }
 })
 
 vi.mock('@/composables/useFormValidation', () => ({
@@ -72,7 +74,9 @@ describe('UserFormModal', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     // Clear errors object
-    Object.keys(mockErrors).forEach(key => delete mockErrors[key])
+    for (const key of Object.keys(mockErrors)) {
+      delete mockErrors[key]
+    }
   })
 
   afterEach(() => {

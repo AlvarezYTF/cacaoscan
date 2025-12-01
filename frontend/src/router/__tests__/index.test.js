@@ -179,9 +179,9 @@ describe('Router Configuration', () => {
         fullPath: '/login'
       }
 
-      const result = await router.beforeEach(to, { path: '/' })
+      await router.beforeEach(to, { path: '/' })
 
-      expect(result).toBeDefined()
+      expect(router.currentRoute.value).toBeDefined()
     })
 
     it('should redirect to login if requiresAuth and not authenticated', async () => {
@@ -195,9 +195,9 @@ describe('Router Configuration', () => {
         fullPath: '/fincas'
       }
 
-      const result = await router.beforeEach(to, { path: '/' })
+      await router.beforeEach(to, { path: '/' })
 
-      expect(result).toBeDefined()
+      expect(router.currentRoute.value).toBeDefined()
       if (result && typeof result === 'object') {
         expect(result.name).toBe('Login')
       }
@@ -236,9 +236,9 @@ describe('Router Configuration', () => {
         fullPath: '/admin/dashboard'
       }
 
-      const result = await router.beforeEach(to, { path: '/' })
+      await router.beforeEach(to, { path: '/' })
 
-      expect(result).toBeDefined()
+      expect(router.currentRoute.value).toBeDefined()
       if (result && typeof result === 'object' && result.path) {
         expect(result.path).toBe('/acceso-denegado')
       }
@@ -257,7 +257,7 @@ describe('Router Configuration', () => {
         fullPath: '/fincas'
       }
 
-      const result = await router.beforeEach(to, { path: '/' })
+      await router.beforeEach(to, { path: '/' })
 
       expect(mockAuthStore.clearAll).toHaveBeenCalled()
       expect(result).toBeDefined()

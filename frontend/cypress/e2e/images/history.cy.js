@@ -1,4 +1,7 @@
-import { verifySelectorsExist } from '../../support/helpers'
+import { 
+  verifySelectorsExist,
+  ifFoundInBody
+} from '../../support/helpers'
 
 describe('Gestión de Imágenes - Historial y Detalles', () => {
   beforeEach(() => {
@@ -268,21 +271,17 @@ describe('Gestión de Imágenes - Historial y Detalles', () => {
     cy.visit('/mis-imagenes')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="image-item"], .image-item, .item').length > 0) {
-        cy.get('[data-cy="image-item"], .image-item, .item', { timeout: 5000 }).then(($items) => {
-          if ($items.length > 0) {
-            cy.wrap($items.first()).within(() => {
-              const infoSelectors = [
-                '[data-cy="analysis-status"]',
-                '[data-cy="quality-badge"]',
-                '[data-cy="analysis-date"]'
-              ]
-              verifySelectorsExist(infoSelectors, $items.first(), 3000)
-            })
-          }
-        })
-      }
+    ifFoundInBody('[data-cy="image-item"], .image-item, .item', () => {
+      return cy.get('[data-cy="image-item"], .image-item, .item', { timeout: 5000 }).then(($items) => {
+        if ($items.length > 0) {
+          const infoSelectors = [
+            '[data-cy="analysis-status"]',
+            '[data-cy="quality-badge"]',
+            '[data-cy="analysis-date"]'
+          ]
+          verifySelectorsExist(infoSelectors, $items.first(), 3000)
+        }
+      })
     })
   })
 

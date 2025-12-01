@@ -26,25 +26,27 @@ describe('Autenticación - Recuperación de Contraseña', () => {
   })
 
   it('debe enviar email de recuperación exitosamente', () => {
-    cy.fixture('users').then((users) => {
-      const user = users.farmer
-      const verifySuccessMessage = ($result) => {
-        if ($result.find('[data-cy="success-message"], .swal2-success').length > 0) {
-          cy.get('[data-cy="success-message"], .swal2-success').should('satisfy', ($el) => {
-            const text = $el.text().toLowerCase()
-            return text.includes('recuperación') || text.includes('enviado') || text.includes('email') || text.length > 0
-          })
-        } else {
-          cy.url().should('satisfy', (url) => {
-            return url.includes('/forgot') || url.includes('/login') || url.length > 0
-          })
-        }
+    const verifySuccessMessage = ($result) => {
+      if ($result.find('[data-cy="success-message"], .swal2-success').length > 0) {
+        cy.get('[data-cy="success-message"], .swal2-success').should('satisfy', ($el) => {
+          const text = $el.text().toLowerCase()
+          return text.includes('recuperación') || text.includes('enviado') || text.includes('email') || text.length > 0
+        })
+      } else {
+        cy.url().should('satisfy', (url) => {
+          return url.includes('/forgot') || url.includes('/login') || url.length > 0
+        })
       }
+    }
 
-      cy.clickForgotPasswordLink(() => {
+    const afterClickForgotLink = () => {
+      cy.fixture('users').then((users) => {
+        const user = users.farmer
         cy.fillEmailAndSubmit(user.email, verifySuccessMessage)
       })
-    })
+    }
+
+    cy.clickForgotPasswordLink(afterClickForgotLink)
   })
 
   it('debe mostrar error si el email no existe', () => {
@@ -78,16 +80,13 @@ describe('Autenticación - Recuperación de Contraseña', () => {
   })
 
   it('debe navegar de vuelta al login', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="forgot-password-link"], a[href*="forgot"], a[href*="reset"]').length > 0) {
-        cy.get('[data-cy="forgot-password-link"], a[href*="forgot"], a[href*="reset"]').first().click({ force: true })
-        const navigateBackToLogin = ($forgot) => {
-          if ($forgot.find('[data-cy="back-to-login-link"], a[href*="login"]').length > 0) {
-            cy.get('[data-cy="back-to-login-link"], a[href*="login"]').first().click()
-            cy.url({ timeout: 5000 }).should('satisfy', (url) => {
-              return url.includes('/login') || url.length > 0
-            })
-          } else {
+    const navigateBackToLogin = ($forgot) => {
+      if ($forgot.find('[data-cy="back-to-login-link"], a[href*="login"]').length > 0) {
+        cy.get('[data-cy="back-to-login-link"], a[href*="login"]').first().click()
+        cy.url({ timeout: 5000 }).should('satisfy', (url) => {
+          return url.includes('/login') || url.length > 0
+        })
+      } else {
             cy.url().should('satisfy', (url) => {
               return url.includes('/forgot') || url.includes('/login') || url.length > 0
             })
@@ -155,49 +154,58 @@ describe('Autenticación - Reset de Contraseña', () => {
     cy.visit('/reset-password?token=valid-token-123')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    cy.get('body').then(($body) => {
+    const verifyPasswordMatchError = ($error) => {
+      if ($error.find('[data-cy="password-match-error"], .error-message').length > 0) {
+        cy.get('[data-cy="password-match-error"], .error-message').first().should('satisfy', ($el) => {
+          const text = $el.text().toLowerCase()
+          return text.includes('no coinciden') || text.includes('no match') || text.includes('password') || text.length > 0
+        })
+      }
+    }
+
+    const fillConfirmPassword = ($confirm) => {
+      if ($confirm.find('[data-cy="confirm-password-input"], input[type="password"]').length > 1) {
+        cy.get('[data-cy="confirm-password-input"], input[type="password"]').last().type('DifferentPassword123!')
+      }
+    }
+
+    const fillResetPassword = ($body) => {
       if ($body.find('[data-cy="new-password-input"], input[type="password"]').length > 0) {
         cy.get('[data-cy="new-password-input"], input[type="password"]').first().type('NewPassword123!')
-        cy.get('body').then(($confirm) => {
-          if ($confirm.find('[data-cy="confirm-password-input"], input[type="password"]').length > 1) {
-            cy.get('[data-cy="confirm-password-input"], input[type="password"]').last().type('DifferentPassword123!')
-          }
-        })
+        cy.get('body', { timeout: 3000 }).then(fillConfirmPassword)
         cy.get('[data-cy="reset-button"], button[type="submit"]').first().click()
-        
-        cy.get('body', { timeout: 5000 }).then(($error) => {
-          if ($error.find('[data-cy="password-match-error"], .error-message').length > 0) {
-            cy.get('[data-cy="password-match-error"], .error-message').first().should('satisfy', ($el) => {
-              const text = $el.text().toLowerCase()
-              return text.includes('no coinciden') || text.includes('no match') || text.includes('password') || text.length > 0
-            })
-          }
-        })
+        cy.get('body', { timeout: 5000 }).then(verifyPasswordMatchError)
       } else {
         cy.get('body').should('be.visible')
       }
-    })
+    }
+
+    cy.get('body', { timeout: 10000 }).then(fillResetPassword)
   })
 
   it('debe validar fortaleza de nueva contraseña', () => {
     cy.visit('/reset-password?token=valid-token-123')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    cy.get('body').then(($body) => {
+    const verifyWeakPasswordStrength = ($strength) => {
+      if ($strength.find('[data-cy="password-strength"], .password-strength-meter').length > 0) {
+        cy.get('[data-cy="password-strength"], .password-strength-meter').should('satisfy', ($el) => {
+          const text = $el.text().toLowerCase()
+          return text.includes('débil') || text.includes('weak') || text.length > 0
+        })
+      }
+    }
+
+    const typeWeakPassword = ($body) => {
       if ($body.find('[data-cy="new-password-input"], input[type="password"]').length > 0) {
         cy.get('[data-cy="new-password-input"], input[type="password"]').first().type('123')
-        cy.get('body').then(($strength) => {
-          if ($strength.find('[data-cy="password-strength"], .password-strength-meter').length > 0) {
-            cy.get('[data-cy="password-strength"], .password-strength-meter').should('satisfy', ($el) => {
-              const text = $el.text().toLowerCase()
-              return text.includes('débil') || text.includes('weak') || text.length > 0
-            })
-          }
-        })
+        cy.get('body', { timeout: 3000 }).then(verifyWeakPasswordStrength)
       } else {
         cy.get('body').should('be.visible')
       }
-    })
+    }
+
+    cy.get('body', { timeout: 10000 }).then(typeWeakPassword)
   })
 })
 

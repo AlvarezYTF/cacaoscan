@@ -189,14 +189,16 @@ describe('Manejo de Errores - Validación y Formularios', () => {
             cy.get('[data-cy="lote-fecha-plantacion"], input[type="date"]').first().type('2030-01-01', { force: true })
             cy.get('[data-cy="save-lote"], button[type="submit"]').first().click({ force: true })
             
-            cy.get('body', { timeout: 3000 }).then(($error) => {
+            const verifyDateError = ($error) => {
               if ($error.find('[data-cy="lote-fecha-error"], .error-message').length > 0) {
                 cy.get('[data-cy="lote-fecha-error"], .error-message').first().should('satisfy', ($el) => {
                   const text = $el.text().toLowerCase()
                   return text.includes('futura') || text.includes('fecha') || text.includes('no puede') || text.length > 0
                 })
               }
-            })
+            }
+
+            cy.get('body', { timeout: 3000 }).then(verifyDateError)
           }
         })
       } else {

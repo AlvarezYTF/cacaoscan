@@ -74,9 +74,11 @@ describe('Admin Farmer Management', () => {
       cy.get('body', { timeout: 5000 }).then(verifyFarmerInModal)
     }
 
-    clickTabIfExists('[data-cy="tab-pending"]', () => {
+    const handlePendingTab = () => {
       interactWithFirstRow('table tbody tr, [data-cy="farmer-item"]', clickVerifyButton)
-    })
+    }
+
+    clickTabIfExists('[data-cy="tab-pending"]', handlePendingTab)
   })
 
   it('should reject a farmer verification with reason', () => {

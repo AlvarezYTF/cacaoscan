@@ -96,33 +96,41 @@ describe('Cacao Analysis & Prediction Flow', () => {
     cy.visit('/detalle-analisis/1')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="btn-edit-classification"], button, a').length > 0) {
-        cy.clickIfExists('[data-cy="btn-edit-classification"], button, a')
-        cy.get('body', { timeout: 5000 }).then(($afterEdit) => {
-          if ($afterEdit.find('[data-cy="select-class"], select').length > 0) {
-            cy.get('[data-cy="select-class"], select').first().select('Bien Fermentado', { force: true })
-            const saveCorrection = ($afterSelect) => {
-              if ($afterSelect.find('[data-cy="btn-save-correction"], button[type="submit"]').length > 0) {
-                cy.get('[data-cy="btn-save-correction"], button[type="submit"]').first().click({ force: true })
-                const verifySuccess = ($afterSave) => {
-                  if ($afterSave.find('.swal2-success, .success, [data-cy="success"]').length > 0) {
-                    cy.get('.swal2-success, .success, [data-cy="success"]').should('be.visible')
-                  } else {
-                    cy.get('body').should('be.visible')
-                  }
-                }
-                cy.get('body', { timeout: 5000 }).then(verifySuccess)
-              }
-            }
-
-            cy.get('body', { timeout: 5000 }).then(saveCorrection)
-          }
-        })
+    const verifySuccess = ($afterSave) => {
+      if ($afterSave.find('.swal2-success, .success, [data-cy="success"]').length > 0) {
+        cy.get('.swal2-success, .success, [data-cy="success"]').should('be.visible')
       } else {
         cy.get('body').should('be.visible')
       }
-    })
+    }
+
+    const saveCorrection = ($afterSelect) => {
+      if ($afterSelect.find('[data-cy="btn-save-correction"], button[type="submit"]').length > 0) {
+        cy.get('[data-cy="btn-save-correction"], button[type="submit"]').first().click({ force: true })
+        cy.get('body', { timeout: 5000 }).then(verifySuccess)
+      }
+    }
+
+    const selectClass = ($afterEdit) => {
+      if ($afterEdit.find('[data-cy="select-class"], select').length > 0) {
+        cy.get('[data-cy="select-class"], select').first().select('Bien Fermentado', { force: true })
+        cy.get('body', { timeout: 5000 }).then(saveCorrection)
+      }
+    }
+
+    const afterClickEdit = () => {
+      cy.get('body', { timeout: 5000 }).then(selectClass)
+    }
+
+    const handleEditButton = ($body) => {
+      if ($body.find('[data-cy="btn-edit-classification"], button, a').length > 0) {
+        cy.clickIfExists('[data-cy="btn-edit-classification"], button, a').then(afterClickEdit)
+      } else {
+        cy.get('body').should('be.visible')
+      }
+    }
+
+    cy.get('body', { timeout: 10000 }).then(handleEditButton)
   })
 })
 

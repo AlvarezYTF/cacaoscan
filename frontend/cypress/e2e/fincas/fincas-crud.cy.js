@@ -271,29 +271,36 @@ describe('Gestión de Fincas - CRUD', () => {
   it('debe permitir filtrar fincas por ubicación', () => {
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="location-filter"], select').length > 0) {
-        cy.get('[data-cy="location-filter"], select').first().then(($filter) => {
+        const selectProvince = ($options) => {
+          if ($options.find('[data-cy="province-filter"], select').length > 0) {
+            cy.get('[data-cy="province-filter"], select').first().select('Los Ríos', { force: true })
+          }
+        }
+
+        const handleFilter = ($filter) => {
           if ($filter.is('select')) {
             cy.wrap($filter).select('Los Ríos', { force: true })
           } else {
             cy.wrap($filter).click({ force: true })
-            cy.get('body').then(($options) => {
-              if ($options.find('[data-cy="province-filter"], select').length > 0) {
-                cy.get('[data-cy="province-filter"], select').first().select('Los Ríos', { force: true })
-              }
-            })
+            cy.get('body', { timeout: 3000 }).then(selectProvince)
           }
-        })
-        cy.get('body').then(($apply) => {
+        }
+
+        const verifyActiveFilters = ($filters) => {
+          if ($filters.find('[data-cy="active-filters"], [data-cy="filtered-results"]').length > 0) {
+            cy.get('[data-cy="active-filters"], [data-cy="filtered-results"]').first().should('exist')
+          }
+        }
+
+        const applyFilter = ($apply) => {
           if ($apply.find('[data-cy="apply-filter"], button').length > 0) {
             cy.get('[data-cy="apply-filter"], button').first().click()
-            
-            cy.get('body', { timeout: 3000 }).then(($filters) => {
-              if ($filters.find('[data-cy="active-filters"], [data-cy="filtered-results"]').length > 0) {
-                cy.get('[data-cy="active-filters"], [data-cy="filtered-results"]').first().should('exist')
-              }
-            })
+            cy.get('body', { timeout: 3000 }).then(verifyActiveFilters)
           }
-        })
+        }
+
+        cy.get('[data-cy="location-filter"], select').first().then(handleFilter)
+        cy.get('body', { timeout: 3000 }).then(applyFilter)
       } else {
         cy.get('body').should('be.visible')
       }
@@ -305,17 +312,20 @@ describe('Gestión de Fincas - CRUD', () => {
       if ($body.find('[data-cy="fincas-map"], .map, [id*="map"]').length > 0) {
         cy.get('[data-cy="fincas-map"], .map, [id*="map"]').first().should('be.visible')
         
-        cy.get('body').then(($markers) => {
+        const verifyMapPopup = ($popup) => {
+          if ($popup.find('[data-cy="map-popup"], .popup').length > 0) {
+            cy.get('[data-cy="map-popup"], .popup').should('exist')
+          }
+        }
+
+        const clickMapMarker = ($markers) => {
           if ($markers.find('[data-cy="map-markers"], [data-cy="map-marker"]').length > 0) {
             cy.get('[data-cy="map-marker"], [data-cy="map-markers"]').first().click({ force: true })
-            
-            cy.get('body', { timeout: 3000 }).then(($popup) => {
-              if ($popup.find('[data-cy="map-popup"], .popup').length > 0) {
-                cy.get('[data-cy="map-popup"], .popup').should('exist')
-              }
-            })
+            cy.get('body', { timeout: 3000 }).then(verifyMapPopup)
           }
-        })
+        }
+
+        cy.get('body', { timeout: 5000 }).then(clickMapMarker)
       } else {
         cy.get('body').should('be.visible')
       }

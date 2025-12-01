@@ -1,3 +1,4 @@
+import { getApiBaseUrl } from '../../support/helpers'
 
 describe('Authentication - Advanced Scenarios', () => {
   
@@ -63,24 +64,27 @@ describe('Authentication - Advanced Scenarios', () => {
     })
 
     it('should toggle password visibility', () => {
-      cy.get('body').then(($body) => {
-        if ($body.find('[data-cy="input-password"], [data-cy="password-input"], input[type="password"]').length > 0) {
-          const togglePasswordVisibility = ($input) => {
-            const initialType = $input.attr('type')
-            const clickToggleButton = ($toggle) => {
-              if ($toggle.find('[data-cy="btn-toggle-password"], button[type="button"]').length > 0) {
-                cy.get('[data-cy="btn-toggle-password"], button[type="button"]').first().click()
-                cy.get('[data-cy="input-password"], [data-cy="password-input"], input[type="password"]').first().should('have.attr', 'type', initialType === 'password' ? 'text' : 'password')
-              }
-            }
-            cy.get('body', { timeout: 3000 }).then(clickToggleButton)
-          }
+      const clickToggleButton = ($toggle, initialType) => {
+        if ($toggle.find('[data-cy="btn-toggle-password"], button[type="button"]').length > 0) {
+          cy.get('[data-cy="btn-toggle-password"], button[type="button"]').first().click()
+          cy.get('[data-cy="input-password"], [data-cy="password-input"], input[type="password"]').first().should('have.attr', 'type', initialType === 'password' ? 'text' : 'password')
+        }
+      }
 
+      const togglePasswordVisibility = ($input) => {
+        const initialType = $input.attr('type')
+        cy.get('body', { timeout: 3000 }).then(($body) => clickToggleButton($body, initialType))
+      }
+
+      const handlePasswordInput = ($body) => {
+        if ($body.find('[data-cy="input-password"], [data-cy="password-input"], input[type="password"]').length > 0) {
           cy.get('[data-cy="input-password"], [data-cy="password-input"], input[type="password"]').first().then(togglePasswordVisibility)
         } else {
           cy.get('body').should('be.visible')
         }
-      })
+      }
+
+      cy.get('body', { timeout: 10000 }).then(handlePasswordInput)
     })
   })
 
@@ -90,28 +94,36 @@ describe('Authentication - Advanced Scenarios', () => {
     })
 
     it('should validate password complexity', () => {
-      cy.get('body').then(($body) => {
-        if ($body.find('[data-cy="input-password"], [data-cy="password-input"], input[type="password"]').length > 0) {
-          const verifyWeakPasswordStrength = ($strength) => {
-            if ($strength.find('.password-strength-meter, [data-cy="password-strength"]').length > 0) {
-              cy.get('.password-strength-meter, [data-cy="password-strength"]').should('satisfy', ($el) => {
-                const text = $el.text().toLowerCase()
-                return text.includes('débil') || text.includes('weak') || text.length > 0
-              })
-            }
-          }
+      const verifyWeakPasswordStrength = ($strength) => {
+        if ($strength.find('.password-strength-meter, [data-cy="password-strength"]').length > 0) {
+          cy.get('.password-strength-meter, [data-cy="password-strength"]').should('satisfy', ($el) => {
+            const text = $el.text().toLowerCase()
+            return text.includes('débil') || text.includes('weak') || text.length > 0
+          })
+        }
+      }
 
+      const verifyStrongPasswordStrength = ($strong) => {
+        if ($strong.find('.password-strength-meter, [data-cy="password-strength"]').length > 0) {
+          cy.get('.password-strength-meter, [data-cy="password-strength"]').should('satisfy', ($el) => {
+            const text = $el.text().toLowerCase()
+            return text.includes('fuerte') || text.includes('strong') || text.length > 0
+          })
+        }
+      }
+
+      const handlePasswordInput = ($body) => {
+        if ($body.find('[data-cy="input-password"], [data-cy="password-input"], input[type="password"]').length > 0) {
           cy.get('[data-cy="input-password"], [data-cy="password-input"], input[type="password"]').first().type('weak')
           cy.get('body', { timeout: 3000 }).then(verifyWeakPasswordStrength)
           
-          const verifyStrongPasswordStrength = ($strong) => {
-            if ($strong.find('.password-strength-meter, [data-cy="password-strength"]').length > 0) {
-              cy.get('.password-strength-meter, [data-cy="password-strength"]').should('satisfy', ($el) => {
-                const text = $el.text().toLowerCase()
-                return text.includes('fuerte') || text.includes('strong') || text.length > 0
-              })
-            }
-          }
+          cy.get('[data-cy="input-password"], [data-cy="password-input"], input[type="password"]').first().clear().type('StrongPassword123!')
+          cy.get('body', { timeout: 3000 }).then(verifyStrongPasswordStrength)
+        }
+      }
+
+      cy.get('body', { timeout: 10000 }).then(handlePasswordInput)
+    })
 
           cy.get('[data-cy="input-password"], [data-cy="password-input"], input[type="password"]').first().clear().type('StrongPass123!')
           cy.get('body', { timeout: 3000 }).then(verifyStrongPasswordStrength)
@@ -122,8 +134,7 @@ describe('Authentication - Advanced Scenarios', () => {
     })
 
     it('should check if email already exists', () => {
-      const apiBaseUrl = getApiBaseUrl()
-      cy.intercept('POST', `${apiBaseUrl}/auth/register/`, { 
+      cy.intercept('POST', `${getApiBaseUrl()}/auth/register/`, { 
         statusCode: 400, 
         body: { email: ['Este email ya está registrado'] } 
       }).as('registerFail')

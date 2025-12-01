@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import api from '../api'
 import servicioAnalisis from '../servicioAnalisis'
 import { createMockApi } from '@/test/mocks'
 

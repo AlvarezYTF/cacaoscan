@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ConfirmModal from '../ConfirmModal.vue'
 
@@ -112,9 +112,9 @@ describe('ConfirmModal', () => {
     })
 
     const buttons = wrapper.findAll('button')
-    buttons.forEach(button => {
+    for (const button of buttons) {
       expect(button.attributes('disabled')).toBeDefined()
-    })
+    }
   })
 
   it('should show loading spinner when loading', () => {

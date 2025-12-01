@@ -1,3 +1,9 @@
+import { 
+  ifFoundInBody, 
+  clickIfExistsAndContinue,
+  verifySelectorsInBody
+} from '../../support/helpers'
+
 describe('Carga de Imágenes - Upload', () => {
   beforeEach(() => {
     cy.login('farmer')
@@ -23,64 +29,50 @@ describe('Carga de Imágenes - Upload', () => {
   it('debe cargar imagen exitosamente', () => {
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
     
-    cy.get('body', { timeout: 5000 }).then(($preview) => {
-      if ($preview.find('[data-cy="image-preview"], .preview').length > 0) {
-        cy.get('[data-cy="image-preview"], .preview').should('be.visible')
-      }
-      if ($preview.find('[data-cy="image-info"], .image-info').length > 0) {
-        cy.get('[data-cy="image-info"], .image-info').should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('test-cacao') || text.includes('jpg') || text.length > 0
-        })
-      }
+    ifFoundInBody('[data-cy="image-preview"], .preview', () => {
+      cy.get('[data-cy="image-preview"], .preview').should('be.visible')
+    })
+    ifFoundInBody('[data-cy="image-info"], .image-info', () => {
+      cy.get('[data-cy="image-info"], .image-info').should('satisfy', ($el) => {
+        const text = $el.text().toLowerCase()
+        return text.includes('test-cacao') || text.includes('jpg') || text.length > 0
+      })
     })
     
-    cy.get('body').then(($upload) => {
-      if ($upload.find('[data-cy="upload-button"], button[type="submit"]').length > 0) {
-        cy.get('[data-cy="upload-button"], button[type="submit"]').first().click()
-        
-        cy.get('body', { timeout: 5000 }).then(($success) => {
-          if ($success.find('[data-cy="upload-success"], .success-message').length > 0) {
-            cy.get('[data-cy="upload-success"], .success-message').should('satisfy', ($el) => {
-              const text = $el.text().toLowerCase()
-              return text.includes('cargada') || text.includes('exitosamente') || text.includes('success') || text.length > 0
-            })
-          }
+    clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', () => {
+      return ifFoundInBody('[data-cy="upload-success"], .success-message', () => {
+        cy.get('[data-cy="upload-success"], .success-message').should('satisfy', ($el) => {
+          const text = $el.text().toLowerCase()
+          return text.includes('cargada') || text.includes('exitosamente') || text.includes('success') || text.length > 0
         })
-      }
+      })
     })
   })
 
   it('debe validar tipos de archivo permitidos', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="file-input"], input[type="file"]').length > 0) {
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
+    ifFoundInBody('[data-cy="file-input"], input[type="file"]', () => {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
+      
+      for (const type of allowedTypes) {
+        cy.uploadFile(`test.${type.split('/')[1]}`, { type, useFixture: false })
         
-        for (const type of allowedTypes) {
-          cy.uploadFile(`test.${type.split('/')[1]}`, { type, useFixture: false })
-          
-          cy.get('body', { timeout: 3000 }).then(($validation) => {
-            if ($validation.find('[data-cy="file-validation-success"], .validation-success').length > 0) {
-              cy.get('[data-cy="file-validation-success"], .validation-success').should('exist')
-            }
-          })
-        }
-      } else {
-        cy.get('body').should('be.visible')
+        ifFoundInBody('[data-cy="file-validation-success"], .validation-success', () => {
+          cy.get('[data-cy="file-validation-success"], .validation-success').should('exist')
+        })
       }
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
   it('debe rechazar tipos de archivo no permitidos', () => {
     cy.uploadFile('test.txt', { type: 'text/plain', useFixture: false })
     
-    cy.get('body', { timeout: 3000 }).then(($error) => {
-      if ($error.find('[data-cy="file-validation-error"], .error-message').length > 0) {
-        cy.get('[data-cy="file-validation-error"], .error-message').first().should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('tipo') || text.includes('permitido') || text.includes('archivo') || text.length > 0
-        })
-      }
+    ifFoundInBody('[data-cy="file-validation-error"], .error-message', () => {
+      cy.get('[data-cy="file-validation-error"], .error-message').first().should('satisfy', ($el) => {
+        const text = $el.text().toLowerCase()
+        return text.includes('tipo') || text.includes('permitido') || text.includes('archivo') || text.length > 0
+      })
     })
   })
 
@@ -88,54 +80,36 @@ describe('Carga de Imágenes - Upload', () => {
     const largeSize = 11 * 1024 * 1024 // 11MB
     cy.uploadFile('large-image.jpg', { type: 'image/jpeg', size: largeSize, useFixture: false })
     
-    cy.get('body', { timeout: 3000 }).then(($error) => {
-      if ($error.find('[data-cy="file-size-error"], .error-message').length > 0) {
-        cy.get('[data-cy="file-size-error"], .error-message').first().should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('grande') || text.includes('tamaño') || text.includes('size') || text.length > 0
-        })
-      }
+    ifFoundInBody('[data-cy="file-size-error"], .error-message', () => {
+      cy.get('[data-cy="file-size-error"], .error-message').first().should('satisfy', ($el) => {
+        const text = $el.text().toLowerCase()
+        return text.includes('grande') || text.includes('tamaño') || text.includes('size') || text.length > 0
+      })
     })
   })
 
   it('debe mostrar progreso de carga', () => {
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
     
-    cy.get('body').then(($upload) => {
-      if ($upload.find('[data-cy="upload-button"], button[type="submit"]').length > 0) {
-        cy.get('[data-cy="upload-button"], button[type="submit"]').first().click()
-        
-        cy.get('body', { timeout: 5000 }).then(($progress) => {
-          if ($progress.find('[data-cy="upload-progress"], .progress').length > 0) {
-            cy.get('[data-cy="upload-progress"], .progress').should('exist')
-          }
-        })
-      }
+    clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', () => {
+      return ifFoundInBody('[data-cy="upload-progress"], .progress', () => {
+        cy.get('[data-cy="upload-progress"], .progress').should('exist')
+      })
     })
   })
 
   it('debe permitir cancelar carga en progreso', () => {
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
     
-    cy.get('body').then(($upload) => {
-      if ($upload.find('[data-cy="upload-button"], button[type="submit"]').length > 0) {
-        cy.get('[data-cy="upload-button"], button[type="submit"]').first().click()
-        
-        cy.get('body', { timeout: 3000 }).then(($cancel) => {
-          if ($cancel.find('[data-cy="cancel-upload"], button').length > 0) {
-            cy.get('[data-cy="cancel-upload"], button').first().click()
-            
-            cy.get('body', { timeout: 3000 }).then(($cancelled) => {
-              if ($cancelled.find('[data-cy="upload-cancelled"], .cancelled-message').length > 0) {
-                cy.get('[data-cy="upload-cancelled"], .cancelled-message').should('satisfy', ($el) => {
-                  const text = $el.text().toLowerCase()
-                  return text.includes('cancelada') || text.includes('cancel') || text.length > 0
-                })
-              }
-            })
-          }
+    clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', () => {
+      return clickIfExistsAndContinue('[data-cy="cancel-upload"], button', () => {
+        return ifFoundInBody('[data-cy="upload-cancelled"], .cancelled-message', () => {
+          cy.get('[data-cy="upload-cancelled"], .cancelled-message').should('satisfy', ($el) => {
+            const text = $el.text().toLowerCase()
+            return text.includes('cancelada') || text.includes('cancel') || text.length > 0
+          })
         })
-      }
+      })
     })
   })
 
@@ -148,109 +122,91 @@ describe('Carga de Imágenes - Upload', () => {
     
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
     
-    cy.get('body').then(($upload) => {
-      if ($upload.find('[data-cy="upload-button"], button[type="submit"]').length > 0) {
-        cy.get('[data-cy="upload-button"], button[type="submit"]').first().click()
-        
-        cy.wait('@uploadError', { timeout: 10000 })
-        
-        cy.get('body', { timeout: 5000 }).then(($error) => {
-          if ($error.find('[data-cy="upload-error"], .error-message').length > 0) {
-            cy.get('[data-cy="upload-error"], .error-message').first().should('satisfy', ($el) => {
-              const text = $el.text().toLowerCase()
-              return text.includes('error') || text.includes('cargar') || text.includes('imagen') || text.length > 0
-            })
-          }
+    clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', () => {
+      cy.wait('@uploadError', { timeout: 10000 })
+      
+      return ifFoundInBody('[data-cy="upload-error"], .error-message', () => {
+        cy.get('[data-cy="upload-error"], .error-message').first().should('satisfy', ($el) => {
+          const text = $el.text().toLowerCase()
+          return text.includes('error') || text.includes('cargar') || text.includes('imagen') || text.length > 0
         })
-      }
+      })
     })
   })
 
   it('debe permitir arrastrar y soltar archivos', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="drop-zone"], .drop-zone, [data-cy*="drop"]').length > 0) {
-        cy.fixture('test-cacao.jpg', { encoding: null }).then((fileContent) => {
-          const blob = new Blob([fileContent], { type: 'image/jpeg' })
-          const file = new File([blob], 'test-cacao.jpg', { type: 'image/jpeg' })
+    ifFoundInBody('[data-cy="drop-zone"], .drop-zone, [data-cy*="drop"]', () => {
+      cy.fixture('test-cacao.jpg', { encoding: null }).then((fileContent) => {
+        const blob = new Blob([fileContent], { type: 'image/jpeg' })
+        const file = new File([blob], 'test-cacao.jpg', { type: 'image/jpeg' })
+        
+        cy.get('[data-cy="drop-zone"], .drop-zone, [data-cy*="drop"]').first().then(($dropZone) => {
+          const dataTransfer = new DataTransfer()
+          dataTransfer.items.add(file)
           
-          cy.get('[data-cy="drop-zone"], .drop-zone, [data-cy*="drop"]').first().then(($dropZone) => {
-            const dataTransfer = new DataTransfer()
-            dataTransfer.items.add(file)
-            
-            cy.wrap($dropZone).trigger('drop', { dataTransfer, force: true })
-          })
-          
-          cy.get('body', { timeout: 5000 }).then(($preview) => {
-            if ($preview.find('[data-cy="image-preview"], .preview').length > 0) {
-              cy.get('[data-cy="image-preview"], .preview').should('be.visible')
-            }
-            if ($preview.find('[data-cy="image-info"], .image-info').length > 0) {
-              cy.get('[data-cy="image-info"], .image-info').should('satisfy', ($el) => {
-                const text = $el.text().toLowerCase()
-                return text.includes('test-cacao') || text.includes('jpg') || text.length > 0
-              })
-            }
-          })
-        }).catch(() => {
-          const blob = new Blob(['fake image content'], { type: 'image/jpeg' })
-          const file = new File([blob], 'test-cacao.jpg', { type: 'image/jpeg' })
-          
-          cy.get('[data-cy="drop-zone"], .drop-zone, [data-cy*="drop"]').first().then(($dropZone) => {
-            const dataTransfer = new DataTransfer()
-            dataTransfer.items.add(file)
-            
-            cy.wrap($dropZone).trigger('drop', { dataTransfer, force: true })
-          })
-          
-          cy.get('body', { timeout: 5000 }).should('be.visible')
+          cy.wrap($dropZone).trigger('drop', { dataTransfer, force: true })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+        
+        ifFoundInBody('[data-cy="image-preview"], .preview', () => {
+          cy.get('[data-cy="image-preview"], .preview').should('be.visible')
+        })
+        ifFoundInBody('[data-cy="image-info"], .image-info', () => {
+          cy.get('[data-cy="image-info"], .image-info').should('satisfy', ($el) => {
+            const text = $el.text().toLowerCase()
+            return text.includes('test-cacao') || text.includes('jpg') || text.length > 0
+          })
+        })
+      }).catch(() => {
+        const blob = new Blob(['fake image content'], { type: 'image/jpeg' })
+        const file = new File([blob], 'test-cacao.jpg', { type: 'image/jpeg' })
+        
+        cy.get('[data-cy="drop-zone"], .drop-zone, [data-cy*="drop"]').first().then(($dropZone) => {
+          const dataTransfer = new DataTransfer()
+          dataTransfer.items.add(file)
+          
+          cy.wrap($dropZone).trigger('drop', { dataTransfer, force: true })
+        })
+        
+        cy.get('body', { timeout: 5000 }).should('be.visible')
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
   it('debe mostrar información de la imagen cargada', () => {
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
     
-    cy.get('body', { timeout: 5000 }).then(($info) => {
-      if ($info.find('[data-cy="image-info"], .image-info').length > 0) {
-        cy.get('[data-cy="image-info"], .image-info').should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('test-cacao') || text.includes('jpg') || text.length > 0
-        })
-      }
-      if ($info.find('[data-cy="image-size"], .image-size').length > 0) {
-        cy.get('[data-cy="image-size"], .image-size').should('exist')
-      }
-      if ($info.find('[data-cy="image-type"], .image-type').length > 0) {
-        cy.get('[data-cy="image-type"], .image-type').should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('jpeg') || text.includes('jpg') || text.length > 0
-        })
-      }
+    ifFoundInBody('[data-cy="image-info"], .image-info', () => {
+      cy.get('[data-cy="image-info"], .image-info').should('satisfy', ($el) => {
+        const text = $el.text().toLowerCase()
+        return text.includes('test-cacao') || text.includes('jpg') || text.length > 0
+      })
+    })
+    ifFoundInBody('[data-cy="image-size"], .image-size', () => {
+      cy.get('[data-cy="image-size"], .image-size').should('exist')
+    })
+    ifFoundInBody('[data-cy="image-type"], .image-type', () => {
+      cy.get('[data-cy="image-type"], .image-type').should('satisfy', ($el) => {
+        const text = $el.text().toLowerCase()
+        return text.includes('jpeg') || text.includes('jpg') || text.length > 0
+      })
     })
   })
 
   it('debe permitir eliminar imagen antes de subir', () => {
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
     
-    cy.get('body', { timeout: 5000 }).then(($preview) => {
-      if ($preview.find('[data-cy="image-preview"], .preview').length > 0) {
-        cy.get('[data-cy="image-preview"], .preview').should('be.visible')
-        
-        cy.get('body').then(($remove) => {
-          if ($remove.find('[data-cy="remove-image"], button').length > 0) {
-            cy.get('[data-cy="remove-image"], button').first().click()
-            
-            cy.get('body', { timeout: 3000 }).then(($afterRemove) => {
-              if ($afterRemove.find('[data-cy="image-preview"], .preview').length === 0) {
-                cy.get('[data-cy="image-preview"], .preview').should('not.exist')
-              }
-            })
+    ifFoundInBody('[data-cy="image-preview"], .preview', () => {
+      cy.get('[data-cy="image-preview"], .preview').should('be.visible')
+      
+      return clickIfExistsAndContinue('[data-cy="remove-image"], button', () => {
+        return cy.get('body', { timeout: 3000 }).then(($afterRemove) => {
+          if ($afterRemove.find('[data-cy="image-preview"], .preview').length === 0) {
+            cy.get('[data-cy="image-preview"], .preview').should('not.exist')
           }
         })
-      }
+      })
     })
   })
 

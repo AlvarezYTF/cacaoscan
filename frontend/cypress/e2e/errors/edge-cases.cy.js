@@ -754,14 +754,16 @@ describe('Manejo de Errores - Casos Edge', () => {
           if ($modal.find('[data-cy="finca-area"], input[type="number"]').length > 0) {
             cy.get('[data-cy="finca-area"], input[type="number"]').first().type('999999999999999', { force: true })
             
-            cy.get('body', { timeout: 3000 }).then(($error) => {
+            const verifyLargeNumberError = ($error) => {
               if ($error.find('[data-cy="finca-area-error"], .error-message').length > 0) {
                 cy.get('[data-cy="finca-area-error"], .error-message').first().should('satisfy', ($el) => {
                   const text = $el.text().toLowerCase()
                   return text.includes('grande') || text.includes('área') || text.includes('demasiado') || text.length > 0
                 })
               }
-            })
+            }
+
+            cy.get('body', { timeout: 3000 }).then(verifyLargeNumberError)
           }
         })
       } else {

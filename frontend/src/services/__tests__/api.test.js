@@ -52,8 +52,6 @@ globalThis.showNotification = vi.fn()
 globalThis.dispatchEvent = vi.fn()
 
 describe('API Service', () => {
-  let api
-
   beforeEach(async () => {
     vi.clearAllMocks()
     localStorageMock.getItem.mockReturnValue(null)
@@ -75,10 +73,6 @@ describe('API Service', () => {
         headers: {}
       }
     })
-
-    // Import api after mocks are set up
-    const apiModule = await import('../api.js')
-    api = apiModule.default
   })
 
   afterEach(() => {

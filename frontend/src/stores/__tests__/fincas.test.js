@@ -112,7 +112,8 @@ describe('FincasStore', () => {
     })
 
     it('should set loading state during fetch', async () => {
-      mockFincasApi.getFincas.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
+      const delayedPromise = new Promise((resolve) => setTimeout(resolve, 100))
+      mockFincasApi.getFincas.mockImplementation(() => delayedPromise)
 
       const fetchPromise = fincasStore.fetchFincas()
 

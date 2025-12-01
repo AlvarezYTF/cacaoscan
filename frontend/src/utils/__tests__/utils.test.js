@@ -1,7 +1,7 @@
 /**
  * Tests unitarios para utilidades de CacaoScan.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
 // Importar utilidades (asumiendo que existen)
 // import { formatDate, formatNumber, validateEmail, debounce, throttle } from '../utils/helpers.js'
@@ -57,8 +57,8 @@ const validateEmail = (email) => {
   // Local part: simple character validation without complex regex
   // Check for valid characters using simple iteration (bounded by length check above)
   const validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&'*+-/=?^_`{|}~."
-  for (let i = 0; i < local.length; i++) {
-    if (!validChars.includes(local[i])) {
+  for (const char of local) {
+    if (!validChars.includes(char)) {
       return false
     }
   }
@@ -85,16 +85,14 @@ const throttle = (func, delay) => {
     if (lastCall === 0 || now - lastCall >= delay) {
       lastCall = now
       func(...args)
-    } else {
+    } else if (timeoutId === null) {
       // Schedule the call for after the delay
-      if (timeoutId === null) {
-        const remainingTime = delay - (now - lastCall)
-        timeoutId = setTimeout(() => {
-          lastCall = Date.now()
-          timeoutId = null
-          func(...args)
-        }, remainingTime)
-      }
+      const remainingTime = delay - (now - lastCall)
+      timeoutId = setTimeout(() => {
+        lastCall = Date.now()
+        timeoutId = null
+        func(...args)
+      }, remainingTime)
     }
   }
 }
@@ -439,7 +437,7 @@ describe('Object Utilities', () => {
   const deepClone = (obj) => {
     if (obj === null || typeof obj !== 'object') return obj
     // Use Object.prototype.toString for more reliable Date checking
-    if (Object.prototype.toString.call(obj) === '[object Date]') return new Date(obj.getTime())
+    if (Object.prototype.toString.call(obj) === '[object Date]') return new Date(obj)
     if (Array.isArray(obj)) return obj.map(item => deepClone(item))
     if (typeof obj === 'object') {
       const clonedObj = {}
@@ -454,17 +452,18 @@ describe('Object Utilities', () => {
 
   const merge = (target, ...sources) => {
     if (!target) target = {}
-    sources.forEach(source => {
+    for (const source of sources) {
       if (source) {
-        Object.keys(source).forEach(key => {
+        for (const key of Object.keys(source)) {
           if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
             target[key] = merge(target[key] || {}, source[key])
           } else {
             target[key] = source[key]
           }
-        })
+        }
+        }
       }
-    })
+    }
     return target
   }
 

@@ -22,17 +22,12 @@ describe('Mobile Responsiveness', () => {
       })
 
       it('should open and close mobile menu', () => {
-        cy.get('body').then(($body) => {
-          if ($body.find('[data-cy="btn-menu-mobile"], .menu-button, button').length > 0) {
-            cy.get('[data-cy="btn-menu-mobile"], .menu-button, button').first().click({ force: true })
-            cy.get('[data-cy="mobile-menu-content"], .mobile-menu, .menu', { timeout: 5000 }).should('exist')
-            cy.get('body').then(($menu) => {
-              if ($menu.find('[data-cy="btn-close-menu"], button, .close').length > 0) {
-                cy.get('[data-cy="btn-close-menu"], button, .close').first().click({ force: true })
-                cy.get('[data-cy="mobile-menu-content"], .mobile-menu', { timeout: 3000 }).should('not.exist')
-              }
-            })
-          }
+        return ifFoundInBody('[data-cy="btn-menu-mobile"], .menu-button, button', () => {
+          cy.get('[data-cy="btn-menu-mobile"], .menu-button, button').first().click({ force: true })
+          cy.get('[data-cy="mobile-menu-content"], .mobile-menu, .menu', { timeout: 5000 }).should('exist')
+          return clickIfExistsAndContinue('[data-cy="btn-close-menu"], button, .close', () => {
+            cy.get('[data-cy="mobile-menu-content"], .mobile-menu', { timeout: 3000 }).should('not.exist')
+          })
         })
       })
 

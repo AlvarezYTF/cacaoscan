@@ -55,29 +55,29 @@ describe('Incremental Training Contribution', () => {
   })
 
   it('should require labeling for uploaded images', () => {
-    uploadImageAndProcess('training_sample.jpg', ($afterUpload) => {
-      const verifyLabelRequired = () => {
-        cy.clickIfExists('[data-cy="btn-submit-contribution"], button[type="submit"]')
-        cy.get('.error-message, [data-cy="error"]', { timeout: 5000 }).should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('etiqueta') || text.includes('label') || text.includes('requerid') || $el.length > 0
-        })
-      }
+    const verifyLabelRequired = () => {
+      cy.clickIfExists('[data-cy="btn-submit-contribution"], button[type="submit"]')
+      cy.get('.error-message, [data-cy="error"]', { timeout: 5000 }).should('satisfy', ($el) => {
+        const text = $el.text().toLowerCase()
+        return text.includes('etiqueta') || text.includes('label') || text.includes('requerid') || $el.length > 0
+      })
+    }
 
-      verifyLabelRequired()
-    })
+    uploadImageAndProcess('training_sample.jpg', verifyLabelRequired)
   })
 
   it('should allow tagging images', () => {
-    uploadImageAndProcess('training_sample.jpg', ($afterUpload) => {
-      selectLabelAndAdd('Monilia', ($afterSelect) => {
-        const addTag = () => {
-          cy.clickIfExists('[data-cy="btn-add-tag"], button')
-          cy.get('.tag-chip, .tag, [data-cy="tag"]', { timeout: 5000 }).should('exist')
-        }
+    const addTag = () => {
+      cy.clickIfExists('[data-cy="btn-add-tag"], button')
+      cy.get('.tag-chip, .tag, [data-cy="tag"]', { timeout: 5000 }).should('exist')
+    }
 
-        addTag()
-      })
+    const afterSelectLabel = ($afterSelect) => {
+      addTag()
+    }
+
+    uploadImageAndProcess('training_sample.jpg', ($afterUpload) => {
+      selectLabelAndAdd('Monilia', afterSelectLabel)
     })
   })
 

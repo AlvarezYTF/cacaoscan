@@ -1,4 +1,10 @@
-import { verifySelectorsExist } from '../../support/helpers'
+import { 
+  verifySelectorsExist,
+  ifFoundInBody,
+  clickIfExistsAndContinue,
+  selectIfExistsAndContinue,
+  typeIfExistsAndContinue
+} from '../../support/helpers'
 
 describe('Reportes - Exportación y Compartir', () => {
   beforeEach(() => {
@@ -20,41 +26,22 @@ describe('Reportes - Exportación y Compartir', () => {
   })
 
   it('debe exportar múltiples reportes en lote', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="report-checkbox"], input[type="checkbox"]').length >= 2) {
-        cy.get('[data-cy="report-checkbox"], input[type="checkbox"]').first().check({ force: true })
-        cy.get('body').then(($second) => {
-          if ($second.find('[data-cy="report-checkbox"], input[type="checkbox"]').length > 1) {
-            cy.get('[data-cy="report-checkbox"], input[type="checkbox"]').eq(1).check({ force: true })
-          }
-        })
-        
-        cy.get('body').then(($bulk) => {
-          if ($bulk.find('[data-cy="bulk-export"], button').length > 0) {
-            cy.get('[data-cy="bulk-export"], button').first().click({ force: true })
-            
-            cy.get('body', { timeout: 5000 }).then(($export) => {
-              if ($export.find('[data-cy="bulk-export-options"], .bulk-export-options').length > 0) {
-                cy.get('[data-cy="bulk-export-options"], .bulk-export-options').should('exist')
-                cy.get('body').then(($options) => {
-                  if ($options.find('[data-cy="export-format"], select').length > 0) {
-                    cy.get('[data-cy="export-format"], select').first().select('zip', { force: true })
-                  }
-                })
-              }
-              
-              cy.get('body').then(($confirm) => {
-                if ($confirm.find('[data-cy="confirm-bulk-export"], button[type="submit"]').length > 0) {
-                  cy.get('[data-cy="confirm-bulk-export"], button[type="submit"]').first().click()
-                  cy.verifyDownload('reportes-lote.zip')
-                }
-              })
+    ifFoundInBody('[data-cy="report-checkbox"], input[type="checkbox"]', () => {
+      cy.get('[data-cy="report-checkbox"], input[type="checkbox"]').first().check({ force: true })
+      cy.get('[data-cy="report-checkbox"], input[type="checkbox"]').eq(1).check({ force: true })
+      
+      return clickIfExistsAndContinue('[data-cy="bulk-export"], button', () => {
+        return ifFoundInBody('[data-cy="bulk-export-options"], .bulk-export-options', () => {
+          cy.get('[data-cy="bulk-export-options"], .bulk-export-options').should('exist')
+          selectIfExistsAndContinue('[data-cy="export-format"], select', 'zip', () => {
+            return clickIfExistsAndContinue('[data-cy="confirm-bulk-export"], button[type="submit"]', () => {
+              cy.verifyDownload('reportes-lote.zip')
             })
-          }
+          })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
@@ -87,223 +74,126 @@ describe('Reportes - Exportación y Compartir', () => {
   })
 
   it('debe programar envío automático de reportes', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="report-item"], .report-item, .item').length > 0) {
-        cy.get('[data-cy="report-item"], .report-item, .item').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($details) => {
-          if ($details.find('[data-cy="schedule-sharing"], button').length > 0) {
-            cy.get('[data-cy="schedule-sharing"], button').first().click({ force: true })
-            
-            cy.get('body', { timeout: 5000 }).then(($schedule) => {
-              if ($schedule.find('[data-cy="schedule-frequency"], select').length > 0) {
-                cy.get('[data-cy="schedule-frequency"], select').first().select('mensual', { force: true })
-                cy.get('body').then(($fields) => {
-                  if ($fields.find('[data-cy="schedule-day"], input[type="number"]').length > 0) {
-                    cy.get('[data-cy="schedule-day"], input[type="number"]').first().type('1')
-                  }
-                  if ($fields.find('[data-cy="schedule-time"], input[type="time"]').length > 0) {
-                    cy.get('[data-cy="schedule-time"], input[type="time"]').first().type('09:00')
-                  }
-                  if ($fields.find('[data-cy="schedule-recipients"], input[type="email"]').length > 0) {
-                    cy.get('[data-cy="schedule-recipients"], input[type="email"]').first().type('admin@cacaoscan.com')
-                  }
-                })
-              }
-              
-              cy.get('body').then(($save) => {
-                if ($save.find('[data-cy="save-schedule"], button[type="submit"]').length > 0) {
-                  cy.get('[data-cy="save-schedule"], button[type="submit"]').first().click()
-                  
-                  cy.get('body', { timeout: 5000 }).then(($success) => {
-                    if ($success.find('[data-cy="notification-success"], .swal2-success').length > 0) {
-                      cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-                    }
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
+      return clickIfExistsAndContinue('[data-cy="schedule-sharing"], button', () => {
+        return selectIfExistsAndContinue('[data-cy="schedule-frequency"], select', 'mensual', () => {
+          typeIfExistsAndContinue('[data-cy="schedule-day"], input[type="number"]', '1', () => {
+            typeIfExistsAndContinue('[data-cy="schedule-time"], input[type="time"]', '09:00', () => {
+              typeIfExistsAndContinue('[data-cy="schedule-recipients"], input[type="email"]', 'admin@cacaoscan.com', () => {
+                return clickIfExistsAndContinue('[data-cy="save-schedule"], button[type="submit"]', () => {
+                  return ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
+                    cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
                   })
-                }
+                })
               })
             })
-          }
+          })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
   it('debe mostrar historial de compartir', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="report-item"], .report-item, .item').length > 0) {
-        cy.get('[data-cy="report-item"], .report-item, .item').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($details) => {
-          if ($details.find('[data-cy="sharing-history"], .sharing-history').length > 0) {
-            cy.get('[data-cy="sharing-history"], .sharing-history').should('be.visible')
-            
-            cy.get('body').then(($history) => {
-              if ($history.find('[data-cy="sharing-item"], .sharing-item').length > 0) {
-                cy.get('[data-cy="sharing-item"], .sharing-item').should('have.length.greaterThan', 0)
-                
-                cy.get('[data-cy="sharing-item"], .sharing-item').first().then(($item) => {
-                  const sharingSelectors = [
-                    '[data-cy="sharing-date"]',
-                    '[data-cy="sharing-method"]',
-                    '[data-cy="sharing-recipients"]'
-                  ]
-                  verifySelectorsExist(sharingSelectors, $item, 3000)
-                })
-              }
-            })
-          } else {
-            cy.get('body').should('be.visible')
-          }
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
+      return ifFoundInBody('[data-cy="sharing-history"], .sharing-history', () => {
+        cy.get('[data-cy="sharing-history"], .sharing-history').should('be.visible')
+        
+        return ifFoundInBody('[data-cy="sharing-item"], .sharing-item', ($item) => {
+          cy.get('[data-cy="sharing-item"], .sharing-item').should('have.length.greaterThan', 0)
+          const sharingSelectors = [
+            '[data-cy="sharing-date"]',
+            '[data-cy="sharing-method"]',
+            '[data-cy="sharing-recipients"]'
+          ]
+          verifySelectorsExist(sharingSelectors, $item, 3000)
         })
-      } else {
+      }, () => {
         cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
   it('debe permitir revocar acceso a reporte compartido', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="report-item"], .report-item, .item').length > 0) {
-        cy.get('[data-cy="report-item"], .report-item, .item').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($details) => {
-          if ($details.find('[data-cy="sharing-item"], .sharing-item').length > 0) {
-            cy.get('[data-cy="sharing-item"], .sharing-item').first().then(($item) => {
-              if ($item.find('[data-cy="revoke-access"], button').length > 0) {
-                cy.get('[data-cy="revoke-access"], button').first().click({ force: true })
-                
-                cy.get('body', { timeout: 5000 }).then(($confirm) => {
-                  if ($confirm.find('[data-cy="confirm-revoke"], .swal2-confirm, button').length > 0) {
-                    cy.get('[data-cy="confirm-revoke"], .swal2-confirm, button').first().click()
-                    
-                    cy.get('body', { timeout: 5000 }).then(($success) => {
-                      if ($success.find('[data-cy="notification-success"], .swal2-success').length > 0) {
-                        cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-                      }
-                    })
-                  }
-                })
-              }
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
+      return ifFoundInBody('[data-cy="sharing-item"], .sharing-item', ($item) => {
+        return clickIfExistsAndContinue('[data-cy="revoke-access"], button', () => {
+          return clickIfExistsAndContinue('[data-cy="confirm-revoke"], .swal2-confirm, button', () => {
+            return ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
+              cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
             })
-          } else {
-            cy.get('body').should('be.visible')
-          }
+          })
         })
-      } else {
+      }, () => {
         cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
   it('debe exportar reporte con marca de agua', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="report-item"], .report-item, .item').length > 0) {
-        cy.get('[data-cy="report-item"], .report-item, .item').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($details) => {
-          if ($details.find('[data-cy="download-pdf"], button, a').length > 0) {
-            cy.get('[data-cy="download-pdf"], button, a').first().click({ force: true })
-            
-            cy.get('body', { timeout: 5000 }).then(($pdf) => {
-              if ($pdf.find('[data-cy="watermark-text"], input').length > 0) {
-                cy.get('[data-cy="watermark-text"], input').first().type('CONFIDENCIAL')
-                cy.get('body').then(($watermark) => {
-                  if ($watermark.find('[data-cy="watermark-position"], select').length > 0) {
-                    cy.get('[data-cy="watermark-position"], select').first().select('center', { force: true })
-                  }
-                  if ($watermark.find('[data-cy="watermark-opacity"], input[type="number"]').length > 0) {
-                    cy.get('[data-cy="watermark-opacity"], input[type="number"]').first().type('0.3')
-                  }
-                })
-              }
-              
-              cy.get('body').then(($confirm) => {
-                if ($confirm.find('[data-cy="confirm-download"], button[type="submit"]').length > 0) {
-                  cy.get('[data-cy="confirm-download"], button[type="submit"]').first().click()
-                  cy.verifyDownload('reporte-marcado.pdf')
-                }
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
+      return clickIfExistsAndContinue('[data-cy="download-pdf"], button, a', () => {
+        return typeIfExistsAndContinue('[data-cy="watermark-text"], input', 'CONFIDENCIAL', () => {
+          selectIfExistsAndContinue('[data-cy="watermark-position"], select', 'center', () => {
+            typeIfExistsAndContinue('[data-cy="watermark-opacity"], input[type="number"]', '0.3', () => {
+              return clickIfExistsAndContinue('[data-cy="confirm-download"], button[type="submit"]', () => {
+                cy.verifyDownload('reporte-marcado.pdf')
               })
             })
-          }
+          })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
   it('debe exportar reporte con firma digital', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="report-item"], .report-item, .item').length > 0) {
-        cy.get('[data-cy="report-item"], .report-item, .item').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($details) => {
-          if ($details.find('[data-cy="download-pdf"], button, a').length > 0) {
-            cy.get('[data-cy="download-pdf"], button, a').first().click({ force: true })
-            
-            cy.get('body', { timeout: 5000 }).then(($pdf) => {
-              if ($pdf.find('[data-cy="digital-signature"], input[type="checkbox"]').length > 0) {
-                cy.get('[data-cy="digital-signature"], input[type="checkbox"]').first().check({ force: true })
-                cy.get('body').then(($signature) => {
-                  if ($signature.find('[data-cy="signature-certificate"], select').length > 0) {
-                    cy.get('[data-cy="signature-certificate"], select').first().select('certificado-valido', { force: true })
-                  }
-                  if ($signature.find('[data-cy="signature-reason"], input, textarea').length > 0) {
-                    cy.get('[data-cy="signature-reason"], input, textarea').first().type('Aprobación del reporte')
-                  }
-                })
-              }
-              
-              cy.get('body').then(($confirm) => {
-                if ($confirm.find('[data-cy="confirm-download"], button[type="submit"]').length > 0) {
-                  cy.get('[data-cy="confirm-download"], button[type="submit"]').first().click()
-                  cy.verifyDownload('reporte-firmado.pdf')
-                }
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
+      return clickIfExistsAndContinue('[data-cy="download-pdf"], button, a', () => {
+        return clickIfExistsAndContinue('[data-cy="digital-signature"], input[type="checkbox"]', () => {
+          selectIfExistsAndContinue('[data-cy="signature-certificate"], select', 'certificado-valido', () => {
+            typeIfExistsAndContinue('[data-cy="signature-reason"], input, textarea', 'Aprobación del reporte', () => {
+              return clickIfExistsAndContinue('[data-cy="confirm-download"], button[type="submit"]', () => {
+                cy.verifyDownload('reporte-firmado.pdf')
               })
             })
-          }
+          })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
   it('debe mostrar vista previa antes de exportar', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="report-item"], .report-item, .item').length > 0) {
-        cy.get('[data-cy="report-item"], .report-item, .item').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($details) => {
-          if ($details.find('[data-cy="preview-export"], button').length > 0) {
-            cy.get('[data-cy="preview-export"], button').first().click({ force: true })
-            
-            cy.get('body', { timeout: 5000 }).then(($preview) => {
-              if ($preview.find('[data-cy="export-preview"], .preview').length > 0) {
-                cy.get('[data-cy="export-preview"], .preview').should('be.visible')
-                
-                cy.get('body').then(($content) => {
-                  const previewSelectors = [
-                    '[data-cy="preview-content"]',
-                    '[data-cy="preview-pages"]'
-                  ]
-                  verifySelectorsExist(previewSelectors, $content, 3000)
-                  
-                  if ($content.find('[data-cy="next-page"], button').length > 0) {
-                    cy.get('[data-cy="next-page"], button').first().click({ force: true })
-                    cy.get('body').then(($afterNext) => {
-                      if ($afterNext.find('[data-cy="previous-page"], button').length > 0) {
-                        cy.get('[data-cy="previous-page"], button').first().click({ force: true })
-                      }
-                    })
-                  }
-                })
-              } else {
-                cy.get('body').should('be.visible')
-              }
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
+      return clickIfExistsAndContinue('[data-cy="preview-export"], button', () => {
+        return ifFoundInBody('[data-cy="export-preview"], .preview', () => {
+          cy.get('[data-cy="export-preview"], .preview').should('be.visible')
+          
+          const previewSelectors = [
+            '[data-cy="preview-content"]',
+            '[data-cy="preview-pages"]'
+          ]
+          verifySelectorsInBody(previewSelectors, 3000)
+          
+          return clickIfExistsAndContinue('[data-cy="next-page"], button', () => {
+            return clickIfExistsAndContinue('[data-cy="previous-page"], button', () => {
+              cy.wrap(null)
             })
-          }
+          })
+        }, () => {
+          cy.get('body').should('be.visible')
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
@@ -314,65 +204,41 @@ describe('Reportes - Exportación y Compartir', () => {
       body: { error: 'Error al exportar reporte' }
     }).as('exportError')
     
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="report-item"], .report-item, .item').length > 0) {
-        cy.get('[data-cy="report-item"], .report-item, .item').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($details) => {
-          if ($details.find('[data-cy="download-pdf"], button, a').length > 0) {
-            cy.get('[data-cy="download-pdf"], button, a').first().click({ force: true })
-            cy.get('body', { timeout: 5000 }).then(($pdf) => {
-              if ($pdf.find('[data-cy="confirm-download"], button[type="submit"]').length > 0) {
-                cy.get('[data-cy="confirm-download"], button[type="submit"]').first().click()
-                
-                cy.wait('@exportError', { timeout: 10000 })
-                
-                cy.get('body', { timeout: 5000 }).then(($error) => {
-                  if ($error.find('[data-cy="export-error"], .error-message, .swal2-error').length > 0) {
-                    cy.get('[data-cy="export-error"], .error-message, .swal2-error').first().should('satisfy', ($el) => {
-                      const text = $el.text().toLowerCase()
-                      return text.includes('error') || text.includes('exportar') || text.includes('reporte') || text.length > 0
-                    })
-                  }
-                })
-              }
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
+      return clickIfExistsAndContinue('[data-cy="download-pdf"], button, a', () => {
+        return clickIfExistsAndContinue('[data-cy="confirm-download"], button[type="submit"]', () => {
+          cy.wait('@exportError', { timeout: 10000 })
+          
+          return ifFoundInBody('[data-cy="export-error"], .error-message, .swal2-error', () => {
+            cy.get('[data-cy="export-error"], .error-message, .swal2-error').first().should('satisfy', ($el) => {
+              const text = $el.text().toLowerCase()
+              return text.includes('error') || text.includes('exportar') || text.includes('reporte') || text.length > 0
             })
-          }
+          })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 
   it('debe mostrar progreso de exportación', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="report-item"], .report-item, .item').length > 0) {
-        cy.get('[data-cy="report-item"], .report-item, .item').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($details) => {
-          if ($details.find('[data-cy="download-pdf"], button, a').length > 0) {
-            cy.get('[data-cy="download-pdf"], button, a').first().click({ force: true })
-            cy.get('body', { timeout: 5000 }).then(($pdf) => {
-              if ($pdf.find('[data-cy="confirm-download"], button[type="submit"]').length > 0) {
-                cy.get('[data-cy="confirm-download"], button[type="submit"]').first().click()
-                
-                cy.get('body', { timeout: 5000 }).then(($progress) => {
-                  if ($progress.find('[data-cy="export-progress"], .progress').length > 0) {
-                    cy.get('[data-cy="export-progress"], .progress').should('be.visible')
-                    if ($progress.find('[data-cy="progress-percentage"], .progress-percentage').length > 0) {
-                      cy.get('[data-cy="progress-percentage"], .progress-percentage').should('satisfy', ($el) => {
-                        const text = $el.text()
-                        return text.includes('%') || text.length > 0
-                      })
-                    }
-                  }
-                })
-              }
+    clickIfExistsAndContinue('[data-cy="report-item"], .report-item, .item', () => {
+      return clickIfExistsAndContinue('[data-cy="download-pdf"], button, a', () => {
+        return clickIfExistsAndContinue('[data-cy="confirm-download"], button[type="submit"]', () => {
+          return ifFoundInBody('[data-cy="export-progress"], .progress', () => {
+            cy.get('[data-cy="export-progress"], .progress').should('be.visible')
+            ifFoundInBody('[data-cy="progress-percentage"], .progress-percentage', () => {
+              cy.get('[data-cy="progress-percentage"], .progress-percentage').should('satisfy', ($el) => {
+                const text = $el.text()
+                return text.includes('%') || text.length > 0
+              })
             })
-          }
+          })
         })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+      })
+    }, () => {
+      cy.get('body').should('be.visible')
     })
   })
 

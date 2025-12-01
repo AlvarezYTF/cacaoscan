@@ -138,58 +138,67 @@ describe('Admin User Management', () => {
   })
 
   it('should show delete confirmation dialog', () => {
-    cy.get('body').then(($body) => {
+    const verifyDeleteDialog = ($dialog) => {
+      if ($dialog.find('.swal2-title, [role="dialog"] h2').length > 0) {
+        cy.get('.swal2-title, [role="dialog"] h2', { timeout: 3000 }).should('satisfy', ($el) => {
+          const text = $el.text().toLowerCase()
+          return text.includes('seguro') || text.includes('sure') || text.includes('¿') || $el.length > 0
+        })
+      }
+    }
+
+    const clickDeleteButton = ($row) => {
+      const btn = $row.find('[data-cy="btn-delete"], button, a, [role="button"]').first()
+      if (btn.length > 0) {
+        cy.wrap(btn).click({ force: true })
+        cy.get('.swal2-container, [role="dialog"]', { timeout: 5000 }).should('exist')
+        cy.get('body', { timeout: 5000 }).then(verifyDeleteDialog)
+      }
+    }
+
+    const handleRows = ($body) => {
       const rows = $body.find('table tbody tr, .table-row, [data-cy="user-row"], tbody tr')
       if (rows.length > 0) {
-        cy.wrap(rows.last()).then(($row) => {
-          const btn = $row.find('[data-cy="btn-delete"], button, a, [role="button"]').first()
-          if (btn.length > 0) {
-            cy.wrap(btn).click({ force: true })
-            cy.get('.swal2-container, [role="dialog"]', { timeout: 5000 }).should('exist')
-            const verifyDeleteDialog = ($dialog) => {
-              if ($dialog.find('.swal2-title, [role="dialog"] h2').length > 0) {
-                cy.get('.swal2-title, [role="dialog"] h2', { timeout: 3000 }).should('satisfy', ($el) => {
-                  const text = $el.text().toLowerCase()
-                  return text.includes('seguro') || text.includes('sure') || text.includes('¿') || $el.length > 0
-                })
-              }
-            }
-
-            cy.get('body', { timeout: 5000 }).then(verifyDeleteDialog)
-          }
-        })
+        cy.wrap(rows.last()).then(clickDeleteButton)
       } else {
         cy.get('body').should('be.visible')
       }
-    })
+    }
+
+    cy.get('body', { timeout: 10000 }).then(handleRows)
   })
 
   it('should cancel delete action', () => {
-    cy.get('body').then(($body) => {
+    const handleCancelDialog = ($dialog) => {
+      const cancel = $dialog.find('.swal2-cancel, button[type="button"], [data-cy="btn-cancel"]')
+      if (cancel.length > 0) {
+        cy.wrap(cancel.first()).click()
+        cy.get('.swal2-container, [role="dialog"]', { timeout: 3000 }).should('not.exist')
+      }
+    }
+
+    const clickDeleteToCancel = ($row) => {
+      const btn = $row.find('[data-cy="btn-delete"], button, a, [role="button"]').first()
+      if (btn.length > 0) {
+        cy.wrap(btn).click({ force: true })
+        cy.get('body', { timeout: 5000 }).then(handleCancelDialog)
+      }
+    }
+
+    const handleRowsForCancel = ($body) => {
       const rows = $body.find('table tbody tr, .table-row, [data-cy="user-row"], tbody tr')
       if (rows.length > 0) {
-        cy.wrap(rows.last()).then(($row) => {
-          const btn = $row.find('[data-cy="btn-delete"], button, a, [role="button"]').first()
-          if (btn.length > 0) {
-            cy.wrap(btn).click({ force: true })
-            const handleCancelDialog = ($dialog) => {
-              const cancel = $dialog.find('.swal2-cancel, button[type="button"], [data-cy="btn-cancel"]')
-              if (cancel.length > 0) {
-                cy.wrap(cancel.first()).click()
-                cy.get('.swal2-container, [role="dialog"]', { timeout: 3000 }).should('not.exist')
-              }
-            }
-            cy.get('body', { timeout: 5000 }).then(handleCancelDialog)
-          }
-        })
+        cy.wrap(rows.last()).then(clickDeleteToCancel)
       } else {
         cy.get('body').should('be.visible')
       }
-    })
+    }
+
+    cy.get('body', { timeout: 10000 }).then(handleRowsForCancel)
   })
 
   it('should delete a user', () => {
-    cy.get('body').then(($body) => {
+    const deleteUser = ($body) => {
       const rows = $body.find('table tbody tr, .table-row, [data-cy="user-row"], tbody tr')
       if (rows.length > 0) {
         cy.get('[data-cy="delete-user"], .delete-button, button').first().click({ force: true })
@@ -200,7 +209,9 @@ describe('Admin User Management', () => {
         cy.log('No users found to delete')
         cy.get('body').should('be.visible')
       }
-    })
+    }
+
+    cy.get('body', { timeout: 10000 }).then(deleteUser)
   })
 
   it('should paginate user list', () => {
@@ -216,10 +227,10 @@ describe('Admin User Management', () => {
     const handlePagination = ($body) => {
       if ($body.find('.pagination, [data-cy="pagination"], .pager').length > 0) {
         cy.get('.pagination, [data-cy="pagination"], .pager').should('exist')
-        cy.get('.pagination .next, [data-cy="next-page"], button').then(clickNextPage)
+        cy.get('.pagination .next, [data-cy="next-page"], button', { timeout: 5000 }).then(clickNextPage)
       }
     }
 
-    cy.get('body').then(handlePagination)
+    cy.get('body', { timeout: 10000 }).then(handlePagination)
   })
 })
