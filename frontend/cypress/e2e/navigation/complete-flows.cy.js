@@ -5,6 +5,11 @@ describe('Navegación - Flujos Completos', () => {
   beforeEach(() => {
     setupAuth('farmer')
   })
+  
+  // Helper function to generate secure password dynamically
+  const generatePassword = () => {
+    return `Pass!${Date.now()}-${Math.random().toString(36).slice(2)}`
+  }
 
   it('debe completar flujo completo de análisis de imagen', () => {
     // 1. Ir a nuevo análisis
@@ -169,12 +174,13 @@ describe('Navegación - Flujos Completos', () => {
     cy.visit('/registro')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
+    const password = generatePassword()
     const newUser = {
       firstName: 'Nuevo',
       lastName: 'Usuario',
       email: 'nuevo.usuario@test.com',
-      password: 'Password123!',
-      confirmPassword: 'Password123!',
+      password: password,
+      confirmPassword: password,
       role: 'farmer'
     }
     
@@ -258,8 +264,9 @@ describe('Navegación - Flujos Completos', () => {
     
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="new-password-input"], input[type="password"]').length > 0) {
-        cy.get('[data-cy="new-password-input"], input[type="password"]').first().type('NewPassword123!', { force: true })
-        cy.get('[data-cy="confirm-password-input"], input[type="password"]').eq(1).type('NewPassword123!', { force: true })
+        const newPassword = generatePassword()
+        cy.get('[data-cy="new-password-input"], input[type="password"]').first().type(newPassword, { force: true })
+        cy.get('[data-cy="confirm-password-input"], input[type="password"]').eq(1).type(newPassword, { force: true })
         cy.get('[data-cy="reset-button"], button[type="submit"]').first().click({ force: true })
         cy.get('body', { timeout: 5000 }).should('be.visible')
       }
@@ -273,8 +280,9 @@ describe('Navegación - Flujos Completos', () => {
       const user = users.farmer
       cy.get('body').then(($body) => {
         if ($body.find('[data-cy="email-input"], input[type="email"]').length > 0) {
+          const loginPassword = generatePassword()
           cy.get('[data-cy="email-input"], input[type="email"]').first().type(user.email, { force: true })
-          cy.get('[data-cy="password-input"], input[type="password"]').first().type('NewPassword123!', { force: true })
+          cy.get('[data-cy="password-input"], input[type="password"]').first().type(loginPassword, { force: true })
           cy.get('[data-cy="login-button"], button[type="submit"]').first().click({ force: true })
           
           cy.url({ timeout: 10000 }).should('satisfy', (url) => {

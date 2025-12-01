@@ -5,6 +5,20 @@ describe('Cacao Analysis & Prediction Flow', () => {
     cy.get('body', { timeout: 10000 }).should('be.visible')
   })
 
+  const uploadAndAnalyze = (imageName, callback) => {
+    cy.get('body').then(($body) => {
+      if ($body.find('input[type="file"]').length > 0) {
+        cy.uploadTestImage(imageName)
+        cy.get('body').then(($afterUpload) => {
+          if ($afterUpload.find('[data-cy="btn-analyze"], button[type="submit"]').length > 0) {
+            cy.get('[data-cy="btn-analyze"], button[type="submit"]').first().click()
+            if (callback) callback()
+          }
+        })
+      }
+    })
+  }
+
   it('should load prediction interface', () => {
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
@@ -43,17 +57,9 @@ describe('Cacao Analysis & Prediction Flow', () => {
   })
 
   it('should process image analysis', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('input[type="file"]').length > 0) {
-        cy.uploadTestImage('cacao_sample.jpg')
-        cy.get('body').then(($afterUpload) => {
-          if ($afterUpload.find('[data-cy="btn-analyze"], button[type="submit"]').length > 0) {
-            cy.get('[data-cy="btn-analyze"], button[type="submit"]').first().click()
-            cy.get('[data-cy="loading-spinner"], .loading, .spinner', { timeout: 5000 }).should('exist')
-            cy.get('[data-cy="results-container"], .results, .result', { timeout: 20000 }).should('exist')
-          }
-        })
-      }
+    uploadAndAnalyze('cacao_sample.jpg', () => {
+      cy.get('[data-cy="loading-spinner"], .loading, .spinner', { timeout: 5000 }).should('exist')
+      cy.get('[data-cy="results-container"], .results, .result', { timeout: 20000 }).should('exist')
     })
   })
 

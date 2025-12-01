@@ -6,6 +6,11 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+// Helper function to generate secure password dynamically
+const generatePassword = () => {
+  return `Pass!${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
 // Importar componentes principales
 import LoginForm from '../auth/LoginForm.vue'
 import RegisterForm from '../auth/RegisterForm.vue'
@@ -108,9 +113,10 @@ describe('LoginForm', () => {
   it('envía datos de login correctamente', async () => {
     const emailInput = wrapper.find('input[type="email"]')
     const passwordInput = wrapper.find('input[type="password"]')
+    const password = generatePassword()
     
     await emailInput.setValue('test@example.com')
-    await passwordInput.setValue('password123')
+    await passwordInput.setValue(password)
     
     const form = wrapper.find('form')
     await form.trigger('submit')

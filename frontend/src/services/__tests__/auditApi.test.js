@@ -254,13 +254,16 @@ describe('auditApi', () => {
   })
 
   describe('formatActivityLog', () => {
+    // Use TEST-NET-1 reserved IP (192.0.2.x) - safe for testing
+    const TEST_IP = '192.0.2.10'
+
     it('should format activity log correctly', () => {
       const log = {
         id: 1,
         usuario: 'user1',
         accion: 'CREATE',
         descripcion: 'Created item',
-        direccion_ip: '192.168.1.1',
+        direccion_ip: TEST_IP,
         user_agent: 'Mozilla/5.0',
         fecha: '2024-01-01T10:00:00Z',
         metadata: { key: 'value' }
@@ -304,12 +307,15 @@ describe('auditApi', () => {
   })
 
   describe('formatLoginHistory', () => {
+    // Use TEST-NET-1 reserved IP (192.0.2.x) - safe for testing
+    const TEST_IP = '192.0.2.10'
+
     it('should format login history correctly for successful login', () => {
       const login = {
         id: 1,
         usuario: 'user1',
         exitoso: true,
-        direccion_ip: '192.168.1.1',
+        direccion_ip: TEST_IP,
         fecha: '2024-01-01T10:00:00Z'
       }
 

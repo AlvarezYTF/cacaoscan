@@ -158,13 +158,17 @@ describe('Audit Store', () => {
     })
 
     it('should get logins by IP', () => {
+      // Use TEST-NET-1 reserved IPs (192.0.2.x) - safe for testing, never used in real networks
+      const TEST_IP_1 = '192.0.2.10'
+      const TEST_IP_2 = '192.0.2.20'
+
       store.loginHistory = [
-        { id: 1, ip_address: '192.168.1.1' },
-        { id: 2, ip_address: '192.168.1.2' },
-        { id: 3, ip_address: '192.168.1.1' }
+        { id: 1, ip_address: TEST_IP_1 },
+        { id: 2, ip_address: TEST_IP_2 },
+        { id: 3, ip_address: TEST_IP_1 }
       ]
 
-      const ipLogins = store.getLoginsByIP('192.168.1.1')
+      const ipLogins = store.getLoginsByIP(TEST_IP_1)
       expect(ipLogins).toHaveLength(2)
     })
   })

@@ -3,6 +3,11 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import UserFormModal from '../UserFormModal.vue'
 
+// Helper function to generate secure password dynamically
+const generatePassword = () => {
+  return `Pass!${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
 const mockAdminStore = {
   createUser: vi.fn(),
   updateUser: vi.fn()
@@ -34,8 +39,21 @@ const mockClearErrors = vi.fn(() => {
 vi.mock('@/composables/useFormValidation', () => ({
   useFormValidation: () => ({
     errors: mockErrors,
-    isValidEmail: (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-    isValidPhone: (phone) => /^\d{7,15}$/.test(phone),
+    isValidEmail: (email) => {
+      if (typeof email !== 'string') return false
+      const trimmed = email.trim()
+      return (
+        trimmed.length >= 5 &&
+        trimmed.includes('@') &&
+        trimmed.includes('.') &&
+        trimmed.indexOf('@') > 0 &&
+        trimmed.lastIndexOf('.') > trimmed.indexOf('@') + 1
+      )
+    },
+    isValidPhone: (phone) => {
+      const digits = String(phone).replace(/\D/g, '')
+      return digits.length >= 7 && digits.length <= 15
+    },
     validatePassword: (pwd) => ({
       isValid: pwd.length >= 8
     }),
@@ -185,13 +203,14 @@ describe('UserFormModal', () => {
       }
     })
 
+    const password = generatePassword()
     wrapper.vm.formData.username = 'testuser'
     wrapper.vm.formData.email = 'test@example.com'
     wrapper.vm.formData.first_name = 'Test'
     wrapper.vm.formData.last_name = 'User'
     wrapper.vm.formData.role = 'Agricultor'
-    wrapper.vm.formData.password = 'Password123'
-    wrapper.vm.formData.password_confirm = 'Password123'
+    wrapper.vm.formData.password = password
+    wrapper.vm.formData.password_confirm = password
 
     await wrapper.vm.saveUser()
     await wrapper.vm.$nextTick()
@@ -252,8 +271,10 @@ describe('UserFormModal', () => {
     wrapper.vm.formData.role = 'farmer'
     
     // Set passwords with mismatch
-    wrapper.vm.formData.password = 'Password123'
-    wrapper.vm.formData.password_confirm = 'Different123'
+    const password = generatePassword()
+    const differentPassword = generatePassword()
+    wrapper.vm.formData.password = password
+    wrapper.vm.formData.password_confirm = differentPassword
 
     await wrapper.vm.$nextTick()
 
@@ -292,8 +313,10 @@ describe('UserFormModal', () => {
     wrapper.vm.formData.role = 'farmer'
     
     // Set new passwords with mismatch
-    wrapper.vm.formData.new_password = 'NewPassword123'
-    wrapper.vm.formData.new_password_confirm = 'Different123'
+    const newPassword = generatePassword()
+    const differentPassword = generatePassword()
+    wrapper.vm.formData.new_password = newPassword
+    wrapper.vm.formData.new_password_confirm = differentPassword
 
     await wrapper.vm.$nextTick()
 
@@ -379,13 +402,14 @@ describe('UserFormModal', () => {
       }
     })
 
+    const password = generatePassword()
     wrapper.vm.formData.username = 'testuser'
     wrapper.vm.formData.email = 'test@example.com'
     wrapper.vm.formData.first_name = 'Test'
     wrapper.vm.formData.last_name = 'User'
     wrapper.vm.formData.role = 'Agricultor'
-    wrapper.vm.formData.password = 'Password123'
-    wrapper.vm.formData.password_confirm = 'Password123'
+    wrapper.vm.formData.password = password
+    wrapper.vm.formData.password_confirm = password
 
     await wrapper.vm.saveUser()
     await wrapper.vm.$nextTick()

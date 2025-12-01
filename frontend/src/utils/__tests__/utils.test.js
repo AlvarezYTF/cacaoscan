@@ -45,15 +45,23 @@ const validateEmail = (email) => {
   if (local.length === 0 || local.length > 64) return false
   if (domain.length === 0 || domain.length > 255) return false
 
-  // No whitespace allowed
-  if (/\s/.test(local) || /\s/.test(domain)) return false
+  // No whitespace allowed - simple check without regex
+  if (local.includes(' ') || local.includes('\t') || local.includes('\n') || 
+      domain.includes(' ') || domain.includes('\t') || domain.includes('\n')) {
+    return false
+  }
 
   // Domain must contain at least one dot
   if (!domain.includes('.')) return false
 
-  // Local part: allow common unquoted atoms (letters, digits and a small set of symbols)
-  // Keep regex simple (no nested quantifiers) and bounded by local length check above
-  if (!/^[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~.]+$/.test(local)) return false
+  // Local part: simple character validation without complex regex
+  // Check for valid characters using simple iteration (bounded by length check above)
+  const validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&'*+-/=?^_`{|}~."
+  for (let i = 0; i < local.length; i++) {
+    if (!validChars.includes(local[i])) {
+      return false
+    }
+  }
 
   // Reject consecutive dots
   if (local.includes('..') || domain.includes('..')) return false

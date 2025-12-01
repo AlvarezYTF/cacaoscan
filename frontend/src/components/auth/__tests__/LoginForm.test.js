@@ -3,6 +3,11 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import LoginForm from '../LoginForm.vue'
 
+// Helper function to generate secure password dynamically
+const generatePassword = () => {
+  return `Pass!${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
 const mockAuthStore = {
   login: vi.fn(),
   isLoading: false,
@@ -127,8 +132,9 @@ describe('LoginForm', () => {
     const emailInput = wrapper.find('#email')
     const passwordInput = wrapper.find('#password')
 
+    const password = generatePassword()
     await emailInput.setValue('test@example.com')
-    await passwordInput.setValue('password123')
+    await passwordInput.setValue(password)
 
     const form = wrapper.find('form')
     await form.trigger('submit.prevent')
@@ -136,7 +142,7 @@ describe('LoginForm', () => {
 
     expect(mockAuthStore.login).toHaveBeenCalledWith({
       email: 'test@example.com',
-      password: 'password123'
+      password: password
     })
   })
 
@@ -155,8 +161,9 @@ describe('LoginForm', () => {
     const emailInput = wrapper.find('#email')
     const passwordInput = wrapper.find('#password')
 
+    const wrongPassword = generatePassword()
     await emailInput.setValue('test@example.com')
-    await passwordInput.setValue('wrongpassword')
+    await passwordInput.setValue(wrongPassword)
 
     const form = wrapper.find('form')
     await form.trigger('submit.prevent')

@@ -5,6 +5,28 @@ describe('Incremental Training Contribution', () => {
     cy.get('body', { timeout: 10000 }).should('be.visible')
   })
 
+  const uploadImageAndProcess = (imageName, callback) => {
+    cy.get('body').then(($body) => {
+      if ($body.find('input[type="file"]').length > 0) {
+        cy.uploadTestImage(imageName)
+        cy.get('body', { timeout: 5000 }).then(($afterUpload) => {
+          if (callback) callback($afterUpload)
+        })
+      }
+    })
+  }
+
+  const selectLabelAndAdd = (label, callback) => {
+    cy.get('body').then(($afterUpload) => {
+      if ($afterUpload.find('[data-cy="select-label"], select').length > 0) {
+        cy.get('[data-cy="select-label"], select').first().select(label, { force: true })
+        cy.get('body').then(($afterSelect) => {
+          if (callback) callback($afterSelect)
+        })
+      }
+    })
+  }
+
   it('should load contribution page', () => {
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
@@ -26,71 +48,47 @@ describe('Incremental Training Contribution', () => {
   })
 
   it('should accept image uploads for training', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('input[type="file"]').length > 0) {
-        cy.uploadTestImage('training_sample.jpg')
-        cy.get('.preview-list, .preview, [data-cy="preview"]', { timeout: 5000 }).then(($preview) => {
-          if ($preview.length > 0) {
-            cy.wrap($preview).children().should('have.length.at.least', 0)
-          }
-        })
-      }
+    uploadImageAndProcess('training_sample.jpg', ($afterUpload) => {
+      cy.get('.preview-list, .preview, [data-cy="preview"]', { timeout: 5000 }).then(($preview) => {
+        if ($preview.length > 0) {
+          cy.wrap($preview).children().should('have.length.at.least', 0)
+        }
+      })
     })
   })
 
   it('should require labeling for uploaded images', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('input[type="file"]').length > 0) {
-        cy.uploadTestImage('training_sample.jpg')
-        cy.get('body').then(($afterUpload) => {
-          if ($afterUpload.find('[data-cy="btn-submit-contribution"], button[type="submit"]').length > 0) {
-            cy.get('[data-cy="btn-submit-contribution"], button[type="submit"]').first().click()
-            cy.get('.error-message, [data-cy="error"]', { timeout: 5000 }).should('satisfy', ($el) => {
-              const text = $el.text().toLowerCase()
-              return text.includes('etiqueta') || text.includes('label') || text.includes('requerid') || $el.length > 0
-            })
-          }
+    uploadImageAndProcess('training_sample.jpg', ($afterUpload) => {
+      if ($afterUpload.find('[data-cy="btn-submit-contribution"], button[type="submit"]').length > 0) {
+        cy.get('[data-cy="btn-submit-contribution"], button[type="submit"]').first().click()
+        cy.get('.error-message, [data-cy="error"]', { timeout: 5000 }).should('satisfy', ($el) => {
+          const text = $el.text().toLowerCase()
+          return text.includes('etiqueta') || text.includes('label') || text.includes('requerid') || $el.length > 0
         })
       }
     })
   })
 
   it('should allow tagging images', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('input[type="file"]').length > 0) {
-        cy.uploadTestImage('training_sample.jpg')
-        cy.get('body').then(($afterUpload) => {
-          if ($afterUpload.find('[data-cy="select-label"], select').length > 0) {
-            cy.get('[data-cy="select-label"], select').first().select('Monilia', { force: true })
-            cy.get('body').then(($afterSelect) => {
-              if ($afterSelect.find('[data-cy="btn-add-tag"], button').length > 0) {
-                cy.get('[data-cy="btn-add-tag"], button').first().click()
-                cy.get('.tag-chip, .tag, [data-cy="tag"]', { timeout: 5000 }).should('exist')
-              }
-            })
-          }
-        })
-      }
+    uploadImageAndProcess('training_sample.jpg', ($afterUpload) => {
+      selectLabelAndAdd('Monilia', ($afterSelect) => {
+        if ($afterSelect.find('[data-cy="btn-add-tag"], button').length > 0) {
+          cy.get('[data-cy="btn-add-tag"], button').first().click()
+          cy.get('.tag-chip, .tag, [data-cy="tag"]', { timeout: 5000 }).should('exist')
+        }
+      })
     })
   })
 
   it('should submit contribution successfully', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('input[type="file"]').length > 0) {
-        cy.uploadTestImage('training_sample.jpg')
-        cy.get('body').then(($afterUpload) => {
-          if ($afterUpload.find('[data-cy="select-label"], select').length > 0) {
-            cy.get('[data-cy="select-label"], select').first().select('Sana', { force: true })
-            cy.get('body').then(($afterSelect) => {
-              if ($afterSelect.find('[data-cy="input-notes"], textarea').length > 0) {
-                cy.get('[data-cy="input-notes"], textarea').first().type('Imagen tomada con buena luz')
-                cy.get('[data-cy="btn-submit-contribution"], button[type="submit"]').first().click()
-                cy.get('body', { timeout: 5000 }).should('be.visible')
-              }
-            })
-          }
-        })
-      }
+    uploadImageAndProcess('training_sample.jpg', ($afterUpload) => {
+      selectLabelAndAdd('Sana', ($afterSelect) => {
+        if ($afterSelect.find('[data-cy="input-notes"], textarea').length > 0) {
+          cy.get('[data-cy="input-notes"], textarea').first().type('Imagen tomada con buena luz')
+          cy.get('[data-cy="btn-submit-contribution"], button[type="submit"]').first().click()
+          cy.get('body', { timeout: 5000 }).should('be.visible')
+        }
+      })
     })
   })
 

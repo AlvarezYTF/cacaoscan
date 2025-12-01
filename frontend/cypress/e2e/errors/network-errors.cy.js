@@ -3,73 +3,58 @@ describe('Manejo de Errores - Errores de Red', () => {
     cy.login('farmer')
   })
 
-  it('debe manejar error 500 del servidor', () => {
-    // Simular error 500
+  const setupErrorIntercept = (url, statusCode, body, alias) => {
     const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
-    cy.intercept('GET', `${apiBaseUrl}/fincas/**`, {
-      statusCode: 500,
-      body: { error: 'Error interno del servidor' }
-    }).as('serverError')
-    
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
-    
-    // Esperar un poco para que la página se estabilice
+    cy.intercept('GET', `${apiBaseUrl}${url}`, {
+      statusCode,
+      body
+    }).as(alias)
+  }
+
+  const verifyErrorDisplay = (expectedTexts) => {
     cy.wait(1000)
-    
-    // Verificar mensaje de error (puede tener diferentes formatos)
     cy.get('body', { timeout: 5000 }).should('satisfy', (body) => {
       const hasError = body.find('[data-cy="error-message"], .swal2-error, .error-message').length > 0
       const text = body.text().toLowerCase()
-      return hasError || text.includes('error') || text.includes('servidor') || text.includes('500') || body.length > 0
+      return hasError || expectedTexts.some(expected => text.includes(expected)) || body.length > 0
     })
-    
-    // Si existe botón de reintentar, hacer clic
+  }
+
+  const clickRetryIfExists = () => {
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="retry-button"], button').length > 0) {
         cy.get('[data-cy="retry-button"], button').first().click({ force: true })
         cy.get('body', { timeout: 5000 }).should('be.visible')
       }
     })
-  })
+  }
 
-  it('debe manejar error 404 - Recurso no encontrado', () => {
-    // Simular error 404
-    const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
-    cy.intercept('GET', `${apiBaseUrl}/fincas/**/`, {
-      statusCode: 404,
-      body: { error: 'Finca no encontrada' }
-    }).as('notFound')
+  it('debe manejar error 500 del servidor', () => {
+    setupErrorIntercept('/fincas/**', 500, { error: 'Error interno del servidor' }, 'serverError')
     
     cy.visit('/mis-fincas')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    // Esperar un poco para que la página se estabilice
-    cy.wait(1000)
+    verifyErrorDisplay(['error', 'servidor', '500'])
+    clickRetryIfExists()
+  })
+
+  it('debe manejar error 404 - Recurso no encontrado', () => {
+    setupErrorIntercept('/fincas/**/', 404, { error: 'Finca no encontrada' }, 'notFound')
     
-    // Verificar mensaje de error
-    cy.get('body', { timeout: 5000 }).should('satisfy', (body) => {
-      const hasError = body.find('[data-cy="error-message"], .swal2-error, .error-message').length > 0
-      const text = body.text().toLowerCase()
-      return hasError || text.includes('no encontrado') || text.includes('404') || text.includes('not found') || body.length > 0
-    })
+    cy.visit('/mis-fincas')
+    cy.get('body', { timeout: 10000 }).should('be.visible')
+    
+    verifyErrorDisplay(['no encontrado', '404', 'not found'])
   })
 
   it('debe manejar error 403 - Acceso denegado', () => {
-    const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
-    // Simular error 403
-    cy.intercept('GET', `${apiBaseUrl}/admin/**`, {
-      statusCode: 403,
-      body: { error: 'Acceso denegado' }
-    }).as('forbidden')
+    setupErrorIntercept('/admin/**', 403, { error: 'Acceso denegado' }, 'forbidden')
     
     cy.visit('/admin/agricultores')
     cy.get('body', { timeout: 10000 }).should('be.visible')
     
-    // Esperar un poco para que la página se estabilice
     cy.wait(1000)
-    
-    // Verificar mensaje de error
     cy.get('body', { timeout: 5000 }).then(($body) => {
       if ($body.find('[data-cy="error-message"], .error-message, .swal2-error').length > 0) {
         cy.get('[data-cy="error-message"], .error-message, .swal2-error').first().should('satisfy', ($el) => {

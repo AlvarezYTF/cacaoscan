@@ -4,6 +4,11 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import CreateFarmerModal from '../CreateFarmerModal.vue'
 
+// Helper function to generate secure password dynamically
+const generatePassword = () => {
+  return `Pass!${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
 vi.mock('@/services/authApi', () => ({
   default: {
     register: vi.fn()
@@ -26,17 +31,48 @@ vi.mock('@/composables/useCatalogos', () => ({
 vi.mock('@/composables/useFormValidation', () => ({
   useFormValidation: () => ({
     errors: {},
-    isValidEmail: (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-    isValidPhone: (phone) => /^\d{7,15}$/.test(phone),
-    isValidDocument: (doc) => /^\d{6,11}$/.test(doc),
+    isValidEmail: (email) => {
+      if (typeof email !== 'string') return false
+      const trimmed = email.trim()
+      return (
+        trimmed.length >= 5 &&
+        trimmed.includes('@') &&
+        trimmed.includes('.') &&
+        trimmed.indexOf('@') > 0 &&
+        trimmed.lastIndexOf('.') > trimmed.indexOf('@') + 1
+      )
+    },
+    isValidPhone: (phone) => {
+      const digits = String(phone).replace(/\D/g, '')
+      return digits.length >= 7 && digits.length <= 15
+    },
+    isValidDocument: (doc) => {
+      const digits = String(doc).replace(/\D/g, '')
+      return digits.length >= 6 && digits.length <= 11
+    },
     isValidBirthdate: () => true,
-    validatePassword: (pwd) => ({
-      isValid: pwd.length >= 8 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /\d/.test(pwd),
-      length: pwd.length >= 8,
-      uppercase: /[A-Z]/.test(pwd),
-      lowercase: /[a-z]/.test(pwd),
-      number: /\d/.test(pwd)
-    }),
+    validatePassword: (pwd) => {
+      if (typeof pwd !== 'string') {
+        return {
+          isValid: false,
+          length: false,
+          uppercase: false,
+          lowercase: false,
+          number: false
+        }
+      }
+      const length = pwd.length >= 8
+      const uppercase = /[A-Z]/.test(pwd)
+      const lowercase = /[a-z]/.test(pwd)
+      const number = /\d/.test(pwd)
+      return {
+        isValid: length && uppercase && lowercase && number,
+        length,
+        uppercase,
+        lowercase,
+        number
+      }
+    },
     clearErrors: vi.fn()
   })
 }))
@@ -121,11 +157,12 @@ describe('CreateFarmerModal', () => {
       }
     })
 
+    const password = generatePassword()
     wrapper.vm.form.firstName = 'Juan'
     wrapper.vm.form.lastName = 'Pérez'
     wrapper.vm.form.email = 'test@example.com'
-    wrapper.vm.form.password = 'Password123'
-    wrapper.vm.form.confirmPassword = 'Password123'
+    wrapper.vm.form.password = password
+    wrapper.vm.form.confirmPassword = password
     wrapper.vm.form.tipoDocumento = 'CC'
     wrapper.vm.form.numeroDocumento = '1234567890'
     wrapper.vm.form.genero = 'M'
@@ -158,8 +195,10 @@ describe('CreateFarmerModal', () => {
       }
     })
 
-    wrapper.vm.form.password = 'Password123'
-    wrapper.vm.form.confirmPassword = 'Password456'
+    const password = generatePassword()
+    const differentPassword = generatePassword()
+    wrapper.vm.form.password = password
+    wrapper.vm.form.confirmPassword = differentPassword
     await wrapper.vm.$nextTick()
 
     expect(wrapper.vm.doPasswordsMatch).toBe(false)
@@ -240,11 +279,12 @@ describe('CreateFarmerModal', () => {
       }
     })
 
+    const password = generatePassword()
     wrapper.vm.form.firstName = 'Juan'
     wrapper.vm.form.lastName = 'Pérez'
     wrapper.vm.form.email = 'test@example.com'
-    wrapper.vm.form.password = 'Password123'
-    wrapper.vm.form.confirmPassword = 'Password123'
+    wrapper.vm.form.password = password
+    wrapper.vm.form.confirmPassword = password
     wrapper.vm.form.tipoDocumento = 'CC'
     wrapper.vm.form.numeroDocumento = '1234567890'
     wrapper.vm.form.genero = 'M'

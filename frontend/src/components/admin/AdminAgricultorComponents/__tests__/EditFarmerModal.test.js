@@ -39,9 +39,25 @@ vi.mock('@/composables/useCatalogos', () => ({
 vi.mock('@/composables/useFormValidation', () => ({
   useFormValidation: () => ({
     errors: {},
-    isValidEmail: (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-    isValidPhone: (phone) => /^\d{7,15}$/.test(phone),
-    isValidDocument: (doc) => /^\d{6,11}$/.test(doc),
+    isValidEmail: (email) => {
+      if (typeof email !== 'string') return false
+      const trimmed = email.trim()
+      return (
+        trimmed.length >= 5 &&
+        trimmed.includes('@') &&
+        trimmed.includes('.') &&
+        trimmed.indexOf('@') > 0 &&
+        trimmed.lastIndexOf('.') > trimmed.indexOf('@') + 1
+      )
+    },
+    isValidPhone: (phone) => {
+      const digits = String(phone).replace(/\D/g, '')
+      return digits.length >= 7 && digits.length <= 15
+    },
+    isValidDocument: (doc) => {
+      const digits = String(doc).replace(/\D/g, '')
+      return digits.length >= 6 && digits.length <= 11
+    },
     clearErrors: vi.fn()
   })
 }))

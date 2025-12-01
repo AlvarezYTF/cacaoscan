@@ -1,4 +1,8 @@
 describe('Auditoria View - Filtros y Visualización', () => {
+  // Use TEST-NET-1 reserved IPs (192.0.2.x) - safe for testing, never used in real networks
+  const TEST_IP_1 = '192.0.2.10'
+  const TEST_IP_2 = '192.0.2.20'
+
   const mockLogs = {
     results: [
       {
@@ -6,7 +10,7 @@ describe('Auditoria View - Filtros y Visualización', () => {
         actor_name: 'Admin User',
         action: 'login',
         timestamp: new Date().toISOString(),
-        ip_address: '127.0.0.1',
+        ip_address: TEST_IP_1,
         details: 'Login exitoso'
       },
       {
@@ -15,7 +19,7 @@ describe('Auditoria View - Filtros y Visualización', () => {
         action: 'create',
         resource_type: 'CacaoImage',
         timestamp: new Date().toISOString(),
-        ip_address: '192.168.1.5',
+        ip_address: TEST_IP_2,
         details: 'Subida de imagen'
       }
     ],

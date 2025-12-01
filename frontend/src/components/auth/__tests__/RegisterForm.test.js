@@ -3,6 +3,11 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import RegisterForm from '../../auth/RegisterForm.vue'
 
+// Helper function to generate secure password dynamically
+const generatePassword = () => {
+  return `Pass!${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
 const mockAuthStore = {
   register: vi.fn(),
   loading: false
@@ -59,13 +64,14 @@ describe('RegisterForm', () => {
     })
 
     // Set form values
+    const password = generatePassword()
     await wrapper.setData({
       form: {
         firstName: 'Juan',
         lastName: 'Pérez',
         email: 'test@example.com',
-        password: 'Password123!',
-        passwordConfirm: 'Password123!',
+        password: password,
+        passwordConfirm: password,
         phone: '1234567890'
       }
     })
