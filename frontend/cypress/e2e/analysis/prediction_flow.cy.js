@@ -102,20 +102,24 @@ describe('Cacao Analysis & Prediction Flow', () => {
     
     const editButtonSelectors = ['[data-cy="btn-edit-classification"]', 'button', 'a']
     clickIfExists(editButtonSelectors.join(', ')).then(() => {
-      cy.get('body', { timeout: 5000 }).then(($afterEdit) => {
+      const handleSaveCorrection = ($afterSelect) => {
+        const saveButtonSelectors = ['[data-cy="btn-save-correction"]', 'button[type="submit"]']
+        if ($afterSelect.find(saveButtonSelectors.join(', ')).length > 0) {
+          cy.get(saveButtonSelectors.join(', ')).first().click({ force: true })
+          const successSelectors = ['.swal2-success', '.success', '[data-cy="success"]']
+          verifyElementWithAlternatives(successSelectors, cy.get('body'), 5000)
+        }
+      }
+
+      const handleClassSelection = ($afterEdit) => {
         const selectClassSelectors = ['[data-cy="select-class"]', 'select']
         if ($afterEdit.find(selectClassSelectors.join(', ')).length > 0) {
           cy.get(selectClassSelectors.join(', ')).first().select('Bien Fermentado', { force: true })
-          cy.get('body', { timeout: 5000 }).then(($afterSelect) => {
-            const saveButtonSelectors = ['[data-cy="btn-save-correction"]', 'button[type="submit"]']
-            if ($afterSelect.find(saveButtonSelectors.join(', ')).length > 0) {
-              cy.get(saveButtonSelectors.join(', ')).first().click({ force: true })
-              const successSelectors = ['.swal2-success', '.success', '[data-cy="success"]']
-              verifyElementWithAlternatives(successSelectors, cy.get('body'), 5000)
-            }
-          })
+          cy.get('body', { timeout: 5000 }).then(handleSaveCorrection)
         }
-      })
+      }
+
+      cy.get('body', { timeout: 5000 }).then(handleClassSelection)
     })
   })
 })

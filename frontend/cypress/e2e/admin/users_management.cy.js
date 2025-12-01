@@ -8,8 +8,7 @@ import {
   verifyUrlPatterns,
   clickIfExists,
   typeIfExists,
-  selectIfExists,
-  verifyErrorMessageWithAlternatives
+  selectIfExists
 } from '../../support/helpers'
 
 describe('Admin User Management', () => {
@@ -197,17 +196,21 @@ describe('Admin User Management', () => {
   })
 
   it('should paginate user list', () => {
+    const handleNextButton = ($next) => {
+      if ($next.length > 0 && !$next.is(':disabled')) {
+        cy.wrap($next.first()).click()
+        verifyUrlPatterns(['page=2', 'page='], 5000)
+      }
+    }
+
+    const handlePagination = () => {
+      const nextButtonSelectors = ['.pagination .next', '[data-cy="next-page"]', 'button']
+      cy.get(nextButtonSelectors.join(', '), { timeout: 5000 }).then(handleNextButton)
+    }
+
     const paginationSelectors = ['.pagination', '[data-cy="pagination"]', '.pager']
     cy.get('body', { timeout: 10000 }).then(($body) => {
-      verifyElementWithAlternatives(paginationSelectors, $body).then(() => {
-        const nextButtonSelectors = ['.pagination .next', '[data-cy="next-page"]', 'button']
-        cy.get(nextButtonSelectors.join(', '), { timeout: 5000 }).then(($next) => {
-          if ($next.length > 0 && !$next.is(':disabled')) {
-            cy.wrap($next.first()).click()
-            verifyUrlPatterns(['page=2', 'page='], 5000)
-          }
-        })
-      })
+      verifyElementWithAlternatives(paginationSelectors, $body).then(handlePagination)
     })
   })
 })

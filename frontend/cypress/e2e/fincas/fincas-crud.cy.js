@@ -154,16 +154,10 @@ describe('Gestión de Fincas - CRUD', () => {
   })
 
   it('debe eliminar finca con confirmación', () => {
-    const verifyDeleteSuccess = ($success) => {
-      if ($success.find('[data-cy="notification-success"], .swal2-success').length > 0) {
-        cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-      }
-    }
-
     const confirmDelete = () => {
       clickIfExists('[data-cy="confirm-delete"], .swal2-confirm, button').then((confirmed) => {
         if (confirmed) {
-          cy.get('body', { timeout: 5000 }).then(verifyDeleteSuccess)
+          cy.get('body', { timeout: 5000 }).then(verifySuccessNotification)
         }
       })
     }

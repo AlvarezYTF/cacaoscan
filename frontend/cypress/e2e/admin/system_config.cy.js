@@ -12,12 +12,23 @@ describe('Admin System Configuration', () => {
   const TITLE_TEXT_PATTERNS = ['configuración', 'configuration', 'sistema']
   const RESET_CONFIRM_TEXT_PATTERNS = ['restaurar', 'reset', 'valores', '¿']
   
+  const checkTitleText = ($element) => {
+    const text = $element.text().toLowerCase()
+    return TITLE_TEXT_PATTERNS.some(pattern => text.includes(pattern)) || $element.length > 0
+  }
+
+  const checkTabActive = ($element) => {
+    return $element.hasClass('active') || $element.attr('aria-selected') === 'true' || $element.length > 0
+  }
+
+  const checkResetConfirmText = ($el) => {
+    const text = $el.text().toLowerCase()
+    return RESET_CONFIRM_TEXT_PATTERNS.some(pattern => text.includes(pattern)) || $el.length > 0
+  }
+
   const verifyPageTitle = () => {
     return ifFoundInBody('h1, h2, .page-title', ($el) => {
-      cy.wrap($el).should('satisfy', ($element) => {
-        const text = $element.text().toLowerCase()
-        return TITLE_TEXT_PATTERNS.some(pattern => text.includes(pattern)) || $element.length > 0
-      })
+      cy.wrap($el).should('satisfy', checkTitleText)
     }, () => {
       cy.get('body').should('be.visible')
     })
@@ -56,9 +67,7 @@ describe('Admin System Configuration', () => {
 
   it('should display general settings tab by default', () => {
     ifFoundInBody('[data-cy="tab-general"], [role="tab"]', ($tab) => {
-      cy.wrap($tab).should('satisfy', ($element) => {
-        return $element.hasClass('active') || $element.attr('aria-selected') === 'true' || $element.length > 0
-      })
+      cy.wrap($tab).should('satisfy', checkTabActive)
       cy.get('[data-cy="section-general"], .section, .tab-content', { timeout: 5000 }).should('exist')
     })
   })
@@ -105,28 +114,29 @@ describe('Admin System Configuration', () => {
   })
 
   it('should validate invalid values in analysis thresholds', () => {
+    const handleInvalidThreshold = () => {
+      clickIfExists('[data-cy="btn-save-analysis"], button[type="submit"]')
+      cy.get('.error-message, [data-cy="error"], .alert-error', { timeout: 5000 }).should('exist')
+    }
+
     clickIfExists('[data-cy="tab-analysis"], [role="tab"]').then(() => {
-      typeIfExists('[data-cy="input-confidence-threshold"], input[type="number"]', '150', { clear: true }).then(() => {
-        clickIfExists('[data-cy="btn-save-analysis"], button[type="submit"]')
-        cy.get('.error-message, [data-cy="error"], .alert-error', { timeout: 5000 }).should('exist')
-      })
+      typeIfExists('[data-cy="input-confidence-threshold"], input[type="number"]', '150', { clear: true }).then(handleInvalidThreshold)
     })
   })
 
   it('should update analysis default model', () => {
+    const handleModelSelection = () => {
+      saveAndWait('[data-cy="btn-save-analysis"], button[type="submit"]')
+    }
+
     clickIfExists('[data-cy="tab-analysis"], [role="tab"]').then(() => {
-      selectIfExists('[data-cy="select-model"], select', 'v2.0').then(() => {
-        saveAndWait('[data-cy="btn-save-analysis"], button[type="submit"]')
-      })
+      selectIfExists('[data-cy="select-model"], select', 'v2.0').then(handleModelSelection)
     })
   })
 
   it('should show reset to defaults confirmation', () => {
     clickIfExists('[data-cy="btn-reset-defaults"], button').then(() => {
-      cy.get('.swal2-title, [role="dialog"] h2', { timeout: 5000 }).should('satisfy', ($el) => {
-        const text = $el.text().toLowerCase()
-        return RESET_CONFIRM_TEXT_PATTERNS.some(pattern => text.includes(pattern)) || $el.length > 0
-      })
+      cy.get('.swal2-title, [role="dialog"] h2', { timeout: 5000 }).should('satisfy', checkResetConfirmText)
     })
   })
 

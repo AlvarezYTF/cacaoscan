@@ -209,7 +209,7 @@ describe('LoginForm', () => {
     })
     
     // If not found by props, try finding by text content
-    if (!registerLink?.exists()) {
+    if (registerLink?.exists() === false) {
       const allLinks = wrapper.findAll('a')
       const linkByText = allLinks.find(link => link.text().includes('Crear nueva cuenta') || link.text().includes('registro'))
       expect(linkByText).toBeDefined()

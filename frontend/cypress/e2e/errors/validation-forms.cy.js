@@ -1,6 +1,5 @@
 import {
   verifySelectorsExist,
-  openModal,
   visitAndWaitForBody,
   openModalAndExecute,
   fillFieldSubmitAndVerifyError,

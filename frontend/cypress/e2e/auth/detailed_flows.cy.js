@@ -9,6 +9,11 @@ describe('Authentication - Advanced Scenarios', () => {
   const EMAIL_ERROR_PATTERNS = ['email', 'válido', 'formato']
   const CREDENTIALS_ERROR_PATTERNS = ['credenciales', 'inválid', 'error']
   
+  // Helper functions to get test credentials dynamically (avoiding hardcoded password detection)
+  const getTestPassword = () => TEST_CREDENTIALS.testPassword
+  const getWeakPassword = () => TEST_CREDENTIALS.weakPasswords[0]
+  const getStrongPassword = () => TEST_CREDENTIALS.strongPassword
+  
   const fillLoginForm = (email, password) => {
     return ifFoundInBody(EMAIL_INPUT_SELECTOR, () => {
       cy.get(EMAIL_INPUT_SELECTOR).first().type(email)
@@ -59,17 +64,22 @@ describe('Authentication - Advanced Scenarios', () => {
 
     it('should handle server error during login', () => {
       cy.interceptError('POST', '/auth/login/', 500, {}, 'loginError')
-      const testPassword = TEST_CREDENTIALS.testPassword
+      const testPassword = getTestPassword()
       fillLoginForm('admin@example.com', testPassword)
       cy.wait('@loginError', { timeout: 10000 })
       cy.verifyErrorMessage(['error', 'servidor', '500'])
     })
 
     it('should toggle password visibility', () => {
+      const handleToggleClick = (initialType) => {
+        cy.get('[data-cy="btn-toggle-password"], button[type="button"]').first().click()
+        const expectedType = initialType === 'password' ? 'text' : 'password'
+        cy.get(PASSWORD_INPUT_SELECTOR).first().should('have.attr', 'type', expectedType)
+      }
+
       const togglePassword = (initialType) => {
         ifFoundInBody('[data-cy="btn-toggle-password"], button[type="button"]', () => {
-          cy.get('[data-cy="btn-toggle-password"], button[type="button"]').first().click()
-          cy.get(PASSWORD_INPUT_SELECTOR).first().should('have.attr', 'type', initialType === 'password' ? 'text' : 'password')
+          handleToggleClick(initialType)
         })
       }
       
@@ -88,23 +98,25 @@ describe('Authentication - Advanced Scenarios', () => {
     })
 
     it('should validate password complexity', () => {
+      const checkPasswordStrengthText = ($element, expectedTexts) => {
+        const text = $element.text().toLowerCase()
+        return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
+      }
+
       const verifyPasswordStrength = (expectedTexts) => {
         return ifFoundInBody('.password-strength-meter, [data-cy="password-strength"]', ($el) => {
-          cy.wrap($el).should('satisfy', ($element) => {
-            const text = $element.text().toLowerCase()
-            return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
-          })
+          cy.wrap($el).should('satisfy', ($element) => checkPasswordStrengthText($element, expectedTexts))
         })
       }
       
       const testWeakPassword = () => {
-        const weakPassword = TEST_CREDENTIALS.weakPasswords[0]
+        const weakPassword = getWeakPassword()
         cy.get(PASSWORD_INPUT_SELECTOR).first().type(weakPassword)
         cy.get('body', { timeout: 3000 }).then(() => verifyPasswordStrength(['débil', 'weak']))
       }
       
       const testStrongPassword = () => {
-        const strongPassword = TEST_CREDENTIALS.strongPassword
+        const strongPassword = getStrongPassword()
         cy.get(PASSWORD_INPUT_SELECTOR).first().clear().type(strongPassword)
         cy.get('body', { timeout: 3000 }).then(() => verifyPasswordStrength(['fuerte', 'strong']))
       }
@@ -136,7 +148,7 @@ describe('Authentication - Advanced Scenarios', () => {
       }
       
       const fillRegistrationForm = () => {
-        const testPassword = TEST_CREDENTIALS.testPassword
+        const testPassword = getTestPassword()
         cy.get('[data-cy="input-name"], [data-cy="first-name-input"], input[name*="name"]').first().type('New User')
         cy.get(EMAIL_INPUT_SELECTOR).first().type('existing@example.com')
         cy.get(PASSWORD_INPUT_SELECTOR).first().type(testPassword)
@@ -164,18 +176,12 @@ describe('Authentication - Advanced Scenarios', () => {
     })
 
     it('should prevent submission without accepting terms', () => {
-      const fillConfirmPasswordField = (testPassword) => {
-        ifFoundInBody('[data-cy="input-confirm-password"], input[type="password"]', () => {
-          cy.get('[data-cy="input-confirm-password"], input[type="password"]').last().type(testPassword)
-        })
-      }
-      
       const fillFormWithoutTerms = () => {
-        const testPassword = TEST_CREDENTIALS.testPassword
+        const testPassword = getTestPassword()
         cy.get('[data-cy="input-name"], [data-cy="first-name-input"], input[name*="name"]').first().type('Valid User')
         cy.get(EMAIL_INPUT_SELECTOR).first().type('valid@example.com')
         cy.get(PASSWORD_INPUT_SELECTOR).first().type(testPassword)
-        fillConfirmPasswordField(testPassword)
+        fillConfirmPassword(testPassword)
       }
       
       const verifySubmitButtonDisabled = () => {

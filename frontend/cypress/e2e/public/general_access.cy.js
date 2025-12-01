@@ -1,6 +1,5 @@
 import {
-  visitAndWaitForBody,
-  verifyErrorMessageWithSelectors
+  visitAndWaitForBody
 } from '../../support/helpers'
 
 describe('Public Pages & Routing', () => {

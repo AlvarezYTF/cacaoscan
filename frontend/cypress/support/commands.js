@@ -51,7 +51,7 @@ Cypress.Commands.add('login', (userType = 'admin') => {
           // Si el endpoint no existe, usar mock para permitir que los tests continúen
           cy.log('⚠️ Login endpoint not found (404). Using mock authentication for testing.')
           const createMockSession = (win) => {
-            const userTypeStr = typeof userType === 'object' ? JSON.stringify(userType) : String(userType)
+            const userTypeStr = typeof userType === 'object' && userType !== null ? JSON.stringify(userType) : String(userType)
             const mockToken = `mock_token_${userTypeStr}_${Date.now()}`
             win.localStorage.setItem('access_token', mockToken)
             win.localStorage.setItem('refresh_token', `mock_refresh_${userTypeStr}`)
@@ -513,7 +513,7 @@ Cypress.Commands.add('createLote', (loteData) => {
 
 // Edit lote
 Cypress.Commands.add('editLote', (loteId, updates) => {
-  const loteIdStr = typeof loteId === 'object' ? JSON.stringify(loteId) : String(loteId)
+  const loteIdStr = typeof loteId === 'object' && loteId !== null ? JSON.stringify(loteId) : String(loteId)
   cy.get(`[data-cy="lote-${loteIdStr}"]`).first().click({ force: true })
   cy.get('[data-cy="edit-lote"], button').first().click({ force: true })
   cy.get('body', { timeout: 5000 }).should('be.visible')
@@ -529,7 +529,7 @@ Cypress.Commands.add('editLote', (loteId, updates) => {
 
 // Delete lote
 Cypress.Commands.add('deleteLote', (loteId) => {
-  const loteIdStr = typeof loteId === 'object' ? JSON.stringify(loteId) : String(loteId)
+  const loteIdStr = typeof loteId === 'object' && loteId !== null ? JSON.stringify(loteId) : String(loteId)
   cy.get(`[data-cy="lote-${loteIdStr}"]`).first().click({ force: true })
   cy.get('[data-cy="delete-lote"], button').first().click({ force: true })
   cy.get('[data-cy="confirm-delete"], .swal2-confirm, button').first().click({ force: true })
@@ -831,7 +831,7 @@ Cypress.Commands.add('requestPasswordRecovery', (email) => {
  * @returns {Cypress.Chainable}
  */
 Cypress.Commands.add('resetPassword', (token, newPassword, confirmPassword) => {
-  const tokenStr = typeof token === 'object' ? JSON.stringify(token) : String(token)
+  const tokenStr = typeof token === 'object' && token !== null ? JSON.stringify(token) : String(token)
   cy.visit(`/reset-password?token=${tokenStr}`)
   cy.get('body', { timeout: 10000 }).should('be.visible')
   

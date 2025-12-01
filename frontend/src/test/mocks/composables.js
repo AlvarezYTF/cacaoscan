@@ -45,12 +45,12 @@ export function createMockUseFormValidation(overrides = {}) {
     },
     isValidPhone: (phone) => {
       // eslint-disable-next-line prefer-regex-literals
-      const digits = String(phone).replace(/\D/g, '')
+      const digits = String(phone).replaceAll(/\D/g, '')
       return digits.length >= 7 && digits.length <= 15
     },
     isValidDocument: (doc) => {
       // eslint-disable-next-line prefer-regex-literals
-      const digits = String(doc).replace(/\D/g, '')
+      const digits = String(doc).replaceAll(/\D/g, '')
       return digits.length >= 6 && digits.length <= 11
     },
     isValidBirthdate: () => true,

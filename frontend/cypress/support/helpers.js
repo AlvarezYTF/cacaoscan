@@ -891,6 +891,7 @@ export function setupEmptyListIntercept(urlPattern, alias) {
   }).as(alias)
 }
 
+
 /**
  * Verifies element exists with multiple selector alternatives
  * @param {Array<string>} selectors - Array of CSS selectors to try
@@ -1222,17 +1223,6 @@ export function verifyUrlContains(patterns, timeout = 10000) {
   return cy.url({ timeout }).should('satisfy', (url) => {
     return patterns.some(pattern => url.includes(pattern)) || url.length > 0
   })
-}
-
-/**
- * Visits page and waits for body to be visible
- * @param {string} url - URL to visit
- * @param {number} timeout - Timeout in milliseconds
- * @returns {Cypress.Chainable} Cypress chainable
- */
-export function visitAndWaitForBody(url, timeout = 10000) {
-  cy.visit(url)
-  return cy.get('body', { timeout }).should('be.visible')
 }
 
 /**

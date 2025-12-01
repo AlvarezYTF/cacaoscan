@@ -12,6 +12,42 @@ describe('Autenticación - Login', () => {
     }
   }
 
+  const checkUrlIncludesRoutes = (url, routes) => {
+    return routes.some(route => url.includes(route))
+  }
+
+  const checkErrorText = (text) => {
+    const lowerText = text.toLowerCase()
+    return lowerText.includes('credenciales') || 
+           lowerText.includes('inválid') || 
+           lowerText.includes('error') || 
+           lowerText.includes('incorrect')
+  }
+
+  const checkEmailErrorText = (text) => {
+    const lowerText = text.toLowerCase()
+    return lowerText.includes('email') || 
+           lowerText.includes('válido') || 
+           lowerText.includes('formato') || 
+           text.length > 0
+  }
+
+  const checkRequiredAttribute = ($el) => {
+    return $el.attr('required') !== undefined || $el.length > 0
+  }
+
+  const checkUrlIncludesLogin = (url) => {
+    return url.includes('/login') || url.length > 0
+  }
+
+  const checkUrlNotIncludesLogin = (url) => {
+    return !url.includes('/login') || url.length > 0
+  }
+
+  const checkUrlIncludesLoginOrAdmin = (url) => {
+    return url.includes('/login') || url.includes('/admin')
+  }
+
   const performLoginAction = (email, password, expectedRoutes) => {
     const submitLogin = ($body) => {
       if ($body.find('[data-cy="email-input"], input[type="text"], input[type="email"]').length > 0) {
@@ -20,9 +56,7 @@ describe('Autenticación - Login', () => {
         cy.get('[data-cy="login-button"], button[type="submit"]').first().click()
         
         const routes = Array.isArray(expectedRoutes) ? expectedRoutes : [expectedRoutes]
-        cy.url({ timeout: 10000 }).should('satisfy', (url) => {
-          return routes.some(route => url.includes(route))
-        })
+        cy.url({ timeout: 10000 }).should('satisfy', (url) => checkUrlIncludesRoutes(url, routes))
         cy.get('body', { timeout: 10000 }).should('be.visible')
       }
     }
@@ -34,8 +68,7 @@ describe('Autenticación - Login', () => {
     cy.get('body', { timeout: 5000 }).then(($error) => {
       if ($error.find('[data-cy="error-message"], .error-message, .swal2-error').length > 0) {
         cy.get('[data-cy="error-message"], .error-message, .swal2-error').first().should('satisfy', (el) => {
-          const text = el.text().toLowerCase()
-          return text.includes('credenciales') || text.includes('inválid') || text.includes('error') || text.includes('incorrect')
+          return checkErrorText(el.text())
         })
       }
     })
@@ -45,8 +78,7 @@ describe('Autenticación - Login', () => {
     cy.get('body', { timeout: 3000 }).then(($error) => {
       if ($error.find('[data-cy="email-error"], .error-message').length > 0) {
         cy.get('[data-cy="email-error"], .error-message').first().should('satisfy', (el) => {
-          const text = el.text().toLowerCase()
-          return text.includes('email') || text.includes('válido') || text.includes('formato') || text.length > 0
+          return checkEmailErrorText(el.text())
         })
       }
     })
@@ -55,9 +87,7 @@ describe('Autenticación - Login', () => {
   const verifyRequiredField = (selector) => {
     cy.get('body').then(($form) => {
       if ($form.find(selector).length > 0) {
-        cy.get(selector).first().should('satisfy', ($el) => {
-          return $el.attr('required') !== undefined || $el.length > 0
-        })
+        cy.get(selector).first().should('satisfy', checkRequiredAttribute)
       }
     })
   }
@@ -109,9 +139,7 @@ describe('Autenticación - Login', () => {
           cy.get('[data-cy="login-button"], button[type="submit"]').first().click()
           
           verifyErrorExists()
-          cy.url({ timeout: 5000 }).should('satisfy', (url) => {
-            return url.includes('/login') || url.length > 0
-          })
+          cy.url({ timeout: 5000 }).should('satisfy', checkUrlIncludesLogin)
         }
       }
 
@@ -166,27 +194,22 @@ describe('Autenticación - Login', () => {
         performLoginAction(admin.email, admin.password, ['/admin', '/dashboard'])
       }
 
+      const verifyLoginForm = ($form) => {
+        if ($form.find('[data-cy="email-input"], input[type="text"], input[type="email"]').length > 0) {
+          cy.get('[data-cy="email-input"], input[type="text"], input[type="email"]').first().should('be.visible')
+        }
+        if ($form.find('[data-cy="login-form"], form').length > 0) {
+          cy.get('[data-cy="login-form"], form').should('be.visible')
+        }
+      }
+
+      const afterLogout = () => {
+        cy.get('body', { timeout: 5000 }).then(verifyLoginForm)
+      }
+
       cy.get('body', { timeout: 10000 }).then(checkRememberMe).then(() => {
-        cy.url({ timeout: 10000 }).should('satisfy', (url) => {
-          return !url.includes('/login') || url.length > 0
-        })
+        cy.url({ timeout: 10000 }).should('satisfy', checkUrlNotIncludesLogin)
         
-        cy.logout()
-        cy.visit('/login')
-        
-        const verifyLoginForm = ($form) => {
-          if ($form.find('[data-cy="email-input"], input[type="text"], input[type="email"]').length > 0) {
-            cy.get('[data-cy="email-input"], input[type="text"], input[type="email"]').first().should('be.visible')
-          }
-          if ($form.find('[data-cy="login-form"], form').length > 0) {
-            cy.get('[data-cy="login-form"], form').should('be.visible')
-          }
-        }
-
-        const afterLogout = () => {
-          cy.get('body', { timeout: 5000 }).then(verifyLoginForm)
-        }
-
         cy.logout()
         cy.visit('/login')
         afterLogout()
@@ -198,17 +221,17 @@ describe('Autenticación - Login', () => {
     cy.fixture('users').then((users) => {
       const admin = users.admin
       
-      cy.navigateTo('/admin/agricultores')
-      
-      cy.url({ timeout: 5000 }).should('satisfy', (url) => {
-        return url.includes('/login') || url.includes('/admin')
-      })
-      
-      cy.url().then((url) => {
+      const handleLoginIfNeeded = (url) => {
         if (url.includes('/login')) {
           performLoginAction(admin.email, admin.password, ['/admin/agricultores', '/admin/dashboard', '/admin'])
         }
-      })
+      }
+
+      cy.navigateTo('/admin/agricultores')
+      
+      cy.url({ timeout: 5000 }).should('satisfy', checkUrlIncludesLoginOrAdmin)
+      
+      cy.url().then(handleLoginIfNeeded)
     })
   })
 })

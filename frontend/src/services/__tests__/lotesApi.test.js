@@ -35,10 +35,10 @@ const testApiCall = async (apiFunction, apiMethod, expectedUrl, expectedParams, 
   apiMethod.mockResolvedValue(mockResponse)
   const result = await apiFunction(expectedParams)
   expect(apiMethod).toHaveBeenCalledWith(expectedUrl, expectedParams || {})
-  if (expectedResult !== undefined) {
-    expect(result).toEqual(expectedResult)
-  } else {
+  if (expectedResult === undefined) {
     expect(result).toBeDefined()
+  } else {
+    expect(result).toEqual(expectedResult)
   }
 }
 

@@ -12,59 +12,42 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
     }
   }
 
-  const verifyLoteItems = () => {
-    cy.get('[data-cy="lote-item"], .lote-item, .item', { timeout: 5000 }).then(($items) => {
-      if ($items.length > 0) {
-        cy.wrap($items).each(($item) => {
-          cy.wrap($item).within(() => {
-            const loteSelectors = [
-              '[data-cy="lote-name"]',
-              '[data-cy="lote-area"]',
-              '[data-cy="lote-variedad"]'
-            ]
-            verifySelectorsExist(loteSelectors, $item, 3000)
-          })
-        })
+  it('debe permitir exportar reporte completo de finca con lotes', () => {
+    const handlePdfExport = ($pdf) => {
+      if ($pdf.find('[data-cy="export-pdf"], button').length > 0) {
+        cy.get('[data-cy="export-pdf"], button').first().click()
+        cy.verifyDownload('reporte-finca-completo.pdf')
+      }
+    }
+
+    const handleExportOptions = ($export) => {
+      if ($export.find('[data-cy="export-pdf"], [data-cy="export-excel"]').length > 0) {
+        cy.get('[data-cy="export-pdf"], [data-cy="export-excel"]').first().should('exist')
+        cy.get('body').then(handlePdfExport)
       } else {
         cy.get('body').should('be.visible')
       }
-    })
-  }
+    }
 
-  it('debe permitir exportar reporte completo de finca con lotes', () => {
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
-    cy.get('body').then(($body) => {
+    const handleExportButton = ($details) => {
+      if ($details.find('[data-cy="export-finca-report"], button').length > 0) {
+        cy.get('[data-cy="export-finca-report"], button').first().click({ force: true })
+        cy.get('body', { timeout: 5000 }).then(handleExportOptions)
+      } else {
+        cy.get('body').should('be.visible')
+      }
+    }
+
+    const handleFincaItem = ($body) => {
       if ($body.find('[data-cy="finca-item"], .finca-item, .item, tbody tr').length > 0) {
         cy.get('[data-cy="finca-item"], .finca-item, .item, tbody tr').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($details) => {
-          if ($details.find('[data-cy="export-finca-report"], button').length > 0) {
-            cy.get('[data-cy="export-finca-report"], button').first().click({ force: true })
-            
-            cy.get('body', { timeout: 5000 }).then(($export) => {
-              // Verificar opciones de exportación
-              if ($export.find('[data-cy="export-pdf"], [data-cy="export-excel"]').length > 0) {
-                cy.get('[data-cy="export-pdf"], [data-cy="export-excel"]').first().should('exist')
-                
-                // Exportar como PDF si existe
-                cy.get('body').then(($pdf) => {
-                  if ($pdf.find('[data-cy="export-pdf"], button').length > 0) {
-                    cy.get('[data-cy="export-pdf"], button').first().click()
-                    cy.verifyDownload('reporte-finca-completo.pdf')
-                  }
-                })
-              } else {
-                cy.get('body').should('be.visible')
-              }
-            })
-          } else {
-            cy.get('body').should('be.visible')
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
+        cy.get('body', { timeout: 5000 }).then(handleExportButton)
       }
-    })
+    }
+
+    cy.visit('/mis-fincas')
+    cy.get('body', { timeout: 10000 }).should('be.visible')
+    cy.get('body').then(handleFincaItem)
   })
 
   it('debe mostrar mapa con ubicación de lotes dentro de la finca', () => {
@@ -290,10 +273,10 @@ describe('Gestión de Fincas y Lotes - Relaciones', () => {
           cy.get('body').then(($area) => {
             if ($area.find('[data-cy="finca-area"]').length > 0 && $area.find('[data-cy="total-area-lotes"]').length > 0) {
               cy.get('[data-cy="finca-area"]').then(($fincaArea) => {
-                const fincaArea = parseFloat($fincaArea.text())
+                const fincaArea = Number.parseFloat($fincaArea.text())
                 
                 cy.get('[data-cy="total-area-lotes"]').then(($lotesArea) => {
-                  const lotesArea = parseFloat($lotesArea.text())
+                  const lotesArea = Number.parseFloat($lotesArea.text())
                   
                   expect(lotesArea).to.be.at.most(fincaArea)
                 })

@@ -2,7 +2,10 @@ import {
   waitForPageLoad,
   verifyElementWithAlternatives,
   verifyUrlPatterns,
-  clickIfExists
+  clickIfExists,
+  fillFieldIfExists,
+  typeIfExists,
+  verifyErrorMessageWithAlternatives
 } from '../../support/helpers'
 
 describe('Farmer Dashboard', () => {
@@ -11,17 +14,23 @@ describe('Farmer Dashboard', () => {
   })
 
   it('should welcome the farmer user', () => {
+    const checkWelcomeText = ($el) => {
+      const text = $el.text().toLowerCase()
+      return text.includes('bienvenido') || text.includes('welcome') || text.includes('dashboard') || text.length > 0
+    }
+
+    const handleTitleVerification = (found, titleSelectors) => {
+      if (found) {
+        cy.get(titleSelectors.join(', ')).first().should('satisfy', checkWelcomeText)
+      }
+    }
+
     waitForPageLoad()
     
     cy.get('body').then(($body) => {
       const titleSelectors = ['h1', 'h2', '.page-title', '[data-cy="page-title"]']
       verifyElementWithAlternatives(titleSelectors, $body).then((found) => {
-        if (found) {
-          cy.get(titleSelectors.join(', ')).first().should('satisfy', ($el) => {
-            const text = $el.text().toLowerCase()
-            return text.includes('bienvenido') || text.includes('welcome') || text.includes('dashboard') || text.length > 0
-          })
-        }
+        handleTitleVerification(found, titleSelectors)
       })
       
       const userNameSelectors = ['[data-cy="user-name"]', '.user-name']
@@ -83,15 +92,6 @@ describe('Farmer Dashboard', () => {
     })
   })
 })
-
-import {
-  waitForPageLoad,
-  verifyElementWithAlternatives,
-  fillFieldIfExists,
-  clickIfExists,
-  typeIfExists,
-  verifyErrorMessageWithAlternatives
-} from '../../support/helpers'
 
 describe('Farmer Profile Settings', () => {
   beforeEach(() => {
