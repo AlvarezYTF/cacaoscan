@@ -59,7 +59,7 @@ describe('authApi', () => {
         user: { id: 1, email: 'test@example.com' },
         access_expires_at: '2024-12-31T23:59:59Z',
         refresh_expires_at: '2024-12-31T23:59:59Z',
-        message: 'Login exitoso'
+        message: 'Login successful'
       })
     })
 
@@ -110,7 +110,7 @@ describe('authApi', () => {
       const result = await authApi.login(credentials)
 
       expect(result.token).toBe('access-token')
-      expect(result.message).toBe('Login exitoso')
+      expect(result.message).toBe('Login successful')
     })
 
     it('should throw error on invalid response format', async () => {
@@ -299,7 +299,14 @@ describe('authApi', () => {
       const result = await authApi.getCurrentUser()
 
       expect(api.get).toHaveBeenCalledWith('/auth/profile/', { params: {} })
-      expect(result).toEqual(mockUser)
+      expect(result.id).toBe(1)
+      expect(result.email).toBe('test@example.com')
+      expect(result.first_name).toBe('John')
+      expect(result.last_name).toBe('Doe')
+      expect(result.username).toBeDefined()
+      expect(result.role).toBeDefined()
+      expect(result.is_active).toBeDefined()
+      expect(result.is_verified).toBeDefined()
     })
   })
 

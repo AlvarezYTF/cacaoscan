@@ -1,12 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import servicioAnalisis from '../servicioAnalisis'
 import { createMockApi } from '@/test/mocks'
+import api from '../api'
 
-const mockApi = createMockApi()
-
-vi.mock('../api', () => ({
-  default: mockApi
-}))
+vi.mock('../api', () => {
+  const mockApi = createMockApi()
+  return {
+    default: mockApi
+  }
+})
 
 vi.mock('@/utils/apiResponse', () => ({
   normalizeResponse: (data) => data.results || data || []

@@ -9,6 +9,7 @@ import { apiPost, apiGet, apiDelete, apiPatch } from './apiClient'
 import api from './api'
 import { validateImageFile, getImageValidationError } from '@/utils/imageValidationUtils'
 import { handleApiError } from './apiErrorHandler'
+import { createImageFormData } from '@/utils/formDataUtils'
 
 // Endpoints de la API
 const API_ENDPOINTS = {
@@ -523,7 +524,7 @@ export async function exportResults(options = {}) {
 // Re-export validateImageFile from utils for backward compatibility
 export { validateImageFile } from '@/utils/imageValidationUtils'
 
-// Import and re-export createImageFormData from utils for backward compatibility
+// Re-export createImageFormData from utils for backward compatibility
 export { createImageFormData } from '@/utils/formDataUtils'
 
 // No exportar api directamente, solo las funciones
