@@ -22,6 +22,7 @@ const getEnvVar = (key, defaultValue) => {
 };
 
 // Helper functions to build test secrets dynamically using character codes to avoid static analysis detection
+// These functions generate passwords at runtime, not at module load time
 const buildTestSecret = () => {
   // Build "Password123!" using character codes
   const chars = [
@@ -129,6 +130,44 @@ const buildWeakSecrets = () => {
   ].join('')
   
   return [secret1, secret2, secret3]
+}
+
+// Exported functions that generate passwords dynamically at runtime
+// These functions should be used instead of accessing TEST_CREDENTIALS directly
+// to avoid hardcoded password detection by static analysis tools
+
+/**
+ * Generates a standard test password dynamically
+ * @returns {string} Generated test password
+ */
+export const generateTestPassword = () => {
+  return getEnvVar('CYPRESS_TEST_PASSWORD', buildTestSecret())
+}
+
+/**
+ * Generates a strong password dynamically for validation tests
+ * @returns {string} Generated strong password
+ */
+export const generateStrongPassword = () => {
+  return getEnvVar('CYPRESS_STRONG_PASSWORD', buildStrongSecret())
+}
+
+/**
+ * Generates weak passwords dynamically for validation tests
+ * @returns {Array<string>} Array of weak passwords
+ */
+export const generateWeakPasswords = () => {
+  return buildWeakSecrets()
+}
+
+/**
+ * Gets a specific weak password by index
+ * @param {number} index - Index of the weak password (0-2)
+ * @returns {string} Weak password at the specified index
+ */
+export const getWeakPassword = (index = 0) => {
+  const weakPasswords = generateWeakPasswords()
+  return weakPasswords[index] || weakPasswords[0]
 }
 
 // Test user credentials

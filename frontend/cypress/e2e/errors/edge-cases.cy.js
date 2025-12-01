@@ -5,8 +5,6 @@ import {
   visitAndWaitForBodyVisible,
   openModalFillFieldAndVerifyError,
   uploadFileAndVerifyError,
-  setupInterceptAndVerifyError,
-  fillLongTextAndVerifyError,
   ifFoundInBody,
   clickIfExistsAndContinue,
   verifyErrorMessageGeneric
@@ -642,65 +640,62 @@ describe('Manejo de Errores - Casos Edge', () => {
 
   it('debe manejar datos vacíos en listas', () => {
     setupEmptyListIntercept('/fincas/**', 'emptyList')
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
+    visitAndWaitForBodyVisible('/mis-fincas')
     
-    cy.wait(1000)
-    
-    cy.get('body', { timeout: 5000 }).then(($body) => {
-      if ($body.find('[data-cy="empty-state"], .empty-state, .empty').length > 0) {
-        cy.get('[data-cy="empty-state"], .empty-state, .empty').should('exist')
-        cy.get('[data-cy="empty-message"], .empty-message', { timeout: 3000 }).should('exist')
-        cy.get('[data-cy="empty-action"], .empty-action, button', { timeout: 3000 }).should('exist')
-      } else {
-        cy.get('body').should('be.visible')
-      }
+    ifFoundInBody('[data-cy="empty-state"], .empty-state, .empty', () => {
+      cy.get('[data-cy="empty-state"], .empty-state, .empty').should('exist')
+      ifFoundInBody('[data-cy="empty-message"], .empty-message', () => {
+        cy.get('[data-cy="empty-message"], .empty-message').should('exist')
+      })
+      ifFoundInBody('[data-cy="empty-action"], .empty-action, button', () => {
+        cy.get('[data-cy="empty-action"], .empty-action, button').should('exist')
+      })
     })
   })
 
   it('debe manejar búsqueda sin resultados', () => {
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
+    visitAndWaitForBodyVisible('/mis-fincas')
     
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="search-fincas"], input[type="search"], input[placeholder*="search"]').length > 0) {
-        cy.get('[data-cy="search-fincas"], input[type="search"], input[placeholder*="search"]').first().type('noexiste123')
-        
-        cy.get('body', { timeout: 5000 }).then(($afterSearch) => {
-          if ($afterSearch.find('[data-cy="no-results"], .no-results, .empty').length > 0) {
-            cy.get('[data-cy="no-results"], .no-results, .empty').should('exist')
-            cy.get('[data-cy="no-results-message"], .no-results-message', { timeout: 3000 }).should('exist')
-            cy.get('[data-cy="clear-search"], button, .clear', { timeout: 3000 }).should('exist')
-          }
+    ifFoundInBody('[data-cy="search-fincas"], input[type="search"], input[placeholder*="search"]', () => {
+      cy.get('[data-cy="search-fincas"], input[type="search"], input[placeholder*="search"]').first().type('noexiste123')
+      
+      ifFoundInBody('[data-cy="no-results"], .no-results, .empty', () => {
+        cy.get('[data-cy="no-results"], .no-results, .empty').should('exist')
+        ifFoundInBody('[data-cy="no-results-message"], .no-results-message', () => {
+          cy.get('[data-cy="no-results-message"], .no-results-message').should('exist')
         })
-      }
+        ifFoundInBody('[data-cy="clear-search"], button, .clear', () => {
+          cy.get('[data-cy="clear-search"], button, .clear').should('exist')
+        })
+      })
     })
   })
 
   it('debe manejar filtros sin resultados', () => {
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
+    visitAndWaitForBodyVisible('/mis-fincas')
     
-    cy.get('body').then(($body) => {
-      const handleNoResults = ($afterFilter) => {
-        if ($afterFilter.find('[data-cy="no-results"], .no-results').length > 0) {
-          cy.get('[data-cy="no-results"], .no-results').should('exist')
-          cy.get('[data-cy="clear-filters"], button', { timeout: 3000 }).should('exist')
-        }
-      }
+    const handleNoResults = () => {
+      ifFoundInBody('[data-cy="no-results"], .no-results', () => {
+        cy.get('[data-cy="no-results"], .no-results').should('exist')
+        ifFoundInBody('[data-cy="clear-filters"], button', () => {
+          cy.get('[data-cy="clear-filters"], button').should('exist')
+        })
+      })
+    }
 
-      const applyFilterAndVerify = ($afterClick) => {
-        if ($afterClick.find('[data-cy="province-filter"], select').length > 0) {
-          cy.get('[data-cy="province-filter"], select').first().select('Provincia Inexistente', { force: true })
-          cy.get('[data-cy="apply-filter"], button[type="submit"]').first().click()
-          cy.get('body', { timeout: 5000 }).then(handleNoResults)
-        }
-      }
+    const applyFilterAndVerify = () => {
+      ifFoundInBody('[data-cy="province-filter"], select', () => {
+        cy.get('[data-cy="province-filter"], select').first().select('Provincia Inexistente', { force: true })
+        cy.get('[data-cy="apply-filter"], button[type="submit"]').first().click()
+        cy.wait(1000)
+        handleNoResults()
+      })
+    }
 
-      if ($body.find('[data-cy="location-filter"], button, .filter').length > 0) {
-        cy.get('[data-cy="location-filter"], button, .filter').first().click({ force: true })
-        cy.get('body', { timeout: 3000 }).then(applyFilterAndVerify)
-      }
+    ifFoundInBody('[data-cy="location-filter"], button, .filter', () => {
+      cy.get('[data-cy="location-filter"], button, .filter').first().click({ force: true })
+      cy.wait(500)
+      applyFilterAndVerify()
     })
   })
 
@@ -754,29 +749,16 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar fechas inválidas', () => {
-    cy.visit('/mis-lotes')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
+    visitAndWaitForBodyVisible('/mis-lotes')
     
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="add-lote-button"], button').length > 0) {
-        cy.get('[data-cy="add-lote-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="lote-edad"], input[type="number"]').length > 0) {
-            cy.get('[data-cy="lote-edad"], input[type="number"]').first().type('50', { force: true })
-            
-            cy.get('body', { timeout: 3000 }).then(($error) => {
-              if ($error.find('[data-cy="lote-edad-error"], .error-message').length > 0) {
-                cy.get('[data-cy="lote-edad-error"], .error-message').first().should('satisfy', ($el) => {
-                  const text = $el.text().toLowerCase()
-                  return text.includes('edad') || text.includes('años') || text.includes('menor') || text.length > 0
-                })
-              }
-            })
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
-      }
+    clickIfExistsAndContinue('[data-cy="add-lote-button"], button', () => {
+      ifFoundInBody('[data-cy="lote-edad"], input[type="number"]', () => {
+        cy.get('[data-cy="lote-edad"], input[type="number"]').first().type('50', { force: true })
+        verifyErrorMessageGeneric(
+          ['edad', 'años', 'menor'],
+          '[data-cy="lote-edad-error"], .error-message'
+        )
+      })
     })
   })
 
@@ -886,18 +868,13 @@ describe('Manejo de Errores - Casos Edge', () => {
       }
     }).as('corruptData')
     
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
+    visitAndWaitForBodyVisible('/mis-fincas')
     
-    cy.wait(1000)
-    
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="finca-item"], .finca-item, .item').length > 0) {
-        cy.get('[data-cy="finca-item"], .finca-item, .item').should('exist')
-      }
-      if ($body.find('[data-cy="corrupt-data-warning"], .warning').length > 0) {
-        cy.get('[data-cy="corrupt-data-warning"], .warning').should('exist')
-      }
+    ifFoundInBody('[data-cy="finca-item"], .finca-item, .item', () => {
+      cy.get('[data-cy="finca-item"], .finca-item, .item').should('exist')
+    })
+    ifFoundInBody('[data-cy="corrupt-data-warning"], .warning', () => {
+      cy.get('[data-cy="corrupt-data-warning"], .warning').should('exist')
     })
   })
 
@@ -912,18 +889,13 @@ describe('Manejo de Errores - Casos Edge', () => {
       }
     }).as('partialResponse')
     
-    cy.visit('/mis-fincas')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
+    visitAndWaitForBodyVisible('/mis-fincas')
     
-    cy.wait(1000)
-    
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="partial-data-warning"], .warning').length > 0) {
-        cy.get('[data-cy="partial-data-warning"], .warning').should('exist')
-      }
-      if ($body.find('[data-cy="load-more"], button').length > 0) {
-        cy.get('[data-cy="load-more"], button').should('exist')
-      }
+    ifFoundInBody('[data-cy="partial-data-warning"], .warning', () => {
+      cy.get('[data-cy="partial-data-warning"], .warning').should('exist')
+    })
+    ifFoundInBody('[data-cy="load-more"], button', () => {
+      cy.get('[data-cy="load-more"], button').should('exist')
     })
   })
 

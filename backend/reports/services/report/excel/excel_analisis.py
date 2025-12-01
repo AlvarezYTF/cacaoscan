@@ -10,6 +10,13 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.chart import BarChart, Reference
 
 from .excel_base import ExcelBaseGenerator
+from ..report_stats import (
+    apply_prediction_filters,
+    get_quality_stats,
+    get_lotes_stats,
+    get_activity_stats,
+    get_login_stats
+)
 
 # Import models safely
 from api.utils.model_imports import get_models_safely
@@ -65,13 +72,13 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             self._create_workbook("Reporte de Calidad")
             
             # Apply filters
-            queryset = self._apply_filters(CacaoPrediction.objects.all(), filtros)
+            queryset = apply_prediction_filters(CacaoPrediction.objects.all(), filtros)
             
             # Create header
             self._create_header("Reporte de Calidad de Granos de Cacao", user)
             
             # General statistics
-            stats = self._get_quality_stats(queryset)
+            stats = get_quality_stats(queryset)
             self._create_stats_section(stats)
             
             # Detailed analyses table
@@ -122,7 +129,7 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             self._create_finca_info_section(finca)
             
             # Lot statistics
-            lotes_stats = self._get_lotes_stats(finca)
+            lotes_stats = get_lotes_stats(finca)
             self._create_lotes_stats_section(lotes_stats)
             
             # Analysis by lot
@@ -156,11 +163,11 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             self._create_header("Reporte de Auditoría del Sistema", user)
             
             # Activity statistics
-            activity_stats = self._get_activity_stats(filtros)
+            activity_stats = get_activity_stats(filtros)
             self._create_activity_stats_section(activity_stats)
             
             # Login statistics
-            login_stats = self._get_login_stats(filtros)
+            login_stats = get_login_stats(filtros)
             self._create_login_stats_section(login_stats)
             
             # Detailed activities sheet
@@ -197,15 +204,15 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             
             # Generate according to type
             if tipo_reporte == 'calidad':
-                queryset = self._apply_filters(CacaoPrediction.objects.all(), filtros)
-                stats = self._get_quality_stats(queryset)
+                queryset = apply_prediction_filters(CacaoPrediction.objects.all(), filtros)
+                stats = get_quality_stats(queryset)
                 self._create_custom_quality_section(stats, parametros)
             elif tipo_reporte == 'finca':
                 if parametros.get('finca_id'):
                     finca = Finca.objects.get(id=parametros['finca_id'])
                     self._create_custom_finca_section(finca, parametros)
             elif tipo_reporte == 'auditoria':
-                activity_stats = self._get_activity_stats(filtros)
+                activity_stats = get_activity_stats(filtros)
                 self._create_custom_audit_section(activity_stats, parametros)
             
             # Save to buffer
@@ -215,76 +222,6 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             logger.error(f"Error generando reporte Excel personalizado: {e}")
             raise
     
-    def _apply_filters(self, queryset, filtros):
-        """Apply filters to queryset."""
-        if not filtros:
-            return queryset
-        
-        # Filter by date
-        if filtros.get('fecha_desde'):
-            queryset = queryset.filter(created_at__date__gte=filtros['fecha_desde'])
-        if filtros.get('fecha_hasta'):
-            queryset = queryset.filter(created_at__date__lte=filtros['fecha_hasta'])
-        
-        # Filter by user
-        if filtros.get('usuario_id'):
-            queryset = queryset.filter(image__user_id=filtros['usuario_id'])
-        
-        # Filter by farm
-        if filtros.get('finca_id'):
-            queryset = queryset.filter(image__finca=filtros['finca_id'])
-        
-        # Filter by lot
-        if filtros.get('lote_id'):
-            queryset = queryset.filter(image__lote_id=filtros['lote_id'])
-        
-        return queryset
-    
-    def _get_quality_stats(self, queryset):
-        """Get quality statistics."""
-        total_analyses = queryset.count()
-        
-        if total_analyses == 0:
-            return {
-                'total_analyses': 0,
-                'avg_confidence': 0,
-                'quality_distribution': {},
-                'avg_dimensions': {},
-                'avg_weight': 0
-            }
-        
-        # Confidence statistics
-        avg_confidence = queryset.aggregate(avg=Avg('average_confidence'))['avg'] or 0
-        
-        # Quality distribution
-        quality_distribution = {
-            'Excelente (90%)': queryset.filter(average_confidence__gte=0.9).count(),
-            'Buena (80-89%)': queryset.filter(average_confidence__gte=0.8, average_confidence__lt=0.9).count(),
-            'Regular (70-79%)': queryset.filter(average_confidence__gte=0.7, average_confidence__lt=0.8).count(),
-            'Baja (<70%)': queryset.filter(average_confidence__lt=0.7).count(),
-        }
-        
-        # Average dimensions
-        avg_dimensions = queryset.aggregate(
-            avg_alto=Avg('alto_mm'),
-            avg_ancho=Avg('ancho_mm'),
-            avg_grosor=Avg('grosor_mm')
-        )
-        
-        # Average weight
-        avg_weight = queryset.aggregate(avg=Avg('peso_g'))['avg'] or 0
-        
-        return {
-            'total_analyses': total_analyses,
-            'avg_confidence': round(float(avg_confidence) * 100, 2),
-            'quality_distribution': quality_distribution,
-            'avg_dimensions': {
-                'alto': round(float(avg_dimensions.get('avg_alto') or 0), 2),
-                'ancho': round(float(avg_dimensions.get('avg_ancho') or 0), 2),
-                'grosor': round(float(avg_dimensions.get('avg_grosor') or 0), 2),
-            },
-            'avg_weight': round(float(avg_weight), 2)
-        }
     
     def _create_stats_section(self, stats):
         """Create statistics section."""
@@ -342,9 +279,10 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         if not stats['quality_distribution']:
             return
         
-        chart_ws = self.workbook.create_sheet("Distribución de Calidad")
-        original_ws = self.ws
-        self.ws = chart_ws
+        chart_ws, original_ws = self._create_sheet_with_title(
+            "Distribución de Calidad",
+            "Distribución de Calidad"
+        )
         
         headers = ["Categoría", "Cantidad", "Porcentaje"]
         total = stats['total_analyses']
@@ -383,13 +321,11 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
     
     def _create_summary_sheet(self, stats, user):
         """Create summary sheet."""
-        summary_ws = self.workbook.create_sheet("Resumen")
-        
-        # Title
-        summary_ws['A1'] = "Resumen Ejecutivo"
-        summary_ws['A1'].font = Font(size=16, bold=True, color="2F4F4F")
-        summary_ws['A1'].alignment = Alignment(horizontal='center')
-        summary_ws.merge_cells('A1:D1')
+        summary_ws, original_ws = self._create_sheet_with_title(
+            "Resumen",
+            "Resumen Ejecutivo",
+            'A1:D1'
+        )
         
         # Report information
         summary_ws['A3'] = f"Generado el: {timezone.now().strftime(DATE_TIME_FORMAT)}"
@@ -464,17 +400,6 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             body_alignment='left'
         )
     
-    def _get_lotes_stats(self, finca):
-        """Get lot statistics for the farm."""
-        lotes = finca.lotes.all()
-        
-        return {
-            'total_lotes': lotes.count(),
-            'lotes_activos': lotes.filter(activo=True).count(),
-            'total_area': sum(float(lote.area_hectareas) for lote in lotes),
-            'variedades': list(lotes.values('variedad').distinct()),
-            'estados': dict(lotes.values('estado').annotate(count=Count('id')).values_list('estado', 'count')),
-        }
     
     def _create_lotes_stats_section(self, stats):
         """Create lot statistics section."""
@@ -559,22 +484,6 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         
         self.ws = original_ws
     
-    def _get_activity_stats(self, filtros):
-        """Get activity statistics."""
-        queryset = ActivityLog.objects.all()
-        
-        if filtros:
-            if filtros.get('fecha_desde'):
-                queryset = queryset.filter(timestamp__date__gte=filtros['fecha_desde'])
-            if filtros.get('fecha_hasta'):
-                queryset = queryset.filter(timestamp__date__lte=filtros['fecha_hasta'])
-        
-        return {
-            'total_activities': queryset.count(),
-            'activities_today': queryset.filter(timestamp__date=timezone.now().date()).count(),
-            'activities_by_action': dict(queryset.values('accion').annotate(count=Count('id')).values_list('accion', 'count')),
-            'top_users': list(queryset.values('usuario__username').annotate(count=Count('id')).order_by('-count')[:10]),
-        }
     
     def _create_activity_stats_section(self, stats):
         """Create activity statistics section."""
@@ -593,22 +502,6 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             column_widths={'A': 20, 'B': 15}
         )
     
-    def _get_login_stats(self, filtros):
-        """Get login statistics."""
-        queryset = LoginHistory.objects.all()
-        
-        if filtros:
-            if filtros.get('fecha_desde'):
-                queryset = queryset.filter(login_time__date__gte=filtros['fecha_desde'])
-            if filtros.get('fecha_hasta'):
-                queryset = queryset.filter(login_time__date__lte=filtros['fecha_hasta'])
-        
-        return {
-            'total_logins': queryset.count(),
-            'successful_logins': queryset.filter(success=True).count(),
-            'failed_logins': queryset.filter(success=False).count(),
-            'success_rate': (queryset.filter(success=True).count() / queryset.count() * 100) if queryset.count() > 0 else 0,
-        }
     
     def _create_login_stats_section(self, stats):
         """Create login statistics section."""
@@ -631,22 +524,13 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
     
     def _create_detailed_activities_sheet(self, filtros):
         """Create detailed activities sheet."""
-        activities_ws = self.workbook.create_sheet("Actividades Detalladas")
-        original_ws = self.ws
-        self.ws = activities_ws
-        
-        # Title
-        activities_ws['A1'] = "Actividades del Sistema"
-        activities_ws['A1'].font = Font(size=16, bold=True, color="2F4F4F")
-        activities_ws['A1'].alignment = Alignment(horizontal='center')
-        activities_ws.merge_cells('A1:F1')
+        activities_ws, original_ws = self._create_sheet_with_title(
+            "Actividades Detalladas",
+            "Actividades del Sistema"
+        )
         
         queryset = ActivityLog.objects.select_related('usuario').order_by('-timestamp')[:100]
-        if filtros:
-            if filtros.get('fecha_desde'):
-                queryset = queryset.filter(timestamp__date__gte=filtros['fecha_desde'])
-            if filtros.get('fecha_hasta'):
-                queryset = queryset.filter(timestamp__date__lte=filtros['fecha_hasta'])
+        queryset = self._apply_date_filters(queryset, filtros, 'timestamp')
         
         headers = ['Fecha', 'Usuario', 'Acción', 'Modelo', 'Descripción', 'IP']
         data_rows = [
@@ -672,22 +556,13 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
     
     def _create_detailed_logins_sheet(self, filtros):
         """Create detailed logins sheet."""
-        logins_ws = self.workbook.create_sheet("Logins Detallados")
-        original_ws = self.ws
-        self.ws = logins_ws
-        
-        # Title
-        logins_ws['A1'] = "Historial de Logins"
-        logins_ws['A1'].font = Font(size=16, bold=True, color="2F4F4F")
-        logins_ws['A1'].alignment = Alignment(horizontal='center')
-        logins_ws.merge_cells('A1:F1')
+        logins_ws, original_ws = self._create_sheet_with_title(
+            "Logins Detallados",
+            "Historial de Logins"
+        )
         
         queryset = LoginHistory.objects.select_related('usuario').order_by('-login_time')[:100]
-        if filtros:
-            if filtros.get('fecha_desde'):
-                queryset = queryset.filter(login_time__date__gte=filtros['fecha_desde'])
-            if filtros.get('fecha_hasta'):
-                queryset = queryset.filter(login_time__date__lte=filtros['fecha_hasta'])
+        queryset = self._apply_date_filters(queryset, filtros, 'login_time')
         
         headers = ['Fecha', 'Usuario', 'IP', 'Éxito', 'Duración', 'Razón Fallo']
         data_rows = [

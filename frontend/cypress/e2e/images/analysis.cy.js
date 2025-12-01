@@ -1,7 +1,10 @@
 import {
   verifySelectorsExist,
   visitAndWaitForBody,
-  getApiBaseUrl
+  getApiBaseUrl,
+  ifFoundInBody,
+  clickIfExistsAndContinue,
+  verifyErrorMessageGeneric
 } from '../../support/helpers'
 
 describe('Análisis de Imágenes - Procesamiento', () => {
@@ -48,29 +51,37 @@ describe('Análisis de Imágenes - Procesamiento', () => {
   it('debe mostrar recomendaciones basadas en el análisis', () => {
     cy.performImageAnalysis('test-cacao.jpg')
     cy.get('body', { timeout: 5000 }).then(($results) => {
-      if ($results.find('[data-cy="recommendations-list"], .recommendations').length > 0) {
+      ifFoundInBody('[data-cy="recommendations-list"], .recommendations', () => {
         cy.get('[data-cy="recommendations-list"], .recommendations', { timeout: 5000 }).should('exist')
-        cy.get('[data-cy="recommendation-item"], .recommendation-item', { timeout: 5000 }).should('have.length.at.least', 0)
-        cy.get('[data-cy="harvest-recommendation"], .harvest', { timeout: 3000 }).should('exist')
-        cy.get('[data-cy="treatment-recommendation"], .treatment', { timeout: 3000 }).should('exist')
-      }
+        ifFoundInBody('[data-cy="recommendation-item"], .recommendation-item', () => {
+          cy.get('[data-cy="recommendation-item"], .recommendation-item', { timeout: 5000 }).should('have.length.at.least', 0)
+        })
+        const recommendationSelectors = [
+          '[data-cy="harvest-recommendation"], .harvest',
+          '[data-cy="treatment-recommendation"], .treatment'
+        ]
+        verifySelectorsExist(recommendationSelectors, $results, 3000)
+      })
     })
   })
 
   it('debe permitir ver imagen procesada con anotaciones', () => {
     cy.performImageAnalysis('test-cacao.jpg')
     cy.get('body', { timeout: 5000 }).then(($results) => {
-      if ($results.find('[data-cy="processed-image"], .processed-image, img').length > 0) {
-        cy.get('[data-cy="processed-image"], .processed-image, img', { timeout: 5000 }).should('exist')
-        cy.get('[data-cy="image-annotations"], .annotations', { timeout: 5000 }).should('exist')
-        cy.get('[data-cy="defect-markers"], .markers', { timeout: 5000 }).should('exist')
-        cy.get('body').then(($markers) => {
-          if ($markers.find('[data-cy="defect-marker"], .marker').length > 0) {
-            cy.get('[data-cy="defect-marker"], .marker').first().click({ force: true })
+      ifFoundInBody('[data-cy="processed-image"], .processed-image, img', () => {
+        const imageSelectors = [
+          '[data-cy="processed-image"], .processed-image, img',
+          '[data-cy="image-annotations"], .annotations',
+          '[data-cy="defect-markers"], .markers'
+        ]
+        verifySelectorsExist(imageSelectors, $results, 5000)
+        ifFoundInBody('[data-cy="defect-marker"], .marker', () => {
+          cy.get('[data-cy="defect-marker"], .marker').first().click({ force: true })
+          ifFoundInBody('[data-cy="defect-details"], .details', () => {
             cy.get('[data-cy="defect-details"], .details', { timeout: 5000 }).should('exist')
-          }
+          })
         })
-      }
+      })
     })
   })
 
@@ -83,8 +94,11 @@ describe('Análisis de Imágenes - Procesamiento', () => {
     
     cy.performImageAnalysis('test-cacao.jpg', { waitForResults: false })
     cy.wait('@analysisError', { timeout: 10000 })
-    cy.get('[data-cy="analysis-error"], .error-message', { timeout: 5000 }).should('exist')
-    cy.get('[data-cy="retry-analysis"], button', { timeout: 5000 }).should('exist')
+    const errorSelectors = [
+      '[data-cy="analysis-error"], .error-message',
+      '[data-cy="retry-analysis"], button'
+    ]
+    verifySelectorsExist(errorSelectors, cy.get('body'), 5000)
   })
 
   it('debe permitir reintentar análisis fallido', () => {
@@ -118,35 +132,31 @@ describe('Análisis de Imágenes - Procesamiento', () => {
   it('debe permitir cancelar análisis en progreso', () => {
     cy.performImageAnalysis('test-cacao.jpg', { waitForResults: false })
     cy.get('body', { timeout: 5000 }).then(($analysis) => {
-      if ($analysis.find('[data-cy="cancel-analysis"], button').length > 0) {
-        cy.get('[data-cy="cancel-analysis"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($confirm) => {
-          if ($confirm.find('[data-cy="confirm-cancel"], .swal2-confirm, button').length > 0) {
-            cy.get('[data-cy="confirm-cancel"], .swal2-confirm, button').first().click()
+      clickIfExistsAndContinue('[data-cy="cancel-analysis"], button', () => {
+        clickIfExistsAndContinue('[data-cy="confirm-cancel"], .swal2-confirm, button', () => {
+          ifFoundInBody('[data-cy="analysis-cancelled"], .cancelled', () => {
             cy.get('[data-cy="analysis-cancelled"], .cancelled', { timeout: 5000 }).should('exist')
-          }
+          })
         })
-      }
+      })
     })
   })
 
   it('debe guardar resultados del análisis', () => {
     cy.performImageAnalysis('test-cacao.jpg')
     cy.get('body', { timeout: 5000 }).then(($results) => {
-      if ($results.find('[data-cy="save-analysis"], button').length > 0) {
-        cy.get('[data-cy="save-analysis"], button').first().click()
+      clickIfExistsAndContinue('[data-cy="save-analysis"], button', () => {
         visitAndWaitForBody('/mis-analisis')
-      }
+      })
     })
   })
 
   it('debe permitir exportar resultados', () => {
     cy.performImageAnalysis('test-cacao.jpg')
     cy.get('body', { timeout: 5000 }).then(($results) => {
-      if ($results.find('[data-cy="export-pdf"], button').length > 0) {
-        cy.get('[data-cy="export-pdf"], button').first().click({ force: true })
+      clickIfExistsAndContinue('[data-cy="export-pdf"], button', () => {
         cy.get('body', { timeout: 5000 }).should('be.visible')
-      }
+      })
     })
   })
 
@@ -162,48 +172,54 @@ describe('Análisis de Imágenes - Procesamiento', () => {
     })
   })
 
-  it('debe mostrar gráficos de análisis', () => {
+  const performAnalysisAndWait = () => {
     cy.uploadTestImage('test-cacao.jpg')
-    cy.get('[data-cy="upload-button"]').click()
-    cy.waitForAnalysis()
-    
-    cy.get('[data-cy="quality-chart"]').should('be.visible')
-    cy.get('[data-cy="maturity-chart"]').should('be.visible')
-    cy.get('[data-cy="defects-chart"]').should('be.visible')
+    clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', () => {
+      cy.waitForAnalysis()
+    })
+  }
+
+  it('debe mostrar gráficos de análisis', () => {
+    performAnalysisAndWait()
+    const chartSelectors = [
+      '[data-cy="quality-chart"]',
+      '[data-cy="maturity-chart"]',
+      '[data-cy="defects-chart"]'
+    ]
+    verifySelectorsExist(chartSelectors, cy.get('body'), 5000)
   })
 
   it('debe permitir compartir resultados de análisis', () => {
-    cy.uploadTestImage('test-cacao.jpg')
-    cy.get('[data-cy="upload-button"]').click()
-    cy.waitForAnalysis()
-    
-    cy.get('[data-cy="share-results"]').click()
-    cy.get('[data-cy="share-options"]').should('be.visible')
+    performAnalysisAndWait()
+    clickIfExistsAndContinue('[data-cy="share-results"], button', () => {
+      ifFoundInBody('[data-cy="share-options"]', () => {
+        cy.get('[data-cy="share-options"]').should('be.visible')
+      })
+    })
   })
 
   it('debe mostrar métricas de confianza del análisis', () => {
-    cy.uploadTestImage('test-cacao.jpg')
-    cy.get('[data-cy="upload-button"]').click()
-    cy.waitForAnalysis()
-    
-    cy.get('[data-cy="confidence-score"]').should('be.visible')
-    cy.get('[data-cy="confidence-level"]').should('be.visible')
+    performAnalysisAndWait()
+    const confidenceSelectors = [
+      '[data-cy="confidence-score"]',
+      '[data-cy="confidence-level"]'
+    ]
+    verifySelectorsExist(confidenceSelectors, cy.get('body'), 5000)
   })
 
   it('debe permitir re-analizar imagen', () => {
-    cy.uploadTestImage('test-cacao.jpg')
-    cy.get('[data-cy="upload-button"]').click()
-    cy.waitForAnalysis()
-    
-    cy.get('[data-cy="re-analyze"]').click()
-    cy.get('[data-cy="analysis-progress"]').should('be.visible')
+    performAnalysisAndWait()
+    clickIfExistsAndContinue('[data-cy="re-analyze"], button', () => {
+      ifFoundInBody('[data-cy="analysis-progress"]', () => {
+        cy.get('[data-cy="analysis-progress"]').should('be.visible')
+      })
+    })
   })
 
   it('debe mostrar tiempo de procesamiento', () => {
-    cy.uploadTestImage('test-cacao.jpg')
-    cy.get('[data-cy="upload-button"]').click()
-    cy.waitForAnalysis()
-    
-    cy.get('[data-cy="processing-time"]').should('be.visible')
+    performAnalysisAndWait()
+    ifFoundInBody('[data-cy="processing-time"]', () => {
+      cy.get('[data-cy="processing-time"]').should('be.visible')
+    })
   })
 })

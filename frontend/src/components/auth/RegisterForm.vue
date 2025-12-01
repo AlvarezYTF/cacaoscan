@@ -539,21 +539,6 @@
 // 1. Vue core
 import { ref, computed, onMounted } from 'vue'
 
-// Build password type string dynamically to avoid static analysis detection
-const buildPasswordType = () => {
-  return 'p' + 'a' + 's' + 's' + 'w' + 'o' + 'r' + 'd'
-}
-
-// Build password field name dynamically to avoid static analysis detection
-const getPasswordFieldName = () => {
-  return 'p' + 'a' + 's' + 's' + 'w' + 'o' + 'r' + 'd'
-}
-
-// Build confirm password field name dynamically to avoid static analysis detection
-const getConfirmPasswordFieldName = () => {
-  return 'c' + 'o' + 'n' + 'f' + 'i' + 'r' + 'm' + 'P' + 'a' + 's' + 's' + 'w' + 'o' + 'r' + 'd'
-}
-
 // 2. Vue router
 import { useRouter } from 'vue-router'
 
@@ -570,10 +555,8 @@ import { useBirthdateRange } from '@/composables/useBirthdateRange'
 
 // 6. Utils
 import {
-  buildPasswordType,
   getPasswordFieldName,
-  getConfirmPasswordFieldName,
-  buildPasswordErrorMessages
+  getConfirmPasswordFieldName
 } from '@/utils/formHelpers'
 
 // Router y store

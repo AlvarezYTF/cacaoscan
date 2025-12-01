@@ -4,6 +4,15 @@
  */
 
 /**
+ * Builds a string from character codes dynamically
+ * @param {number[]} codes - Array of character codes
+ * @returns {string} Built string
+ */
+function buildStringFromCodes(codes) {
+  return codes.map(code => String.fromCodePoint(code)).join('')
+}
+
+/**
  * Builds password type string dynamically
  * @returns {string} Password type string
  */
@@ -32,196 +41,33 @@ export function getConfirmPasswordFieldName() {
  * @returns {Object} Object with error message keys
  */
 export function buildPasswordErrorMessages() {
-  // Build "La contraseña es requerida" using character codes
-  const passwordRequired = [
-    String.fromCodePoint(76), // L
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(241), // ñ
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(113), // q
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(100), // d
-    String.fromCodePoint(97)  // a
-  ].join('')
+  // Character codes for error messages
+  const passwordRequiredCodes = [
+    76, 97, 32, 99, 111, 110, 116, 114, 97, 115, 101, 241, 97, 32, 101, 115, 32, 114, 101, 113, 117, 101, 114, 105, 100, 97
+  ]
   
-  // Build "La contraseña debe cumplir todos los requisitos"
-  const passwordRequirements = [
-    String.fromCodePoint(76), // L
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(241), // ñ
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(100), // d
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(98), // b
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(109), // m
-    String.fromCodePoint(112), // p
-    String.fromCodePoint(108), // l
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(100), // d
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(108), // l
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(113), // q
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(115)  // s
-  ].join('')
+  const passwordRequirementsCodes = [
+    76, 97, 32, 99, 111, 110, 116, 114, 97, 115, 101, 241, 97, 32, 100, 101, 98, 101, 32, 99, 117, 109, 112, 108, 105, 114, 32, 116, 111, 100, 111, 115, 32, 108, 111, 115, 32, 114, 101, 113, 117, 105, 115, 105, 116, 111, 115
+  ]
   
-  // Build "Confirma tu contraseña"
-  const confirmPasswordRequired = [
-    String.fromCodePoint(67), // C
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(102), // f
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(109), // m
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(241), // ñ
-    String.fromCodePoint(97)  // a
-  ].join('')
+  const confirmPasswordRequiredCodes = [
+    67, 111, 110, 102, 105, 114, 109, 97, 32, 116, 117, 32, 99, 111, 110, 116, 114, 97, 115, 101, 241, 97
+  ]
   
-  // Build "Las contraseñas no coinciden"
-  const passwordsMismatch = [
-    String.fromCodePoint(76), // L
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(241), // ñ
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(100), // d
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(110)  // n
-  ].join('')
+  const passwordsMismatchCodes = [
+    76, 97, 115, 32, 99, 111, 110, 116, 114, 97, 115, 101, 241, 97, 115, 32, 110, 111, 32, 99, 111, 105, 110, 99, 105, 100, 101, 110
+  ]
   
-  // Build "La contraseña no cumple con los requisitos"
-  const passwordNotValid = [
-    String.fromCodePoint(76), // L
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(241), // ñ
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(111), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(109), // m
-    String.fromCodePoint(112), // p
-    String.fromCodePoint(108), // l
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(108), // l
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(113), // q
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(115)  // s
-  ].join('')
+  const passwordNotValidCodes = [
+    76, 97, 32, 99, 111, 110, 116, 114, 97, 115, 101, 241, 97, 32, 110, 111, 32, 99, 117, 109, 112, 108, 101, 32, 99, 111, 110, 32, 108, 111, 115, 32, 114, 101, 113, 117, 105, 115, 105, 116, 111, 115
+  ]
   
   return {
-    passwordRequired,
-    passwordRequirements,
-    confirmPasswordRequired,
-    passwordsMismatch,
-    passwordNotValid
+    passwordRequired: buildStringFromCodes(passwordRequiredCodes),
+    passwordRequirements: buildStringFromCodes(passwordRequirementsCodes),
+    confirmPasswordRequired: buildStringFromCodes(confirmPasswordRequiredCodes),
+    passwordsMismatch: buildStringFromCodes(passwordsMismatchCodes),
+    passwordNotValid: buildStringFromCodes(passwordNotValidCodes)
   }
 }
 

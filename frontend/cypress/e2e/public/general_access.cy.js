@@ -1,7 +1,6 @@
 import {
   visitAndWaitForBody,
   verifyPageTitle,
-  navigateToPage,
   verifyUrlContains
 } from '../../support/helpers'
 

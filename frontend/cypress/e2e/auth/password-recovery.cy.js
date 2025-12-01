@@ -32,15 +32,21 @@ describe('Autenticación - Recuperación de Contraseña', () => {
   })
 
   it('debe enviar email de recuperación exitosamente', () => {
+    const handleUrlVerification = () => {
+      verifyUrlContains(['/forgot', '/login'])
+    }
+    
+    const handleSuccessMessage = () => {
+      verifySuccessMessage(['recuperación', 'enviado', 'email']).then(handleUrlVerification)
+    }
+    
+    const handleUserData = (users) => {
+      const user = users.farmer
+      cy.fillEmailAndSubmit(user.email, handleSuccessMessage)
+    }
+    
     cy.clickForgotPasswordLink(() => {
-      cy.fixture('users').then((users) => {
-        const user = users.farmer
-        cy.fillEmailAndSubmit(user.email, () => {
-          verifySuccessMessage(['recuperación', 'enviado', 'email']).then(() => {
-            verifyUrlContains(['/forgot', '/login'])
-          })
-        })
-      })
+      cy.fixture('users').then(handleUserData)
     })
   })
 

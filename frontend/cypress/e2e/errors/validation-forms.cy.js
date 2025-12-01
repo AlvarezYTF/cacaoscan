@@ -3,7 +3,11 @@ import {
   visitAndWaitForBody,
   openModalAndExecute,
   fillFieldSubmitAndVerifyError,
-  verifyErrorMessageWithSelectors
+  verifyErrorMessageWithSelectors,
+  testPasswordStrength,
+  validateRealTimeField,
+  ifFoundInBody,
+  clickIfExistsAndContinue
 } from '../../support/helpers'
 
 describe('Manejo de Errores - Validación y Formularios', () => {
@@ -44,61 +48,22 @@ describe('Manejo de Errores - Validación y Formularios', () => {
 
   it('debe validar fortaleza de contraseña', () => {
     visitAndWaitForBody('/registro')
-    
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="password-input"], input[type="password"]').length > 0) {
-        const weakPasswords = ['123', 'password', '12345678']
-        
-        for (const [index, password] of weakPasswords.entries()) {
-          if (index > 0) {
-            cy.get('[data-cy="password-input"], input[type="password"]').first().clear()
-          }
-          cy.get('[data-cy="password-input"], input[type="password"]').first().type(password, { force: true })
-          cy.get('body', { timeout: 2000 }).then(($afterType) => {
-            if ($afterType.find('[data-cy="password-strength"], .password-strength').length > 0) {
-              cy.get('[data-cy="password-strength"], .password-strength').should('exist')
-            }
-          })
-        }
-        
-        cy.get('body').then(($strong) => {
-          if ($strong.find('[data-cy="password-input"], input[type="password"]').length > 0) {
-            cy.get('[data-cy="password-input"], input[type="password"]').first().clear().type('StrongPassword123!', { force: true })
-            const checkPasswordStrength = ($el) => {
-              const text = $el.text().toLowerCase()
-              return text.includes('fuerte') || text.includes('strong') || text.length > 0
-            }
-
-            const handlePasswordStrength = ($afterStrong) => {
-              if ($afterStrong.find('[data-cy="password-strength"], .password-strength').length > 0) {
-                cy.get('[data-cy="password-strength"], .password-strength').should('satisfy', checkPasswordStrength)
-              }
-            }
-
-            cy.get('body', { timeout: 2000 }).then(handlePasswordStrength)
-          }
-        })
-      }
-    })
+    testPasswordStrength(['123', 'password', '12345678'], 'StrongPassword123!')
   })
 
   it('debe validar coincidencia de contraseñas', () => {
     visitAndWaitForBody('/registro')
-    
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="password-input"], input[type="password"]').length > 0) {
-        cy.get('[data-cy="password-input"], input[type="password"]').first().type('Password123!', { force: true })
-        cy.get('body').then(($confirm) => {
-          if ($confirm.find('[data-cy="confirm-password-input"], input[type="password"]').length > 0) {
-            cy.get('[data-cy="confirm-password-input"], input[type="password"]').first().type('DifferentPassword123!', { force: true })
-            cy.get('[data-cy="register-button"], button[type="submit"]').first().click({ force: true })
-            verifyErrorMessageWithSelectors(
-              ['[data-cy="password-match-error"], .error-message'],
-              ['coinciden', 'match', 'contraseña']
-            )
-          }
+    ifFoundInBody('[data-cy="password-input"], input[type="password"]', () => {
+      cy.get('[data-cy="password-input"], input[type="password"]').first().type('Password123!', { force: true })
+      ifFoundInBody('[data-cy="confirm-password-input"], input[type="password"]', () => {
+        cy.get('[data-cy="confirm-password-input"], input[type="password"]').first().type('DifferentPassword123!', { force: true })
+        clickIfExistsAndContinue('[data-cy="register-button"], button[type="submit"]', () => {
+          verifyErrorMessageWithSelectors(
+            ['[data-cy="password-match-error"], .error-message'],
+            ['coinciden', 'match', 'contraseña']
+          )
         })
-      }
+      })
     })
   })
 
@@ -181,36 +146,24 @@ describe('Manejo de Errores - Validación y Formularios', () => {
 
   it('debe validar checkboxes requeridos', () => {
     visitAndWaitForBody('/registro')
-    
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="register-button"], button[type="submit"]').length > 0) {
-        cy.get('[data-cy="register-button"], button[type="submit"]').first().click({ force: true })
-        verifyErrorMessageWithSelectors(
-          ['[data-cy="terms-error"], .error-message'],
-          ['términos', 'aceptar', 'requerido']
-        )
-      }
+    clickIfExistsAndContinue('[data-cy="register-button"], button[type="submit"]', () => {
+      verifyErrorMessageWithSelectors(
+        ['[data-cy="terms-error"], .error-message'],
+        ['términos', 'aceptar', 'requerido']
+      )
     })
   })
 
   it('debe validar en tiempo real', () => {
     visitAndWaitForBody('/mis-fincas')
-    
     openModalAndExecute('[data-cy="add-finca-button"], button', ($modal) => {
       if ($modal.find('[data-cy="finca-nombre"], input').length > 0) {
-        cy.get('[data-cy="finca-nombre"], input').first().type('A', { force: true })
-        const checkMinLengthError = ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('caracteres') || text.includes('al menos') || text.includes('3') || text.length > 0
-        }
-
-        const handleMinLengthError = ($afterType) => {
-          if ($afterType.find('[data-cy="finca-nombre-error"], .error-message').length > 0) {
-            cy.get('[data-cy="finca-nombre-error"], .error-message').first().should('satisfy', checkMinLengthError)
-          }
-        }
-
-        cy.get('body', { timeout: 2000 }).then(handleMinLengthError)
+        validateRealTimeField(
+          '[data-cy="finca-nombre"], input',
+          'A',
+          '[data-cy="finca-nombre-error"], .error-message',
+          ['caracteres', 'al menos', '3']
+        )
       }
     })
   })
@@ -334,19 +287,19 @@ describe('Manejo de Errores - Validación y Formularios', () => {
 
   it('debe validar formularios con campos condicionales', () => {
     visitAndWaitForBody('/mis-lotes')
-    
     openModalAndExecute('[data-cy="add-lote-button"], button', ($modal) => {
       if ($modal.find('[data-cy="lote-tipo-cultivo"], select').length > 0) {
         cy.get('[data-cy="lote-tipo-cultivo"], select').first().select('organico', { force: true })
         cy.get('body', { timeout: 3000 }).then(($afterSelect) => {
-          if ($afterSelect.find('[data-cy="certificacion-organica"], input, select').length > 0) {
+          ifFoundInBody('[data-cy="certificacion-organica"], input, select', () => {
             cy.get('[data-cy="certificacion-organica"], input, select').should('exist')
-          }
-          cy.get('[data-cy="save-lote"], button[type="submit"]').first().click({ force: true })
-          verifyErrorMessageWithSelectors(
-            ['[data-cy="certificacion-error"], .error-message'],
-            ['requerido', 'orgánicos', 'certificación']
-          )
+          })
+          clickIfExistsAndContinue('[data-cy="save-lote"], button[type="submit"]', () => {
+            verifyErrorMessageWithSelectors(
+              ['[data-cy="certificacion-error"], .error-message'],
+              ['requerido', 'orgánicos', 'certificación']
+            )
+          })
         })
       }
     })

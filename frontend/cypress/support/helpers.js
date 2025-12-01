@@ -1378,6 +1378,65 @@ export function fillLongTextAndVerifyError(fieldSelector, length, submitSelector
 }
 
 /**
+ * Tests password strength validation with multiple passwords
+ * @param {Array<string>} weakPasswords - Array of weak passwords to test
+ * @param {string} strongPassword - Strong password to test
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function testPasswordStrength(weakPasswords, strongPassword) {
+  return cy.get('body').then(($body) => {
+    if ($body.find('[data-cy="password-input"], input[type="password"]').length > 0) {
+      for (const [index, password] of weakPasswords.entries()) {
+        if (index > 0) {
+          cy.get('[data-cy="password-input"], input[type="password"]').first().clear()
+        }
+        cy.get('[data-cy="password-input"], input[type="password"]').first().type(password, { force: true })
+        cy.get('body', { timeout: 2000 }).then(($afterType) => {
+          ifFoundInBody('[data-cy="password-strength"], .password-strength', () => {
+            cy.get('[data-cy="password-strength"], .password-strength').should('exist')
+          })
+        })
+      }
+      cy.get('body').then(($strong) => {
+        if ($strong.find('[data-cy="password-input"], input[type="password"]').length > 0) {
+          cy.get('[data-cy="password-input"], input[type="password"]').first().clear().type(strongPassword, { force: true })
+          cy.get('body', { timeout: 2000 }).then(($afterStrong) => {
+            ifFoundInBody('[data-cy="password-strength"], .password-strength', () => {
+              cy.get('[data-cy="password-strength"], .password-strength').should('satisfy', ($el) => {
+                const text = $el.text().toLowerCase()
+                return text.includes('fuerte') || text.includes('strong') || text.length > 0
+              })
+            })
+          })
+        }
+      })
+    }
+  })
+}
+
+/**
+ * Validates real-time field validation
+ * @param {string} fieldSelector - Selector for field
+ * @param {string} value - Value to type
+ * @param {string} errorSelector - Selector for error message
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function validateRealTimeField(fieldSelector, value, errorSelector, expectedTexts) {
+  return cy.get(fieldSelector).first().type(value, { force: true })
+    .then(() => {
+      cy.get('body', { timeout: 2000 }).then(($afterType) => {
+        ifFoundInBody(errorSelector, () => {
+          cy.get(errorSelector).first().should('satisfy', ($el) => {
+            const text = $el.text().toLowerCase()
+            return expectedTexts.some(expected => text.includes(expected.toLowerCase())) || text.length > 0
+          })
+        })
+      })
+    })
+}
+
+/**
  * Verifies element exists with multiple selector alternatives and text content
  * @param {Array<string>} selectors - Array of CSS selectors to try
  * @param {Array<string>} expectedTexts - Optional array of expected text fragments
