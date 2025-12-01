@@ -260,24 +260,36 @@ describe('Navegación - UI y UX', () => {
     })
   })
 
+  const checkEmptyMessageText = ($el) => {
+    const text = $el.text().toLowerCase()
+    return text.includes('fincas') || text.includes('vacío') || text.includes('no hay') || text.length > 0
+  }
+
+  const verifyEmptyMessage = () => {
+    ifFoundInBody('[data-cy="empty-message"], .empty-message', () => {
+      cy.get('[data-cy="empty-message"], .empty-message').first().should('satisfy', checkEmptyMessageText)
+    })
+  }
+
+  const verifyEmptyAction = () => {
+    ifFoundInBody('[data-cy="empty-action"], .empty-action, button', () => {
+      cy.get('[data-cy="empty-action"], .empty-action, button').should('exist')
+    })
+  }
+
+  const handleEmptyState = () => {
+    cy.get('[data-cy="empty-state"], .empty-state, .empty').should('exist')
+    verifyEmptyMessage()
+    verifyEmptyAction()
+  }
+
   it('debe mostrar navegación con estados vacíos', () => {
     setupEmptyListIntercept('/fincas/**', 'emptyList')
     
     cy.visit('/mis-fincas')
     waitForPageLoad()
     
-    ifFoundInBody('[data-cy="empty-state"], .empty-state, .empty', () => {
-      cy.get('[data-cy="empty-state"], .empty-state, .empty').should('exist')
-      ifFoundInBody('[data-cy="empty-message"], .empty-message', () => {
-        cy.get('[data-cy="empty-message"], .empty-message').first().should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('fincas') || text.includes('vacío') || text.includes('no hay') || text.length > 0
-        })
-      })
-      ifFoundInBody('[data-cy="empty-action"], .empty-action, button', () => {
-        cy.get('[data-cy="empty-action"], .empty-action, button').should('exist')
-      })
-    })
+    ifFoundInBody('[data-cy="empty-state"], .empty-state, .empty', handleEmptyState)
   })
 
   it('debe mostrar navegación con estados de búsqueda', () => {
@@ -308,40 +320,70 @@ describe('Navegación - UI y UX', () => {
     })
   })
 
+  const checkFilterTagText = ($el) => {
+    const text = $el.text().toLowerCase()
+    return text.includes('ríos') || text.includes('los') || text.length > 0
+  }
+
+  const verifyFilterTag = () => {
+    ifFoundInBody('[data-cy="filter-tag"], .filter-tag', () => {
+      cy.get('[data-cy="filter-tag"], .filter-tag').first().should('satisfy', checkFilterTagText)
+    })
+  }
+
+  const handleClearFilters = () => {
+    cy.get('body', { timeout: 3000 }).should('be.visible')
+  }
+
+  const verifyActiveFilters = () => {
+    ifFoundInBody('[data-cy="active-filters"], .active-filters', () => {
+      cy.get('[data-cy="active-filters"], .active-filters').should('exist')
+      verifyFilterTag()
+      clickIfExistsAndContinue('[data-cy="clear-filters"], button', handleClearFilters)
+    })
+  }
+
+  const applyProvinceFilter = () => {
+    selectIfExistsAndContinue('[data-cy="province-filter"], select', 'Los Ríos', () => {
+      cy.get('[data-cy="apply-filter"], button[type="submit"]').first().click({ force: true })
+      verifyActiveFilters()
+    })
+  }
+
   it('debe mostrar navegación con estados de filtros', () => {
     cy.visit('/mis-fincas')
     cy.get('body', { timeout: 10000 }).should('be.visible')
-    
-    const verifyFilterTag = () => {
-      ifFoundInBody('[data-cy="filter-tag"], .filter-tag', () => {
-        cy.get('[data-cy="filter-tag"], .filter-tag').first().should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('ríos') || text.includes('los') || text.length > 0
-        })
-      })
-    }
-    
-    const verifyActiveFilters = () => {
-      ifFoundInBody('[data-cy="active-filters"], .active-filters', () => {
-        cy.get('[data-cy="active-filters"], .active-filters').should('exist')
-        verifyFilterTag()
-        clickIfExistsAndContinue('[data-cy="clear-filters"], button', () => {
-          cy.get('body', { timeout: 3000 }).should('be.visible')
-        })
-      })
-    }
-    
-    const applyProvinceFilter = () => {
-      selectIfExistsAndContinue('[data-cy="province-filter"], select', 'Los Ríos', () => {
-        cy.get('[data-cy="apply-filter"], button[type="submit"]').first().click({ force: true })
-        verifyActiveFilters()
-      })
-    }
     
     clickIfExistsAndContinue('[data-cy="location-filter"], .location-filter, button', applyProvinceFilter, () => {
       cy.get('body').should('be.visible')
     })
   })
+
+  const checkPageInfoText = ($el) => {
+    const text = $el.text().toLowerCase()
+    return text.includes('1') || text.includes('4') || text.includes('página') || text.length > 0
+  }
+
+  const verifyPageInfo = () => {
+    ifFoundInBody('[data-cy="page-info"], .page-info', () => {
+      cy.get('[data-cy="page-info"], .page-info').first().should('satisfy', checkPageInfoText)
+    })
+  }
+
+  const handleNextPageClick = () => {
+    cy.get('[data-cy="next-page"], .next-page, button').first().click({ force: true })
+    waitForPageLoad(5000)
+  }
+
+  const verifyNextPageButton = () => {
+    ifFoundInBody('[data-cy="next-page"], .next-page, button', handleNextPageClick)
+  }
+
+  const handlePagination = () => {
+    cy.get('[data-cy="pagination"], .pagination').should('exist')
+    verifyPageInfo()
+    verifyNextPageButton()
+  }
 
   it('debe mostrar navegación con estados de paginación', () => {
     const apiBaseUrl = getApiBaseUrl()
@@ -362,100 +404,109 @@ describe('Navegación - UI y UX', () => {
     cy.visit('/mis-fincas')
     waitForPageLoad()
     
-    ifFoundInBody('[data-cy="pagination"], .pagination', () => {
-      cy.get('[data-cy="pagination"], .pagination').should('exist')
-      ifFoundInBody('[data-cy="page-info"], .page-info', () => {
-        cy.get('[data-cy="page-info"], .page-info').first().should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('1') || text.includes('4') || text.includes('página') || text.length > 0
-        })
-      })
-      ifFoundInBody('[data-cy="next-page"], .next-page, button', () => {
-        cy.get('[data-cy="next-page"], .next-page, button').first().click({ force: true })
-        waitForPageLoad(5000)
-      })
-    })
+    ifFoundInBody('[data-cy="pagination"], .pagination', handlePagination)
   })
+
+  const checkSelectionInfoText = ($el) => {
+    const text = $el.text().toLowerCase()
+    return text.includes('seleccionados') || text.includes('2') || text.length > 0
+  }
+
+  const verifySelectionInfo = () => {
+    ifFoundInBody('[data-cy="selection-info"], .selection-info', () => {
+      cy.get('[data-cy="selection-info"], .selection-info').first().should('satisfy', checkSelectionInfoText)
+    })
+  }
+
+  const handleSelectAll = () => {
+    waitForPageLoad(3000)
+  }
+
+  const verifyBulkActions = () => {
+    ifFoundInBody('[data-cy="bulk-actions"], .bulk-actions', () => {
+      cy.get('[data-cy="bulk-actions"], .bulk-actions').should('exist')
+    })
+    clickIfExistsAndContinue('[data-cy="select-all"], input[type="checkbox"]', handleSelectAll)
+  }
+
+  const handleCheckboxSelection = () => {
+    cy.get('[data-cy="finca-checkbox"], input[type="checkbox"]').first().check({ force: true })
+    cy.get('[data-cy="finca-checkbox"], input[type="checkbox"]').eq(1).check({ force: true })
+    verifySelectionInfo()
+    verifyBulkActions()
+  }
 
   it('debe mostrar navegación con estados de selección', () => {
     cy.visit('/mis-fincas')
     waitForPageLoad()
     
-    const verifySelectionInfo = () => {
-      ifFoundInBody('[data-cy="selection-info"], .selection-info', () => {
-        cy.get('[data-cy="selection-info"], .selection-info').first().should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('seleccionados') || text.includes('2') || text.length > 0
-        })
-      })
-    }
-    
-    const verifyBulkActions = () => {
-      ifFoundInBody('[data-cy="bulk-actions"], .bulk-actions', () => {
-        cy.get('[data-cy="bulk-actions"], .bulk-actions').should('exist')
-      })
-      clickIfExistsAndContinue('[data-cy="select-all"], input[type="checkbox"]', () => {
-        waitForPageLoad(3000)
-      })
-    }
-    
-    ifFoundInBody('[data-cy="finca-checkbox"], input[type="checkbox"]', () => {
-      cy.get('[data-cy="finca-checkbox"], input[type="checkbox"]').first().check({ force: true })
-      cy.get('[data-cy="finca-checkbox"], input[type="checkbox"]').eq(1).check({ force: true })
-      verifySelectionInfo()
-      verifyBulkActions()
-    })
+    ifFoundInBody('[data-cy="finca-checkbox"], input[type="checkbox"]', handleCheckboxSelection)
   })
+
+  const checkSubmitButtonEnabled = ($el) => {
+    return !$el.is(':disabled') || $el.length > 0
+  }
+
+  const verifySubmitButtonAfterFill = () => {
+    ifFoundInBody('[data-cy="save-finca"], button[type="submit"]', () => {
+      cy.get('[data-cy="save-finca"], button[type="submit"]').first().should('satisfy', checkSubmitButtonEnabled)
+    })
+  }
+
+  const fillFormFields = () => {
+    ifFoundInBody('[data-cy="finca-nombre"], input', () => {
+      cy.get('[data-cy="finca-nombre"], input').first().type('Finca Test', { force: true })
+      cy.get('[data-cy="finca-ubicacion"], input').first().type('Test Location', { force: true })
+      cy.get('[data-cy="finca-area"], input[type="number"]').first().type('10', { force: true })
+      verifySubmitButtonAfterFill()
+    })
+  }
+
+  const checkSubmitButtonDisabled = ($el) => {
+    return $el.is(':disabled') || $el.length > 0
+  }
+
+  const verifySubmitButtonInitial = () => {
+    ifFoundInBody('[data-cy="save-finca"], button[type="submit"]', () => {
+      cy.get('[data-cy="save-finca"], button[type="submit"]').first().should('satisfy', checkSubmitButtonDisabled)
+    })
+  }
+
+  const verifyFormState = () => {
+    ifFoundInBody('[data-cy="finca-form"], .finca-form, form', () => {
+      cy.get('[data-cy="finca-form"], .finca-form, form').should('exist')
+      verifySubmitButtonInitial()
+      fillFormFields()
+    })
+  }
 
   it('debe mostrar navegación con estados de formulario', () => {
     cy.visit('/mis-fincas')
     waitForPageLoad()
     
-    const fillFormFields = () => {
-      ifFoundInBody('[data-cy="finca-nombre"], input', () => {
-        cy.get('[data-cy="finca-nombre"], input').first().type('Finca Test', { force: true })
-        cy.get('[data-cy="finca-ubicacion"], input').first().type('Test Location', { force: true })
-        cy.get('[data-cy="finca-area"], input[type="number"]').first().type('10', { force: true })
-        
-        ifFoundInBody('[data-cy="save-finca"], button[type="submit"]', () => {
-          cy.get('[data-cy="save-finca"], button[type="submit"]').first().should('satisfy', ($el) => {
-            return !$el.is(':disabled') || $el.length > 0
-          })
-        })
-      })
-    }
-    
-    const verifyFormState = () => {
-      ifFoundInBody('[data-cy="finca-form"], .finca-form, form', () => {
-        cy.get('[data-cy="finca-form"], .finca-form, form').should('exist')
-        ifFoundInBody('[data-cy="save-finca"], button[type="submit"]', () => {
-          cy.get('[data-cy="save-finca"], button[type="submit"]').first().should('satisfy', ($el) => {
-            return $el.is(':disabled') || $el.length > 0
-          })
-        })
-        fillFormFields()
-      })
-    }
-    
     clickIfExistsAndContinue('[data-cy="add-finca-button"], button', verifyFormState)
   })
+
+  const verifyFieldErrors = () => {
+    ifFoundInBody('[data-cy="field-error"], .field-error', () => {
+      cy.get('[data-cy="field-error"], .field-error').should('have.length.greaterThan', 0)
+    })
+  }
+
+  const verifyValidationErrors = () => {
+    ifFoundInBody('[data-cy="validation-error"], .validation-error, .error-message', () => {
+      cy.get('[data-cy="validation-error"], .validation-error, .error-message').should('exist')
+      verifyFieldErrors()
+    })
+  }
+
+  const submitForm = () => {
+    clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', verifyValidationErrors)
+  }
 
   it('debe mostrar navegación con estados de validación', () => {
     cy.visit('/mis-fincas')
     waitForPageLoad()
-    
-    const verifyValidationErrors = () => {
-      ifFoundInBody('[data-cy="validation-error"], .validation-error, .error-message', () => {
-        cy.get('[data-cy="validation-error"], .validation-error, .error-message').should('exist')
-        ifFoundInBody('[data-cy="field-error"], .field-error', () => {
-          cy.get('[data-cy="field-error"], .field-error').should('have.length.greaterThan', 0)
-        })
-      })
-    }
-    
-    const submitForm = () => {
-      clickIfExistsAndContinue('[data-cy="save-finca"], button[type="submit"]', verifyValidationErrors)
-    }
     
     clickIfExistsAndContinue('[data-cy="add-finca-button"], button', submitForm)
   })

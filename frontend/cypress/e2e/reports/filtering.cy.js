@@ -54,10 +54,12 @@ describe('Reports & Filtering', () => {
             cy.get('[data-cy="reports-table"], .table, table').should('be.visible')
           }
 
+          const handleReportsTableNotFound = () => {
+            cy.get('body').should('be.visible')
+          }
+
           const handleFarmerSelection = () => {
-            return ifFoundInBody('[data-cy="reports-table"], .table, table', handleReportsTable, () => {
-              cy.get('body').should('be.visible')
-            })
+            return ifFoundInBody('[data-cy="reports-table"], .table, table', handleReportsTable, handleReportsTableNotFound)
           }
 
           const handleSelectFarmer = () => {
@@ -65,9 +67,11 @@ describe('Reports & Filtering', () => {
             return selectIfExistsAndContinue('[data-cy="select-farmer"], select', '1', handleFarmerSelection)
           }
 
-          return ifFoundInBody('[data-cy="select-farmer"], select', handleSelectFarmer, () => {
+          const handleSelectFarmerNotFound = () => {
             cy.get('body').should('be.visible')
-          })
+          }
+
+          return ifFoundInBody('[data-cy="select-farmer"], select', handleSelectFarmer, handleSelectFarmerNotFound)
         })
       }
 
@@ -76,30 +80,44 @@ describe('Reports & Filtering', () => {
           cy.get('canvas, .chart').first().should('exist')
         }
 
-        const handleBarChart = () => {
-          cy.get('canvas, .chart').first().should('exist')
-          return clickIfExistsAndContinue('[data-cy="btn-chart-line"], button', () => {
-            return ifFoundInBody('canvas, .chart', handleLineChart)
-          })
+        const handleLineChartClick = () => {
+          return ifFoundInBody('canvas, .chart', handleLineChart)
         }
 
-        return clickIfExistsAndContinue('[data-cy="btn-chart-bar"], button, .chart-toggle', () => {
+        const handleBarChart = () => {
+          cy.get('canvas, .chart').first().should('exist')
+          return clickIfExistsAndContinue('[data-cy="btn-chart-line"], button', handleLineChartClick)
+        }
+
+        const handleBarChartClick = () => {
           return ifFoundInBody('canvas, .chart', handleBarChart)
-        }, () => {
+        }
+
+        const handleBarChartNotFound = () => {
           cy.get('body').should('be.visible')
-        })
+        }
+
+        return clickIfExistsAndContinue('[data-cy="btn-chart-bar"], button, .chart-toggle', handleBarChartClick, handleBarChartNotFound)
       })
 
       it('should download report summary', () => {
-        return clickIfExistsAndContinue('[data-cy="btn-download-summary"], button', () => {
-          return ifFoundInBody('.swal2-success, [data-cy="notification-success"]', () => {
-            cy.get('.swal2-success, [data-cy="notification-success"]').should('exist')
-          }, () => {
-            cy.get('body').should('be.visible')
-          })
-        }, () => {
+        const handleNotificationSuccess = () => {
+          cy.get('.swal2-success, [data-cy="notification-success"]').should('exist')
+        }
+
+        const handleNotificationNotFound = () => {
           cy.get('body').should('be.visible')
-        })
+        }
+
+        const handleDownloadButtonClick = () => {
+          return ifFoundInBody('.swal2-success, [data-cy="notification-success"]', handleNotificationSuccess, handleNotificationNotFound)
+        }
+
+        const handleDownloadButtonNotFound = () => {
+          cy.get('body').should('be.visible')
+        }
+
+        return clickIfExistsAndContinue('[data-cy="btn-download-summary"], button', handleDownloadButtonClick, handleDownloadButtonNotFound)
       })
     })
   }

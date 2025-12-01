@@ -142,15 +142,104 @@ export function validateConditionalFieldInModal(
   return openModalAndExecute(buttonSelector, ($modal) => {
     if ($modal.find(triggerSelector).length > 0) {
       cy.get(triggerSelector).first().select(triggerValue, { force: true })
-      cy.get('body', { timeout: 3000 }).then(($afterSelect) => {
-        ifFoundInBody(conditionalSelector, () => {
-          cy.get(conditionalSelector).should('exist')
-        })
-        clickIfExistsAndContinue(submitSelector, () => {
-          verifyErrorMessageWithSelectors([errorSelector], expectedTexts)
-        })
+      return cy.get('body', { timeout: 3000 }).then(($afterSelect) => {
+        return handleConditionalFieldValidation($afterSelect, conditionalSelector, submitSelector, errorSelector, expectedTexts)
       })
     }
+    return cy.wrap(null)
+  })
+}
+
+/**
+ * Handles conditional field validation after trigger selection
+ * Reduces nesting by extracting logic into separate function
+ * @param {JQuery} $context - jQuery context element
+ * @param {string} conditionalSelector - Selector for conditional field
+ * @param {string} submitSelector - Selector for submit button
+ * @param {string} errorSelector - Selector for error message
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+function handleConditionalFieldValidation($context, conditionalSelector, submitSelector, errorSelector, expectedTexts) {
+  ifFoundInBody(conditionalSelector, () => {
+    cy.get(conditionalSelector).should('exist')
+  })
+  return clickIfExistsAndContinue(submitSelector, () => {
+    verifyErrorMessageWithSelectors([errorSelector], expectedTexts)
+  })
+}
+
+/**
+ * Validates password match by filling password and confirm password fields
+ * Reduces nesting by extracting password match validation logic
+ * @param {string} pageUrl - URL to visit
+ * @param {string} passwordSelector - Selector for password input
+ * @param {string} passwordValue - Password value to type
+ * @param {string} confirmPasswordSelector - Selector for confirm password input
+ * @param {string} confirmPasswordValue - Confirm password value to type
+ * @param {string} submitSelector - Selector for submit button
+ * @param {Array<string>} errorSelectors - Array of error selectors
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function validatePasswordMatch(
+  pageUrl,
+  passwordSelector,
+  passwordValue,
+  confirmPasswordSelector,
+  confirmPasswordValue,
+  submitSelector,
+  errorSelectors,
+  expectedTexts
+) {
+  visitAndWaitForBody(pageUrl)
+  return fillPasswordField(passwordSelector, passwordValue)
+    .then(() => fillConfirmPasswordField(confirmPasswordSelector, confirmPasswordValue))
+    .then(() => submitAndVerifyPasswordError(submitSelector, errorSelectors, expectedTexts))
+}
+
+/**
+ * Fills password field if it exists
+ * @param {string} passwordSelector - Selector for password input
+ * @param {string} passwordValue - Password value to type
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+function fillPasswordField(passwordSelector, passwordValue) {
+  return cy.get('body').then(($body) => {
+    if ($body.find(passwordSelector).length > 0) {
+      cy.get(passwordSelector).first().type(passwordValue, { force: true })
+      return cy.wrap(true)
+    }
+    return cy.wrap(false)
+  })
+}
+
+/**
+ * Fills confirm password field if it exists
+ * @param {string} confirmPasswordSelector - Selector for confirm password input
+ * @param {string} confirmPasswordValue - Confirm password value to type
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+function fillConfirmPasswordField(confirmPasswordSelector, confirmPasswordValue) {
+  return cy.get('body').then(($body) => {
+    if ($body.find(confirmPasswordSelector).length > 0) {
+      cy.get(confirmPasswordSelector).first().type(confirmPasswordValue, { force: true })
+      return cy.wrap(true)
+    }
+    return cy.wrap(false)
+  })
+}
+
+/**
+ * Submits form and verifies password match error
+ * @param {string} submitSelector - Selector for submit button
+ * @param {Array<string>} errorSelectors - Array of error selectors
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+function submitAndVerifyPasswordError(submitSelector, errorSelectors, expectedTexts) {
+  return clickIfExistsAndContinue(submitSelector, () => {
+    verifyErrorMessageWithSelectors(errorSelectors, expectedTexts)
   })
 }
 

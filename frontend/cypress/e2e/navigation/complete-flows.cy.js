@@ -129,14 +129,16 @@ describe('Navegación - Flujos Completos', () => {
       })
     }
     
-    const editUser = () => {
-      clickIfExistsAndContinue('[data-cy="edit-user"], button', () => {
-        ifFoundInBody('[data-cy="user-first-name"], input[name*="first"]', () => {
-          cy.get('[data-cy="user-first-name"], input[name*="first"]').first().clear().type('Usuario Editado')
-          cy.get('[data-cy="save-user"], button[type="submit"]').first().click()
-          cy.get('body', { timeout: 5000 }).should('be.visible')
-        })
+    const fillUserEditForm = () => {
+      ifFoundInBody('[data-cy="user-first-name"], input[name*="first"]', () => {
+        cy.get('[data-cy="user-first-name"], input[name*="first"]').first().clear().type('Usuario Editado')
+        cy.get('[data-cy="save-user"], button[type="submit"]').first().click()
+        cy.get('body', { timeout: 5000 }).should('be.visible')
       })
+    }
+
+    const editUser = () => {
+      clickIfExistsAndContinue('[data-cy="edit-user"], button', fillUserEditForm)
     }
     
     const openUserDetails = () => {
@@ -309,22 +311,30 @@ describe('Navegación - Flujos Completos', () => {
         cy.get('[data-cy="breadcrumb-fincas"], .breadcrumb').should('exist')
       })
       
-      const navigateBreadcrumbs = () => {
-        clickIfExistsAndContinue('[data-cy="breadcrumb-fincas"], .breadcrumb', () => {
-          cy.get('body', { timeout: 5000 }).should('be.visible')
-        }).then(() => {
-          clickIfExistsAndContinue('[data-cy="breadcrumb-home"], .breadcrumb, a[href*="dashboard"]', () => {
-            verifyUrlPatterns(['/agricultor-dashboard', '/dashboard'], 10000)
-          })
+      const navigateToHome = () => {
+        clickIfExistsAndContinue('[data-cy="breadcrumb-home"], .breadcrumb, a[href*="dashboard"]', () => {
+          verifyUrlPatterns(['/agricultor-dashboard', '/dashboard'], 10000)
         })
       }
+
+      const navigateToFincas = () => {
+        cy.get('body', { timeout: 5000 }).should('be.visible')
+      }
+
+      const navigateBreadcrumbs = () => {
+        clickIfExistsAndContinue('[data-cy="breadcrumb-fincas"], .breadcrumb', navigateToFincas).then(navigateToHome)
+      }
       
+      const verifyLoteBreadcrumb = () => {
+        ifFoundInBody('[data-cy="breadcrumb-lotes"], .breadcrumb', () => {
+          cy.get('[data-cy="breadcrumb-lotes"], .breadcrumb').should('exist')
+        })
+      }
+
       const openLote = () => {
         ifFoundInBody('[data-cy="lote-item"], .lote-item, .item', () => {
           cy.get('[data-cy="lote-item"], .lote-item, .item').first().click({ force: true })
-          ifFoundInBody('[data-cy="breadcrumb-lotes"], .breadcrumb', () => {
-            cy.get('[data-cy="breadcrumb-lotes"], .breadcrumb').should('exist')
-          })
+          verifyLoteBreadcrumb()
           navigateBreadcrumbs()
         })
       }
@@ -353,13 +363,18 @@ describe('Navegación - Flujos Completos', () => {
     
     const performBulkExport = (url, checkboxSelector) => {
       visitAndWait(url)
-      ifFoundInBody(checkboxSelector, () => {
+      
+      const handleExport = () => {
+        cy.get('body', { timeout: 5000 }).should('be.visible')
+      }
+
+      const selectItemsAndExport = () => {
         cy.get(checkboxSelector).first().check({ force: true })
         cy.get(checkboxSelector).eq(1).check({ force: true })
-        return clickIfExistsAndContinue('[data-cy="bulk-export"], button', () => {
-          cy.get('body', { timeout: 5000 }).should('be.visible')
-        })
-      })
+        return clickIfExistsAndContinue('[data-cy="bulk-export"], button', handleExport)
+      }
+
+      ifFoundInBody(checkboxSelector, selectItemsAndExport)
     }
     
     performBulkExport('/mis-fincas', '[data-cy="finca-checkbox"], input[type="checkbox"]')
@@ -377,12 +392,16 @@ describe('Navegación - Flujos Completos', () => {
       })
     }
     
+    const handleMarkRead = () => {
+      cy.wrap(null)
+    }
+
+    const clickMarkReadButton = () => {
+      clickIfExistsAndContinue('[data-cy="mark-read"], button', handleMarkRead)
+    }
+
     const markAsRead = () => {
-      clickIfExistsAndContinue('[data-cy="notification-item"], .notification-item', () => {
-        clickIfExistsAndContinue('[data-cy="mark-read"], button', () => {
-          cy.wrap(null)
-        })
-      }).then(markAllRead)
+      clickIfExistsAndContinue('[data-cy="notification-item"], .notification-item', clickMarkReadButton).then(markAllRead)
     }
     
     const openNotifications = () => {

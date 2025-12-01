@@ -900,19 +900,22 @@ export function setupEmptyListIntercept(urlPattern, alias) {
 
 /**
  * Verifies element exists with multiple selector alternatives
+ * Attempts to find element using cy.get directly, checking visibility
  * @param {Array<string>} selectors - Array of CSS selectors to try
  * @param {JQuery} $context - jQuery context element
  * @param {number} timeout - Timeout in milliseconds
- * @returns {Cypress.Chainable<boolean>} True if any selector found
+ * @returns {Cypress.Chainable<boolean>} True if any selector found and visible
  */
 export function verifyElementWithAlternatives(selectors, $context, timeout = 5000) {
-  for (const selector of selectors) {
-    if ($context.find(selector).length > 0) {
-      cy.get(selector, { timeout }).should('exist')
-      return cy.wrap(true)
+  return cy.get('body', { timeout }).then(() => {
+    for (const selector of selectors) {
+      if ($context.find(selector).length > 0) {
+        cy.get(selector, { timeout }).should('exist').should('be.visible')
+        return cy.wrap(true)
+      }
     }
-  }
-  return cy.wrap(false)
+    return cy.wrap(false)
+  })
 }
 
 /**
@@ -1094,22 +1097,84 @@ const verifyErrorMessageText = ($el, expectedTexts) => {
   return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
 }
 
+/**
+ * Checks if error element exists and verifies error message
+ * Refactored to reduce nesting by using direct selector access without conditional checks
+ * @param {JQuery} $error - jQuery context element
+ * @param {string} errorSelector - Selector for error message
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
 const checkErrorDisplay = ($error, errorSelector, expectedTexts) => {
-  if ($error.find(errorSelector).length > 0) {
-    cy.get(errorSelector).first().should('satisfy', ($el) => verifyErrorMessageText($el, expectedTexts))
+  const errorExists = $error.find(errorSelector).length > 0
+  if (!errorExists) {
+    return cy.wrap(null)
   }
+  return cy.get(errorSelector).first().should('satisfy', ($el) => verifyErrorMessageText($el, expectedTexts))
 }
 
+/**
+ * Fills field, submits form and verifies error
+ * Refactored to reduce nesting by using direct selector access without conditional checks
+ * @param {string} fieldSelector - Selector for field to fill
+ * @param {string} value - Value to type
+ * @param {string} submitSelector - Selector for submit button
+ * @param {string} errorSelector - Selector for error message
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @param {number} timeout - Timeout in milliseconds
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
 export function fillFieldSubmitAndVerifyError(fieldSelector, value, submitSelector, errorSelector, expectedTexts, timeout = 3000) {
-  return cy.get('body').then(($body) => {
-    if ($body.find(fieldSelector).length > 0) {
-      cy.get(fieldSelector).first().type(value, { force: true })
+  return cy.get(fieldSelector, { timeout: 10000 }).first()
+    .type(value, { force: true })
+    .then(() => {
       cy.get(submitSelector).first().click({ force: true })
-      return cy.get('body', { timeout }).then(($error) => {
-        checkErrorDisplay($error, errorSelector, expectedTexts)
-      })
-    }
-    return cy.wrap(null)
+      return verifyErrorAfterSubmit(errorSelector, expectedTexts, timeout)
+    })
+}
+
+/**
+ * Executes field fill, submit and error verification
+ * Extracted to reduce nesting
+ * @param {string} fieldSelector - Selector for field to fill
+ * @param {string} value - Value to type
+ * @param {string} submitSelector - Selector for submit button
+ * @param {string} errorSelector - Selector for error message
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @param {number} timeout - Timeout in milliseconds
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+function executeFieldFillAndSubmit(fieldSelector, value, submitSelector, errorSelector, expectedTexts, timeout) {
+  cy.get(fieldSelector).first().type(value, { force: true })
+  cy.get(submitSelector).first().click({ force: true })
+  return verifyErrorAfterSubmit(errorSelector, expectedTexts, timeout)
+}
+
+/**
+ * Fills field and clicks submit button
+ * Extracted to reduce nesting
+ * @param {string} fieldSelector - Selector for field to fill
+ * @param {string} value - Value to type
+ * @param {string} submitSelector - Selector for submit button
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+function fillFieldAndClickSubmit(fieldSelector, value, submitSelector) {
+  cy.get(fieldSelector).first().type(value, { force: true })
+  cy.get(submitSelector).first().click({ force: true })
+  return cy.wrap(null)
+}
+
+/**
+ * Verifies error message after form submission
+ * Refactored to reduce nesting by using direct selector access
+ * @param {string} errorSelector - Selector for error message
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @param {number} timeout - Timeout in milliseconds
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+function verifyErrorAfterSubmit(errorSelector, expectedTexts, timeout) {
+  return cy.get('body', { timeout }).then(($error) => {
+    return checkErrorDisplay($error, errorSelector, expectedTexts)
   })
 }
 
@@ -1322,19 +1387,29 @@ export function openModalFillFieldAndVerifyError(buttonSelector, fieldSelector, 
  * @returns {Cypress.Chainable} Cypress chainable
  */
 export function uploadFileAndVerifyError(fileInputSelector, file, errorSelector, expectedTexts) {
+  const handleFileInput = ($input) => {
+    const dataTransfer = new DataTransfer()
+    dataTransfer.items.add(file)
+    $input[0].files = dataTransfer.files
+    cy.wrap($input).trigger('change', { force: true })
+  }
+
+  const verifyErrorIfPresent = () => {
+    cy.get('body', { timeout: 3000 }).then(($error) => {
+      if ($error.find(errorSelector).length > 0) {
+        verifyErrorMessageGeneric(expectedTexts, errorSelector)
+      }
+    })
+  }
+
+  const uploadFile = () => {
+    cy.get(fileInputSelector).then(handleFileInput)
+    verifyErrorIfPresent()
+  }
+
   return cy.get('body').then(($body) => {
     if ($body.find(fileInputSelector).length > 0) {
-      cy.get(fileInputSelector).then(($input) => {
-        const dataTransfer = new DataTransfer()
-        dataTransfer.items.add(file)
-        $input[0].files = dataTransfer.files
-        cy.wrap($input).trigger('change', { force: true })
-      })
-      cy.get('body', { timeout: 3000 }).then(($error) => {
-        if ($error.find(errorSelector).length > 0) {
-          verifyErrorMessageGeneric(expectedTexts, errorSelector)
-        }
-      })
+      uploadFile()
     } else {
       cy.get('body').should('be.visible')
     }
@@ -1384,32 +1459,52 @@ export function fillLongTextAndVerifyError(fieldSelector, length, submitSelector
  * @returns {Cypress.Chainable} Cypress chainable
  */
 export function testPasswordStrength(weakPasswords, strongPassword) {
-  return cy.get('body').then(($body) => {
-    if ($body.find('[data-cy="password-input"], input[type="password"]').length > 0) {
-      for (const [index, password] of weakPasswords.entries()) {
-        if (index > 0) {
-          cy.get('[data-cy="password-input"], input[type="password"]').first().clear()
-        }
-        cy.get('[data-cy="password-input"], input[type="password"]').first().type(password, { force: true })
-        cy.get('body', { timeout: 2000 }).then(($afterType) => {
-          ifFoundInBody('[data-cy="password-strength"], .password-strength', () => {
-            cy.get('[data-cy="password-strength"], .password-strength').should('exist')
-          })
-        })
+  const passwordSelector = '[data-cy="password-input"], input[type="password"]'
+  const strengthSelector = '[data-cy="password-strength"], .password-strength'
+
+  const verifyWeakPasswordStrength = () => {
+    ifFoundInBody(strengthSelector, () => {
+      cy.get(strengthSelector).should('exist')
+    })
+  }
+
+  const testWeakPassword = (index, password) => {
+    if (index > 0) {
+      cy.get(passwordSelector).first().clear()
+    }
+    cy.get(passwordSelector).first().type(password, { force: true })
+    cy.get('body', { timeout: 2000 }).then(verifyWeakPasswordStrength)
+  }
+
+  const verifyStrongPasswordStrength = () => {
+    ifFoundInBody(strengthSelector, () => {
+      const isStrongPassword = ($el) => {
+        const text = $el.text().toLowerCase()
+        return text.includes('fuerte') || text.includes('strong') || text.length > 0
       }
-      cy.get('body').then(($strong) => {
-        if ($strong.find('[data-cy="password-input"], input[type="password"]').length > 0) {
-          cy.get('[data-cy="password-input"], input[type="password"]').first().clear().type(strongPassword, { force: true })
-          cy.get('body', { timeout: 2000 }).then(($afterStrong) => {
-            ifFoundInBody('[data-cy="password-strength"], .password-strength', () => {
-              cy.get('[data-cy="password-strength"], .password-strength').should('satisfy', ($el) => {
-                const text = $el.text().toLowerCase()
-                return text.includes('fuerte') || text.includes('strong') || text.length > 0
-              })
-            })
-          })
-        }
-      })
+      cy.get(strengthSelector).should('satisfy', isStrongPassword)
+    })
+  }
+
+  const testStrongPassword = () => {
+    cy.get('body').then(($strong) => {
+      if ($strong.find(passwordSelector).length > 0) {
+        cy.get(passwordSelector).first().clear().type(strongPassword, { force: true })
+        cy.get('body', { timeout: 2000 }).then(verifyStrongPasswordStrength)
+      }
+    })
+  }
+
+  const testAllPasswords = () => {
+    for (const [index, password] of weakPasswords.entries()) {
+      testWeakPassword(index, password)
+    }
+    testStrongPassword()
+  }
+
+  return cy.get('body').then(($body) => {
+    if ($body.find(passwordSelector).length > 0) {
+      testAllPasswords()
     }
   })
 }

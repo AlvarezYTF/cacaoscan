@@ -14,7 +14,8 @@ import {
   validateRequiredFieldsInModal,
   validateFieldFormat,
   validateMultipleFieldsInModal,
-  validateConditionalFieldInModal
+  validateConditionalFieldInModal,
+  validatePasswordMatch
 } from '../../support/validation-helpers'
 
 describe('Manejo de Errores - Validación y Formularios', () => {
@@ -53,19 +54,16 @@ describe('Manejo de Errores - Validación y Formularios', () => {
   })
 
   it('debe validar coincidencia de contraseñas', () => {
-    visitAndWaitForBody('/registro')
-    ifFoundInBody('[data-cy="password-input"], input[type="password"]', () => {
-      cy.get('[data-cy="password-input"], input[type="password"]').first().type('Password123!', { force: true })
-      ifFoundInBody('[data-cy="confirm-password-input"], input[type="password"]', () => {
-        cy.get('[data-cy="confirm-password-input"], input[type="password"]').first().type('DifferentPassword123!', { force: true })
-        clickIfExistsAndContinue('[data-cy="register-button"], button[type="submit"]', () => {
-          verifyErrorMessageWithSelectors(
-            ['[data-cy="password-match-error"], .error-message'],
-            ['coinciden', 'match', 'contraseña']
-          )
-        })
-      })
-    })
+    validatePasswordMatch(
+      '/registro',
+      '[data-cy="password-input"], input[type="password"]',
+      'Password123!',
+      '[data-cy="confirm-password-input"], input[type="password"]',
+      'DifferentPassword123!',
+      '[data-cy="register-button"], button[type="submit"]',
+      ['[data-cy="password-match-error"], .error-message'],
+      ['coinciden', 'match', 'contraseña']
+    )
   })
 
   it('debe validar longitud de campos de texto', () => {

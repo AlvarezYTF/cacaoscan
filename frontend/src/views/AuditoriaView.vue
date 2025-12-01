@@ -333,7 +333,6 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue';
 import StatsCard from '@/components/reportes/StatsCard.vue';
 import AuditTable from '@/components/audit/AuditTable.vue';
@@ -363,7 +362,6 @@ export default {
     ConfirmModal
   },
   setup() {
-    const router = useRouter();
     const auditStore = useAuditStore();
     const authStore = useAuthStore();
 
@@ -456,8 +454,7 @@ export default {
       handleRefresh,
       loadInitialData: baseLoadInitialData,
       applyFilters: baseApplyFilters,
-      clearFilters: baseClearFilters,
-      handlePageChange: baseHandlePageChange
+      clearFilters: baseClearFilters
     } = useAdminView({
       store: auditStore,
       initialFilters,

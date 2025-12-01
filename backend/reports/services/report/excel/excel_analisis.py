@@ -51,6 +51,9 @@ from .excel_base import (
     DATE_TIME_FORMAT
 )
 
+# Sheet and chart titles
+EXCEL_QUALITY_DISTRIBUTION_TITLE = "Distribución de Calidad"
+
 
 class ExcelAnalisisGenerator(ExcelBaseGenerator):
     """
@@ -280,8 +283,8 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             return
         
         chart_ws, original_ws = self._create_sheet_with_title(
-            "Distribución de Calidad",
-            "Distribución de Calidad"
+            EXCEL_QUALITY_DISTRIBUTION_TITLE,
+            EXCEL_QUALITY_DISTRIBUTION_TITLE
         )
         
         headers = ["Categoría", "Cantidad", "Porcentaje"]
@@ -306,7 +309,7 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         chart = BarChart()
         chart.type = "col"
         chart.style = 10
-        chart.title = "Distribución de Calidad"
+        chart.title = EXCEL_QUALITY_DISTRIBUTION_TITLE
         chart.y_axis.title = 'Cantidad'
         chart.x_axis.title = 'Categoría'
         
@@ -321,7 +324,7 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
     
     def _create_summary_sheet(self, stats, user):
         """Create summary sheet."""
-        summary_ws, original_ws = self._create_sheet_with_title(
+        summary_ws, _ = self._create_sheet_with_title(
             "Resumen",
             "Resumen Ejecutivo",
             'A1:D1'
@@ -524,7 +527,7 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
     
     def _create_detailed_activities_sheet(self, filtros):
         """Create detailed activities sheet."""
-        activities_ws, original_ws = self._create_sheet_with_title(
+        _, original_ws = self._create_sheet_with_title(
             "Actividades Detalladas",
             "Actividades del Sistema"
         )
@@ -556,7 +559,7 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
     
     def _create_detailed_logins_sheet(self, filtros):
         """Create detailed logins sheet."""
-        logins_ws, original_ws = self._create_sheet_with_title(
+        _, original_ws = self._create_sheet_with_title(
             "Logins Detallados",
             "Historial de Logins"
         )

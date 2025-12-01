@@ -23,6 +23,29 @@ describe('Authentication - Advanced Scenarios', () => {
       return expectedTexts.some(expected => text.includes(expected)) || $el.length > 0
     })
   }
+
+  const checkCredentialsError = ($body) => {
+    const hasError = $body.find('.swal2-error, [data-cy="error-message"]').length > 0
+    const text = $body.text().toLowerCase()
+    return hasError || CREDENTIALS_ERROR_PATTERNS.some(pattern => text.includes(pattern))
+  }
+
+  const handleToggleClick = (initialType) => {
+    cy.get('[data-cy="btn-toggle-password"], button[type="button"]').first().click()
+    const expectedType = initialType === 'password' ? 'text' : 'password'
+    cy.get(PASSWORD_INPUT_SELECTOR).first().should('have.attr', 'type', expectedType)
+  }
+
+  const togglePasswordVisibility = (initialType) => {
+    ifFoundInBody('[data-cy="btn-toggle-password"], button[type="button"]', () => {
+      handleToggleClick(initialType)
+    })
+  }
+
+  const handlePasswordInputToggle = ($input) => {
+    const initialType = $input.attr('type')
+    togglePasswordVisibility(initialType)
+  }
   
   describe('Login Validation & Errors', () => {
     beforeEach(() => {
@@ -44,17 +67,11 @@ describe('Authentication - Advanced Scenarios', () => {
     })
 
     it('should handle incorrect credentials', () => {
-      const verifyCredentialsError = ($body) => {
-        const hasError = $body.find('.swal2-error, [data-cy="error-message"]').length > 0
-        const text = $body.text().toLowerCase()
-        return hasError || CREDENTIALS_ERROR_PATTERNS.some(pattern => text.includes(pattern))
-      }
-      
       cy.interceptError('POST', '/auth/login/', 401, { detail: 'Credenciales inválidas' }, 'loginError')
       const wrongPassword = generatePassword()
       fillLoginForm('wrong@example.com', wrongPassword)
       cy.wait('@loginError', { timeout: 10000 })
-      cy.get('body', { timeout: 5000 }).should('satisfy', verifyCredentialsError)
+      cy.get('body', { timeout: 5000 }).should('satisfy', checkCredentialsError)
     })
 
     it('should handle server error during login', () => {
@@ -66,26 +83,81 @@ describe('Authentication - Advanced Scenarios', () => {
     })
 
     it('should toggle password visibility', () => {
-      const handleToggleClick = (initialType) => {
-        cy.get('[data-cy="btn-toggle-password"], button[type="button"]').first().click()
-        const expectedType = initialType === 'password' ? 'text' : 'password'
-        cy.get(PASSWORD_INPUT_SELECTOR).first().should('have.attr', 'type', expectedType)
-      }
-
-      const togglePassword = (initialType) => {
-        ifFoundInBody('[data-cy="btn-toggle-password"], button[type="button"]', () => {
-          handleToggleClick(initialType)
-        })
-      }
-      
-      ifFoundInBody(PASSWORD_INPUT_SELECTOR, ($input) => {
-        const initialType = $input.attr('type')
-        togglePassword(initialType)
-      }, () => {
+      ifFoundInBody(PASSWORD_INPUT_SELECTOR, handlePasswordInputToggle, () => {
         cy.get('body').should('be.visible')
       })
     })
   })
+
+  const checkPasswordStrengthText = ($element, expectedTexts) => {
+    const text = $element.text().toLowerCase()
+    return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
+  }
+
+  const createStrengthChecker = (expectedTexts) => {
+    return ($element) => checkPasswordStrengthText($element, expectedTexts)
+  }
+
+  const verifyPasswordStrength = (expectedTexts) => {
+    const checkStrength = createStrengthChecker(expectedTexts)
+    return ifFoundInBody('.password-strength-meter, [data-cy="password-strength"]', ($el) => {
+      cy.wrap($el).should('satisfy', checkStrength)
+    })
+  }
+
+  const testWeakPassword = () => {
+    const weakPassword = getWeakPassword(0)
+    cy.get(PASSWORD_INPUT_SELECTOR).first().type(weakPassword)
+    cy.get('body', { timeout: 3000 }).then(() => verifyPasswordStrength(['débil', 'weak']))
+  }
+
+  const testStrongPassword = () => {
+    const strongPassword = generateStrongPassword()
+    cy.get(PASSWORD_INPUT_SELECTOR).first().clear().type(strongPassword)
+    cy.get('body', { timeout: 3000 }).then(() => verifyPasswordStrength(['fuerte', 'strong']))
+  }
+
+  const handlePasswordInput = () => {
+    testWeakPassword()
+    testStrongPassword()
+  }
+
+  const fillConfirmPasswordField = (testPassword) => {
+    const selector = '[data-cy="input-confirm-password"], input[type="password"]'
+    ifFoundInBody(selector, () => {
+      cy.get(selector).last().should('be.visible').type(testPassword)
+    })
+  }
+
+  const fillTermsCheckboxField = () => {
+    const selector = '[data-cy="check-terms"], input[type="checkbox"]'
+    cy.get('body').then(($body) => {
+      if ($body.find(selector).length > 0) {
+        cy.get(selector).first().should('exist').check({ force: true })
+      }
+    })
+  }
+
+  const checkEmailErrorText = ($element) => {
+    const text = $element.text().toLowerCase()
+    return text.includes('ya está registrado') || text.includes('already') || text.length > 0
+  }
+
+  const verifyEmailExistsError = () => {
+    return ifFoundInBody('.error-message, [data-cy="error-message"]', ($el) => {
+      cy.wrap($el).should('satisfy', checkEmailErrorText)
+    })
+  }
+
+  const checkButtonDisabledState = ($element) => {
+    return $element.is(':disabled') || $element.length > 0
+  }
+
+  const verifySubmitButtonDisabled = () => {
+    return ifFoundInBody('[data-cy="btn-submit-register"], [data-cy="register-button"], button[type="submit"]', ($btn) => {
+      cy.wrap($btn).first().should('satisfy', checkButtonDisabledState)
+    })
+  }
 
   describe('Registration Flow Detailed', () => {
     beforeEach(() => {
@@ -93,35 +165,6 @@ describe('Authentication - Advanced Scenarios', () => {
     })
 
     it('should validate password complexity', () => {
-      const checkPasswordStrengthText = ($element, expectedTexts) => {
-        const text = $element.text().toLowerCase()
-        return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
-      }
-
-      const verifyPasswordStrength = (expectedTexts) => {
-        const checkStrength = ($element) => checkPasswordStrengthText($element, expectedTexts)
-        return ifFoundInBody('.password-strength-meter, [data-cy="password-strength"]', ($el) => {
-          cy.wrap($el).should('satisfy', checkStrength)
-        })
-      }
-      
-      const testWeakPassword = () => {
-        const weakPassword = getWeakPassword(0)
-        cy.get(PASSWORD_INPUT_SELECTOR).first().type(weakPassword)
-        cy.get('body', { timeout: 3000 }).then(() => verifyPasswordStrength(['débil', 'weak']))
-      }
-      
-      const testStrongPassword = () => {
-        const strongPassword = generateStrongPassword()
-        cy.get(PASSWORD_INPUT_SELECTOR).first().clear().type(strongPassword)
-        cy.get('body', { timeout: 3000 }).then(() => verifyPasswordStrength(['fuerte', 'strong']))
-      }
-      
-      const handlePasswordInput = () => {
-        testWeakPassword()
-        testStrongPassword()
-      }
-      
       ifFoundInBody(PASSWORD_INPUT_SELECTOR, handlePasswordInput, () => {
         cy.get('body').should('be.visible')
       })
@@ -133,36 +176,13 @@ describe('Authentication - Advanced Scenarios', () => {
         body: { email: ['Este email ya está registrado'] } 
       }).as('registerFail')
 
-      const fillConfirmPassword = (testPassword) => {
-        ifFoundInBody('[data-cy="input-confirm-password"], input[type="password"]', () => {
-          cy.get('[data-cy="input-confirm-password"], input[type="password"]').last().type(testPassword)
-        })
-      }
-      
-      const fillTermsCheckbox = () => {
-        ifFoundInBody('[data-cy="check-terms"], input[type="checkbox"]', () => {
-          cy.get('[data-cy="check-terms"], input[type="checkbox"]').first().check({ force: true })
-        })
-      }
-      
       const fillRegistrationForm = () => {
         const testPassword = generateTestPassword()
         cy.get('[data-cy="input-name"], [data-cy="first-name-input"], input[name*="name"]').first().type('New User')
         cy.get(EMAIL_INPUT_SELECTOR).first().type('existing@example.com')
         cy.get(PASSWORD_INPUT_SELECTOR).first().type(testPassword)
-        fillConfirmPassword(testPassword)
-        fillTermsCheckbox()
-      }
-      
-      const checkEmailError = ($element) => {
-        const text = $element.text().toLowerCase()
-        return text.includes('ya está registrado') || text.includes('already') || text.length > 0
-      }
-      
-      const verifyEmailExistsError = () => {
-        return ifFoundInBody('.error-message, [data-cy="error-message"]', ($el) => {
-          cy.wrap($el).should('satisfy', checkEmailError)
-        })
+        fillConfirmPasswordField(testPassword)
+        fillTermsCheckboxField()
       }
       
       const handleRegistrationForm = () => {
@@ -178,28 +198,12 @@ describe('Authentication - Advanced Scenarios', () => {
     })
 
     it('should prevent submission without accepting terms', () => {
-      const fillConfirmPassword = (testPassword) => {
-        ifFoundInBody('[data-cy="input-confirm-password"], input[type="password"]', () => {
-          cy.get('[data-cy="input-confirm-password"], input[type="password"]').last().type(testPassword)
-        })
-      }
-      
       const fillFormWithoutTerms = () => {
         const testPassword = generateTestPassword()
         cy.get('[data-cy="input-name"], [data-cy="first-name-input"], input[name*="name"]').first().type('Valid User')
         cy.get(EMAIL_INPUT_SELECTOR).first().type('valid@example.com')
         cy.get(PASSWORD_INPUT_SELECTOR).first().type(testPassword)
-        fillConfirmPassword(testPassword)
-      }
-      
-      const checkButtonDisabled = ($element) => {
-        return $element.is(':disabled') || $element.length > 0
-      }
-      
-      const verifySubmitButtonDisabled = () => {
-        return ifFoundInBody('[data-cy="btn-submit-register"], [data-cy="register-button"], button[type="submit"]', ($btn) => {
-          cy.wrap($btn).first().should('satisfy', checkButtonDisabled)
-        })
+        fillConfirmPasswordField(testPassword)
       }
       
       const handleFormSubmission = () => {
@@ -213,55 +217,63 @@ describe('Authentication - Advanced Scenarios', () => {
     })
   })
 
+  const RESET_URL_PATTERNS = ['/forgot', '/login']
+  
+  const requestPasswordReset = (email) => {
+    return ifFoundInBody(EMAIL_INPUT_SELECTOR, () => {
+      cy.get(EMAIL_INPUT_SELECTOR).first().type(email)
+      cy.get('[data-cy="btn-submit"], [data-cy="send-reset-button"], button[type="submit"]').first().click()
+    })
+  }
+
+  const handleResetSuccessMessage = () => {
+    cy.get('.swal2-success, [data-cy="success-message"]').should('be.visible')
+  }
+
+  const handleResetSuccessFallback = () => {
+    verifyUrlPatterns(RESET_URL_PATTERNS, 5000)
+  }
+  
+  const verifyResetSuccess = () => {
+    return ifFoundInBody('.swal2-success, [data-cy="success-message"]', handleResetSuccessMessage, handleResetSuccessFallback)
+  }
+
+  const handleResetErrorMessage = () => {
+    cy.get('.swal2-error, [data-cy="error-message"]').should('be.visible')
+  }
+
+  const handleResetErrorFallback = () => {
+    verifyUrlPatterns(RESET_URL_PATTERNS, 5000)
+  }
+  
+  const verifyResetError = () => {
+    return ifFoundInBody('.swal2-error, [data-cy="error-message"]', handleResetErrorMessage, handleResetErrorFallback)
+  }
+
+  const handleResetSuccessCallback = () => {
+    verifyResetSuccess()
+  }
+
+  const handleResetErrorCallback = () => {
+    verifyResetError()
+  }
+
   describe('Password Reset Flow', () => {
-    const RESET_URL_PATTERNS = ['/forgot', '/login']
-    
-    const requestPasswordReset = (email) => {
-      return ifFoundInBody(EMAIL_INPUT_SELECTOR, () => {
-        cy.get(EMAIL_INPUT_SELECTOR).first().type(email)
-        cy.get('[data-cy="btn-submit"], [data-cy="send-reset-button"], button[type="submit"]').first().click()
-      })
-    }
-    
-    const verifyResetSuccess = () => {
-      return ifFoundInBody('.swal2-success, [data-cy="success-message"]', () => {
-        cy.get('.swal2-success, [data-cy="success-message"]').should('be.visible')
-      }, () => {
-        verifyUrlPatterns(RESET_URL_PATTERNS, 5000)
-      })
-    }
-    
-    const verifyResetError = () => {
-      return ifFoundInBody('.swal2-error, [data-cy="error-message"]', () => {
-        cy.get('.swal2-error, [data-cy="error-message"]').should('be.visible')
-      }, () => {
-        verifyUrlPatterns(RESET_URL_PATTERNS, 5000)
-      })
-    }
-    
     it('should request password reset successfully', () => {
-      const handleResetSuccess = () => {
-        verifyResetSuccess()
-      }
-      
       cy.visit('/auth/forgot-password')
       cy.get('body', { timeout: 10000 }).should('be.visible')
       requestPasswordReset('user@example.com')
-      cy.get('body', { timeout: 5000 }).then(handleResetSuccess)
+      cy.get('body', { timeout: 5000 }).then(handleResetSuccessCallback)
     })
 
     it('should handle non-existent email for reset', () => {
-      const handleResetError = () => {
-        verifyResetError()
-      }
-      
       cy.interceptError('POST', '/auth/password_reset/', 404, { detail: 'Email no encontrado' }, 'resetFail')
       
       cy.visit('/auth/forgot-password')
       cy.get('body', { timeout: 10000 }).should('be.visible')
       requestPasswordReset('nobody@example.com')
       cy.wait('@resetFail', { timeout: 10000 })
-      cy.get('body', { timeout: 5000 }).then(handleResetError)
+      cy.get('body', { timeout: 5000 }).then(handleResetErrorCallback)
     })
   })
 })

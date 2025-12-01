@@ -40,14 +40,18 @@ describe('Gestión de Lotes - CRUD', () => {
     })
   }
   
+  const verifyFilterApplied = () => {
+    return ifFoundInBody('[data-cy="active-filters"], [data-cy="filtered-results"]', () => {
+      cy.get('[data-cy="active-filters"], [data-cy="filtered-results"]').first().should('exist')
+    })
+  }
+
+  const handleApplyFilterClick = () => {
+    return clickIfExistsAndContinue('[data-cy="apply-filter"], button', verifyFilterApplied)
+  }
+
   const applyFilter = (filterSelector, filterValue) => {
-    return selectIfExistsAndContinue(filterSelector, filterValue, () => {
-      return clickIfExistsAndContinue('[data-cy="apply-filter"], button', () => {
-        return ifFoundInBody('[data-cy="active-filters"], [data-cy="filtered-results"]', () => {
-          cy.get('[data-cy="active-filters"], [data-cy="filtered-results"]').first().should('exist')
-        })
-      })
-    }, () => {
+    return selectIfExistsAndContinue(filterSelector, filterValue, handleApplyFilterClick, () => {
       cy.get('body').should('be.visible')
     })
   }
@@ -57,10 +61,14 @@ describe('Gestión de Lotes - CRUD', () => {
     return text.includes(expectedText.toLowerCase()) || text.length > 0
   }
 
+  const verifySingleFilteredItem = ($item, expectedText) => {
+    cy.wrap($item).should('satisfy', ($el) => checkFilteredItemText($el, expectedText))
+  }
+
   const verifyFilteredItems = (itemSelector, expectedText) => {
     return ifFoundInBody(itemSelector, () => {
       cy.get(itemSelector).each(($item) => {
-        cy.wrap($item).should('satisfy', ($el) => checkFilteredItemText($el, expectedText))
+        verifySingleFilteredItem($item, expectedText)
       })
     })
   }
@@ -161,15 +169,21 @@ describe('Gestión de Lotes - CRUD', () => {
     })
   })
 
+  const handleDeleteConfirmation = () => {
+    cy.visit('/mis-lotes')
+    return cy.get('body', { timeout: 10000 }).should('be.visible')
+  }
+
+  const handleDeleteButtonClick = () => {
+    return clickIfExistsAndContinue('[data-cy="confirm-delete"], .swal2-confirm, button', handleDeleteConfirmation)
+  }
+
+  const handleDeleteLoteClick = () => {
+    return clickIfExistsAndContinue('[data-cy="delete-lote"], button', handleDeleteButtonClick)
+  }
+
   it('debe eliminar lote con confirmación', () => {
-    interactWithLoteItem(() => {
-      return clickIfExistsAndContinue('[data-cy="delete-lote"], button', () => {
-        return clickIfExistsAndContinue('[data-cy="confirm-delete"], .swal2-confirm, button', () => {
-          cy.visit('/mis-lotes')
-          return cy.get('body', { timeout: 10000 }).should('be.visible')
-        })
-      })
-    })
+    interactWithLoteItem(handleDeleteLoteClick)
   })
 
   it('debe mostrar análisis asociados al lote', () => {
@@ -195,20 +209,30 @@ describe('Gestión de Lotes - CRUD', () => {
     })
   })
 
-  it('debe permitir buscar lotes por nombre', () => {
-    typeIfExistsAndContinue('[data-cy="search-lotes"], input[type="search"], input[placeholder*="search"]', 'Norte', () => {
-      return ifFoundInBody(LOTE_ITEM_SELECTOR, ($item) => {
-        cy.wrap($item).should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('norte') || text.length > 0
-        })
-      })
-    }, () => {
-      cy.get('body').should('be.visible')
-    })
+  const checkSearchItemText = ($el) => {
+    const text = $el.text().toLowerCase()
+    return text.includes('norte') || text.length > 0
+  }
+
+  const verifySearchResults = ($item) => {
+    cy.wrap($item).should('satisfy', checkSearchItemText)
+  }
+
+  const handleSearchResults = () => {
+    return ifFoundInBody(LOTE_ITEM_SELECTOR, verifySearchResults)
+  }
+
+  const verifySearchResultsCount = () => {
     ifFoundInBody('[data-cy="search-results-count"]', () => {
       cy.get('[data-cy="search-results-count"]').should('be.visible')
     })
+  }
+
+  it('debe permitir buscar lotes por nombre', () => {
+    typeIfExistsAndContinue('[data-cy="search-lotes"], input[type="search"], input[placeholder*="search"]', 'Norte', handleSearchResults, () => {
+      cy.get('body').should('be.visible')
+    })
+    verifySearchResultsCount()
   })
 
   it('debe permitir filtrar lotes por finca', () => {
@@ -238,76 +262,110 @@ describe('Gestión de Lotes - CRUD', () => {
     })
   })
 
-  it('debe permitir exportar datos de lotes', () => {
-    clickIfExistsAndContinue('[data-cy="export-lotes"], button', () => {
-      return ifFoundInBody('[data-cy="export-pdf"], [data-cy="export-excel"]', () => {
-        cy.get('[data-cy="export-pdf"], [data-cy="export-excel"]').first().should('exist')
-        return clickIfExistsAndContinue('[data-cy="export-excel"], button', () => {
-          cy.verifyDownload('lotes.xlsx')
-        })
-      }, () => {
-        cy.get('body').should('be.visible')
-      })
-    }, () => {
+  const handleExcelExport = () => {
+    cy.verifyDownload('lotes.xlsx')
+  }
+
+  const handleExportOptionsClick = () => {
+    cy.get('[data-cy="export-pdf"], [data-cy="export-excel"]').first().should('exist')
+    return clickIfExistsAndContinue('[data-cy="export-excel"], button', handleExcelExport)
+  }
+
+  const handleExportOptions = () => {
+    return ifFoundInBody('[data-cy="export-pdf"], [data-cy="export-excel"]', handleExportOptionsClick, () => {
       cy.get('body').should('be.visible')
     })
+  }
+
+  const handleExportButtonClick = () => {
+    return clickIfExistsAndContinue('[data-cy="export-lotes"], button', handleExportOptions, () => {
+      cy.get('body').should('be.visible')
+    })
+  }
+
+  it('debe permitir exportar datos de lotes', () => {
+    handleExportButtonClick()
   })
+
+  const verifyAlertItems = () => {
+    cy.get('[data-cy="alert-item"], .alert-item').should('be.visible')
+  }
+
+  const verifyMaintenanceAlerts = () => {
+    cy.get('[data-cy="maintenance-alerts"], .alerts').should('be.visible')
+    return ifFoundInBody('[data-cy="alert-item"], .alert-item', verifyAlertItems)
+  }
+
+  const handleMaintenanceAlerts = () => {
+    return ifFoundInBody('[data-cy="maintenance-alerts"], .alerts', verifyMaintenanceAlerts, () => {
+      cy.get('body').should('be.visible')
+    })
+  }
 
   it('debe mostrar alertas de mantenimiento', () => {
-    interactWithLoteItem(() => {
-      return ifFoundInBody('[data-cy="maintenance-alerts"], .alerts', () => {
-        cy.get('[data-cy="maintenance-alerts"], .alerts').should('be.visible')
-        return ifFoundInBody('[data-cy="alert-item"], .alert-item', () => {
-          cy.get('[data-cy="alert-item"], .alert-item').should('be.visible')
-        })
-      }, () => {
-        cy.get('body').should('be.visible')
-      })
-    }, () => {
+    interactWithLoteItem(handleMaintenanceAlerts, () => {
       cy.get('body').should('be.visible')
     })
   })
+
+  const verifyScheduleSuccess = () => {
+    return ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
+      cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
+    })
+  }
+
+  const handleScheduleFormSubmission = () => {
+    return fillFormFieldsSequence(
+      [
+        { selector: '[data-cy="analysis-date"], input[type="date"]', value: '2024-02-15' },
+        { selector: '[data-cy="analysis-time"], input[type="time"]', value: '10:00' },
+        { selector: '[data-cy="analysis-notes"], textarea', value: 'Análisis programado' }
+      ],
+      '[data-cy="save-schedule"], button[type="submit"]'
+    ).then(verifyScheduleSuccess)
+  }
+
+  const handleScheduleButtonClick = () => {
+    return clickIfExistsAndContinue('[data-cy="schedule-analysis"], button', handleScheduleFormSubmission, () => {
+      cy.get('body').should('be.visible')
+    })
+  }
 
   it('debe permitir programar análisis para lote', () => {
-    interactWithLoteItem(() => {
-      return clickIfExistsAndContinue('[data-cy="schedule-analysis"], button', () => {
-        return fillFormFieldsSequence(
-          [
-            { selector: '[data-cy="analysis-date"], input[type="date"]', value: '2024-02-15' },
-            { selector: '[data-cy="analysis-time"], input[type="time"]', value: '10:00' },
-            { selector: '[data-cy="analysis-notes"], textarea', value: 'Análisis programado' }
-          ],
-          '[data-cy="save-schedule"], button[type="submit"]'
-        ).then(() => {
-          return ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
-            cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-          })
-        })
-      }, () => {
-        cy.get('body').should('be.visible')
-      })
-    }, () => {
+    interactWithLoteItem(handleScheduleButtonClick, () => {
       cy.get('body').should('be.visible')
     })
   })
 
+  const verifyAnalisisItemDetails = () => {
+    cy.get('[data-cy="analisis-item"], .analisis-item').should('have.length.greaterThan', 0)
+    cy.get('[data-cy="analisis-item"], .analisis-item').first().then(($item) => {
+      const analisisSelectors = [
+        '[data-cy="analisis-date"]',
+        '[data-cy="analisis-quality"]',
+        '[data-cy="analisis-results"]'
+      ]
+      verifySelectorsExist(analisisSelectors, $item, 3000)
+    })
+  }
+
+  const verifyAnalisisItems = () => {
+    return ifFoundInBody('[data-cy="analisis-item"], .analisis-item', verifyAnalisisItemDetails)
+  }
+
+  const verifyAnalisisHistory = () => {
+    cy.get('[data-cy="analisis-history"], .history').should('be.visible')
+    return verifyAnalisisItems()
+  }
+
+  const handleAnalisisHistory = () => {
+    return ifFoundInBody('[data-cy="analisis-history"], .history', verifyAnalisisHistory, () => {
+      cy.get('body').should('be.visible')
+    })
+  }
+
   it('debe mostrar historial de análisis del lote', () => {
-    interactWithLoteItem(() => {
-      return ifFoundInBody('[data-cy="analisis-history"], .history', () => {
-        cy.get('[data-cy="analisis-history"], .history').should('be.visible')
-        return ifFoundInBody('[data-cy="analisis-item"], .analisis-item', ($item) => {
-          cy.get('[data-cy="analisis-item"], .analisis-item').should('have.length.greaterThan', 0)
-          const analisisSelectors = [
-            '[data-cy="analisis-date"]',
-            '[data-cy="analisis-quality"]',
-            '[data-cy="analisis-results"]'
-          ]
-          verifySelectorsExist(analisisSelectors, $item, 3000)
-        })
-      }, () => {
-        cy.get('body').should('be.visible')
-      })
-    }, () => {
+    interactWithLoteItem(handleAnalisisHistory, () => {
       cy.get('body').should('be.visible')
     })
   })

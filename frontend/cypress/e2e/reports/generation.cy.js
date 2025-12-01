@@ -124,34 +124,38 @@ describe('Generación de Reportes - Creación', () => {
     })
   })
 
-  it('debe validar campos requeridos para generar reporte', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="create-report-button"], button').length > 0) {
-        cy.get('[data-cy="create-report-button"], button').first().click({ force: true })
-        cy.get('body', { timeout: 5000 }).then(($modal) => {
-          if ($modal.find('[data-cy="generate-report"], button[type="submit"]').length > 0) {
-            cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
-            
-            const verifyErrorSelector = (selector) => {
-              cy.get(selector, { timeout: 3000 }).should('exist')
-            }
+  const verifyErrorSelector = (selector) => {
+    cy.get(selector, { timeout: 3000 }).should('exist')
+  }
 
-            const verifyValidationErrors = () => {
-              const errorSelectors = [
-                '[data-cy="report-type-error"]',
-                '[data-cy="date-range-error"]'
-              ]
-              for (const selector of errorSelectors) {
-                ifFoundInBody(selector, () => verifyErrorSelector(selector))
-              }
-            }
-            verifyValidationErrors()
-          }
-        })
-      } else {
-        cy.get('body').should('be.visible')
-      }
-    })
+  const verifyValidationErrors = () => {
+    const errorSelectors = [
+      '[data-cy="report-type-error"]',
+      '[data-cy="date-range-error"]'
+    ]
+    for (const selector of errorSelectors) {
+      ifFoundInBody(selector, () => verifyErrorSelector(selector))
+    }
+  }
+
+  const clickGenerateAndVerifyErrors = ($modal) => {
+    if ($modal.find('[data-cy="generate-report"], button[type="submit"]').length > 0) {
+      cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
+      verifyValidationErrors()
+    }
+  }
+
+  const openCreateReportModal = ($body) => {
+    if ($body.find('[data-cy="create-report-button"], button').length > 0) {
+      cy.get('[data-cy="create-report-button"], button').first().click({ force: true })
+      cy.get('body', { timeout: 5000 }).then(clickGenerateAndVerifyErrors)
+    } else {
+      cy.get('body').should('be.visible')
+    }
+  }
+
+  it('debe validar campos requeridos para generar reporte', () => {
+    cy.get('body').then(openCreateReportModal)
   })
 
   it('debe validar rango de fechas', () => {
@@ -318,20 +322,30 @@ describe('Generación de Reportes - Creación', () => {
     })
   })
 
-  it('debe permitir personalizar formato de reporte', () => {
-    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
-      return selectIfExistsAndContinue('[data-cy="report-format"], select', 'pdf', () => {
-        checkCheckboxIfExists('[data-cy="include-cover"], input[type="checkbox"]')
-        checkCheckboxIfExists('[data-cy="include-summary"], input[type="checkbox"]')
-        selectIfExistsAndContinue('[data-cy="color-scheme"], select', 'corporate', () => {
-          return ifFoundInBody('[data-cy="format-preview"], .preview', () => {
-            cy.get('[data-cy="format-preview"], .preview').should('be.visible')
-          }, () => {
-            cy.get('body').should('be.visible')
-          })
-        })
-      })
+  const verifyFormatPreview = () => {
+    ifFoundInBody('[data-cy="format-preview"], .preview', () => {
+      cy.get('[data-cy="format-preview"], .preview').should('be.visible')
     }, () => {
+      cy.get('body').should('be.visible')
+    })
+  }
+
+  const selectColorScheme = () => {
+    selectIfExistsAndContinue('[data-cy="color-scheme"], select', 'corporate', verifyFormatPreview)
+  }
+
+  const configureReportFormat = () => {
+    checkCheckboxIfExists('[data-cy="include-cover"], input[type="checkbox"]')
+    checkCheckboxIfExists('[data-cy="include-summary"], input[type="checkbox"]')
+    selectColorScheme()
+  }
+
+  const selectReportFormat = () => {
+    selectIfExistsAndContinue('[data-cy="report-format"], select', 'pdf', configureReportFormat)
+  }
+
+  it('debe permitir personalizar formato de reporte', () => {
+    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', selectReportFormat, () => {
       cy.get('body').should('be.visible')
     })
   })
