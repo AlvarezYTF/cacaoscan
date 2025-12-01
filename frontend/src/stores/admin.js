@@ -120,7 +120,7 @@ export const useAdminStore = defineStore('admin', () => {
       })
       
       const data = response.data || {}
-      const notificationsArray = data.results || data.data || Array.isArray(data) ? data : []
+      const notificationsArray = data.results || data.data || (Array.isArray(data) ? data : [])
       
       console.log('🚨 [admin store] Notifications response:', data)
       console.log('🚨 [admin store] Notifications count:', notificationsArray.length)

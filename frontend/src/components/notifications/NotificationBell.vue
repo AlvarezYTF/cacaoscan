@@ -262,6 +262,7 @@ export default {
     }
 
     const truncateMessage = (message) => {
+      if (!message) return ''
       if (message.length <= 60) return message
       return message.substring(0, 60) + '...'
     }

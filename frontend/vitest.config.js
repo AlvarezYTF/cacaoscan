@@ -8,6 +8,12 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
+    pool: 'forks',
+    css: {
+      modules: {
+        classNameStrategy: 'non-scoped'
+      }
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
@@ -24,10 +30,10 @@ export default defineConfig({
       ],
       thresholds: {
         global: {
-          branches: 70,
-          functions: 70,
-          lines: 70,
-          statements: 70
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80
         }
       }
     }
@@ -36,5 +42,8 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, './src')
     }
+  },
+  define: {
+    'import.meta.vitest': 'undefined'
   }
 })

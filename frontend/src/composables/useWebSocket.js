@@ -425,6 +425,35 @@ export function useWebSocket() {
     (userStatsSocket?.isConnecting.value)
   )
   
+  const emit = (event, data) => {
+    if (listeners.has(event)) {
+      for (const callback of listeners.get(event)) {
+        try {
+          callback(data)
+        } catch (error) {
+          console.error(`Error en listener de evento ${event}:`, error)
+        }
+      }
+    }
+  }
+  
+  const on = (event, callback) => {
+    if (!listeners.has(event)) {
+      listeners.set(event, [])
+    }
+    listeners.get(event).push(callback)
+  }
+  
+  const off = (event, callback) => {
+    if (listeners.has(event)) {
+      const callbacks = listeners.get(event)
+      const index = callbacks.indexOf(callback)
+      if (index > -1) {
+        callbacks.splice(index, 1)
+      }
+    }
+  }
+  
   // Lifecycle
   onMounted(() => {
     // Solo conectar WebSockets si están habilitados (evitar reconexiones infinitas)

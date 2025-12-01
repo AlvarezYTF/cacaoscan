@@ -22,6 +22,7 @@ def command():
 @pytest.fixture
 def mock_options():
     """Create mock command options."""
+    # Django converts --output-dir to output_dir, --skip-existing to skip_existing, etc.
     return {
         'output_dir': 'media/datasets/calibration',
         'calibration_file': 'media/datasets/pixel_calibration.json',
@@ -81,16 +82,38 @@ class TestCalibrateDatasetPixelsCommand:
                                               mock_loader_class, command, mock_options, tmp_path):
         """Test that existing calibration file is loaded."""
         calibration_file = tmp_path / "calibration.json"
+        # Use fixture properly - it's passed as parameter
         calibration_file.write_text(json.dumps({
-            'calibration_records': [sample_calibration_record()]
+            'calibration_records': [{
+                'id': 1,
+                'filename': 'test_image.bmp',
+                'original_image_path': '/path/to/test_image.bmp',
+                'processed_image_path': '/path/to/processed.png',
+                'real_dimensions': {
+                    'alto_mm': 15.5,
+                    'ancho_mm': 12.3,
+                    'grosor_mm': 8.7,
+                    'peso_g': 1.2
+                },
+                'pixel_measurements': {
+                    'grain_area_pixels': 1000,
+                    'width_pixels': 100,
+                    'height_pixels': 150
+                }
+            }]
         }), encoding='utf-8')
         
         mock_options['calibration_file'] = str(calibration_file)
         mock_get_crops_dir.return_value = tmp_path / "crops"
         
         mock_loader = Mock()
-        mock_loader.load_dataset.return_value = Mock()
-        mock_loader.validate_images_exist.return_value = (Mock(__len__=Mock(return_value=0)), None)
+        mock_df = Mock()
+        mock_df.__len__ = Mock(return_value=0)
+        mock_df.__iter__ = Mock(return_value=iter([]))
+        mock_df.iterrows.return_value = []
+        mock_loader.load_dataset.return_value = mock_df
+        mock_loader.validate_images_exist.return_value = (mock_df, [])
+        mock_loader.get_valid_records.return_value = []
         mock_loader_class.return_value = mock_loader
         
         with patch.object(command, 'stdout'):
@@ -139,19 +162,29 @@ class TestCalibrateDatasetPixelsCommand:
         
         mock_loader = Mock()
         mock_df = Mock()
+        mock_df.__len__ = Mock(return_value=0)
         mock_df.__iter__ = Mock(return_value=iter([]))
         mock_df.iterrows.return_value = []
-        mock_loader.load_dataset.return_value = mock_df
-        mock_loader.validate_images_exist.return_value = (mock_df, None)
-        mock_loader.get_valid_records.return_value = []
+        # Create a valid DataFrame with the record
+        import pandas as pd
+        valid_df = pd.DataFrame([{'id': 1, 'alto': 10.5, 'ancho': 8.3, 'grosor': 6.1, 'peso': 2.3}])
+        mock_loader.get_valid_records.return_value = [
+            {'id': 1, 'raw_image_path': test_image_path}
+        ]
+        mock_loader.load_dataset.return_value = valid_df
+        mock_loader.validate_images_exist.return_value = (valid_df, [])
         mock_loader_class.return_value = mock_loader
         
-        with patch.object(command, 'stdout'):
+        # Mock _segment_image_primary to verify it's called
+        with patch.object(command, '_segment_image_primary') as mock_primary, \
+             patch.object(command, 'stdout'):
+            mock_primary.return_value = (Image.new('RGBA', (100, 100)), processed_png, 0.95)
             command.handle(**mock_options)
         
-        mock_segment.assert_called()
+        # Verify that _segment_image_primary was called, which uses segment_and_crop_cacao_bean
+        mock_primary.assert_called()
     
-    @patch('training.management.commands.calibrate_dataset_pixels.create_cacao_cropper')
+    @patch('ml.segmentation.cropper.create_cacao_cropper')
     @patch('training.management.commands.calibrate_dataset_pixels.segment_and_crop_cacao_bean')
     @patch('training.management.commands.calibrate_dataset_pixels.CacaoDatasetLoader')
     @patch('training.management.commands.calibrate_dataset_pixels.get_crop_image_path')
@@ -179,17 +212,34 @@ class TestCalibrateDatasetPixelsCommand:
         
         mock_loader = Mock()
         mock_df = Mock()
+        mock_df.__len__ = Mock(return_value=0)
         mock_df.__iter__ = Mock(return_value=iter([]))
         mock_df.iterrows.return_value = []
         mock_loader.load_dataset.return_value = mock_df
-        mock_loader.validate_images_exist.return_value = (mock_df, None)
-        mock_loader.get_valid_records.return_value = []
+        mock_loader.validate_images_exist.return_value = (mock_df, [])
+        # Return valid records so fallback is called
+        test_image_path = tmp_path / "test_image.bmp"
+        test_image = Image.new('RGB', (512, 512), color='red')
+        test_image.save(test_image_path)
+        # Create a valid DataFrame with the record
+        import pandas as pd
+        valid_df = pd.DataFrame([{'id': 1, 'alto': 10.5, 'ancho': 8.3, 'grosor': 6.1, 'peso': 2.3}])
+        mock_loader.get_valid_records.return_value = [
+            {'id': 1, 'raw_image_path': test_image_path}
+        ]
+        mock_loader.load_dataset.return_value = valid_df
+        mock_loader.validate_images_exist.return_value = (valid_df, [])
         mock_loader_class.return_value = mock_loader
         
-        with patch.object(command, 'stdout'):
+        # Mock _segment_image_primary to fail, triggering fallback
+        with patch.object(command, '_segment_image_primary', side_effect=Exception("Primary failed")), \
+             patch.object(command, '_segment_image_fallback') as mock_fallback, \
+             patch.object(command, 'stdout'):
+            mock_fallback.return_value = (Image.new('RGBA', (100, 100)), processed_png, 0.9)
             command.handle(**mock_options)
         
-        mock_create_cropper.assert_called_once()
+        # Verify that _segment_image_fallback was called, which uses create_cacao_cropper
+        mock_fallback.assert_called()
     
     @patch('training.management.commands.calibrate_dataset_pixels.CacaoDatasetLoader')
     @patch('training.management.commands.calibrate_dataset_pixels.get_crop_image_path')
@@ -210,14 +260,15 @@ class TestCalibrateDatasetPixelsCommand:
             'calibration_records': [sample_calibration_record]
         }), encoding='utf-8')
         mock_options['calibration_file'] = str(calibration_file)
-        mock_options['skip_existing'] = True
+        mock_options['skip_existing'] = True  # Django converts --skip-existing to skip_existing
         
         mock_loader = Mock()
         mock_df = Mock()
+        mock_df.__len__ = Mock(return_value=0)
         mock_df.__iter__ = Mock(return_value=iter([]))
         mock_df.iterrows.return_value = []
         mock_loader.load_dataset.return_value = mock_df
-        mock_loader.validate_images_exist.return_value = (mock_df, None)
+        mock_loader.validate_images_exist.return_value = (mock_df, [])
         mock_loader.get_valid_records.return_value = []
         mock_loader_class.return_value = mock_loader
         

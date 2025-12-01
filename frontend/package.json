@@ -29,7 +29,13 @@
     "test:public": "cypress run --spec 'cypress/e2e/public/**/*.cy.js'",
     "test:security": "cypress run --spec 'cypress/e2e/security/**/*.cy.js'",
     "test:settings": "cypress run --spec 'cypress/e2e/settings/**/*.cy.js'",
-    "test:accessibility": "cypress run --spec 'cypress/e2e/accessibility/**/*.cy.js'"
+    "test:accessibility": "cypress run --spec 'cypress/e2e/accessibility/**/*.cy.js'",
+    "test:unit:coverage": "vitest run --coverage",
+    "test:coverage:sonar": "vitest run --coverage --reporter=verbose",
+    "test:all:coverage": "pnpm run test:coverage:sonar && pnpm run cypress:run",
+    "test:all": "pnpm run test:unit && pnpm run cypress:run",
+    "lint": "eslint . --fix",
+    "format": "prettier --write src/"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",

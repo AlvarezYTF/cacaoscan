@@ -3,6 +3,15 @@ describe('Autenticación - Recuperación de Contraseña', () => {
     cy.visit('/login')
     cy.get('body', { timeout: 10000 }).should('be.visible')
   })
+  
+  // Helper functions to reduce nesting depth
+  const verifySelectorsExist = (selectors, $context, timeout = 3000) => {
+    for (const selector of selectors) {
+      if ($context.find(selector).length > 0) {
+        cy.get(selector, { timeout }).should('exist')
+      }
+    }
+  }
 
   it('debe mostrar formulario de recuperación de contraseña', () => {
     cy.get('body').then(($body) => {
@@ -146,11 +155,7 @@ describe('Autenticación - Reset de Contraseña', () => {
       const selectors = [
         '[data-cy="new-password-input"]', '[data-cy="confirm-password-input"]', '[data-cy="reset-button"]'
       ]
-      selectors.forEach(selector => {
-        if ($body.find(selector).length > 0) {
-          cy.get(selector, { timeout: 5000 }).should('exist')
-        }
-      })
+          verifySelectorsExist(selectors, $body, 5000)
     })
   })
 

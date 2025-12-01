@@ -32,6 +32,24 @@ def mock_finca():
     finca.id = 1
     finca.nombre = "Test Finca"
     finca.ubicacion = "Test Location"
+    
+    # Mock lotes
+    mock_lote1 = Mock()
+    mock_lote1.area_hectareas = "5.0"
+    mock_lote2 = Mock()
+    mock_lote2.area_hectareas = "3.5"
+    
+    mock_lotes_queryset = Mock()
+    mock_lotes_queryset.count.return_value = 2
+    mock_lotes_queryset.filter.return_value.count.return_value = 2
+    mock_lotes_queryset.values.return_value.distinct.return_value = [{'variedad': 'CCN-51'}]
+    mock_lotes_queryset.values.return_value.annotate.return_value.values_list.return_value = [('activo', 2)]
+    
+    # Make it iterable
+    mock_lotes_queryset.__iter__ = lambda self: iter([mock_lote1, mock_lote2])
+    
+    finca.lotes.all.return_value = mock_lotes_queryset
+    
     return finca
 
 
@@ -57,8 +75,21 @@ class TestExcelAnalisisGenerator:
         """Test successful quality report generation."""
         mock_queryset = Mock()
         mock_queryset.count.return_value = 10
-        mock_queryset.aggregate.return_value = {'avg': 0.85}
-        mock_queryset.filter.return_value.count.return_value = 5
+        
+        # Configure aggregate to return different values based on call
+        call_count = [0]
+        def aggregate_side_effect(**kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return {'avg': 0.85}
+            elif call_count[0] == 2:
+                return {'avg_alto': 10.5, 'avg_ancho': 8.3, 'avg_grosor': 5.2}
+            elif call_count[0] == 3:
+                return {'avg': 1.5}
+            return {}
+        
+        mock_queryset.aggregate.side_effect = aggregate_side_effect
+        mock_queryset.filter.return_value = mock_queryset
         mock_prediction_model.objects.all.return_value = mock_queryset
         
         mock_save.return_value = b"excel_content"
@@ -86,8 +117,21 @@ class TestExcelAnalisisGenerator:
         """Test quality report generation with filters."""
         mock_queryset = Mock()
         mock_queryset.count.return_value = 5
-        mock_queryset.aggregate.return_value = {'avg': 0.90}
-        mock_queryset.filter.return_value.count.return_value = 3
+        
+        # Configure aggregate to return different values based on call
+        call_count = [0]
+        def aggregate_side_effect(**kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return {'avg': 0.90}
+            elif call_count[0] == 2:
+                return {'avg_alto': 11.0, 'avg_ancho': 9.0, 'avg_grosor': 5.5}
+            elif call_count[0] == 3:
+                return {'avg': 1.8}
+            return {}
+        
+        mock_queryset.aggregate.side_effect = aggregate_side_effect
+        mock_queryset.filter.return_value = mock_queryset
         mock_prediction_model.objects.all.return_value = mock_queryset
         
         mock_save.return_value = b"excel_content"
@@ -133,20 +177,37 @@ class TestExcelAnalisisGenerator:
         with pytest.raises(Exception):
             excel_generator.generate_finca_report(999, mock_user)
     
+    @patch('reports.services.report.excel.excel_analisis.LoginHistory')
     @patch('reports.services.report.excel.excel_analisis.ActivityLog')
     @patch.object(ExcelAnalisisGenerator, '_create_workbook')
     @patch.object(ExcelAnalisisGenerator, '_create_header')
     @patch.object(ExcelAnalisisGenerator, '_create_activity_stats_section')
     @patch.object(ExcelAnalisisGenerator, '_create_login_stats_section')
-    @patch.object(ExcelAnalisisGenerator, '_create_recent_activities_table')
     @patch.object(ExcelAnalisisGenerator, '_save_to_buffer')
-    def test_generate_audit_report_success(self, mock_save, mock_activities, mock_login_stats,
+    def test_generate_audit_report_success(self, mock_save, mock_login_stats,
                                          mock_activity_stats, mock_header, mock_workbook,
-                                         mock_activity_model, excel_generator, mock_user):
+                                         mock_activity_model, mock_login_model, excel_generator, mock_user):
         """Test successful audit report generation."""
-        mock_queryset = Mock()
-        mock_queryset.select_related.return_value.order_by.return_value = []
-        mock_activity_model.objects.select_related.return_value.order_by.return_value = []
+        # Mock workbook to be created
+        from openpyxl import Workbook
+        mock_wb = Workbook()
+        excel_generator.workbook = mock_wb
+        
+        # Mock activity queryset
+        mock_activity_queryset = Mock()
+        # Make queryset subscriptable for [:100]
+        mock_activity_queryset_subset = []
+        mock_activity_queryset.__getitem__ = Mock(return_value=mock_activity_queryset_subset)
+        mock_activity_queryset.__iter__ = Mock(return_value=iter([]))
+        mock_activity_queryset.select_related.return_value.order_by.return_value = mock_activity_queryset
+        mock_activity_model.objects.select_related.return_value.order_by.return_value = mock_activity_queryset
+        
+        # Mock login queryset
+        mock_login_queryset = Mock()
+        mock_login_queryset.count.return_value = 5
+        mock_login_queryset.filter.return_value.count.return_value = 4
+        mock_login_model.objects.all.return_value = mock_login_queryset
+        mock_login_model.objects.select_related.return_value.order_by.return_value = []
         
         mock_save.return_value = b"excel_content"
         
@@ -174,8 +235,21 @@ class TestExcelAnalisisGenerator:
         """Test getting quality stats with data."""
         mock_queryset = Mock()
         mock_queryset.count.return_value = 10
-        mock_queryset.aggregate.return_value = {'avg': 0.85}
-        mock_queryset.filter.return_value.count.return_value = 5
+        
+        # Configure aggregate to return different values based on call
+        call_count = [0]
+        def aggregate_side_effect(**kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return {'avg': 0.85}
+            elif call_count[0] == 2:
+                return {'avg_alto': 10.5, 'avg_ancho': 8.3, 'avg_grosor': 5.2}
+            elif call_count[0] == 3:
+                return {'avg': 1.5}
+            return {}
+        
+        mock_queryset.aggregate.side_effect = aggregate_side_effect
+        mock_queryset.filter.return_value = mock_queryset
         mock_prediction_model.objects.all.return_value = mock_queryset
         
         stats = excel_generator._get_quality_stats(mock_queryset)

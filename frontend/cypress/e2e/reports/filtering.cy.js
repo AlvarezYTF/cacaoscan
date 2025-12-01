@@ -1,7 +1,7 @@
 describe('Reports & Filtering', () => {
   const roles = ['admin', 'analyst', 'farmer']
 
-  roles.forEach(role => {
+  for (const role of roles) {
     describe(`Reports for ${role}`, () => {
       beforeEach(() => {
         cy.login(role)
@@ -108,6 +108,6 @@ describe('Reports & Filtering', () => {
         })
       })
     })
-  })
+  }
 })
 

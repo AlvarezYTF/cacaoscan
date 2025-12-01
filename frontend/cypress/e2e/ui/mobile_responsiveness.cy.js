@@ -1,7 +1,7 @@
 describe('Mobile Responsiveness', () => {
   const viewports = ['iphone-x', 'ipad-2', 'samsung-s10']
 
-  viewports.forEach(viewport => {
+  for (const viewport of viewports) {
     describe(`On ${viewport}`, () => {
       beforeEach(() => {
         cy.viewport(viewport)
@@ -68,6 +68,6 @@ describe('Mobile Responsiveness', () => {
          })
       })
     })
-  })
+  }
 })
 

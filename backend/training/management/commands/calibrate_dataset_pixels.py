@@ -431,8 +431,8 @@ class Command(BaseCommand):
         """Main handler for calibration command."""
         self.stdout.write(self.style.SUCCESS('🔧 Iniciando calibración del dataset basada en píxeles...'))
         
-        output_dir = Path(options['output-dir'])
-        calibration_file = Path(options['calibration_file'])
+        output_dir = Path(options.get('output_dir', options.get('output-dir', 'media/datasets/calibration')))
+        calibration_file = Path(options.get('calibration_file', 'media/datasets/pixel_calibration.json'))
         processed_images_dir = get_crops_dir()
         ensure_dir_exists(output_dir)
         

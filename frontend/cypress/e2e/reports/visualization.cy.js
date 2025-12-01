@@ -2,7 +2,17 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
   beforeEach(() => {
     cy.login('analyst')
     cy.visit('/reportes')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
+    cy.get('body', { timeout: 10000 })
+  // Helper functions to reduce nesting depth
+  const verifySelectorsExist = (selectors, $context, timeout = 3000) => {
+    for (const selector of selectors) {
+      if ($context.find(selector).length > 0) {
+        cy.get(selector, { timeout }).should('exist')
+      }
+    }
+  }
+
+.should('be.visible')
   })
 
   it('debe mostrar lista de reportes generados', () => {
@@ -21,9 +31,9 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
                 '[data-cy="report-date"]',
                 '[data-cy="report-status"]'
               ]
-              selectors.forEach(selector => {
+              for (const selector of selectors) {
                 cy.get(selector, { timeout: 3000 }).should('exist')
-              })
+              }
             })
           }
         })
@@ -42,11 +52,7 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
             '[data-cy="report-metadata"]',
             '[data-cy="report-content"]'
           ]
-          detailSelectors.forEach(selector => {
-            if ($details.find(selector).length > 0) {
-              cy.get(selector, { timeout: 3000 }).should('exist')
-            }
-          })
+          verifySelectorsExist(detailSelectors, $details, 3000)
         })
       } else {
         cy.get('body').should('be.visible')
@@ -65,11 +71,7 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
             '[data-cy="recommendations"]',
             '[data-cy="conclusions"]'
           ]
-          summarySelectors.forEach(selector => {
-            if ($details.find(selector).length > 0) {
-              cy.get(selector, { timeout: 3000 }).should('exist')
-            }
-          })
+          verifySelectorsExist(summarySelectors, $details, 3000)
         })
       } else {
         cy.get('body').should('be.visible')
@@ -88,11 +90,7 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
             '[data-cy="trend-chart"]',
             '[data-cy="comparison-chart"]'
           ]
-          chartSelectors.forEach(selector => {
-            if ($details.find(selector).length > 0) {
-              cy.get(selector, { timeout: 3000 }).should('exist')
-            }
-          })
+          verifySelectorsExist(chartSelectors, $details, 3000)
         })
       } else {
         cy.get('body').should('be.visible')
@@ -115,11 +113,7 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
                 '[data-cy="download-excel"]',
                 '[data-cy="download-powerpoint"]'
               ]
-              downloadSelectors.forEach(selector => {
-                if ($download.find(selector).length > 0) {
-                  cy.get(selector).should('exist')
-                }
-              })
+          verifySelectorsExist(downloadSelectors, $download, 3000)
               
               // Descargar PDF si existe
               if ($download.find('[data-cy="download-pdf"], button, a').length > 0) {
@@ -307,11 +301,7 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
         '[data-cy="reports-this-month"]',
         '[data-cy="average-generation-time"]'
       ]
-      statsSelectors.forEach(selector => {
-        if ($body.find(selector).length > 0) {
-          cy.get(selector, { timeout: 5000 }).should('exist')
-        }
-      })
+          verifySelectorsExist(statsSelectors, $body, 5000)
     })
   })
 
@@ -364,11 +354,7 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
                     '[data-cy="version-date"]',
                     '[data-cy="version-changes"]'
                   ]
-                  versionSelectors.forEach(selector => {
-                    if ($item.find(selector).length > 0) {
-                      cy.get(selector).should('exist')
-                    }
-                  })
+          verifySelectorsExist(versionSelectors, $item, 3000)
                 })
               }
             })
@@ -476,11 +462,7 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
             '[data-cy="data-source"]',
             '[data-cy="report-size"]'
           ]
-          metadataSelectors.forEach(selector => {
-            if ($details.find(selector).length > 0) {
-              cy.get(selector, { timeout: 3000 }).should('exist')
-            }
-          })
+          verifySelectorsExist(metadataSelectors, $details, 3000)
         })
       } else {
         cy.get('body').should('be.visible')
@@ -567,5 +549,48 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
         cy.get('body').should('be.visible')
       }
     })
+  })
+
+  it('debe mostrar vista de tarjetas y lista', () => {
+    // Cambiar a vista de tarjetas
+    cy.get('[data-cy="view-cards"]').click()
+    cy.get('[data-cy="reports-cards"]').should('be.visible')
+    
+    // Cambiar a vista de lista
+    cy.get('[data-cy="view-list"]').click()
+    cy.get('[data-cy="reports-list"]').should('be.visible')
+  })
+
+  it('debe mostrar preview de reporte en hover', () => {
+    cy.get('[data-cy="report-item"]').first().trigger('mouseover')
+    cy.get('[data-cy="report-preview"]').should('be.visible')
+  })
+
+  it('debe mostrar tags y categorías de reportes', () => {
+    cy.get('[data-cy="report-item"]').first().within(() => {
+      cy.get('[data-cy="report-tags"]').should('be.visible')
+      cy.get('[data-cy="report-category"]').should('be.visible')
+    })
+  })
+
+  it('debe filtrar reportes por múltiples criterios', () => {
+    cy.get('[data-cy="report-type-filter"]').select('analisis-periodo')
+    cy.get('[data-cy="status-filter"]').select('completado')
+    cy.get('[data-cy="apply-filters"]').click()
+    
+    cy.get('[data-cy="active-filters"]').should('be.visible')
+    cy.get('[data-cy="filter-tag"]').should('have.length', 2)
+  })
+
+  it('debe mostrar gráficos interactivos en reporte', () => {
+    cy.get('[data-cy="report-item"]').first().click()
+    
+    // Interactuar con gráficos
+    cy.get('[data-cy="quality-chart"]').should('be.visible')
+    cy.get('[data-cy="chart-legend"]').should('be.visible')
+    
+    // Hacer clic en elemento del gráfico
+    cy.get('[data-cy="chart-bar"]').first().click()
+    cy.get('[data-cy="chart-tooltip"]').should('be.visible')
   })
 })

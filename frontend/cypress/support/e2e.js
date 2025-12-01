@@ -30,8 +30,9 @@ Cypress.on('uncaught:exception', (err, runnable) => {
     return false
   }
   
-  // Por defecto, no fallar en errores no capturados
-  return false
+  // Por defecto, permitir que Cypress maneje otros errores
+  // Retornar true para que Cypress falle el test, false para ignorarlo
+  return true
 })
 
 // Configuración global de timeouts

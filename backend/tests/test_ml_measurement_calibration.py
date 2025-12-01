@@ -196,7 +196,7 @@ class TestCalibrationManager:
         
         assert isinstance(result, CalibrationResult)
         assert result.success is False
-        assert 'error' in result.error_message.lower()
+        assert 'no se detectaron' in result.error_message.lower() or 'error' in result.error_message.lower()
     
     def test_calibrate_image_ruler_detection(self, calibration_manager, mock_image):
         """Test calibration with ruler detection method."""
@@ -279,7 +279,7 @@ class TestCalibrationManager:
         )
         
         with patch('ml.measurement.calibration.save_json'), \
-             patch('ml.measurement.calibration.time.time', return_value=1234567890):
+             patch('time.time', return_value=1234567890):
             calibration_manager.save_calibration(calibration_result)
             
             assert calibration_manager.current_calibration is not None

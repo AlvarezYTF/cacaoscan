@@ -53,7 +53,11 @@ function createHttpClient() {
     },
     (error) => {
       const standardError = error instanceof Error ? error : createStandardError(error)
-      return Promise.reject(standardError instanceof Error ? standardError : new Error(String(standardError)))
+      if (standardError instanceof Error) {
+        return Promise.reject(standardError)
+      }
+      const errorMessage = standardError?.message || standardError?.toString() || 'Unknown error'
+      return Promise.reject(new Error(errorMessage))
     }
   )
 
@@ -110,7 +114,11 @@ function createHttpClient() {
         standardError.message = 'Error al configurar la petición.'
       }
 
-      return Promise.reject(standardError instanceof Error ? standardError : new Error(String(standardError)))
+      if (standardError instanceof Error) {
+        return Promise.reject(standardError)
+      }
+      const errorMessage = standardError?.message || standardError?.toString() || 'Unknown error'
+      return Promise.reject(new Error(errorMessage))
     }
   )
 

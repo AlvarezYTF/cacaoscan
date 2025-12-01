@@ -277,9 +277,9 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             'avg_confidence': round(float(avg_confidence) * 100, 2),
             'quality_distribution': quality_distribution,
             'avg_dimensions': {
-                'alto': round(float(avg_dimensions['avg_alto'] or 0), 2),
-                'ancho': round(float(avg_dimensions['avg_ancho'] or 0), 2),
-                'grosor': round(float(avg_dimensions['avg_grosor'] or 0), 2),
+                'alto': round(float(avg_dimensions.get('avg_alto') or 0), 2),
+                'ancho': round(float(avg_dimensions.get('avg_ancho') or 0), 2),
+                'grosor': round(float(avg_dimensions.get('avg_grosor') or 0), 2),
             },
             'avg_weight': round(float(avg_weight), 2)
         }

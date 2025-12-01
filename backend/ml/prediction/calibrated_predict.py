@@ -470,6 +470,6 @@ def get_calibrated_predictor(confidence_threshold: float = 0.5, use_calibration:
     Returns:
         Instancia del predictor calibrado
     """
-    return CalibratedCacaoPredictor(confidence_threshold, use_calibration)
+    return CalibratedCacaoPredictor(confidence_threshold=confidence_threshold, use_calibration=use_calibration)
 
 

@@ -75,6 +75,11 @@ export function formatPercentage(value, options = {}) {
     return String(value)
   }
 
+  // Return '0%' for zero values instead of '0.0%'
+  if (numValue === 0) {
+    return '0%'
+  }
+
   return `${numValue.toFixed(decimals)}%`
 }
 

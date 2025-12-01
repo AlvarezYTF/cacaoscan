@@ -12,7 +12,13 @@ export function getApiBaseUrl() {
  */
 export function interceptApi(method, endpoint, response, statusCode = 200) {
   const apiBaseUrl = getApiBaseUrl()
-  const fullUrl = endpoint.startsWith('http') ? endpoint : `${apiBaseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`
+  
+  if (endpoint.startsWith('http')) {
+    return cy.intercept(method, endpoint, { statusCode, body: response })
+  }
+  
+  const endpointPrefix = endpoint.startsWith('/') ? '' : '/'
+  const fullUrl = `${apiBaseUrl}${endpointPrefix}${endpoint}`
   return cy.intercept(method, fullUrl, { statusCode, body: response })
 }
 

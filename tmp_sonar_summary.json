@@ -1,0 +1,4173 @@
+{
+  "total_issues": 402,
+  "by_severity": {
+    "CRITICAL": 282,
+    "MINOR": 106,
+    "MAJOR": 13,
+    "BLOCKER": 1
+  },
+  "by_type": {
+    "CODE_SMELL": 399,
+    "BUG": 3
+  },
+  "files": {
+    "cypress/e2e/fincas/fincas-lotes-relations.cy.js": {
+      "total": 30,
+      "by_severity": {
+        "CRITICAL": 18,
+        "MINOR": 12
+      },
+      "by_type": {
+        "CODE_SMELL": 30
+      },
+      "issues": [
+        {
+          "key": "0bfc377c-33f8-4b96-ba52-ad0a2508e5b9",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 18,
+          "status": "OPEN"
+        },
+        {
+          "key": "c0635b39-3fef-4b9a-89eb-d36351c2f508",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 18,
+          "status": "OPEN"
+        },
+        {
+          "key": "949c30b6-7143-4f06-9290-6b7c4475172a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 25,
+          "status": "OPEN"
+        },
+        {
+          "key": "33183435-be5d-488a-bc4f-1bf6914c0852",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 34,
+          "status": "OPEN"
+        },
+        {
+          "key": "f0e8156c-ca32-4dee-9da7-45a183981c43",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 56,
+          "status": "OPEN"
+        },
+        {
+          "key": "0c1e4afc-316a-4da8-851c-d1ba7cf479b2",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 116,
+          "status": "OPEN"
+        },
+        {
+          "key": "85e90bd2-6b9f-412e-bec7-0759b2e05c17",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 116,
+          "status": "OPEN"
+        },
+        {
+          "key": "49eaeb48-313b-4811-b2ac-a441cec9e68d",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 141,
+          "status": "OPEN"
+        },
+        {
+          "key": "59545b46-36f2-4da2-9d85-708b020116b7",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 141,
+          "status": "OPEN"
+        },
+        {
+          "key": "45c5a23d-5703-4139-935d-c8ba7b7b7290",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 165,
+          "status": "OPEN"
+        },
+        {
+          "key": "96ffa0eb-b209-404f-824f-c3bd06377bfa",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 165,
+          "status": "OPEN"
+        },
+        {
+          "key": "a7e3bc3d-5147-4a8a-986b-b0d71039d7d0",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 189,
+          "status": "OPEN"
+        },
+        {
+          "key": "18c3732f-c596-428e-a86b-d52c27de205b",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 231,
+          "status": "OPEN"
+        },
+        {
+          "key": "5adcc10b-121b-4ef3-b548-cb745b38d589",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 242,
+          "status": "OPEN"
+        },
+        {
+          "key": "8026b651-8b29-4c76-b086-f1cda082bcb0",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 268,
+          "status": "OPEN"
+        },
+        {
+          "key": "916b24cf-4a1a-4bc7-a390-d91f2302f4cc",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 305,
+          "status": "OPEN"
+        },
+        {
+          "key": "1bdfbc38-d3bb-4665-8056-1dca4aab2e3c",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 336,
+          "status": "OPEN"
+        },
+        {
+          "key": "4ab8be2e-d08c-475f-9e4d-da28a84ab600",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 378,
+          "status": "OPEN"
+        },
+        {
+          "key": "b1c66ea5-2345-45f5-9856-344932ad0358",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 378,
+          "status": "OPEN"
+        },
+        {
+          "key": "099517f2-f68b-4101-85b2-05ec38edb698",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 401,
+          "status": "OPEN"
+        },
+        {
+          "key": "b33d3435-df85-4c4b-bad6-cad2a3ec2141",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 412,
+          "status": "OPEN"
+        },
+        {
+          "key": "e316e812-91d7-474e-bebf-34d71ba4c141",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 438,
+          "status": "OPEN"
+        },
+        {
+          "key": "e01e2b82-a250-450f-ae84-b4b0784de172",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 445,
+          "status": "OPEN"
+        },
+        {
+          "key": "2c7648bb-4732-4fdc-882c-c7013b99e981",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 488,
+          "status": "OPEN"
+        },
+        {
+          "key": "17d8baa6-9e54-46e5-b1d7-f06578c89c74",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 499,
+          "status": "OPEN"
+        },
+        {
+          "key": "49c53489-311f-40d2-808d-d2c9588fc623",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 525,
+          "status": "OPEN"
+        },
+        {
+          "key": "095152b7-9e7e-43bd-ac48-3d25125cdeee",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 560,
+          "status": "OPEN"
+        },
+        {
+          "key": "43028adc-4da5-4439-87e6-6a418e6625e5",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 560,
+          "status": "OPEN"
+        },
+        {
+          "key": "febda663-5a5b-477f-bce6-0bbd00b67796",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7773",
+          "message": "Prefer `Number.parseFloat` over `parseFloat`.",
+          "line": 528,
+          "status": "OPEN"
+        },
+        {
+          "key": "798abfc6-1402-40b0-827b-c4b4c2e0aade",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7773",
+          "message": "Prefer `Number.parseFloat` over `parseFloat`.",
+          "line": 531,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/reports/visualization.cy.js": {
+      "total": 26,
+      "by_severity": {
+        "CRITICAL": 18,
+        "MINOR": 8
+      },
+      "by_type": {
+        "CODE_SMELL": 26
+      },
+      "issues": [
+        {
+          "key": "de115ad6-bfb3-4cfa-a79b-95229116d7ac",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 17,
+          "status": "OPEN"
+        },
+        {
+          "key": "0fe43eb7-185b-4e7d-b9f1-db1f70c11067",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 24,
+          "status": "OPEN"
+        },
+        {
+          "key": "09c04630-2621-47b3-9323-cd5e8c83e3d0",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 45,
+          "status": "OPEN"
+        },
+        {
+          "key": "36aa031d-0614-48ed-84aa-6df6551aec19",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 45,
+          "status": "OPEN"
+        },
+        {
+          "key": "4813367c-3ea4-4b03-91f3-97b28a65fd95",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 68,
+          "status": "OPEN"
+        },
+        {
+          "key": "69ec5700-2c25-4527-b244-d678195904ff",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 68,
+          "status": "OPEN"
+        },
+        {
+          "key": "02ec6741-743f-4f4d-a48e-bdc812404f0b",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 91,
+          "status": "OPEN"
+        },
+        {
+          "key": "4730f09e-de40-4469-88b3-431ab7ee2559",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 91,
+          "status": "OPEN"
+        },
+        {
+          "key": "99ee6b72-a6b9-4daf-a95b-248ea823b106",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 112,
+          "status": "OPEN"
+        },
+        {
+          "key": "cba60dd3-6952-4026-9130-49e2eafb7f61",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 118,
+          "status": "OPEN"
+        },
+        {
+          "key": "04216642-47e0-459f-b9e6-d8900aa7901b",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 148,
+          "status": "OPEN"
+        },
+        {
+          "key": "04b9c641-78c5-4b83-8ff1-e07e9792bdef",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 196,
+          "status": "OPEN"
+        },
+        {
+          "key": "704bffc9-a216-449b-9216-a3252f4c3ede",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 223,
+          "status": "OPEN"
+        },
+        {
+          "key": "5344c15e-5715-4bb8-94bf-16f6cec5a88f",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 248,
+          "status": "OPEN"
+        },
+        {
+          "key": "b22868b7-ca55-4330-b951-829bb3ec88ae",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 277,
+          "status": "OPEN"
+        },
+        {
+          "key": "98dda933-4c53-4066-a683-783da8b86a22",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 286,
+          "status": "OPEN"
+        },
+        {
+          "key": "7c6e3394-956c-4e39-b40e-bf7a6d6611e0",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 310,
+          "status": "OPEN"
+        },
+        {
+          "key": "0423a503-2404-46c2-b953-768ad3b02411",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 327,
+          "status": "OPEN"
+        },
+        {
+          "key": "a6c251a6-d4da-4a7d-8190-071de5f8ab68",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 356,
+          "status": "OPEN"
+        },
+        {
+          "key": "57047387-d15b-474b-b057-410bfc0539e5",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 367,
+          "status": "OPEN"
+        },
+        {
+          "key": "423dd957-d6b2-4f7a-ab02-e56ea786c76a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 393,
+          "status": "OPEN"
+        },
+        {
+          "key": "dd2861b7-733a-4e5f-a8cc-99a0f4dd8f43",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 431,
+          "status": "OPEN"
+        },
+        {
+          "key": "50bb0682-c056-4507-bdb9-3342605d3662",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 479,
+          "status": "OPEN"
+        },
+        {
+          "key": "c5422b4b-a781-4da0-b737-07fc665355a1",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 479,
+          "status": "OPEN"
+        },
+        {
+          "key": "11c43796-d0f4-4054-a884-7e0383477fc2",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 501,
+          "status": "OPEN"
+        },
+        {
+          "key": "6368dbc9-9ebf-4e79-aa0b-56b0a5485e55",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 555,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/images/upload.cy.js": {
+      "total": 26,
+      "by_severity": {
+        "CRITICAL": 25,
+        "MINOR": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 26
+      },
+      "issues": [
+        {
+          "key": "d4feb705-d8e4-4639-9777-eba20ca8232b",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 31,
+          "status": "OPEN"
+        },
+        {
+          "key": "4d70d20b-d928-4c72-ba73-d742299bba76",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 40,
+          "status": "OPEN"
+        },
+        {
+          "key": "ce8dd169-dabc-498c-babd-2a2e6bdd0539",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 53,
+          "status": "OPEN"
+        },
+        {
+          "key": "36a85b23-3486-44bf-aeae-bbeb9c29b6fc",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 73,
+          "status": "OPEN"
+        },
+        {
+          "key": "bf2e9c12-8f7f-4af3-a46f-10d746979ed1",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 96,
+          "status": "OPEN"
+        },
+        {
+          "key": "e92d6858-ff70-467c-ada2-c3c9596f7e01",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 134,
+          "status": "OPEN"
+        },
+        {
+          "key": "f324a9f3-f500-44ac-a0c2-740b18c38018",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 165,
+          "status": "OPEN"
+        },
+        {
+          "key": "1536c03b-0d22-424e-a566-03a9a05b80cf",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 188,
+          "status": "OPEN"
+        },
+        {
+          "key": "8d43903f-04e0-4d94-ba79-0b051197e3dd",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 196,
+          "status": "OPEN"
+        },
+        {
+          "key": "e5e79f7a-e9e2-40b0-87e8-d7bffceb75ba",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 213,
+          "status": "OPEN"
+        },
+        {
+          "key": "0a864850-550b-4a95-81ee-963c8d020ff7",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 237,
+          "status": "OPEN"
+        },
+        {
+          "key": "6f565432-b2c2-44ea-9bbf-1b2fc3c34e04",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 245,
+          "status": "OPEN"
+        },
+        {
+          "key": "13749353-e7dc-4511-a453-961aa14c093a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 272,
+          "status": "OPEN"
+        },
+        {
+          "key": "8c71025d-3991-470f-80ef-5354a4805f14",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 303,
+          "status": "OPEN"
+        },
+        {
+          "key": "cb7c618b-37c1-456a-b4ba-1af85c42f4de",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 311,
+          "status": "OPEN"
+        },
+        {
+          "key": "d8a245d3-41cc-4124-8534-4f96c0ee1f5c",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 333,
+          "status": "OPEN"
+        },
+        {
+          "key": "6a2fb23f-19ce-492b-a60b-0fdbd663214c",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 357,
+          "status": "OPEN"
+        },
+        {
+          "key": "bb18f7a7-4b41-4414-b219-3ab6ba28ab1c",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 365,
+          "status": "OPEN"
+        },
+        {
+          "key": "037ec418-a54c-42db-a58c-ba032575a388",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 381,
+          "status": "OPEN"
+        },
+        {
+          "key": "72378cd2-77fd-47d3-a619-fe42b2f4e9f4",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 404,
+          "status": "OPEN"
+        },
+        {
+          "key": "73841eca-7825-4aec-b4a9-ca3587f7a432",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 413,
+          "status": "OPEN"
+        },
+        {
+          "key": "3e7e820b-4a78-4de8-afe8-aa394ac5ada1",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 435,
+          "status": "OPEN"
+        },
+        {
+          "key": "51b6036c-877c-4d39-88d7-cbb47004b21f",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 459,
+          "status": "OPEN"
+        },
+        {
+          "key": "dfa0bb9c-3e28-4b22-941b-06e5c89a03f1",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 467,
+          "status": "OPEN"
+        },
+        {
+          "key": "2ab7c232-419f-4afb-9e01-778d3f9264e5",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 491,
+          "status": "OPEN"
+        },
+        {
+          "key": "237560f0-4814-401c-8f69-e1dcc493bbf5",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 95,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/fincas/lotes-crud.cy.js": {
+      "total": 26,
+      "by_severity": {
+        "MINOR": 7,
+        "CRITICAL": 19
+      },
+      "by_type": {
+        "CODE_SMELL": 26
+      },
+      "issues": [
+        {
+          "key": "f795873a-6d48-49cf-98d6-e9aa252c03ee",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 15,
+          "status": "OPEN"
+        },
+        {
+          "key": "6b7e9683-eee5-4ffe-96bc-ebfcf51555d3",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 32,
+          "status": "OPEN"
+        },
+        {
+          "key": "c0e9f57b-3ada-4506-ac12-ca1f9d5eae48",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 51,
+          "status": "OPEN"
+        },
+        {
+          "key": "1fccd874-8774-4eaf-8c14-4a96a4721126",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 58,
+          "status": "OPEN"
+        },
+        {
+          "key": "2191c0dd-7f3c-4d42-b77b-9b8bcd84b237",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 77,
+          "status": "OPEN"
+        },
+        {
+          "key": "441ae97d-ff62-47ff-8bb8-4ddd50da986b",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 100,
+          "status": "OPEN"
+        },
+        {
+          "key": "c22c1541-9a68-4f23-8535-f8dda5a831b5",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 130,
+          "status": "OPEN"
+        },
+        {
+          "key": "ecb4a7a9-0c75-4b42-b5b0-e249c5a4793b",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 130,
+          "status": "OPEN"
+        },
+        {
+          "key": "c747e4c2-4d9f-4c22-b4dc-b90ad2df5b75",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 147,
+          "status": "OPEN"
+        },
+        {
+          "key": "9f029948-63d9-497b-8e3e-56cbf8220f8d",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 168,
+          "status": "OPEN"
+        },
+        {
+          "key": "0a5bc492-4a12-46d6-9e90-ada83a97208c",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 192,
+          "status": "OPEN"
+        },
+        {
+          "key": "b4d0853b-427a-40f7-b44f-1ba9cfe27392",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 192,
+          "status": "OPEN"
+        },
+        {
+          "key": "446b6aaf-5603-434d-a708-482d89bb42e6",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 210,
+          "status": "OPEN"
+        },
+        {
+          "key": "e6f80177-fa78-42f3-b24a-9944222c4447",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 226,
+          "status": "OPEN"
+        },
+        {
+          "key": "884ea25e-f816-4456-bfc0-b2bda2383e18",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 250,
+          "status": "OPEN"
+        },
+        {
+          "key": "60bb0467-29b3-4175-b50d-c79c7a8890c8",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 272,
+          "status": "OPEN"
+        },
+        {
+          "key": "12e4b42c-ee1b-41c1-87ef-e506f557fc9e",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 300,
+          "status": "OPEN"
+        },
+        {
+          "key": "6efe0458-086f-499a-baff-bd92357520d6",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 300,
+          "status": "OPEN"
+        },
+        {
+          "key": "1c51f399-1f02-4b09-a232-84d00a996087",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 323,
+          "status": "OPEN"
+        },
+        {
+          "key": "56694f9b-6216-49b6-b5f1-ac9516c858da",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 348,
+          "status": "OPEN"
+        },
+        {
+          "key": "45c7a3d9-15bb-400d-b390-9d30b73a0a27",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 371,
+          "status": "OPEN"
+        },
+        {
+          "key": "3ce1dd5a-ef75-4a43-8446-c20112946dba",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 406,
+          "status": "OPEN"
+        },
+        {
+          "key": "332018c2-c76b-4620-82a1-2edeb22d5f06",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 417,
+          "status": "OPEN"
+        },
+        {
+          "key": "d98feac4-7a1a-4283-814e-693fb83c24c3",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 448,
+          "status": "OPEN"
+        },
+        {
+          "key": "224cd346-33dc-45bb-971f-9e8703cf2bc2",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 473,
+          "status": "OPEN"
+        },
+        {
+          "key": "2e31db08-d8e3-49d3-af66-3cc8f5754851",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 495,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/errors/validation-forms.cy.js": {
+      "total": 22,
+      "by_severity": {
+        "CRITICAL": 19,
+        "MINOR": 3
+      },
+      "by_type": {
+        "CODE_SMELL": 22
+      },
+      "issues": [
+        {
+          "key": "2cc0c6ef-b748-4073-b2d7-72f58604460f",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 19,
+          "status": "OPEN"
+        },
+        {
+          "key": "3c064db0-da0c-4139-86f5-af6340d9fa0c",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 25,
+          "status": "OPEN"
+        },
+        {
+          "key": "6173d116-753e-44bb-9811-620faf003a4d",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 64,
+          "status": "OPEN"
+        },
+        {
+          "key": "9e12737d-647a-4bf5-9a8d-5f329f576dbd",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 69,
+          "status": "OPEN"
+        },
+        {
+          "key": "80f985b9-5894-4665-940d-d5193fe98cb6",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 80,
+          "status": "OPEN"
+        },
+        {
+          "key": "7a76a61f-b52c-4066-b4ef-3c1aca59f63c",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 109,
+          "status": "OPEN"
+        },
+        {
+          "key": "6b6b4b4e-5ada-4b7d-8eea-fddef2e17aa6",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 138,
+          "status": "OPEN"
+        },
+        {
+          "key": "0a9de536-42ea-4ed2-85e7-b53ad07cc42a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 167,
+          "status": "OPEN"
+        },
+        {
+          "key": "fc507625-aa01-435d-8c60-efede266921c",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 196,
+          "status": "OPEN"
+        },
+        {
+          "key": "5c224c47-4e1d-4132-a981-599cfeec08b1",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 233,
+          "status": "OPEN"
+        },
+        {
+          "key": "54b3df86-c5f4-4d68-8e21-55de6cce13aa",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 257,
+          "status": "OPEN"
+        },
+        {
+          "key": "58757e5d-847b-47ed-a476-9a3302d92a35",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 284,
+          "status": "OPEN"
+        },
+        {
+          "key": "5dcb9def-3447-40f8-9b2c-09886369442b",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 307,
+          "status": "OPEN"
+        },
+        {
+          "key": "c2a5f154-911d-4613-bba6-05db2a56d1d2",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 339,
+          "status": "OPEN"
+        },
+        {
+          "key": "5be83f92-8ae9-4f98-93ac-0eb8b6dd8d95",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 371,
+          "status": "OPEN"
+        },
+        {
+          "key": "6080ee99-ced4-4722-b099-34d08a87f245",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 400,
+          "status": "OPEN"
+        },
+        {
+          "key": "9ae29711-e6c0-4a9c-8fbf-9c89ecb79151",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 429,
+          "status": "OPEN"
+        },
+        {
+          "key": "ad4e11de-fe5f-4a65-86db-a6dc306d712b",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 458,
+          "status": "OPEN"
+        },
+        {
+          "key": "df823d69-5cdc-4dee-95ba-d4f0b9ca3653",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 488,
+          "status": "OPEN"
+        },
+        {
+          "key": "857ebb72-c3bd-4ffa-a612-1a2c14ef0951",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 519,
+          "status": "OPEN"
+        },
+        {
+          "key": "59120e0e-23e4-4dc4-b3a4-8f9da982f7b8",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 525,
+          "status": "OPEN"
+        },
+        {
+          "key": "af17571e-831e-40e8-a0c2-7b71b3e95d67",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 551,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "src/utils/__tests__/utils.test.js": {
+      "total": 20,
+      "by_severity": {
+        "MAJOR": 5,
+        "MINOR": 15
+      },
+      "by_type": {
+        "CODE_SMELL": 19,
+        "BUG": 1
+      },
+      "issues": [
+        {
+          "key": "cb452f83-fead-41ef-b566-3ecb30663d81",
+          "severity": "MAJOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S6666",
+          "message": "Use the spread operator instead of '.apply()'.",
+          "line": 68,
+          "status": "OPEN"
+        },
+        {
+          "key": "1c9d1a22-0794-4d9b-a861-fb83a3b2626d",
+          "severity": "MAJOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S6666",
+          "message": "Use the spread operator instead of '.apply()'.",
+          "line": 79,
+          "status": "OPEN"
+        },
+        {
+          "key": "c4a92cec-9ff2-48c3-95ee-aece4be7bc5e",
+          "severity": "MAJOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S6660",
+          "message": "'If' statement should not be the only statement in 'else' block",
+          "line": 82,
+          "status": "OPEN"
+        },
+        {
+          "key": "23bf004f-e3a8-470b-a972-b99edf343974",
+          "severity": "MAJOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S6666",
+          "message": "Use the spread operator instead of '.apply()'.",
+          "line": 86,
+          "status": "OPEN"
+        },
+        {
+          "key": "b92a7c2a-e113-4947-b955-9ab3421e84b0",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7773",
+          "message": "Prefer `Number.parseFloat` over `parseFloat`.",
+          "line": 100,
+          "status": "OPEN"
+        },
+        {
+          "key": "81a5546e-9636-4440-a535-6e2051fa5ce3",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7773",
+          "message": "Prefer `Number.isNaN` over `isNaN`.",
+          "line": 132,
+          "status": "OPEN"
+        },
+        {
+          "key": "37a1b112-051c-4109-b2d1-748f493c28e5",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7773",
+          "message": "Prefer `Number.NaN` over `NaN`.",
+          "line": 165,
+          "status": "OPEN"
+        },
+        {
+          "key": "a3dacb31-fee9-472d-98f1-031a3e4de40a",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7773",
+          "message": "Prefer `Number.NaN` over `NaN`.",
+          "line": 178,
+          "status": "OPEN"
+        },
+        {
+          "key": "bdbdd8a2-c5c3-40dd-9520-f1fa193a9e94",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7781",
+          "message": "Prefer `String#replaceAll()` over `String#replace()`.",
+          "line": 320,
+          "status": "OPEN"
+        },
+        {
+          "key": "903d854a-da4e-4f16-8940-3523e00ac3bd",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7781",
+          "message": "Prefer `String#replaceAll()` over `String#replace()`.",
+          "line": 321,
+          "status": "OPEN"
+        },
+        {
+          "key": "0bf4a53e-22aa-4e3a-a3e0-abb9b69b51af",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7781",
+          "message": "Prefer `String#replaceAll()` over `String#replace()`.",
+          "line": 322,
+          "status": "OPEN"
+        },
+        {
+          "key": "dcbfadbe-3e54-4edf-affc-0f5ea100e343",
+          "severity": "MAJOR",
+          "type": "BUG",
+          "rule": "javascript:S5850",
+          "message": "Group parts of the regex together to make the intended operator precedence explicit.",
+          "line": 322,
+          "status": "OPEN"
+        },
+        {
+          "key": "a978463c-0a97-4091-8668-87e5e56d2f3f",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7781",
+          "message": "Prefer `String#replaceAll()` over `String#replace()`.",
+          "line": 323,
+          "status": "OPEN"
+        },
+        {
+          "key": "da24e715-907d-4afd-9966-bd89c4a044ee",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7719",
+          "message": "Unnecessary `.getTime()` call.",
+          "line": 418,
+          "status": "OPEN"
+        },
+        {
+          "key": "af828e33-9294-451d-8bf7-1742343c376c",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7732",
+          "message": "Avoid using `instanceof` for type checking as it can lead to unreliable results.",
+          "line": 419,
+          "status": "OPEN"
+        },
+        {
+          "key": "dc9eca94-dedd-4452-b9e4-aa927a2c5edc",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 433,
+          "status": "OPEN"
+        },
+        {
+          "key": "dad84978-5a19-4e80-9eea-69da6072f99d",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 435,
+          "status": "OPEN"
+        },
+        {
+          "key": "5fb85758-cbbc-4f21-a0be-3fdd2ff1b2f7",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S1128",
+          "message": "Remove this unused import of 'beforeEach'.",
+          "line": 4,
+          "status": "OPEN"
+        },
+        {
+          "key": "3cc0c9bf-f35c-4d3f-bebd-1c447dac709e",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7773",
+          "message": "Prefer `Number.isNaN` over `isNaN`.",
+          "line": 15,
+          "status": "OPEN"
+        },
+        {
+          "key": "541691d2-665b-42d4-a6a3-a3b1d9737bef",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7773",
+          "message": "Prefer `Number.isNaN` over `isNaN`.",
+          "line": 28,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/fincas/fincas-crud.cy.js": {
+      "total": 20,
+      "by_severity": {
+        "CRITICAL": 16,
+        "MINOR": 4
+      },
+      "by_type": {
+        "CODE_SMELL": 20
+      },
+      "issues": [
+        {
+          "key": "f65fd8c5-047f-4c6b-8b48-685eb3f595af",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 30,
+          "status": "OPEN"
+        },
+        {
+          "key": "c18ba073-8e30-4fad-8d95-952d2c861d57",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 82,
+          "status": "OPEN"
+        },
+        {
+          "key": "5f27652b-9af4-43bb-bfc2-18a151e61e05",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 88,
+          "status": "OPEN"
+        },
+        {
+          "key": "86b4cf73-5abc-42d7-b478-2db4cfc559ff",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 115,
+          "status": "OPEN"
+        },
+        {
+          "key": "48d727e3-2021-41f8-9fa2-dbaaf4a4a216",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 144,
+          "status": "OPEN"
+        },
+        {
+          "key": "e32e2195-9702-4005-8ede-76dcf9acbcab",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 144,
+          "status": "OPEN"
+        },
+        {
+          "key": "94da7416-7fd0-45b5-ba83-0315f978643c",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 164,
+          "status": "OPEN"
+        },
+        {
+          "key": "9474782c-6281-4fa5-a002-f84db0809344",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 199,
+          "status": "OPEN"
+        },
+        {
+          "key": "ed8dfd15-44f8-4363-8cdb-80a4bf4c1fba",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 227,
+          "status": "OPEN"
+        },
+        {
+          "key": "33f07552-1eb8-4e21-811b-2774093df01b",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 257,
+          "status": "OPEN"
+        },
+        {
+          "key": "7855d11d-3cc2-43c4-afe7-d6e755899c62",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 273,
+          "status": "OPEN"
+        },
+        {
+          "key": "301172c3-5248-49f1-8b6e-e486f349ae5d",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 296,
+          "status": "OPEN"
+        },
+        {
+          "key": "d97e1d74-bdc2-4f66-b86d-7a45bf874617",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 308,
+          "status": "OPEN"
+        },
+        {
+          "key": "84e43bb2-e496-439b-8a94-001eb5ffcc8c",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 331,
+          "status": "OPEN"
+        },
+        {
+          "key": "717319c4-112e-472d-9e8f-cc1646cf5d39",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 355,
+          "status": "OPEN"
+        },
+        {
+          "key": "a0753876-2784-43a7-8f45-d16f48904f85",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 381,
+          "status": "OPEN"
+        },
+        {
+          "key": "ebc7f6ab-c5dc-476f-b605-7a93f12e2fb2",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 381,
+          "status": "OPEN"
+        },
+        {
+          "key": "588e7b72-1f2a-44c1-8495-fa0412563693",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 406,
+          "status": "OPEN"
+        },
+        {
+          "key": "8bd6c1ef-c40c-47b2-a4d1-7c66da55e21e",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 420,
+          "status": "OPEN"
+        },
+        {
+          "key": "a3bb3f66-60ff-43d3-bb93-3296a19e5a07",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 449,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/auth/register.cy.js": {
+      "total": 19,
+      "by_severity": {
+        "MINOR": 4,
+        "CRITICAL": 14,
+        "MAJOR": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 19
+      },
+      "issues": [
+        {
+          "key": "4723264f-be62-440f-86a0-bdcc6f54a29f",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 18,
+          "status": "OPEN"
+        },
+        {
+          "key": "f17d8721-4b1a-4708-bc23-714bb2099284",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 70,
+          "status": "OPEN"
+        },
+        {
+          "key": "dca2ef08-f968-44bd-b736-ecafd547c667",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 80,
+          "status": "OPEN"
+        },
+        {
+          "key": "884dfa33-a9cf-45a8-ae79-27a5f4132942",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 135,
+          "status": "OPEN"
+        },
+        {
+          "key": "d0291549-112d-4631-8577-fb5a3fff083b",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 159,
+          "status": "OPEN"
+        },
+        {
+          "key": "c78e5c16-2d49-4862-839b-0e5c60cad240",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 166,
+          "status": "OPEN"
+        },
+        {
+          "key": "4b91c400-b0f8-42f7-a27c-c9cbea266af4",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 171,
+          "status": "OPEN"
+        },
+        {
+          "key": "da6de0c5-6291-42be-8545-3e6135cf2269",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 176,
+          "status": "OPEN"
+        },
+        {
+          "key": "212de8df-5be8-431c-90db-1425264655b7",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 183,
+          "status": "OPEN"
+        },
+        {
+          "key": "b30c216a-1a81-4230-95a7-4ef075f487b4",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 232,
+          "status": "OPEN"
+        },
+        {
+          "key": "c299b102-d541-454c-8345-a99b1d9e6189",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 252,
+          "status": "OPEN"
+        },
+        {
+          "key": "0b27cfe8-020f-46bc-b78d-8b22fc07addb",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 266,
+          "status": "OPEN"
+        },
+        {
+          "key": "676d9e2a-dc02-46ea-8428-1b891d46421e",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 308,
+          "status": "OPEN"
+        },
+        {
+          "key": "5bc905e8-4279-4e9a-96df-6853494770c9",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 330,
+          "status": "OPEN"
+        },
+        {
+          "key": "813e8962-b7a4-449c-942c-89fdc56575ea",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 330,
+          "status": "OPEN"
+        },
+        {
+          "key": "7eb402e1-2def-4e60-a8dd-ae1b5d0b921c",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 348,
+          "status": "OPEN"
+        },
+        {
+          "key": "1a0df85a-6202-4853-bf0c-71d8d18342ca",
+          "severity": "MAJOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S1854",
+          "message": "Remove this useless assignment to variable \"testPassword\".",
+          "line": 150,
+          "status": "OPEN"
+        },
+        {
+          "key": "ea303163-e047-4dde-bb9e-e18a020d9408",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S1481",
+          "message": "Remove the declaration of the unused 'testPassword' variable.",
+          "line": 150,
+          "status": "OPEN"
+        },
+        {
+          "key": "1404be7b-3aa7-4db7-bc19-e407883b0d96",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 250,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "src/composables/__tests__/composables.test.js": {
+      "total": 18,
+      "by_severity": {
+        "CRITICAL": 2,
+        "MINOR": 13,
+        "MAJOR": 3
+      },
+      "by_type": {
+        "CODE_SMELL": 18
+      },
+      "issues": [
+        {
+          "key": "f1166c66-3388-4562-a3d5-d13f682cf033",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S4123",
+          "message": "Unexpected `await` of a non-Promise (non-\"Thenable\") value.",
+          "line": 200,
+          "status": "OPEN"
+        },
+        {
+          "key": "0beaa921-20c4-4015-8a2c-ab42c79af73a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S4123",
+          "message": "Unexpected `await` of a non-Promise (non-\"Thenable\") value.",
+          "line": 273,
+          "status": "OPEN"
+        },
+        {
+          "key": "07ea5a6d-bc5b-4e80-b2f4-87cbb9167caf",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S1128",
+          "message": "Remove this unused import of 'ref'.",
+          "line": 5,
+          "status": "OPEN"
+        },
+        {
+          "key": "9fd97f0c-fcc7-4653-8e52-5f6844f501bc",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S1128",
+          "message": "Remove this unused import of 'nextTick'.",
+          "line": 5,
+          "status": "OPEN"
+        },
+        {
+          "key": "6d4bc9d8-7e2f-469b-a7be-b4f16812037f",
+          "severity": "MAJOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S1854",
+          "message": "Remove this useless assignment to variable \"mockApi\".",
+          "line": 29,
+          "status": "OPEN"
+        },
+        {
+          "key": "5fe28c80-4016-45db-8996-c8297819a749",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7748",
+          "message": "Don't use a zero fraction in the number.",
+          "line": 58,
+          "status": "OPEN"
+        },
+        {
+          "key": "f993551f-21e8-4d5a-91cb-7861b3c99087",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7748",
+          "message": "Don't use a zero fraction in the number.",
+          "line": 99,
+          "status": "OPEN"
+        },
+        {
+          "key": "76527370-a452-4ff7-9be7-932e9caf4a71",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7748",
+          "message": "Don't use a zero fraction in the number.",
+          "line": 115,
+          "status": "OPEN"
+        },
+        {
+          "key": "987685f5-c002-4d2c-9a6b-2394235082dc",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7748",
+          "message": "Don't use a zero fraction in the number.",
+          "line": 118,
+          "status": "OPEN"
+        },
+        {
+          "key": "87b1f480-2697-47f0-9017-e1b7800a4a2c",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7748",
+          "message": "Don't use a zero fraction in the number.",
+          "line": 126,
+          "status": "OPEN"
+        },
+        {
+          "key": "b3872f87-1a4e-4ece-a4db-c59d0d74eb49",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7748",
+          "message": "Don't use a zero fraction in the number.",
+          "line": 127,
+          "status": "OPEN"
+        },
+        {
+          "key": "1254d2e4-4552-43d9-ac3c-d11173de0aa8",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7764",
+          "message": "Prefer `globalThis` over `global`.",
+          "line": 185,
+          "status": "OPEN"
+        },
+        {
+          "key": "bb36b5fa-52b2-4d78-8b91-ae484e5545c3",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S1481",
+          "message": "Remove the declaration of the unused 'isConnected' variable.",
+          "line": 198,
+          "status": "OPEN"
+        },
+        {
+          "key": "ecc87f0c-90a2-483c-a8ee-f06be5e787ef",
+          "severity": "MAJOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S1854",
+          "message": "Remove this useless assignment to variable \"isConnected\".",
+          "line": 198,
+          "status": "OPEN"
+        },
+        {
+          "key": "b2ca8737-f633-48af-81fc-67d00aba347c",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7764",
+          "message": "Prefer `globalThis` over `global`.",
+          "line": 202,
+          "status": "OPEN"
+        },
+        {
+          "key": "98adab73-ee0e-4aa9-86fd-f625395ff21b",
+          "severity": "MAJOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S1854",
+          "message": "Remove this useless assignment to variable \"isConnected\".",
+          "line": 271,
+          "status": "OPEN"
+        },
+        {
+          "key": "cd2f2203-9073-4ff4-88f5-a30b488b5682",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S1481",
+          "message": "Remove the declaration of the unused 'isConnected' variable.",
+          "line": 271,
+          "status": "OPEN"
+        },
+        {
+          "key": "7d6ef1a4-bab4-48a9-9ad8-99b1332dad24",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7764",
+          "message": "Prefer `globalThis` over `global`.",
+          "line": 275,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/reports/export-sharing.cy.js": {
+      "total": 16,
+      "by_severity": {
+        "CRITICAL": 14,
+        "MINOR": 2
+      },
+      "by_type": {
+        "CODE_SMELL": 16
+      },
+      "issues": [
+        {
+          "key": "86a0d853-d880-4a07-9fbc-c83a632ebe6d",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 15,
+          "status": "OPEN"
+        },
+        {
+          "key": "46f40369-1651-491a-b472-6906f7df2fab",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 40,
+          "status": "OPEN"
+        },
+        {
+          "key": "432309b7-4bbe-4f73-ac70-11a896414192",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 81,
+          "status": "OPEN"
+        },
+        {
+          "key": "7fdb03a1-04aa-4e36-9255-55647013872b",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 127,
+          "status": "OPEN"
+        },
+        {
+          "key": "50819c1a-fce1-44e7-a012-15839d238b2a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 162,
+          "status": "OPEN"
+        },
+        {
+          "key": "bae4769e-fcb2-4bda-84df-e598bd0b9d6e",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 206,
+          "status": "OPEN"
+        },
+        {
+          "key": "5556e663-90b4-4622-a605-5d4a82cee926",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 253,
+          "status": "OPEN"
+        },
+        {
+          "key": "75941aa5-5eed-45e9-86ac-28ec9d654e5d",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 301,
+          "status": "OPEN"
+        },
+        {
+          "key": "d9857ad6-3454-4bf8-8097-bb3bc7cd58a0",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 312,
+          "status": "OPEN"
+        },
+        {
+          "key": "5a34d56e-153a-4b4d-88b9-cb63e981154a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 337,
+          "status": "OPEN"
+        },
+        {
+          "key": "09779e98-42c3-40ae-b5c0-c517afd8d2c5",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 374,
+          "status": "OPEN"
+        },
+        {
+          "key": "6b906726-66bf-4a16-989b-76e4df26f43d",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 412,
+          "status": "OPEN"
+        },
+        {
+          "key": "769ccf3b-2627-44a0-b736-182de3b04c14",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 450,
+          "status": "OPEN"
+        },
+        {
+          "key": "cf2115dd-96c3-4124-84ab-bcaa7f3d4349",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 460,
+          "status": "OPEN"
+        },
+        {
+          "key": "41ee2975-bb3e-485d-b604-cc08e2dded7d",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 502,
+          "status": "OPEN"
+        },
+        {
+          "key": "a86531fb-9bbd-45b1-8aa8-47a56b761e00",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 534,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/reports/generation.cy.js": {
+      "total": 14,
+      "by_severity": {
+        "MINOR": 2,
+        "CRITICAL": 12
+      },
+      "by_type": {
+        "CODE_SMELL": 14
+      },
+      "issues": [
+        {
+          "key": "52a89329-3c6a-4e36-9da2-a56e03d62293",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 16,
+          "status": "OPEN"
+        },
+        {
+          "key": "f91acf21-1795-4f25-bbd1-22e30008374a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 31,
+          "status": "OPEN"
+        },
+        {
+          "key": "45b5ae0a-4616-491e-b142-cca5fd458f7e",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 59,
+          "status": "OPEN"
+        },
+        {
+          "key": "07f27524-28aa-4581-b5ac-f4a29f3f6643",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 104,
+          "status": "OPEN"
+        },
+        {
+          "key": "2d6ed1be-fddd-413a-92c2-f67aa8415bb6",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 149,
+          "status": "OPEN"
+        },
+        {
+          "key": "e234c8f2-2ba5-42c5-b7f4-643de1e84e64",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 196,
+          "status": "OPEN"
+        },
+        {
+          "key": "5eed66bf-03e1-4ee6-bc23-931fec915ea1",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 201,
+          "status": "OPEN"
+        },
+        {
+          "key": "e8818853-ddcd-4a3f-bd2b-a224c2a37041",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 226,
+          "status": "OPEN"
+        },
+        {
+          "key": "52b9782b-6f5f-42ce-b210-d74f441c25d0",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 249,
+          "status": "OPEN"
+        },
+        {
+          "key": "e00c3c9c-e74c-453c-aa93-7b9527846bb6",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 295,
+          "status": "OPEN"
+        },
+        {
+          "key": "03138449-7ff2-428f-8f3c-241d1f1a8cd3",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 334,
+          "status": "OPEN"
+        },
+        {
+          "key": "a2306e32-0165-4b5b-b145-837e2e6e4db8",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 368,
+          "status": "OPEN"
+        },
+        {
+          "key": "7941d366-b285-47b2-a8f4-84223cf321be",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 416,
+          "status": "OPEN"
+        },
+        {
+          "key": "40cf0075-c8b2-4aec-9a93-e56ed1588a10",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 430,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/auth/detailed_flows.cy.js": {
+      "total": 13,
+      "by_severity": {
+        "CRITICAL": 13
+      },
+      "by_type": {
+        "CODE_SMELL": 13
+      },
+      "issues": [
+        {
+          "key": "11eb91ce-baef-4040-ba3f-f283ea25e355",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 24,
+          "status": "OPEN"
+        },
+        {
+          "key": "d22bf21a-a5a5-47e7-b642-548304b66fde",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 42,
+          "status": "OPEN"
+        },
+        {
+          "key": "c7e102d6-8995-47e9-b018-16ca17c965a8",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 62,
+          "status": "OPEN"
+        },
+        {
+          "key": "14eb27f0-272a-40a2-be89-49a55346cc09",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 77,
+          "status": "OPEN"
+        },
+        {
+          "key": "ff69df76-50ca-4656-9321-ac3223b498d7",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 103,
+          "status": "OPEN"
+        },
+        {
+          "key": "ac26c71b-a248-46f8-be43-dfba70294f7f",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 113,
+          "status": "OPEN"
+        },
+        {
+          "key": "83b78075-2a4c-437d-88ab-262a80652734",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 143,
+          "status": "OPEN"
+        },
+        {
+          "key": "867fd62b-85a8-44bb-a9d3-4ac0c2c56d9f",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 148,
+          "status": "OPEN"
+        },
+        {
+          "key": "9f8cb526-cea8-4ffe-b94d-9bf646318fd0",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 156,
+          "status": "OPEN"
+        },
+        {
+          "key": "1e568aae-13d1-4b7e-bb61-8472129b95cf",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 180,
+          "status": "OPEN"
+        },
+        {
+          "key": "531520cc-64bc-468a-b971-b90ca8bd1021",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 185,
+          "status": "OPEN"
+        },
+        {
+          "key": "7b7e845e-ea60-4617-9e39-dd4ab241721a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 207,
+          "status": "OPEN"
+        },
+        {
+          "key": "b6e8616f-1336-4384-a791-5edbd047bd54",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 235,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/errors/edge-cases.cy.js": {
+      "total": 13,
+      "by_severity": {
+        "CRITICAL": 13
+      },
+      "by_type": {
+        "CODE_SMELL": 13
+      },
+      "issues": [
+        {
+          "key": "f423fbb6-5861-4425-9f41-503b81c2f5fb",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 67,
+          "status": "OPEN"
+        },
+        {
+          "key": "aa4ff1aa-c0f2-4ff9-b696-9a21de230bf8",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 93,
+          "status": "OPEN"
+        },
+        {
+          "key": "f22e9957-b894-4e94-8cf3-39c498823974",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 122,
+          "status": "OPEN"
+        },
+        {
+          "key": "75a0a51c-129d-47f6-bdbf-4d7cb001a622",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 147,
+          "status": "OPEN"
+        },
+        {
+          "key": "9c89a5e0-dccd-41fc-ab10-c6757e6ac226",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 176,
+          "status": "OPEN"
+        },
+        {
+          "key": "36ace5f2-090c-4287-b449-a7d0ad9d0c19",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 205,
+          "status": "OPEN"
+        },
+        {
+          "key": "ec90a98d-ccfb-4217-8428-e2c58186308f",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 244,
+          "status": "OPEN"
+        },
+        {
+          "key": "4451043e-00d2-47e8-835f-8b91dcd7714e",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 278,
+          "status": "OPEN"
+        },
+        {
+          "key": "45c02998-378a-4841-94ad-29b166adab6d",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 314,
+          "status": "OPEN"
+        },
+        {
+          "key": "24726ed1-afee-4b07-8c6e-8510e3ae795d",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 351,
+          "status": "OPEN"
+        },
+        {
+          "key": "0481b598-2999-4f2f-9497-fc68e04867f2",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 383,
+          "status": "OPEN"
+        },
+        {
+          "key": "d6b4a768-9397-4a42-acbb-6f7f7d8a0804",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 480,
+          "status": "OPEN"
+        },
+        {
+          "key": "ba227eeb-e6c6-456a-ad18-2ab60bedfc24",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 517,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/auth/password-recovery.cy.js": {
+      "total": 12,
+      "by_severity": {
+        "CRITICAL": 11,
+        "MINOR": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 12
+      },
+      "issues": [
+        {
+          "key": "f8664dca-3920-475f-828c-31148041fae1",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 33,
+          "status": "OPEN"
+        },
+        {
+          "key": "aaf3e7ff-89ac-4382-888a-5110c0c13995",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 36,
+          "status": "OPEN"
+        },
+        {
+          "key": "2fb22717-56e8-494e-a25a-00cf689798b9",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 71,
+          "status": "OPEN"
+        },
+        {
+          "key": "1c8ae503-4f5a-439f-8836-f514e4273da2",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 96,
+          "status": "OPEN"
+        },
+        {
+          "key": "001a6966-5937-4e46-a0fa-24a8ec130f24",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 119,
+          "status": "OPEN"
+        },
+        {
+          "key": "46505838-6357-4115-8dcb-bbfcaed6f571",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 123,
+          "status": "OPEN"
+        },
+        {
+          "key": "0b7f4025-7d05-4735-b113-374c8328fcbb",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 149,
+          "status": "OPEN"
+        },
+        {
+          "key": "b382e0e3-3600-4758-be8b-313022d87788",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 173,
+          "status": "OPEN"
+        },
+        {
+          "key": "3871cbe1-fdf2-4a77-999d-92dc209b4057",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 222,
+          "status": "OPEN"
+        },
+        {
+          "key": "af1bc78f-4c96-4f56-9479-6a1c313b7a50",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 243,
+          "status": "OPEN"
+        },
+        {
+          "key": "64372a16-99dc-4fe8-8abb-23a37dc47167",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 271,
+          "status": "OPEN"
+        },
+        {
+          "key": "61521f11-0959-46fd-a49f-05334bd2b97a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 301,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/auth/login.cy.js": {
+      "total": 12,
+      "by_severity": {
+        "MINOR": 1,
+        "CRITICAL": 11
+      },
+      "by_type": {
+        "CODE_SMELL": 12
+      },
+      "issues": [
+        {
+          "key": "c5435cff-5519-4a87-b76d-d528da5079f6",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 17,
+          "status": "OPEN"
+        },
+        {
+          "key": "7642663b-95ca-4ac9-b77e-00f6484c78c5",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 36,
+          "status": "OPEN"
+        },
+        {
+          "key": "815b92eb-24a2-48e1-8e76-070dd7ff18a0",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 56,
+          "status": "OPEN"
+        },
+        {
+          "key": "84837433-bbec-4d95-bb96-9393bef913cd",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 77,
+          "status": "OPEN"
+        },
+        {
+          "key": "e3a109ec-1235-4480-ba45-f08952c78843",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 98,
+          "status": "OPEN"
+        },
+        {
+          "key": "456438d7-ad00-4386-8678-1ec0de905911",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 108,
+          "status": "OPEN"
+        },
+        {
+          "key": "ab3ffe9b-9a02-49c2-96d2-c204b369f65d",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 123,
+          "status": "OPEN"
+        },
+        {
+          "key": "15707417-8339-48fa-8533-38cbfd7e534b",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 128,
+          "status": "OPEN"
+        },
+        {
+          "key": "3e74fa1b-954a-4859-a1e0-2864397b3347",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 153,
+          "status": "OPEN"
+        },
+        {
+          "key": "0c24070b-1870-4256-ac61-305398a6fb52",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 177,
+          "status": "OPEN"
+        },
+        {
+          "key": "9cba5bc7-15a2-4fff-b9d2-d10376f94aa3",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 187,
+          "status": "OPEN"
+        },
+        {
+          "key": "aeba4469-a862-444a-b702-72f5f207b7f1",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 215,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/navigation/complete-flows.cy.js": {
+      "total": 11,
+      "by_severity": {
+        "MINOR": 1,
+        "CRITICAL": 10
+      },
+      "by_type": {
+        "CODE_SMELL": 11
+      },
+      "issues": [
+        {
+          "key": "2532f417-4fd2-48fd-b25b-639fd94ffc03",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S1128",
+          "message": "Remove this unused import of 'SELECTORS'.",
+          "line": 2,
+          "status": "OPEN"
+        },
+        {
+          "key": "5a7f3493-cef1-4002-9985-3d13b6a4e11a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 30,
+          "status": "OPEN"
+        },
+        {
+          "key": "145d930c-f98d-4b25-a924-c05a91de61c4",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 63,
+          "status": "OPEN"
+        },
+        {
+          "key": "074efd02-c21f-4c6c-b032-6acd2267568b",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 110,
+          "status": "OPEN"
+        },
+        {
+          "key": "9772ae4c-c121-4bc0-949c-5e57d8b3d3e5",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 143,
+          "status": "OPEN"
+        },
+        {
+          "key": "92b40d6b-011e-4ee3-b070-74842d7bb839",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 216,
+          "status": "OPEN"
+        },
+        {
+          "key": "2d913273-fae5-4da4-96da-1dda6df2f69f",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 243,
+          "status": "OPEN"
+        },
+        {
+          "key": "be2ea07e-e2a2-4ff6-bc65-3977cfb9348e",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 280,
+          "status": "OPEN"
+        },
+        {
+          "key": "d8694bd1-8004-4e83-849f-0710cef27300",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 347,
+          "status": "OPEN"
+        },
+        {
+          "key": "6e8584f7-7c28-4b9b-bc03-4313c1fc3652",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 398,
+          "status": "OPEN"
+        },
+        {
+          "key": "95f6a7ab-5854-46dc-8356-fd174b9132f0",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 513,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/navigation/ui-ux.cy.js": {
+      "total": 9,
+      "by_severity": {
+        "MINOR": 1,
+        "CRITICAL": 8
+      },
+      "by_type": {
+        "CODE_SMELL": 9
+      },
+      "issues": [
+        {
+          "key": "19919177-039b-4de3-bfff-41018ad7d886",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 18,
+          "status": "OPEN"
+        },
+        {
+          "key": "46ca549b-5136-43d7-8851-800a67af1540",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 84,
+          "status": "OPEN"
+        },
+        {
+          "key": "ad649c78-0dc1-40dd-a627-50b4202fa7a7",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 256,
+          "status": "OPEN"
+        },
+        {
+          "key": "1e8942b2-0401-4f7b-bbbf-45921a3e35b1",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 355,
+          "status": "OPEN"
+        },
+        {
+          "key": "309a9b13-c3ff-4961-8826-d5e7fd27ae60",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 380,
+          "status": "OPEN"
+        },
+        {
+          "key": "11d8ae26-94e3-416f-99d5-30d3c6e81401",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 461,
+          "status": "OPEN"
+        },
+        {
+          "key": "4756ada4-b091-429d-853c-168fe3d790bb",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 494,
+          "status": "OPEN"
+        },
+        {
+          "key": "99dbc6e3-cf5b-47c2-ba1a-6c07c03e1263",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 507,
+          "status": "OPEN"
+        },
+        {
+          "key": "19d9c490-b636-4708-a149-18a4e4a1f273",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 531,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/images/analysis.cy.js": {
+      "total": 9,
+      "by_severity": {
+        "CRITICAL": 7,
+        "MINOR": 2
+      },
+      "by_type": {
+        "CODE_SMELL": 9
+      },
+      "issues": [
+        {
+          "key": "a5184d6c-4c36-49d5-8af9-8a56131305d0",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 64,
+          "status": "OPEN"
+        },
+        {
+          "key": "9157974b-851b-4533-9a61-eda28ca60819",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 73,
+          "status": "OPEN"
+        },
+        {
+          "key": "e345157a-2344-4b68-9bd5-7a7a7c82f2cc",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 93,
+          "status": "OPEN"
+        },
+        {
+          "key": "f9dd0f2b-b8bf-4e86-87a9-3d24287fe8db",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 115,
+          "status": "OPEN"
+        },
+        {
+          "key": "712a30f6-6d27-4142-9cfd-b117ab48c3e5",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 209,
+          "status": "OPEN"
+        },
+        {
+          "key": "3c600ad5-3d36-433f-951e-ac7546325d24",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 234,
+          "status": "OPEN"
+        },
+        {
+          "key": "fc74a209-f833-46a8-b7f7-045b7168f454",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 256,
+          "status": "OPEN"
+        },
+        {
+          "key": "f1d8caab-a167-484a-933e-eff65da05992",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 276,
+          "status": "OPEN"
+        },
+        {
+          "key": "b293eed8-665a-44dc-b6d1-0efacd3b6d65",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 282,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/admin/users_management.cy.js": {
+      "total": 8,
+      "by_severity": {
+        "CRITICAL": 6,
+        "MINOR": 1,
+        "MAJOR": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 7,
+        "BUG": 1
+      },
+      "issues": [
+        {
+          "key": "a9f5037e-61db-4107-836c-ac25e47fcef9",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 45,
+          "status": "OPEN"
+        },
+        {
+          "key": "9cdf224e-a50f-4de1-808d-60e3e370a0c0",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 62,
+          "status": "OPEN"
+        },
+        {
+          "key": "2c8b35fd-1432-465f-9951-ca7114329c88",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7759",
+          "message": "Prefer `Date.now()` over `Date#getTime()`.",
+          "line": 97,
+          "status": "OPEN"
+        },
+        {
+          "key": "ed379813-a2d5-4e1c-b3e3-2603582557ca",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 146,
+          "status": "OPEN"
+        },
+        {
+          "key": "d077484d-23bc-4ea6-807a-0721b5f7c6e4",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 191,
+          "status": "OPEN"
+        },
+        {
+          "key": "3add6d50-5174-47f4-ac67-2e68cb44cb7f",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 217,
+          "status": "OPEN"
+        },
+        {
+          "key": "c84c10ca-7468-4ce9-b220-af726738a8c2",
+          "severity": "MAJOR",
+          "type": "BUG",
+          "rule": "javascript:S3923",
+          "message": "Remove this conditional structure or edit its code blocks so that they're not all the same.",
+          "line": 239,
+          "status": "OPEN"
+        },
+        {
+          "key": "3ae9fa00-b380-4aef-84f5-03597b50e6f6",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 256,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/auth/logout.cy.js": {
+      "total": 7,
+      "by_severity": {
+        "CRITICAL": 6,
+        "MINOR": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 7
+      },
+      "issues": [
+        {
+          "key": "9a66d795-5e4c-4b38-8f57-7f24684688b8",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 19,
+          "status": "OPEN"
+        },
+        {
+          "key": "44dda63a-ab8d-4216-bb34-d2c0b3b5dd96",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 29,
+          "status": "OPEN"
+        },
+        {
+          "key": "53a93f22-d7b4-49b1-b0ca-9ac07f95091a",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 43,
+          "status": "OPEN"
+        },
+        {
+          "key": "efea7d00-560b-4089-8d63-b9073a4bf365",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 50,
+          "status": "OPEN"
+        },
+        {
+          "key": "0a3b0bee-6c9d-427a-9c2e-63f99d724d92",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 84,
+          "status": "OPEN"
+        },
+        {
+          "key": "53fa2106-7c0a-4c06-ac35-2f3264263f37",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 130,
+          "status": "OPEN"
+        },
+        {
+          "key": "e2e3a002-833e-420b-94c9-43f247b91ae7",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 156,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/ui/mobile_responsiveness.cy.js": {
+      "total": 6,
+      "by_severity": {
+        "MINOR": 2,
+        "CRITICAL": 4
+      },
+      "by_type": {
+        "CODE_SMELL": 6
+      },
+      "issues": [
+        {
+          "key": "7b20de7f-69d6-4159-9131-2056699229f9",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 4,
+          "status": "OPEN"
+        },
+        {
+          "key": "3eef5f47-726c-422e-a348-0989bfe685ef",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 14,
+          "status": "OPEN"
+        },
+        {
+          "key": "cc34639b-d619-4a5a-9e94-9773f87cb0d5",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 25,
+          "status": "OPEN"
+        },
+        {
+          "key": "c97c8032-0c9a-451d-8236-a3759a6b17de",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 42,
+          "status": "OPEN"
+        },
+        {
+          "key": "b0064081-f184-400b-b296-911ed4676f75",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7773",
+          "message": "Prefer `Number.parseInt` over `parseInt`.",
+          "line": 45,
+          "status": "OPEN"
+        },
+        {
+          "key": "5217971e-a545-4f74-aab0-1cca46913bce",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 61,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/performance/load_times.cy.js": {
+      "total": 6,
+      "by_severity": {
+        "MINOR": 5,
+        "CRITICAL": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 6
+      },
+      "issues": [
+        {
+          "key": "b35812a6-2266-4e15-9f20-70de6b47fdaa",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7759",
+          "message": "Prefer `Date.now()` over `Date#getTime()`.",
+          "line": 5,
+          "status": "OPEN"
+        },
+        {
+          "key": "7ea99fb8-04f3-4eb3-ac14-1bb0bc94e1b2",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7759",
+          "message": "Prefer `Date.now()` over `Date#getTime()`.",
+          "line": 14,
+          "status": "OPEN"
+        },
+        {
+          "key": "9fc0966e-a50e-4d3f-a32f-29b17e8814e2",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7723",
+          "message": "Use `new Array()` instead of `Array()`.",
+          "line": 29,
+          "status": "OPEN"
+        },
+        {
+          "key": "ca17fa69-9491-44c3-b629-4af6ab4daa8f",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7759",
+          "message": "Prefer `Date.now()` over `Date#getTime()`.",
+          "line": 47,
+          "status": "OPEN"
+        },
+        {
+          "key": "fd99e77c-945e-4c52-8d14-6bd80818ef62",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7759",
+          "message": "Prefer `Date.now()` over `Date#getTime()`.",
+          "line": 63,
+          "status": "OPEN"
+        },
+        {
+          "key": "eeefb8ce-d103-451b-b2c8-6e738db49d9a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 74,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/reports/filtering.cy.js": {
+      "total": 6,
+      "by_severity": {
+        "MINOR": 1,
+        "CRITICAL": 5
+      },
+      "by_type": {
+        "CODE_SMELL": 6
+      },
+      "issues": [
+        {
+          "key": "13ed000a-1282-40b6-a030-831b6fc1830c",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 4,
+          "status": "OPEN"
+        },
+        {
+          "key": "055d473a-cd0d-454c-ada4-16e18bfdcd56",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 16,
+          "status": "OPEN"
+        },
+        {
+          "key": "5afcacf8-f48c-4b6f-9eaa-3d56147e4c96",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 32,
+          "status": "OPEN"
+        },
+        {
+          "key": "0b66631f-9a99-4d2c-880c-74c24331ba17",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 52,
+          "status": "OPEN"
+        },
+        {
+          "key": "1c9f6716-7ada-4ab1-8dab-d4170ad7b769",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 71,
+          "status": "OPEN"
+        },
+        {
+          "key": "85b5ea2a-188c-466e-87ff-d5a01dc044ae",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 94,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/images/history.cy.js": {
+      "total": 6,
+      "by_severity": {
+        "MINOR": 4,
+        "CRITICAL": 2
+      },
+      "by_type": {
+        "CODE_SMELL": 6
+      },
+      "issues": [
+        {
+          "key": "06bbc69c-ca57-41c4-94e7-045d19db6350",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 18,
+          "status": "OPEN"
+        },
+        {
+          "key": "65669091-35b1-43d8-97ca-b27f90a77212",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 40,
+          "status": "OPEN"
+        },
+        {
+          "key": "8fc33302-d45c-4054-822f-ac44111576e6",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 40,
+          "status": "OPEN"
+        },
+        {
+          "key": "97eb20cb-ac8c-44ab-bd58-c7e674c4aad4",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 178,
+          "status": "OPEN"
+        },
+        {
+          "key": "ac41ed2f-3cf2-4df4-9eef-1beea14de506",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 290,
+          "status": "OPEN"
+        },
+        {
+          "key": "e34a425a-3b8f-4d4b-b527-7b0e83e6bed3",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 296,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/errors/network-errors.cy.js": {
+      "total": 5,
+      "by_severity": {
+        "CRITICAL": 5
+      },
+      "by_type": {
+        "CODE_SMELL": 5
+      },
+      "issues": [
+        {
+          "key": "e4adcc4c-161f-4b4a-8313-2e986c827a85",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 196,
+          "status": "OPEN"
+        },
+        {
+          "key": "18ee8b95-170c-4aa2-9dd7-f6de1fc61ac6",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 233,
+          "status": "OPEN"
+        },
+        {
+          "key": "7923638f-b7fd-427c-8208-583881a1c65f",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 335,
+          "status": "OPEN"
+        },
+        {
+          "key": "3ed487d8-a711-4447-af34-439d0fc27c12",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 383,
+          "status": "OPEN"
+        },
+        {
+          "key": "82231773-d8d3-4097-b92a-afb9633d7f37",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 425,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/accessibility/basic_checks.cy.js": {
+      "total": 4,
+      "by_severity": {
+        "MINOR": 1,
+        "CRITICAL": 3
+      },
+      "by_type": {
+        "CODE_SMELL": 4
+      },
+      "issues": [
+        {
+          "key": "5fc94eb6-25d8-4e29-919e-aca168b99861",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 9,
+          "status": "OPEN"
+        },
+        {
+          "key": "d4c5fd22-1f9a-4935-b3aa-4c823ee49f46",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 17,
+          "status": "OPEN"
+        },
+        {
+          "key": "b18390df-4d14-4c0e-99e4-d16b9af1ab49",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 28,
+          "status": "OPEN"
+        },
+        {
+          "key": "9d841857-6509-418c-801f-9e35d97fcb94",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 46,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/support/commands.js": {
+      "total": 4,
+      "by_severity": {
+        "CRITICAL": 2,
+        "MINOR": 2
+      },
+      "by_type": {
+        "CODE_SMELL": 4
+      },
+      "issues": [
+        {
+          "key": "d24dd833-7740-4c4c-a212-2dfa04c9a1dd",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 33,
+          "status": "OPEN"
+        },
+        {
+          "key": "090b0154-7243-495f-8786-51a9f80e8b66",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 51,
+          "status": "OPEN"
+        },
+        {
+          "key": "feffaa32-96dd-4314-ad98-13923808a2ef",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S6551",
+          "message": "'userType' will use Object's default stringification format ('[object Object]') when stringified.",
+          "line": 53,
+          "status": "OPEN"
+        },
+        {
+          "key": "a93394e7-2865-4096-8518-fc9745399cdb",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S6551",
+          "message": "'userType' will use Object's default stringification format ('[object Object]') when stringified.",
+          "line": 55,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "src/services/__tests__/services.test.js": {
+      "total": 4,
+      "by_severity": {
+        "MINOR": 4
+      },
+      "by_type": {
+        "CODE_SMELL": 4
+      },
+      "issues": [
+        {
+          "key": "fda65eb8-9ce2-49fd-97f3-224f20d4fa05",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7748",
+          "message": "Don't use a zero fraction in the number.",
+          "line": 291,
+          "status": "OPEN"
+        },
+        {
+          "key": "d28dfa12-2481-414f-a429-8f916d4255ba",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7748",
+          "message": "Don't use a zero fraction in the number.",
+          "line": 320,
+          "status": "OPEN"
+        },
+        {
+          "key": "793d4f7e-1ec9-45b1-a11a-6aa3ad7a2972",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7748",
+          "message": "Don't use a zero fraction in the number.",
+          "line": 342,
+          "status": "OPEN"
+        },
+        {
+          "key": "14ad3559-6e4a-439b-8f55-2ca388e2f91e",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7748",
+          "message": "Don't use a zero fraction in the number.",
+          "line": 365,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/agricultor/incremental_training.cy.js": {
+      "total": 3,
+      "by_severity": {
+        "CRITICAL": 3
+      },
+      "by_type": {
+        "CODE_SMELL": 3
+      },
+      "issues": [
+        {
+          "key": "6e885ae7-511c-443b-9fbd-717fecac5a83",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 48,
+          "status": "OPEN"
+        },
+        {
+          "key": "74cc95b3-cef1-4774-9fd8-6f68b1a98dd3",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 65,
+          "status": "OPEN"
+        },
+        {
+          "key": "3665eaad-4b30-499f-b13d-53aa874da67e",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 84,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "src/services/httpClient.js": {
+      "total": 2,
+      "by_severity": {
+        "MINOR": 2
+      },
+      "by_type": {
+        "CODE_SMELL": 2
+      },
+      "issues": [
+        {
+          "key": "d233d8b1-c433-48d2-8ac6-304bf7db714b",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S6551",
+          "message": "'standardError' will use Object's default stringification format ('[object Object]') when stringified.",
+          "line": 56,
+          "status": "OPEN"
+        },
+        {
+          "key": "3fc1340e-014c-471a-9408-574468446b06",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S6551",
+          "message": "'standardError' will use Object's default stringification format ('[object Object]') when stringified.",
+          "line": 113,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/ui/map_interactions.cy.js": {
+      "total": 2,
+      "by_severity": {
+        "CRITICAL": 2
+      },
+      "by_type": {
+        "CODE_SMELL": 2
+      },
+      "issues": [
+        {
+          "key": "ef03be25-9799-4f8d-a8aa-c983a396a05b",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 55,
+          "status": "OPEN"
+        },
+        {
+          "key": "e5fcf15d-5eee-4022-a9d6-3189da5754d1",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 76,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/security/input_sanitization.cy.js": {
+      "total": 2,
+      "by_severity": {
+        "MINOR": 1,
+        "CRITICAL": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 2
+      },
+      "issues": [
+        {
+          "key": "361e790b-7fe1-4336-9923-4b57219b001c",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7728",
+          "message": "Use `for…of` instead of `.forEach(…)`.",
+          "line": 16,
+          "status": "OPEN"
+        },
+        {
+          "key": "0a85ced1-e86f-4f70-8b1a-482aa37cae29",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 22,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/settings/account_profile.cy.js": {
+      "total": 2,
+      "by_severity": {
+        "CRITICAL": 2
+      },
+      "by_type": {
+        "CODE_SMELL": 2
+      },
+      "issues": [
+        {
+          "key": "76bfb4ee-89c5-4734-9096-c92cd2e3caf1",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 45,
+          "status": "OPEN"
+        },
+        {
+          "key": "09ef15e0-81f8-4feb-8bed-20b48a3da155",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 64,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/integration/full_user_journey.cy.js": {
+      "total": 2,
+      "by_severity": {
+        "MINOR": 1,
+        "CRITICAL": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 2
+      },
+      "issues": [
+        {
+          "key": "77d15340-75e9-4707-8c68-8abc64aa4691",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7759",
+          "message": "Prefer `Date.now()` over `Date#getTime()`.",
+          "line": 2,
+          "status": "OPEN"
+        },
+        {
+          "key": "3cce1050-5268-4f0d-b4bf-b618736185b8",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 71,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/audit/audit-view.cy.js": {
+      "total": 2,
+      "by_severity": {
+        "MAJOR": 1,
+        "CRITICAL": 1
+      },
+      "by_type": {
+        "BUG": 1,
+        "CODE_SMELL": 1
+      },
+      "issues": [
+        {
+          "key": "86bd25d4-e7bd-4625-be81-7d105545b018",
+          "severity": "MAJOR",
+          "type": "BUG",
+          "rule": "javascript:S3923",
+          "message": "Remove this conditional structure or edit its code blocks so that they're not all the same.",
+          "line": 64,
+          "status": "OPEN"
+        },
+        {
+          "key": "91d299d0-6a1c-4393-8d74-0b7b71d7a49c",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 80,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/admin/farmer_management.cy.js": {
+      "total": 2,
+      "by_severity": {
+        "CRITICAL": 2
+      },
+      "by_type": {
+        "CODE_SMELL": 2
+      },
+      "issues": [
+        {
+          "key": "480265de-307a-4f87-96e8-6c071bdba5a9",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 31,
+          "status": "OPEN"
+        },
+        {
+          "key": "bb3eca16-139b-461f-9722-16f540584cf4",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 52,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/admin/audit_logs.cy.js": {
+      "total": 2,
+      "by_severity": {
+        "CRITICAL": 2
+      },
+      "by_type": {
+        "CODE_SMELL": 2
+      },
+      "issues": [
+        {
+          "key": "28fc6a71-43de-44a3-97c4-e563b8d093d9",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 41,
+          "status": "OPEN"
+        },
+        {
+          "key": "62c2d268-6b0b-401d-81ae-35407189700f",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 82,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/fincas/advanced_management.cy.js": {
+      "total": 2,
+      "by_severity": {
+        "CRITICAL": 1,
+        "MINOR": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 2
+      },
+      "issues": [
+        {
+          "key": "f593d7dc-6510-4ddc-af58-b0022e5ae057",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 22,
+          "status": "OPEN"
+        },
+        {
+          "key": "97028b99-4e25-4223-89bb-74c0b1e91a7e",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7759",
+          "message": "Prefer `Date.now()` over `Date#getTime()`.",
+          "line": 56,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "src/components/__tests__/components.test.js": {
+      "total": 2,
+      "by_severity": {
+        "MINOR": 2
+      },
+      "by_type": {
+        "CODE_SMELL": 2
+      },
+      "issues": [
+        {
+          "key": "d559f75f-e5dd-4988-9b14-679b4bd7dd69",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7748",
+          "message": "Don't use a zero fraction in the number.",
+          "line": 249,
+          "status": "OPEN"
+        },
+        {
+          "key": "0b7b3f67-7b53-4438-9b5d-9bc1207b5642",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7748",
+          "message": "Don't use a zero fraction in the number.",
+          "line": 527,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "src/services/predictionApi.js": {
+      "total": 1,
+      "by_severity": {
+        "MINOR": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 1
+      },
+      "issues": [
+        {
+          "key": "9eafa4cb-9a19-472f-baa6-52a31e99b053",
+          "severity": "MINOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S7763",
+          "message": "Use `export…from` to re-export `createImageFormData`.",
+          "line": 527,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/ui/advanced_forms.cy.js": {
+      "total": 1,
+      "by_severity": {
+        "CRITICAL": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 1
+      },
+      "issues": [
+        {
+          "key": "a1cd78e7-cc46-4dd9-9d3c-72aabb66e6cf",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 31,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/analysis/prediction_flow.cy.js": {
+      "total": 1,
+      "by_severity": {
+        "CRITICAL": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 1
+      },
+      "issues": [
+        {
+          "key": "66a86a9b-0065-4e1c-99d7-c330ec7f54c0",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 134,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/e2e/admin/training.cy.js": {
+      "total": 1,
+      "by_severity": {
+        "CRITICAL": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 1
+      },
+      "issues": [
+        {
+          "key": "21b205a7-7dd0-4ae2-b099-603e5994b46a",
+          "severity": "CRITICAL",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S2004",
+          "message": "Refactor this code to not nest functions more than 4 levels deep.",
+          "line": 104,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/support/e2e.js": {
+      "total": 1,
+      "by_severity": {
+        "BLOCKER": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 1
+      },
+      "issues": [
+        {
+          "key": "7695fc64-f75d-40f3-bc5e-f47be85abb5d",
+          "severity": "BLOCKER",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S3516",
+          "message": "Refactor this function to not always return the same value.",
+          "line": 20,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "cypress/support/test-helpers.js": {
+      "total": 1,
+      "by_severity": {
+        "MAJOR": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 1
+      },
+      "issues": [
+        {
+          "key": "7037764a-5e96-4632-bf38-064d383d963d",
+          "severity": "MAJOR",
+          "type": "CODE_SMELL",
+          "rule": "javascript:S3358",
+          "message": "Extract this nested ternary operation into an independent statement.",
+          "line": 15,
+          "status": "OPEN"
+        }
+      ]
+    },
+    "src/components/common/BaseToggleSwitch.vue": {
+      "total": 1,
+      "by_severity": {
+        "MAJOR": 1
+      },
+      "by_type": {
+        "CODE_SMELL": 1
+      },
+      "issues": [
+        {
+          "key": "06536afe-df74-4c52-b3fd-2fdafbbec1d2",
+          "severity": "MAJOR",
+          "type": "CODE_SMELL",
+          "rule": "Web:S6807",
+          "message": "The attribute \"aria-checked\" is required by the role \"switch\".",
+          "line": 11,
+          "status": "OPEN"
+        }
+      ]
+    }
+  }
+}

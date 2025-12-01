@@ -2,6 +2,16 @@ describe('Gestión de Imágenes - Historial y Detalles', () => {
   beforeEach(() => {
     cy.login('farmer')
   })
+  // Helper functions to reduce nesting depth
+  const verifySelectorsExist = (selectors, $context, timeout = 3000) => {
+    for (const selector of selectors) {
+      if ($context.find(selector).length > 0) {
+        cy.get(selector, { timeout }).should('exist')
+      }
+    }
+  }
+
+
 
   it('debe mostrar historial de imágenes cargadas', () => {
     cy.visit('/mis-imagenes')
@@ -15,11 +25,7 @@ describe('Gestión de Imágenes - Historial y Detalles', () => {
         '[data-cy="search-images"]',
         '[data-cy="filter-images"]'
       ]
-      selectors.forEach(selector => {
-        if ($body.find(selector).length > 0) {
-          cy.get(selector, { timeout: 5000 }).should('exist')
-        }
-      })
+          verifySelectorsExist(selectors, $body, 5000)
     })
   })
 
@@ -37,11 +43,7 @@ describe('Gestión de Imágenes - Historial y Detalles', () => {
             '[data-cy="analysis-results"]',
             '[data-cy="upload-date"]'
           ]
-          detailSelectors.forEach(selector => {
-            if ($details.find(selector).length > 0) {
-              cy.get(selector, { timeout: 3000 }).should('exist')
-            }
-          })
+          verifySelectorsExist(detailSelectors, $details, 3000)
         })
       }
     })
@@ -175,11 +177,7 @@ describe('Gestión de Imágenes - Historial y Detalles', () => {
         '[data-cy="average-quality"]',
         '[data-cy="images-this-month"]'
       ]
-      statsSelectors.forEach(selector => {
-        if ($body.find(selector).length > 0) {
-          cy.get(selector, { timeout: 5000 }).should('exist')
-        }
-      })
+          verifySelectorsExist(statsSelectors, $body, 5000)
     })
   })
 
@@ -293,13 +291,58 @@ describe('Gestión de Imágenes - Historial y Detalles', () => {
                 '[data-cy="quality-badge"]',
                 '[data-cy="analysis-date"]'
               ]
-              infoSelectors.forEach(selector => {
-                cy.get(selector, { timeout: 3000 }).should('exist')
-              })
+              verifySelectorsExist(infoSelectors, $details, 3000)
             })
           }
         })
       }
     })
+  })
+
+  it('debe permitir filtrar por estado de análisis', () => {
+    cy.visit('/mis-imagenes')
+    
+    cy.get('[data-cy="analysis-status-filter"]').select('completado')
+    cy.get('[data-cy="image-item"]').each(($item) => {
+      cy.wrap($item).find('[data-cy="analysis-status"]').should('contain', 'Completado')
+    })
+  })
+
+  it('debe mostrar vista de galería', () => {
+    cy.visit('/mis-imagenes')
+    
+    cy.get('[data-cy="view-gallery"]').click()
+    cy.get('[data-cy="gallery-view"]').should('be.visible')
+    cy.get('[data-cy="gallery-item"]').should('have.length.greaterThan', 0)
+  })
+
+  it('debe permitir etiquetar imágenes', () => {
+    cy.visit('/mis-imagenes')
+    
+    cy.get('[data-cy="image-item"]').first().within(() => {
+      cy.get('[data-cy="add-tag"]').click()
+      cy.get('[data-cy="tag-input"]').type('mejor-calidad')
+      cy.get('[data-cy="save-tag"]').click()
+    })
+    
+    cy.get('[data-cy="image-tags"]').should('contain', 'mejor-calidad')
+  })
+
+  it('debe mostrar timeline de imágenes', () => {
+    cy.visit('/mis-imagenes')
+    
+    cy.get('[data-cy="view-timeline"]').click()
+    cy.get('[data-cy="timeline-view"]').should('be.visible')
+    cy.get('[data-cy="timeline-item"]').should('have.length.greaterThan', 0)
+  })
+
+  it('debe permitir comparar múltiples imágenes', () => {
+    cy.visit('/mis-imagenes')
+    
+    cy.get('[data-cy="image-checkbox"]').first().check()
+    cy.get('[data-cy="image-checkbox"]').eq(1).check()
+    
+    cy.get('[data-cy="compare-images"]').click()
+    cy.get('[data-cy="comparison-view"]').should('be.visible')
   })
 })

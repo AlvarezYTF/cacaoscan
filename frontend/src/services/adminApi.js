@@ -243,8 +243,42 @@ const createExperiment = async (experimentData) => {
  * @returns {Promise<Array>} Lista de experimentos
  */
 const getExperiments = async (filters = {}) => {
-  return await fetchGet('/images/admin/experiments/', filters)
-}
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, value);
+      }
+    }
+    
+    const url = `${API_BASE_URL}/images/admin/experiments/?${params}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error obteniendo experimentos:', error);
+    throw error;
+  }
+};
 
 // ==========================================
 // UTILIDADES Y VALIDACIONES (DRY)
@@ -491,6 +525,9 @@ export default {
   trainVisionModel: baseTrainVision,
   getTrainingJobStatus: baseGetJobStatus,
   getTrainingJobs: baseGetJobs
+  
+  // Nota: TRAINING_PRESETS, DATA_FILTERS y ADMIN_TRAINING_CONFIG 
+  // están disponibles como named exports arriba
 }
 
 // Nota: TRAINING_PRESETS, DATA_FILTERS y ADMIN_TRAINING_CONFIG 

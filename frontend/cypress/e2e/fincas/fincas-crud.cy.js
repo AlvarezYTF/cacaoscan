@@ -4,6 +4,15 @@ describe('Gestión de Fincas - CRUD', () => {
     cy.visit('/mis-fincas')
     cy.get('body', { timeout: 10000 }).should('be.visible')
   })
+  
+  // Helper functions to reduce nesting depth
+  const verifySelectorsExist = (selectors, $context, timeout = 3000) => {
+    for (const selector of selectors) {
+      if ($context.find(selector).length > 0) {
+        cy.get(selector, { timeout }).should('exist')
+      }
+    }
+  }
 
   it('debe mostrar lista de fincas del usuario', () => {
     cy.get('body').then(($body) => {
@@ -85,11 +94,7 @@ describe('Gestión de Fincas - CRUD', () => {
                 '[data-cy="finca-ubicacion-error"]',
                 '[data-cy="finca-area-error"]'
               ]
-              errorSelectors.forEach(selector => {
-                if ($errors.find(selector).length > 0) {
-                  cy.get(selector).should('exist')
-                }
-              })
+          verifySelectorsExist(errorSelectors, $errors, 3000)
             })
           }
         })
@@ -141,11 +146,7 @@ describe('Gestión de Fincas - CRUD', () => {
             '[data-cy="finca-description"]',
             '[data-cy="finca-map"]'
           ]
-          detailSelectors.forEach(selector => {
-            if ($details.find(selector).length > 0) {
-              cy.get(selector, { timeout: 3000 }).should('exist')
-            }
-          })
+          verifySelectorsExist(detailSelectors, $details, 3000)
         })
       } else {
         cy.get('body').should('be.visible')
@@ -254,11 +255,7 @@ describe('Gestión de Fincas - CRUD', () => {
         '[data-cy="total-area"]',
         '[data-cy="average-area"]'
       ]
-      statsSelectors.forEach(selector => {
-        if ($body.find(selector).length > 0) {
-          cy.get(selector, { timeout: 5000 }).should('exist')
-        }
-      })
+          verifySelectorsExist(statsSelectors, $body, 5000)
     })
   })
 
@@ -378,11 +375,7 @@ describe('Gestión de Fincas - CRUD', () => {
             '[data-cy="lotes-count"]',
             '[data-cy="add-lote-button"]'
           ]
-          loteSelectors.forEach(selector => {
-            if ($details.find(selector).length > 0) {
-              cy.get(selector, { timeout: 3000 }).should('exist')
-            }
-          })
+          verifySelectorsExist(loteSelectors, $details, 3000)
         })
       } else {
         cy.get('body').should('be.visible')
@@ -460,5 +453,69 @@ describe('Gestión de Fincas - CRUD', () => {
         cy.get('body').should('be.visible')
       }
     })
+  })
+
+  it('debe permitir duplicar finca', () => {
+    cy.get('[data-cy="finca-item"]').first().click()
+    cy.get('[data-cy="duplicate-finca"]').click()
+    
+    // Verificar que se abre formulario con datos prellenados
+    cy.get('[data-cy="finca-nombre"]').should('have.value').and('not.be.empty')
+    
+    // Modificar nombre
+    cy.get('[data-cy="finca-nombre"]').clear().type('Finca Duplicada')
+    cy.get('[data-cy="save-finca"]').click()
+    
+    cy.checkNotification('Finca creada exitosamente', 'success')
+  })
+
+  it('debe permitir activar/desactivar finca', () => {
+    cy.get('[data-cy="finca-item"]').first().click()
+    
+    // Desactivar finca
+    cy.get('[data-cy="toggle-finca-status"]').click()
+    cy.checkNotification('Finca desactivada', 'success')
+    
+    // Activar finca
+    cy.get('[data-cy="toggle-finca-status"]').click()
+    cy.checkNotification('Finca activada', 'success')
+  })
+
+  it('debe mostrar historial de cambios de finca', () => {
+    cy.get('[data-cy="finca-item"]').first().click()
+    cy.get('[data-cy="finca-history"]').should('be.visible')
+    cy.get('[data-cy="history-item"]').should('have.length.greaterThan', 0)
+  })
+
+  it('debe permitir agregar notas a finca', () => {
+    cy.get('[data-cy="finca-item"]').first().click()
+    cy.get('[data-cy="add-note"]').click()
+    
+    cy.get('[data-cy="note-text"]').type('Nota importante sobre la finca')
+    cy.get('[data-cy="save-note"]').click()
+    
+    cy.checkNotification('Nota agregada', 'success')
+    cy.get('[data-cy="finca-notes"]').should('contain', 'Nota importante')
+  })
+
+  it('debe permitir agregar imágenes a finca', () => {
+    cy.get('[data-cy="finca-item"]').first().click()
+    cy.get('[data-cy="add-image"]').click()
+    
+    cy.fixture('test-cacao.jpg').then((fileContent) => {
+      const blob = new Blob([fileContent], { type: 'image/jpeg' })
+      const file = new File([blob], 'finca-image.jpg', { type: 'image/jpeg' })
+      
+      cy.get('[data-cy="image-input"]').then((input) => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.items.add(file)
+        input[0].files = dataTransfer.files
+        
+        cy.wrap(input).trigger('change', { force: true })
+      })
+    })
+    
+    cy.get('[data-cy="upload-image"]').click()
+    cy.checkNotification('Imagen agregada', 'success')
   })
 })
