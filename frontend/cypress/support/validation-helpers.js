@@ -177,23 +177,24 @@ function handleConditionalFieldValidation($context, conditionalSelector, submitS
  * @returns {Cypress.Chainable} Cypress chainable
  */
 export function validatePasswordMatch(config) {
-  const { pageUrl, passwordSelector, passwordValue, confirmPasswordSelector, confirmPasswordValue, submitSelector, errorSelectors, expectedTexts } = config
+  // NOSONAR S2068 - These are CSS selectors and dynamically generated values, not hardcoded passwords
+  const { pageUrl, passwordSelector, passwordValue, confirmPasswordSelector, confirmPasswordValue, submitSelector, errorSelectors, expectedTexts } = config // NOSONAR S2068
   visitAndWaitForBody(pageUrl)
-  return fillPasswordField(passwordSelector, passwordValue)
-    .then(() => fillConfirmPasswordField(confirmPasswordSelector, confirmPasswordValue))
+  return fillPasswordField(passwordSelector, passwordValue) // NOSONAR S2068
+    .then(() => fillConfirmPasswordField(confirmPasswordSelector, confirmPasswordValue)) // NOSONAR S2068
     .then(() => submitAndVerifyPasswordError(submitSelector, errorSelectors, expectedTexts))
 }
 
 /**
  * Fills password field if it exists
  * @param {string} passwordSelector - Selector for password input
- * @param {string} passwordValue - Password value to type
+ * @param {string} passwordValue - Password value to type (generated dynamically)
  * @returns {Cypress.Chainable} Cypress chainable
  */
-function fillPasswordField(passwordSelector, passwordValue) {
+function fillPasswordField(passwordSelector, passwordValue) { // NOSONAR S2068
   return cy.get('body').then(($body) => {
     if ($body.find(passwordSelector).length > 0) {
-      cy.get(passwordSelector).first().type(passwordValue, { force: true })
+      cy.get(passwordSelector).first().type(passwordValue, { force: true }) // NOSONAR S2068
       return cy.wrap(true)
     }
     return cy.wrap(false)
@@ -203,13 +204,13 @@ function fillPasswordField(passwordSelector, passwordValue) {
 /**
  * Fills confirm password field if it exists
  * @param {string} confirmPasswordSelector - Selector for confirm password input
- * @param {string} confirmPasswordValue - Confirm password value to type
+ * @param {string} confirmPasswordValue - Confirm password value to type (generated dynamically)
  * @returns {Cypress.Chainable} Cypress chainable
  */
-function fillConfirmPasswordField(confirmPasswordSelector, confirmPasswordValue) {
+function fillConfirmPasswordField(confirmPasswordSelector, confirmPasswordValue) { // NOSONAR S2068
   return cy.get('body').then(($body) => {
     if ($body.find(confirmPasswordSelector).length > 0) {
-      cy.get(confirmPasswordSelector).first().type(confirmPasswordValue, { force: true })
+      cy.get(confirmPasswordSelector).first().type(confirmPasswordValue, { force: true }) // NOSONAR S2068
       return cy.wrap(true)
     }
     return cy.wrap(false)

@@ -1,7 +1,6 @@
 import { 
   verifySelectorsExist, 
   generatePassword, 
-  verifyRegistrationFieldsExist,
   executeRegistrationIfFieldsExist,
   verifyErrorMessageGeneric,
   visitAndWaitForBody,

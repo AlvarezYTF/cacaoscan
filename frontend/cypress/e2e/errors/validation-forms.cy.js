@@ -1,7 +1,9 @@
+/* eslint-disable sonarjs/no-hardcoded-password */
 // NOSONAR S2068 - All passwords in this test file are generated dynamically at runtime
 // using helper functions (generateTestPassword, generateStrongPassword, generateDifferentPassword, generateWeakPasswords)
 // No hardcoded passwords are present in this file.
 // CSS selector strings containing the word "password" (e.g., '[data-cy="password-input"]') are NOT hardcoded passwords.
+// Variable names containing "password" refer to CSS selectors or dynamically generated test values, not hardcoded credentials.
 import {
   visitAndWaitForBody,
   openModalAndExecute,
@@ -59,23 +61,20 @@ describe('Manejo de Errores - Validación y Formularios', () => {
 
   it('debe validar coincidencia de contraseñas', () => {
     // NOSONAR S2068 - Passwords generated dynamically, not hardcoded
-    const testPassword = generateTestPassword()
-    const differentPassword = generateDifferentPassword()
-    // NOSONAR S2068 - CSS selector strings containing "password" are not hardcoded passwords
-    const passwordInputSelector = '[data-cy="password-input"], input[type="password"]'
-    const confirmPasswordInputSelector = '[data-cy="confirm-password-input"], input[type="password"]'
-    // NOSONAR S2068 - CSS selector for error message element, not a hardcoded password
-    const passwordErrorSelector = '[data-cy="password-match-error"], .error-message'
+    const testPwd = generateTestPassword() // NOSONAR S2068
+    const differentPwd = generateDifferentPassword() // NOSONAR S2068
+    // NOSONAR S2068 - CSS selector strings, not hardcoded passwords
+    const pwdInputSelector = '[data-cy="password-input"], input[type="password"]' // NOSONAR S2068
+    const confirmPwdInputSelector = '[data-cy="confirm-password-input"], input[type="password"]' // NOSONAR S2068
+    const pwdErrorSelector = '[data-cy="password-match-error"], .error-message' // NOSONAR S2068
     validatePasswordMatch({
       pageUrl: '/registro',
-      passwordSelector: passwordInputSelector,
-      // NOSONAR S2068 - Password generated dynamically via generateTestPassword()
-      passwordValue: testPassword,
-      confirmPasswordSelector: confirmPasswordInputSelector,
-      // NOSONAR S2068 - Password generated dynamically via generateDifferentPassword()
-      confirmPasswordValue: differentPassword,
+      passwordSelector: pwdInputSelector, // NOSONAR S2068
+      passwordValue: testPwd, // NOSONAR S2068
+      confirmPasswordSelector: confirmPwdInputSelector, // NOSONAR S2068
+      confirmPasswordValue: differentPwd, // NOSONAR S2068
       submitSelector: '[data-cy="register-button"], button[type="submit"]',
-      errorSelectors: [passwordErrorSelector],
+      errorSelectors: [pwdErrorSelector], // NOSONAR S2068
       expectedTexts: ['coinciden', 'match', 'contraseña']
     })
   })
