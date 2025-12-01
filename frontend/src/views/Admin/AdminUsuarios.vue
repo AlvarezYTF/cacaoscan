@@ -13,7 +13,7 @@
     />
 
     <!-- Main Content -->
-    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'">
+    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'" data-cy="admin-usuarios">
       <!-- Page Header -->
       <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
         <div class="flex items-center justify-between flex-wrap gap-4">
