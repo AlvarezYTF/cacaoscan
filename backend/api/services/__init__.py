@@ -20,7 +20,20 @@ from .analysis_service import AnalysisService
 from fincas_app.services import FincaService, LoteService
 from reports.services import ReportService
 from images_app.services import ImageProcessingService, ImageStorageService, ImageManagementService
-from training.services import MLService, PredictionService
+
+# Training services are imported lazily to avoid circular import
+# They are available in __all__ but imported on demand
+MLService = None
+PredictionService = None
+
+def _lazy_import_training_services():
+    """Lazy import of training services to avoid circular dependency."""
+    global MLService, PredictionService
+    if MLService is None or PredictionService is None:
+        from training.services import MLService as _MLService, PredictionService as _PredictionService
+        MLService = _MLService
+        PredictionService = _PredictionService
+    return MLService, PredictionService
 
 # Crear instancias de servicios para uso fácil
 login_service = LoginService()
@@ -28,7 +41,8 @@ registration_service = RegistrationService()
 password_service = PasswordService()
 verification_service = VerificationService()
 profile_service = ProfileService()
-analysis_service = AnalysisService()
+# analysis_service is created lazily to avoid circular import
+analysis_service = None
 image_service = ImageManagementService()
 finca_service = FincaService()
 lote_service = LoteService()
@@ -74,5 +88,23 @@ __all__ = [
     'lote_service',
     'report_service'
 ]
+
+
+def __getattr__(name: str):
+    """Lazy import/creation for services to avoid circular dependency."""
+    global analysis_service
+    
+    if name in ('MLService', 'PredictionService'):
+        _lazy_import_training_services()
+        if name == 'MLService':
+            return MLService
+        elif name == 'PredictionService':
+            return PredictionService
+    elif name == 'analysis_service':
+        if analysis_service is None:
+            analysis_service = AnalysisService()
+        return analysis_service
+    
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 

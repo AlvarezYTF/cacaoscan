@@ -18,7 +18,13 @@ from api.tests.test_constants import (
     TEST_ADMIN_EMAIL,
 )
 from images_app.models import CacaoImage
-from images_app.views.image.admin.bulk_views import AdminBulkUpdateView
+# Import directly to avoid circular import issues
+import sys
+if 'images_app.views.image.admin.bulk_views' not in sys.modules:
+    from images_app.views.image.admin import bulk_views
+    AdminBulkUpdateView = bulk_views.AdminBulkUpdateView
+else:
+    from images_app.views.image.admin.bulk_views import AdminBulkUpdateView
 
 
 class AdminBulkUpdateViewTest(APITestCase):
