@@ -145,4 +145,130 @@ class ExcelBaseGenerator:
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+    
+    def _create_section_title(self, cell_address: str, title: str):
+        """
+        Creates a section title.
+        
+        Args:
+            cell_address: Cell address (e.g., 'A8')
+            title: Section title text
+        """
+        self.ws[cell_address] = title
+        self.ws[cell_address].font = Font(size=14, bold=True, color="2F4F4F")
+    
+    def _create_table_with_data(
+        self,
+        data: list[list],
+        start_row: int,
+        header_row: int,
+        column_widths: dict = None,
+        header_alignment: str = 'center',
+        body_alignment: str = 'center'
+    ):
+        """
+        Creates a table with headers and data rows.
+        
+        Args:
+            data: List of rows, first row should be headers
+            start_row: Starting row number
+            header_row: Row number for headers (usually same as start_row)
+            column_widths: Dict with column letters as keys and widths as values
+            header_alignment: Alignment for header cells ('center', 'left', 'right')
+            body_alignment: Alignment for body cells ('center', 'left', 'right')
+        """
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        header_fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF")
+        
+        alignment_map = {
+            'center': Alignment(horizontal='center'),
+            'left': Alignment(horizontal='left'),
+            'right': Alignment(horizontal='right')
+        }
+        header_align = alignment_map.get(header_alignment, Alignment(horizontal='center'))
+        body_align = alignment_map.get(body_alignment, Alignment(horizontal='center'))
+        
+        for row_num, row_data in enumerate(data, start_row):
+            is_header = row_num == header_row
+            for col_num, cell_value in enumerate(row_data, 1):
+                cell = self.ws.cell(row=row_num, column=col_num, value=cell_value)
+                
+                if is_header:
+                    cell.font = header_font
+                    cell.fill = header_fill
+                    cell.alignment = header_align
+                else:
+                    cell.alignment = body_align
+                
+                cell.border = thin_border
+        
+        if column_widths:
+            self._adjust_column_widths(column_widths)
+    
+    def _create_table_with_headers(
+        self,
+        headers: list,
+        data_rows: list[list],
+        start_row: int,
+        column_widths: list = None,
+        header_alignment: str = 'center',
+        body_alignment: str = 'center'
+    ):
+        """
+        Creates a table with separate headers and data rows.
+        
+        Args:
+            headers: List of header strings
+            data_rows: List of data rows
+            start_row: Starting row number for headers
+            column_widths: List of widths (will be mapped to column letters)
+            header_alignment: Alignment for header cells
+            body_alignment: Alignment for body cells
+        """
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        header_fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF")
+        
+        alignment_map = {
+            'center': Alignment(horizontal='center'),
+            'left': Alignment(horizontal='left'),
+            'right': Alignment(horizontal='right')
+        }
+        header_align = alignment_map.get(header_alignment, Alignment(horizontal='center'))
+        body_align = alignment_map.get(body_alignment, Alignment(horizontal='center'))
+        
+        # Create headers
+        for col_num, header in enumerate(headers, 1):
+            cell = self.ws.cell(row=start_row, column=col_num, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_align
+            cell.border = thin_border
+        
+        # Create data rows
+        for row_offset, row_data in enumerate(data_rows, 1):
+            row_num = start_row + row_offset
+            for col_num, value in enumerate(row_data, 1):
+                cell = self.ws.cell(row=row_num, column=col_num, value=value)
+                cell.alignment = body_align
+                cell.border = thin_border
+        
+        # Adjust column widths
+        if column_widths:
+            width_dict = {}
+            for i, width in enumerate(column_widths, 1):
+                col_letter = chr(64 + i)
+                width_dict[col_letter] = width
+            self._adjust_column_widths(width_dict)
 

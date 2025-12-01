@@ -32,8 +32,7 @@
                     *</label>
                   <input id="create-farmer-nombre" v-model="form.firstName" type="text" autocomplete="given-name"
                     required :disabled="isSubmitting"
-                    class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
-                    :class="errors.firstName ? 'border-red-500' : 'border-gray-300'" placeholder="Juan" />
+                    :class="getInputClasses('firstName')" placeholder="Juan" />
                   <p v-if="errors.firstName" class="text-red-600 text-xs mt-1">{{ errors.firstName }}</p>
                 </div>
                 <div>
@@ -41,15 +40,14 @@
                     class="block text-sm font-semibold text-gray-700 mb-2">Segundo Nombre</label>
                   <input id="create-farmer-segundo-nombre" v-model="form.segundoNombre" type="text"
                     autocomplete="additional-name" :disabled="isSubmitting"
-                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                    :class="baseSelectClasses" />
                 </div>
                 <div>
                   <label for="create-farmer-apellido" class="block text-sm font-semibold text-gray-700 mb-2">Apellido
                     *</label>
                   <input id="create-farmer-apellido" v-model="form.lastName" type="text" autocomplete="family-name"
                     required :disabled="isSubmitting"
-                    class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    :class="errors.lastName ? 'border-red-500' : 'border-gray-300'" placeholder="Pérez" />
+                    :class="getInputClasses('lastName')" placeholder="Pérez" />
                   <p v-if="errors.lastName" class="text-red-600 text-xs mt-1">{{ errors.lastName }}</p>
                 </div>
                 <div>
@@ -57,15 +55,14 @@
                     class="block text-sm font-semibold text-gray-700 mb-2">Segundo Apellido</label>
                   <input id="create-farmer-segundo-apellido" v-model="form.segundoApellido" type="text"
                     autocomplete="family-name" :disabled="isSubmitting"
-                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                    :class="baseSelectClasses" />
                 </div>
                 <div>
                   <label for="create-farmer-telefono"
                     class="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
                   <input id="create-farmer-telefono" v-model="form.phoneNumber" type="tel" autocomplete="tel"
                     :disabled="isSubmitting"
-                    class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    :class="errors.phoneNumber ? 'border-red-500' : 'border-gray-300'" placeholder="+57 300 123 4567" />
+                    :class="getInputClasses('phoneNumber')" placeholder="+57 300 123 4567" />
                   <p v-if="errors.phoneNumber" class="text-red-600 text-xs mt-1">{{ errors.phoneNumber }}</p>
                 </div>
                 <div>
@@ -73,7 +70,7 @@
                     *</label>
                   <select id="create-farmer-genero" v-model="form.genero" required
                     :disabled="isSubmitting || isLoadingCatalogos"
-                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    :class="baseSelectClasses">
                     <option v-if="isLoadingCatalogos" value="">Cargando...</option>
                     <option v-else-if="generos.length === 0" value="">No hay opciones disponibles</option>
                     <option v-for="genero in generos" :key="genero.codigo" :value="genero.codigo">{{ genero.nombre }}
@@ -85,7 +82,7 @@
                     class="block text-sm font-semibold text-gray-700 mb-2">Fecha de Nacimiento</label>
                   <input id="create-farmer-fecha-nacimiento" v-model="form.fechaNacimiento" type="date"
                     autocomplete="bday" :disabled="isSubmitting" :max="maxBirthdate" :min="minBirthdate"
-                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                    :class="[baseSelectClasses, errors.fechaNacimiento ? 'border-red-500' : '']" />
                   <p v-if="errors.fechaNacimiento" class="text-red-600 text-xs mt-1">{{ errors.fechaNacimiento }}</p>
                 </div>
               </div>
@@ -99,7 +96,7 @@
                     Documento *</label>
                   <select id="create-farmer-tipo-documento" v-model="form.tipoDocumento" required
                     :disabled="isSubmitting || isLoadingCatalogos"
-                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    :class="baseSelectClasses">
                     <option v-if="isLoadingCatalogos" value="">Cargando...</option>
                     <option v-else-if="tiposDocumento.length === 0" value="">No hay opciones disponibles</option>
                     <option v-for="tipo in tiposDocumento" :key="tipo.codigo" :value="tipo.codigo">{{ tipo.codigo }} -
@@ -111,8 +108,7 @@
                     class="block text-sm font-semibold text-gray-700 mb-2">Número de Documento *</label>
                   <input id="create-farmer-numero-documento" v-model="form.numeroDocumento" type="text"
                     autocomplete="off" required :disabled="isSubmitting"
-                    class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    :class="errors.numeroDocumento ? 'border-red-500' : 'border-gray-300'" placeholder="1234567890" />
+                    :class="getInputClasses('numeroDocumento')" placeholder="1234567890" />
                   <p v-if="errors.numeroDocumento" class="text-red-600 text-xs mt-1">{{ errors.numeroDocumento }}</p>
                 </div>
               </div>
@@ -126,7 +122,7 @@
                     class="block text-sm font-semibold text-gray-700 mb-2">Departamento *</label>
                   <select id="create-farmer-departamento" v-model="form.departamento" @change="onDepartamentoChange"
                     required :disabled="isSubmitting || isLoadingCatalogos"
-                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    :class="baseSelectClasses">
                     <option v-if="isLoadingCatalogos" value="">Cargando...</option>
                     <option v-else value="">Seleccione un departamento</option>
                     <option v-for="dept in departamentos" :key="dept.codigo" :value="dept.codigo">{{ dept.nombre }}
@@ -138,7 +134,7 @@
                     *</label>
                   <select id="create-farmer-municipio" v-model="form.municipio" :required="!!form.departamento"
                     :disabled="isSubmitting || !form.departamento || municipios.length === 0"
-                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    :class="baseSelectClasses">
                     <option v-if="!form.departamento" value="">Seleccione primero un departamento</option>
                     <option v-else-if="municipios.length === 0" value="">Cargando municipios...</option>
                     <option v-else value="">Seleccione un municipio</option>
@@ -156,7 +152,7 @@
                     autocomplete="address-line1"
                     placeholder="Calle 10 #5-20" 
                     :disabled="isSubmitting"
-                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                    :class="baseSelectClasses" />
                 </div>
               </div>
             </div>
@@ -169,8 +165,7 @@
                     *</label>
                   <input id="create-farmer-email" v-model="form.email" type="email" autocomplete="email" required
                     :disabled="isSubmitting"
-                    class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    :class="errors.email ? 'border-red-500' : 'border-gray-300'" placeholder="juan@ejemplo.com" />
+                    :class="getInputClasses('email')" placeholder="juan@ejemplo.com" />
                   <p v-if="errors.email" class="text-red-600 text-xs mt-1">{{ errors.email }}</p>
                 </div>
                 <div>
@@ -180,7 +175,7 @@
                     <input id="create-farmer-password" :type="showPassword ? 'text' : 'password'"
                       v-model="form.password" :autocomplete="showPassword ? 'off' : 'new-password'"
                       placeholder="••••••••••••" required :disabled="isSubmitting"
-                      class="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                      :class="baseSelectClasses + ' pr-12'" />
                     <button type="button" @click="showPassword = !showPassword"
                       class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-green-600">
                       <svg v-if="showPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -249,8 +244,7 @@
                     <input id="create-farmer-confirm-password" :type="showPassword ? 'text' : 'password'"
                       v-model="form.confirmPassword" :autocomplete="showPassword ? 'off' : 'new-password'" required
                       :disabled="isSubmitting"
-                      class="w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      :class="errors.confirmPassword ? 'border-red-500' : 'border-gray-300'"
+                      :class="getInputClasses('confirmPassword') + ' pr-12'"
                       placeholder="••••••••••••" />
                     <div v-if="doPasswordsMatch" class="absolute inset-y-0 right-0 pr-3 flex items-center">
                       <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -545,6 +539,22 @@ const doPasswordsMatch = computed(() => {
   const confirmPasswordValue = form.confirmPassword
   return passwordValue && confirmPasswordValue && passwordValue === confirmPasswordValue
 })
+
+const baseInputClasses = computed(() => {
+  return 'w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+})
+
+const baseSelectClasses = computed(() => {
+  return 'w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+})
+
+const getInputClasses = (fieldName) => {
+  return [
+    baseInputClasses.value,
+    errors[fieldName] ? 'border-red-500' : 'border-gray-300',
+    isSubmitting.value ? 'disabled:bg-gray-100' : ''
+  ].filter(Boolean).join(' ')
+}
 
 const isFormValid = computed(() => {
   // Store password values in variables to avoid hard-coded credential detection

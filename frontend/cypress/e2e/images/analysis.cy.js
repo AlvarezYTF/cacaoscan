@@ -1,10 +1,12 @@
-import { verifySelectorsExist } from '../../support/helpers'
+import {
+  verifySelectorsExist,
+  visitAndWaitForBody
+} from '../../support/helpers'
 
 describe('Análisis de Imágenes - Procesamiento', () => {
   beforeEach(() => {
     cy.login('farmer')
-    cy.visit('/nuevo-analisis')
-    cy.get('body', { timeout: 10000 }).should('be.visible')
+    visitAndWaitForBody('/nuevo-analisis')
   })
 
   it('debe iniciar análisis después de cargar imagen', () => {
@@ -132,9 +134,7 @@ describe('Análisis de Imágenes - Procesamiento', () => {
     cy.get('body', { timeout: 5000 }).then(($results) => {
       if ($results.find('[data-cy="save-analysis"], button').length > 0) {
         cy.get('[data-cy="save-analysis"], button').first().click()
-        cy.get('body', { timeout: 5000 }).should('be.visible')
-        cy.visit('/mis-analisis')
-        cy.get('body', { timeout: 10000 }).should('be.visible')
+        visitAndWaitForBody('/mis-analisis')
       }
     })
   })

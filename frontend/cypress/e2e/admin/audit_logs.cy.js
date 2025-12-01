@@ -1,32 +1,31 @@
+import { verifyUrlContains, ifFoundInBody } from '../../support/helpers'
+
 describe('Admin Audit Logs', () => {
+  const verifyPageTitle = () => {
+    return ifFoundInBody('h1, h2, .page-title', ($el) => {
+      cy.wrap($el).should('satisfy', ($element) => {
+        const text = $element.text().toLowerCase()
+        return text.includes('auditoría') || text.includes('audit') || $element.length > 0
+      })
+    })
+  }
+
+  const verifyTableIfExists = () => {
+    return ifFoundInBody('table, .table, [data-cy="audit-table"]', () => {
+      cy.get('table, .table, [data-cy="audit-table"]', { timeout: 5000 }).should('exist')
+    }, () => {
+      cy.get('body').should('be.visible')
+    })
+  }
+
   beforeEach(() => {
     cy.navigateToAdminAuditLogs('admin')
   })
 
   it('should load audit logs table', () => {
-    // Verificar que la página cargó correctamente
-    cy.url({ timeout: 10000 }).should('satisfy', (url) => {
-      return url.includes('/admin') || url.includes('/auditoria') || url.includes('/audit')
-    })
-    // Verificar título de página (puede no existir)
-    cy.get('body').then(($body) => {
-      const hasTitle = $body.find('h1, h2, .page-title').length > 0
-      if (hasTitle) {
-        cy.get('h1, h2, .page-title', { timeout: 5000 }).should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('auditoría') || text.includes('audit') || $el.length > 0
-        })
-      }
-    })
-    // Verificar tabla (puede no existir si no hay datos)
-    cy.get('body').then(($body) => {
-      if ($body.find('table, .table, [data-cy="audit-table"]').length > 0) {
-        cy.get('table, .table, [data-cy="audit-table"]', { timeout: 5000 }).should('exist')
-      } else {
-        // Si no hay tabla, verificar que hay algún contenido
-        cy.get('body').should('be.visible')
-      }
-    })
+    verifyUrlContains(['/admin', '/auditoria', '/audit'], 10000)
+    verifyPageTitle()
+    verifyTableIfExists()
   })
 
   it('should filter logs by action type', () => {
@@ -37,21 +36,17 @@ describe('Admin Audit Logs', () => {
 
   it('should filter logs by date range', () => {
     const today = new Date().toISOString().split('T')[0]
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="date-start"], input[type="date"]').length > 0) {
-        cy.get('[data-cy="date-start"], input[type="date"]').first().type(today, { force: true })
-        cy.get('[data-cy="date-end"], input[type="date"]').last().type(today, { force: true })
-        cy.get('[data-cy="btn-apply-filter"], button[type="submit"]').first().click()
-        
-        // Verificar logs o estado vacío
-        cy.get('body', { timeout: 5000 }).then(($body) => {
-          if ($body.find('table tbody tr, .table-row').length > 0) {
-            cy.get('table tbody tr, .table-row').first().should('exist')
-          } else {
-            cy.contains('No se encontraron registros, No hay registros, Sin resultados', { matchCase: false }).should('exist')
-          }
-        })
-      }
+    
+    return ifFoundInBody('[data-cy="date-start"], input[type="date"]', () => {
+      cy.get('[data-cy="date-start"], input[type="date"]').first().type(today, { force: true })
+      cy.get('[data-cy="date-end"], input[type="date"]').last().type(today, { force: true })
+      cy.get('[data-cy="btn-apply-filter"], button[type="submit"]').first().click()
+      
+      return ifFoundInBody('table tbody tr, .table-row', () => {
+        cy.get('table tbody tr, .table-row').first().should('exist')
+      }, () => {
+        cy.contains('No se encontraron registros, No hay registros, Sin resultados', { matchCase: false }).should('exist')
+      })
     })
   })
 

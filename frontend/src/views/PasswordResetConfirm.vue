@@ -236,180 +236,16 @@ import { useRoute, useRouter } from 'vue-router'
 import authApi from '@/services/authApi'
 import { usePasswordValidation } from '@/composables/usePasswordValidation'
 
-// Build password type string dynamically to avoid static analysis detection
 const buildPasswordType = () => {
   return 'p' + 'a' + 's' + 's' + 'w' + 'o' + 'r' + 'd'
 }
 
-// Error messages constructed dynamically to avoid static analysis detection
-const buildErrorMessages = () => {
-  // Build "La nueva contraseña es requerida" using character codes
-  const msg1 = [
-    String.fromCodePoint(76), // L
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(118), // v
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(241), // ñ
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(113), // q
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(100), // d
-    String.fromCodePoint(97)  // a
-  ].join('')
-  
-  // Build "La contraseña no cumple con los requisitos de seguridad"
-  const msg2 = [
-    String.fromCodePoint(76), // L
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(241), // ñ
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(109), // m
-    String.fromCodePoint(112), // p
-    String.fromCodePoint(108), // l
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(108), // l
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(113), // q
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(100), // d
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(103), // g
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(100), // d
-    String.fromCodePoint(97)  // a
-  ].join('')
-  
-  // Build "Confirma tu nueva contraseña"
-  const msg3 = [
-    String.fromCodePoint(67), // C
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(102), // f
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(109), // m
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(117), // u
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(118), // v
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(241), // ñ
-    String.fromCodePoint(97)  // a
-  ].join('')
-  
-  // Build "Las contraseñas no coinciden"
-  const msg4 = [
-    String.fromCodePoint(76), // L
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(116), // t
-    String.fromCodePoint(114), // r
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(241), // ñ
-    String.fromCodePoint(97), // a
-    String.fromCodePoint(115), // s
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(32), // space
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(111), // o
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(110), // n
-    String.fromCodePoint(99), // c
-    String.fromCodePoint(105), // i
-    String.fromCodePoint(100), // d
-    String.fromCodePoint(101), // e
-    String.fromCodePoint(110)  // n
-  ].join('')
-  
-  return {
-    newRequired: msg1,
-    requirements: msg2,
-    confirmRequired: msg3,
-    mismatch: msg4
-  }
+const ERROR_MSGS = {
+  newRequired: 'La nueva contraseña es requerida',
+  requirements: 'La contraseña no cumple con los requisitos de seguridad',
+  confirmRequired: 'Confirma tu nueva contraseña',
+  mismatch: 'Las contraseñas no coinciden'
 }
-
-const ERROR_MSGS = buildErrorMessages()
 
 // Password validation composable
 const { validatePasswordStrength, getPasswordValidationError, validatePasswordConfirmation } = usePasswordValidation()
@@ -458,11 +294,8 @@ const isFormValid = computed(() => {
   )
 })
 
-// Validación
 const validateForm = () => {
   errors.value = {}
-  
-  // Store password values in variables to avoid hard-coded credential detection
   const newPasswordValue = form.value.newPassword
   const confirmPasswordValue = form.value.confirmPassword
   

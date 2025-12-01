@@ -28,7 +28,6 @@ class BatchImageProcessor:
     """
     
     @staticmethod
-    @staticmethod
     def _get_predictor():
         """Obtiene el predictor ML."""
         try:

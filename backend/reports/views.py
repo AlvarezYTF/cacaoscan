@@ -30,6 +30,107 @@ CONTENT_TYPE_PDF = 'application/pdf'
 ERROR_REPORT_GENERATION = 'Error interno del servidor al generar el reporte'
 
 
+def apply_image_filters(queryset, request_data, filters_dict):
+    """
+    Apply common filters to images queryset.
+    
+    Args:
+        queryset: Django queryset of CacaoImage
+        request_data: Request data dictionary
+        filters_dict: Dictionary to store applied filter labels
+        
+    Returns:
+        Filtered queryset
+    """
+    if 'date_from' in request_data and request_data['date_from']:
+        queryset = queryset.filter(created_at__date__gte=request_data['date_from'])
+        filters_dict[FILTER_DATE_FROM] = request_data['date_from']
+    
+    if 'date_to' in request_data and request_data['date_to']:
+        queryset = queryset.filter(created_at__date__lte=request_data['date_to'])
+        filters_dict[FILTER_DATE_TO] = request_data['date_to']
+    
+    if 'region' in request_data and request_data['region']:
+        queryset = queryset.filter(region__icontains=request_data['region'])
+        filters_dict[FILTER_REGION] = request_data['region']
+    
+    if 'finca' in request_data and request_data['finca']:
+        queryset = queryset.filter(finca__icontains=request_data['finca'])
+        filters_dict['Finca'] = request_data['finca']
+    
+    return queryset
+
+
+def apply_query_filters(queryset, request_get):
+    """
+    Apply filters from query parameters.
+    
+    Args:
+        queryset: Django queryset of CacaoImage
+        request_get: Request GET parameters
+        
+    Returns:
+        Filtered queryset
+    """
+    if 'date_from' in request_get:
+        queryset = queryset.filter(created_at__date__gte=request_get['date_from'])
+    
+    if 'date_to' in request_get:
+        queryset = queryset.filter(created_at__date__lte=request_get['date_to'])
+    
+    if 'region' in request_get:
+        queryset = queryset.filter(region__icontains=request_get['region'])
+    
+    if 'finca' in request_get:
+        queryset = queryset.filter(finca__icontains=request_get['finca'])
+    
+    return queryset
+
+
+def generate_pdf_response(pdf_buffer, filename, username, report_type, image_count):
+    """
+    Generate FileResponse for PDF download.
+    
+    Args:
+        pdf_buffer: PDF file buffer
+        filename: Filename for download
+        username: Username for logging
+        report_type: Type of report for logging
+        image_count: Number of images for logging
+        
+    Returns:
+        FileResponse instance
+    """
+    logger.info(f"Reporte de {report_type} generado para usuario {username}. "
+               f"Imágenes incluidas: {image_count}")
+    
+    return FileResponse(
+        pdf_buffer,
+        as_attachment=True,
+        filename=filename,
+        content_type=CONTENT_TYPE_PDF
+    )
+
+
+def handle_report_error(e, username, report_type):
+    """
+    Handle errors during report generation.
+    
+    Args:
+        e: Exception instance
+        username: Username for logging
+        report_type: Type of report for logging
+        
+    Returns:
+        Error Response
+    """
+    logger.error(f"Error generando reporte de {report_type} para usuario {username}: {e}")
+    return Response({
+        'error': ERROR_REPORT_GENERATION,
+        'status': 'error'
+    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class GenerateQualityReportView(APIView):
     """
     Endpoint para generar reporte de calidad en PDF.
@@ -65,29 +166,13 @@ class GenerateQualityReportView(APIView):
         Genera un reporte de calidad de cacao en PDF.
         """
         try:
-            # Obtener imágenes del usuario con predicciones
             images_queryset = CacaoImage.objects.filter(
                 user=request.user,
                 prediction__isnull=False
             ).select_related('prediction')
             
-            # Aplicar filtros
             filters = {}
-            if 'date_from' in request.data and request.data['date_from']:
-                images_queryset = images_queryset.filter(created_at__date__gte=request.data['date_from'])
-                filters[FILTER_DATE_FROM] = request.data['date_from']
-            
-            if 'date_to' in request.data and request.data['date_to']:
-                images_queryset = images_queryset.filter(created_at__date__lte=request.data['date_to'])
-                filters[FILTER_DATE_TO] = request.data['date_to']
-            
-            if 'region' in request.data and request.data['region']:
-                images_queryset = images_queryset.filter(region__icontains=request.data['region'])
-                filters[FILTER_REGION] = request.data['region']
-            
-            if 'finca' in request.data and request.data['finca']:
-                images_queryset = images_queryset.filter(finca__icontains=request.data['finca'])
-                filters['Finca'] = request.data['finca']
+            images_queryset = apply_image_filters(images_queryset, request.data, filters)
             
             if 'min_confidence' in request.data and request.data['min_confidence']:
                 images_queryset = images_queryset.filter(prediction__average_confidence__gte=request.data['min_confidence'])
@@ -97,30 +182,18 @@ class GenerateQualityReportView(APIView):
                 images_queryset = images_queryset.filter(prediction__average_confidence__lte=request.data['max_confidence'])
                 filters['Confianza máxima'] = f"{request.data['max_confidence']:.2%}"
             
-            # Generar PDF
             generator = CacaoReportPDFGenerator()
             pdf_buffer = generator.generate_quality_report(images_queryset, request.user, filters)
             
-            # Preparar nombre del archivo
             timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
             filename = f"reporte_calidad_{request.user.username}_{timestamp}.pdf"
             
-            logger.info(f"Reporte de calidad generado para usuario {request.user.username}. "
-                       f"Imágenes incluidas: {images_queryset.count()}")
-            
-            return FileResponse(
-                pdf_buffer,
-                as_attachment=True,
-                filename=filename,
-                content_type=CONTENT_TYPE_PDF
+            return generate_pdf_response(
+                pdf_buffer, filename, request.user.username, 'calidad', images_queryset.count()
             )
             
         except Exception as e:
-            logger.error(f"Error generando reporte de calidad para usuario {request.user.username}: {e}")
-            return Response({
-                'error': ERROR_REPORT_GENERATION,
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return handle_report_error(e, request.user.username, 'calidad')
 
 
 class GenerateDefectsReportView(APIView):
@@ -157,54 +230,26 @@ class GenerateDefectsReportView(APIView):
         Genera un reporte de defectos de cacao en PDF.
         """
         try:
-            # Obtener imágenes del usuario con predicciones
             images_queryset = CacaoImage.objects.filter(
                 user=request.user,
                 prediction__isnull=False
             ).select_related('prediction')
             
-            # Aplicar filtros
             filters = {}
-            if 'date_from' in request.data and request.data['date_from']:
-                images_queryset = images_queryset.filter(created_at__date__gte=request.data['date_from'])
-                filters[FILTER_DATE_FROM] = request.data['date_from']
+            images_queryset = apply_image_filters(images_queryset, request.data, filters)
             
-            if 'date_to' in request.data and request.data['date_to']:
-                images_queryset = images_queryset.filter(created_at__date__lte=request.data['date_to'])
-                filters[FILTER_DATE_TO] = request.data['date_to']
-            
-            if 'region' in request.data and request.data['region']:
-                images_queryset = images_queryset.filter(region__icontains=request.data['region'])
-                filters[FILTER_REGION] = request.data['region']
-            
-            if 'finca' in request.data and request.data['finca']:
-                images_queryset = images_queryset.filter(finca__icontains=request.data['finca'])
-                filters['Finca'] = request.data['finca']
-            
-            # Generar PDF
             generator = CacaoReportPDFGenerator()
             pdf_buffer = generator.generate_defects_report(images_queryset, request.user)
             
-            # Preparar nombre del archivo
             timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
             filename = f"reporte_defectos_{request.user.username}_{timestamp}.pdf"
             
-            logger.info(f"Reporte de defectos generado para usuario {request.user.username}. "
-                       f"Imágenes analizadas: {images_queryset.count()}")
-            
-            return FileResponse(
-                pdf_buffer,
-                as_attachment=True,
-                filename=filename,
-                content_type=CONTENT_TYPE_PDF
+            return generate_pdf_response(
+                pdf_buffer, filename, request.user.username, 'defectos', images_queryset.count()
             )
             
         except Exception as e:
-            logger.error(f"Error generando reporte de defectos para usuario {request.user.username}: {e}")
-            return Response({
-                'error': ERROR_REPORT_GENERATION,
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return handle_report_error(e, request.user.username, 'defectos')
 
 
 class GeneratePerformanceReportView(APIView):
@@ -240,51 +285,23 @@ class GeneratePerformanceReportView(APIView):
         Genera un reporte de rendimiento de análisis en PDF.
         """
         try:
-            # Obtener imágenes del usuario
             images_queryset = CacaoImage.objects.filter(user=request.user)
             
-            # Aplicar filtros
             filters = {}
-            if 'date_from' in request.data and request.data['date_from']:
-                images_queryset = images_queryset.filter(created_at__date__gte=request.data['date_from'])
-                filters[FILTER_DATE_FROM] = request.data['date_from']
+            images_queryset = apply_image_filters(images_queryset, request.data, filters)
             
-            if 'date_to' in request.data and request.data['date_to']:
-                images_queryset = images_queryset.filter(created_at__date__lte=request.data['date_to'])
-                filters[FILTER_DATE_TO] = request.data['date_to']
-            
-            if 'region' in request.data and request.data['region']:
-                images_queryset = images_queryset.filter(region__icontains=request.data['region'])
-                filters[FILTER_REGION] = request.data['region']
-            
-            if 'finca' in request.data and request.data['finca']:
-                images_queryset = images_queryset.filter(finca__icontains=request.data['finca'])
-                filters['Finca'] = request.data['finca']
-            
-            # Generar PDF
             generator = CacaoReportPDFGenerator()
             pdf_buffer = generator.generate_performance_report(images_queryset, request.user)
             
-            # Preparar nombre del archivo
             timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
             filename = f"reporte_rendimiento_{request.user.username}_{timestamp}.pdf"
             
-            logger.info(f"Reporte de rendimiento generado para usuario {request.user.username}. "
-                       f"Período analizado: {images_queryset.count()} imágenes")
-            
-            return FileResponse(
-                pdf_buffer,
-                as_attachment=True,
-                filename=filename,
-                content_type=CONTENT_TYPE_PDF
+            return generate_pdf_response(
+                pdf_buffer, filename, request.user.username, 'rendimiento', images_queryset.count()
             )
             
         except Exception as e:
-            logger.error(f"Error generando reporte de rendimiento para usuario {request.user.username}: {e}")
-            return Response({
-                'error': ERROR_REPORT_GENERATION,
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return handle_report_error(e, request.user.username, 'rendimiento')
 
 
 class ReportStatsView(APIView):
@@ -316,21 +333,8 @@ class ReportStatsView(APIView):
         Obtiene estadísticas para preview de reportes.
         """
         try:
-            # Obtener imágenes del usuario
             images_queryset = CacaoImage.objects.filter(user=request.user)
-            
-            # Aplicar filtros de query parameters
-            if 'date_from' in request.GET:
-                images_queryset = images_queryset.filter(created_at__date__gte=request.GET['date_from'])
-            
-            if 'date_to' in request.GET:
-                images_queryset = images_queryset.filter(created_at__date__lte=request.GET['date_to'])
-            
-            if 'region' in request.GET:
-                images_queryset = images_queryset.filter(region__icontains=request.GET['region'])
-            
-            if 'finca' in request.GET:
-                images_queryset = images_queryset.filter(finca__icontains=request.GET['finca'])
+            images_queryset = apply_query_filters(images_queryset, request.GET)
             
             # Calcular estadísticas
             total_images = images_queryset.count()

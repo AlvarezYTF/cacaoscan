@@ -67,16 +67,32 @@ vi.mock('sweetalert2', () => ({
   }
 }))
 
+const createWrapper = (props = {}) => {
+  return mount(UserFormModal, {
+    props,
+    global: {}
+  })
+}
+
+const fillFormData = (wrapper, formData) => {
+  for (const [key, value] of Object.entries(formData)) {
+    wrapper.vm.formData[key] = value
+  }
+}
+
+const clearErrors = () => {
+  for (const key of Object.keys(mockErrors)) {
+    delete mockErrors[key]
+  }
+}
+
 describe('UserFormModal', () => {
   let wrapper
 
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    // Clear errors object
-    for (const key of Object.keys(mockErrors)) {
-      delete mockErrors[key]
-    }
+    clearErrors()
   })
 
   afterEach(() => {

@@ -1,10 +1,73 @@
 import { 
   ifFoundInBody, 
   clickIfExistsAndContinue,
-  verifySelectorsInBody
+  verifySelectorsInBody,
+  getApiBaseUrl
 } from '../../support/helpers'
 
 describe('Carga de Imágenes - Upload', () => {
+  const UPLOAD_FORM_SELECTOR = '[data-cy="upload-form"], form, .upload-form'
+  const FILE_INPUT_SELECTOR = '[data-cy="file-input"], input[type="file"]'
+  const UPLOAD_BUTTON_SELECTOR = '[data-cy="upload-button"], button[type="submit"]'
+  const IMAGE_PREVIEW_SELECTOR = '[data-cy="image-preview"], .preview'
+  const IMAGE_INFO_SELECTOR = '[data-cy="image-info"], .image-info'
+  const SUCCESS_TEXT_PATTERNS = ['cargada', 'exitosamente', 'success']
+  const ERROR_TEXT_PATTERNS = ['tipo', 'permitido', 'archivo', 'grande', 'tamaño', 'size']
+  
+  const verifyUploadForm = () => {
+    return cy.get('body').then(($body) => {
+      ifFoundInBody(UPLOAD_FORM_SELECTOR, () => {
+        cy.get(UPLOAD_FORM_SELECTOR).should('exist')
+      })
+      ifFoundInBody(FILE_INPUT_SELECTOR, () => {
+        cy.get(FILE_INPUT_SELECTOR).should('exist')
+      })
+      ifFoundInBody(UPLOAD_BUTTON_SELECTOR, () => {
+        cy.get(UPLOAD_BUTTON_SELECTOR).should('exist')
+      })
+      cy.get(IMAGE_PREVIEW_SELECTOR, { timeout: 1000 }).should('not.exist')
+    })
+  }
+  
+  const verifyImageInfo = (expectedText) => {
+    return ifFoundInBody(IMAGE_INFO_SELECTOR, ($el) => {
+      cy.wrap($el).should('satisfy', ($element) => {
+        const text = $element.text().toLowerCase()
+        return expectedText ? text.includes(expectedText.toLowerCase()) : text.length > 0
+      })
+    })
+  }
+  
+  const verifyErrorMessage = (errorSelector, expectedTexts) => {
+    return ifFoundInBody(errorSelector, ($el) => {
+      cy.wrap($el).first().should('satisfy', ($element) => {
+        const text = $element.text().toLowerCase()
+        return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
+      })
+    })
+  }
+  
+  const performDragAndDrop = (fileName, type) => {
+    return cy.fixture(fileName, { encoding: null }).then((content) => {
+      const blob = new Blob([content], { type })
+      const file = new File([blob], fileName, { type })
+      return performDrop(file, fileName)
+    }).catch(() => {
+      const blob = new Blob(['fake image content'], { type })
+      const file = new File([blob], fileName, { type })
+      return performDrop(file, fileName)
+    })
+  }
+  
+  const performDrop = (file, fileName) => {
+    return cy.get('[data-cy="drop-zone"], .drop-zone, [data-cy*="drop"]').first().then(($dropZone) => {
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file)
+      cy.wrap($dropZone).trigger('drop', { dataTransfer, force: true })
+      verifyImageInfo(fileName)
+    })
+  }
+  
   beforeEach(() => {
     cy.login('farmer')
     cy.visit('/nuevo-analisis')
@@ -12,38 +75,22 @@ describe('Carga de Imágenes - Upload', () => {
   })
 
   it('debe mostrar el formulario de carga de imagen correctamente', () => {
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-cy="upload-form"], form, .upload-form').length > 0) {
-        cy.get('[data-cy="upload-form"], form, .upload-form').should('exist')
-      }
-      if ($body.find('[data-cy="file-input"], input[type="file"]').length > 0) {
-        cy.get('[data-cy="file-input"], input[type="file"]').should('exist')
-      }
-      if ($body.find('[data-cy="upload-button"], button[type="submit"]').length > 0) {
-        cy.get('[data-cy="upload-button"], button[type="submit"]').should('exist')
-      }
-      cy.get('[data-cy="image-preview"], .preview', { timeout: 1000 }).should('not.exist')
-    })
+    verifyUploadForm()
   })
 
   it('debe cargar imagen exitosamente', () => {
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
     
-    ifFoundInBody('[data-cy="image-preview"], .preview', () => {
-      cy.get('[data-cy="image-preview"], .preview').should('be.visible')
+    ifFoundInBody(IMAGE_PREVIEW_SELECTOR, () => {
+      cy.get(IMAGE_PREVIEW_SELECTOR).should('be.visible')
     })
-    ifFoundInBody('[data-cy="image-info"], .image-info', () => {
-      cy.get('[data-cy="image-info"], .image-info').should('satisfy', ($el) => {
-        const text = $el.text().toLowerCase()
-        return text.includes('test-cacao') || text.includes('jpg') || text.length > 0
-      })
-    })
+    verifyImageInfo('test-cacao')
     
-    clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', () => {
-      return ifFoundInBody('[data-cy="upload-success"], .success-message', () => {
-        cy.get('[data-cy="upload-success"], .success-message').should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('cargada') || text.includes('exitosamente') || text.includes('success') || text.length > 0
+    clickIfExistsAndContinue(UPLOAD_BUTTON_SELECTOR, () => {
+      return ifFoundInBody('[data-cy="upload-success"], .success-message', ($el) => {
+        cy.wrap($el).should('satisfy', ($element) => {
+          const text = $element.text().toLowerCase()
+          return SUCCESS_TEXT_PATTERNS.some(pattern => text.includes(pattern)) || text.length > 0
         })
       })
     })
@@ -67,25 +114,13 @@ describe('Carga de Imágenes - Upload', () => {
 
   it('debe rechazar tipos de archivo no permitidos', () => {
     cy.uploadFile('test.txt', { type: 'text/plain', useFixture: false })
-    
-    ifFoundInBody('[data-cy="file-validation-error"], .error-message', () => {
-      cy.get('[data-cy="file-validation-error"], .error-message').first().should('satisfy', ($el) => {
-        const text = $el.text().toLowerCase()
-        return text.includes('tipo') || text.includes('permitido') || text.includes('archivo') || text.length > 0
-      })
-    })
+    verifyErrorMessage('[data-cy="file-validation-error"], .error-message', ['tipo', 'permitido', 'archivo'])
   })
 
   it('debe validar tamaño máximo de archivo', () => {
     const largeSize = 11 * 1024 * 1024 // 11MB
     cy.uploadFile('large-image.jpg', { type: 'image/jpeg', size: largeSize, useFixture: false })
-    
-    ifFoundInBody('[data-cy="file-size-error"], .error-message', () => {
-      cy.get('[data-cy="file-size-error"], .error-message').first().should('satisfy', ($el) => {
-        const text = $el.text().toLowerCase()
-        return text.includes('grande') || text.includes('tamaño') || text.includes('size') || text.length > 0
-      })
-    })
+    verifyErrorMessage('[data-cy="file-size-error"], .error-message', ['grande', 'tamaño', 'size'])
   })
 
   it('debe mostrar progreso de carga', () => {
@@ -114,7 +149,7 @@ describe('Carga de Imágenes - Upload', () => {
   })
 
   it('debe manejar errores de red durante la carga', () => {
-    const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
+    const apiBaseUrl = getApiBaseUrl()
     cy.intercept('POST', `${apiBaseUrl}/images/`, {
       statusCode: 500,
       body: { error: 'Error del servidor' }
@@ -122,52 +157,19 @@ describe('Carga de Imágenes - Upload', () => {
     
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
     
-    clickIfExistsAndContinue('[data-cy="upload-button"], button[type="submit"]', () => {
+    clickIfExistsAndContinue(UPLOAD_BUTTON_SELECTOR, () => {
       cy.wait('@uploadError', { timeout: 10000 })
-      
-      return ifFoundInBody('[data-cy="upload-error"], .error-message', () => {
-        cy.get('[data-cy="upload-error"], .error-message').first().should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('error') || text.includes('cargar') || text.includes('imagen') || text.length > 0
-        })
-      })
+      return verifyErrorMessage('[data-cy="upload-error"], .error-message', ['error', 'cargar', 'imagen'])
     })
   })
 
   it('debe permitir arrastrar y soltar archivos', () => {
     ifFoundInBody('[data-cy="drop-zone"], .drop-zone, [data-cy*="drop"]', () => {
-      cy.fixture('test-cacao.jpg', { encoding: null }).then((fileContent) => {
-        const blob = new Blob([fileContent], { type: 'image/jpeg' })
-        const file = new File([blob], 'test-cacao.jpg', { type: 'image/jpeg' })
-        
-        cy.get('[data-cy="drop-zone"], .drop-zone, [data-cy*="drop"]').first().then(($dropZone) => {
-          const dataTransfer = new DataTransfer()
-          dataTransfer.items.add(file)
-          
-          cy.wrap($dropZone).trigger('drop', { dataTransfer, force: true })
+      performDragAndDrop('test-cacao.jpg', 'image/jpeg').then(() => {
+        ifFoundInBody(IMAGE_PREVIEW_SELECTOR, () => {
+          cy.get(IMAGE_PREVIEW_SELECTOR).should('be.visible')
         })
-        
-        ifFoundInBody('[data-cy="image-preview"], .preview', () => {
-          cy.get('[data-cy="image-preview"], .preview').should('be.visible')
-        })
-        ifFoundInBody('[data-cy="image-info"], .image-info', () => {
-          cy.get('[data-cy="image-info"], .image-info').should('satisfy', ($el) => {
-            const text = $el.text().toLowerCase()
-            return text.includes('test-cacao') || text.includes('jpg') || text.length > 0
-          })
-        })
-      }).catch(() => {
-        const blob = new Blob(['fake image content'], { type: 'image/jpeg' })
-        const file = new File([blob], 'test-cacao.jpg', { type: 'image/jpeg' })
-        
-        cy.get('[data-cy="drop-zone"], .drop-zone, [data-cy*="drop"]').first().then(($dropZone) => {
-          const dataTransfer = new DataTransfer()
-          dataTransfer.items.add(file)
-          
-          cy.wrap($dropZone).trigger('drop', { dataTransfer, force: true })
-        })
-        
-        cy.get('body', { timeout: 5000 }).should('be.visible')
+        verifyImageInfo('test-cacao')
       })
     }, () => {
       cy.get('body').should('be.visible')
@@ -176,34 +178,23 @@ describe('Carga de Imágenes - Upload', () => {
 
   it('debe mostrar información de la imagen cargada', () => {
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
+    verifyImageInfo('test-cacao')
     
-    ifFoundInBody('[data-cy="image-info"], .image-info', () => {
-      cy.get('[data-cy="image-info"], .image-info').should('satisfy', ($el) => {
-        const text = $el.text().toLowerCase()
-        return text.includes('test-cacao') || text.includes('jpg') || text.length > 0
-      })
-    })
     ifFoundInBody('[data-cy="image-size"], .image-size', () => {
       cy.get('[data-cy="image-size"], .image-size').should('exist')
     })
-    ifFoundInBody('[data-cy="image-type"], .image-type', () => {
-      cy.get('[data-cy="image-type"], .image-type').should('satisfy', ($el) => {
-        const text = $el.text().toLowerCase()
-        return text.includes('jpeg') || text.includes('jpg') || text.length > 0
-      })
-    })
+    verifyImageInfo('jpeg')
   })
 
   it('debe permitir eliminar imagen antes de subir', () => {
     cy.uploadFile('test-cacao.jpg', { useFixture: true })
     
-    ifFoundInBody('[data-cy="image-preview"], .preview', () => {
-      cy.get('[data-cy="image-preview"], .preview').should('be.visible')
-      
+    ifFoundInBody(IMAGE_PREVIEW_SELECTOR, () => {
+      cy.get(IMAGE_PREVIEW_SELECTOR).should('be.visible')
       return clickIfExistsAndContinue('[data-cy="remove-image"], button', () => {
         return cy.get('body', { timeout: 3000 }).then(($afterRemove) => {
-          if ($afterRemove.find('[data-cy="image-preview"], .preview').length === 0) {
-            cy.get('[data-cy="image-preview"], .preview').should('not.exist')
+          if ($afterRemove.find(IMAGE_PREVIEW_SELECTOR).length === 0) {
+            cy.get(IMAGE_PREVIEW_SELECTOR).should('not.exist')
           }
         })
       })

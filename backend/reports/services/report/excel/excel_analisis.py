@@ -286,11 +286,8 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
     
     def _create_stats_section(self, stats):
         """Create statistics section."""
-        # Section title
-        self.ws['A8'] = "Estadísticas Generales"
-        self.ws['A8'].font = Font(size=14, bold=True, color="2F4F4F")
+        self._create_section_title('A8', "Estadísticas Generales")
         
-        # Statistics data
         data = [
             [EXCEL_COL_METRIC, EXCEL_COL_VALUE],
             [EXCEL_TOTAL_ANALISIS, stats['total_analyses']],
@@ -301,56 +298,22 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             [EXCEL_AVG_PESO, f"{stats['avg_weight']} g"],
         ]
         
-        # Create table
-        for row_num, row_data in enumerate(data, 10):
-            for col_num, cell_value in enumerate(row_data, 1):
-                cell = self.ws.cell(row=row_num, column=col_num, value=cell_value)
-                
-                # Style for headers
-                if row_num == 10:
-                    cell.font = Font(bold=True, color="FFFFFF")
-                    cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-                    cell.alignment = Alignment(horizontal='center')
-                else:
-                    cell.alignment = Alignment(horizontal='center')
-                
-                # Borders
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
-        
-        # Adjust column widths
-        self.ws.column_dimensions['A'].width = 20
-        self.ws.column_dimensions['B'].width = 15
+        self._create_table_with_data(
+            data,
+            start_row=10,
+            header_row=10,
+            column_widths={'A': 20, 'B': 15}
+        )
     
     def _create_detailed_analyses_table(self, queryset):
         """Create detailed analyses table."""
-        # Section title
-        self.ws['A18'] = "Análisis Detallados"
-        self.ws['A18'].font = Font(size=14, bold=True, color="2F4F4F")
+        self._create_section_title('A18', "Análisis Detallados")
         
-        # Headers
         headers = ['ID', 'Usuario', 'Finca', 'Región', 'Fecha', 'Alto (mm)', 'Ancho (mm)', 'Grosor (mm)', 'Peso (g)', 'Confianza']
-        for col_num, header in enumerate(headers, 1):
-            cell = self.ws.cell(row=20, column=col_num, value=header)
-            cell.font = Font(bold=True, color="FFFFFF")
-            cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-            cell.alignment = Alignment(horizontal='center')
-            cell.border = Border(
-                left=Side(style='thin'),
-                right=Side(style='thin'),
-                top=Side(style='thin'),
-                bottom=Side(style='thin')
-            )
-        
-        # Data (limit to 100 records to avoid very large files)
         analyses = queryset.select_related('image', 'image__user').order_by('-created_at')[:100]
         
-        for row_num, analysis in enumerate(analyses, 21):
-            data = [
+        data_rows = [
+            [
                 analysis.id,
                 analysis.image.user.username,
                 analysis.image.finca or 'N/A',
@@ -362,50 +325,42 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
                 round(float(analysis.peso_g), 2),
                 f"{analysis.average_confidence:.2%}"
             ]
-            
-            for col_num, value in enumerate(data, 1):
-                cell = self.ws.cell(row=row_num, column=col_num, value=value)
-                cell.alignment = Alignment(horizontal='center')
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
+            for analysis in analyses
+        ]
         
-        # Adjust column widths
-        column_widths = [8, 12, 15, 12, 18, 10, 10, 10, 10, 12]
-        for i, width in enumerate(column_widths, 1):
-            self.ws.column_dimensions[chr(64 + i)].width = width
+        self._create_table_with_headers(
+            headers,
+            data_rows,
+            start_row=20,
+            column_widths=[8, 12, 15, 12, 18, 10, 10, 10, 10, 12]
+        )
     
     def _create_quality_chart(self, stats):
         """Create quality distribution chart."""
         if not stats['quality_distribution']:
             return
         
-        # Create new sheet for chart
         chart_ws = self.workbook.create_sheet("Distribución de Calidad")
+        original_ws = self.ws
+        self.ws = chart_ws
         
-        # Chart data
-        chart_ws['A1'] = "Categoría"
-        chart_ws['B1'] = "Cantidad"
-        chart_ws['C1'] = "Porcentaje"
-        
-        # Style for headers
-        for col in ['A', 'B', 'C']:
-            cell = chart_ws[f'{col}1']
-            cell.font = Font(bold=True, color="FFFFFF")
-            cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-            cell.alignment = Alignment(horizontal='center')
-        
-        row = 2
+        headers = ["Categoría", "Cantidad", "Porcentaje"]
         total = stats['total_analyses']
-        for category, count in stats['quality_distribution'].items():
-            percentage = (count / total * 100) if total > 0 else 0
-            chart_ws[f'A{row}'] = category
-            chart_ws[f'B{row}'] = count
-            chart_ws[f'C{row}'] = f"{percentage:.1f}%"
-            row += 1
+        data_rows = [
+            [
+                category,
+                count,
+                f"{(count / total * 100) if total > 0 else 0:.1f}%"
+            ]
+            for category, count in stats['quality_distribution'].items()
+        ]
+        
+        self._create_table_with_headers(
+            headers,
+            data_rows,
+            start_row=1,
+            column_widths=[20, 12, 12]
+        )
         
         # Create bar chart
         chart = BarChart()
@@ -415,17 +370,14 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         chart.y_axis.title = 'Cantidad'
         chart.x_axis.title = 'Categoría'
         
-        data = Reference(chart_ws, min_col=2, min_row=1, max_row=row-1, max_col=2)
-        cats = Reference(chart_ws, min_col=1, min_row=2, max_row=row-1)
+        last_row = len(data_rows) + 1
+        data = Reference(chart_ws, min_col=2, min_row=1, max_row=last_row, max_col=2)
+        cats = Reference(chart_ws, min_col=1, min_row=2, max_row=last_row)
         chart.add_data(data, titles_from_data=True)
         chart.set_categories(cats)
         
         chart_ws.add_chart(chart, "E2")
-        
-        # Adjust column widths
-        chart_ws.column_dimensions['A'].width = 20
-        chart_ws.column_dimensions['B'].width = 12
-        chart_ws.column_dimensions['C'].width = 12
+        self.ws = original_ws
     
     def _create_summary_sheet(self, stats, user):
         """Create summary sheet."""
@@ -488,11 +440,8 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
     
     def _create_finca_info_section(self, finca):
         """Create farm information section."""
-        # Section title
-        self.ws['A8'] = "Información de la Finca"
-        self.ws['A8'].font = Font(size=14, bold=True, color="2F4F4F")
+        self._create_section_title('A8', "Información de la Finca")
         
-        # Farm data
         finca_data = [
             ['Campo', 'Valor'],
             ['Nombre', finca.nombre],
@@ -505,30 +454,13 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             ['Calidad Promedio', f"{finca.calidad_promedio}%"],
         ]
         
-        # Create table
-        for row_num, row_data in enumerate(finca_data, 10):
-            for col_num, cell_value in enumerate(row_data, 1):
-                cell = self.ws.cell(row=row_num, column=col_num, value=cell_value)
-                
-                # Style for headers
-                if row_num == 10:
-                    cell.font = Font(bold=True, color="FFFFFF")
-                    cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-                    cell.alignment = Alignment(horizontal='center')
-                else:
-                    cell.alignment = Alignment(horizontal='left')
-                
-                # Borders
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
-        
-        # Adjust column widths
-        self.ws.column_dimensions['A'].width = 20
-        self.ws.column_dimensions['B'].width = 30
+        self._create_table_with_data(
+            finca_data,
+            start_row=10,
+            header_row=10,
+            column_widths={'A': 20, 'B': 30},
+            body_alignment='left'
+        )
     
     def _get_lotes_stats(self, finca):
         """Get lot statistics for the farm."""
@@ -544,11 +476,8 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
     
     def _create_lotes_stats_section(self, stats):
         """Create lot statistics section."""
-        # Section title
-        self.ws['A20'] = "Estadísticas de Lotes"
-        self.ws['A20'].font = Font(size=14, bold=True, color="2F4F4F")
+        self._create_section_title('A20', "Estadísticas de Lotes")
         
-        # Statistics data
         data = [
             [EXCEL_COL_METRIC, EXCEL_COL_VALUE],
             [EXCEL_TOTAL_LOTES, str(stats['total_lotes'])],
@@ -557,57 +486,23 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             ['Variedades', str(len(stats['variedades']))],
         ]
         
-        # Create table
-        for row_num, row_data in enumerate(data, 22):
-            for col_num, cell_value in enumerate(row_data, 1):
-                cell = self.ws.cell(row=row_num, column=col_num, value=cell_value)
-                
-                # Style for headers
-                if row_num == 22:
-                    cell.font = Font(bold=True, color="FFFFFF")
-                    cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-                    cell.alignment = Alignment(horizontal='center')
-                else:
-                    cell.alignment = Alignment(horizontal='center')
-                
-                # Borders
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
-        
-        # Adjust column widths
-        self.ws.column_dimensions['A'].width = 20
-        self.ws.column_dimensions['B'].width = 15
+        self._create_table_with_data(
+            data,
+            start_row=22,
+            header_row=22,
+            column_widths={'A': 20, 'B': 15}
+        )
     
     def _create_lotes_analysis_section(self, finca):
         """Create analysis by lot section."""
-        # Section title
-        self.ws['A28'] = "Análisis por Lote"
-        self.ws['A28'].font = Font(size=14, bold=True, color="2F4F4F")
+        self._create_section_title('A28', "Análisis por Lote")
         
         lotes = finca.lotes.all()
         
         if lotes.exists():
-            # Headers
             headers = ['Lote', 'Variedad', 'Estado', 'Área (ha)', 'Análisis', 'Calidad (%)']
-            for col_num, header in enumerate(headers, 1):
-                cell = self.ws.cell(row=30, column=col_num, value=header)
-                cell.font = Font(bold=True, color="FFFFFF")
-                cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-                cell.alignment = Alignment(horizontal='center')
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
-            
-            # Lot data
-            for row_num, lote in enumerate(lotes, 31):
-                data = [
+            data_rows = [
+                [
                     lote.identificador,
                     lote.variedad,
                     lote.get_estado_display(),
@@ -615,25 +510,21 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
                     str(lote.total_analisis),
                     f"{lote.calidad_promedio:.1f}",
                 ]
-                
-                for col_num, value in enumerate(data, 1):
-                    cell = self.ws.cell(row=row_num, column=col_num, value=value)
-                    cell.alignment = Alignment(horizontal='center')
-                    cell.border = Border(
-                        left=Side(style='thin'),
-                        right=Side(style='thin'),
-                        top=Side(style='thin'),
-                        bottom=Side(style='thin')
-                    )
+                for lote in lotes
+            ]
             
-            # Adjust column widths
-            column_widths = [12, 15, 12, 12, 10, 12]
-            for i, width in enumerate(column_widths, 1):
-                self.ws.column_dimensions[chr(64 + i)].width = width
+            self._create_table_with_headers(
+                headers,
+                data_rows,
+                start_row=30,
+                column_widths=[12, 15, 12, 12, 10, 12]
+            )
     
     def _create_detailed_lotes_sheet(self, finca):
         """Create detailed lots sheet."""
         lotes_ws = self.workbook.create_sheet("Lotes Detallados")
+        original_ws = self.ws
+        self.ws = lotes_ws
         
         # Title
         lotes_ws['A1'] = f"Análisis Detallados - Finca {finca.nombre}"
@@ -641,24 +532,10 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         lotes_ws['A1'].alignment = Alignment(horizontal='center')
         lotes_ws.merge_cells('A1:H1')
         
-        # Headers
         headers = ['Lote', 'Variedad', 'Estado', 'Área (ha)', 'Fecha Plantación', 'Análisis', 'Calidad (%)', 'Observaciones']
-        for col_num, header in enumerate(headers, 1):
-            cell = lotes_ws.cell(row=3, column=col_num, value=header)
-            cell.font = Font(bold=True, color="FFFFFF")
-            cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-            cell.alignment = Alignment(horizontal='center')
-            cell.border = Border(
-                left=Side(style='thin'),
-                right=Side(style='thin'),
-                top=Side(style='thin'),
-                bottom=Side(style='thin')
-            )
-        
-        # Lot data
         lotes = finca.lotes.all()
-        for row_num, lote in enumerate(lotes, 4):
-            data = [
+        data_rows = [
+            [
                 lote.identificador,
                 lote.variedad,
                 lote.get_estado_display(),
@@ -668,21 +545,17 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
                 f"{lote.calidad_promedio:.1f}",
                 lote.descripcion or 'Sin observaciones',
             ]
-            
-            for col_num, value in enumerate(data, 1):
-                cell = lotes_ws.cell(row=row_num, column=col_num, value=value)
-                cell.alignment = Alignment(horizontal='center')
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
+            for lote in lotes
+        ]
         
-        # Adjust column widths
-        column_widths = [12, 15, 12, 12, 15, 10, 12, 25]
-        for i, width in enumerate(column_widths, 1):
-            lotes_ws.column_dimensions[chr(64 + i)].width = width
+        self._create_table_with_headers(
+            headers,
+            data_rows,
+            start_row=3,
+            column_widths=[12, 15, 12, 12, 15, 10, 12, 25]
+        )
+        
+        self.ws = original_ws
     
     def _get_activity_stats(self, filtros):
         """Get activity statistics."""
@@ -703,41 +576,20 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
     
     def _create_activity_stats_section(self, stats):
         """Create activity statistics section."""
-        # Section title
-        self.ws['A8'] = "Estadísticas de Actividad"
-        self.ws['A8'].font = Font(size=14, bold=True, color="2F4F4F")
+        self._create_section_title('A8', "Estadísticas de Actividad")
         
-        # Statistics data
         data = [
             [EXCEL_COL_METRIC, EXCEL_COL_VALUE],
             ['Total de Actividades', str(stats['total_activities'])],
             ['Actividades Hoy', str(stats['activities_today'])],
         ]
         
-        # Create table
-        for row_num, row_data in enumerate(data, 10):
-            for col_num, cell_value in enumerate(row_data, 1):
-                cell = self.ws.cell(row=row_num, column=col_num, value=cell_value)
-                
-                # Style for headers
-                if row_num == 10:
-                    cell.font = Font(bold=True, color="FFFFFF")
-                    cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-                    cell.alignment = Alignment(horizontal='center')
-                else:
-                    cell.alignment = Alignment(horizontal='center')
-                
-                # Borders
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
-        
-        # Adjust column widths
-        self.ws.column_dimensions['A'].width = 20
-        self.ws.column_dimensions['B'].width = 15
+        self._create_table_with_data(
+            data,
+            start_row=10,
+            header_row=10,
+            column_widths={'A': 20, 'B': 15}
+        )
     
     def _get_login_stats(self, filtros):
         """Get login statistics."""
@@ -758,11 +610,8 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
     
     def _create_login_stats_section(self, stats):
         """Create login statistics section."""
-        # Section title
-        self.ws['A14'] = "Estadísticas de Logins"
-        self.ws['A14'].font = Font(size=14, bold=True, color="2F4F4F")
+        self._create_section_title('A14', "Estadísticas de Logins")
         
-        # Statistics data
         data = [
             [EXCEL_COL_METRIC, EXCEL_COL_VALUE],
             ['Total de Logins', str(stats['total_logins'])],
@@ -771,34 +620,18 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
             ['Tasa de éxito', f"{stats['success_rate']:.1f}%"],
         ]
         
-        # Create table
-        for row_num, row_data in enumerate(data, 16):
-            for col_num, cell_value in enumerate(row_data, 1):
-                cell = self.ws.cell(row=row_num, column=col_num, value=cell_value)
-                
-                # Style for headers
-                if row_num == 16:
-                    cell.font = Font(bold=True, color="FFFFFF")
-                    cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-                    cell.alignment = Alignment(horizontal='center')
-                else:
-                    cell.alignment = Alignment(horizontal='center')
-                
-                # Borders
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
-        
-        # Adjust column widths
-        self.ws.column_dimensions['A'].width = 20
-        self.ws.column_dimensions['B'].width = 15
+        self._create_table_with_data(
+            data,
+            start_row=16,
+            header_row=16,
+            column_widths={'A': 20, 'B': 15}
+        )
     
     def _create_detailed_activities_sheet(self, filtros):
         """Create detailed activities sheet."""
         activities_ws = self.workbook.create_sheet("Actividades Detalladas")
+        original_ws = self.ws
+        self.ws = activities_ws
         
         # Title
         activities_ws['A1'] = "Actividades del Sistema"
@@ -806,31 +639,16 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         activities_ws['A1'].alignment = Alignment(horizontal='center')
         activities_ws.merge_cells('A1:F1')
         
-        # Headers
-        headers = ['Fecha', 'Usuario', 'Acción', 'Modelo', 'Descripción', 'IP']
-        for col_num, header in enumerate(headers, 1):
-            cell = activities_ws.cell(row=3, column=col_num, value=header)
-            cell.font = Font(bold=True, color="FFFFFF")
-            cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-            cell.alignment = Alignment(horizontal='center')
-            cell.border = Border(
-                left=Side(style='thin'),
-                right=Side(style='thin'),
-                top=Side(style='thin'),
-                bottom=Side(style='thin')
-            )
-        
-        # Activity data (limit to 100 records)
         queryset = ActivityLog.objects.select_related('usuario').order_by('-timestamp')[:100]
-        
         if filtros:
             if filtros.get('fecha_desde'):
                 queryset = queryset.filter(timestamp__date__gte=filtros['fecha_desde'])
             if filtros.get('fecha_hasta'):
                 queryset = queryset.filter(timestamp__date__lte=filtros['fecha_hasta'])
         
-        for row_num, activity in enumerate(queryset, 4):
-            data = [
+        headers = ['Fecha', 'Usuario', 'Acción', 'Modelo', 'Descripción', 'IP']
+        data_rows = [
+            [
                 activity.timestamp.strftime(DATE_TIME_FORMAT),
                 activity.usuario.username if activity.usuario else 'Anónimo',
                 activity.get_accion_display(),
@@ -838,25 +656,23 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
                 activity.descripcion[:50] + '...' if len(activity.descripcion) > 50 else activity.descripcion,
                 activity.ip_address or 'N/A',
             ]
-            
-            for col_num, value in enumerate(data, 1):
-                cell = activities_ws.cell(row=row_num, column=col_num, value=value)
-                cell.alignment = Alignment(horizontal='center')
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
+            for activity in queryset
+        ]
         
-        # Adjust column widths
-        column_widths = [18, 12, 12, 12, 30, 15]
-        for i, width in enumerate(column_widths, 1):
-            activities_ws.column_dimensions[chr(64 + i)].width = width
+        self._create_table_with_headers(
+            headers,
+            data_rows,
+            start_row=3,
+            column_widths=[18, 12, 12, 12, 30, 15]
+        )
+        
+        self.ws = original_ws
     
     def _create_detailed_logins_sheet(self, filtros):
         """Create detailed logins sheet."""
         logins_ws = self.workbook.create_sheet("Logins Detallados")
+        original_ws = self.ws
+        self.ws = logins_ws
         
         # Title
         logins_ws['A1'] = "Historial de Logins"
@@ -864,204 +680,110 @@ class ExcelAnalisisGenerator(ExcelBaseGenerator):
         logins_ws['A1'].alignment = Alignment(horizontal='center')
         logins_ws.merge_cells('A1:F1')
         
-        # Headers
-        headers = ['Fecha', 'Usuario', 'IP', 'Éxito', 'Duración', 'Razón Fallo']
-        for col_num, header in enumerate(headers, 1):
-            cell = logins_ws.cell(row=3, column=col_num, value=header)
-            cell.font = Font(bold=True, color="FFFFFF")
-            cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-            cell.alignment = Alignment(horizontal='center')
-            cell.border = Border(
-                left=Side(style='thin'),
-                right=Side(style='thin'),
-                top=Side(style='thin'),
-                bottom=Side(style='thin')
-            )
-        
-        # Login data (limit to 100 records)
         queryset = LoginHistory.objects.select_related('usuario').order_by('-login_time')[:100]
-        
         if filtros:
             if filtros.get('fecha_desde'):
                 queryset = queryset.filter(login_time__date__gte=filtros['fecha_desde'])
             if filtros.get('fecha_hasta'):
                 queryset = queryset.filter(login_time__date__lte=filtros['fecha_hasta'])
         
-        for row_num, login in enumerate(queryset, 4):
-            duration = login.session_duration_formatted if hasattr(login, 'session_duration_formatted') else 'N/A'
-            data = [
+        headers = ['Fecha', 'Usuario', 'IP', 'Éxito', 'Duración', 'Razón Fallo']
+        data_rows = [
+            [
                 login.login_time.strftime(DATE_TIME_FORMAT),
                 login.usuario.username,
                 login.ip_address,
                 'Sí' if login.success else 'No',
-                duration,
+                login.session_duration_formatted if hasattr(login, 'session_duration_formatted') else 'N/A',
                 login.failure_reason or 'N/A',
             ]
-            
-            for col_num, value in enumerate(data, 1):
-                cell = logins_ws.cell(row=row_num, column=col_num, value=value)
-                cell.alignment = Alignment(horizontal='center')
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
+            for login in queryset
+        ]
         
-        # Adjust column widths
-        column_widths = [18, 12, 15, 8, 12, 20]
-        for i, width in enumerate(column_widths, 1):
-            logins_ws.column_dimensions[chr(64 + i)].width = width
+        self._create_table_with_headers(
+            headers,
+            data_rows,
+            start_row=3,
+            column_widths=[18, 12, 15, 8, 12, 20]
+        )
+        
+        self.ws = original_ws
     
     def _create_custom_quality_section(self, stats, parametros):
         """Create custom quality section."""
-        # Section title
-        self.ws['A8'] = "Análisis Personalizado de Calidad"
-        self.ws['A8'].font = Font(size=14, bold=True, color="2F4F4F")
+        self._create_section_title('A8', "Análisis Personalizado de Calidad")
         
-        # Specific metrics according to parameters
         custom_metrics = []
-        
         if parametros.get('include_dimensions', True):
             custom_metrics.extend([
                 [EXCEL_AVG_ALTO, f"{stats['avg_dimensions']['alto']} mm"],
                 [EXCEL_AVG_ANCHO, f"{stats['avg_dimensions']['ancho']} mm"],
                 [EXCEL_AVG_GROSOR, f"{stats['avg_dimensions']['grosor']} mm"],
             ])
-        
         if parametros.get('include_weight', True):
             custom_metrics.append([EXCEL_AVG_PESO, f"{stats['avg_weight']} g"])
-        
         if parametros.get('include_confidence', True):
             custom_metrics.append([EXCEL_AVG_CONFIDENCE, f"{stats['avg_confidence']}%"])
         
-        # Create custom table
         data = [[EXCEL_COL_METRIC, EXCEL_COL_VALUE]] + custom_metrics
-        
-        for row_num, row_data in enumerate(data, 10):
-            for col_num, cell_value in enumerate(row_data, 1):
-                cell = self.ws.cell(row=row_num, column=col_num, value=cell_value)
-                
-                # Style for headers
-                if row_num == 10:
-                    cell.font = Font(bold=True, color="FFFFFF")
-                    cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-                    cell.alignment = Alignment(horizontal='center')
-                else:
-                    cell.alignment = Alignment(horizontal='center')
-                
-                # Borders
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
-        
-        # Adjust column widths
-        self.ws.column_dimensions['A'].width = 20
-        self.ws.column_dimensions['B'].width = 15
+        self._create_table_with_data(
+            data,
+            start_row=10,
+            header_row=10,
+            column_widths={'A': 20, 'B': 15}
+        )
     
     def _create_custom_finca_section(self, finca, parametros):
         """Create custom farm section."""
-        # Section title
-        self.ws['A8'] = f"Análisis Personalizado - {finca.nombre}"
-        self.ws['A8'].font = Font(size=14, bold=True, color="2F4F4F")
+        self._create_section_title('A8', f"Análisis Personalizado - {finca.nombre}")
         
-        # Specific metrics according to parameters
         custom_metrics = []
-        
         if parametros.get('include_basic_info', True):
             custom_metrics.extend([
                 ['Nombre', finca.nombre],
                 ['Ubicación', finca.ubicacion_completa],
                 ['Hectáreas', f"{finca.hectareas} ha"],
             ])
-        
         if parametros.get('include_lotes', True):
             custom_metrics.extend([
                 [EXCEL_TOTAL_LOTES, str(finca.total_lotes)],
                 [EXCEL_LOTES_ACTIVOS, str(finca.lotes_activos)],
             ])
-        
         if parametros.get('include_quality', True):
             custom_metrics.extend([
                 [EXCEL_TOTAL_ANALISIS, str(finca.total_analisis)],
                 ['Calidad Promedio', f"{finca.calidad_promedio}%"],
             ])
         
-        # Create custom table
         data = [['Campo', 'Valor']] + custom_metrics
-        
-        for row_num, row_data in enumerate(data, 10):
-            for col_num, cell_value in enumerate(row_data, 1):
-                cell = self.ws.cell(row=row_num, column=col_num, value=cell_value)
-                
-                # Style for headers
-                if row_num == 10:
-                    cell.font = Font(bold=True, color="FFFFFF")
-                    cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-                    cell.alignment = Alignment(horizontal='center')
-                else:
-                    cell.alignment = Alignment(horizontal='left')
-                
-                # Borders
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
-        
-        # Adjust column widths
-        self.ws.column_dimensions['A'].width = 20
-        self.ws.column_dimensions['B'].width = 30
+        self._create_table_with_data(
+            data,
+            start_row=10,
+            header_row=10,
+            column_widths={'A': 20, 'B': 30},
+            body_alignment='left'
+        )
     
     def _create_custom_audit_section(self, stats, parametros):
         """Create custom audit section."""
-        # Section title
-        self.ws['A8'] = "Análisis Personalizado de Auditoría"
-        self.ws['A8'].font = Font(size=14, bold=True, color="2F4F4F")
+        self._create_section_title('A8', "Análisis Personalizado de Auditoría")
         
-        # Specific metrics according to parameters
         custom_metrics = []
-        
         if parametros.get('include_activity', True):
             custom_metrics.extend([
                 ['Total de Actividades', str(stats['total_activities'])],
                 ['Actividades Hoy', str(stats['activities_today'])],
             ])
-        
         if parametros.get('include_top_users', True):
             custom_metrics.append(['Usuarios Más Activos', str(len(stats['top_users']))])
-        
         if parametros.get('include_action_types', True):
             custom_metrics.append(['Tipos de Acción', str(len(stats['activities_by_action']))])
         
-        # Create custom table
         data = [[EXCEL_COL_METRIC, EXCEL_COL_VALUE]] + custom_metrics
-        
-        for row_num, row_data in enumerate(data, 10):
-            for col_num, cell_value in enumerate(row_data, 1):
-                cell = self.ws.cell(row=row_num, column=col_num, value=cell_value)
-                
-                # Style for headers
-                if row_num == 10:
-                    cell.font = Font(bold=True, color="FFFFFF")
-                    cell.fill = PatternFill(start_color="2F4F4F", end_color="2F4F4F", fill_type="solid")
-                    cell.alignment = Alignment(horizontal='center')
-                else:
-                    cell.alignment = Alignment(horizontal='center')
-                
-                # Borders
-                cell.border = Border(
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin')
-                )
-        
-        # Adjust column widths
-        self.ws.column_dimensions['A'].width = 20
-        self.ws.column_dimensions['B'].width = 15
+        self._create_table_with_data(
+            data,
+            start_row=10,
+            header_row=10,
+            column_widths={'A': 20, 'B': 15}
+        )
 
