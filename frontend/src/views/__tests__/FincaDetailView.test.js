@@ -67,7 +67,22 @@ vi.mock('sweetalert2', () => ({
 vi.mock('@/components/common/BaseDetailView.vue', () => ({
   default: {
     name: 'BaseDetailView',
-    template: '<div><slot name="main"></slot><slot name="actions"></slot><slot name="sidebar"></slot></div>',
+    template: `
+      <div>
+        <div v-if="loading" class="text-center py-5">
+          <div class="spinner"></div>
+          <p>{{ loadingText || 'Cargando información...' }}</p>
+        </div>
+        <div v-else-if="error" class="alert alert-danger">
+          <p>{{ error }}</p>
+        </div>
+        <div v-else>
+          <slot name="main"></slot>
+          <slot name="actions"></slot>
+          <slot name="sidebar"></slot>
+        </div>
+      </div>
+    `,
     props: ['loading', 'error', 'title', 'subtitle', 'icon', 'breadcrumbs', 'showEditButton', 'canEdit', 'statusBadge', 'statistics', 'loadingText'],
     emits: ['edit', 'retry']
   }

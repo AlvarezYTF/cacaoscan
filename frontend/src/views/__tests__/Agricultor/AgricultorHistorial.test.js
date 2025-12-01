@@ -3,6 +3,42 @@ import { mount, config } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AgricultorHistorial from '../../Agricultor/AgricultorHistorial.vue'
 
+// Mock vue-router composables to prevent router redefinition errors
+const mockRouter = {
+  push: vi.fn(),
+  replace: vi.fn(),
+  go: vi.fn(),
+  back: vi.fn(),
+  forward: vi.fn(),
+  currentRoute: {
+    value: {
+      path: '/agricultor/historial',
+      name: 'AgricultorHistorial',
+      params: {},
+      query: {},
+      meta: {}
+    }
+  },
+  isReady: vi.fn().mockResolvedValue(true)
+}
+
+const mockRoute = {
+  path: '/agricultor/historial',
+  name: 'AgricultorHistorial',
+  params: {},
+  query: {},
+  meta: {}
+}
+
+vi.mock('vue-router', async () => {
+  const actual = await vi.importActual('vue-router')
+  return {
+    ...actual,
+    useRoute: () => mockRoute,
+    useRouter: () => mockRouter
+  }
+})
+
 vi.mock('@/composables/useImageStats', () => ({
   useImageStats: () => ({
     fetchImages: vi.fn().mockResolvedValue({ data: { results: [] } })
@@ -22,16 +58,13 @@ vi.mock('@/composables/useSidebarNavigation', () => ({
 
 describe('AgricultorHistorial', () => {
   let wrapper
-  const originalPlugins = config.global.plugins
 
   beforeEach(() => {
     setActivePinia(createPinia())
-    config.global.plugins = []
     vi.clearAllMocks()
   })
 
   afterEach(() => {
-    config.global.plugins = originalPlugins
     if (wrapper) {
       wrapper.unmount()
       wrapper = null
@@ -61,8 +94,7 @@ describe('AgricultorHistorial', () => {
           'router-view': true,
           Sidebar: { template: '<div>Sidebar</div>' },
           ImageHistoryCard: { template: '<div>ImageHistoryCard</div>' }
-        },
-        mocks: globalMocks
+        }
       }
     })
 

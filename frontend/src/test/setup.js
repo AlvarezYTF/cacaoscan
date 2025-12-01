@@ -87,3 +87,14 @@ const sessionStorageMock = {
   clear: vi.fn(),
 }
 globalThis.sessionStorage = sessionStorageMock
+
+// Mock global de URL.createObjectURL y URL.revokeObjectURL
+if (typeof URL.createObjectURL === 'undefined') {
+  globalThis.URL.createObjectURL = vi.fn((file) => {
+    return `blob:${file.name || 'mock-url'}-${Date.now()}`
+  })
+}
+
+if (typeof URL.revokeObjectURL === 'undefined') {
+  globalThis.URL.revokeObjectURL = vi.fn()
+}

@@ -52,7 +52,10 @@ vi.mock('@/composables/useWebSocket', () => ({
   useWebSocket: () => ({
     connect: vi.fn(),
     disconnect: vi.fn(),
-    send: vi.fn()
+    send: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+    emit: vi.fn()
   })
 }))
 

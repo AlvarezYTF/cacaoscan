@@ -9,15 +9,65 @@ vi.mock('@/stores/auth', () => ({
   })
 }))
 
-// Mock BaseModal component
-vi.mock('../BaseModal.vue', () => ({
-  default: {
+// Mock vue-router
+const mockRouter = {
+  push: vi.fn(),
+  replace: vi.fn(),
+  go: vi.fn(),
+  back: vi.fn(),
+  forward: vi.fn(),
+  currentRoute: {
+    value: {
+      path: '/',
+      name: 'home',
+      params: {},
+      query: {},
+      meta: {}
+    }
+  },
+  isReady: vi.fn().mockResolvedValue(true)
+}
+
+const mockRoute = {
+  path: '/',
+  name: 'home',
+  params: {},
+  query: {},
+  meta: {}
+}
+
+vi.mock('vue-router', async () => {
+  const actual = await vi.importActual('vue-router')
+  return {
+    ...actual,
+    useRouter: () => mockRouter,
+    useRoute: () => mockRoute
+  }
+})
+
+// Mock BaseModal component - define stub inside factory to avoid hoisting issues
+vi.mock('../BaseModal.vue', () => {
+  const BaseModalStub = {
     name: 'BaseModal',
     template: '<div v-if="show" class="fixed"><slot name="header"></slot><slot></slot><slot name="footer"></slot></div>',
-    props: ['show', 'title', 'subtitle', 'maxWidth', 'showCloseButton', 'closeOnOverlay'],
+    props: {
+      show: {
+        type: Boolean,
+        default: false
+      },
+      title: String,
+      subtitle: String,
+      maxWidth: String,
+      showCloseButton: Boolean,
+      closeOnOverlay: Boolean
+    },
     emits: ['close', 'update:show']
   }
-}))
+  
+  return {
+    default: BaseModalStub
+  }
+})
 
 describe('SessionExpiredModal', () => {
   let wrapper
@@ -31,6 +81,7 @@ describe('SessionExpiredModal', () => {
   afterEach(() => {
     if (wrapper) {
       wrapper.unmount()
+      wrapper = null
     }
     vi.useRealTimers()
     vi.clearAllMocks()
@@ -39,7 +90,7 @@ describe('SessionExpiredModal', () => {
   it('should not render when visible is false', () => {
     wrapper = mount(SessionExpiredModal, {
       global: {
-        stubs: { BaseModal: true, 'router-link': true }
+        stubs: { 'router-link': true }
       }
     })
 
@@ -49,12 +100,13 @@ describe('SessionExpiredModal', () => {
   it('should render when show is called', async () => {
     wrapper = mount(SessionExpiredModal, {
       global: {
-        stubs: { BaseModal: true, 'router-link': true }
+        stubs: { 'router-link': true }
       }
     })
 
     wrapper.vm.show()
     await wrapper.vm.$nextTick()
+    await vi.runOnlyPendingTimersAsync()
 
     expect(wrapper.find('.fixed').exists()).toBe(true)
   })
@@ -62,28 +114,34 @@ describe('SessionExpiredModal', () => {
   it('should display countdown', async () => {
     wrapper = mount(SessionExpiredModal, {
       global: {
-        stubs: { BaseModal: true, 'router-link': true }
+        stubs: { 'router-link': true }
       }
     })
 
     wrapper.vm.show()
     await wrapper.vm.$nextTick()
+    // Don't run timers - we want to check the initial countdown value (5)
+    // before the timer executes
 
-    expect(wrapper.text()).toContain('5 segundos')
+    const text = wrapper.text()
+    expect(text).toContain('5 segundos')
   })
 
   it('should decrease countdown every second', async () => {
     wrapper = mount(SessionExpiredModal, {
       global: {
-        stubs: { BaseModal: true, 'router-link': true }
+        stubs: { 'router-link': true }
       }
     })
 
     wrapper.vm.show()
     await wrapper.vm.$nextTick()
-
+    
+    // Verify initial countdown value before running timers
     expect(wrapper.text()).toContain('5 segundos')
 
+    // Advance timer by 1 second (1000ms) to trigger the interval once
+    // This should execute the interval callback and decrement from 5 to 4
     vi.advanceTimersByTime(1000)
     await wrapper.vm.$nextTick()
 
@@ -93,43 +151,47 @@ describe('SessionExpiredModal', () => {
   it('should redirect to login when countdown reaches 0', async () => {
     wrapper = mount(SessionExpiredModal, {
       global: {
-        stubs: { BaseModal: true, 'router-link': true }
+        stubs: { 'router-link': true }
       }
     })
 
     wrapper.vm.show()
     await wrapper.vm.$nextTick()
+    await vi.runOnlyPendingTimersAsync()
 
     vi.advanceTimersByTime(5000)
     await wrapper.vm.$nextTick()
+    await vi.runOnlyPendingTimersAsync()
     vi.advanceTimersByTime(300)
+    await vi.runOnlyPendingTimersAsync()
 
-    // Router push will be called by the component using the global router
-    expect(wrapper.vm.$router).toBeDefined()
+    expect(mockRouter.push).toHaveBeenCalledWith('/login')
   })
 
   it('should redirect to login when button is clicked', async () => {
     wrapper = mount(SessionExpiredModal, {
       global: {
-        stubs: { BaseModal: true, 'router-link': true }
+        stubs: { 'router-link': true }
       }
     })
 
     wrapper.vm.show()
     await wrapper.vm.$nextTick()
+    await vi.runOnlyPendingTimersAsync()
 
     const button = wrapper.find('button')
+    expect(button.exists()).toBe(true)
     await button.trigger('click')
     vi.advanceTimersByTime(300)
+    await vi.runOnlyPendingTimersAsync()
 
-    // Router push will be called by the component using the global router
-    expect(wrapper.vm.$router).toBeDefined()
+    expect(mockRouter.push).toHaveBeenCalledWith('/login')
   })
 
   it('should expose show method', () => {
     wrapper = mount(SessionExpiredModal, {
       global: {
-        stubs: { BaseModal: true, 'router-link': true }
+        stubs: { 'router-link': true }
       }
     })
 

@@ -1,11 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import servicioAnalisis from '../servicioAnalisis'
-import { createMockApi } from '@/test/mocks'
-
-const mockApi = createMockApi()
 
 vi.mock('../api', () => ({
-  default: mockApi
+  default: {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn()
+  }
 }))
 
 // Import after mock to get the mocked version
@@ -78,7 +81,7 @@ describe('servicioAnalisis', () => {
       const mockResponse = {
         data: { id: 1, tipo_analisis: 'Calidad', calidad: 85 }
       }
-      mockApi.get.mockResolvedValue(mockResponse)
+      vi.mocked(api.get).mockResolvedValue(mockResponse)
 
       const result = await servicioAnalisis.getAnalisisById(1)
 
@@ -146,7 +149,7 @@ describe('servicioAnalisis', () => {
           analisis_por_tipo: {}
         }
       }
-      mockApi.get.mockResolvedValue(mockResponse)
+      vi.mocked(api.get).mockResolvedValue(mockResponse)
 
       const result = await servicioAnalisis.getAnalisisStats()
 

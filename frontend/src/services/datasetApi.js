@@ -12,7 +12,7 @@
  * Usa apiClient para reducir duplicación de código
  * Mantiene fetch directo para operaciones con FormData
  */
-import { fetchGet, fetchPost, fetchPatch, fetchDelete } from './apiClient'
+import { fetchGet, fetchPost, fetchPatch, fetchDelete, handleResponse } from './apiClient'
 import { validateImageFileSingleError } from '@/utils/imageValidationUtils'
 import { getApiBaseUrlWithoutPath } from '@/utils/apiConfig'
 
