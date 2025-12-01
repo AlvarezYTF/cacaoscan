@@ -1,4 +1,5 @@
-import { getApiBaseUrl, ifFoundInBody, verifyUrlPatterns } from '../../support/helpers'
+import { getApiBaseUrl, ifFoundInBody, verifyUrlPatterns, generatePassword } from '../../support/helpers'
+import { TEST_CREDENTIALS } from '../../support/test-data'
 
 describe('Authentication - Advanced Scenarios', () => {
   const EMAIL_INPUT_SELECTOR = '[data-cy="input-email"], input[type="text"], input[type="email"]'
@@ -37,13 +38,15 @@ describe('Authentication - Advanced Scenarios', () => {
     })
 
     it('should show validation error for invalid email format', () => {
-      fillLoginForm('notanemail', 'password')
+      const testPassword = generatePassword()
+      fillLoginForm('notanemail', testPassword)
       verifyErrorDisplay(EMAIL_ERROR_PATTERNS)
     })
 
     it('should handle incorrect credentials', () => {
       cy.interceptError('POST', '/auth/login/', 401, { detail: 'Credenciales inválidas' }, 'loginError')
-      fillLoginForm('wrong@example.com', 'wrongpassword')
+      const wrongPassword = generatePassword()
+      fillLoginForm('wrong@example.com', wrongPassword)
       cy.wait('@loginError', { timeout: 10000 })
       cy.get('body', { timeout: 5000 }).should('satisfy', ($body) => {
         const hasError = $body.find('.swal2-error, [data-cy="error-message"]').length > 0
@@ -54,7 +57,8 @@ describe('Authentication - Advanced Scenarios', () => {
 
     it('should handle server error during login', () => {
       cy.interceptError('POST', '/auth/login/', 500, {}, 'loginError')
-      fillLoginForm('admin@example.com', 'admin123')
+      const testPassword = TEST_CREDENTIALS.testPassword
+      fillLoginForm('admin@example.com', testPassword)
       cy.wait('@loginError', { timeout: 10000 })
       cy.verifyErrorMessage(['error', 'servidor', '500'])
     })
@@ -88,10 +92,12 @@ describe('Authentication - Advanced Scenarios', () => {
       }
       
       ifFoundInBody(PASSWORD_INPUT_SELECTOR, () => {
-        cy.get(PASSWORD_INPUT_SELECTOR).first().type('weak')
+        const weakPassword = TEST_CREDENTIALS.weakPasswords[0]
+        cy.get(PASSWORD_INPUT_SELECTOR).first().type(weakPassword)
         cy.get('body', { timeout: 3000 }).then(() => verifyPasswordStrength(['débil', 'weak']))
         
-        cy.get(PASSWORD_INPUT_SELECTOR).first().clear().type('StrongPassword123!')
+        const strongPassword = TEST_CREDENTIALS.strongPassword
+        cy.get(PASSWORD_INPUT_SELECTOR).first().clear().type(strongPassword)
         cy.get('body', { timeout: 3000 }).then(() => verifyPasswordStrength(['fuerte', 'strong']))
       }, () => {
         cy.get('body').should('be.visible')
@@ -105,12 +111,13 @@ describe('Authentication - Advanced Scenarios', () => {
       }).as('registerFail')
 
       const fillRegistrationForm = () => {
+        const testPassword = TEST_CREDENTIALS.testPassword
         cy.get('[data-cy="input-name"], [data-cy="first-name-input"], input[name*="name"]').first().type('New User')
         cy.get(EMAIL_INPUT_SELECTOR).first().type('existing@example.com')
-        cy.get(PASSWORD_INPUT_SELECTOR).first().type('Pass123!')
+        cy.get(PASSWORD_INPUT_SELECTOR).first().type(testPassword)
         
         ifFoundInBody('[data-cy="input-confirm-password"], input[type="password"]', () => {
-          cy.get('[data-cy="input-confirm-password"], input[type="password"]').last().type('Pass123!')
+          cy.get('[data-cy="input-confirm-password"], input[type="password"]').last().type(testPassword)
         })
         
         ifFoundInBody('[data-cy="check-terms"], input[type="checkbox"]', () => {
@@ -139,12 +146,13 @@ describe('Authentication - Advanced Scenarios', () => {
 
     it('should prevent submission without accepting terms', () => {
       const fillFormWithoutTerms = () => {
+        const testPassword = TEST_CREDENTIALS.testPassword
         cy.get('[data-cy="input-name"], [data-cy="first-name-input"], input[name*="name"]').first().type('Valid User')
         cy.get(EMAIL_INPUT_SELECTOR).first().type('valid@example.com')
-        cy.get(PASSWORD_INPUT_SELECTOR).first().type('Pass123!')
+        cy.get(PASSWORD_INPUT_SELECTOR).first().type(testPassword)
         
         ifFoundInBody('[data-cy="input-confirm-password"], input[type="password"]', () => {
-          cy.get('[data-cy="input-confirm-password"], input[type="password"]').last().type('Pass123!')
+          cy.get('[data-cy="input-confirm-password"], input[type="password"]').last().type(testPassword)
         })
       }
       
