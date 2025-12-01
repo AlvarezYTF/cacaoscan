@@ -1,14 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import api from '../api'
 import servicioAnalisis from '../servicioAnalisis'
+import { createMockApi } from '@/test/mocks'
+
+const mockApi = createMockApi()
 
 vi.mock('../api', () => ({
-  default: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn()
-  }
+  default: mockApi
 }))
 
 vi.mock('@/utils/apiResponse', () => ({
@@ -31,17 +29,17 @@ describe('servicioAnalisis', () => {
           count: 2
         }
       }
-      api.get.mockResolvedValue(mockResponse)
+      mockApi.get.mockResolvedValue(mockResponse)
 
       const result = await servicioAnalisis.getAnalisis({ page: 1 })
 
-      expect(api.get).toHaveBeenCalledWith('/analisis/', { params: { page: 1 } })
+      expect(mockApi.get).toHaveBeenCalledWith('/analisis/', { params: { page: 1 } })
       expect(result).toBeDefined()
     })
 
     it('should handle error when fetching analisis', async () => {
       const error = new Error('Network error')
-      api.get.mockRejectedValue(error)
+      mockApi.get.mockRejectedValue(error)
 
       await expect(servicioAnalisis.getAnalisis()).rejects.toThrow('Network error')
     })
@@ -57,17 +55,17 @@ describe('servicioAnalisis', () => {
       const mockResponse = {
         data: { id: 1, ...analisisData }
       }
-      api.post.mockResolvedValue(mockResponse)
+      mockApi.post.mockResolvedValue(mockResponse)
 
       const result = await servicioAnalisis.createAnalisis(analisisData)
 
-      expect(api.post).toHaveBeenCalledWith('/analisis/', analisisData)
+      expect(mockApi.post).toHaveBeenCalledWith('/analisis/', analisisData)
       expect(result).toEqual(mockResponse.data)
     })
 
     it('should handle error when creating analisis', async () => {
       const error = new Error('Validation error')
-      api.post.mockRejectedValue(error)
+      mockApi.post.mockRejectedValue(error)
 
       await expect(servicioAnalisis.createAnalisis({})).rejects.toThrow('Validation error')
     })
@@ -78,17 +76,17 @@ describe('servicioAnalisis', () => {
       const mockResponse = {
         data: { id: 1, tipo_analisis: 'Calidad', calidad: 85 }
       }
-      api.get.mockResolvedValue(mockResponse)
+      mockApi.get.mockResolvedValue(mockResponse)
 
       const result = await servicioAnalisis.getAnalisisById(1)
 
-      expect(api.get).toHaveBeenCalledWith('/analisis/1/')
+      expect(mockApi.get).toHaveBeenCalledWith('/analisis/1/')
       expect(result).toEqual(mockResponse.data)
     })
 
     it('should handle error when fetching analisis by id', async () => {
       const error = new Error('Not found')
-      api.get.mockRejectedValue(error)
+      mockApi.get.mockRejectedValue(error)
 
       await expect(servicioAnalisis.getAnalisisById(999)).rejects.toThrow('Not found')
     })
@@ -100,17 +98,17 @@ describe('servicioAnalisis', () => {
       const mockResponse = {
         data: { id: 1, ...analisisData }
       }
-      api.put.mockResolvedValue(mockResponse)
+      mockApi.put.mockResolvedValue(mockResponse)
 
       const result = await servicioAnalisis.updateAnalisis(1, analisisData)
 
-      expect(api.put).toHaveBeenCalledWith('/analisis/1/', analisisData)
+      expect(mockApi.put).toHaveBeenCalledWith('/analisis/1/', analisisData)
       expect(result).toEqual(mockResponse.data)
     })
 
     it('should handle error when updating analisis', async () => {
       const error = new Error('Update error')
-      api.put.mockRejectedValue(error)
+      mockApi.put.mockRejectedValue(error)
 
       await expect(servicioAnalisis.updateAnalisis(1, {})).rejects.toThrow('Update error')
     })
@@ -121,17 +119,17 @@ describe('servicioAnalisis', () => {
       const mockResponse = {
         data: { success: true }
       }
-      api.delete.mockResolvedValue(mockResponse)
+      mockApi.delete.mockResolvedValue(mockResponse)
 
       const result = await servicioAnalisis.deleteAnalisis(1)
 
-      expect(api.delete).toHaveBeenCalledWith('/analisis/1/')
+      expect(mockApi.delete).toHaveBeenCalledWith('/analisis/1/')
       expect(result).toEqual(mockResponse.data)
     })
 
     it('should handle error when deleting analisis', async () => {
       const error = new Error('Delete error')
-      api.delete.mockRejectedValue(error)
+      mockApi.delete.mockRejectedValue(error)
 
       await expect(servicioAnalisis.deleteAnalisis(1)).rejects.toThrow('Delete error')
     })
@@ -146,17 +144,17 @@ describe('servicioAnalisis', () => {
           analisis_por_tipo: {}
         }
       }
-      api.get.mockResolvedValue(mockResponse)
+      mockApi.get.mockResolvedValue(mockResponse)
 
       const result = await servicioAnalisis.getAnalisisStats()
 
-      expect(api.get).toHaveBeenCalledWith('/analisis/stats/')
+      expect(mockApi.get).toHaveBeenCalledWith('/analisis/stats/')
       expect(result).toEqual(mockResponse.data)
     })
 
     it('should handle error when getting stats', async () => {
       const error = new Error('Stats error')
-      api.get.mockRejectedValue(error)
+      mockApi.get.mockRejectedValue(error)
 
       await expect(servicioAnalisis.getAnalisisStats()).rejects.toThrow('Stats error')
     })

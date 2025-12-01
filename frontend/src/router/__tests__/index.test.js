@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { createMockAuthStore } from '@/test/mocks'
 
 // Mock views
 const mockHomeView = { template: '<div>Home</div>' }
@@ -7,16 +8,7 @@ const mockAdminDashboard = { template: '<div>Admin Dashboard</div>' }
 const mockFincasView = { template: '<div>Fincas</div>' }
 
 // Mock auth store
-const mockAuthStore = {
-  isAuthenticated: false,
-  accessToken: null,
-  user: null,
-  userRole: null,
-  getCurrentUser: vi.fn(),
-  clearAll: vi.fn(),
-  updateLastActivity: vi.fn(),
-  checkSessionTimeout: vi.fn(() => false)
-}
+const mockAuthStore = createMockAuthStore()
 
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () => mockAuthStore

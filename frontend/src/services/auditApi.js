@@ -10,6 +10,7 @@
  */
 
 import { apiGet } from './apiClient'
+import api from './api'
 
 // Endpoints de la API
 const API_ENDPOINTS = {
@@ -152,6 +153,31 @@ export const AUDIT_SEVERITY_LEVELS = {
 }
 
 /**
+ * Formats date for display (extracted common logic)
+ * @param {string|Date} date - Date to format
+ * @returns {string} Formatted date string
+ */
+function formatDateForDisplay(date) {
+  return new Date(date).toLocaleString('es-ES', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
+
+/**
+ * Checks if date is recent (within last hour) (extracted common logic)
+ * @param {string|Date} date - Date to check
+ * @returns {boolean} True if date is recent
+ */
+function isRecentDate(date) {
+  return new Date(date) > new Date(Date.now() - 60 * 60 * 1000)
+}
+
+/**
  * Formatea un log de actividad para visualización
  * @param {Object} log - Log a formatear
  * @returns {Object} - Log formateado
@@ -166,18 +192,8 @@ export function formatActivityLog(log) {
     direccion_ip: log.direccion_ip,
     user_agent: log.user_agent,
     fecha: log.fecha,
-    // Formatear fecha para visualización
-    fecha_formateada: new Date(log.fecha).toLocaleString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }),
-    // Indicador de reciente (última hora)
-    es_reciente: new Date(log.fecha) > new Date(Date.now() - 60 * 60 * 1000),
-    // Datos adicionales
+    fecha_formateada: formatDateForDisplay(log.fecha),
+    es_reciente: isRecentDate(log.fecha),
     metadata: log.metadata || {}
   }
 }
@@ -197,18 +213,8 @@ export function formatLoginHistory(login) {
     user_agent: login.user_agent,
     razon_falla: login.razon_falla,
     fecha: login.fecha,
-    // Formatear fecha para visualización
-    fecha_formateada: new Date(login.fecha).toLocaleString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }),
-    // Indicador de reciente (última hora)
-    es_reciente: new Date(login.fecha) > new Date(Date.now() - 60 * 60 * 1000),
-    // Estado visual
+    fecha_formateada: formatDateForDisplay(login.fecha),
+    es_reciente: isRecentDate(login.fecha),
     estado_visual: login.exitoso ? 'success' : 'danger',
     icono: login.exitoso ? 'check-circle' : 'times-circle'
   }
@@ -294,16 +300,10 @@ export async function generateAuditReport(params) {
     }
 
   } catch (error) {
-    console.error('❌ Error generando reporte de auditoría:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al generar el reporte de auditoría'
-
+    const errorMessage = handleApiError(error, 'Error al generar el reporte de auditoría', 'generando reporte de auditoría')
     return {
       success: false,
-      error: errorMessage
+      error: errorMessage.message
     }
   }
 }
@@ -332,16 +332,10 @@ export async function getUserActivitySummary(userId, params = {}) {
     }
 
   } catch (error) {
-    console.error('❌ Error obteniendo resumen de actividad:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al obtener el resumen de actividad'
-
+    const errorMessage = handleApiError(error, 'Error al obtener el resumen de actividad', 'obteniendo resumen de actividad')
     return {
       success: false,
-      error: errorMessage
+      error: errorMessage.message
     }
   }
 }

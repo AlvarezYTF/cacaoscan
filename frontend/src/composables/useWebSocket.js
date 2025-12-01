@@ -108,92 +108,50 @@ export function useWebSocket() {
     }
   }
   
+  // Base message handler (extracted common logic)
+  const createMessageHandler = (eventMap, logContext) => {
+    return (data) => {
+      lastMessage.value = data
+      addToHistory(data)
+      
+      // Handle pong responses
+      if (data.type === 'pong') {
+        return
+      }
+      
+      // Emit mapped events
+      const eventName = eventMap[data.type]
+      if (eventName) {
+        emit(eventName, data.data)
+      } else {
+        console.log(`Mensaje de ${logContext} no manejado:`, data)
+      }
+    }
+  }
+  
   // Handlers de mensajes específicos
-  const handleNotificationMessage = (data) => {
-    lastMessage.value = data
-    addToHistory(data)
-    
-    // Emitir eventos específicos
-    switch (data.type) {
-      case 'notification':
-        emit('notification-received', data.data)
-        break
-      case 'notification_update':
-        emit('notification-updated', data.data)
-        break
-      case 'stats_update':
-        emit('notification-stats-updated', data.data)
-        break
-      case 'pending_notification':
-        emit('pending-notification', data.data)
-        break
-      case 'pong':
-        // Respuesta a ping
-        break
-      default:
-        console.log('Mensaje de notificación no manejado:', data)
-    }
-  }
+  const handleNotificationMessage = createMessageHandler({
+    notification: 'notification-received',
+    notification_update: 'notification-updated',
+    stats_update: 'notification-stats-updated',
+    pending_notification: 'pending-notification'
+  }, 'notificación')
   
-  const handleSystemStatusMessage = (data) => {
-    lastMessage.value = data
-    addToHistory(data)
-    
-    switch (data.type) {
-      case 'system_status':
-        emit('system-status-updated', data.data)
-        break
-      case 'system_alert':
-        emit('system-alert', data.data)
-        break
-      case 'pong':
-        // Respuesta a ping
-        break
-      default:
-        console.log('Mensaje de estado del sistema no manejado:', data)
-    }
-  }
+  const handleSystemStatusMessage = createMessageHandler({
+    system_status: 'system-status-updated',
+    system_alert: 'system-alert'
+  }, 'estado del sistema')
   
-  const handleAuditMessage = (data) => {
-    lastMessage.value = data
-    addToHistory(data)
-    
-    switch (data.type) {
-      case 'audit_activity':
-        emit('audit-activity', data.data)
-        break
-      case 'audit_login':
-        emit('audit-login', data.data)
-        break
-      case 'audit_stats_update':
-        emit('audit-stats-updated', data.data)
-        break
-      case 'pong':
-        // Respuesta a ping
-        break
-      default:
-        console.log('Mensaje de auditoría no manejado:', data)
-    }
-  }
+  const handleAuditMessage = createMessageHandler({
+    audit_activity: 'audit-activity',
+    audit_login: 'audit-login',
+    audit_stats_update: 'audit-stats-updated'
+  }, 'auditoría')
   
-  const handleUserStatsMessage = (data) => {
-    lastMessage.value = data
-    addToHistory(data)
-    
-    switch (data.type) {
-      case 'user_stats':
-        emit('user-stats-updated', data.data)
-        break
-      case 'user_stats_update':
-        emit('user-stats-updated', data.data)
-        break
-      case 'pong':
-        // Respuesta a ping
-        break
-      default:
-        console.log('Mensaje de estadísticas de usuarios no manejado:', data)
-    }
-  }
+  const handleUserStatsMessage = createMessageHandler({
+    user_stats: 'user-stats-updated',
+    user_stats_update: 'user-stats-updated'
+  }, 'estadísticas de usuarios')
   
   // Estado compartido
   const lastMessage = ref(null)

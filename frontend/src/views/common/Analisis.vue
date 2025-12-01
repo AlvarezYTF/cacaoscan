@@ -403,14 +403,24 @@ import CameraCapture from '@/components/admin/AdminAnalisisComponents/CameraCapt
 import { useAuthStore } from '@/stores/auth'
 import { useAnalysisStore } from '@/stores/analysis'
 
+// 5. Composables
+import { useSidebarNavigation } from '@/composables/useSidebarNavigation'
+
 // Router and stores
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const analysisStore = useAnalysisStore()
 
-// Sidebar collapse state
-const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
+// Sidebar navigation composable
+const {
+  isSidebarCollapsed,
+  userName,
+  userRole: computedUserRole,
+  handleMenuClick,
+  toggleSidebarCollapse,
+  handleLogout
+} = useSidebarNavigation()
 
 // Local state
 const batchData = ref({
@@ -467,16 +477,7 @@ const error = computed(() => {
   return analysisStore.uploadError
 })
 
-const userName = computed(() => {
-  return authStore.userFullName || 'Usuario'
-})
-
-const userRole = computed(() => {
-  const role = authStore.userRole || 'Usuario'
-  if (role === 'farmer' || role === 'Agricultor') return 'agricultor'
-  if (role === 'admin' || role === 'Administrador') return 'admin'
-  return role
-})
+const userRole = computedUserRole
 
 const userEmail = computed(() => {
   return authStore.user?.email || ''
@@ -572,40 +573,7 @@ const resetForm = () => {
   formErrors.value = {}
 }
 
-const handleMenuClick = (item) => {
-  if (item.route && item.route !== null) {
-    const currentPath = route.path
-    if (currentPath !== item.route) {
-      router.push(item.route)
-    }
-  } else {
-    const role = authStore.userRole
-    if (role === 'farmer' || role === 'Agricultor') {
-      router.push({ 
-        name: 'AgricultorDashboard',
-        query: { section: item.id }
-      })
-    } else {
-      router.push({ 
-        name: 'AdminDashboard',
-        query: { section: item.id }
-      })
-    }
-  }
-}
-
-const toggleSidebarCollapse = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
-  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
-}
-
-const handleLogout = async () => {
-  try {
-    await authStore.logout()
-  } catch (error) {
-    console.error('Error during logout:', error)
-  }
-}
+// Sidebar and navbar methods are now provided by useSidebarNavigation composable
 
 const resetAndCreateNew = () => {
   analysisResult.value = null

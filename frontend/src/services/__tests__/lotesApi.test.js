@@ -26,6 +26,28 @@ vi.mock('@/utils/apiResponse', () => ({
   normalizeResponse: (data) => data.results || data || []
 }))
 
+// Test helpers
+const createMockResponse = (data) => ({ data })
+
+const createMockError = (message) => new Error(message)
+
+const testApiCall = async (apiFunction, apiMethod, expectedUrl, expectedParams, mockResponse, expectedResult) => {
+  apiMethod.mockResolvedValue(mockResponse)
+  const result = await apiFunction(expectedParams)
+  expect(apiMethod).toHaveBeenCalledWith(expectedUrl, expectedParams || {})
+  if (expectedResult !== undefined) {
+    expect(result).toEqual(expectedResult)
+  } else {
+    expect(result).toBeDefined()
+  }
+}
+
+const testApiError = async (apiFunction, apiMethod, params, errorMessage) => {
+  const error = createMockError(errorMessage)
+  apiMethod.mockRejectedValue(error)
+  await expect(apiFunction(params)).rejects.toThrow(errorMessage)
+}
+
 describe('lotesApi', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -33,49 +55,29 @@ describe('lotesApi', () => {
 
   describe('getLotes', () => {
     it('should fetch lotes successfully', async () => {
-      const mockResponse = {
-        data: {
-          results: [
-            { id: 1, identificador: 'Lote A', variedad: 'Criollo' },
-            { id: 2, identificador: 'Lote B', variedad: 'Forastero' }
-          ],
-          count: 2
-        }
-      }
-      api.get.mockResolvedValue(mockResponse)
-
-      const result = await getLotes({ page: 1 })
-
-      expect(api.get).toHaveBeenCalledWith('/lotes/', { params: { page: 1 } })
-      expect(result).toBeDefined()
+      const mockResponse = createMockResponse({
+        results: [
+          { id: 1, identificador: 'Lote A', variedad: 'Criollo' },
+          { id: 2, identificador: 'Lote B', variedad: 'Forastero' }
+        ],
+        count: 2
+      })
+      await testApiCall(getLotes, api.get, '/lotes/', { page: 1 }, mockResponse)
     })
 
     it('should handle error when fetching lotes', async () => {
-      const error = new Error('Network error')
-      api.get.mockRejectedValue(error)
-
-      await expect(getLotes()).rejects.toThrow('Network error')
+      await testApiError(getLotes, api.get, {}, 'Network error')
     })
   })
 
   describe('getLoteById', () => {
     it('should fetch lote by id successfully', async () => {
-      const mockResponse = {
-        data: { id: 1, identificador: 'Lote A', variedad: 'Criollo' }
-      }
-      api.get.mockResolvedValue(mockResponse)
-
-      const result = await getLoteById(1)
-
-      expect(api.get).toHaveBeenCalledWith('/lotes/1/', { params: {} })
-      expect(result).toEqual(mockResponse.data)
+      const mockResponse = createMockResponse({ id: 1, identificador: 'Lote A', variedad: 'Criollo' })
+      await testApiCall(getLoteById, api.get, '/lotes/1/', {}, mockResponse, mockResponse.data)
     })
 
     it('should handle error when fetching lote by id', async () => {
-      const error = new Error('Not found')
-      api.get.mockRejectedValue(error)
-
-      await expect(getLoteById(999)).rejects.toThrow('Not found')
+      await testApiError(getLoteById, api.get, 999, 'Not found')
     })
   })
 
@@ -88,9 +90,7 @@ describe('lotesApi', () => {
         fecha_plantacion: '2024-01-01',
         area_hectareas: 5.5
       }
-      const mockResponse = {
-        data: { id: 3, ...loteData }
-      }
+      const mockResponse = createMockResponse({ id: 3, ...loteData })
       api.post.mockResolvedValue(mockResponse)
 
       const result = await createLote(loteData)
@@ -100,19 +100,14 @@ describe('lotesApi', () => {
     })
 
     it('should handle error when creating lote', async () => {
-      const error = new Error('Validation error')
-      api.post.mockRejectedValue(error)
-
-      await expect(createLote({})).rejects.toThrow('Validation error')
+      await testApiError(createLote, api.post, {}, 'Validation error')
     })
   })
 
   describe('updateLote', () => {
     it('should update lote successfully', async () => {
       const loteData = { identificador: 'Lote Actualizado' }
-      const mockResponse = {
-        data: { id: 1, ...loteData }
-      }
+      const mockResponse = createMockResponse({ id: 1, ...loteData })
       api.put.mockResolvedValue(mockResponse)
 
       const result = await updateLote(1, loteData)
@@ -122,48 +117,30 @@ describe('lotesApi', () => {
     })
 
     it('should handle error when updating lote', async () => {
-      const error = new Error('Update error')
-      api.put.mockRejectedValue(error)
-
-      await expect(updateLote(1, {})).rejects.toThrow('Update error')
+      await testApiError(updateLote, api.put, [1, {}], 'Update error')
     })
   })
 
   describe('deleteLote', () => {
     it('should delete lote successfully', async () => {
       api.delete.mockResolvedValue({})
-
       await deleteLote(1)
-
       expect(api.delete).toHaveBeenCalledWith('/lotes/1/delete/', {})
     })
 
     it('should handle error when deleting lote', async () => {
-      const error = new Error('Delete error')
-      api.delete.mockRejectedValue(error)
-
-      await expect(deleteLote(1)).rejects.toThrow('Delete error')
+      await testApiError(deleteLote, api.delete, 1, 'Delete error')
     })
   })
 
   describe('getLoteStats', () => {
     it('should get lote stats successfully', async () => {
-      const mockResponse = {
-        data: { total_analisis: 10, calidad_promedio: 85 }
-      }
-      api.get.mockResolvedValue(mockResponse)
-
-      const result = await getLoteStats(1)
-
-      expect(api.get).toHaveBeenCalledWith('/lotes/1/stats/', { params: {} })
-      expect(result).toEqual(mockResponse.data)
+      const mockResponse = createMockResponse({ total_analisis: 10, calidad_promedio: 85 })
+      await testApiCall(getLoteStats, api.get, '/lotes/1/stats/', {}, mockResponse, mockResponse.data)
     })
 
     it('should handle error when getting stats', async () => {
-      const error = new Error('Stats error')
-      api.get.mockRejectedValue(error)
-
-      await expect(getLoteStats(1)).rejects.toThrow('Stats error')
+      await testApiError(getLoteStats, api.get, 1, 'Stats error')
     })
   })
 
@@ -306,4 +283,3 @@ describe('lotesApi', () => {
     })
   })
 })
-

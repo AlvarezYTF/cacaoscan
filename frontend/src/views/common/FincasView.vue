@@ -84,6 +84,7 @@ import { useAuthStore } from '@/stores/auth'
 
 // 4. Composables
 import { useFincas } from '@/composables/useFincas'
+import { useSidebarNavigation } from '@/composables/useSidebarNavigation'
 
 // 5. Components
 import Sidebar from '@/components/layout/Common/Sidebar.vue'
@@ -113,8 +114,15 @@ const {
   activateFinca
 } = useFincas()
 
-// Sidebar collapse state
-const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
+// Sidebar navigation composable
+const {
+  isSidebarCollapsed,
+  userName,
+  userRole: computedUserRole,
+  handleMenuClick,
+  toggleSidebarCollapse,
+  handleLogout
+} = useSidebarNavigation()
 
 // Estado reactivo
 const searchQuery = ref('')
@@ -130,17 +138,7 @@ const selectedFincaDetail = ref(null)
 const activeSection = ref('fincas')
 
 // Computed
-const userName = computed(() => {
-  return authStore.userFullName || 'Usuario'
-})
-
-const userRole = computed(() => {
-  const role = authStore.userRole || 'Usuario'
-  // Normalize role for sidebar - Backend returns: 'admin', 'analyst', or 'farmer'
-  if (role === 'admin') return 'admin'
-  if (role === 'farmer') return 'agricultor'
-  return 'agricultor' // Default to agricultor
-})
+const userRole = computedUserRole
 
 // Métodos
 const buildLoadParams = () => {
@@ -297,44 +295,7 @@ const confirmActivate = async (finca) => {
   }
 }
 
-// Sidebar and navbar methods
-const handleMenuClick = (item) => {
-  if (item.route && item.route !== null) {
-    // Navigate to external routes
-    const currentPath = router.currentRoute.value.path
-    if (currentPath !== item.route) {
-      router.push(item.route)
-    }
-  } else {
-    // For internal sections without routes, navigate to dashboard with query param
-    const role = authStore.userRole
-    if (role === 'farmer' || role === 'Agricultor') {
-      router.push({
-        name: 'AgricultorDashboard',
-        query: { section: item.id }
-      })
-    } else {
-      router.push({
-        name: 'AdminDashboard',
-        query: { section: item.id }
-      })
-    }
-  }
-}
-
-const toggleSidebarCollapse = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
-  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
-}
-
-const handleLogout = async () => {
-  try {
-    await authStore.logout()
-  } catch (err) {
-    console.error('Error durante logout:', err)
-    // Continuar con logout aunque haya error
-  }
-}
+// Sidebar and navbar methods are now provided by useSidebarNavigation composable
 
 // Lifecycle
 onMounted(() => {

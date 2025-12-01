@@ -115,6 +115,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { personasApi, authApi } from '@/services'
+import { useSidebarNavigation } from '@/composables/useSidebarNavigation'
 import Sidebar from '@/components/layout/Common/Sidebar.vue'
 import ProfileSection from '@/components/agricultor/configuracion/ProfileSection.vue'
 import PasswordSection from '@/components/agricultor/configuracion/PasswordSection.vue'
@@ -124,7 +125,16 @@ const authStore = useAuthStore()
 const profileSectionRef = ref(null)
 const passwordSectionRef = ref(null)
 
-const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
+// Sidebar navigation composable
+const {
+  isSidebarCollapsed,
+  userName,
+  userRole: computedUserRole,
+  handleMenuClick,
+  toggleSidebarCollapse,
+  handleLogout
+} = useSidebarNavigation()
+
 const activeSection = ref('settings')
 
 // ============================================
@@ -144,16 +154,7 @@ const toggleAccordion = (section) => {
 }
 
 // Computed properties
-const userName = computed(() => {
-  return authStore.userFullName || 'Usuario'
-})
-
-const userRole = computed(() => {
-  const role = authStore.userRole || 'Usuario'
-  if (role === 'admin') return 'admin'
-  if (role === 'farmer') return 'agricultor'
-  return 'agricultor'
-})
+const userRole = computedUserRole
 
 // Datos de persona
 const personaData = ref({})
@@ -234,41 +235,7 @@ const notifications = ref({
 // Conectividad y respaldo
 const lastSync = ref('Hace 2 horas')
 
-// Sidebar methods
-const handleMenuClick = (item) => {
-  if (item.route && item.route !== null) {
-    const currentPath = router.currentRoute.value.path
-    if (currentPath !== item.route) {
-      router.push(item.route)
-    }
-  } else {
-    const role = authStore.userRole
-    if (role === 'farmer' || role === 'Agricultor') {
-      router.push({ 
-        name: 'AgricultorDashboard',
-        query: { section: item.id }
-      })
-    } else {
-      router.push({ 
-        name: 'AdminDashboard',
-        query: { section: item.id }
-      })
-    }
-  }
-}
-
-const toggleSidebarCollapse = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
-  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
-}
-
-const handleLogout = async () => {
-  try {
-    await authStore.logout()
-  } catch (error) {
-    console.error('Error during logout:', error)
-  }
-}
+// Sidebar and navbar methods are now provided by useSidebarNavigation composable
 
 // Helper functions for profile management
 const prepareProfileData = (formData) => {
