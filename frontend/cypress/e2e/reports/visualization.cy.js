@@ -1,8 +1,4 @@
 describe('Visualización de Reportes - Lista y Detalles', () => {
-  beforeEach(() => {
-    cy.login('analyst')
-    cy.visit('/reportes')
-    cy.get('body', { timeout: 10000 })
   // Helper functions to reduce nesting depth
   const verifySelectorsExist = (selectors, $context, timeout = 3000) => {
     for (const selector of selectors) {
@@ -12,7 +8,10 @@ describe('Visualización de Reportes - Lista y Detalles', () => {
     }
   }
 
-.should('be.visible')
+  beforeEach(() => {
+    cy.login('analyst')
+    cy.visit('/reportes')
+    cy.get('body', { timeout: 10000 }).should('be.visible')
   })
 
   it('debe mostrar lista de reportes generados', () => {

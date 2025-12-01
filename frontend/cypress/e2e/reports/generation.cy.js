@@ -47,36 +47,54 @@ describe('Generación de Reportes - Creación', () => {
   })
 
   it('debe crear reporte de calidad por finca', () => {
-    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
-      cy.wait(500)
-      return selectIfExistsAndContinue('[data-cy="report-type"], select', 'calidad-finca', () => {
-        cy.wait(500)
-        return selectIfExistsAndContinue('[data-cy="finca-select"], select', 'Finca El Paraíso', () => {
-          checkCheckboxIfExists('[data-cy="include-trends"], input[type="checkbox"]')
-          checkCheckboxIfExists('[data-cy="include-comparisons"], input[type="checkbox"]')
-          return clickIfExistsAndContinue('[data-cy="generate-report"], button[type="submit"]', () => {
-            return verifyReportGenerationComplete()
-          })
-        })
+    const generateReport = () => {
+      checkCheckboxIfExists('[data-cy="include-trends"], input[type="checkbox"]')
+      checkCheckboxIfExists('[data-cy="include-comparisons"], input[type="checkbox"]')
+      clickIfExistsAndContinue('[data-cy="generate-report"], button[type="submit"]', () => {
+        verifyReportGenerationComplete()
       })
+    }
+    
+    const selectFinca = () => {
+      cy.wait(500)
+      selectIfExistsAndContinue('[data-cy="finca-select"], select', 'Finca El Paraíso', generateReport)
+    }
+    
+    const selectReportType = () => {
+      cy.wait(500)
+      selectIfExistsAndContinue('[data-cy="report-type"], select', 'calidad-finca', selectFinca)
+    }
+    
+    clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
+      cy.wait(500)
+      selectReportType()
     }, () => {
       cy.get('body').should('be.visible')
     })
   })
 
   it('debe crear reporte comparativo entre lotes', () => {
+    const generateComparativoReport = () => {
+      checkCheckboxIfExists('[data-cy="lotes-select"], input[type="checkbox"]')
+      checkCheckboxIfExists('[data-cy="compare-quality"], input[type="checkbox"]')
+      checkCheckboxIfExists('[data-cy="compare-production"], input[type="checkbox"]')
+      clickIfExistsAndContinue('[data-cy="generate-report"], button[type="submit"]', () => {
+        verifyReportGenerationComplete()
+      })
+    }
+    
+    const selectComparativoType = () => {
+      cy.wait(500)
+      selectIfExistsAndContinue('[data-cy="report-type"], select', 'comparativo-lotes', () => {
+        cy.wait(500)
+        generateComparativoReport()
+      })
+    }
+    
     cy.clickIfExists('[data-cy="create-report-button"], button').then((clicked) => {
       if (clicked) {
         cy.wait(500)
-        return selectIfExistsAndContinue('[data-cy="report-type"], select', 'comparativo-lotes', () => {
-          cy.wait(500)
-          checkCheckboxIfExists('[data-cy="lotes-select"], input[type="checkbox"]')
-          checkCheckboxIfExists('[data-cy="compare-quality"], input[type="checkbox"]')
-          checkCheckboxIfExists('[data-cy="compare-production"], input[type="checkbox"]')
-          return clickIfExistsAndContinue('[data-cy="generate-report"], button[type="submit"]', () => {
-            return verifyReportGenerationComplete()
-          })
-        })
+        selectComparativoType()
       } else {
         cy.get('body').should('be.visible')
       }
@@ -84,19 +102,22 @@ describe('Generación de Reportes - Creación', () => {
   })
 
   it('debe crear reporte de recomendaciones', () => {
+    const generateRecomendacionesReport = () => {
+      checkCheckboxIfExists('[data-cy="scope-all-fincas"], input[type="checkbox"]')
+      checkCheckboxIfExists('[data-cy="fertilization-rec"], input[type="checkbox"]')
+      checkCheckboxIfExists('[data-cy="irrigation-rec"], input[type="checkbox"]')
+      clickIfExistsAndContinue('[data-cy="generate-report"], button[type="submit"]', () => {
+        verifyReportGenerationComplete()
+      })
+    }
+    
+    const selectRecomendacionesType = () => {
+      selectIfExistsAndContinue('[data-cy="report-type"], select', 'recomendaciones', generateRecomendacionesReport)
+    }
+    
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="create-report-button"], button').length > 0) {
-        return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
-          return selectIfExistsAndContinue('[data-cy="report-type"], select', 'recomendaciones', () => {
-            checkCheckboxIfExists('[data-cy="scope-all-fincas"], input[type="checkbox"]')
-            checkCheckboxIfExists('[data-cy="fertilization-rec"], input[type="checkbox"]')
-            checkCheckboxIfExists('[data-cy="irrigation-rec"], input[type="checkbox"]')
-            
-            return clickIfExistsAndContinue('[data-cy="generate-report"], button[type="submit"]', () => {
-              return verifyReportGenerationComplete()
-            })
-          })
-        })
+        clickIfExistsAndContinue('[data-cy="create-report-button"], button', selectRecomendacionesType)
       } else {
         cy.get('body').should('be.visible')
       }
@@ -111,16 +132,18 @@ describe('Generación de Reportes - Creación', () => {
           if ($modal.find('[data-cy="generate-report"], button[type="submit"]').length > 0) {
             cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
             
-            // Verificar errores de validación si existen
-            const errorSelectors = [
-              '[data-cy="report-type-error"]',
-              '[data-cy="date-range-error"]'
-            ]
-            for (const selector of errorSelectors) {
-              ifFoundInBody(selector, () => {
-                cy.get(selector, { timeout: 3000 }).should('exist')
-              })
+            const verifyValidationErrors = () => {
+              const errorSelectors = [
+                '[data-cy="report-type-error"]',
+                '[data-cy="date-range-error"]'
+              ]
+              for (const selector of errorSelectors) {
+                ifFoundInBody(selector, () => {
+                  cy.get(selector, { timeout: 3000 }).should('exist')
+                })
+              }
             }
+            verifyValidationErrors()
           }
         })
       } else {
@@ -130,57 +153,88 @@ describe('Generación de Reportes - Creación', () => {
   })
 
   it('debe validar rango de fechas', () => {
-    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
-      return typeIfExistsAndContinue('[data-cy="start-date"], input[type="date"]', '2024-01-31', () => {
-        return typeIfExistsAndContinue('[data-cy="end-date"], input[type="date"]', '2024-01-01', () => {
-          cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
-          
-          return ifFoundInBody('[data-cy="date-range-error"], .error-message', () => {
-            verifyErrorMessageGeneric(['fecha', 'inicio', 'anterior'], '[data-cy="date-range-error"], .error-message')
-          })
-        })
+    const verifyDateRangeError = () => {
+      ifFoundInBody('[data-cy="date-range-error"], .error-message', () => {
+        verifyErrorMessageGeneric(['fecha', 'inicio', 'anterior'], '[data-cy="date-range-error"], .error-message')
       })
-    }, () => {
+    }
+    
+    const fillEndDate = () => {
+      typeIfExistsAndContinue('[data-cy="end-date"], input[type="date"]', '2024-01-01', () => {
+        cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
+        verifyDateRangeError()
+      })
+    }
+    
+    const fillStartDate = () => {
+      typeIfExistsAndContinue('[data-cy="start-date"], input[type="date"]', '2024-01-31', fillEndDate)
+    }
+    
+    clickIfExistsAndContinue('[data-cy="create-report-button"], button', fillStartDate, () => {
       cy.get('body').should('be.visible')
     })
   })
 
   it('debe permitir cancelar generación de reporte', () => {
-    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
-      return selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', () => {
-        return typeIfExistsAndContinue('[data-cy="start-date"], input[type="date"]', '2024-01-01', () => {
-          return typeIfExistsAndContinue('[data-cy="end-date"], input[type="date"]', '2024-01-31', () => {
-            cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
-            
-            return clickIfExistsAndContinue('[data-cy="cancel-generation"], button', () => {
-              return clickIfExistsAndContinue('[data-cy="confirm-cancel"], .swal2-confirm, button', () => {
-                return ifFoundInBody('[data-cy="generation-cancelled"], .cancelled-message', () => {
-                  verifyErrorMessageGeneric(['cancelada', 'cancel'], '[data-cy="generation-cancelled"], .cancelled-message')
-                })
-              })
-            })
-          })
-        })
+    const verifyCancelled = () => {
+      ifFoundInBody('[data-cy="generation-cancelled"], .cancelled-message', () => {
+        verifyErrorMessageGeneric(['cancelada', 'cancel'], '[data-cy="generation-cancelled"], .cancelled-message')
       })
-    }, () => {
+    }
+    
+    const confirmCancel = () => {
+      clickIfExistsAndContinue('[data-cy="confirm-cancel"], .swal2-confirm, button', verifyCancelled)
+    }
+    
+    const cancelGeneration = () => {
+      clickIfExistsAndContinue('[data-cy="cancel-generation"], button', confirmCancel)
+    }
+    
+    const fillDatesAndCancel = () => {
+      typeIfExistsAndContinue('[data-cy="end-date"], input[type="date"]', '2024-01-31', () => {
+        cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
+        cancelGeneration()
+      })
+    }
+    
+    const fillStartDateAndContinue = () => {
+      typeIfExistsAndContinue('[data-cy="start-date"], input[type="date"]', '2024-01-01', fillDatesAndCancel)
+    }
+    
+    const selectReportType = () => {
+      selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', fillStartDateAndContinue)
+    }
+    
+    clickIfExistsAndContinue('[data-cy="create-report-button"], button', selectReportType, () => {
       cy.get('body').should('be.visible')
     })
   })
 
   it('debe mostrar progreso detallado de generación', () => {
-    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
-      return selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', () => {
-        return typeIfExistsAndContinue('[data-cy="start-date"], input[type="date"]', '2024-01-01', () => {
-          return typeIfExistsAndContinue('[data-cy="end-date"], input[type="date"]', '2024-01-31', () => {
-            cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
-            
-            return ifFoundInBody('[data-cy="progress-stage"], .progress-stage', () => {
-              verifyErrorMessageGeneric(['recopilando', 'procesando', 'generando', 'finalizando'], '[data-cy="progress-stage"], .progress-stage')
-            })
-          })
-        })
+    const verifyProgress = () => {
+      ifFoundInBody('[data-cy="progress-stage"], .progress-stage', () => {
+        verifyErrorMessageGeneric(['recopilando', 'procesando', 'generando', 'finalizando'], '[data-cy="progress-stage"], .progress-stage')
       })
-    }, () => {
+    }
+    
+    const submitAndVerify = () => {
+      cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
+      verifyProgress()
+    }
+    
+    const fillEndDate = () => {
+      typeIfExistsAndContinue('[data-cy="end-date"], input[type="date"]', '2024-01-31', submitAndVerify)
+    }
+    
+    const fillStartDate = () => {
+      typeIfExistsAndContinue('[data-cy="start-date"], input[type="date"]', '2024-01-01', fillEndDate)
+    }
+    
+    const selectType = () => {
+      selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', fillStartDate)
+    }
+    
+    clickIfExistsAndContinue('[data-cy="create-report-button"], button', selectType, () => {
       cy.get('body').should('be.visible')
     })
   })
@@ -192,44 +246,70 @@ describe('Generación de Reportes - Creación', () => {
       body: { error: 'Error del servidor' }
     }).as('reportError')
     
-    return clickIfExistsAndContinue('[data-cy="create-report-button"], button', () => {
-      return selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', () => {
-        return typeIfExistsAndContinue('[data-cy="start-date"], input[type="date"]', '2024-01-01', () => {
-          return typeIfExistsAndContinue('[data-cy="end-date"], input[type="date"]', '2024-01-31', () => {
-            cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
-            
-            cy.wait('@reportError', { timeout: 10000 })
-            
-            return ifFoundInBody('[data-cy="generation-error"], .error-message, .swal2-error', () => {
-              verifyErrorMessageGeneric(['error', 'generar', 'reporte'], '[data-cy="generation-error"], .error-message, .swal2-error')
-            })
-          })
-        })
+    const verifyError = () => {
+      ifFoundInBody('[data-cy="generation-error"], .error-message, .swal2-error', () => {
+        verifyErrorMessageGeneric(['error', 'generar', 'reporte'], '[data-cy="generation-error"], .error-message, .swal2-error')
       })
-    }, () => {
+    }
+    
+    const submitAndWait = () => {
+      cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
+      cy.wait('@reportError', { timeout: 10000 })
+      verifyError()
+    }
+    
+    const fillEndDate = () => {
+      typeIfExistsAndContinue('[data-cy="end-date"], input[type="date"]', '2024-01-31', submitAndWait)
+    }
+    
+    const fillStartDate = () => {
+      typeIfExistsAndContinue('[data-cy="start-date"], input[type="date"]', '2024-01-01', fillEndDate)
+    }
+    
+    const selectType = () => {
+      selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', fillStartDate)
+    }
+    
+    clickIfExistsAndContinue('[data-cy="create-report-button"], button', selectType, () => {
       cy.get('body').should('be.visible')
     })
   })
 
   it('debe permitir programar generación de reportes', () => {
+    const verifyScheduleSuccess = () => {
+      ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
+        cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
+      })
+    }
+    
+    const saveSchedule = () => {
+      clickIfExistsAndContinue('[data-cy="save-schedule"], button[type="submit"]', verifyScheduleSuccess)
+    }
+    
+    const fillTime = () => {
+      typeIfExistsAndContinue('[data-cy="schedule-time"], input[type="time"]', '09:00', saveSchedule)
+    }
+    
+    const fillDay = () => {
+      typeIfExistsAndContinue('[data-cy="schedule-day"], input[type="number"]', '1', fillTime)
+    }
+    
+    const selectFrequency = () => {
+      selectIfExistsAndContinue('[data-cy="schedule-frequency"], select', 'mensual', fillDay)
+    }
+    
+    const enableSchedule = () => {
+      clickIfExistsAndContinue('[data-cy="schedule-report"], input[type="checkbox"]', selectFrequency)
+    }
+    
+    const selectType = () => {
+      selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', enableSchedule)
+    }
+    
     cy.get('body').then(($body) => {
       if ($body.find('[data-cy="create-report-button"], button').length > 0) {
         cy.get('[data-cy="create-report-button"], button').first().click({ force: true })
-        return selectIfExistsAndContinue('[data-cy="report-type"], select', 'analisis-periodo', () => {
-          return clickIfExistsAndContinue('[data-cy="schedule-report"], input[type="checkbox"]', () => {
-            return selectIfExistsAndContinue('[data-cy="schedule-frequency"], select', 'mensual', () => {
-              typeIfExistsAndContinue('[data-cy="schedule-day"], input[type="number"]', '1', () => {
-                typeIfExistsAndContinue('[data-cy="schedule-time"], input[type="time"]', '09:00', () => {
-                  return clickIfExistsAndContinue('[data-cy="save-schedule"], button[type="submit"]', () => {
-                    return ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
-                      cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-                    })
-                  })
-                })
-              })
-            })
-          })
-        })
+        selectType()
       } else {
         cy.get('body').should('be.visible')
       }
