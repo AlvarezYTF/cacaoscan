@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import PredictionView from '../PredictionView.vue'
@@ -11,7 +11,11 @@ describe('PredictionView', () => {
   it('should render prediction view', () => {
     const wrapper = mount(PredictionView, {
       global: {
-        stubs: { 'router-link': true }
+        stubs: { 
+          'router-link': true,
+          ImageUpload: true,
+          PredictionResults: true
+        }
       }
     })
 

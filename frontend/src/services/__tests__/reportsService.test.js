@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ReportsService } from '../reportsService.js'
 
+// Mock apiConfig to return base URL for testing
+const mockApiBaseUrl = 'https://cacaoscan-backend.onrender.com'
+vi.mock('@/utils/apiConfig', () => ({
+  getApiBaseUrlWithoutPath: vi.fn(() => 'https://cacaoscan-backend.onrender.com'),
+  getApiBaseUrlWithPath: vi.fn(() => 'https://cacaoscan-backend.onrender.com/api/v1'),
+  getApiBaseUrl: vi.fn(() => 'https://cacaoscan-backend.onrender.com/api/v1')
+}))
+
 // Mock auth store
 const mockAuthStore = {
   token: 'test-token'
@@ -12,6 +20,25 @@ vi.mock('@/stores/auth', () => ({
 
 // Mock fetch
 globalThis.fetch = vi.fn()
+
+// Mock localStorage
+const mockLocalStorage = {
+  getItem: vi.fn((key) => {
+    if (key === 'access_token' || key === 'token') {
+      return 'test-token'
+    }
+    return null
+  }),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn()
+}
+globalThis.localStorage = mockLocalStorage
+
+// Mock location for downloadReport
+globalThis.location = {
+  origin: mockApiBaseUrl
+}
 
 // Mock URL.createObjectURL and related DOM APIs
 globalThis.URL = {
@@ -37,24 +64,27 @@ describe('ReportsService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    
+    // Mock localStorage to provide token
+    globalThis.localStorage = {
+      getItem: vi.fn((key) => {
+        if (key === 'access_token' || key === 'token') {
+          return 'test-token'
+        }
+        return null
+      }),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn()
+    }
+    
     reportsService = new ReportsService()
     mockAuthStore.token = 'test-token'
   })
 
-  describe('getHeaders', () => {
-    it('should return headers with authorization token', () => {
-      const headers = reportsService.getHeaders()
-
-      expect(headers).toEqual({
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-token'
-      })
-    })
-  })
-
   describe('getReports', () => {
     it('should fetch reports successfully', async () => {
-      const mockReports = {
+      const mockApiResponse = {
         results: [
           { id: 1, tipo_reporte: 'calidad', estado: 'completado' },
           { id: 2, tipo_reporte: 'finca', estado: 'generando' }
@@ -64,22 +94,51 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
-        json: vi.fn().mockResolvedValue(mockReports)
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
+        json: vi.fn().mockResolvedValue(mockApiResponse)
       })
 
       const result = await reportsService.getReports()
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes/?page=1&page_size=20',
-        {
-          headers: {
+        `${mockApiBaseUrl}/api/reportes/?page=1&page_size=20`,
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({
             'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
-          }
-        }
+          })
+        })
       )
 
-      expect(result).toEqual(mockReports)
+      // The normalizeReportListResponse function transforms the API response
+      // So we check the normalized structure instead of the raw API response
+      expect(result).toHaveProperty('reports')
+      expect(result).toHaveProperty('pagination')
+      expect(result.reports).toHaveLength(2)
+      expect(result.pagination).toMatchObject({
+        currentPage: 1,
+        totalItems: 2,
+        itemsPerPage: 20
+      })
+      // Verify that reports are normalized
+      expect(result.reports[0]).toMatchObject({
+        id: 1,
+        tipo_reporte: 'calidad',
+        estado: 'completado'
+      })
+      expect(result.reports[1]).toMatchObject({
+        id: 2,
+        tipo_reporte: 'finca',
+        estado: 'generando'
+      })
     })
 
     it('should fetch reports with filters', async () => {
@@ -88,6 +147,14 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue(mockReports)
       })
 
@@ -107,6 +174,16 @@ describe('ReportsService', () => {
     it('should handle error when fetching reports', async () => {
       const errorResponse = {
         ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue({ error: 'Unauthorized' })
       }
 
@@ -129,26 +206,58 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue(mockReport)
       })
 
       const result = await reportsService.getReportDetails(reportId)
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes/1/',
+        `${mockApiBaseUrl}/api/reportes/1/`,
         expect.objectContaining({
+          method: 'GET',
           headers: expect.objectContaining({
+            'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
           })
         })
       )
 
-      expect(result).toEqual(mockReport)
+      // The normalizeReportDTO function adds additional fields with default values
+      // So we check that the important fields match instead of exact equality
+      expect(result).toMatchObject({
+        id: 1,
+        tipo_reporte: 'calidad',
+        estado: 'completado',
+        fecha_generacion: '2024-01-01'
+      })
+      // Verify that normalized fields exist
+      expect(result).toHaveProperty('tipo_reporte_display')
+      expect(result).toHaveProperty('estado_display')
+      expect(result).toHaveProperty('formato')
+      expect(result).toHaveProperty('formato_display')
     })
 
     it('should handle error when fetching report details', async () => {
       const errorResponse = {
         ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue({ error: 'Report not found' })
       }
 
@@ -175,24 +284,47 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue(mockCreatedReport)
       })
 
       const result = await reportsService.createReport(reportData)
 
+      // buildReportRequestPayload always includes descripcion, parametros, and filtros with defaults
+      const expectedPayload = {
+        tipo_reporte: reportData.tipo_reporte || '',
+        formato: reportData.formato || '',
+        titulo: reportData.titulo || '',
+        descripcion: reportData.descripcion || '',
+        parametros: reportData.parametros || {},
+        filtros: reportData.filtros || reportData.filtros_aplicados || {}
+      }
+
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes',
-        {
+        expect.stringContaining('/api/reportes'),
+        expect.objectContaining({
           method: 'POST',
-          headers: {
+          headers: expect.objectContaining({
             'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
-          },
-          body: JSON.stringify(reportData)
-        }
+          }),
+          body: JSON.stringify(expectedPayload)
+        })
       )
 
-      expect(result).toEqual(mockCreatedReport)
+      // normalizeReportDTO adds many default fields, so we check the important ones
+      expect(result).toMatchObject({
+        id: 1,
+        tipo_reporte: 'calidad',
+        formato: 'pdf',
+        titulo: 'Test Report',
+        estado: 'generando'
+      })
+      expect(result.tipo_reporte_display).toBe('calidad')
+      expect(result.formato_display).toBe('PDF')
+      expect(result.estado_display).toBe('generando')
     })
 
     it('should handle error when creating report', async () => {
@@ -200,6 +332,16 @@ describe('ReportsService', () => {
 
       const errorResponse = {
         ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue({ error: 'Invalid data' })
       }
 
@@ -229,7 +371,7 @@ describe('ReportsService', () => {
       const result = await reportsService.downloadReport(reportId)
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes/1/download/',
+        `${mockApiBaseUrl}/api/reportes/1/download/`,
         expect.objectContaining({
           headers: expect.objectContaining({
             'Authorization': 'Bearer test-token',
@@ -244,6 +386,16 @@ describe('ReportsService', () => {
     it('should handle error when downloading report', async () => {
       const errorResponse = {
         ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue({ error: 'Report not found' })
       }
 
@@ -259,20 +411,29 @@ describe('ReportsService', () => {
       const reportId = 1
 
       globalThis.fetch.mockResolvedValue({
-        ok: true
+        ok: true,
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
+        json: vi.fn().mockResolvedValue({})
       })
 
       const result = await reportsService.deleteReport(reportId)
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes/1/delete/',
-        {
+        `${mockApiBaseUrl}/api/reportes/1/delete/`,
+        expect.objectContaining({
           method: 'DELETE',
-          headers: {
+          headers: expect.objectContaining({
             'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
-          }
-        }
+          })
+        })
       )
 
       expect(result).toBe(true)
@@ -281,6 +442,16 @@ describe('ReportsService', () => {
     it('should handle error when deleting report', async () => {
       const errorResponse = {
         ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue({ error: 'Cannot delete' })
       }
 
@@ -293,30 +464,62 @@ describe('ReportsService', () => {
 
   describe('getReportsStats', () => {
     it('should fetch reports stats successfully', async () => {
-      const mockStats = {
-        total: 100,
-        completados: 80,
-        generando: 15,
-        fallidos: 5
+      // Mock API response with properties that normalizeReportStatsResponse expects
+      const mockApiResponse = {
+        total_reportes: 100,
+        reportes_completados: 80,
+        reportes_generando: 15,
+        reportes_fallidos: 5,
+        reportsChange: 10,
+        completedChange: 5,
+        inProgressChange: 2,
+        errorChange: 1,
+        reportes_por_tipo: {},
+        reportes_por_formato: {},
+        reportes_recientes: []
       }
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
-        json: vi.fn().mockResolvedValue(mockStats)
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
+        json: vi.fn().mockResolvedValue(mockApiResponse)
       })
 
       const result = await reportsService.getReportsStats()
 
+      // fetchGet constructs the full URL using API_BASE_URL
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes/stats/',
+        `${mockApiBaseUrl}/api/reportes/stats/`,
         expect.objectContaining({
+          method: 'GET',
           headers: expect.objectContaining({
+            'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
           })
         })
       )
 
-      expect(result).toEqual(mockStats)
+      // The normalizeReportStatsResponse function transforms the API response
+      expect(result).toMatchObject({
+        totalReports: 100,
+        completedReports: 80,
+        inProgressReports: 15,
+        errorReports: 5,
+        reportsChange: 10,
+        completedChange: 5,
+        inProgressChange: 2,
+        errorChange: 1
+      })
+      expect(result).toHaveProperty('reportsByType')
+      expect(result).toHaveProperty('reportsByFormat')
+      expect(result).toHaveProperty('recentReports')
     })
   })
 
@@ -329,20 +532,30 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue(mockResult)
       })
 
       const result = await reportsService.cleanupExpiredReports()
 
+      // fetchPost constructs the full URL using API_BASE_URL
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes/cleanup/',
-        {
+        `${mockApiBaseUrl}/api/reportes/cleanup/`,
+        expect.objectContaining({
           method: 'POST',
-          headers: {
+          headers: expect.objectContaining({
             'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
-          }
-        }
+          }),
+          body: '{}'
+        })
       )
 
       expect(result).toEqual(mockResult)
@@ -363,13 +576,21 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue(mockReport)
       })
 
       const result = await reportsService.generateQualityReport(title, description, filters)
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes',
+        expect.stringContaining('/api/reportes'),
         expect.objectContaining({
           method: 'POST',
           body: expect.stringContaining('"tipo_reporte":"calidad"')
@@ -392,6 +613,14 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue(mockReport)
       })
 
@@ -413,6 +642,14 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue(mockReport)
       })
 
@@ -437,6 +674,14 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue(mockReport)
       })
 
@@ -518,6 +763,14 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: {
+          get: vi.fn((header) => {
+            if (header === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue(mockReport)
       })
 

@@ -34,7 +34,11 @@ const createMockError = (message) => new Error(message)
 const testApiCall = async (apiFunction, apiMethod, expectedUrl, expectedParams, mockResponse, expectedResult) => {
   apiMethod.mockResolvedValue(mockResponse)
   const result = await apiFunction(expectedParams)
-  expect(apiMethod).toHaveBeenCalledWith(expectedUrl, expectedParams || {})
+  if (expectedParams && Object.keys(expectedParams).length > 0) {
+    expect(apiMethod).toHaveBeenCalledWith(expectedUrl, { params: expectedParams })
+  } else {
+    expect(apiMethod).toHaveBeenCalledWith(expectedUrl, { params: {} })
+  }
   if (expectedResult === undefined) {
     expect(result).toBeDefined()
   } else {
@@ -73,7 +77,10 @@ describe('lotesApi', () => {
   describe('getLoteById', () => {
     it('should fetch lote by id successfully', async () => {
       const mockResponse = createMockResponse({ id: 1, identificador: 'Lote A', variedad: 'Criollo' })
-      await testApiCall(getLoteById, api.get, '/lotes/1/', {}, mockResponse, mockResponse.data)
+      api.get.mockResolvedValue(mockResponse)
+      const result = await getLoteById(1)
+      expect(api.get).toHaveBeenCalledWith('/lotes/1/', { params: {} })
+      expect(result).toEqual(mockResponse.data)
     })
 
     it('should handle error when fetching lote by id', async () => {
@@ -136,7 +143,10 @@ describe('lotesApi', () => {
   describe('getLoteStats', () => {
     it('should get lote stats successfully', async () => {
       const mockResponse = createMockResponse({ total_analisis: 10, calidad_promedio: 85 })
-      await testApiCall(getLoteStats, api.get, '/lotes/1/stats/', {}, mockResponse, mockResponse.data)
+      api.get.mockResolvedValue(mockResponse)
+      const result = await getLoteStats(1)
+      expect(api.get).toHaveBeenCalledWith('/lotes/1/stats/', { params: {} })
+      expect(result).toEqual(mockResponse.data)
     })
 
     it('should handle error when getting stats', async () => {

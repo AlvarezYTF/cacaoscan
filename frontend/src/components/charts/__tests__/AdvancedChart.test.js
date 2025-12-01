@@ -6,7 +6,16 @@ import AdvancedChart from '../AdvancedChart.vue'
 vi.mock('../BaseChart.vue', () => ({
   default: {
     name: 'BaseChart',
-    template: '<div class="chart-container"><canvas></canvas></div>',
+    template: `
+      <div class="base-chart">
+        <div v-if="title" class="chart-header">
+          <h3 class="chart-title">{{ title }}</h3>
+        </div>
+        <div class="chart-body">
+          <div class="chart-container"><canvas></canvas></div>
+        </div>
+      </div>
+    `,
     props: ['chartData', 'options', 'type', 'title', 'height', 'responsive', 'maintainAspectRatio', 'showControls', 'showLegend', 'legendPosition', 'animation', 'animationDuration', 'colors', 'gradient', 'theme', 'enableResizeObserver'],
     emits: ['chart-click', 'chart-hover', 'chart-loaded'],
     setup(props, { emit }) {
@@ -55,6 +64,7 @@ describe('AdvancedChart', () => {
       }
     })
 
+    expect(wrapper.find('.base-chart').exists()).toBe(true)
     expect(wrapper.find('.chart-container').exists()).toBe(true)
     expect(wrapper.find('canvas').exists()).toBe(true)
   })
@@ -89,8 +99,10 @@ describe('AdvancedChart', () => {
       }
     })
 
-    // AdvancedChart passes height as prop to BaseChart
-    expect(wrapper.props('height')).toBe('500px')
+    // AdvancedChart passes height as prop to BaseChart through $attrs
+    const baseChart = wrapper.findComponent({ name: 'BaseChart' })
+    expect(baseChart.exists()).toBe(true)
+    expect(baseChart.props('height')).toBe('500px')
   })
 
   it('should pass props to BaseChart correctly', () => {

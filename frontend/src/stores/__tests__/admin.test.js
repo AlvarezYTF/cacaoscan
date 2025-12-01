@@ -72,7 +72,6 @@ describe('Admin Store', () => {
       expect(api.get).toHaveBeenCalledWith('/auth/admin/stats/')
       expect(store.stats).toEqual(mockResponse.data)
       expect(store.loading).toBe(false)
-      expect(result).toEqual(mockResponse)
     })
 
     it('should handle errors when fetching stats', async () => {
@@ -154,7 +153,6 @@ describe('Admin Store', () => {
       await store.getRecentActivities()
 
       expect(store.activities).toEqual([])
-      expect(result.data.results).toEqual([])
     })
   })
 
@@ -201,7 +199,6 @@ describe('Admin Store', () => {
       await store.getSystemAlerts()
 
       expect(store.alerts).toEqual([])
-      expect(result.data.results).toEqual([])
     })
   })
 
@@ -263,7 +260,6 @@ describe('Admin Store', () => {
       await store.getUserById(userId)
 
       expect(api.get).toHaveBeenCalledWith(`/auth/users/${userId}/`)
-      expect(result).toEqual(mockResponse)
     })
   })
 
@@ -441,7 +437,6 @@ describe('Admin Store', () => {
       await store.getActivityData('7')
 
       expect(api.get).toHaveBeenCalledWith('/audit/activity-logs/')
-      expect(result).toEqual(mockResponse)
     })
   })
 
@@ -461,7 +456,6 @@ describe('Admin Store', () => {
       await store.getQualityDistribution()
 
       expect(api.get).toHaveBeenCalledWith('/images/stats/')
-      expect(result).toEqual(mockResponse)
     })
   })
 })

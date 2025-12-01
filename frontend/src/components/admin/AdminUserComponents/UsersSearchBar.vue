@@ -3,6 +3,7 @@
     :model-value="searchQuery"
     placeholder="Buscar usuarios..."
     container-class="mb-8"
+    search-cy="user-search"
     @update:model-value="$emit('update:searchQuery', $event)"
     @clear="$emit('update:searchQuery', '')"
   >
@@ -12,6 +13,7 @@
           :value="roleFilter" 
           @change="$emit('update:roleFilter', $event.target.value)"
           class="block w-full lg:w-auto px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+          data-cy="role-filter"
         >
           <option value="">Todos los roles</option>
           <option value="Administrador">Administrador</option>

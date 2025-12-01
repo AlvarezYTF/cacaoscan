@@ -1,6 +1,6 @@
 <template>
   <!-- Charts con diseño profesional mejorado -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" data-cy="dashboard-charts">
     <!-- Activity Chart -->
     <div class="lg:col-span-2 bg-white rounded-2xl border-2 border-gray-200 p-8 hover:shadow-xl hover:border-green-300 transition-all duration-300">
       <div class="flex items-center justify-between mb-6">

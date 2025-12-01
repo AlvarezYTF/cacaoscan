@@ -1,6 +1,6 @@
 import { config } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createMemoryHistory } from 'vue-router'
 import { vi } from 'vitest'
 
 // Mock para Tailwind CSS v4 - clsfn function
@@ -25,11 +25,14 @@ if (globalThis.clsfn === undefined) {
 // Configuración global para tests
 const pinia = createPinia()
 const router = createRouter({
-  history: createWebHistory(),
+  history: createMemoryHistory(),
   routes: [
     { path: '/', component: { template: '<div>Home</div>' } },
     { path: '/login', component: { template: '<div>Login</div>' } },
-    { path: '/dashboard', component: { template: '<div>Dashboard</div>' } }
+    { path: '/dashboard', component: { template: '<div>Dashboard</div>' } },
+    { path: '/reset-password/confirm', component: { template: '<div>PasswordResetConfirm</div>' } },
+    { path: '/reset-password', component: { template: '<div>Reset</div>' } },
+    { path: '/user/prediction', component: { template: '<div>UserPrediction</div>' } }
   ]
 })
 
@@ -84,3 +87,14 @@ const sessionStorageMock = {
   clear: vi.fn(),
 }
 globalThis.sessionStorage = sessionStorageMock
+
+// Mock global de URL.createObjectURL y URL.revokeObjectURL
+if (typeof URL.createObjectURL === 'undefined') {
+  globalThis.URL.createObjectURL = vi.fn((file) => {
+    return `blob:${file.name || 'mock-url'}-${Date.now()}`
+  })
+}
+
+if (typeof URL.revokeObjectURL === 'undefined') {
+  globalThis.URL.revokeObjectURL = vi.fn()
+}

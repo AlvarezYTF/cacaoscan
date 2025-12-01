@@ -2,6 +2,7 @@
   <BaseSearchBar
     :model-value="searchQuery"
     :placeholder="placeholder"
+    search-cy="filter-agricultores"
     @update:model-value="$emit('update:searchQuery', $event)"
     @clear="$emit('update:searchQuery', '')"
   />

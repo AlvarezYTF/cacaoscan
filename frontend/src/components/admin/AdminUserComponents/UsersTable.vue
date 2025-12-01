@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+  <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden" data-cy="users-table">
     <div class="bg-gradient-to-r from-green-50 to-green-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
       <h3 class="text-xl font-bold text-gray-900">Lista de Usuarios</h3>
       <div class="flex items-center space-x-3">
@@ -139,6 +139,7 @@
                   type="button"
                   class="text-green-600 hover:text-green-700 p-2 rounded-lg hover:bg-green-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
                   title="Ver detalles"
+                  data-cy="view-user"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -153,6 +154,7 @@
                   type="button"
                   class="text-amber-600 hover:text-amber-700 p-2 rounded-lg hover:bg-amber-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
                   title="Editar"
+                  data-cy="edit-user"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -177,6 +179,7 @@
                   class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Eliminar" 
                   :disabled="user.is_superuser"
+                  data-cy="delete-user"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

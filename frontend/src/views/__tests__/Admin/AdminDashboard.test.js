@@ -1,58 +1,141 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AdminDashboard from '../../Admin/AdminDashboard.vue'
-import { 
-  createCommonMocks, 
-  adminDashboardComponentMocks,
-  composableMocks,
-  sweetAlert2Mock,
-  createDefaultStubs
-} from '@/test/mocks'
 
-const mocks = createCommonMocks({
-  authStore: {
-    isAuthenticated: true,
-    isAdmin: true,
-    user: { id: 1, email: 'admin@example.com', role: 'admin' }
-  }
-})
+// Create mock store objects that will be reused
+const mockAdminStore = {
+  stats: {
+    users: { total: 0, this_week: 0, this_month: 0 },
+    fincas: { total: 0, this_week: 0, this_month: 0 },
+    images: { total: 0, this_week: 0, this_month: 0 },
+    predictions: { average_confidence: 0 },
+    activity_by_day: { labels: [], data: [] },
+    quality_distribution: { excelente: 0, buena: 0, regular: 0, baja: 0 }
+  },
+  users: [],
+  activities: [],
+  reports: [],
+  alerts: [],
+  loading: false,
+  error: null,
+  getGeneralStats: vi.fn().mockResolvedValue({ data: {} }),
+  getRecentUsers: vi.fn().mockResolvedValue({ data: { results: [] } }),
+  getRecentActivities: vi.fn().mockResolvedValue({ data: { results: [] } }),
+  getSystemAlerts: vi.fn().mockResolvedValue({ data: { results: [] } }),
+  getReportStats: vi.fn().mockResolvedValue({ data: {} }),
+  getActivityData: vi.fn().mockResolvedValue({ data: { labels: [], data: [] } }),
+  getQualityDistribution: vi.fn().mockResolvedValue({ data: {} })
+}
 
+const mockAuthStore = {
+  isAuthenticated: true,
+  isAdmin: true,
+  user: { id: 1, email: 'admin@example.com', role: 'admin' },
+  userRole: 'admin',
+  userFullName: 'Admin User',
+  accessToken: 'test-token',
+  getCurrentUser: vi.fn(),
+  clearAll: vi.fn(),
+  updateLastActivity: vi.fn(),
+  checkSessionTimeout: vi.fn(() => false),
+  logout: vi.fn()
+}
+
+// Create mocks directly in vi.mock factories to avoid hoisting issues
 vi.mock('@/stores/admin', () => ({
-  useAdminStore: () => mocks.adminStore
+  useAdminStore: () => mockAdminStore
 }))
 
 vi.mock('@/stores/auth', () => ({
-  useAuthStore: () => mocks.authStore
+  useAuthStore: () => mockAuthStore
 }))
 
 vi.mock('@/stores/config', () => ({
-  useConfigStore: () => mocks.configStore
+  useConfigStore: () => ({
+    brandName: 'CacaoScan',
+    getConfig: vi.fn()
+  })
 }))
 
-// Mock components
-vi.mock('@/components/layout/Common/Sidebar.vue', () => adminDashboardComponentMocks.Sidebar)
-vi.mock('@/components/admin/AdminDashboardComponents/KPICards.vue', () => adminDashboardComponentMocks.KPICards)
-vi.mock('@/components/admin/AdminDashboardComponents/DashboardCharts.vue', () => adminDashboardComponentMocks.DashboardCharts)
-vi.mock('@/components/admin/AdminDashboardComponents/DashboardTables.vue', () => adminDashboardComponentMocks.DashboardTables)
-vi.mock('@/components/admin/AdminDashboardComponents/DashboardAlerts.vue', () => adminDashboardComponentMocks.DashboardAlerts)
+// Mock vue-router
+const mockRouter = {
+  push: vi.fn(),
+  replace: vi.fn(),
+  go: vi.fn(),
+  back: vi.fn(),
+  forward: vi.fn(),
+  currentRoute: {
+    value: {
+      path: '/admin',
+      name: 'admin-dashboard',
+      params: {},
+      query: {},
+      meta: {}
+    }
+  },
+  isReady: vi.fn().mockResolvedValue(true)
+}
+
+const mockRoute = {
+  path: '/admin',
+  name: 'admin-dashboard',
+  params: {},
+  query: {},
+  meta: {}
+}
+
+vi.mock('vue-router', async () => {
+  const actual = await vi.importActual('vue-router')
+  return {
+    ...actual,
+    useRouter: () => mockRouter,
+    useRoute: () => mockRoute
+  }
+})
 
 // Mock composables
 vi.mock('@/composables/useWebSocket', () => ({
-  useWebSocket: vi.fn(() => composableMocks.useWebSocket.useWebSocket())
+  useWebSocket: vi.fn(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    send: vi.fn()
+  }))
 }))
 
 // Mock sweetalert2
-vi.mock('sweetalert2', () => sweetAlert2Mock)
+vi.mock('sweetalert2', () => ({
+  default: {
+    fire: vi.fn()
+  },
+  fire: vi.fn()
+}))
 
-// Common stubs configuration
-const defaultStubs = createDefaultStubs()
+// Create mocks for use in tests
+const mocks = {
+  adminStore: mockAdminStore,
+  authStore: mockAuthStore
+}
 
 // Helper function to mount component with default stubs
 const mountWithDefaults = (options = {}) => {
+  const defaultStubs = {
+    'router-link': true,
+    'router-view': true,
+    'AdminSidebar': true,
+    'KPICards': true,
+    'DashboardCharts': true,
+    'DashboardTables': true,
+    'DashboardAlerts': true
+  }
+  const globalMocks = {
+    $route: mockRoute,
+    $router: mockRouter
+  }
   return mount(AdminDashboard, {
     global: {
       stubs: defaultStubs,
+      mocks: globalMocks,
       ...options.global
     },
     ...options
@@ -85,11 +168,14 @@ describe('AdminDashboard', () => {
     mocks.adminStore.getRecentActivities.mockResolvedValue({ data: { results: [] } })
     mocks.adminStore.getSystemAlerts.mockResolvedValue({ data: { results: [] } })
     mocks.adminStore.getReportStats.mockResolvedValue({ data: {} })
+    mocks.adminStore.getActivityData.mockResolvedValue({ data: { labels: [], data: [] } })
+    mocks.adminStore.getQualityDistribution.mockResolvedValue({ data: {} })
     
     wrapper = mountWithDefaults()
 
     // Wait for onMounted and async operations to complete
     await wrapper.vm.$nextTick()
+    await flushPromises()
     await new Promise(resolve => setTimeout(resolve, 100))
 
     // Verify that store methods are called

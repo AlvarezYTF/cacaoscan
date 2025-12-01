@@ -120,6 +120,9 @@ const table = useTable({
   enableSelection: false
 })
 
+// Destructure sorting state for template
+const { sortKey, sortOrder } = table
+
 const columns = [
   { key: 'name', label: 'Nombre del Reporte', mobileHidden: false },
   { key: 'type', label: 'Tipo', mobileHidden: true },

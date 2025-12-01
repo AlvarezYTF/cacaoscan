@@ -18,6 +18,7 @@
           :disabled="disabled"
           class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
           :class="inputClass"
+          :data-cy="searchCy || 'search-input'"
         />
         <button
           v-if="showClearButton && modelValue"
@@ -62,6 +63,10 @@ const props = defineProps({
   inputClass: {
     type: String,
     default: 'bg-gray-50'
+  },
+  searchCy: {
+    type: String,
+    default: ''
   }
 })
 

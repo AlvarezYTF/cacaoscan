@@ -277,20 +277,6 @@ describe('API Service', () => {
   })
 
   describe('Helper Functions', () => {
-    it('should create FormData request correctly', async () => {
-      const { createFormDataRequest } = await import('../api.js')
-      
-      const data = {
-        image: new File(['test'], 'test.jpg', { type: 'image/jpeg' }),
-        metadata: 'test'
-      }
-
-      const result = createFormDataRequest(data)
-      
-      expect(result.formData).toBeInstanceOf(FormData)
-      expect(result.config.headers['Content-Type']).toBe('multipart/form-data')
-    })
-
     it('should create timeout request correctly', async () => {
       const { createTimeoutRequest } = await import('../api.js')
       

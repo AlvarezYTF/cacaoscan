@@ -6,7 +6,7 @@
       @menu-click="handleMenuClick" @logout="handleLogout" @toggle-collapse="toggleSidebarCollapse" />
 
     <!-- Main content -->
-    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'">
+    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'" data-cy="admin-training">
 
       <!-- INSERT_YOUR_CODE -->
       <!-- Page Header -->
@@ -183,7 +183,7 @@
 
             <div class="p-6">
               <!-- Training history cards -->
-              <div class="space-y-4">
+              <div class="space-y-4" data-cy="training-jobs">
                 <div v-for="job in filteredTrainingHistory" :key="job.job_id"
                   class="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-green-200 transition-all duration-200">
                   <div class="flex items-center justify-between">
@@ -224,7 +224,9 @@
                       <div class="flex items-center space-x-2">
                         <button @click="viewJobDetails(job)"
                           class="text-green-600 hover:text-green-700 p-2 rounded-lg hover:bg-green-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-                          title="Ver detalles">
+                          title="Ver detalles"
+                          data-cy="view-job-status"
+                        >
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -235,7 +237,9 @@
 
                         <button v-if="job.status === 'running'" @click="cancelJob(job.job_id)"
                           class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-                          title="Cancelar">
+                          title="Cancelar"
+                          data-cy="cancel-job"
+                        >
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M6 18L18 6M6 6l12 12" />
@@ -322,7 +326,9 @@
                   @click="startTraining" 
                   :disabled="isStartingTraining || hasActiveTraining"
                   :title="hasActiveTraining ? `Hay ${activeTrainings.length} entrenamiento${activeTrainings.length > 1 ? 's' : ''} en ejecución. Espera a que ${activeTrainings.length > 1 ? 'terminen' : 'termine'}.` : 'Iniciar nuevo entrenamiento'"
-                  class="w-full inline-flex items-center justify-center px-6 py-3 text-base font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+                  class="w-full inline-flex items-center justify-center px-6 py-3 text-base font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                  data-cy="create-training-job"
+                >
                   <svg v-if="isStartingTraining" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none"
                     viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

@@ -470,11 +470,11 @@ const startMLTraining = async (config = {}) => {
 
 // Re-exportar funciones base necesarias para compatibilidad (DRY)
 // Using export...from would require separate statements for aliases, so keeping this structure
-export { 
-  trainRegressionModel: baseTrainRegression,
-  trainVisionModel: baseTrainVision,
-  getTrainingJobStatus: baseGetJobStatus,
-  getTrainingJobs: baseGetJobs
+export {
+  baseTrainRegression as trainRegressionModel,
+  baseTrainVision as trainVisionModel,
+  baseGetJobStatus as getTrainingJobStatus,
+  baseGetJobs as getTrainingJobs
 }
 
 // Exportar funciones avanzadas

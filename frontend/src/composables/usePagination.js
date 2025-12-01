@@ -141,6 +141,20 @@ export function usePagination(options = {}) {
     }
   }
 
+  const updatePagination = (params) => {
+    if (params) {
+      if (params.page !== undefined) {
+        currentPage.value = params.page
+      }
+      if (params.page_size !== undefined) {
+        itemsPerPage.value = params.page_size
+      }
+      if (params.count !== undefined) {
+        totalItems.value = params.count
+      }
+    }
+  }
+
   const reset = () => {
     currentPage.value = initialPage
     itemsPerPage.value = initialItemsPerPage
@@ -233,6 +247,7 @@ export function usePagination(options = {}) {
     setItemsPerPage,
     setTotalItems,
     updateFromApiResponse,
+    updatePagination,
     reset,
     getPaginationParams,
     syncWithQuery

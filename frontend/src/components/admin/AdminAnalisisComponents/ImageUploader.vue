@@ -54,7 +54,7 @@
       >
         <img 
           :src="getImageUrl(file)" 
-          :alt="file.name ? `Vista previa: ${file.name.replaceAll(/\.[^/.]+$/, '')}` : `Vista previa ${index + 1}`"
+          :alt="file.name ? `Vista previa: ${file.name.replace(/\.[^/.]+$/, '')}` : `Vista previa ${index + 1}`"
           class="w-full h-32 object-cover"
         />
         <button
