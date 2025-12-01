@@ -34,6 +34,11 @@ class CacaoScalers:
         Args:
             scaler_type: Tipo de escalador ("standard", "minmax", "robust")
         """
+        # Validar tipo de escalador
+        valid_types = {"standard", "minmax", "robust"}
+        if scaler_type not in valid_types:
+            raise ValueError(f"Tipo de escalador '{scaler_type}' no soportado. Debe ser uno de: {', '.join(valid_types)}")
+        
         self.scaler_type = scaler_type
         self.scalers: Dict[str, StandardScaler] = {}
         self.is_fitted = False
@@ -121,7 +126,13 @@ class CacaoScalers:
             scaler.fit(target_array)
             self.scalers[target] = scaler
             
-            logger.debug(f"Escalador ajustado para {target}: mean={scaler.mean_[0]:.3f}, std={scaler.scale_[0]:.3f}")
+            # Log different attributes based on scaler type
+            if hasattr(scaler, 'mean_') and hasattr(scaler, 'scale_'):
+                logger.debug(f"Escalador ajustado para {target}: mean={scaler.mean_[0]:.3f}, std={scaler.scale_[0]:.3f}")
+            elif hasattr(scaler, 'min_') and hasattr(scaler, 'scale_'):
+                logger.debug(f"Escalador ajustado para {target}: min={scaler.min_[0]:.3f}, max={scaler.min_[0] + scaler.scale_[0]:.3f}")
+            else:
+                logger.debug(f"Escalador ajustado para {target} (tipo: {type(scaler).__name__})")
         
         self.is_fitted = True
         logger.info("Escaladores ajustados exitosamente")

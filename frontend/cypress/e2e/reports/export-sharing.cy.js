@@ -4,6 +4,15 @@ describe('Reportes - Exportación y Compartir', () => {
     cy.visit('/reportes')
     cy.get('body', { timeout: 10000 }).should('be.visible')
   })
+  
+  // Helper functions to reduce nesting depth
+  const verifySelectorsExist = (selectors, $context, timeout = 3000) => {
+    for (const selector of selectors) {
+      if ($context.find(selector).length > 0) {
+        cy.get(selector, { timeout }).should('exist')
+      }
+    }
+  }
 
   it('debe exportar reporte como PDF', () => {
     cy.get('body').then(($body) => {
@@ -309,11 +318,7 @@ describe('Reportes - Exportación y Compartir', () => {
                     '[data-cy="sharing-method"]',
                     '[data-cy="sharing-recipients"]'
                   ]
-                  sharingSelectors.forEach(selector => {
-                    if ($item.find(selector).length > 0) {
-                      cy.get(selector).should('exist')
-                    }
-                  })
+          verifySelectorsExist(sharingSelectors, $item, 3000)
                 })
               }
             })
@@ -457,11 +462,7 @@ describe('Reportes - Exportación y Compartir', () => {
                     '[data-cy="preview-content"]',
                     '[data-cy="preview-pages"]'
                   ]
-                  previewSelectors.forEach(selector => {
-                    if ($content.find(selector).length > 0) {
-                      cy.get(selector).should('exist')
-                    }
-                  })
+          verifySelectorsExist(previewSelectors, $content, 3000)
                   
                   // Navegar por páginas si existen los botones
                   if ($content.find('[data-cy="next-page"], button').length > 0) {
@@ -555,5 +556,49 @@ describe('Reportes - Exportación y Compartir', () => {
         cy.get('body').should('be.visible')
       }
     })
+  })
+
+  it('debe exportar reporte como CSV', () => {
+    cy.get('[data-cy="report-item"]').first().click()
+    cy.get('[data-cy="download-csv"]').click()
+    cy.verifyDownload('reporte.csv')
+  })
+
+  it('debe exportar reporte como JSON', () => {
+    cy.get('[data-cy="report-item"]').first().click()
+    cy.get('[data-cy="download-json"]').click()
+    cy.verifyDownload('reporte.json')
+  })
+
+  it('debe validar destinatarios de email', () => {
+    cy.get('[data-cy="report-item"]').first().click()
+    cy.get('[data-cy="share-email"]').click()
+    
+    // Email inválido
+    cy.get('[data-cy="email-recipients"]').type('invalid-email')
+    cy.get('[data-cy="send-email"]').click()
+    
+    cy.get('[data-cy="email-error"]')
+      .should('be.visible')
+      .and('contain', 'Email inválido')
+  })
+
+  it('debe permitir cancelar exportación en progreso', () => {
+    cy.get('[data-cy="report-item"]').first().click()
+    cy.get('[data-cy="download-pdf"]').click()
+    cy.get('[data-cy="confirm-download"]').click()
+    
+    // Cancelar exportación
+    cy.get('[data-cy="cancel-export"]').click()
+    cy.get('[data-cy="export-progress"]').should('not.exist')
+  })
+
+  it('debe mostrar tamaño estimado del archivo', () => {
+    cy.get('[data-cy="report-item"]').first().click()
+    cy.get('[data-cy="download-pdf"]').click()
+    
+    // Verificar tamaño estimado
+    cy.get('[data-cy="estimated-size"]').should('be.visible')
+    cy.get('[data-cy="estimated-size"]').should('contain', 'MB')
   })
 })

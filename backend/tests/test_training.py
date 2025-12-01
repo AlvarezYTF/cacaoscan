@@ -9,7 +9,7 @@ import requests
 
 # Load credentials from environment variables for security
 ADMIN_USERNAME = os.getenv('TEST_ADMIN_USERNAME', 'admin_training')
-ADMIN_PASSWORD = os.getenv('TEST_ADMIN_PASSWORD', '')  # noqa: S106  # NOSONAR - S2068 credentials from environment
+ADMIN_PASSWORD = os.getenv('TEST_ADMIN_PASSWORD', 'test_admin_password_123')  # noqa: S106  # NOSONAR - S2068 credentials from environment
 
 BASE_URL = 'http://127.0.0.1:8000'
 LOGIN_URL = f'{BASE_URL}/api/v1/auth/login/'

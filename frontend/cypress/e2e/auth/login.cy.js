@@ -3,6 +3,15 @@ describe('Autenticación - Login', () => {
     cy.visit('/login')
     cy.get('body', { timeout: 10000 }).should('be.visible')
   })
+  
+  // Helper functions to reduce nesting depth
+  const verifySelectorsExist = (selectors, $context, timeout = 3000) => {
+    for (const selector of selectors) {
+      if ($context.find(selector).length > 0) {
+        cy.get(selector, { timeout }).should('exist')
+      }
+    }
+  }
 
   it('debe mostrar el formulario de login correctamente', () => {
     cy.get('body').then(($body) => {
@@ -14,11 +23,7 @@ describe('Autenticación - Login', () => {
         '[data-cy="email-input"]', '[data-cy="password-input"]', '[data-cy="login-button"]',
         '[data-cy="forgot-password-link"]', '[data-cy="register-link"]'
       ]
-      selectors.forEach(selector => {
-        if ($body.find(selector).length > 0) {
-          cy.get(selector, { timeout: 5000 }).should('exist')
-        }
-      })
+          verifySelectorsExist(selectors, $body, 5000)
     })
   })
 

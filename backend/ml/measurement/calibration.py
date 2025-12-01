@@ -14,6 +14,7 @@ import cv2
 import numpy as np
 import json
 import logging
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Any
 from dataclasses import dataclass
@@ -146,13 +147,14 @@ class CoinDetector:
         diameter_pixels = 2 * radius
         
         # Rangos aproximados para diferentes monedas (se ajustarían con datos reales)
-        if 40 <= diameter_pixels <= 50:  # ~23mm
+        # Rangos sin solapamiento para evitar ambigüedad
+        if 42 <= diameter_pixels <= 50:  # ~23mm (1000 COP)
             return ReferenceObject.COIN_1000_COP
-        elif 35 <= diameter_pixels <= 45:  # ~21mm
+        elif 38 <= diameter_pixels < 42:  # ~21mm (500 COP)
             return ReferenceObject.COIN_500_COP
-        elif 30 <= diameter_pixels <= 40:  # ~17mm
+        elif 32 <= diameter_pixels < 38:  # ~17mm (200 COP)
             return ReferenceObject.COIN_200_COP
-        elif 25 <= diameter_pixels <= 35:  # ~15mm
+        elif 28 <= diameter_pixels < 32:  # ~15mm (100 COP)
             return ReferenceObject.COIN_100_COP
         
         return None

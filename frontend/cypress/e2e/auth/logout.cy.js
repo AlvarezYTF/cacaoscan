@@ -40,7 +40,7 @@ describe('Autenticación - Logout', () => {
   it('debe hacer logout desde cualquier página', () => {
     const pages = ['/admin/dashboard', '/analisis', '/agricultor-dashboard']
     
-    pages.forEach((page, index) => {
+    for (const [index, page] of pages.entries()) {
       cy.visit(page)
       cy.get('body', { timeout: 10000 }).should('be.visible')
       
@@ -60,7 +60,7 @@ describe('Autenticación - Logout', () => {
           })
         }
       })
-    })
+    }
   })
 
   it('debe limpiar datos de sesión al hacer logout', () => {

@@ -13,7 +13,7 @@ describe('Security - Input Sanitization & XSS', () => {
     cy.get('body', { timeout: 10000 }).should('be.visible')
   })
 
-  maliciousInputs.forEach(input => {
+  for (const input of maliciousInputs) {
     it(`should sanitize input: ${input} in user search`, () => {
       cy.get('body').then(($body) => {
         if ($body.find('[data-cy="search-input"], input[type="search"], input').length > 0) {
@@ -29,7 +29,7 @@ describe('Security - Input Sanitization & XSS', () => {
         }
       })
     })
-  })
+  }
 
   it('should escape HTML in comments/notes', () => {
     cy.visit('/detalle-analisis/1')

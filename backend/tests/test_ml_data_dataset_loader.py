@@ -173,17 +173,18 @@ class TestCacaoDatasetLoader:
                  'peso': [1.5, 1.8, 2.0],
                  'image_path': ['cacao_images/raw/1.bmp', 'cacao_images/raw/2.bmp', 'cacao_images/raw/3.bmp']
              })), \
-             patch.object(dataset_loader, 'validate_images_exist', return_value=(
-                 pd.DataFrame({
-                     'id': [1, 2],
-                     'alto': [20.0, 25.0],
-                     'ancho': [12.0, 15.0],
-                     'grosor': [8.0, 9.0],
-                     'peso': [1.5, 1.8],
-                     'image_path': ['cacao_images/raw/1.bmp', 'cacao_images/raw/2.bmp']
-                 }),
-                 [3]
-             )):
+            patch.object(dataset_loader, 'validate_images_exist', return_value=(
+                pd.DataFrame({
+                    'id': [1, 2],
+                    'alto': [20.0, 25.0],
+                    'ancho': [12.0, 15.0],
+                    'grosor': [8.0, 9.0],
+                    'peso': [1.5, 1.8],
+                    'image_path': ['cacao_images/raw/1.bmp', 'cacao_images/raw/2.bmp'],
+                    'crop_image_path': ['cacao_images/crops/1.png', 'cacao_images/crops/2.png']
+                }),
+                [3]
+            )):
             records = dataset_loader.get_valid_records()
             
             assert isinstance(records, list)
@@ -210,10 +211,11 @@ class TestCacaoDatasetLoader:
                      'ancho': [12.0, 15.0],
                      'grosor': [8.0, 9.0],
                      'peso': [1.5, 1.8],
-                     'image_path': ['cacao_images/raw/1.bmp', 'cacao_images/raw/2.bmp']
-                 }),
-                 [3]
-             )):
+                    'image_path': ['cacao_images/raw/1.bmp', 'cacao_images/raw/2.bmp'],
+                    'crop_image_path': ['cacao_images/crops/1.png', 'cacao_images/crops/2.png']
+                }),
+                [3]
+            )):
             stats = dataset_loader.get_dataset_stats()
             
             assert isinstance(stats, dict)
@@ -261,10 +263,11 @@ class TestCacaoDatasetLoader:
                      'ancho': [12.0, 15.0],
                      'grosor': [8.0, 9.0],
                      'peso': [1.5, 1.8],
-                     'image_path': ['cacao_images/raw/1.bmp', 'cacao_images/raw/2.bmp']
-                 }),
-                 []
-             )):
+                    'image_path': ['cacao_images/raw/1.bmp', 'cacao_images/raw/2.bmp'],
+                    'crop_image_path': ['cacao_images/crops/1.png', 'cacao_images/crops/2.png']
+                }),
+                []
+            )):
             target_values, records = dataset_loader.get_target_data('alto')
             
             assert isinstance(target_values, np.ndarray)
@@ -283,7 +286,11 @@ class TestDatasetLoaderConvenienceFunctions:
             mock_loader = Mock()
             mock_loader.load_dataset.return_value = pd.DataFrame({'id': [1, 2]})
             mock_loader.validate_images_exist.return_value = (
-                pd.DataFrame({'id': [1, 2]}),
+                pd.DataFrame({
+                    'id': [1, 2],
+                    'image_path': ['cacao_images/raw/1.bmp', 'cacao_images/raw/2.bmp'],
+                    'crop_image_path': ['cacao_images/crops/1.png', 'cacao_images/crops/2.png']
+                }),
                 []
             )
             mock_loader_class.return_value = mock_loader

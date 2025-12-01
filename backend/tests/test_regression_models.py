@@ -142,7 +142,8 @@ class TestCreateModel:
         model = create_model(
             model_type="resnet18",
             num_outputs=1,
-            multi_head=False
+            multi_head=False,
+            use_optimized=False  # Use standard model for test
         )
         
         assert isinstance(model, ResNet18Regression)

@@ -243,7 +243,7 @@ class CacaoDatasetLoader:
         """
         try:
             df = self.load_dataset()
-            valid_df, _ = self.validate_images_exist(df)
+            valid_df, missing_ids = self.validate_images_exist(df)
             
             stats = {
                 'total_records': len(df),

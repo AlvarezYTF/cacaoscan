@@ -160,20 +160,26 @@ class TestImageManagementService:
     def test_get_image_details_success(self, mock_get_model, management_service, 
                                        mock_user, mock_cacao_image):
         """Test getting image details."""
-        # Create a proper queryset mock that is iterable - use a list directly
+        # Create a proper queryset mock that is iterable - return empty list directly
+        mock_predictions_queryset = Mock()
+        mock_predictions_queryset.order_by = Mock(return_value=[])
         mock_cacao_image.predictions = Mock()
-        mock_cacao_image.predictions.all.return_value.order_by.return_value = []  # Empty list is iterable
+        mock_cacao_image.predictions.all.return_value = mock_predictions_queryset
         
         mock_model = Mock()
         mock_model.objects.select_related.return_value.prefetch_related.return_value.get.return_value = mock_cacao_image
         mock_model.DoesNotExist = Exception
         mock_get_model.return_value = mock_model
         
-        result = management_service.get_image_details(1, mock_user)
-        
-        assert result.success is True
-        assert 'id' in result.data
-        assert 'predictions' in result.data
+        # Also patch CacaoImage model directly for get_image_details
+        with patch('images_app.services.image.management_service.CacaoImage') as mock_cacao_model:
+            mock_cacao_model.objects.select_related.return_value.prefetch_related.return_value.get.return_value = mock_cacao_image
+            mock_cacao_model.DoesNotExist = Exception
+            result = management_service.get_image_details(1, mock_user)
+            
+            assert result.success is True
+            assert 'id' in result.data
+            assert 'predictions' in result.data
     
     @patch('images_app.services.image.management_service.get_model_safely')
     def test_get_image_details_not_found(self, mock_get_model, management_service, mock_user):
@@ -196,13 +202,22 @@ class TestImageManagementService:
                                           mock_user, mock_cacao_image):
         """Test updating image metadata."""
         mock_cacao_image.metadata = {'old': 'value'}
+        # Mock predictions queryset to be iterable
+        mock_predictions_queryset = Mock()
+        mock_predictions_queryset.order_by = Mock(return_value=[])
+        mock_cacao_image.predictions = Mock()
+        mock_cacao_image.predictions.all.return_value = mock_predictions_queryset
         mock_model = Mock()
         mock_model.objects.select_related.return_value.prefetch_related.return_value.get.return_value = mock_cacao_image
         mock_model.DoesNotExist = Exception
         mock_get_model.return_value = mock_model
         
-        new_metadata = {'new': 'value', 'key': 'data'}
-        result = management_service.update_image_metadata(1, mock_user, new_metadata)
+        # Also patch CacaoImage model directly for update_image_metadata
+        with patch('images_app.services.image.management_service.CacaoImage') as mock_cacao_model:
+            mock_cacao_model.objects.select_related.return_value.prefetch_related.return_value.get.return_value = mock_cacao_image
+            mock_cacao_model.DoesNotExist = Exception
+            new_metadata = {'new': 'value', 'key': 'data'}
+            result = management_service.update_image_metadata(1, mock_user, new_metadata)
         
         assert result.success is True
         assert mock_cacao_image.metadata == new_metadata
@@ -213,19 +228,25 @@ class TestImageManagementService:
                                   mock_user, mock_cacao_image):
         """Test deleting an image."""
         # Create a proper queryset mock that is iterable - use a list directly
+        mock_predictions_queryset = Mock()
+        mock_predictions_queryset.order_by = Mock(return_value=[])  # Empty list is iterable
         mock_cacao_image.predictions = Mock()
         mock_cacao_image.predictions.count.return_value = 2
-        mock_cacao_image.predictions.all.return_value.order_by.return_value = []  # Empty list is iterable
+        mock_cacao_image.predictions.all.return_value = mock_predictions_queryset
         
         mock_model = Mock()
         mock_model.objects.select_related.return_value.prefetch_related.return_value.get.return_value = mock_cacao_image
         mock_model.DoesNotExist = Exception
         mock_get_model.return_value = mock_model
         
-        result = management_service.delete_image(1, mock_user)
-        
-        assert result.success is True
-        mock_cacao_image.delete.assert_called_once()
+        # Also patch CacaoImage model directly for delete_image
+        with patch('images_app.services.image.management_service.CacaoImage') as mock_cacao_model:
+            mock_cacao_model.objects.select_related.return_value.get.return_value = mock_cacao_image
+            mock_cacao_model.DoesNotExist = Exception
+            result = management_service.delete_image(1, mock_user)
+            
+            assert result.success is True
+            mock_cacao_image.delete.assert_called_once()
     
     @patch('images_app.services.image.management_service.get_model_safely')
     def test_bulk_delete_images_success(self, mock_get_model, management_service, mock_user):
@@ -234,15 +255,21 @@ class TestImageManagementService:
         mock_queryset = Mock()
         mock_queryset.filter.return_value.select_related.return_value.prefetch_related.return_value = mock_queryset
         mock_queryset.__len__ = Mock(return_value=2)
+        mock_queryset.__iter__ = Mock(return_value=iter(mock_images))
         mock_queryset.count.return_value = 2
+        mock_queryset.__len__ = Mock(return_value=2)
+        mock_queryset.__iter__ = Mock(return_value=iter([Mock(id=1), Mock(id=2)]))
         mock_model = Mock()
         mock_model.objects.filter.return_value = mock_queryset
         mock_get_model.return_value = mock_model
         
-        result = management_service.bulk_delete_images([1, 2], mock_user)
-        
-        assert result.success is True
-        assert result.data['deleted_count'] == 2
+        # Also patch CacaoImage model directly for bulk_delete_images
+        with patch('images_app.services.image.management_service.CacaoImage') as mock_cacao_model:
+            mock_cacao_model.objects.filter.return_value = mock_queryset
+            result = management_service.bulk_delete_images([1, 2], mock_user)
+            
+            assert result.success is True
+            assert result.data['deleted_count'] == 2
     
     def test_bulk_delete_images_empty_list(self, management_service, mock_user):
         """Test bulk delete with empty list."""
@@ -255,19 +282,34 @@ class TestImageManagementService:
     def test_get_image_statistics_success(self, mock_get_model, management_service, mock_user):
         """Test getting image statistics."""
         mock_queryset = Mock()
-        mock_queryset.filter.return_value.select_related.return_value.prefetch_related.return_value = mock_queryset
+        mock_queryset.filter.return_value = mock_queryset
+        mock_queryset.select_related.return_value = mock_queryset
+        mock_queryset.prefetch_related.return_value = mock_queryset
         mock_queryset.count.return_value = 10
-        mock_queryset.filter.return_value.count.return_value = 5
-        mock_queryset.aggregate.return_value = {'total': 10240, 'avg': 1024}
+        
+        # Configure aggregate to return different values
+        call_count = [0]
+        def aggregate_side_effect(**kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return {'total': 10240}
+            elif call_count[0] == 2:
+                return {'avg': 1024}
+            return {}
+        
+        mock_queryset.aggregate.side_effect = aggregate_side_effect
         mock_queryset.values.return_value.annotate.return_value.values_list.return_value = [('image/jpeg', 8), ('image/png', 2)]
         mock_model = Mock()
         mock_model.objects.filter.return_value = mock_queryset
         mock_get_model.return_value = mock_model
         
-        result = management_service.get_image_statistics(mock_user)
-        
-        assert result.success is True
-        assert 'total_images' in result.data
+        # Also patch CacaoImage model directly for get_image_statistics
+        with patch('images_app.services.image.management_service.CacaoImage') as mock_cacao_model:
+            mock_cacao_model.objects.filter.return_value = mock_queryset
+            result = management_service.get_image_statistics(mock_user)
+            
+            assert result.success is True
+            assert 'total_images' in result.data
         assert 'processed_images' in result.data
         assert 'file_types' in result.data
 

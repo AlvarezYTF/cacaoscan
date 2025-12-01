@@ -437,4 +437,74 @@ describe('Manejo de Errores - Errores de Red', () => {
       }
     })
   })
+
+  it('debe manejar error de servicio no disponible', () => {
+    cy.intercept('GET', '/api/fincas/', {
+      statusCode: 503,
+      body: { error: 'Servicio no disponible' }
+    }).as('serviceUnavailable')
+    
+    cy.visit('/mis-fincas')
+    cy.wait('@serviceUnavailable')
+    
+    cy.get('[data-cy="error-message"]')
+      .should('be.visible')
+      .and('contain', 'Servicio no disponible')
+  })
+
+  it('debe manejar error de gateway', () => {
+    cy.intercept('GET', '/api/fincas/', {
+      statusCode: 502,
+      body: { error: 'Bad Gateway' }
+    }).as('badGateway')
+    
+    cy.visit('/mis-fincas')
+    cy.wait('@badGateway')
+    
+    cy.get('[data-cy="error-message"]')
+      .should('be.visible')
+      .and('contain', 'Error del servidor')
+  })
+
+  it('debe manejar error de versión no soportada', () => {
+    cy.intercept('GET', '/api/fincas/', {
+      statusCode: 505,
+      body: { error: 'Versión HTTP no soportada' }
+    }).as('versionError')
+    
+    cy.visit('/mis-fincas')
+    cy.wait('@versionError')
+    
+    cy.get('[data-cy="error-message"]')
+      .should('be.visible')
+  })
+
+  it('debe manejar error de payload demasiado grande', () => {
+    cy.intercept('POST', '/api/images/', {
+      statusCode: 413,
+      body: { error: 'Payload demasiado grande' }
+    }).as('payloadTooLarge')
+    
+    cy.visit('/nuevo-analisis')
+    
+    cy.get('[data-cy="upload-button"]').click()
+    cy.wait('@payloadTooLarge')
+    
+    cy.get('[data-cy="upload-error"]')
+      .should('be.visible')
+      .and('contain', 'Archivo demasiado grande')
+  })
+
+  it('debe manejar error de método no permitido', () => {
+    cy.intercept('PATCH', '/api/fincas/1/', {
+      statusCode: 405,
+      body: { error: 'Método no permitido' }
+    }).as('methodNotAllowed')
+    
+    cy.visit('/mis-fincas')
+    cy.wait('@methodNotAllowed')
+    
+    cy.get('[data-cy="error-message"]')
+      .should('be.visible')
+  })
 })
