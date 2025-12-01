@@ -191,49 +191,43 @@ const handleItemsPerPageChange = (newSize) => {
 </script>
 
 <style scoped>
+.pagination {
+  margin-bottom: 0;
+}
+
+.page-link {
+  color: #007bff;
+  border-color: #dee2e6;
+  transition: all 0.2s ease-in-out;
+}
+
+.page-link:hover {
+  color: #0056b3;
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.page-item.active .page-link {
+  background-color: #1f4e79;
+  border-color: #1f4e79;
+  color: #ffffff;
+}
+
+.page-item.disabled .page-link {
+  color: #6c757d;
+  background-color: #fff;
+  border-color: #dee2e6;
+  cursor: not-allowed;
+}
+
+.page-link:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
 /* Responsive adjustments */
-@media (max-width: 768px) {
-  .md\:px-6 {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-  
-  .md\:py-4 {
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-  }
-  
-  .text-xs {
-    font-size: 0.75rem;
-    line-height: 1rem;
-  }
-}
-
-@media (max-width: 640px) {
-  .px-3 {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
-  
-  .py-3 {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
-  
-  .text-xs {
-    font-size: 0.75rem;
-    line-height: 1rem;
-  }
-  
-  .space-y-3 > * + * {
-    margin-top: 0.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .px-3 {
-    padding-left: 0.375rem;
-    padding-right: 0.375rem;
+@media (max-width: 576px) {
+  .pagination {
+    font-size: 0.875rem;
   }
   
   .py-3 {

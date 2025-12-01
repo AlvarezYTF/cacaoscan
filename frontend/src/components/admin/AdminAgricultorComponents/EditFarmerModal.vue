@@ -28,16 +28,20 @@
           <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 mb-6">
             <li class="mr-2">
               <button @click="activeTab = 'info'"
+              <button @click="activeTab = 'info'"
                 :class="activeTab === 'info' ? 'text-green-600 border-green-600' : 'text-gray-500 border-transparent'"
                 class="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-600 transition-all duration-200"
+                type="button">
                 type="button">
                 Información Personal
               </button>
             </li>
             <li>
               <button @click="activeTab = 'fincas'"
+              <button @click="activeTab = 'fincas'"
                 :class="activeTab === 'fincas' ? 'text-green-600 border-green-600' : 'text-gray-500 border-transparent'"
                 class="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-600 transition-all duration-200"
+                type="button">
                 type="button">
                 Fincas ({{ fincasList.length }})
               </button>
@@ -70,7 +74,9 @@
               <div class="flex items-center justify-between mb-4">
                 <h4 class="text-lg font-bold text-gray-900">Fincas Registradas</h4>
                 <button @click="showCreateFinca = !showCreateFinca"
+                <button @click="showCreateFinca = !showCreateFinca"
                   class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-all duration-200"
+                  type="button">
                   type="button">
                   <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -90,12 +96,18 @@
                     <input type="text" id="finca_nombre" v-model="newFinca.nombre"
                       class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
                       placeholder="Ej: Finca El Paraíso" required />
+                    <input type="text" id="finca_nombre" v-model="newFinca.nombre"
+                      class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
+                      placeholder="Ej: Finca El Paraíso" required />
                   </div>
 
                   <div>
                     <label for="finca_municipio" class="block mb-2 text-sm font-semibold text-gray-700">
                       Municipio <span class="text-red-500">*</span>
                     </label>
+                    <input type="text" id="finca_municipio" v-model="newFinca.municipio"
+                      class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
+                      placeholder="Ej: Medellín" required />
                     <input type="text" id="finca_municipio" v-model="newFinca.municipio"
                       class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
                       placeholder="Ej: Medellín" required />
@@ -108,12 +120,18 @@
                     <input type="text" id="finca_departamento" v-model="newFinca.departamento"
                       class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
                       placeholder="Ej: Antioquia" required />
+                    <input type="text" id="finca_departamento" v-model="newFinca.departamento"
+                      class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
+                      placeholder="Ej: Antioquia" required />
                   </div>
 
                   <div>
                     <label for="finca_hectareas" class="block mb-2 text-sm font-semibold text-gray-700">
                       Hectáreas <span class="text-red-500">*</span>
                     </label>
+                    <input type="number" id="finca_hectareas" v-model.number="newFinca.hectareas"
+                      class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
+                      placeholder="0.00" step="0.01" min="0.01" required />
                     <input type="number" id="finca_hectareas" v-model.number="newFinca.hectareas"
                       class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
                       placeholder="0.00" step="0.01" min="0.01" required />
@@ -126,12 +144,18 @@
                     <input type="text" id="finca_ubicacion" v-model="newFinca.ubicacion"
                       class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
                       placeholder="Dirección específica o referencia" />
+                    <input type="text" id="finca_ubicacion" v-model="newFinca.ubicacion"
+                      class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
+                      placeholder="Dirección específica o referencia" />
                   </div>
 
                   <div>
                     <label for="finca_coordenadas_lat" class="block mb-2 text-sm font-semibold text-gray-700">
                       Latitud GPS
                     </label>
+                    <input type="number" id="finca_coordenadas_lat" v-model.number="newFinca.coordenadas_lat"
+                      class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
+                      placeholder="Ej: 4.6097" step="0.0000001" />
                     <input type="number" id="finca_coordenadas_lat" v-model.number="newFinca.coordenadas_lat"
                       class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
                       placeholder="Ej: 4.6097" step="0.0000001" />
@@ -144,20 +168,34 @@
                     <input type="number" id="finca_coordenadas_lng" v-model.number="newFinca.coordenadas_lng"
                       class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
                       placeholder="Ej: -74.0817" step="0.0000001" />
+                    <input type="number" id="finca_coordenadas_lng" v-model.number="newFinca.coordenadas_lng"
+                      class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full px-4 py-3 transition-all duration-200"
+                      placeholder="Ej: -74.0817" step="0.0000001" />
                   </div>
                 </div>
 
                 <div class="flex items-center justify-end gap-3 mt-4">
                   <button @click="showCreateFinca = false; resetNewFinca()"
+                  <button @click="showCreateFinca = false; resetNewFinca()"
                     class="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                    type="button">
                     type="button">
                     Cancelar
                   </button>
                   <button @click="handleCreateFinca" :disabled="isCreatingFinca"
+                  <button @click="handleCreateFinca" :disabled="isCreatingFinca"
                     class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    type="button">
                     type="button">
                     <span v-if="!isCreatingFinca">Crear Finca</span>
                     <span v-else class="flex items-center">
+                      <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
+                        fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
                       <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
                         fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
@@ -176,11 +214,16 @@
               <div v-if="fincasList.length > 0" class="space-y-3">
                 <div v-for="finca in fincasList" :key="finca.id || finca.nombre"
                   class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200">
+                <div v-for="finca in fincasList" :key="finca.id || finca.nombre"
+                  class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200">
                   <div class="flex items-start justify-between">
                     <div class="flex-1">
                       <div class="flex items-center gap-3 mb-2">
                         <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
                           <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                            </path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
                             </path>
@@ -197,12 +240,19 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9">
                             </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9">
+                            </path>
                           </svg>
                           {{ finca.hectareas }} hectáreas
                         </span>
                         <span :class="finca.activa ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
                           class="px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5">
+                        <span :class="finca.activa ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                          class="px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
+                            </path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
                             </path>
                           </svg>
@@ -210,10 +260,16 @@
                         </span>
                       </div>
 
+
                       <!-- Coordenadas GPS -->
                       <div v-if="finca.coordenadas_lat && finca.coordenadas_lng"
                         class="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                      <div v-if="finca.coordenadas_lat && finca.coordenadas_lng"
+                        class="mt-2 flex items-center gap-2 text-xs text-gray-500">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                          </path>
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
                           </path>
@@ -228,6 +284,9 @@
               <!-- Empty state -->
               <div v-else class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                  </path>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
                   </path>
@@ -317,6 +376,11 @@ const {
   generos,
   departamentos,
   municipios,
+const {
+  tiposDocumento,
+  generos,
+  departamentos,
+  municipios,
   isLoadingCatalogos,
   cargarCatalogos,
   cargarMunicipios,
@@ -397,6 +461,7 @@ watch(() => props.farmer, async (newFarmer) => {
     formData.region = newFarmer.region || ''
     formData.municipality = newFarmer.municipality || ''
 
+
     // Load fincas
     await loadFarmersFincas(newFarmer.id)
 
@@ -414,6 +479,7 @@ watch(() => props.farmer, async (newFarmer) => {
 
       if (statusCode === 404) {
         // 404 is expected - persona doesn't exist yet and will be created on save
+        console.warn('Persona no encontrada para el usuario, se podrá crear al guardar')
         console.warn('Persona no encontrada para el usuario, se podrá crear al guardar')
       } else {
         // Handle unexpected errors by showing notification to user
@@ -480,6 +546,7 @@ const handleCreateFinca = async () => {
 const handleUpdate = async () => {
   // Validate required fields
   clearErrors()
+
 
   if (!formData.first_name || !formData.last_name || !formData.email) {
     showError('Por favor completa todos los campos requeridos')
