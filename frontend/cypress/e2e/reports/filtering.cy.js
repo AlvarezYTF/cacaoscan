@@ -17,12 +17,14 @@ describe('Reports & Filtering', () => {
       })
 
       it('should load reports dashboard', () => {
+        const checkReportsTitle = ($el) => {
+          const text = $el.text().toLowerCase()
+          return text.includes('reportes') || text.includes('reports') || text.length > 0
+        }
+
         cy.get('body', { timeout: 10000 }).should('be.visible')
         ifFoundInBody('h1, h2, .page-title', () => {
-          cy.get('h1, h2, .page-title', { timeout: 5000 }).should('satisfy', ($el) => {
-            const text = $el.text().toLowerCase()
-            return text.includes('reportes') || text.includes('reports') || text.length > 0
-          })
+          cy.get('h1, h2, .page-title', { timeout: 5000 }).should('satisfy', checkReportsTitle)
         })
         ifFoundInBody('[data-cy="chart-main"], .chart, canvas', () => {
           cy.get('[data-cy="chart-main"], .chart, canvas', { timeout: 5000 }).should('exist')
@@ -30,13 +32,17 @@ describe('Reports & Filtering', () => {
       })
 
       it('should filter reports by date range', () => {
+        const handleApplyDateRange = () => {
+          cy.get('body', { timeout: 5000 }).should('be.visible')
+        }
+
+        const handleDatePicker = () => {
+          cy.get('.daterangepicker, .date-picker').should('be.visible')
+          return clickIfExistsAndContinue('.applyBtn, button[type="submit"]', handleApplyDateRange)
+        }
+
         return clickIfExistsAndContinue('[data-cy="date-range-picker"], input[type="date"], .date-picker', () => {
-          return ifFoundInBody('.daterangepicker, .date-picker', () => {
-            cy.get('.daterangepicker, .date-picker').should('be.visible')
-            return clickIfExistsAndContinue('.applyBtn, button[type="submit"]', () => {
-              cy.get('body', { timeout: 5000 }).should('be.visible')
-            })
-          })
+          return ifFoundInBody('.daterangepicker, .date-picker', handleDatePicker)
         }, () => {
           cy.get('body').should('be.visible')
         })
@@ -44,32 +50,41 @@ describe('Reports & Filtering', () => {
 
       if (role !== 'farmer') {
         it('should filter by farmer (admin/analyst only)', () => {
-          return ifFoundInBody('[data-cy="select-farmer"], select', () => {
-            cy.get('[data-cy="select-farmer"], select').first().should('exist')
-            return selectIfExistsAndContinue('[data-cy="select-farmer"], select', '1', () => {
-              return ifFoundInBody('[data-cy="reports-table"], .table, table', () => {
-                cy.get('[data-cy="reports-table"], .table, table').should('be.visible')
-              }, () => {
-                cy.get('body').should('be.visible')
-              })
+          const handleReportsTable = () => {
+            cy.get('[data-cy="reports-table"], .table, table').should('be.visible')
+          }
+
+          const handleFarmerSelection = () => {
+            return ifFoundInBody('[data-cy="reports-table"], .table, table', handleReportsTable, () => {
+              cy.get('body').should('be.visible')
             })
-          }, () => {
+          }
+
+          const handleSelectFarmer = () => {
+            cy.get('[data-cy="select-farmer"], select').first().should('exist')
+            return selectIfExistsAndContinue('[data-cy="select-farmer"], select', '1', handleFarmerSelection)
+          }
+
+          return ifFoundInBody('[data-cy="select-farmer"], select', handleSelectFarmer, () => {
             cy.get('body').should('be.visible')
           })
         })
       }
 
       it('should toggle chart types', () => {
-        return clickIfExistsAndContinue('[data-cy="btn-chart-bar"], button, .chart-toggle', () => {
-          return ifFoundInBody('canvas, .chart', () => {
-            cy.get('canvas, .chart').first().should('exist')
-          }).then(() => {
-            return clickIfExistsAndContinue('[data-cy="btn-chart-line"], button', () => {
-              return ifFoundInBody('canvas, .chart', () => {
-                cy.get('canvas, .chart').first().should('exist')
-              })
-            })
+        const handleLineChart = () => {
+          cy.get('canvas, .chart').first().should('exist')
+        }
+
+        const handleBarChart = () => {
+          cy.get('canvas, .chart').first().should('exist')
+          return clickIfExistsAndContinue('[data-cy="btn-chart-line"], button', () => {
+            return ifFoundInBody('canvas, .chart', handleLineChart)
           })
+        }
+
+        return clickIfExistsAndContinue('[data-cy="btn-chart-bar"], button, .chart-toggle', () => {
+          return ifFoundInBody('canvas, .chart', handleBarChart)
         }, () => {
           cy.get('body').should('be.visible')
         })

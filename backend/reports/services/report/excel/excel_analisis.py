@@ -29,18 +29,20 @@ from audit.models import LoginHistory
 
 logger = logging.getLogger("cacaoscan.services.report.excel.analisis")
 
-# Excel column constants
-EXCEL_COL_METRIC = 'Métrica'
-EXCEL_COL_VALUE = 'Valor'
-EXCEL_TOTAL_ANALISIS = 'Total de Análisis'
-EXCEL_AVG_CONFIDENCE = 'Confianza Promedio'
-EXCEL_AVG_ALTO = 'Alto Promedio'
-EXCEL_AVG_ANCHO = 'Ancho Promedio'
-EXCEL_AVG_GROSOR = 'Grosor Promedio'
-EXCEL_AVG_PESO = 'Peso Promedio'
-EXCEL_TOTAL_LOTES = 'Total de Lotes'
-EXCEL_LOTES_ACTIVOS = 'Lotes Activos'
-DATE_TIME_FORMAT = '%d/%m/%Y %H:%M'
+# Import shared constants from base
+from .excel_base import (
+    EXCEL_COL_METRIC,
+    EXCEL_COL_VALUE,
+    EXCEL_TOTAL_ANALISIS,
+    EXCEL_AVG_CONFIDENCE,
+    EXCEL_AVG_ALTO,
+    EXCEL_AVG_ANCHO,
+    EXCEL_AVG_GROSOR,
+    EXCEL_AVG_PESO,
+    EXCEL_TOTAL_LOTES,
+    EXCEL_LOTES_ACTIVOS,
+    DATE_TIME_FORMAT
+)
 
 
 class ExcelAnalisisGenerator(ExcelBaseGenerator):

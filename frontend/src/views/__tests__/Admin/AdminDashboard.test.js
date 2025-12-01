@@ -2,30 +2,26 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AdminDashboard from '../../Admin/AdminDashboard.vue'
-import {
-  createMockAdminStore,
-  createMockAuthStore,
-  createMockConfigStore
-} from '@/test/mocks'
+import { createCommonMocks } from '@/test/mocks'
 
-const mockAdminStore = createMockAdminStore()
-const mockAuthStore = createMockAuthStore({
-  isAuthenticated: true,
-  isAdmin: true,
-  user: { id: 1, email: 'admin@example.com', role: 'admin' }
+const mocks = createCommonMocks({
+  authStore: {
+    isAuthenticated: true,
+    isAdmin: true,
+    user: { id: 1, email: 'admin@example.com', role: 'admin' }
+  }
 })
-const mockConfigStore = createMockConfigStore()
 
 vi.mock('@/stores/admin', () => ({
-  useAdminStore: () => mockAdminStore
+  useAdminStore: () => mocks.adminStore
 }))
 
 vi.mock('@/stores/auth', () => ({
-  useAuthStore: () => mockAuthStore
+  useAuthStore: () => mocks.authStore
 }))
 
 vi.mock('@/stores/config', () => ({
-  useConfigStore: () => mockConfigStore
+  useConfigStore: () => mocks.configStore
 }))
 
 // Mock components
@@ -111,11 +107,11 @@ describe('AdminDashboard', () => {
   })
 
   it('should load data on mount', async () => {
-    mockAdminStore.getGeneralStats.mockResolvedValue({ data: {} })
-    mockAdminStore.getRecentUsers.mockResolvedValue({ data: { results: [] } })
-    mockAdminStore.getRecentActivities.mockResolvedValue({ data: { results: [] } })
-    mockAdminStore.getSystemAlerts.mockResolvedValue({ data: { results: [] } })
-    mockAdminStore.getReportStats.mockResolvedValue({ data: {} })
+    mocks.adminStore.getGeneralStats.mockResolvedValue({ data: {} })
+    mocks.adminStore.getRecentUsers.mockResolvedValue({ data: { results: [] } })
+    mocks.adminStore.getRecentActivities.mockResolvedValue({ data: { results: [] } })
+    mocks.adminStore.getSystemAlerts.mockResolvedValue({ data: { results: [] } })
+    mocks.adminStore.getReportStats.mockResolvedValue({ data: {} })
     
     wrapper = mountWithDefaults()
 
@@ -124,7 +120,7 @@ describe('AdminDashboard', () => {
     await new Promise(resolve => setTimeout(resolve, 100))
 
     // Verify that store methods are called
-    expect(mockAdminStore.getGeneralStats).toHaveBeenCalled()
+    expect(mocks.adminStore.getGeneralStats).toHaveBeenCalled()
   })
 
   it('should handle refresh action', async () => {
@@ -133,7 +129,7 @@ describe('AdminDashboard', () => {
     // Test refresh functionality if method exists
     if (wrapper.vm.handleRefresh) {
       await wrapper.vm.handleRefresh()
-      expect(mockAdminStore.getGeneralStats).toHaveBeenCalled()
+      expect(mocks.adminStore.getGeneralStats).toHaveBeenCalled()
     }
   })
 
@@ -143,7 +139,7 @@ describe('AdminDashboard', () => {
     if (wrapper.vm.handleLogout) {
       await wrapper.vm.handleLogout()
       // Verify logout behavior
-      expect(mockAuthStore).toBeDefined()
+      expect(mocks.authStore).toBeDefined()
     }
   })
 })

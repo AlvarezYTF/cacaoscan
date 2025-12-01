@@ -1,7 +1,6 @@
 import { 
   ifFoundInBody, 
   clickIfExistsAndContinue,
-  verifySelectorsInBody,
   getApiBaseUrl
 } from '../../support/helpers'
 
@@ -12,7 +11,6 @@ describe('Carga de Imágenes - Upload', () => {
   const IMAGE_PREVIEW_SELECTOR = '[data-cy="image-preview"], .preview'
   const IMAGE_INFO_SELECTOR = '[data-cy="image-info"], .image-info'
   const SUCCESS_TEXT_PATTERNS = ['cargada', 'exitosamente', 'success']
-  const ERROR_TEXT_PATTERNS = ['tipo', 'permitido', 'archivo', 'grande', 'tamaño', 'size']
   
   const verifyUploadForm = () => {
     return cy.get('body').then(($body) => {
@@ -38,12 +36,14 @@ describe('Carga de Imágenes - Upload', () => {
     })
   }
   
+  const checkErrorText = ($element, expectedTexts) => {
+    const text = $element.text().toLowerCase()
+    return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
+  }
+
   const verifyErrorMessage = (errorSelector, expectedTexts) => {
     return ifFoundInBody(errorSelector, ($el) => {
-      cy.wrap($el).first().should('satisfy', ($element) => {
-        const text = $element.text().toLowerCase()
-        return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
-      })
+      cy.wrap($el).first().should('satisfy', ($element) => checkErrorText($element, expectedTexts))
     })
   }
   

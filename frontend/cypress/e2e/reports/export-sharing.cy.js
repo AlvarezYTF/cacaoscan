@@ -142,14 +142,8 @@ describe('Reportes - Exportación y Compartir', () => {
   })
 
   it('debe permitir revocar acceso a reporte compartido', () => {
-    const verifyRevokeSuccess = () => {
-      ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
-        cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
-      })
-    }
-    
     const confirmRevoke = () => {
-      clickIfExistsAndContinue('[data-cy="confirm-revoke"], .swal2-confirm, button', verifyRevokeSuccess)
+      clickIfExistsAndContinue('[data-cy="confirm-revoke"], .swal2-confirm, button', verifySuccess)
     }
     
     const revokeAccess = () => {

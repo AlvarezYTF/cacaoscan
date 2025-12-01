@@ -4,39 +4,51 @@ describe('Advanced Form Inputs', () => {
     cy.clickIfExists('[data-cy="btn-add-finca"], button', { force: true })
   })
 
+  const verifyInputExists = () => {
+    cy.get('[data-cy="input-nombre"], input[name*="nombre"], input[type="text"]', { timeout: 3000 }).first().should('exist')
+  }
+
+  const typeLongText = () => {
+    const longText = 'a'.repeat(256)
+    return typeIfExistsAndContinue('[data-cy="input-nombre"], input[name*="nombre"], input[type="text"]', longText, verifyInputExists)
+  }
+
   it('should validate max length on inputs', () => {
-    return ifFoundInBody('[data-cy="input-nombre"], input[name*="nombre"], input[type="text"]', () => {
-      const longText = 'a'.repeat(256)
-      return typeIfExistsAndContinue('[data-cy="input-nombre"], input[name*="nombre"], input[type="text"]', longText, () => {
-        cy.get('[data-cy="input-nombre"], input[name*="nombre"], input[type="text"]', { timeout: 3000 }).first().should('exist')
+    return ifFoundInBody('[data-cy="input-nombre"], input[name*="nombre"], input[type="text"]', typeLongText)
+  })
+
+  const verifyNegativeNumberHandling = () => {
+    return ifFoundInBody('.error-message, [data-cy="error"]', () => {
+      cy.get('.error-message, [data-cy="error"]').should('exist')
+    }, () => {
+      cy.get('[data-cy="input-area"], input[type="number"]').first().should('satisfy', ($el) => {
+        const val = $el.val()
+        return val !== '-50' || val === '' || val === null
       })
     })
-  })
+  }
+
+  const typeNegativeNumber = () => {
+    return typeIfExistsAndContinue('[data-cy="input-area"], input[type="number"]', '-50', verifyNegativeNumberHandling)
+  }
 
   it('should prevent negative numbers in area', () => {
-    return ifFoundInBody('[data-cy="input-area"], input[type="number"]', () => {
-      return typeIfExistsAndContinue('[data-cy="input-area"], input[type="number"]', '-50', () => {
-        return ifFoundInBody('.error-message, [data-cy="error"]', () => {
-          cy.get('.error-message, [data-cy="error"]').should('exist')
-        }, () => {
-          cy.get('[data-cy="input-area"], input[type="number"]').first().should('satisfy', ($el) => {
-            const val = $el.val()
-            return val !== '-50' || val === '' || val === null
-          })
-        })
-      })
-    })
+    return ifFoundInBody('[data-cy="input-area"], input[type="number"]', typeNegativeNumber)
   })
 
-  it('should handle special characters in names', () => {
-    return ifFoundInBody('[data-cy="input-nombre"], input[name*="nombre"], input[type="text"]', () => {
-      const weirdName = 'Finca Ñandú & Cacao @100%'
-      return typeIfExistsAndContinue('[data-cy="input-nombre"], input[name*="nombre"], input[type="text"]', weirdName, () => {
-        return clickIfExistsAndContinue('[data-cy="btn-save-finca"], button[type="submit"]', () => {
-          cy.get('body', { timeout: 5000 }).should('be.visible')
-        })
-      })
+  const saveFincaWithSpecialChars = () => {
+    return clickIfExistsAndContinue('[data-cy="btn-save-finca"], button[type="submit"]', () => {
+      cy.get('body', { timeout: 5000 }).should('be.visible')
     })
+  }
+
+  const typeSpecialCharsName = () => {
+    const weirdName = 'Finca Ñandú & Cacao @100%'
+    return typeIfExistsAndContinue('[data-cy="input-nombre"], input[name*="nombre"], input[type="text"]', weirdName, saveFincaWithSpecialChars)
+  }
+
+  it('should handle special characters in names', () => {
+    return ifFoundInBody('[data-cy="input-nombre"], input[name*="nombre"], input[type="text"]', typeSpecialCharsName)
   })
 
   it('should validate dates in history filter', () => {

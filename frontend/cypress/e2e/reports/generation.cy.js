@@ -132,15 +132,17 @@ describe('Generación de Reportes - Creación', () => {
           if ($modal.find('[data-cy="generate-report"], button[type="submit"]').length > 0) {
             cy.get('[data-cy="generate-report"], button[type="submit"]').first().click()
             
+            const verifyErrorSelector = (selector) => {
+              cy.get(selector, { timeout: 3000 }).should('exist')
+            }
+
             const verifyValidationErrors = () => {
               const errorSelectors = [
                 '[data-cy="report-type-error"]',
                 '[data-cy="date-range-error"]'
               ]
               for (const selector of errorSelectors) {
-                ifFoundInBody(selector, () => {
-                  cy.get(selector, { timeout: 3000 }).should('exist')
-                })
+                ifFoundInBody(selector, () => verifyErrorSelector(selector))
               }
             }
             verifyValidationErrors()

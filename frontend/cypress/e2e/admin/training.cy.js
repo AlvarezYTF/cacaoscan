@@ -5,12 +5,14 @@ describe('Admin Training & Datasets', () => {
   const TITLE_TEXT_PATTERNS = ['entrenamiento', 'training']
   const DELETE_CONFIRM_TEXT_PATTERNS = ['eliminar', 'delete', '¿']
   
+  const checkTitleText = ($element) => {
+    const text = $element.text().toLowerCase()
+    return TITLE_TEXT_PATTERNS.some(pattern => text.includes(pattern)) || $element.length > 0
+  }
+
   const verifyPageTitle = () => {
     return ifFoundInBody('h1, h2, .page-title', ($el) => {
-      cy.wrap($el).should('satisfy', ($element) => {
-        const text = $element.text().toLowerCase()
-        return TITLE_TEXT_PATTERNS.some(pattern => text.includes(pattern)) || $element.length > 0
-      })
+      cy.wrap($el).should('satisfy', checkTitleText)
     }, () => {
       cy.get('body').should('be.visible')
     })
@@ -82,13 +84,15 @@ describe('Admin Training & Datasets', () => {
   })
 
   it('should validate dataset deletion', () => {
+    const checkDeleteConfirmText = ($el) => {
+      const text = $el.text().toLowerCase()
+      return DELETE_CONFIRM_TEXT_PATTERNS.some(pattern => text.includes(pattern)) || $el.length > 0
+    }
+
     const clickDeleteAndVerify = ($btns) => {
       if ($btns.length > 0) {
         cy.wrap($btns.first()).click({ force: true })
-        cy.get('.swal2-title, [role="dialog"] h2', { timeout: 5000 }).should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return DELETE_CONFIRM_TEXT_PATTERNS.some(pattern => text.includes(pattern)) || $el.length > 0
-        })
+        cy.get('.swal2-title, [role="dialog"] h2', { timeout: 5000 }).should('satisfy', checkDeleteConfirmText)
       }
     }
 

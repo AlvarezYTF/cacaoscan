@@ -14,7 +14,7 @@ from django.utils import timezone
 from typing import Dict, List, Any
 
 from ...services import analysis_service
-from core.utils import create_error_response, create_success_response
+from core.utils import create_error_response, create_success_response, validate_target
 # Importar desde apps modulares
 from ...utils.model_imports import get_models_safely
 
@@ -87,16 +87,6 @@ class IncrementalTrainingView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
     
-    @staticmethod
-    def _validate_target(target: str):
-        """Validate target parameter."""
-        valid_targets = ['alto', 'ancho', 'grosor', 'peso']
-        if target not in valid_targets:
-            return create_error_response(
-                message=f"target debe ser uno de: {', '.join(valid_targets)}",
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
-        return None
     
     @swagger_auto_schema(
         operation_description="Ejecuta entrenamiento incremental con nuevos datos",
@@ -168,7 +158,7 @@ class IncrementalTrainingView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
             
-            validation_error = self._validate_target(target)
+            validation_error = validate_target(target)
             if validation_error:
                 return validation_error
             
@@ -280,10 +270,6 @@ class IncrementalDataUploadView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
     
-    @staticmethod
-    def _validate_target(target: str):
-        """Validate target parameter."""
-        return IncrementalTrainingView._validate_target(target)
     
     @swagger_auto_schema(
         operation_description="Sube datos para entrenamiento incremental",
@@ -344,7 +330,7 @@ class IncrementalDataUploadView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
             
-            validation_error = self._validate_target(target)
+            validation_error = validate_target(target)
             if validation_error:
                 return validation_error
             

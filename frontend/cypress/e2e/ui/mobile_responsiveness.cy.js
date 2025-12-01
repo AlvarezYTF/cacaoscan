@@ -21,31 +21,34 @@ describe('Mobile Responsiveness', () => {
         })
       })
 
+      const closeMobileMenu = () => {
+        return clickIfExistsAndContinue('[data-cy="btn-close-menu"], button, .close', () => {
+          cy.get('[data-cy="mobile-menu-content"], .mobile-menu', { timeout: 3000 }).should('not.exist')
+        })
+      }
+
       it('should open and close mobile menu', () => {
         return ifFoundInBody('[data-cy="btn-menu-mobile"], .menu-button, button', () => {
           cy.get('[data-cy="btn-menu-mobile"], .menu-button, button').first().click({ force: true })
           cy.get('[data-cy="mobile-menu-content"], .mobile-menu, .menu', { timeout: 5000 }).should('exist')
-          return clickIfExistsAndContinue('[data-cy="btn-close-menu"], button, .close', () => {
-            cy.get('[data-cy="mobile-menu-content"], .mobile-menu', { timeout: 3000 }).should('not.exist')
-          })
+          return closeMobileMenu()
         })
       })
 
+      const verifyCardWidth = ($body) => {
+        if ($body.find('[data-cy="stat-card-fincas"], .stat-card, .card, [data-cy="card"]').length > 0) {
+          cy.get('[data-cy="stat-card-fincas"], .stat-card, .card, [data-cy="card"]').first().should('satisfy', ($el) => {
+            const width = Number.parseInt($el.css('width') || '0', 10)
+            return width > 300 || width > 0 || $el.length > 0
+          })
+        } else {
+          cy.get('body').should('be.visible')
+        }
+      }
+
       it('should stack grid cards vertically', () => {
         cy.get('body', { timeout: 10000 }).should('be.visible')
-        
-        cy.get('body').then(($body) => {
-          if ($body.find('[data-cy="stat-card-fincas"], .stat-card, .card, [data-cy="card"]').length > 0) {
-            cy.get('[data-cy="stat-card-fincas"], .stat-card, .card, [data-cy="card"]').first().should('satisfy', ($el) => {
-              const width = Number.parseInt($el.css('width') || '0', 10)
-              // Basic check if it takes full width roughly or exists
-              return width > 300 || width > 0 || $el.length > 0
-            })
-          } else {
-            // Si no hay cards, verificar que la página cargó correctamente
-            cy.get('body').should('be.visible')
-          }
-        })
+        cy.get('body').then(verifyCardWidth)
       })
       
       it('should adjust tables to responsive view', () => {

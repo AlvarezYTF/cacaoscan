@@ -1,6 +1,5 @@
 import {
   verifySelectorsExist,
-  openModal,
   visitAndWaitForBody,
   openModalAndExecute,
   fillFieldSubmitAndVerifyError,
@@ -65,14 +64,18 @@ describe('Manejo de Errores - Validación y Formularios', () => {
         cy.get('body').then(($strong) => {
           if ($strong.find('[data-cy="password-input"], input[type="password"]').length > 0) {
             cy.get('[data-cy="password-input"], input[type="password"]').first().clear().type('StrongPassword123!', { force: true })
-            cy.get('body', { timeout: 2000 }).then(($afterStrong) => {
+            const checkPasswordStrength = ($el) => {
+              const text = $el.text().toLowerCase()
+              return text.includes('fuerte') || text.includes('strong') || text.length > 0
+            }
+
+            const handlePasswordStrength = ($afterStrong) => {
               if ($afterStrong.find('[data-cy="password-strength"], .password-strength').length > 0) {
-                cy.get('[data-cy="password-strength"], .password-strength').should('satisfy', ($el) => {
-                  const text = $el.text().toLowerCase()
-                  return text.includes('fuerte') || text.includes('strong') || text.length > 0
-                })
+                cy.get('[data-cy="password-strength"], .password-strength').should('satisfy', checkPasswordStrength)
               }
-            })
+            }
+
+            cy.get('body', { timeout: 2000 }).then(handlePasswordStrength)
           }
         })
       }
@@ -196,14 +199,18 @@ describe('Manejo de Errores - Validación y Formularios', () => {
     openModalAndExecute('[data-cy="add-finca-button"], button', ($modal) => {
       if ($modal.find('[data-cy="finca-nombre"], input').length > 0) {
         cy.get('[data-cy="finca-nombre"], input').first().type('A', { force: true })
-        cy.get('body', { timeout: 2000 }).then(($afterType) => {
+        const checkMinLengthError = ($el) => {
+          const text = $el.text().toLowerCase()
+          return text.includes('caracteres') || text.includes('al menos') || text.includes('3') || text.length > 0
+        }
+
+        const handleMinLengthError = ($afterType) => {
           if ($afterType.find('[data-cy="finca-nombre-error"], .error-message').length > 0) {
-            cy.get('[data-cy="finca-nombre-error"], .error-message').first().should('satisfy', ($el) => {
-              const text = $el.text().toLowerCase()
-              return text.includes('caracteres') || text.includes('al menos') || text.includes('3') || text.length > 0
-            })
+            cy.get('[data-cy="finca-nombre-error"], .error-message').first().should('satisfy', checkMinLengthError)
           }
-        })
+        }
+
+        cy.get('body', { timeout: 2000 }).then(handleMinLengthError)
       }
     })
   })

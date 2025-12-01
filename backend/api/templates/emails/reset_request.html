@@ -1,37 +1,10 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Restablecimiento de Contraseña - CacaoScan</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #8B4513;
-        }
-        .logo {
-            font-size: 28px;
-            font-weight: bold;
-            color: #8B4513;
-            margin-bottom: 10px;
-        }
+{% extends "emails/base_email.html" %}
+
+{% block email_title %}Restablecimiento de Contraseña - CacaoScan{% endblock %}
+
+{% block email_subtitle %}Restablecimiento de Contraseña{% endblock %}
+
+{% block extra_styles %}
         .security-notice {
             background-color: #fff3cd;
             border: 1px solid #ffeaa7;
@@ -65,24 +38,9 @@
             font-family: monospace;
             word-break: break-all;
         }
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
-            color: #666;
-            font-size: 14px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">🌱 CacaoScan</div>
-            <div>Restablecimiento de Contraseña</div>
-        </div>
-        
-        <div class="content">
+{% endblock %}
+
+{% block email_content %}
             <h2>🔐 Restablecimiento de Contraseña</h2>
             
             <p>Hola {{ user_name }},</p>
@@ -134,13 +92,10 @@
             </div>
             
             <p>¿Necesitas ayuda? Contacta a nuestro equipo de soporte.</p>
-        </div>
-        
-        <div class="footer">
+{% endblock %}
+
+{% block email_footer %}
             <p>Este email fue enviado a {{ user_email }} porque solicitaste restablecer tu contraseña.</p>
             <p><strong>Token de seguridad:</strong> {{ token }}</p>
             <p>&copy; {{ current_year }} CacaoScan. Todos los derechos reservados.</p>
-        </div>
-    </div>
-</body>
-</html>
+{% endblock %}

@@ -1,37 +1,10 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis Completado - CacaoScan</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #8B4513;
-        }
-        .logo {
-            font-size: 28px;
-            font-weight: bold;
-            color: #8B4513;
-            margin-bottom: 10px;
-        }
+{% extends "emails/base_email.html" %}
+
+{% block email_title %}Análisis Completado - CacaoScan{% endblock %}
+
+{% block email_subtitle %}Análisis de Granos Completado{% endblock %}
+
+{% block extra_styles %}
         .status-badge {
             display: inline-block;
             padding: 8px 16px;
@@ -71,37 +44,9 @@
         .results-table tr:nth-child(even) {
             background-color: #ffffff;
         }
-        .cta-button {
-            display: inline-block;
-            background-color: #8B4513;
-            color: white;
-            padding: 12px 30px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-        .cta-button:hover {
-            background-color: #6d3410;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
-            color: #666;
-            font-size: 14px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">🌱 CacaoScan</div>
-            <div>Análisis de Granos Completado</div>
-        </div>
-        
-        <div class="content">
+{% endblock %}
+
+{% block email_content %}
             <h2>¡Tu análisis está listo! 🎉</h2>
             
             <p>Hola {{ user_name }},</p>
@@ -183,12 +128,9 @@
             {% endif %}
             
             <p>¿Tienes preguntas sobre estos resultados? No dudes en contactarnos.</p>
-        </div>
-        
-        <div class="footer">
+{% endblock %}
+
+{% block email_footer %}
             <p>Este email fue enviado a {{ user_email }} porque solicitaste un análisis de granos de cacao.</p>
             <p>&copy; {{ current_year }} CacaoScan. Todos los derechos reservados.</p>
-        </div>
-    </div>
-</body>
-</html>
+{% endblock %}

@@ -31,6 +31,15 @@ describe('Map Component Interactions', () => {
     })
   })
 
+  const verifyGeolocationError = () => {
+    return ifFoundInBody('.swal2-warning, .error-message, .warning', () => {
+      cy.get('.swal2-warning, .error-message, .warning').first().should('satisfy', ($el) => {
+        const text = $el.text().toLowerCase()
+        return text.includes('permiso') || text.includes('denegado') || text.includes('geolocation') || text.length > 0
+      })
+    })
+  }
+
   it('should handle geolocation permission denied gracefully', () => {
     cy.visit('/fincas', {
       onBeforeLoad(win) {
@@ -40,31 +49,30 @@ describe('Map Component Interactions', () => {
       }
     })
     cy.get('body', { timeout: 10000 }).should('be.visible')
-    
-    return clickIfExistsAndContinue('[data-cy="btn-locate-me"], .btn-locate-me, button', () => {
-      return ifFoundInBody('.swal2-warning, .error-message, .warning', () => {
-        cy.get('.swal2-warning, .error-message, .warning').first().should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes('permiso') || text.includes('denegado') || text.includes('geolocation') || text.length > 0
-        })
+    return clickIfExistsAndContinue('[data-cy="btn-locate-me"], .btn-locate-me, button', verifyGeolocationError)
+  })
+
+  const verifySatelliteLayer = () => {
+    return ifFoundInBody('.leaflet-tile-pane img, .map-tile', () => {
+      cy.get('.leaflet-tile-pane img, .map-tile').first().should('satisfy', ($el) => {
+        const src = $el.attr('src') || ''
+        return src.includes('satellite') || src.includes('sat') || src.length > 0
       })
     })
-  })
+  }
+
+  const clickSatelliteOption = () => {
+    return ifFoundInBody('text:contains("Satélite"), button:contains("Satélite"), a:contains("Satélite")', () => {
+      cy.contains('Satélite').click({ force: true })
+      return verifySatelliteLayer()
+    })
+  }
 
   it('should switch map layers (Satellite/Terrain)', () => {
     cy.get('body', { timeout: 10000 }).should('be.visible')
-    
     return ifFoundInBody('.leaflet-control-layers-toggle, [data-cy="layer-toggle"], button', () => {
       cy.get('.leaflet-control-layers-toggle, [data-cy="layer-toggle"], button').first().trigger('mouseover', { force: true })
-      return ifFoundInBody('text:contains("Satélite"), button:contains("Satélite"), a:contains("Satélite")', () => {
-        cy.contains('Satélite').click({ force: true })
-        return ifFoundInBody('.leaflet-tile-pane img, .map-tile', () => {
-          cy.get('.leaflet-tile-pane img, .map-tile').first().should('satisfy', ($el) => {
-            const src = $el.attr('src') || ''
-            return src.includes('satellite') || src.includes('sat') || src.length > 0
-          })
-        })
-      })
+      return clickSatelliteOption()
     })
   })
 })

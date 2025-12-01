@@ -1,6 +1,7 @@
 import {
   verifySelectorsExist,
-  visitAndWaitForBody
+  visitAndWaitForBody,
+  getApiBaseUrl
 } from '../../support/helpers'
 
 describe('Análisis de Imágenes - Procesamiento', () => {
@@ -74,7 +75,7 @@ describe('Análisis de Imágenes - Procesamiento', () => {
   })
 
   it('debe manejar errores durante el análisis', () => {
-    const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
+    const apiBaseUrl = getApiBaseUrl()
     cy.intercept('POST', `${apiBaseUrl}/scan/measure/`, {
       statusCode: 500,
       body: { error: 'Error en el análisis' }
@@ -87,7 +88,7 @@ describe('Análisis de Imágenes - Procesamiento', () => {
   })
 
   it('debe permitir reintentar análisis fallido', () => {
-    const apiBaseUrl = Cypress.env('API_BASE_URL') || 'http://localhost:8000/api/v1'
+    const apiBaseUrl = getApiBaseUrl()
     cy.intercept('POST', `${apiBaseUrl}/scan/measure/`, {
       statusCode: 500,
       body: { error: 'Error temporal' }

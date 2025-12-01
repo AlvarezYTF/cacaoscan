@@ -2,7 +2,7 @@
  * Composable for date period calculations
  * Provides reusable functions to calculate date ranges for different periods
  */
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
 /**
  * Calculate date range for a given period
@@ -35,7 +35,8 @@ export function calculatePeriodDates(period, referenceDate = null) {
       // Return empty strings for custom period (user will set dates manually)
       return { fecha_desde: '', fecha_hasta: fecha_hasta }
     default:
-      fecha_desde = ''
+      // fecha_desde already initialized as empty string, no need to reassign
+      break
   }
 
   return { fecha_desde, fecha_hasta }

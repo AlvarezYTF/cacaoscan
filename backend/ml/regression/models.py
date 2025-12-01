@@ -211,7 +211,7 @@ class ConvNeXtTinyRegression(nn.Module):
         super(ConvNeXtTinyRegression, self).__init__()
         
         if not TIMM_AVAILABLE:
-            raise ImportError("timm es requerido para ConvNeXt. Instalar con: pip install timm")
+            raise ImportError(TIMM_REQUIRED_ERROR_MSG)
         
         # Cargar ConvNeXt Tiny pre-entrenado con pesos ImageNet-12k
         # FORZAR uso de pesos ImageNet-12k para mejor rendimiento
@@ -537,7 +537,7 @@ class HybridCacaoRegression(nn.Module):
         super(HybridCacaoRegression, self).__init__()
         
         if not TIMM_AVAILABLE:
-            raise ImportError("timm es requerido para ConvNeXt. Instalar con: pip install timm")
+            raise ImportError(TIMM_REQUIRED_ERROR_MSG)
             
         self.use_pixel_features = use_pixel_features
         

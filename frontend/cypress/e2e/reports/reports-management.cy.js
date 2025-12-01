@@ -1,33 +1,6 @@
 import { visitAndWaitForBody } from '../../support/helpers'
 
 describe('Gestión de Reportes - ReportsManagement', () => {
-  const createReport = (reportData) => {
-    cy.get('[data-cy="create-report-button"]').click()
-    
-    if (reportData.type) {
-      cy.get('[data-cy="report-type"]').select(reportData.type)
-    }
-    if (reportData.finca) {
-      cy.get('[data-cy="finca-select"]').select(reportData.finca)
-    }
-    if (reportData.title) {
-      cy.get('[data-cy="report-title"]').type(reportData.title)
-    }
-    if (reportData.description) {
-      cy.get('[data-cy="report-description"]').type(reportData.description)
-    }
-    if (reportData.format) {
-      cy.get('[data-cy="report-format"]').select(reportData.format)
-    }
-    
-    cy.get('[data-cy="generate-report"]').click()
-  }
-
-  const applyFilter = (filterType, value) => {
-    cy.get(`[data-cy="filter-${filterType}"]`).select(value)
-    cy.get('[data-cy="apply-filters"]').click()
-  }
-
   beforeEach(() => {
     cy.login('analyst')
     visitAndWaitForBody('/reportes/management')
@@ -47,7 +20,7 @@ describe('Gestión de Reportes - ReportsManagement', () => {
   })
 
   it('debe crear nuevo reporte de calidad', () => {
-    createReport({
+    cy.createReport({
       type: 'calidad',
       title: 'Reporte de Calidad Mensual',
       description: 'Análisis de calidad de granos',
@@ -59,7 +32,7 @@ describe('Gestión de Reportes - ReportsManagement', () => {
   })
 
   it('debe crear reporte de finca', () => {
-    createReport({
+    cy.createReport({
       type: 'finca',
       finca: '1',
       title: 'Reporte de Finca'
@@ -69,7 +42,7 @@ describe('Gestión de Reportes - ReportsManagement', () => {
   })
 
   it('debe filtrar reportes por tipo', () => {
-    applyFilter('type', 'calidad')
+    cy.applyReportFilter('type', 'calidad')
     
     cy.get('[data-cy="reports-list"]').within(() => {
       cy.get('[data-cy="report-item"]').each(($item) => {
@@ -79,7 +52,7 @@ describe('Gestión de Reportes - ReportsManagement', () => {
   })
 
   it('debe filtrar reportes por estado', () => {
-    applyFilter('status', 'completado')
+    cy.applyReportFilter('status', 'completado')
     
     cy.get('[data-cy="reports-list"]').should('be.visible')
   })
@@ -128,7 +101,7 @@ describe('Gestión de Reportes - ReportsManagement', () => {
   })
 
   it('debe mostrar mensaje cuando no hay reportes', () => {
-    applyFilter('status', 'fallido')
+    cy.applyReportFilter('status', 'fallido')
     
     cy.get('[data-cy="empty-state"]').should('be.visible')
     cy.get('[data-cy="empty-state"]').should('contain', 'No se encontraron reportes')

@@ -1,29 +1,6 @@
 import { visitAndWaitForBody } from '../../support/helpers'
 
 describe('Gestión de Lotes - LotesView y LoteDetailView', () => {
-  const createLote = (loteData) => {
-    cy.get('[data-cy="create-lote-button"]').click()
-    
-    if (loteData.nombre) {
-      cy.get('[data-cy="lote-nombre"]').type(loteData.nombre)
-    }
-    if (loteData.finca) {
-      cy.get('[data-cy="lote-finca"]').select(loteData.finca)
-    }
-    if (loteData.area) {
-      cy.get('[data-cy="lote-area"]').type(loteData.area)
-    }
-    if (loteData.descripcion) {
-      cy.get('[data-cy="lote-descripcion"]').type(loteData.descripcion)
-    }
-    
-    cy.get('[data-cy="save-lote"]').click()
-  }
-
-  const applyFilter = (filterType, value) => {
-    cy.get(`[data-cy="filter-${filterType}"]`).select(value)
-    cy.get('[data-cy="apply-filters"]').click()
-  }
 
   beforeEach(() => {
     cy.login('farmer')
@@ -43,7 +20,7 @@ describe('Gestión de Lotes - LotesView y LoteDetailView', () => {
   })
 
   it('debe crear nuevo lote', () => {
-    createLote({
+    cy.createLote({
       nombre: 'Lote Norte',
       finca: '1',
       area: '5.5',
@@ -115,7 +92,7 @@ describe('Gestión de Lotes - LotesView y LoteDetailView', () => {
   })
 
   it('debe filtrar lotes por finca', () => {
-    applyFilter('finca', '1')
+    cy.applyFilter('finca', '1')
     
     cy.get('[data-cy="lotes-list"]').should('be.visible')
   })
@@ -134,7 +111,7 @@ describe('Gestión de Lotes - LotesView y LoteDetailView', () => {
   })
 
   it('debe mostrar mensaje cuando no hay lotes', () => {
-    applyFilter('finca', '999')
+    cy.applyFilter('finca', '999')
     
     cy.get('[data-cy="empty-state"]').should('be.visible')
     cy.get('[data-cy="empty-state"]').should('contain', 'No se encontraron lotes')

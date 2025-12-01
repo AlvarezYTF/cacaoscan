@@ -335,11 +335,11 @@ describe('String Utilities', () => {
     let result = str
       .toLowerCase()
       // eslint-disable-next-line prefer-regex-literals
-      .replace(/[^a-z0-9 -]/g, '')
+      .replaceAll(/[^a-z0-9 -]/g, '')
       // eslint-disable-next-line prefer-regex-literals
-      .replace(/\s+/g, '-')
+      .replaceAll(/\s+/g, '-')
       // eslint-disable-next-line prefer-regex-literals
-      .replace(/-+/g, '-')
+      .replaceAll(/-+/g, '-')
       .trim()
     
     // Remove leading and trailing dashes using string methods to avoid ReDoS

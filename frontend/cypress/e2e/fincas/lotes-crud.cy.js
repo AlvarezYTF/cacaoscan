@@ -29,12 +29,14 @@ describe('Gestión de Lotes - CRUD', () => {
     return clickIfExistsAndContinue(LOTE_ITEM_SELECTOR, action, fallback)
   }
   
+  const checkErrorText = ($element, expectedTexts) => {
+    const text = $element.text().toLowerCase()
+    return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
+  }
+
   const verifyLoteError = (errorSelector, expectedTexts) => {
     return ifFoundInBody(errorSelector, ($el) => {
-      cy.wrap($el).first().should('satisfy', ($element) => {
-        const text = $element.text().toLowerCase()
-        return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
-      })
+      cy.wrap($el).first().should('satisfy', ($element) => checkErrorText($element, expectedTexts))
     })
   }
   
@@ -50,13 +52,15 @@ describe('Gestión de Lotes - CRUD', () => {
     })
   }
   
+  const checkFilteredItemText = ($el, expectedText) => {
+    const text = $el.text().toLowerCase()
+    return text.includes(expectedText.toLowerCase()) || text.length > 0
+  }
+
   const verifyFilteredItems = (itemSelector, expectedText) => {
     return ifFoundInBody(itemSelector, () => {
       cy.get(itemSelector).each(($item) => {
-        cy.wrap($item).should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return text.includes(expectedText.toLowerCase()) || text.length > 0
-        })
+        cy.wrap($item).should('satisfy', ($el) => checkFilteredItemText($el, expectedText))
       })
     })
   }

@@ -767,16 +767,22 @@ export function verifySelectorsInBody(selectors, timeout = 5000) {
  * @param {Array<string>} expectedTexts - Expected error text fragments
  * @returns {Cypress.Chainable} Cypress chainable
  */
+const verifyErrorText = ($el, expectedTexts) => {
+  const text = $el.text().toLowerCase()
+  return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
+}
+
+const checkErrorInBody = ($body, errorSelector, expectedTexts) => {
+  if ($body.find(errorSelector).length > 0) {
+    cy.get(errorSelector).first().should('satisfy', ($el) => verifyErrorText($el, expectedTexts))
+  }
+}
+
 export function clickAndVerifyError(clickSelector, errorSelector, expectedTexts) {
   return clickIfExists(clickSelector).then((clicked) => {
     if (!clicked) return cy.wrap(null)
     return cy.get('body', { timeout: 5000 }).then(($body) => {
-      if ($body.find(errorSelector).length > 0) {
-        cy.get(errorSelector).first().should('satisfy', ($el) => {
-          const text = $el.text().toLowerCase()
-          return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
-        })
-      }
+      checkErrorInBody($body, errorSelector, expectedTexts)
     })
   })
 }
@@ -890,6 +896,7 @@ export function setupEmptyListIntercept(urlPattern, alias) {
     body: { results: [], count: 0 }
   }).as(alias)
 }
+
 
 /**
  * Verifies element exists with multiple selector alternatives
@@ -1082,18 +1089,24 @@ export function openModalAndExecute(buttonSelector, callback, timeout = 5000) {
  * @param {number} timeout - Timeout in milliseconds
  * @returns {Cypress.Chainable} Cypress chainable
  */
+const verifyErrorMessageText = ($el, expectedTexts) => {
+  const text = $el.text().toLowerCase()
+  return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
+}
+
+const checkErrorDisplay = ($error, errorSelector, expectedTexts) => {
+  if ($error.find(errorSelector).length > 0) {
+    cy.get(errorSelector).first().should('satisfy', ($el) => verifyErrorMessageText($el, expectedTexts))
+  }
+}
+
 export function fillFieldSubmitAndVerifyError(fieldSelector, value, submitSelector, errorSelector, expectedTexts, timeout = 3000) {
   return cy.get('body').then(($body) => {
     if ($body.find(fieldSelector).length > 0) {
       cy.get(fieldSelector).first().type(value, { force: true })
       cy.get(submitSelector).first().click({ force: true })
       return cy.get('body', { timeout }).then(($error) => {
-        if ($error.find(errorSelector).length > 0) {
-          cy.get(errorSelector).first().should('satisfy', ($el) => {
-            const text = $el.text().toLowerCase()
-            return expectedTexts.some(expected => text.includes(expected)) || text.length > 0
-          })
-        }
+        checkErrorDisplay($error, errorSelector, expectedTexts)
       })
     }
     return cy.wrap(null)
@@ -1225,17 +1238,6 @@ export function verifyUrlContains(patterns, timeout = 10000) {
 }
 
 /**
- * Visits page and waits for body to be visible
- * @param {string} url - URL to visit
- * @param {number} timeout - Timeout in milliseconds
- * @returns {Cypress.Chainable} Cypress chainable
- */
-export function visitAndWaitForBody(url, timeout = 10000) {
-  cy.visit(url)
-  return cy.get('body', { timeout }).should('be.visible')
-}
-
-/**
  * Verifies registration form fields exist
  * @param {JQuery} $body - jQuery body element
  * @returns {boolean} True if all required fields exist
@@ -1279,6 +1281,166 @@ export function verifyReportGenerationComplete() {
     ifFoundInBody('[data-cy="notification-success"], .swal2-success', () => {
       cy.get('[data-cy="notification-success"], .swal2-success').should('exist')
     })
+  })
+}
+
+/**
+ * Visits page and waits for body to be visible (common pattern)
+ * @param {string} url - URL to visit
+ * @param {number} timeout - Timeout in milliseconds
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function visitAndWaitForBodyVisible(url, timeout = 10000) {
+  cy.visit(url)
+  return cy.get('body', { timeout }).should('be.visible')
+}
+
+/**
+ * Opens modal, fills form field and verifies error (common pattern)
+ * @param {string} buttonSelector - Selector for button that opens modal
+ * @param {string} fieldSelector - Selector for field to fill
+ * @param {string} value - Value to type
+ * @param {string} submitSelector - Selector for submit button
+ * @param {string} errorSelector - Selector for error message
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function openModalFillFieldAndVerifyError(buttonSelector, fieldSelector, value, submitSelector, errorSelector, expectedTexts) {
+  return openModalAndExecute(buttonSelector, ($modal) => {
+    if ($modal.find(fieldSelector).length > 0) {
+      fillFieldSubmitAndVerifyError(fieldSelector, value, submitSelector, errorSelector, expectedTexts)
+    }
+  })
+}
+
+/**
+ * Handles file upload with error verification (common pattern)
+ * @param {string} fileInputSelector - Selector for file input
+ * @param {File} file - File object to upload
+ * @param {string} errorSelector - Selector for error message
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function uploadFileAndVerifyError(fileInputSelector, file, errorSelector, expectedTexts) {
+  return cy.get('body').then(($body) => {
+    if ($body.find(fileInputSelector).length > 0) {
+      cy.get(fileInputSelector).then(($input) => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.items.add(file)
+        $input[0].files = dataTransfer.files
+        cy.wrap($input).trigger('change', { force: true })
+      })
+      cy.get('body', { timeout: 3000 }).then(($error) => {
+        if ($error.find(errorSelector).length > 0) {
+          verifyErrorMessageGeneric(expectedTexts, errorSelector)
+        }
+      })
+    } else {
+      cy.get('body').should('be.visible')
+    }
+  })
+}
+
+/**
+ * Sets up intercept and verifies error response (common pattern)
+ * @param {string} method - HTTP method
+ * @param {string} urlPattern - URL pattern to intercept
+ * @param {number} statusCode - HTTP status code
+ * @param {Object} body - Response body
+ * @param {string} alias - Intercept alias
+ * @param {string} errorSelector - Selector for error message
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function setupInterceptAndVerifyError(method, urlPattern, statusCode, body, alias, errorSelector, expectedTexts) {
+  const apiBaseUrl = getApiBaseUrl()
+  cy.intercept(method, `${apiBaseUrl}${urlPattern}`, {
+    statusCode,
+    body
+  }).as(alias)
+  return cy.wait(`@${alias}`, { timeout: 10000 }).then(() => {
+    verifyErrorMessageGeneric(expectedTexts, errorSelector)
+  })
+}
+
+/**
+ * Fills form field with long text and verifies error (common pattern)
+ * @param {string} fieldSelector - Selector for field
+ * @param {number} length - Length of text to generate
+ * @param {string} submitSelector - Selector for submit button
+ * @param {string} errorSelector - Selector for error message
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function fillLongTextAndVerifyError(fieldSelector, length, submitSelector, errorSelector, expectedTexts) {
+  const longText = 'a'.repeat(length)
+  return fillFieldSubmitAndVerifyError(fieldSelector, longText, submitSelector, errorSelector, expectedTexts)
+}
+
+/**
+ * Verifies element exists with multiple selector alternatives and text content
+ * @param {Array<string>} selectors - Array of CSS selectors to try
+ * @param {Array<string>} expectedTexts - Optional array of expected text fragments
+ * @param {JQuery} $context - Optional jQuery context element (defaults to body)
+ * @param {number} timeout - Timeout in milliseconds
+ * @returns {Cypress.Chainable<boolean>} True if element found and text matches
+ */
+export function verifyElementWithText(selectors, expectedTexts, $context, timeout = 5000) {
+  const context = $context || cy.get('body')
+  return context.then(($ctx) => {
+    for (const selector of selectors) {
+      if ($ctx.find(selector).length > 0) {
+        const $el = cy.get(selector).first()
+        if (expectedTexts && expectedTexts.length > 0) {
+          $el.should('satisfy', ($element) => {
+            const text = $element.text().toLowerCase()
+            return expectedTexts.some(expected => text.includes(expected.toLowerCase())) || text.length > 0
+          })
+        } else {
+          $el.should('exist')
+        }
+        return cy.wrap(true)
+      }
+    }
+    return cy.wrap(false)
+  })
+}
+
+/**
+ * Navigates to a page by clicking a link if it exists, otherwise visits directly
+ * @param {Array<string>} linkSelectors - Array of selectors for navigation link
+ * @param {string} directUrl - URL to visit if link not found
+ * @param {Array<string>} urlPatterns - Array of URL patterns to verify navigation
+ * @param {number} timeout - Timeout in milliseconds
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function navigateToPage(linkSelectors, directUrl, urlPatterns, timeout = 10000) {
+  return cy.get('body').then(($body) => {
+    let linkFound = false
+    for (const selector of linkSelectors) {
+      if ($body.find(selector).length > 0) {
+        cy.get(selector).first().click({ force: true })
+        linkFound = true
+        break
+      }
+    }
+    if (!linkFound) {
+      cy.visit(directUrl, { failOnStatusCode: false })
+    }
+    return verifyUrlContains(urlPatterns, timeout)
+  })
+}
+
+/**
+ * Verifies page title or heading contains expected text
+ * @param {Array<string>} titleSelectors - Array of selectors for page title/heading
+ * @param {Array<string>} expectedTexts - Array of expected text fragments
+ * @param {number} timeout - Timeout in milliseconds
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function verifyPageTitle(titleSelectors, expectedTexts, timeout = 5000) {
+  return cy.get('body', { timeout }).then(($body) => {
+    return verifyElementWithText(titleSelectors, expectedTexts, $body, timeout)
   })
 }
 

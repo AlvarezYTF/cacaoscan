@@ -12,6 +12,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from api.views.mixins import PaginationMixin, AdminPermissionMixin
+from core.utils import create_error_response, create_success_response
 
 from api.utils.model_imports import get_model_safely
 
@@ -34,7 +35,7 @@ ERROR_FINCA_NOT_FOUND = 'Finca no encontrada'
 
 def _error_response(error_message, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, details=None):
     """
-    Create standardized error response.
+    Create standardized error response using centralized helper.
     
     Args:
         error_message: Error message string
@@ -44,18 +45,16 @@ def _error_response(error_message, status_code=status.HTTP_500_INTERNAL_SERVER_E
     Returns:
         Response: Django REST Framework Response object
     """
-    response_data = {
-        'error': error_message,
-        'status': 'error'
-    }
-    if details:
-        response_data['details'] = details
-    return Response(response_data, status=status_code)
+    return create_error_response(
+        message=error_message,
+        status_code=status_code,
+        details=details
+    )
 
 
 def _success_response(message, data=None, status_code=status.HTTP_200_OK):
     """
-    Create standardized success response.
+    Create standardized success response using centralized helper.
     
     Args:
         message: Success message string
@@ -65,18 +64,19 @@ def _success_response(message, data=None, status_code=status.HTTP_200_OK):
     Returns:
         Response: Django REST Framework Response object
     """
-    response_data = {
-        'message': message,
-        'status': 'success'
-    }
-    if data:
-        response_data.update(data)
-    return Response(response_data, status=status_code)
+    return create_success_response(
+        message=message,
+        data=data,
+        status_code=status_code
+    )
 
 
 def _handle_finca_not_found():
     """Return standardized finca not found error response."""
-    return _error_response(ERROR_FINCA_NOT_FOUND, status.HTTP_404_NOT_FOUND)
+    return create_error_response(
+        message=ERROR_FINCA_NOT_FOUND,
+        status_code=status.HTTP_404_NOT_FOUND
+    )
 
 
 def _handle_internal_error(error, log_message=None):
@@ -92,7 +92,10 @@ def _handle_internal_error(error, log_message=None):
     """
     if log_message:
         logger.error(log_message)
-    return _error_response(ERROR_INTERNAL_SERVER, status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return create_error_response(
+        message=ERROR_INTERNAL_SERVER,
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+    )
 
 
 class FincaPermissionMixin(AdminPermissionMixin):

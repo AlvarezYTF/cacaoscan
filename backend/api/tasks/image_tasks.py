@@ -4,16 +4,18 @@ Handles heavy image processing operations asynchronously.
 """
 import logging
 import time
-import io
 from typing import Dict, Any, List
-from PIL import Image
 from celery import shared_task
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.files.base import ContentFile
 from django.db import transaction
 
-from training.services import MLService
 from ..utils.model_imports import get_models_safely
+from ..utils.ml_helpers import (
+    get_predictor,
+    calculate_prediction_statistics,
+    process_image_prediction
+)
 
 logger = logging.getLogger("cacaoscan.api.tasks.image")
 
@@ -21,13 +23,11 @@ logger = logging.getLogger("cacaoscan.api.tasks.image")
 models = get_models_safely({
     'Lote': 'fincas_app.models.Lote',
     'Finca': 'fincas_app.models.Finca',
-    'CacaoImage': 'images_app.models.CacaoImage',
-    'CacaoPrediction': 'images_app.models.CacaoPrediction'
+    'CacaoImage': 'images_app.models.CacaoImage'
 })
 Lote = models['Lote']
 Finca = models['Finca']
 CacaoImage = models['CacaoImage']
-CacaoPrediction = models['CacaoPrediction']
 
 
 def _get_user_and_lote(user_id: int, lote_id: int) -> tuple:
@@ -47,19 +47,6 @@ def _get_user_and_lote(user_id: int, lote_id: int) -> tuple:
     
     return user, lote, None
 
-def _get_predictor():
-    """Obtiene el predictor ML."""
-    ml_service = MLService()
-    predictor_result = ml_service.get_predictor()
-    
-    if not predictor_result.success:
-        return None, {'status': 'error', 'error': f'ML models not available: {predictor_result.error.message}'}
-    
-    predictor = predictor_result.data
-    if not predictor.models_loaded:
-        return None, {'status': 'error', 'error': 'ML models not loaded'}
-    
-    return predictor, None
 
 def _create_cacao_image(user, lote, image_data: Dict[str, Any], temp_path: str) -> tuple:
     """Crea la instancia de CacaoImage."""
@@ -85,56 +72,7 @@ def _create_cacao_image(user, lote, image_data: Dict[str, Any], temp_path: str) 
 
 def _process_image_with_ml(predictor, temp_path: str, cacao_image) -> tuple:
     """Procesa la imagen con ML y guarda la predicción."""
-    try:
-        pil_image = Image.open(temp_path)
-        prediction_start = time.time()
-        result = predictor.predict(pil_image)
-        prediction_time_ms = int((time.time() - prediction_start) * 1000)
-        
-        device = result.get('debug', {}).get('device', 'cpu')
-        device_used = device.split(':')[0] if ':' in str(device) else 'cpu'
-        
-        cacao_prediction = CacaoPrediction(
-            image=cacao_image,
-            alto_mm=result['alto_mm'],
-            ancho_mm=result['ancho_mm'],
-            grosor_mm=result['grosor_mm'],
-            peso_g=result['peso_g'],
-            confidence_alto=result['confidences']['alto'],
-            confidence_ancho=result['confidences']['ancho'],
-            confidence_grosor=result['confidences']['grosor'],
-            confidence_peso=result['confidences']['peso'],
-            processing_time_ms=prediction_time_ms,
-            crop_url=result.get('crop_url', ''),
-            model_version=result.get('debug', {}).get('models_version', 'v1.0'),
-            device_used=device_used
-        )
-        cacao_prediction.save()
-        
-        cacao_image.processed = True
-        cacao_image.save()
-        
-        return {
-            'success': True,
-            'image_id': cacao_image.id,
-            'prediction': {
-                'alto_mm': result['alto_mm'],
-                'ancho_mm': result['ancho_mm'],
-                'grosor_mm': result['grosor_mm'],
-                'peso_g': result['peso_g'],
-                'confidences': result['confidences'],
-                'crop_url': result.get('crop_url', ''),
-                'model_version': result.get('debug', {}).get('models_version', 'v1.0'),
-                'processing_time_ms': prediction_time_ms
-            }
-        }, None
-    except Exception as pred_error:
-        logger.error(f"Error in prediction: {pred_error}", exc_info=True)
-        return {
-            'success': False,
-            'image_id': cacao_image.id,
-            'error': str(pred_error)
-        }, None
+    return process_image_prediction(predictor, temp_path, cacao_image)
 
 def _cleanup_temp_file(temp_path: str):
     """Limpia el archivo temporal."""
@@ -147,46 +85,11 @@ def _cleanup_temp_file(temp_path: str):
 
 def _calculate_statistics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Calcula las estadísticas de los resultados."""
-    successful_results = [r for r in results if r.get('success', False)]
-    
-    if not successful_results:
-        return {
-            'avg_confidence': 0,
-            'avg_dimensions': {'alto': 0, 'ancho': 0, 'grosor': 0},
-            'total_weight': 0
-        }
-    
-    confidences = []
-    altos = []
-    anchos = []
-    grosor = []
-    pesos = []
-    
-    for r in successful_results:
-        pred = r.get('prediction', {})
-        conf = pred.get('confidences', {})
-        
-        avg_conf = sum([
-            conf.get('alto', 0),
-            conf.get('ancho', 0),
-            conf.get('grosor', 0),
-            conf.get('peso', 0)
-        ]) / 4
-        confidences.append(avg_conf)
-        
-        altos.append(pred.get('alto_mm', 0))
-        anchos.append(pred.get('ancho_mm', 0))
-        grosor.append(pred.get('grosor_mm', 0))
-        pesos.append(pred.get('peso_g', 0))
-    
+    stats = calculate_prediction_statistics(results)
     return {
-        'avg_confidence': sum(confidences) / len(confidences) if confidences else 0,
-        'avg_dimensions': {
-            'alto': sum(altos) / len(altos) if altos else 0,
-            'ancho': sum(anchos) / len(anchos) if anchos else 0,
-            'grosor': sum(grosor) / len(grosor) if grosor else 0
-        },
-        'total_weight': sum(pesos)
+        'avg_confidence': stats['average_confidence'],
+        'avg_dimensions': stats['average_dimensions'],
+        'total_weight': stats['total_weight']
     }
 
 @shared_task(bind=True, name='api.tasks.image.process_batch_analysis')
@@ -228,7 +131,7 @@ def process_batch_analysis_task(
         if error:
             return error
         
-        predictor, error = _get_predictor()
+        predictor, error = get_predictor()
         if error:
             return error
         
