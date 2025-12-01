@@ -1,14 +1,10 @@
 """
 Tests unitarios para servicios de CacaoScan.
 """
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from django.test import TestCase
-from django.contrib.auth.models import User, Group
-from django.core.exceptions import ValidationError
-from django.utils import timezone
-from datetime import timedelta
+from django.contrib.auth.models import User
 from decimal import Decimal
-import json
 
 from api.services import (
     AuthenticationService,
@@ -20,7 +16,6 @@ from api.services import (
 )
 # ImageManagementService ahora está en api.services.image.management_service
 from api.services.base import (
-    ServiceResult,
     ServiceError,
     ValidationServiceError,
     PermissionServiceError,
@@ -28,15 +23,11 @@ from api.services.base import (
 )
 from api.models import (
     EmailVerificationToken,
-    UserProfile,
     CacaoImage,
     CacaoPrediction,
     Finca,
-    Lote,
-    Notification,
-    ActivityLog
+    Lote
 )
-from audit.models import LoginHistory
 from reports.models import ReporteGenerado
 from api.tests.test_constants import (
     TEST_USER_PASSWORD,
