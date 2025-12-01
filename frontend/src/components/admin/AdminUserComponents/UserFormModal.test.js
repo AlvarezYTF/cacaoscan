@@ -58,7 +58,7 @@ describe('UserFormModal', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('should display create user title in create mode', () => {
+  it('should display create user title in create mode', async () => {
     wrapper = mount(UserFormModal, {
       props: {
         mode: 'create',
@@ -66,14 +66,19 @@ describe('UserFormModal', () => {
       },
       global: {
         stubs: {
-          BaseModal: true,
           BaseFormField: { template: '<div><slot></slot></div>', props: ['name', 'label', 'required', 'error'] }
         }
       }
     })
 
+    await wrapper.vm.$nextTick()
+    
     const text = wrapper.text()
-    expect(text.includes('Crear') || text.includes('Usuario')).toBe(true)
+    // Check for the title in the header slot
+    const headerText = wrapper.find('h3')?.text() || ''
+    const allText = text + headerText
+    
+    expect(allText.includes('Crear') || allText.includes('Usuario')).toBe(true)
   })
 
   it('should emit close event when modal is closed', async () => {

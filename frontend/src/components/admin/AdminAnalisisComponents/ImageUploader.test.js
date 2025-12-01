@@ -2,8 +2,55 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ImageUploader from './ImageUploader.vue'
 
+// Mock DataTransfer for Node.js environment
+class MockDataTransferItemList {
+  constructor(dataTransfer) {
+    this._items = []
+    this._dataTransfer = dataTransfer
+  }
+
+  add(file) {
+    this._items.push(file)
+    // Also add to files array
+    this._dataTransfer._files.push(file)
+  }
+
+  get length() {
+    return this._items.length
+  }
+
+  item(index) {
+    return this._items[index] || null
+  }
+}
+
+class MockDataTransfer {
+  constructor() {
+    this._files = []
+    this.items = new MockDataTransferItemList(this)
+  }
+
+  get files() {
+    // Return a FileList-like object
+    const fileList = Object.create(Array.prototype)
+    fileList.length = this._files.length
+    this._files.forEach((file, index) => {
+      fileList[index] = file
+    })
+    fileList.item = (index) => this._files[index] || null
+    return fileList
+  }
+}
+
+// Make DataTransfer available globally
+global.DataTransfer = MockDataTransfer
+
 describe('ImageUploader', () => {
   let wrapper
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
 
   afterEach(() => {
     if (wrapper) {
@@ -63,11 +110,15 @@ describe('ImageUploader', () => {
       
       Object.defineProperty(fileInput.element, 'files', {
         value: dataTransfer.files,
-        writable: false
+        writable: false,
+        configurable: true
       })
 
       await fileInput.trigger('change')
       await wrapper.vm.$nextTick()
+
+      // Verify that the event was emitted
+      expect(wrapper.emitted('update:modelValue')).toBeTruthy()
     }
   })
 

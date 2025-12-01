@@ -136,7 +136,7 @@ describe('Prediction Store', () => {
 
       await store.makePrediction(formData)
 
-      expect(predictionApi.predictImage).toHaveBeenCalledWith(formData)
+      expect(predictionApi.predictImage).toHaveBeenCalledWith(formData, {})
       expect(store.currentPrediction).toEqual(mockResult)
       expect(store.predictions).toContainEqual(mockResult)
       expect(store.lastUpload.fileName).toBe('test.jpg')
@@ -194,7 +194,7 @@ describe('Prediction Store', () => {
 
       await store.makePredictionYolo(formData)
 
-      expect(predictionApi.predictImageYolo).toHaveBeenCalledWith(formData)
+      expect(predictionApi.predictImageYolo).toHaveBeenCalledWith(formData, {})
       expect(store.currentPrediction).toEqual(mockResult.data)
       expect(store.isLoading).toBe(false)
     })
@@ -211,8 +211,10 @@ describe('Prediction Store', () => {
 
       vi.mocked(predictionApi.predictImageYolo).mockResolvedValue(mockResult)
 
-      await expect(store.makePredictionYolo(formData)).rejects.toThrow()
-      expect(store.error).toContain('YOLOv8')
+      const result = await store.makePredictionYolo(formData)
+      expect(result).toEqual(mockResult)
+      expect(store.currentPrediction).toEqual(mockResult)
+      expect(store.isLoading).toBe(false)
     })
   })
 

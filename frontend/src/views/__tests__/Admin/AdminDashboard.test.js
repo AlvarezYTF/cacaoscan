@@ -45,6 +45,15 @@ vi.mock('@/composables/useWebSocket', () => ({
 // Mock sweetalert2
 vi.mock('sweetalert2', () => sweetAlert2Mock)
 
+// Create mocks for use in tests (after vi.mock declarations)
+const mocks = createCommonMocks({
+  authStore: {
+    isAuthenticated: true,
+    isAdmin: true,
+    user: { id: 1, email: 'admin@example.com', role: 'admin' }
+  }
+})
+
 // Common stubs configuration
 const defaultStubs = createDefaultStubs()
 

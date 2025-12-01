@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
 import Analisis from '../../common/Analisis.vue'
 
 const mockAnalysisStore = {
@@ -17,16 +16,31 @@ vi.mock('@/stores/analysis', () => ({
   useAnalysisStore: () => mockAnalysisStore
 }))
 
+vi.mock('@/stores/auth', () => ({
+  useAuthStore: () => ({
+    user: { id: 1, name: 'Test User', role: 'admin', email: 'test@example.com' },
+    isAuthenticated: true,
+    isAdmin: true
+  })
+}))
+
+vi.mock('@/composables/useSidebarNavigation', () => ({
+  useSidebarNavigation: () => ({
+    isSidebarCollapsed: false,
+    userName: 'Test User',
+    userRole: 'admin',
+    toggleSidebarCollapse: vi.fn(),
+    handleMenuClick: vi.fn(),
+    handleLogout: vi.fn(),
+    activeSection: 'analisis'
+  })
+}))
+
 describe('Analisis', () => {
-  let router
   let wrapper
 
   beforeEach(() => {
     setActivePinia(createPinia())
-    router = createRouter({
-      history: createWebHistory(),
-      routes: [{ path: '/', component: Analisis }]
-    })
     vi.clearAllMocks()
   })
 
@@ -39,7 +53,6 @@ describe('Analisis', () => {
   it('should render analysis view', () => {
     wrapper = mount(Analisis, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -54,7 +67,6 @@ describe('Analisis', () => {
 
     wrapper = mount(Analisis, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -73,7 +85,6 @@ describe('Analisis', () => {
 
     wrapper = mount(Analisis, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -86,7 +97,6 @@ describe('Analisis', () => {
   it('should filter analyses', async () => {
     wrapper = mount(Analisis, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -111,7 +121,6 @@ describe('Analisis', () => {
 
     wrapper = mount(Analisis, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -128,7 +137,6 @@ describe('Analisis', () => {
 
     wrapper = mount(Analisis, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -144,7 +152,6 @@ describe('Analisis', () => {
   it('should export analysis data', async () => {
     wrapper = mount(Analisis, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -158,4 +165,3 @@ describe('Analisis', () => {
     }
   })
 })
-

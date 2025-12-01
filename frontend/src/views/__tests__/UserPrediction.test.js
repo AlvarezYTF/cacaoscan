@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, config } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
 import UserPrediction from '../UserPrediction.vue'
 
 const mockPredictionStore = {
@@ -9,6 +8,12 @@ const mockPredictionStore = {
   currentImage: null,
   isLoading: false,
   error: null,
+  quickStats: {
+    total: 0,
+    avgConfidence: 0,
+    avgWeight: 0,
+    highConfidenceCount: 0
+  },
   predictImage: vi.fn(),
   clearPrediction: vi.fn()
 }
@@ -18,28 +23,26 @@ vi.mock('@/stores/prediction', () => ({
 }))
 
 describe('UserPrediction', () => {
-  let router
   let wrapper
+  const originalPlugins = config.global.plugins
 
   beforeEach(() => {
     setActivePinia(createPinia())
-    router = createRouter({
-      history: createWebHistory(),
-      routes: [{ path: '/', component: UserPrediction }]
-    })
+    config.global.plugins = []
     vi.clearAllMocks()
   })
 
   afterEach(() => {
+    config.global.plugins = originalPlugins
     if (wrapper) {
       wrapper.unmount()
+      wrapper = null
     }
   })
 
   it('should render prediction view', () => {
     wrapper = mount(UserPrediction, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -50,7 +53,6 @@ describe('UserPrediction', () => {
   it('should display image upload section', () => {
     wrapper = mount(UserPrediction, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -62,7 +64,6 @@ describe('UserPrediction', () => {
   it('should handle image selection', async () => {
     wrapper = mount(UserPrediction, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -83,7 +84,6 @@ describe('UserPrediction', () => {
 
     wrapper = mount(UserPrediction, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -108,7 +108,6 @@ describe('UserPrediction', () => {
 
     wrapper = mount(UserPrediction, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -121,7 +120,6 @@ describe('UserPrediction', () => {
   it('should clear prediction', async () => {
     wrapper = mount(UserPrediction, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -140,7 +138,6 @@ describe('UserPrediction', () => {
 
     wrapper = mount(UserPrediction, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true, 'router-view': true }
       }
     })
@@ -156,4 +153,3 @@ describe('UserPrediction', () => {
     }
   })
 })
-

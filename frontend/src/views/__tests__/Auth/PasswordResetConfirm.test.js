@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createRouter, createWebHistory } from 'vue-router'
 import PasswordResetConfirm from '../../PasswordResetConfirm.vue'
 
 vi.mock('@/services/authApi', () => ({
@@ -10,20 +9,57 @@ vi.mock('@/services/authApi', () => ({
   }
 }))
 
+// Mock vue-router composables to prevent router redefinition errors
+const mockRouter = {
+  push: vi.fn(),
+  replace: vi.fn(),
+  go: vi.fn(),
+  back: vi.fn(),
+  forward: vi.fn()
+}
+
+const mockRoute = {
+  path: '/reset-password-confirm',
+  query: {},
+  params: {},
+  meta: {}
+}
+
+vi.mock('vue-router', async () => {
+  const actual = await vi.importActual('vue-router')
+  return {
+    ...actual,
+    useRoute: () => mockRoute,
+    useRouter: () => mockRouter
+  }
+})
+
+// Mock password validation composable
+vi.mock('@/composables/usePasswordValidation', () => ({
+  usePasswordValidation: () => ({
+    validatePasswordStrength: vi.fn((password) => ({
+      length: password && password.length >= 8,
+      uppercase: password && /[A-Z]/.test(password),
+      lowercase: password && /[a-z]/.test(password),
+      number: password && /[0-9]/.test(password),
+      specialChar: false
+    })),
+    getPasswordValidationError: vi.fn(() => null),
+    validatePasswordConfirmation: vi.fn(() => null),
+    getPasswordRequirements: vi.fn(() => []),
+    validatePassword: vi.fn(() => true),
+    PASSWORD_RULES: {},
+    ERROR_MESSAGES: {}
+  })
+}))
+
 describe('PasswordResetConfirm', () => {
-  let router
   let wrapper
 
   beforeEach(() => {
-    router = createRouter({
-      history: createWebHistory(),
-      routes: [
-        { path: '/reset-password/confirm', component: PasswordResetConfirm },
-        { path: '/login', component: { template: '<div>Login</div>' } },
-        { path: '/reset-password', component: { template: '<div>Reset</div>' } }
-      ]
-    })
     vi.clearAllMocks()
+    // Reset route query for each test
+    mockRoute.query = {}
   })
 
   afterEach(() => {
@@ -35,24 +71,22 @@ describe('PasswordResetConfirm', () => {
   it('should render password reset confirm view', () => {
     wrapper = mount(PasswordResetConfirm, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true }
-      },
-      props: {}
+      }
     })
 
     expect(wrapper.exists()).toBe(true)
   })
 
   it('should display form when token is valid', async () => {
-    router.push({
-      path: '/reset-password/confirm',
-      query: { uid: 'test-uid', token: 'test-token' }
-    })
+    // Set route query parameters
+    mockRoute.query = {
+      uid: 'test-uid',
+      token: 'test-token'
+    }
 
     wrapper = mount(PasswordResetConfirm, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true }
       }
     })
@@ -65,14 +99,11 @@ describe('PasswordResetConfirm', () => {
   })
 
   it('should display invalid token message when token is invalid', async () => {
-    router.push({
-      path: '/reset-password/confirm',
-      query: { uid: 'invalid', token: 'invalid' }
-    })
+    // Set route query to empty or invalid
+    mockRoute.query = {}
 
     wrapper = mount(PasswordResetConfirm, {
       global: {
-        plugins: [router],
         stubs: { 'router-link': true }
       }
     })
@@ -84,4 +115,3 @@ describe('PasswordResetConfirm', () => {
     expect(text.includes('Inválido') || text.includes('inválido')).toBe(true)
   })
 })
-

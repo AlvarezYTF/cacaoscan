@@ -5,9 +5,28 @@ import CreateFarmerModal from './CreateFarmerModal.vue'
 vi.mock('@/components/common/BaseModal.vue', () => ({
   default: {
     name: 'BaseModal',
-    template: '<div><slot name="header"></slot><slot></slot></div>',
-    props: ['show', 'title', 'subtitle', 'maxWidth'],
+    template: '<div v-if="show"><slot name="header"></slot><slot></slot><slot name="footer"></slot></div>',
+    props: {
+      show: {
+        type: Boolean,
+        default: true
+      },
+      title: String,
+      subtitle: String,
+      maxWidth: String
+    },
     emits: ['close', 'update:show']
+  }
+}))
+
+// Mock api to prevent real API calls when errors occur
+vi.mock('@/services/api', () => ({
+  default: {
+    get: vi.fn(),
+    post: vi.fn().mockResolvedValue({ data: {} }),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn()
   }
 }))
 
@@ -22,9 +41,6 @@ describe('CreateFarmerModal', () => {
 
   it('should render modal when isOpen is true', () => {
     wrapper = mount(CreateFarmerModal, {
-      props: {
-        isOpen: true
-      },
       global: {
         stubs: {
           BaseModal: true
@@ -35,17 +51,17 @@ describe('CreateFarmerModal', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('should display create farmer title', () => {
+  it('should display create farmer title', async () => {
     wrapper = mount(CreateFarmerModal, {
-      props: {
-        isOpen: true
-      },
       global: {
         stubs: {
           BaseModal: true
         }
       }
     })
+
+    wrapper.vm.openModal()
+    await wrapper.vm.$nextTick()
 
     const text = wrapper.text()
     expect(text.includes('Crear') || text.includes('Agricultor')).toBe(true)
@@ -53,15 +69,15 @@ describe('CreateFarmerModal', () => {
 
   it('should emit close event when modal is closed', async () => {
     wrapper = mount(CreateFarmerModal, {
-      props: {
-        isOpen: true
-      },
       global: {
         stubs: {
           BaseModal: true
         }
       }
     })
+
+    wrapper.vm.openModal()
+    await wrapper.vm.$nextTick()
 
     await wrapper.vm.closeModal()
 
@@ -70,9 +86,6 @@ describe('CreateFarmerModal', () => {
 
   it('should emit created event when farmer is created successfully', async () => {
     wrapper = mount(CreateFarmerModal, {
-      props: {
-        isOpen: true
-      },
       global: {
         stubs: {
           BaseModal: true
@@ -80,6 +93,7 @@ describe('CreateFarmerModal', () => {
       }
     })
 
+    wrapper.vm.openModal()
     await wrapper.vm.$nextTick()
 
     const form = wrapper.find('form')

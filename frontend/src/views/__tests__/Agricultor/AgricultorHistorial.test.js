@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { createRouter, createWebHistory } from 'vue-router'
+import { mount, config } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AgricultorHistorial from '../../Agricultor/AgricultorHistorial.vue'
 
@@ -22,28 +21,26 @@ vi.mock('@/composables/useSidebarNavigation', () => ({
 }))
 
 describe('AgricultorHistorial', () => {
-  let router
   let wrapper
+  const originalPlugins = config.global.plugins
 
   beforeEach(() => {
     setActivePinia(createPinia())
-    router = createRouter({
-      history: createWebHistory(),
-      routes: [{ path: '/', component: AgricultorHistorial }]
-    })
+    config.global.plugins = []
     vi.clearAllMocks()
   })
 
   afterEach(() => {
+    config.global.plugins = originalPlugins
     if (wrapper) {
       wrapper.unmount()
+      wrapper = null
     }
   })
 
   it('should render historial view', () => {
     wrapper = mount(AgricultorHistorial, {
       global: {
-        plugins: [router],
         stubs: {
           'router-link': true,
           'router-view': true,
@@ -59,13 +56,13 @@ describe('AgricultorHistorial', () => {
   it('should display historial title', () => {
     wrapper = mount(AgricultorHistorial, {
       global: {
-        plugins: [router],
         stubs: {
           'router-link': true,
           'router-view': true,
           Sidebar: { template: '<div>Sidebar</div>' },
           ImageHistoryCard: { template: '<div>ImageHistoryCard</div>' }
-        }
+        },
+        mocks: globalMocks
       }
     })
 

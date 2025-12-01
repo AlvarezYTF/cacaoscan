@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ReportsService } from '../reportsService.js'
 
+// Mock apiConfig to return base URL for testing
+const mockApiBaseUrl = 'https://cacaoscan-backend.onrender.com'
+vi.mock('@/utils/apiConfig', () => ({
+  getApiBaseUrlWithoutPath: vi.fn(() => mockApiBaseUrl)
+}))
+
 // Mock auth store
 const mockAuthStore = {
   token: 'test-token'
@@ -12,6 +18,25 @@ vi.mock('@/stores/auth', () => ({
 
 // Mock fetch
 globalThis.fetch = vi.fn()
+
+// Mock localStorage
+const mockLocalStorage = {
+  getItem: vi.fn((key) => {
+    if (key === 'access_token' || key === 'token') {
+      return 'test-token'
+    }
+    return null
+  }),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn()
+}
+globalThis.localStorage = mockLocalStorage
+
+// Mock location for downloadReport
+globalThis.location = {
+  origin: mockApiBaseUrl
+}
 
 // Mock URL.createObjectURL and related DOM APIs
 globalThis.URL = {
@@ -37,6 +62,20 @@ describe('ReportsService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    
+    // Mock localStorage to provide token
+    globalThis.localStorage = {
+      getItem: vi.fn((key) => {
+        if (key === 'access_token' || key === 'token') {
+          return 'test-token'
+        }
+        return null
+      }),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn()
+    }
+    
     reportsService = new ReportsService()
     mockAuthStore.token = 'test-token'
   })
@@ -64,19 +103,23 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue(mockReports)
       })
 
       const result = await reportsService.getReports()
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes/?page=1&page_size=20',
-        {
-          headers: {
+        `${mockApiBaseUrl}/api/reportes/?page=1&page_size=20`,
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({
             'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
-          }
-        }
+          })
+        })
       )
 
       expect(result).toEqual(mockReports)
@@ -88,6 +131,9 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue(mockReports)
       })
 
@@ -107,6 +153,11 @@ describe('ReportsService', () => {
     it('should handle error when fetching reports', async () => {
       const errorResponse = {
         ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue({ error: 'Unauthorized' })
       }
 
@@ -129,15 +180,20 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue(mockReport)
       })
 
       const result = await reportsService.getReportDetails(reportId)
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes/1/',
+        `${mockApiBaseUrl}/api/reportes/1/`,
         expect.objectContaining({
+          method: 'GET',
           headers: expect.objectContaining({
+            'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
           })
         })
@@ -149,6 +205,11 @@ describe('ReportsService', () => {
     it('should handle error when fetching report details', async () => {
       const errorResponse = {
         ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue({ error: 'Report not found' })
       }
 
@@ -181,15 +242,15 @@ describe('ReportsService', () => {
       const result = await reportsService.createReport(reportData)
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes',
-        {
+        `${mockApiBaseUrl}/api/reportes`,
+        expect.objectContaining({
           method: 'POST',
-          headers: {
+          headers: expect.objectContaining({
             'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
-          },
+          }),
           body: JSON.stringify(reportData)
-        }
+        })
       )
 
       expect(result).toEqual(mockCreatedReport)
@@ -229,7 +290,7 @@ describe('ReportsService', () => {
       const result = await reportsService.downloadReport(reportId)
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes/1/download/',
+        `${mockApiBaseUrl}/api/reportes/1/download/`,
         expect.objectContaining({
           headers: expect.objectContaining({
             'Authorization': 'Bearer test-token',
@@ -244,6 +305,11 @@ describe('ReportsService', () => {
     it('should handle error when downloading report', async () => {
       const errorResponse = {
         ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue({ error: 'Report not found' })
       }
 
@@ -259,20 +325,24 @@ describe('ReportsService', () => {
       const reportId = 1
 
       globalThis.fetch.mockResolvedValue({
-        ok: true
+        ok: true,
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
+        json: vi.fn().mockResolvedValue({})
       })
 
       const result = await reportsService.deleteReport(reportId)
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes/1/delete/',
-        {
+        `${mockApiBaseUrl}/api/reportes/1/delete/`,
+        expect.objectContaining({
           method: 'DELETE',
-          headers: {
+          headers: expect.objectContaining({
             'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
-          }
-        }
+          })
+        })
       )
 
       expect(result).toBe(true)
@@ -281,6 +351,11 @@ describe('ReportsService', () => {
     it('should handle error when deleting report', async () => {
       const errorResponse = {
         ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue({ error: 'Cannot delete' })
       }
 
@@ -302,15 +377,21 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue(mockStats)
       })
 
       const result = await reportsService.getReportsStats()
 
+      // fetchGet constructs the full URL using API_BASE_URL
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes/stats/',
+        `${mockApiBaseUrl}/api/reportes/stats/`,
         expect.objectContaining({
+          method: 'GET',
           headers: expect.objectContaining({
+            'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
           })
         })
@@ -329,20 +410,25 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue(mockResult)
       })
 
       const result = await reportsService.cleanupExpiredReports()
 
+      // fetchPost constructs the full URL using API_BASE_URL
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes/cleanup/',
-        {
+        `${mockApiBaseUrl}/api/reportes/cleanup/`,
+        expect.objectContaining({
           method: 'POST',
-          headers: {
+          headers: expect.objectContaining({
             'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
-          }
-        }
+          }),
+          body: '{}'
+        })
       )
 
       expect(result).toEqual(mockResult)
@@ -363,6 +449,9 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue(mockReport)
       })
 
@@ -392,6 +481,9 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue(mockReport)
       })
 
@@ -413,6 +505,9 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue(mockReport)
       })
 
@@ -437,6 +532,9 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue(mockReport)
       })
 
@@ -518,6 +616,9 @@ describe('ReportsService', () => {
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
         json: vi.fn().mockResolvedValue(mockReport)
       })
 

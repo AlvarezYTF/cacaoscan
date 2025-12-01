@@ -77,13 +77,12 @@ describe('auditApi', () => {
             { id: 2, usuario: 'user2', exitoso: false, fecha: '2024-01-02T10:00:00Z' }
           ],
           count: 2
-        }
       }
-      api.get.mockResolvedValue(mockResponse)
+      vi.mocked(apiGet).mockResolvedValue(mockResponse)
 
       const result = await getLoginHistory({ page: 1 })
 
-      expect(api.get).toHaveBeenCalledWith('/audit/login-history/', { params: { page: 1 } })
+      expect(apiGet).toHaveBeenCalledWith('/audit/login-history/', { page: 1 })
       expect(result.success).toBe(true)
       expect(result.data.results).toHaveLength(2)
     })
@@ -96,7 +95,7 @@ describe('auditApi', () => {
           }
         }
       }
-      api.get.mockRejectedValue(error)
+      vi.mocked(apiGet).mockRejectedValue(error)
 
       await expect(getLoginHistory()).rejects.toThrow('Error message')
     })
@@ -126,7 +125,7 @@ describe('auditApi', () => {
           }
         }
       }
-      api.get.mockRejectedValue(error)
+      vi.mocked(apiGet).mockRejectedValue(error)
 
       await expect(getAuditStats()).rejects.toThrow('Error message')
     })

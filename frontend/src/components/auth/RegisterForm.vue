@@ -426,7 +426,7 @@
             </label>
           </div>
         </div>
-      </div>
+      </FormSection>
 
       <!-- Mensaje de estado global -->
       <Transition 

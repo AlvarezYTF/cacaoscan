@@ -6,7 +6,8 @@ globalThis.fetch = vi.fn()
 
 // Mock apiConfig
 vi.mock('@/utils/apiConfig', () => ({
-  getApiBaseUrlWithoutPath: vi.fn(() => 'https://test-api.example.com')
+  getApiBaseUrlWithoutPath: vi.fn(() => 'https://test-api.example.com'),
+  getApiBaseUrlWithPath: vi.fn(() => 'https://test-api.example.com/api/v1')
 }))
 
 // Mock localStorage

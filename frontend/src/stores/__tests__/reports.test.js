@@ -17,7 +17,8 @@ vi.mock('@/services/reportsService', () => {
 
 // Mock fileExportUtils
 vi.mock('@/utils/fileExportUtils', () => ({
-  downloadFileFromResponse: vi.fn()
+  downloadFileFromResponse: vi.fn(),
+  downloadBlob: vi.fn()
 }))
 
 // Mock fetch for downloadReport
@@ -160,6 +161,7 @@ describe('Reports Store', () => {
     it('should handle errors when fetching reports', async () => {
       const mockError = new Error('Error fetching reports')
       mockError.response = {
+        status: 500,
         data: { detail: 'Error fetching reports' }
       }
 
@@ -218,6 +220,7 @@ describe('Reports Store', () => {
     it('should handle errors when creating report', async () => {
       const mockError = new Error('Error creating report')
       mockError.response = {
+        status: 500,
         data: { detail: 'Error creating report' }
       }
 
