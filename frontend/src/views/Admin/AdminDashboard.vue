@@ -13,7 +13,7 @@
     />
 
     <!-- Main Content -->
-    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'">
+    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'" data-cy="admin-dashboard">
       <!-- Dashboard Header -->
       <div class="mb-8">
         <div class="bg-gradient-to-r from-white to-green-50 rounded-2xl border-2 border-gray-200 hover:shadow-xl hover:border-green-300 transition-all duration-300">
@@ -31,10 +31,21 @@
                 </div>
               </div>
               <div class="flex items-center gap-2 ml-auto">
-                <div v-if="isRefreshing" class="flex items-center gap-2 text-sm text-green-600">
-                  <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button
+                  @click="refreshData"
+                  :disabled="isRefreshing"
+                  class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  data-cy="refresh-button"
+                  title="Actualizar datos"
+                >
+                  <svg v-if="!isRefreshing" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                   </svg>
+                  <svg v-else class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                </button>
+                <div v-if="isRefreshing" class="flex items-center gap-2 text-sm text-green-600">
                   <span>Actualizando...</span>
                 </div>
                 <div v-else-if="lastUpdateTime" class="text-xs text-gray-500">
