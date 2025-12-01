@@ -345,8 +345,10 @@ import ConfirmModal from '@/components/common/ConfirmModal.vue';
 import { useAuditStore } from '@/stores/audit';
 import { useAuthStore } from '@/stores/auth';
 import { useAdminView } from '@/composables/useAdminView';
+import { useAdminSidebarProps } from '@/composables/useAdminSidebarProps';
 import { calculatePeriodDates } from '@/composables/usePeriodDates';
 import Swal from 'sweetalert2';
+import '@/styles/admin-view-common.css';
 
 export default {
   name: 'AuditoriaView',
@@ -376,19 +378,7 @@ export default {
     const realTimeInterval = ref(null);
 
     // Props para AdminSidebar y AdminNavbar
-    const brandName = computed(() => 'CacaoScan');
-    
-    const userName = computed(() => {
-      const user = authStore.user;
-      if (user?.first_name && user?.last_name) {
-        return `${user.first_name} ${user.last_name}`;
-      }
-      return user?.username || 'Usuario';
-    });
-
-    const userRole = computed(() => {
-      return authStore.user?.is_superuser ? 'Administrador' : 'Analista';
-    });
+    const { brandName, userName, userRole } = useAdminSidebarProps();
 
     const navbarTitle = ref('Auditoría del Sistema');
     const navbarSubtitle = ref('Monitorea la actividad y seguridad del sistema');
@@ -610,10 +600,8 @@ export default {
     });
 
     const checkScreenSize = () => {
-      if (globalThis.innerWidth <= 768) {
-        sidebarCollapsed.value = true;
-        localStorage.setItem('sidebarCollapsed', 'true');
-      }
+      // Screen size check logic can be handled by AdminSidebar component
+      // This function is kept for potential future use
     };
 
     return {
@@ -669,223 +657,5 @@ export default {
 
 <style scoped>
 /* Estilos específicos para la vista de auditoría */
-.min-h-screen {
-  min-height: 100vh;
-}
-
-/* Formularios */
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-label {
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.875rem;
-}
-
-.form-select,
-.form-input {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-select:focus,
-.form-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-/* Botones */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.2s;
-  cursor: pointer;
-  border: 1px solid transparent;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background-color: #2563eb;
-  color: #ffffff;
-  border-color: #2563eb;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: #1e3a8a;
-  border-color: #1e3a8a;
-}
-
-.btn-outline {
-  background-color: transparent;
-  color: #374151;
-  border-color: #d1d5db;
-}
-
-.btn-outline:hover:not(:disabled) {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
-}
-
-.btn-success {
-  background-color: #047857;
-  color: #ffffff;
-  border-color: #047857;
-  position: relative;
-}
-
-.btn-success:hover:not(:disabled) {
-  background-color: #065f46;
-  border-color: #065f46;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .dashboard-layout {
-    flex-direction: column;
-  }
-  
-  .dashboard-content {
-    height: calc(100vh - 60px);
-  }
-  
-  .grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .flex-col.sm\:flex-row {
-    flex-direction: column;
-  }
-  
-  .items-start.sm\:items-center {
-    align-items: flex-start;
-  }
-  
-  .justify-between {
-    justify-content: flex-start;
-  }
-  
-  .flex.gap-2 {
-    margin-top: 1rem;
-    width: 100%;
-    justify-content: space-between;
-  }
-}
-
-@media (max-width: 640px) {
-  .lg\:grid-cols-4 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  
-  .xl\:grid-cols-4 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 480px) {
-  .lg\:grid-cols-4 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-  
-  .md\:grid-cols-2 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-}
-
-/* Animaciones */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-main {
-  animation: fadeIn 0.5s ease-out;
-}
-
-/* Estados de carga */
-.loading {
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-/* Mejoras para accesibilidad */
-*:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-}
-
-/* Scroll suave */
-.overflow-y-auto {
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-
-.overflow-y-auto::-webkit-scrollbar {
-  width: 6px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Indicador de tiempo real */
-.btn-success::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 8px;
-  height: 8px;
-  background: #10b981;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-  }
-  
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
-  }
-  
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  }
-}
+/* Los estilos comunes están en @/styles/admin-view-common.css */
 </style>

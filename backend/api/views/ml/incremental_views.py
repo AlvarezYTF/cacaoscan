@@ -16,6 +16,10 @@ from typing import Dict, List, Any
 from ...services import analysis_service
 from core.utils import create_error_response, create_success_response, validate_target
 from .mixins.incremental_mixin import IncrementalViewMixin
+from .mixins.swagger_helpers import (
+    create_incremental_swagger_decorator,
+    create_incremental_success_response_schema
+)
 # Importar desde apps modulares
 from ...utils.model_imports import get_models_safely
 
@@ -38,24 +42,15 @@ class IncrementalTrainingStatusView(IncrementalViewMixin, APIView):
     """
     permission_classes = [IsAuthenticated]
     
-    @swagger_auto_schema(
+    @create_incremental_swagger_decorator(
         operation_description="Obtiene el estado del sistema de entrenamiento incremental",
         operation_summary="Estado del entrenamiento incremental",
         responses={
             200: openapi.Response(
                 description="Estado obtenido exitosamente",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'success': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                        'data': openapi.Schema(type=openapi.TYPE_OBJECT),
-                        'message': openapi.Schema(type=openapi.TYPE_STRING)
-                    }
-                )
-            ),
-            401: openapi.Response(description="No autorizado"),
-        },
-        tags=['Entrenamiento Incremental']
+                schema=create_incremental_success_response_schema()
+            )
+        }
     )
     def get(self, request):
         """
@@ -84,7 +79,7 @@ class IncrementalTrainingView(IncrementalViewMixin, APIView):
     parser_classes = [JSONParser]
     
     
-    @swagger_auto_schema(
+    @create_incremental_swagger_decorator(
         operation_description="Ejecuta entrenamiento incremental con nuevos datos",
         operation_summary="Entrenamiento incremental",
         request_body=openapi.Schema(
@@ -125,19 +120,9 @@ class IncrementalTrainingView(IncrementalViewMixin, APIView):
         responses={
             200: openapi.Response(
                 description="Entrenamiento incremental completado",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'success': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                        'data': openapi.Schema(type=openapi.TYPE_OBJECT),
-                        'message': openapi.Schema(type=openapi.TYPE_STRING)
-                    }
-                )
-            ),
-            400: openapi.Response(description="Datos inválidos"),
-            401: openapi.Response(description="No autorizado"),
-        },
-        tags=['Entrenamiento Incremental']
+                schema=create_incremental_success_response_schema()
+            )
+        }
     )
     def post(self, request):
         """
@@ -251,7 +236,7 @@ class IncrementalDataUploadView(IncrementalViewMixin, APIView):
     parser_classes = [MultiPartParser, FormParser]
     
     
-    @swagger_auto_schema(
+    @create_incremental_swagger_decorator(
         operation_description="Sube datos para entrenamiento incremental",
         operation_summary="Subir datos incrementales",
         manual_parameters=[
@@ -281,19 +266,9 @@ class IncrementalDataUploadView(IncrementalViewMixin, APIView):
         responses={
             200: openapi.Response(
                 description="Datos subidos exitosamente",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'success': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                        'data': openapi.Schema(type=openapi.TYPE_OBJECT),
-                        'message': openapi.Schema(type=openapi.TYPE_STRING)
-                    }
-                )
-            ),
-            400: openapi.Response(description="Datos inválidos"),
-            401: openapi.Response(description="No autorizado"),
-        },
-        tags=['Entrenamiento Incremental']
+                schema=create_incremental_success_response_schema()
+            )
+        }
     )
     def post(self, request):
         """
@@ -389,7 +364,7 @@ class IncrementalModelVersionsView(IncrementalViewMixin, APIView):
     """
     permission_classes = [IsAuthenticated]
     
-    @swagger_auto_schema(
+    @create_incremental_swagger_decorator(
         operation_description="Obtiene información de versiones de modelos incrementales",
         operation_summary="Versiones de modelos incrementales",
         manual_parameters=[
@@ -411,18 +386,9 @@ class IncrementalModelVersionsView(IncrementalViewMixin, APIView):
         responses={
             200: openapi.Response(
                 description="Versiones obtenidas exitosamente",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'success': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                        'data': openapi.Schema(type=openapi.TYPE_OBJECT),
-                        'message': openapi.Schema(type=openapi.TYPE_STRING)
-                    }
-                )
-            ),
-            401: openapi.Response(description="No autorizado"),
-        },
-        tags=['Entrenamiento Incremental']
+                schema=create_incremental_success_response_schema()
+            )
+        }
     )
     def get(self, request):
         """
@@ -469,7 +435,7 @@ class IncrementalDataVersionsView(IncrementalViewMixin, APIView):
     """
     permission_classes = [IsAuthenticated]
     
-    @swagger_auto_schema(
+    @create_incremental_swagger_decorator(
         operation_description="Obtiene información de versiones de datos incrementales",
         operation_summary="Versiones de datos incrementales",
         manual_parameters=[
@@ -484,18 +450,9 @@ class IncrementalDataVersionsView(IncrementalViewMixin, APIView):
         responses={
             200: openapi.Response(
                 description="Versiones obtenidas exitosamente",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'success': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                        'data': openapi.Schema(type=openapi.TYPE_OBJECT),
-                        'message': openapi.Schema(type=openapi.TYPE_STRING)
-                    }
-                )
-            ),
-            401: openapi.Response(description="No autorizado"),
-        },
-        tags=['Entrenamiento Incremental']
+                schema=create_incremental_success_response_schema()
+            )
+        }
     )
     def get(self, request):
         """

@@ -305,42 +305,43 @@ describe('Navegación - Flujos Completos', () => {
     cy.login('farmer')
     visitAndWait('/mis-fincas')
     
-    ifFoundInBody('[data-cy="finca-item"], .finca-item, .item', () => {
+    const navigateToHome = () => {
+      clickIfExistsAndContinue('[data-cy="breadcrumb-home"], .breadcrumb, a[href*="dashboard"]', () => {
+        verifyUrlPatterns(['/agricultor-dashboard', '/dashboard'], 10000)
+      })
+    }
+
+    const navigateToFincas = () => {
+      cy.get('body', { timeout: 5000 }).should('be.visible')
+    }
+
+    const navigateBreadcrumbs = () => {
+      clickIfExistsAndContinue('[data-cy="breadcrumb-fincas"], .breadcrumb', navigateToFincas).then(navigateToHome)
+    }
+    
+    const verifyLoteBreadcrumb = () => {
+      ifFoundInBody('[data-cy="breadcrumb-lotes"], .breadcrumb', () => {
+        cy.get('[data-cy="breadcrumb-lotes"], .breadcrumb').should('exist')
+      })
+    }
+
+    const openLote = () => {
+      ifFoundInBody('[data-cy="lote-item"], .lote-item, .item', () => {
+        cy.get('[data-cy="lote-item"], .lote-item, .item').first().click({ force: true })
+        verifyLoteBreadcrumb()
+        navigateBreadcrumbs()
+      })
+    }
+
+    const clickFincaAndVerifyBreadcrumb = () => {
       cy.get('[data-cy="finca-item"], .finca-item, .item').first().click({ force: true })
       ifFoundInBody('[data-cy="breadcrumb-fincas"], .breadcrumb', () => {
         cy.get('[data-cy="breadcrumb-fincas"], .breadcrumb').should('exist')
       })
-      
-      const navigateToHome = () => {
-        clickIfExistsAndContinue('[data-cy="breadcrumb-home"], .breadcrumb, a[href*="dashboard"]', () => {
-          verifyUrlPatterns(['/agricultor-dashboard', '/dashboard'], 10000)
-        })
-      }
-
-      const navigateToFincas = () => {
-        cy.get('body', { timeout: 5000 }).should('be.visible')
-      }
-
-      const navigateBreadcrumbs = () => {
-        clickIfExistsAndContinue('[data-cy="breadcrumb-fincas"], .breadcrumb', navigateToFincas).then(navigateToHome)
-      }
-      
-      const verifyLoteBreadcrumb = () => {
-        ifFoundInBody('[data-cy="breadcrumb-lotes"], .breadcrumb', () => {
-          cy.get('[data-cy="breadcrumb-lotes"], .breadcrumb').should('exist')
-        })
-      }
-
-      const openLote = () => {
-        ifFoundInBody('[data-cy="lote-item"], .lote-item, .item', () => {
-          cy.get('[data-cy="lote-item"], .lote-item, .item').first().click({ force: true })
-          verifyLoteBreadcrumb()
-          navigateBreadcrumbs()
-        })
-      }
-      
-      return openLote()
-    })
+      openLote()
+    }
+    
+    ifFoundInBody('[data-cy="finca-item"], .finca-item, .item', clickFincaAndVerifyBreadcrumb)
   })
 
   it('debe completar flujo de búsqueda y filtros', () => {

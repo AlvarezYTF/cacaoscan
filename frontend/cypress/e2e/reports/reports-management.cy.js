@@ -1,7 +1,6 @@
 import { 
   visitAndWaitForBody, 
-  verifyElementsVisible, 
-  verifyEmptyStateMessage 
+  verifyElementsVisible
 } from '../../support/helpers'
 
 describe('Gestión de Reportes - ReportsManagement', () => {

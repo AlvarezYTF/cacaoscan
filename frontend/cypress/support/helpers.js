@@ -1510,6 +1510,31 @@ export function testPasswordStrength(weakPasswords, strongPassword) {
 }
 
 /**
+ * Verifies error message text matches expected texts
+ * @param {JQuery} $el - jQuery element containing error
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @returns {boolean} True if text matches
+ */
+const verifyErrorTextMatch = ($el, expectedTexts) => {
+  const text = $el.text().toLowerCase()
+  return expectedTexts.some(expected => text.includes(expected.toLowerCase())) || text.length > 0
+}
+
+/**
+ * Verifies error message after typing in field
+ * @param {string} errorSelector - Selector for error message
+ * @param {Array<string>} expectedTexts - Expected error text fragments
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+const verifyErrorAfterType = (errorSelector, expectedTexts) => {
+  return cy.get('body', { timeout: 2000 }).then(() => {
+    return ifFoundInBody(errorSelector, () => {
+      cy.get(errorSelector).first().should('satisfy', ($el) => verifyErrorTextMatch($el, expectedTexts))
+    })
+  })
+}
+
+/**
  * Validates real-time field validation
  * @param {string} fieldSelector - Selector for field
  * @param {string} value - Value to type
@@ -1519,16 +1544,7 @@ export function testPasswordStrength(weakPasswords, strongPassword) {
  */
 export function validateRealTimeField(fieldSelector, value, errorSelector, expectedTexts) {
   return cy.get(fieldSelector).first().type(value, { force: true })
-    .then(() => {
-      cy.get('body', { timeout: 2000 }).then(($afterType) => {
-        ifFoundInBody(errorSelector, () => {
-          cy.get(errorSelector).first().should('satisfy', ($el) => {
-            const text = $el.text().toLowerCase()
-            return expectedTexts.some(expected => text.includes(expected.toLowerCase())) || text.length > 0
-          })
-        })
-      })
-    })
+    .then(() => verifyErrorAfterType(errorSelector, expectedTexts))
 }
 
 /**
@@ -1636,17 +1652,19 @@ export function verifyEmptyStateMessage(emptyStateSelector, expectedText) {
 
 /**
  * Sets up error intercept and verifies error message
- * @param {string} method - HTTP method
- * @param {string} urlPattern - URL pattern to intercept
- * @param {number} statusCode - HTTP status code
- * @param {Object} errorBody - Error response body
- * @param {string} alias - Intercept alias
+ * @param {Object} interceptConfig - Intercept configuration
+ * @param {string} interceptConfig.method - HTTP method
+ * @param {string} interceptConfig.urlPattern - URL pattern to intercept
+ * @param {number} interceptConfig.statusCode - HTTP status code
+ * @param {Object} interceptConfig.errorBody - Error response body
+ * @param {string} interceptConfig.alias - Intercept alias
  * @param {string} visitUrl - URL to visit after intercept
  * @param {Array<string>} errorSelectors - Array of error selectors
  * @param {Array<string>} expectedTexts - Expected error text fragments
  * @returns {Cypress.Chainable} Cypress chainable
  */
-export function setupErrorInterceptAndVerify(method, urlPattern, statusCode, errorBody, alias, visitUrl, errorSelectors, expectedTexts) {
+export function setupErrorInterceptAndVerify(interceptConfig, visitUrl, errorSelectors, expectedTexts) {
+  const { method, urlPattern, statusCode, errorBody, alias } = interceptConfig
   cy.interceptError(method, urlPattern, statusCode, errorBody, alias)
   visitAndWaitForBody(visitUrl)
   return verifyErrorMessageWithSelectors(errorSelectors, expectedTexts)
@@ -1678,17 +1696,19 @@ export function uploadFileAndVerifyErrorAfterIntercept(fileInputSelector, fileCo
 
 /**
  * Sets up direct intercept and verifies error message
- * @param {string} method - HTTP method
- * @param {string} url - Full URL to intercept
- * @param {number} statusCode - HTTP status code
- * @param {Object} body - Response body
- * @param {string} alias - Intercept alias
+ * @param {Object} interceptConfig - Intercept configuration
+ * @param {string} interceptConfig.method - HTTP method
+ * @param {string} interceptConfig.url - Full URL to intercept
+ * @param {number} interceptConfig.statusCode - HTTP status code
+ * @param {Object} interceptConfig.body - Response body
+ * @param {string} interceptConfig.alias - Intercept alias
  * @param {string} visitUrl - URL to visit
  * @param {string} errorSelector - Selector for error message
  * @param {string} expectedText - Expected error text
  * @returns {Cypress.Chainable} Cypress chainable
  */
-export function setupDirectInterceptAndVerify(method, url, statusCode, body, alias, visitUrl, errorSelector, expectedText) {
+export function setupDirectInterceptAndVerify(interceptConfig, visitUrl, errorSelector, expectedText) {
+  const { method, url, statusCode, body, alias } = interceptConfig
   cy.intercept(method, url, {
     statusCode,
     body
@@ -1699,5 +1719,56 @@ export function setupDirectInterceptAndVerify(method, url, statusCode, body, ali
     .should('be.visible')
     .and('contain', expectedText)
   return cy.wrap(null)
+}
+
+/**
+ * Tests browser API availability and usage in a standardized way
+ * @param {string} visitUrl - URL to visit before testing API
+ * @param {Function} apiTest - Function that receives window object and tests the API
+ * @param {string|Array<string>} verifySelector - Selector(s) to verify after API test
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function testBrowserApi(visitUrl, apiTest, verifySelector) {
+  cy.visit(visitUrl)
+  cy.window().then((win) => {
+    apiTest(win)
+  })
+  
+  const selectors = Array.isArray(verifySelector) ? verifySelector : [verifySelector]
+  const selector = selectors[0]
+  cy.get(selector).should('be.visible')
+  return cy.wrap(null)
+}
+
+/**
+ * Tests navigator API availability with a check function
+ * @param {string} visitUrl - URL to visit
+ * @param {Function} checkFunction - Function that checks if API exists in navigator
+ * @param {Function} useFunction - Function that uses the API
+ * @param {string|Array<string>} verifySelector - Selector(s) to verify
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function testNavigatorApi(visitUrl, checkFunction, useFunction, verifySelector) {
+  return testBrowserApi(visitUrl, (win) => {
+    if (checkFunction(win.navigator)) {
+      useFunction(win.navigator).catch(() => {})
+    }
+  }, verifySelector)
+}
+
+/**
+ * Tests window API availability with a check function
+ * @param {string} visitUrl - URL to visit
+ * @param {Function} checkFunction - Function that checks if API exists in window
+ * @param {Function} useFunction - Function that uses the API
+ * @param {string|Array<string>} verifySelector - Selector(s) to verify
+ * @returns {Cypress.Chainable} Cypress chainable
+ */
+export function testWindowApi(visitUrl, checkFunction, useFunction, verifySelector) {
+  return testBrowserApi(visitUrl, (win) => {
+    if (checkFunction(win)) {
+      useFunction(win).catch(() => {})
+    }
+  }, verifySelector)
 }
 

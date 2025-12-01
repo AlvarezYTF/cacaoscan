@@ -12,7 +12,7 @@
         :id="fieldId"
         type="button"
         role="switch"
-        :aria-checked="ariaChecked"
+        :aria-checked="ariaChecked.toString()"
         :aria-label="ariaLabel"
         :class="[
           'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 ease-in-out',
@@ -106,7 +106,7 @@ const ariaLabel = computed(() => {
 })
 
 const ariaChecked = computed(() => {
-  return Boolean(props.modelValue) ? 'true' : 'false'
+  return props.modelValue
 })
 
 const activeClasses = computed(() => {

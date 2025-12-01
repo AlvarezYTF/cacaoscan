@@ -9,8 +9,8 @@
     :save-button-text="saveButtonText"
     :reset-button-text="resetButtonText"
     :container-class="containerClass"
-    :icon-path="SCAN_ICON_PATH"
-    content-slot-name="preferences"
+    :icon-path="iconPath"
+    :content-slot-name="contentSlotName"
     @update:model-value="$emit('update:modelValue', $event)"
     @save="$emit('save', $event)"
     @reset="$emit('reset')"
@@ -18,8 +18,8 @@
     <template #header-icon>
       <slot name="header-icon"></slot>
     </template>
-    <template #preferences="{ value, update }">
-      <slot name="preferences" :preferences="value" :update="update"></slot>
+    <template #[contentSlotName]="{ value, update }">
+      <slot :name="contentSlotName" :preferences="value" :update="update"></slot>
     </template>
     <template #actions>
       <slot name="actions"></slot>
@@ -29,48 +29,18 @@
 
 <script setup>
 import BasePreferencesWrapper from './BasePreferencesWrapper.vue'
+import { 
+  createPreferenceWrapperProps, 
+  getPreferenceIconPath, 
+  getPreferenceContentSlotName 
+} from '@/composables/usePreferencesWrapperConfig'
 
-const SCAN_ICON_PATH = 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'
+const PREFERENCE_TYPE = 'SCAN'
 
-defineProps({
-  modelValue: {
-    type: Object,
-    required: true,
-    default: () => ({})
-  },
-  title: {
-    type: String,
-    default: 'Preferencias de Escaneo'
-  },
-  showHeader: {
-    type: Boolean,
-    default: true
-  },
-  showActions: {
-    type: Boolean,
-    default: true
-  },
-  showSaveButton: {
-    type: Boolean,
-    default: true
-  },
-  showResetButton: {
-    type: Boolean,
-    default: false
-  },
-  saveButtonText: {
-    type: String,
-    default: 'Guardar Preferencias'
-  },
-  resetButtonText: {
-    type: String,
-    default: 'Restablecer'
-  },
-  containerClass: {
-    type: String,
-    default: 'bg-white rounded-2xl border-2 border-gray-200 p-8 shadow-lg'
-  }
-})
+const props = defineProps(createPreferenceWrapperProps(PREFERENCE_TYPE))
+
+const iconPath = getPreferenceIconPath(PREFERENCE_TYPE)
+const contentSlotName = getPreferenceContentSlotName(PREFERENCE_TYPE)
 
 defineEmits(['update:modelValue', 'save', 'reset'])
 </script>

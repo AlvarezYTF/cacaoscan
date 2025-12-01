@@ -286,6 +286,10 @@ import { useNotifications } from '@/composables/useNotifications'
 import BaseModal from '@/components/common/BaseModal.vue'
 import PersonFormFields from '@/components/common/PersonFormFields.vue'
 
+// 4. Utils
+import { mapPersonaDataToForm, mapPersonaFormToPayload, extractErrorMessageWithDetails } from '@/utils/personaDataMapper'
+import { extractErrorMessage } from '@/utils/apiErrorHandler'
+
 // Props
 const props = defineProps({
   farmer: {
@@ -399,18 +403,7 @@ watch(() => props.farmer, async (newFarmer) => {
     // Load persona data
     try {
       const personaData = await personasApi.getPersonaByUserId(newFarmer.id)
-      personaForm.primer_nombre = personaData.primer_nombre || ''
-      personaForm.segundo_nombre = personaData.segundo_nombre || ''
-      personaForm.primer_apellido = personaData.primer_apellido || ''
-      personaForm.segundo_apellido = personaData.segundo_apellido || ''
-      personaForm.tipo_documento = personaData.tipo_documento_info?.codigo || ''
-      personaForm.numero_documento = personaData.numero_documento || ''
-      personaForm.genero = personaData.genero_info?.codigo || ''
-      personaForm.fecha_nacimiento = personaData.fecha_nacimiento || ''
-      personaForm.telefono = personaData.telefono || ''
-      personaForm.direccion = personaData.direccion || ''
-      personaForm.departamento = personaData.departamento_info?.id || null
-      personaForm.municipio = personaData.municipio_info?.id || null
+      Object.assign(personaForm, mapPersonaDataToForm(personaData))
 
       // Load municipios if there's a departamento
       if (personaForm.departamento) {
@@ -418,14 +411,13 @@ watch(() => props.farmer, async (newFarmer) => {
       }
     } catch (error) {
       const statusCode = error?.response?.status
-      const errorData = error?.response?.data
-      const errorMessage = errorData?.message || errorData?.detail || error?.message || 'Error al cargar los datos de la persona'
 
       if (statusCode === 404) {
         // 404 is expected - persona doesn't exist yet and will be created on save
         console.warn('Persona no encontrada para el usuario, se podrá crear al guardar')
       } else {
         // Handle unexpected errors by showing notification to user
+        const errorMessage = extractErrorMessage(error, 'Error al cargar los datos de la persona')
         console.error('Error al cargar datos de persona:', errorMessage, error)
         showError(errorMessage)
       }
@@ -478,22 +470,8 @@ const handleCreateFinca = async () => {
 
   } catch (error) {
     console.error('Error creando finca:', error)
-
-    let errorMessage = 'Error al crear la finca'
-    if (error.response?.data) {
-      const data = error.response.data
-      errorMessage = data.message || data.error || errorMessage
-      if (data.details) {
-        const details = Object.entries(data.details)
-          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value[0] : value}`)
-          .join(', ')
-        if (details) {
-          errorMessage += `\n\nDetalles: ${details}`
-        }
-      }
-    }
-
-    showError(errorMessage.replaceAll('\n', ' '))
+    const errorMessage = extractErrorMessageWithDetails(error, 'Error al crear la finca')
+    showError(errorMessage)
   } finally {
     isCreatingFinca.value = false
   }
@@ -520,20 +498,7 @@ const handleUpdate = async () => {
     const response = await authApi.updateUser(props.farmer.id, updateData)
 
     // Update/create persona data
-    const personaPayload = {
-      primer_nombre: personaForm.primer_nombre,
-      segundo_nombre: personaForm.segundo_nombre || '',
-      primer_apellido: personaForm.primer_apellido,
-      segundo_apellido: personaForm.segundo_apellido || '',
-      tipo_documento: personaForm.tipo_documento,
-      numero_documento: personaForm.numero_documento,
-      genero: personaForm.genero,
-      fecha_nacimiento: personaForm.fecha_nacimiento || null,
-      telefono: personaForm.telefono,
-      direccion: personaForm.direccion || '',
-      departamento: personaForm.departamento || null,
-      municipio: personaForm.municipio || null
-    }
+    const personaPayload = mapPersonaFormToPayload(personaForm)
 
     if (Object.keys(personaPayload).length > 0) {
       try {
@@ -549,22 +514,8 @@ const handleUpdate = async () => {
     closeModal()
   } catch (error) {
     console.error('Error actualizando agricultor:', error)
-
-    let errorMessage = 'Error al actualizar el agricultor'
-    if (error.response?.data) {
-      const data = error.response.data
-      errorMessage = data.message || data.error || errorMessage
-      if (data.details) {
-        const details = Object.entries(data.details)
-          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value[0] : value}`)
-          .join(', ')
-        if (details) {
-          errorMessage += `\n\nDetalles: ${details}`
-        }
-      }
-    }
-
-    showError(errorMessage.replaceAll('\n', ' '))
+    const errorMessage = extractErrorMessageWithDetails(error, 'Error al actualizar el agricultor')
+    showError(errorMessage)
   } finally {
     isSubmitting.value = false
   }

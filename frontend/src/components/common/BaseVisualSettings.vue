@@ -9,8 +9,8 @@
     :save-button-text="saveButtonText"
     :reset-button-text="resetButtonText"
     :container-class="containerClass"
-    :icon-path="VISUAL_ICON_PATH"
-    content-slot-name="settings"
+    :icon-path="iconPath"
+    :content-slot-name="contentSlotName"
     @update:model-value="$emit('update:modelValue', $event)"
     @save="$emit('save', $event)"
     @reset="$emit('reset')"
@@ -18,8 +18,8 @@
     <template #header-icon>
       <slot name="header-icon"></slot>
     </template>
-    <template #settings="{ value, update }">
-      <slot name="settings" :settings="value" :update="update"></slot>
+    <template #[contentSlotName]="{ value, update }">
+      <slot :name="contentSlotName" :settings="value" :update="update"></slot>
     </template>
     <template #actions>
       <slot name="actions"></slot>
@@ -29,48 +29,18 @@
 
 <script setup>
 import BasePreferencesWrapper from './BasePreferencesWrapper.vue'
+import { 
+  createPreferenceWrapperProps, 
+  getPreferenceIconPath, 
+  getPreferenceContentSlotName 
+} from '@/composables/usePreferencesWrapperConfig'
 
-const VISUAL_ICON_PATH = 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01'
+const PREFERENCE_TYPE = 'VISUAL'
 
-defineProps({
-  modelValue: {
-    type: Object,
-    required: true,
-    default: () => ({})
-  },
-  title: {
-    type: String,
-    default: 'Ajustes Visuales'
-  },
-  showHeader: {
-    type: Boolean,
-    default: true
-  },
-  showActions: {
-    type: Boolean,
-    default: true
-  },
-  showSaveButton: {
-    type: Boolean,
-    default: true
-  },
-  showResetButton: {
-    type: Boolean,
-    default: false
-  },
-  saveButtonText: {
-    type: String,
-    default: 'Guardar Ajustes'
-  },
-  resetButtonText: {
-    type: String,
-    default: 'Restablecer'
-  },
-  containerClass: {
-    type: String,
-    default: 'bg-white rounded-2xl border-2 border-gray-200 p-8 shadow-lg'
-  }
-})
+const props = defineProps(createPreferenceWrapperProps(PREFERENCE_TYPE))
+
+const iconPath = getPreferenceIconPath(PREFERENCE_TYPE)
+const contentSlotName = getPreferenceContentSlotName(PREFERENCE_TYPE)
 
 defineEmits(['update:modelValue', 'save', 'reset'])
 </script>

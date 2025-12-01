@@ -27,6 +27,9 @@ import LotesView from '../views/LotesView.vue'
 // Importar auth store
 import { useAuthStore } from '@/stores/auth'
 
+// Import route helpers
+import { createRouteMeta, createPublicRoute, createAuthRoute, createGuestRoute } from '@/utils/routeHelpers'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -36,10 +39,7 @@ const router = createRouter({
       path: '/',
       name: 'Home',
       component: HomeView,
-      meta: {
-        title: 'CacaoScan - Sistema de Análisis de Cacao',
-        requiresAuth: false
-      },
+      meta: createRouteMeta('CacaoScan - Sistema de Análisis de Cacao', { requiresAuth: false })
     },
 
     //RUTA DEL REDIRECCIONAMIENTO DE LA DASHBOARD
@@ -64,10 +64,7 @@ const router = createRouter({
             return '/'
         }
       },
-      meta: {
-        title: 'Dashboard | CacaoScan',
-        requiresAuth: true,
-      },
+      meta: createRouteMeta('Dashboard', { requiresAuth: true })
     },
 
     //LOGIN Y REGISTRO
@@ -75,39 +72,25 @@ const router = createRouter({
       path: '/login',
       name: 'Login',
       component: LoginView,
-      // beforeEnter removido - el guard global maneja requiresGuest
-      meta: {
-        title: 'Iniciar sesión | CacaoScan',
-        requiresGuest: true,
-      },
+      meta: createRouteMeta('Iniciar sesión', { requiresGuest: true })
     },
     {
       path: '/registro',
       name: 'Register',
       component: RegisterView,
-      // beforeEnter removido - el guard global maneja requiresGuest
-      meta: {
-        title: 'Registro | CacaoScan',
-        requiresGuest: true,
-      },
+      meta: createRouteMeta('Registro', { requiresGuest: true })
     },
     {
       path: '/auth/forgot-password',
       name: 'ForgotPassword',
       component: () => import('../views/Auth/PasswordReset.vue'),
-      meta: {
-        title: 'Recuperar Contraseña | CacaoScan',
-        requiresGuest: true,
-      },
+      meta: createRouteMeta('Recuperar Contraseña', { requiresGuest: true })
     },
     {
       path: '/auth/reset-password',
       name: 'ResetPassword',
       component: () => import('../views/Auth/ResetPassword.vue'),
-      meta: {
-        title: 'Restablecer Contraseña | CacaoScan',
-        requiresGuest: true,
-      },
+      meta: createRouteMeta('Restablecer Contraseña', { requiresGuest: true })
     },
 
     // DOCUMENTOS LEGALES
@@ -115,78 +98,55 @@ const router = createRouter({
       path: '/legal/terms',
       name: 'LegalTerms',
       component: () => import('@/views/Pages/LegalTermsView.vue'),
-      meta: {
-        title: 'Términos y Condiciones | CacaoScan',
-        requiresAuth: false,
-      },
+      meta: createRouteMeta('Términos y Condiciones', { requiresAuth: false })
     },
     {
       path: '/legal/privacy',
       name: 'PrivacyPolicy',
       component: () => import('@/views/Pages/PrivacyPolicyView.vue'),
-      meta: {
-        title: 'Política de Privacidad | CacaoScan',
-        requiresAuth: false,
-      },
+      meta: createRouteMeta('Política de Privacidad', { requiresAuth: false })
     },
 
     // RUTAS DEL ADMINISTRADOR
     {
       path: '/admin',
-      meta: {
-        requiresAuth: true,
-        requiresRole: 'admin',
-      },
+      meta: createRouteMeta('', { requiresAuth: true, requiresRole: 'admin' }),
       children: [
         {
           path: 'dashboard',
           name: 'AdminDashboard',
           component: AdminDashboard,
-          meta: {
-            title: 'Panel de Administración | CacaoScan',
-            requiresAuth: true,
-            requiresRole: 'admin',
-          },
+          meta: createRouteMeta('Panel de Administración', { requiresAuth: true, requiresRole: 'admin' })
         },
         {
           path: 'agricultores',
           name: 'AdminAgricultores',
           component: AdminAgricultores,
-          meta: {
-            title: 'Gestión de Agricultores | CacaoScan',
-          },
+          meta: createRouteMeta('Gestión de Agricultores')
         },
         {
           path: 'configuracion',
           name: 'AdminConfiguracion',
           component: AdminConfiguracion,
-          meta: {
-            title: 'Configuración | CacaoScan',
-          },
+          meta: createRouteMeta('Configuración')
         },
         {
           path: 'entrenamiento',
           name: 'AdminTraining',
           component: AdminTraining,
-          meta: {
-            title: 'Panel de Reentrenamiento | CacaoScan',
-          },
+          meta: createRouteMeta('Panel de Reentrenamiento')
         },
         {
           path: 'usuarios',
           name: 'AdminUsuarios',
           component: AdminUsuarios,
-          meta: {
-            title: 'Gestión de Usuarios | CacaoScan',
-          },
+          meta: createRouteMeta('Gestión de Usuarios')
         },
         {
           path: 'analisis',
           name: 'AdminAnalisis',
           component: AdminAnalisis,
-          meta: {
-            title: 'Análisis de Lote | CacaoScan',
-          },
+          meta: createRouteMeta('Análisis de Lote')
         },
       ],
     },
@@ -196,118 +156,73 @@ const router = createRouter({
       path: '/detalle-analisis/:id?',
       name: 'DetalleAnalisis',
       component: DetalleAnalisisView,
-      meta: {
-        title: 'Detalle del Análisis de Cacao | CacaoScan',
-        requiresAuth: true,
-      },
+      meta: createRouteMeta('Detalle del Análisis de Cacao', { requiresAuth: true })
     },
     {
       path: '/analisis',
       name: 'Analisis',
       component: AdminAnalisis,
-      meta: {
-        title: 'Análisis de Datos | CacaoScan',
-        requiresAuth: true,
-      },
+      meta: createRouteMeta('Análisis de Datos', { requiresAuth: true })
     },
     {
       path: '/reportes',
       name: 'Reportes',
       component: Reportes,
-      meta: {
-        title: 'Reportes | CacaoScan',
-        requiresAuth: true,
-        requiresRole: 'analyst',
-      },
+      meta: createRouteMeta('Reportes', { requiresAuth: true, requiresRole: 'analyst' })
     },
     {
       path: '/reportes/management',
       name: 'ReportsManagement',
       component: ReportsManagement,
-      meta: {
-        title: 'Gestión de Reportes | CacaoScan',
-        requiresAuth: true,
-        requiresRole: 'analyst',
-      },
+      meta: createRouteMeta('Gestión de Reportes', { requiresAuth: true, requiresRole: 'analyst' })
     },
     {
       path: '/agricultor-dashboard',
       name: 'AgricultorDashboard',
       component: AgricultorDashboard,
-      meta: {
-        title: 'Dashboard de Agricultor | CacaoScan',
-        requiresAuth: true,
-        requiresRole: 'farmer',
-      },
+      meta: createRouteMeta('Dashboard de Agricultor', { requiresAuth: true, requiresRole: 'farmer' })
     },
     {
       path: '/agricultor/historial',
       name: 'Historial',
       component: Historial,
-      meta: {
-        title: 'Historial de Análisis | CacaoScan',
-        requiresAuth: true,
-        requiresRole: 'farmer',
-      },
+      meta: createRouteMeta('Historial de Análisis', { requiresAuth: true, requiresRole: 'farmer' })
     },
     {
       path: '/agricultor/reportes',
       name: 'AgricultorReportes',
       component: AgricultorReportes,
-      meta: {
-        title: 'Reportes de Análisis | CacaoScan',
-        requiresAuth: true,
-        requiresRole: 'farmer',
-      },
+      meta: createRouteMeta('Reportes de Análisis', { requiresAuth: true, requiresRole: 'farmer' })
     },
     {
       path: '/agricultor/configuracion',
       name: 'AgricultorConfiguracion',
       component: AgricultorConfiguracion,
-      meta: {
-        title: 'Configuración | CacaoScan',
-        requiresAuth: true,
-        requiresRole: 'farmer',
-      },
+      meta: createRouteMeta('Configuración', { requiresAuth: true, requiresRole: 'farmer' })
     },
     {
       path: '/prediccion',
       name: 'Prediction',
       component: PredictionView,
-      meta: {
-        title: 'Análisis de Granos de Cacao | CacaoScan',
-        requiresAuth: true,
-        requiresVerification: false,
-      },
+      meta: createRouteMeta('Análisis de Granos de Cacao', { requiresAuth: true, requiresVerification: false })
     },
     {
       path: '/user/prediction',
       name: 'UserPrediction',
       component: UserPrediction,
-      meta: {
-        title: 'Predicción de Usuario | CacaoScan',
-        requiresAuth: true,
-        requiresVerification: true,
-      },
+      meta: createRouteMeta('Predicción de Usuario', { requiresAuth: true, requiresVerification: true })
     },
     {
       path: '/upload-images',
       name: 'UploadImages',
       component: () => import('../views/UploadImagesView.vue'),
-      meta: {
-        title: 'Subir Imágenes de Cacao | CacaoScan',
-        requiresAuth: true,
-      },
+      meta: createRouteMeta('Subir Imágenes de Cacao', { requiresAuth: true })
     },
     {
       path: '/entrenamiento-incremental',
       name: 'SubirDatosEntrenamiento',
       component: SubirDatosEntrenamiento,
-      meta: {
-        title: 'Entrenamiento Incremental | CacaoScan',
-        requiresAuth: true,
-        requiresVerification: true,
-      },
+      meta: createRouteMeta('Entrenamiento Incremental', { requiresAuth: true, requiresVerification: true })
     },
     // Redirección de ruta antigua de agricultor a la nueva ruta unificada
     {
@@ -319,137 +234,86 @@ const router = createRouter({
       path: '/fincas',
       name: 'Fincas',
       component: FincasView,
-      meta: {
-        title: 'Gestión de Fincas | CacaoScan',
-        requiresAuth: true,
-        // Both admin and farmer can access fincas
-      },
+      meta: createRouteMeta('Gestión de Fincas', { requiresAuth: true })
     },
     {
       path: '/fincas/:id',
       name: 'FincaDetail',
       component: () => import('../views/FincaDetailView.vue'),
-      meta: {
-        title: 'Detalle de Finca | CacaoScan',
-        requiresAuth: true,
-        requiresRole: 'farmer',
-        requiresVerification: true,
-      },
+      meta: createRouteMeta('Detalle de Finca', { requiresAuth: true, requiresRole: 'farmer', requiresVerification: true })
     },
     {
       path: '/fincas/:id/lotes',
       name: 'FincaLotes',
       component: () => import('../views/FincaLotesView.vue'),
-      meta: {
-        title: 'Lotes de Finca | CacaoScan',
-        requiresAuth: true,
-        requiresRole: 'farmer',
-        requiresVerification: true,
-      },
+      meta: createRouteMeta('Lotes de Finca', { requiresAuth: true, requiresRole: 'farmer', requiresVerification: true })
     },
     {
       path: '/lotes',
       name: 'Lotes',
       component: LotesView,
-      meta: {
-        title: 'Gestión de Lotes | CacaoScan',
-        requiresAuth: true,
-        requiresRole: 'farmer',
-        requiresVerification: true,
-      },
+      meta: createRouteMeta('Gestión de Lotes', { requiresAuth: true, requiresRole: 'farmer', requiresVerification: true })
     },
     {
       path: '/lotes/:id',
       name: 'LoteDetail',
       component: () => import('../views/LoteDetailView.vue'),
-      meta: {
-        title: 'Detalle de Lote | CacaoScan',
-        requiresAuth: true,
-        requiresRole: 'farmer',
-        requiresVerification: true,
-      },
+      meta: createRouteMeta('Detalle de Lote', { requiresAuth: true, requiresRole: 'farmer', requiresVerification: true })
     },
     {
       path: '/lotes/:id/analisis',
       name: 'LoteAnalisis',
       component: () => import('../views/LoteAnalisisView.vue'),
-      meta: {
-        title: 'Análisis de Lote | CacaoScan',
-        requiresAuth: true,
-        requiresRole: 'farmer',
-        requiresVerification: true,
-      },
+      meta: createRouteMeta('Análisis de Lote', { requiresAuth: true, requiresRole: 'farmer', requiresVerification: true })
     },
     // Rutas adicionales para autenticación
     {
       path: '/verificar-email',
       name: 'EmailVerification',
       component: () => import('../views/EmailVerification.vue'),
-      meta: {
-        title: 'Verificar Email | CacaoScan',
-        requiresAuth: false, // Permitir acceso sin autenticación para verificar
-      },
+      meta: createRouteMeta('Verificar Email', { requiresAuth: false })
     },
     {
       path: '/verify-email-otp',
       name: 'VerifyEmailOTP',
       component: () => import('../views/VerifyEmailView.vue'),
-      meta: {
-        title: 'Verificar Código OTP | CacaoScan',
-        requiresGuest: true,
-      },
+      meta: createRouteMeta('Verificar Código OTP', { requiresGuest: true })
     },
     {
       path: '/verify-email/:token',
       name: 'VerifyEmail',
       component: () => import('../views/EmailVerification.vue'),
-      meta: {
-        title: 'Verificando Email | CacaoScan',
-        requiresAuth: false,
-      },
+      meta: createRouteMeta('Verificando Email', { requiresAuth: false })
     },
     {
       path: '/verify-prompt',
       name: 'VerifyPrompt',
       component: () => import('../views/VerifyPrompt.vue'),
-      meta: {
-        title: 'Verifica tu correo | CacaoScan',
-        requiresAuth: false,
-      },
+      meta: createRouteMeta('Verifica tu correo', { requiresAuth: false })
     },
     {
       path: '/reset-password',
       name: 'PasswordReset',
       component: () => import('../views/Auth/PasswordReset.vue'),
-      meta: {
-        title: 'Restablecer Contraseña | CacaoScan',
-        requiresGuest: true,
-      },
+      meta: createRouteMeta('Restablecer Contraseña', { requiresGuest: true })
     },
     {
       path: '/reset-password/confirm',
       name: 'PasswordResetConfirm',
       component: () => import('../views/PasswordResetConfirm.vue'),
-      meta: {
-        title: 'Confirmar Nueva Contraseña | CacaoScan',
-        requiresGuest: true,
-      },
+      meta: createRouteMeta('Confirmar Nueva Contraseña', { requiresGuest: true })
     },
     {
       path: '/acceso-denegado',
       name: 'AccessDenied',
       component: () => import('../views/AccessDenied.vue'),
-      meta: {
-        title: 'Acceso Denegado | CacaoScan',
-      },
+      meta: createRouteMeta('Acceso Denegado')
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'NotFound',
       component: () => import('../views/Pages/NotFound.vue'),
-      meta: {
-        title: 'Página no encontrada | CacaoScan',
-      },
+      meta: createRouteMeta('Página no encontrada')
     },
   ],
 })

@@ -2,12 +2,10 @@ import {
   getApiBaseUrl,
   visitAndWaitForBody,
   verifyErrorMessageWithSelectors,
-  uploadFileWithDataTransfer,
   openModalAndExecute,
   setupErrorInterceptAndVerify,
   uploadFileAndVerifyErrorAfterIntercept,
-  setupDirectInterceptAndVerify,
-  ifFoundInBody
+  setupDirectInterceptAndVerify
 } from '../../support/helpers'
 
 describe('Manejo de Errores - Errores de Red', () => {
@@ -17,11 +15,13 @@ describe('Manejo de Errores - Errores de Red', () => {
 
   it('debe manejar error 500 del servidor', () => {
     setupErrorInterceptAndVerify(
-      'GET',
-      '/fincas/**',
-      500,
-      { error: 'Error interno del servidor' },
-      'serverError',
+      {
+        method: 'GET',
+        urlPattern: '/fincas/**',
+        statusCode: 500,
+        errorBody: { error: 'Error interno del servidor' },
+        alias: 'serverError'
+      },
       '/mis-fincas',
       ['[data-cy="error-message"], .error-message, .swal2-error'],
       ['error', 'servidor', '500']
@@ -31,11 +31,13 @@ describe('Manejo de Errores - Errores de Red', () => {
 
   it('debe manejar error 404 - Recurso no encontrado', () => {
     setupErrorInterceptAndVerify(
-      'GET',
-      '/fincas/**/',
-      404,
-      { error: 'Finca no encontrada' },
-      'notFound',
+      {
+        method: 'GET',
+        urlPattern: '/fincas/**/',
+        statusCode: 404,
+        errorBody: { error: 'Finca no encontrada' },
+        alias: 'notFound'
+      },
       '/mis-fincas',
       ['[data-cy="error-message"], .error-message, .swal2-error'],
       ['no encontrado', '404', 'not found']
@@ -44,11 +46,13 @@ describe('Manejo de Errores - Errores de Red', () => {
 
   it('debe manejar error 403 - Acceso denegado', () => {
     setupErrorInterceptAndVerify(
-      'GET',
-      '/admin/**',
-      403,
-      { error: 'Acceso denegado' },
-      'forbidden',
+      {
+        method: 'GET',
+        urlPattern: '/admin/**',
+        statusCode: 403,
+        errorBody: { error: 'Acceso denegado' },
+        alias: 'forbidden'
+      },
       '/admin/agricultores',
       ['[data-cy="error-message"], .error-message, .swal2-error'],
       ['acceso', 'denegado', '403']
@@ -69,11 +73,13 @@ describe('Manejo de Errores - Errores de Red', () => {
 
   it('debe manejar error de timeout', () => {
     setupErrorInterceptAndVerify(
-      'GET',
-      '/fincas/**',
-      408,
-      { error: 'Timeout' },
-      'timeoutError',
+      {
+        method: 'GET',
+        urlPattern: '/fincas/**',
+        statusCode: 408,
+        errorBody: { error: 'Timeout' },
+        alias: 'timeoutError'
+      },
       '/mis-fincas',
       ['[data-cy="error-message"], .error-message, .swal2-error'],
       ['timeout', 'tiempo', '408']
@@ -208,11 +214,13 @@ describe('Manejo de Errores - Errores de Red', () => {
   it('debe manejar error de servicio no disponible', () => {
     const apiBaseUrl = getApiBaseUrl()
     setupDirectInterceptAndVerify(
-      'GET',
-      `${apiBaseUrl}/fincas/`,
-      503,
-      { error: 'Servicio no disponible' },
-      'serviceUnavailable',
+      {
+        method: 'GET',
+        url: `${apiBaseUrl}/fincas/`,
+        statusCode: 503,
+        body: { error: 'Servicio no disponible' },
+        alias: 'serviceUnavailable'
+      },
       '/mis-fincas',
       '[data-cy="error-message"]',
       'Servicio no disponible'
@@ -222,11 +230,13 @@ describe('Manejo de Errores - Errores de Red', () => {
   it('debe manejar error de gateway', () => {
     const apiBaseUrl = getApiBaseUrl()
     setupDirectInterceptAndVerify(
-      'GET',
-      `${apiBaseUrl}/fincas/`,
-      502,
-      { error: 'Bad Gateway' },
-      'badGateway',
+      {
+        method: 'GET',
+        url: `${apiBaseUrl}/fincas/`,
+        statusCode: 502,
+        body: { error: 'Bad Gateway' },
+        alias: 'badGateway'
+      },
       '/mis-fincas',
       '[data-cy="error-message"]',
       'Error del servidor'

@@ -1,3 +1,6 @@
+// NOSONAR S2068 - All passwords in this test file are generated dynamically at runtime
+// using helper functions (generatePassword, generateTestPassword, generateStrongPassword, getWeakPassword)
+// No hardcoded passwords are present in this file
 import { getApiBaseUrl, ifFoundInBody, verifyUrlPatterns, generatePassword } from '../../support/helpers'
 import { generateTestPassword, generateStrongPassword, getWeakPassword } from '../../support/test-data'
 
@@ -61,6 +64,7 @@ describe('Authentication - Advanced Scenarios', () => {
     })
 
     it('should show validation error for invalid email format', () => {
+      // NOSONAR S2068 - Password generated dynamically, not hardcoded
       const testPassword = generatePassword()
       fillLoginForm('notanemail', testPassword)
       verifyErrorDisplay(EMAIL_ERROR_PATTERNS)
@@ -68,6 +72,7 @@ describe('Authentication - Advanced Scenarios', () => {
 
     it('should handle incorrect credentials', () => {
       cy.interceptError('POST', '/auth/login/', 401, { detail: 'Credenciales inválidas' }, 'loginError')
+      // NOSONAR S2068 - Password generated dynamically, not hardcoded
       const wrongPassword = generatePassword()
       fillLoginForm('wrong@example.com', wrongPassword)
       cy.wait('@loginError', { timeout: 10000 })
@@ -76,6 +81,7 @@ describe('Authentication - Advanced Scenarios', () => {
 
     it('should handle server error during login', () => {
       cy.interceptError('POST', '/auth/login/', 500, {}, 'loginError')
+      // NOSONAR S2068 - Password generated dynamically, not hardcoded
       const testPassword = generateTestPassword()
       fillLoginForm('admin@example.com', testPassword)
       cy.wait('@loginError', { timeout: 10000 })
@@ -106,12 +112,14 @@ describe('Authentication - Advanced Scenarios', () => {
   }
 
   const testWeakPassword = () => {
+    // NOSONAR S2068 - Password generated dynamically, not hardcoded
     const weakPassword = getWeakPassword(0)
     cy.get(PASSWORD_INPUT_SELECTOR).first().type(weakPassword)
     cy.get('body', { timeout: 3000 }).then(() => verifyPasswordStrength(['débil', 'weak']))
   }
 
   const testStrongPassword = () => {
+    // NOSONAR S2068 - Password generated dynamically, not hardcoded
     const strongPassword = generateStrongPassword()
     cy.get(PASSWORD_INPUT_SELECTOR).first().clear().type(strongPassword)
     cy.get('body', { timeout: 3000 }).then(() => verifyPasswordStrength(['fuerte', 'strong']))
@@ -177,6 +185,7 @@ describe('Authentication - Advanced Scenarios', () => {
       }).as('registerFail')
 
       const fillRegistrationForm = () => {
+        // NOSONAR S2068 - Password generated dynamically, not hardcoded
         const testPassword = generateTestPassword()
         cy.get('[data-cy="input-name"], [data-cy="first-name-input"], input[name*="name"]').first().type('New User')
         cy.get(EMAIL_INPUT_SELECTOR).first().type('existing@example.com')
@@ -199,6 +208,7 @@ describe('Authentication - Advanced Scenarios', () => {
 
     it('should prevent submission without accepting terms', () => {
       const fillFormWithoutTerms = () => {
+        // NOSONAR S2068 - Password generated dynamically, not hardcoded
         const testPassword = generateTestPassword()
         cy.get('[data-cy="input-name"], [data-cy="first-name-input"], input[name*="name"]').first().type('Valid User')
         cy.get(EMAIL_INPUT_SELECTOR).first().type('valid@example.com')

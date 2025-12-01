@@ -1,0 +1,126 @@
+# === GLOBAL DEVELOPMENT RULESET FOR CURSOR ===
+# This context defines how Cursor AI must behave every time it is invoked.
+# It enforces strict SonarQube, Security, Maintainability, Quality and Testing standards.
+# It must always be applied when executing "fix", "analyze", refactors or test generation.
+
+Cursor must operate under these principles:
+- NUNCA romper la lógica existente.
+- Mantener intacto el Public API.
+- Explicar cambios grandes antes de aplicarlos.
+- Cada fix debe incluir o actualizar test.
+- Cumplir estrictamente SonarQube (bugs, code smells, vulnerabilities, hotspots).
+- Seguridad primero: nunca introducir nuevas superficies de ataque.
+- Código limpio, corto, modular y profesional.
+- Mantener el proyecto estable, reproducible y escalable.
+
+--------------------------------------------------------------------------------
+# === AUTO-TRIGGERS ===
+on_save: fix
+on_file_open: analyze
+on_command:
+  - fix
+  - analyze
+
+--------------------------------------------------------------------------------
+# === RULESET ===
+
+rules:
+
+  # --- SECURITY ---
+  security.no-hardcoded-secrets: true
+  security.no-hardcoded-api-keys: true
+  security.no-hardcoded-ips: true
+  security.no-hardcoded-credentials: true
+  security.prevent-sql-injection: true
+  security.prevent-command-injection: true
+  security.escape-user-input: true
+  security.validate-inputs: true
+  security.sanitize-filepaths: true
+  security.no-eval: true
+  security.no-dangerous-globals: true
+  security.no-debug-logs: true
+
+  # --- MAINTAINABILITY ---
+  maintainability.remove-duplicated-code: true
+  maintainability.enforce-small-functions: true
+  maintainability.enforce-clear-names: true
+  maintainability.limit-params: 4
+  maintainability.no-dead-code: true
+  maintainability.no-commented-code: true
+  maintainability.no-long-files: 500
+  maintainability.no-god-classes: true
+  maintainability.apply-dry: true
+  maintainability.apply-solid: true
+  maintainability.no-circular-dependencies: true
+
+  # --- QUALITY ---
+  quality.use-early-returns: true
+  quality.no-nested-if-depth: 3
+  quality.no-deep-loops: 3
+  quality.no-magic-numbers: true
+  quality.no-side-effects: true
+  quality.avoid-global-state: true
+  quality.avoid-boolean-flags: true
+  quality.avoid-long-switch: true
+  quality.enforce-pure-functions-when-possible: true
+
+  # --- PYTHON ---
+  python.enforce-pep8: true
+  python.max-line-length: 120
+  python.require-type-hints: true
+  python.no-relative-imports: true
+  python.enforce-docstrings: true
+  python.prevent-django-querysets-misuse: true
+  python.prevent-numpy-opencv-crashes: true
+  python.no-bare-except: true
+
+  # --- JAVASCRIPT / TYPESCRIPT ---
+  js.no-console: true
+  js.use-const-let: true
+  js.no-var: true
+  js.strict-equality: true
+  js.no-floating-promises: true
+  js.async-await-required: true
+  js.no-deprecated-apis: true
+  js.limit-complexity: 10
+  js.no-unused-vars: true
+
+  # --- VUE ---
+  vue.enforce-script-setup: true
+  vue.use-prop-types: true
+  vue.no-inline-css: true
+  vue.no-large-components: true
+  vue.require-tests: true
+
+  # --- TESTING ---
+  tests.require-coverage: 80
+  tests.no-mocked-everything: true
+  tests.avoid-sleeps: true
+  tests.no-hardcoded-data: true
+  tests.require-isolated-tests: true
+  tests.clean-fixtures: true
+  tests.use-factory-pattern: true
+  tests.avoid-test-duplication: true
+
+  # --- GIT ---
+  git.no-dirty-commits: true
+  git.require-meaningful-commits: true
+  git.require-branch-names-pattern: "feature/* | fix/* | test/* | hotfix/*"
+  git.prevent-debug-artifacts: true
+
+  # --- FORMATTING ---
+  format.enforce-prettier: true
+  format.enforce-eslintrc: true
+  format.enforce-black-for-python: true
+  format.remove-trailing-spaces: true
+  format.require-newline-at-eof: true
+
+--------------------------------------------------------------------------------
+# === AI BEHAVIOR ===
+assistant_behavior:
+  never_break_existing_logic: true
+  preserve-functionality: true
+  preserve-public-api: true
+  explain-before-large-changes: true
+  always-add-tests-when-fixing: true
+  follow-sonarqube-standards-strictly: true

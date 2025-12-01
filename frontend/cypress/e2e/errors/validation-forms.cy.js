@@ -1,14 +1,12 @@
 import {
-  verifySelectorsExist,
   visitAndWaitForBody,
   openModalAndExecute,
-  fillFieldSubmitAndVerifyError,
   verifyErrorMessageWithSelectors,
   testPasswordStrength,
   validateRealTimeField,
-  ifFoundInBody,
   clickIfExistsAndContinue
 } from '../../support/helpers'
+import { generateStrongPassword, generateWeakPasswords } from '../../support/test-data'
 import {
   validateFieldInModal,
   validateRequiredFieldsInModal,
@@ -50,20 +48,22 @@ describe('Manejo de Errores - Validación y Formularios', () => {
 
   it('debe validar fortaleza de contraseña', () => {
     visitAndWaitForBody('/registro')
-    testPasswordStrength(['123', 'password', '12345678'], 'StrongPassword123!')
+    const weakPasswords = generateWeakPasswords()
+    const strongPassword = generateStrongPassword()
+    testPasswordStrength(weakPasswords, strongPassword)
   })
 
   it('debe validar coincidencia de contraseñas', () => {
-    validatePasswordMatch(
-      '/registro',
-      '[data-cy="password-input"], input[type="password"]',
-      'Password123!',
-      '[data-cy="confirm-password-input"], input[type="password"]',
-      'DifferentPassword123!',
-      '[data-cy="register-button"], button[type="submit"]',
-      ['[data-cy="password-match-error"], .error-message'],
-      ['coinciden', 'match', 'contraseña']
-    )
+    validatePasswordMatch({
+      pageUrl: '/registro',
+      passwordSelector: '[data-cy="password-input"], input[type="password"]',
+      passwordValue: 'Password123!',
+      confirmPasswordSelector: '[data-cy="confirm-password-input"], input[type="password"]',
+      confirmPasswordValue: 'DifferentPassword123!',
+      submitSelector: '[data-cy="register-button"], button[type="submit"]',
+      errorSelectors: ['[data-cy="password-match-error"], .error-message'],
+      expectedTexts: ['coinciden', 'match', 'contraseña']
+    })
   })
 
   it('debe validar longitud de campos de texto', () => {
@@ -247,16 +247,16 @@ describe('Manejo de Errores - Validación y Formularios', () => {
   })
 
   it('debe validar formularios con campos condicionales', () => {
-    validateConditionalFieldInModal(
-      '/mis-lotes',
-      '[data-cy="add-lote-button"], button',
-      '[data-cy="lote-tipo-cultivo"], select',
-      'organico',
-      '[data-cy="certificacion-organica"], input, select',
-      '[data-cy="save-lote"], button[type="submit"]',
-      '[data-cy="certificacion-error"], .error-message',
-      ['requerido', 'orgánicos', 'certificación']
-    )
+    validateConditionalFieldInModal({
+      pageUrl: '/mis-lotes',
+      buttonSelector: '[data-cy="add-lote-button"], button',
+      triggerSelector: '[data-cy="lote-tipo-cultivo"], select',
+      triggerValue: 'organico',
+      conditionalSelector: '[data-cy="certificacion-organica"], input, select',
+      submitSelector: '[data-cy="save-lote"], button[type="submit"]',
+      errorSelector: '[data-cy="certificacion-error"], .error-message',
+      expectedTexts: ['requerido', 'orgánicos', 'certificación']
+    })
   })
 
   it('debe validar formato de teléfono', () => {

@@ -7,7 +7,10 @@ import {
   uploadFileAndVerifyError,
   ifFoundInBody,
   clickIfExistsAndContinue,
-  verifyErrorMessageGeneric
+  verifyErrorMessageGeneric,
+  testNavigatorApi,
+  testWindowApi,
+  testBrowserApi
 } from '../../support/helpers'
 
 describe('Manejo de Errores - Casos Edge', () => {
@@ -320,322 +323,306 @@ describe('Manejo de Errores - Casos Edge', () => {
   })
 
   it('debe manejar operación con service worker', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('serviceWorker' in win.navigator) {
-        win.navigator.serviceWorker.register('/sw.js').catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'serviceWorker' in nav,
+      (nav) => nav.serviceWorker.register('/sw.js'),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web workers', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if (typeof Worker !== 'undefined') {
-        const worker = new Worker('/worker.js')
-        worker.postMessage({ type: 'test' })
-        worker.terminate()
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testBrowserApi(
+      '/mis-fincas',
+      (win) => {
+        if (typeof Worker !== 'undefined') {
+          const worker = new Worker('/worker.js')
+          worker.postMessage({ type: 'test' })
+          worker.terminate()
+        }
+      },
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con geolocation', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('geolocation' in win.navigator) {
-        win.navigator.geolocation.getCurrentPosition(() => {}, () => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'geolocation' in nav,
+      (nav) => nav.geolocation.getCurrentPosition(() => {}, () => {}),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con camera', () => {
-    cy.visit('/nuevo-analisis')
-    cy.window().then((win) => {
-      if ('mediaDevices' in win.navigator) {
-        win.navigator.mediaDevices.getUserMedia({ video: true }).catch(() => {})
-      }
-    })
-    cy.get('[data-cy="file-input"]').should('be.visible')
+    testNavigatorApi(
+      '/nuevo-analisis',
+      (nav) => 'mediaDevices' in nav,
+      (nav) => nav.mediaDevices.getUserMedia({ video: true }),
+      '[data-cy="file-input"]'
+    )
   })
 
   it('debe manejar operación con clipboard', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('clipboard' in win.navigator) {
-        win.navigator.clipboard.writeText('test').catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'clipboard' in nav,
+      (nav) => nav.clipboard.writeText('test'),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con notifications', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('Notification' in win) {
-        win.Notification.requestPermission().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testWindowApi(
+      '/mis-fincas',
+      (win) => 'Notification' in win,
+      (win) => win.Notification.requestPermission(),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con battery API', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('getBattery' in win.navigator) {
-        win.navigator.getBattery().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'getBattery' in nav,
+      (nav) => nav.getBattery(),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con device orientation', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('DeviceOrientationEvent' in win) {
-        win.addEventListener('deviceorientation', () => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testWindowApi(
+      '/mis-fincas',
+      (win) => 'DeviceOrientationEvent' in win,
+      (win) => Promise.resolve(win.addEventListener('deviceorientation', () => {})),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con device motion', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('DeviceMotionEvent' in win) {
-        win.addEventListener('devicemotion', () => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testWindowApi(
+      '/mis-fincas',
+      (win) => 'DeviceMotionEvent' in win,
+      (win) => Promise.resolve(win.addEventListener('devicemotion', () => {})),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con vibration API', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('vibrate' in win.navigator) {
-        win.navigator.vibrate(100)
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'vibrate' in nav,
+      (nav) => Promise.resolve(nav.vibrate(100)),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con fullscreen API', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('requestFullscreen' in win.document.documentElement) {
-        win.document.documentElement.requestFullscreen().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testBrowserApi(
+      '/mis-fincas',
+      (win) => {
+        if ('requestFullscreen' in win.document.documentElement) {
+          win.document.documentElement.requestFullscreen().catch(() => {})
+        }
+      },
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con pointer lock', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('requestPointerLock' in win.document.body) {
-        win.document.body.requestPointerLock().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testBrowserApi(
+      '/mis-fincas',
+      (win) => {
+        if ('requestPointerLock' in win.document.body) {
+          win.document.body.requestPointerLock().catch(() => {})
+        }
+      },
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con screen orientation', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('orientation' in win.screen) {
-        win.screen.orientation.lock('portrait').catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testBrowserApi(
+      '/mis-fincas',
+      (win) => {
+        if ('orientation' in win.screen) {
+          win.screen.orientation.lock('portrait').catch(() => {})
+        }
+      },
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con wake lock', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('wakeLock' in win.navigator) {
-        win.navigator.wakeLock.request('screen').catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'wakeLock' in nav,
+      (nav) => nav.wakeLock.request('screen'),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con payment request', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('PaymentRequest' in win) {
-        try {
-          const paymentRequest = new win.PaymentRequest([], { total: { label: 'Test', amount: { currency: 'USD', value: '0' } } })
-          paymentRequest.show().catch((error) => {
-            cy.log(`PaymentRequest error: ${error.message}`)
-          })
-        } catch (e) {
-          cy.log(`PaymentRequest initialization error: ${e.message}`)
+    testBrowserApi(
+      '/mis-fincas',
+      (win) => {
+        if ('PaymentRequest' in win) {
+          try {
+            const paymentRequest = new win.PaymentRequest([], { total: { label: 'Test', amount: { currency: 'USD', value: '0' } } })
+            paymentRequest.show().catch((error) => {
+              cy.log(`PaymentRequest error: ${error.message}`)
+            })
+          } catch (e) {
+            cy.log(`PaymentRequest initialization error: ${e.message}`)
+          }
         }
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+      },
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con credential management', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('credentials' in win.navigator) {
-        win.navigator.credentials.get({ publicKey: {} }).catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'credentials' in nav,
+      (nav) => nav.credentials.get({ publicKey: {} }),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web share', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('share' in win.navigator) {
-        win.navigator.share({ title: 'Test', text: 'Test', url: '/' }).catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'share' in nav,
+      (nav) => nav.share({ title: 'Test', text: 'Test', url: '/' }),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web bluetooth', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('bluetooth' in win.navigator) {
-        win.navigator.bluetooth.requestDevice({ filters: [] }).catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'bluetooth' in nav,
+      (nav) => nav.bluetooth.requestDevice({ filters: [] }),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web usb', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('usb' in win.navigator) {
-        win.navigator.usb.requestDevice({ filters: [] }).catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'usb' in nav,
+      (nav) => nav.usb.requestDevice({ filters: [] }),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web serial', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('serial' in win.navigator) {
-        win.navigator.serial.requestPort().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'serial' in nav,
+      (nav) => nav.serial.requestPort(),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web nfc', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('nfc' in win.navigator) {
-        win.navigator.nfc.watch(() => {}).catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'nfc' in nav,
+      (nav) => nav.nfc.watch(() => {}),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web xr', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('xr' in win.navigator) {
-        win.navigator.xr.requestSession('immersive-vr').catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'xr' in nav,
+      (nav) => nav.xr.requestSession('immersive-vr'),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web midi', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('requestMIDIAccess' in win.navigator) {
-        win.navigator.requestMIDIAccess().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'requestMIDIAccess' in nav,
+      (nav) => nav.requestMIDIAccess(),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web hid', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('hid' in win.navigator) {
-        win.navigator.hid.requestDevice({ filters: [] }).catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'hid' in nav,
+      (nav) => nav.hid.requestDevice({ filters: [] }),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web locks', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('locks' in win.navigator) {
-        win.navigator.locks.request('test', () => {}).catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'locks' in nav,
+      (nav) => nav.locks.request('test', () => {}),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web storage estimate', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('storage' in win.navigator && 'estimate' in win.navigator.storage) {
-        win.navigator.storage.estimate().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'storage' in nav && 'estimate' in nav.storage,
+      (nav) => nav.storage.estimate(),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web storage persist', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('storage' in win.navigator && 'persist' in win.navigator.storage) {
-        win.navigator.storage.persist().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'storage' in nav && 'persist' in nav.storage,
+      (nav) => nav.storage.persist(),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web storage persisted', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('storage' in win.navigator && 'persisted' in win.navigator.storage) {
-        win.navigator.storage.persisted().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'storage' in nav && 'persisted' in nav.storage,
+      (nav) => nav.storage.persisted(),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web storage quota', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('storage' in win.navigator && 'quota' in win.navigator.storage) {
-        win.navigator.storage.quota().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'storage' in nav && 'quota' in nav.storage,
+      (nav) => nav.storage.quota(),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web storage usage', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('storage' in win.navigator && 'usage' in win.navigator.storage) {
-        win.navigator.storage.usage().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'storage' in nav && 'usage' in nav.storage,
+      (nav) => nav.storage.usage(),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar operación con web storage getDirectory', () => {
-    cy.visit('/mis-fincas')
-    cy.window().then((win) => {
-      if ('storage' in win.navigator && 'getDirectory' in win.navigator.storage) {
-        win.navigator.storage.getDirectory().catch(() => {})
-      }
-    })
-    cy.get('[data-cy="fincas-list"]').should('be.visible')
+    testNavigatorApi(
+      '/mis-fincas',
+      (nav) => 'storage' in nav && 'getDirectory' in nav.storage,
+      (nav) => nav.storage.getDirectory(),
+      '[data-cy="fincas-list"]'
+    )
   })
 
   it('debe manejar datos vacíos en listas', () => {
