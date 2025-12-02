@@ -24,7 +24,9 @@ export default defineConfig({
         '**/*.d.ts',
         '**/*.config.js',
         '**/*.config.ts',
-        'cypress/',
+        'cypress/**',
+        '**/cypress/**',
+        '**/*.cy.js',
         'dist/',
         'coverage/'
       ],
