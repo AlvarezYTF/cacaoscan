@@ -21,16 +21,22 @@ vi.mock('../useCatalogos', () => ({
   }))
 }))
 
-vi.mock('../useFormValidation', () => ({
-  useFormValidation: vi.fn(() => ({
-    errors: {},
-    isValidEmail: vi.fn(),
-    isValidPhone: vi.fn(),
-    isValidDocument: vi.fn(),
-    isValidBirthdate: vi.fn(),
-    clearErrors: vi.fn()
-  }))
-}))
+vi.mock('../useFormValidation', () => {
+  const createMockValidation = () => {
+    const errors = {}
+    return {
+      errors,
+      isValidEmail: vi.fn(),
+      isValidPhone: vi.fn(),
+      isValidDocument: vi.fn(),
+      isValidBirthdate: vi.fn(),
+      clearErrors: vi.fn()
+    }
+  }
+  return {
+    useFormValidation: vi.fn(createMockValidation)
+  }
+})
 
 vi.mock('../useBirthdateRange', () => ({
   useBirthdateRange: () => ({
@@ -67,7 +73,7 @@ describe('usePersonForm', () => {
 
   describe('getInputClasses', () => {
     it('should return base classes when no error', () => {
-      personForm.errors = {}
+      delete personForm.errors.testField
       const classes = personForm.getInputClasses('testField')
       
       expect(classes).toContain('border-gray-200')
@@ -75,7 +81,7 @@ describe('usePersonForm', () => {
     })
 
     it('should include error class when field has error', () => {
-      personForm.errors = { testField: 'Error message' }
+      personForm.errors.testField = 'Error message'
       const classes = personForm.getInputClasses('testField')
       
       expect(classes).toContain('border-red-500')

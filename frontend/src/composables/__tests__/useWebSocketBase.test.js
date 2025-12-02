@@ -6,10 +6,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useWebSocketBase } from '../useWebSocketBase.js'
 
 // Mock WebSocket
+const mockWebSocketSend = vi.fn()
+const mockWebSocketClose = vi.fn()
+
 const mockWebSocket = {
   readyState: 1, // OPEN
-  send: vi.fn(),
-  close: vi.fn(),
+  send: mockWebSocketSend,
+  close: mockWebSocketClose,
   onopen: null,
   onmessage: null,
   onerror: null,
@@ -17,7 +20,15 @@ const mockWebSocket = {
 }
 
 globalThis.WebSocket = vi.fn(() => {
-  const ws = { ...mockWebSocket }
+  const ws = {
+    readyState: mockWebSocket.readyState,
+    send: mockWebSocketSend,
+    close: mockWebSocketClose,
+    onopen: null,
+    onmessage: null,
+    onerror: null,
+    onclose: null
+  }
   setTimeout(() => {
     if (ws.onopen) ws.onopen()
   }, 0)
@@ -80,18 +91,18 @@ describe('useWebSocketBase', () => {
   })
 
   describe('send', () => {
-    it('should send message when connected', () => {
+    it('should send message when connected', async () => {
       socketBase = useWebSocketBase({ url: 'ws://test.com' })
-      mockWebSocket.readyState = 1 // OPEN
       
-      // Manually set socket for testing
-      socketBase.socket = { value: mockWebSocket }
-      socketBase.isConnected.value = true
+      socketBase.connect()
+      
+      // Wait for connection
+      await new Promise(resolve => setTimeout(resolve, 10))
       
       const message = { type: 'test', data: 'hello' }
       socketBase.send(message)
       
-      expect(mockWebSocket.send).toHaveBeenCalledWith(JSON.stringify(message))
+      expect(mockWebSocketSend).toHaveBeenCalledWith(JSON.stringify(message))
     })
 
     it('should not send if not connected', () => {
@@ -102,7 +113,7 @@ describe('useWebSocketBase', () => {
       
       socketBase.send({ type: 'test' })
       
-      expect(mockWebSocket.send).not.toHaveBeenCalled()
+      expect(mockWebSocketSend).not.toHaveBeenCalled()
       
       consoleSpy.mockRestore()
     })

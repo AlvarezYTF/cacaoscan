@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { nextTick } from 'vue'
 import { useSearchFilter, useFilters } from '../useSearchFilter.js'
 
 describe('useSearchFilter', () => {
@@ -36,6 +37,7 @@ describe('useSearchFilter', () => {
       const search = useSearchFilter({ debounceMs: 300 })
       
       search.searchQuery.value = 'test'
+      await nextTick()
       expect(search.debouncedQuery.value).toBe('')
       
       vi.advanceTimersByTime(300)
@@ -43,11 +45,13 @@ describe('useSearchFilter', () => {
       expect(search.debouncedQuery.value).toBe('test')
     })
 
-    it('should clear previous debounce timer', () => {
+    it('should clear previous debounce timer', async () => {
       const search = useSearchFilter({ debounceMs: 300 })
       
       search.searchQuery.value = 'test'
+      await nextTick()
       search.searchQuery.value = 'updated'
+      await nextTick()
       
       vi.advanceTimersByTime(300)
       
@@ -55,10 +59,11 @@ describe('useSearchFilter', () => {
       expect(search.debouncedQuery.value).not.toBe('test')
     })
 
-    it('should use custom debounce delay', () => {
+    it('should use custom debounce delay', async () => {
       const search = useSearchFilter({ debounceMs: 500 })
       
       search.searchQuery.value = 'test'
+      await nextTick()
       
       vi.advanceTimersByTime(300)
       expect(search.debouncedQuery.value).toBe('')

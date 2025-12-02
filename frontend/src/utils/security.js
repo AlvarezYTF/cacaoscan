@@ -28,7 +28,8 @@ export function generateSecureId(prefix = 'id') {
 
 /**
  * Sanitizes HTML content to prevent XSS attacks.
- * Uses DOMParser to create a safe DOM structure and extracts text content.
+ * Removes dangerous tags (script, style) and their content, removes event handlers,
+ * and escapes remaining HTML to return safe text content.
  * For more complex HTML, consider using DOMPurify library.
  * 
  * @param {string} html - HTML content to sanitize
@@ -42,13 +43,35 @@ export function sanitizeHTML(html) {
   // Create a temporary container element
   const container = document.createElement('div')
   
-  // Set text content which automatically escapes HTML
-  // Then we'll allow only safe tags
-  container.textContent = html
+  // Parse HTML into DOM structure
+  container.innerHTML = html
   
-  // If we need to preserve some HTML, parse and filter
-  // For now, we'll use a simple approach: escape all HTML
-  return container.innerHTML
+  // Remove dangerous tags and their content
+  const dangerousTags = container.querySelectorAll('script, style, iframe, object, embed, form')
+  dangerousTags.forEach((tag) => {
+    tag.remove()
+  })
+  
+  // Remove event handler attributes from all elements (including container)
+  const allElements = [container, ...Array.from(container.querySelectorAll('*'))]
+  allElements.forEach((element) => {
+    // Get all attributes
+    const attributes = Array.from(element.attributes)
+    attributes.forEach((attr) => {
+      // Remove event handlers (onclick, onerror, etc.)
+      if (attr.name.toLowerCase().startsWith('on') && attr.name.length > 2) {
+        element.removeAttribute(attr.name)
+      }
+      // Remove javascript: protocol in href/src
+      if ((attr.name === 'href' || attr.name === 'src') && attr.value.toLowerCase().startsWith('javascript:')) {
+        element.removeAttribute(attr.name)
+      }
+    })
+  })
+  
+  // Extract text content and escape it
+  const textContent = container.textContent || container.innerText || ''
+  return escapeHTML(textContent)
 }
 
 /**
@@ -151,8 +174,8 @@ export function sanitizeFilename(filename) {
   // Trim whitespace
   sanitized = sanitized.trim()
   
-  // If empty after sanitization, use default
-  if (sanitized.length === 0) {
+  // If empty after sanitization or only contains replacement characters, use default
+  if (sanitized.length === 0 || sanitized.replaceAll('_', '').length === 0) {
     sanitized = 'file'
   }
 

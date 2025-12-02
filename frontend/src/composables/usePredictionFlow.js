@@ -210,6 +210,7 @@ export function usePredictionFlow() {
     selectedMethod,
     imageFile,
     imagePreview,
+    isExecuting,
     predictionResult,
     loading,
     error,

@@ -31,7 +31,11 @@ vi.mock('@/services/lotesApi', () => ({
   getLoteById: vi.fn(),
   createLote: vi.fn(),
   updateLote: vi.fn(),
-  deleteLote: vi.fn()
+  deleteLote: vi.fn(),
+  getVariedadesCacao: vi.fn(),
+  getEstadosLote: vi.fn(),
+  validateLoteData: vi.fn(),
+  formatLoteData: vi.fn()
 }))
 
 describe('useLotes', () => {

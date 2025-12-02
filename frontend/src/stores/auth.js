@@ -73,13 +73,13 @@ export const useAuthStore = defineStore('auth', () => {
       // Si se pasa directamente el token como string (solo access)
       accessToken.value = tokenData
       localStorage.setItem('access_token', tokenData)
-    } else if (tokenData.access) {
+    } else if (tokenData && tokenData.access) {
       // Si se pasa un objeto con access y refresh token
       accessToken.value = tokenData.access
       localStorage.setItem('access_token', tokenData.access)
       
       // Guardar refresh token si está disponible
-      if (tokenData.refresh) {
+      if (tokenData.refresh !== undefined && tokenData.refresh !== null) {
         refreshToken.value = tokenData.refresh
         localStorage.setItem('refresh_token', tokenData.refresh)
       }
@@ -513,11 +513,16 @@ export const useAuthStore = defineStore('auth', () => {
    * Útil para resetear el estado después de logout o errores de autenticación.
    */
   const clearAll = () => {
-    clearTokens()
-    clearUser()
+    accessToken.value = null
+    refreshToken.value = null
+    user.value = null
     error.value = null
     isLoading.value = false
     lastActivity.value = Date.now()
+    
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('user')
   }
 
   // Obtener ruta de redirección según rol
@@ -634,6 +639,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Estado
     user,
     accessToken,
+    refreshToken,
     isLoading,
     error,
     lastActivity,
@@ -667,8 +673,11 @@ export const useAuthStore = defineStore('auth', () => {
     checkSessionTimeout,
     hasPermission,
     clearAll,
+    clearTokens,
     setError,
     setTokens,
+    setUser,
+    clearUser,
     initializeAuth,
     sendOtp,
     verifyOtp

@@ -53,26 +53,33 @@ describe('idGenerator', () => {
         })
       }
       
-      globalThis.crypto = mockCrypto
+      const originalCrypto = globalThis.crypto
+      vi.stubGlobal('crypto', mockCrypto)
       
       const id = generateSecureId('test')
       
       expect(mockCrypto.getRandomValues).toHaveBeenCalled()
       expect(id).toMatch(/^test-/)
       
-      delete globalThis.crypto
+      vi.unstubAllGlobals()
+      if (originalCrypto) {
+        vi.stubGlobal('crypto', originalCrypto)
+      }
     })
 
     it('should fallback when crypto is not available', () => {
       const originalCrypto = globalThis.crypto
-      delete globalThis.crypto
+      vi.stubGlobal('crypto', undefined)
       
       const id = generateSecureId('fallback')
       
       expect(id).toMatch(/^fallback-/)
       expect(id).toContain('-')
       
-      globalThis.crypto = originalCrypto
+      vi.unstubAllGlobals()
+      if (originalCrypto) {
+        vi.stubGlobal('crypto', originalCrypto)
+      }
     })
   })
 })

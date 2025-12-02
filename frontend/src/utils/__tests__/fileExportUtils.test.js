@@ -34,7 +34,7 @@ describe('fileExportUtils', () => {
     document.createElement = vi.fn(() => mockLink)
     document.body = {
       appendChild: mockAppendChild
-    } as any
+    }
 
     vi.clearAllMocks()
   })
@@ -141,4 +141,3 @@ describe('fileExportUtils', () => {
     })
   })
 })
-

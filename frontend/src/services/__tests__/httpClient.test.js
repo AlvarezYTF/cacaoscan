@@ -8,26 +8,30 @@ import axios from 'axios'
 import { get, post, put, patch, del, upload, download, httpClient } from '../httpClient.js'
 
 // Mock dependencies
-vi.mock('axios', () => {
-  const mockAxiosInstance = {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-    interceptors: {
-      request: {
-        use: vi.fn()
-      },
-      response: {
-        use: vi.fn()
-      }
+const mockAxiosInstance = {
+  get: vi.fn(),
+  post: vi.fn(),
+  put: vi.fn(),
+  patch: vi.fn(),
+  delete: vi.fn(),
+  interceptors: {
+    request: {
+      use: vi.fn()
+    },
+    response: {
+      use: vi.fn()
     }
   }
+}
+
+const mockCreate = vi.fn(() => mockAxiosInstance)
+
+vi.mock('axios', () => {
+  const axiosMock = {
+    create: mockCreate
+  }
   return {
-    default: {
-      create: vi.fn(() => mockAxiosInstance)
-    }
+    default: axiosMock
   }
 })
 
@@ -66,14 +70,9 @@ globalThis.console = {
 }
 
 describe('httpClient', () => {
-  let mockAxiosInstance
-
   beforeEach(() => {
     vi.clearAllMocks()
     localStorageMock.getItem.mockReturnValue(null)
-    
-    // Get the mock instance
-    mockAxiosInstance = axios.default.create()
     
     // Setup default successful responses
     mockAxiosInstance.get.mockResolvedValue({ data: { success: true } })
@@ -85,18 +84,18 @@ describe('httpClient', () => {
 
   describe('client creation', () => {
     it('should create axios instance with correct base URL', () => {
-      expect(axios.default.create).toHaveBeenCalled()
-      const callArgs = axios.default.create.mock.calls[0][0]
+      expect(mockCreate).toHaveBeenCalled()
+      const callArgs = mockCreate.mock.calls[0][0]
       expect(callArgs.baseURL).toBe('https://api.example.com/api/v1')
     })
 
     it('should configure axios with timeout', () => {
-      const callArgs = axios.default.create.mock.calls[0][0]
+      const callArgs = mockCreate.mock.calls[0][0]
       expect(callArgs.timeout).toBe(15000)
     })
 
     it('should configure default headers', () => {
-      const callArgs = axios.default.create.mock.calls[0][0]
+      const callArgs = mockCreate.mock.calls[0][0]
       expect(callArgs.headers['Content-Type']).toBe('application/json')
       expect(callArgs.headers['Accept']).toBe('application/json')
     })

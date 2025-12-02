@@ -113,10 +113,13 @@ describe('security', () => {
     it('should escape all HTML special characters', () => {
       const text = '<div class="test">Hello & World</div>'
       const result = escapeHTML(text)
+      expect(result).toBe('&lt;div class=&quot;test&quot;&gt;Hello &amp; World&lt;/div&gt;')
       expect(result).not.toContain('<')
       expect(result).not.toContain('>')
-      expect(result).not.toContain('&')
       expect(result).not.toContain('"')
+      // Verify that & is only present as part of HTML entities
+      const unescapedAmpersands = result.match(/&(?!amp;|lt;|gt;|quot;|#039;)/g)
+      expect(unescapedAmpersands).toBeNull()
     })
 
     it('should return empty string for null input', () => {

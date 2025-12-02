@@ -52,18 +52,21 @@ describe('useWebSocket', () => {
 
   describe('development mode', () => {
     it('should return mock interface in development mode', () => {
-      vi.stubGlobal('import', {
-        meta: {
-          env: {
-            MODE: 'development'
-          }
-        }
-      })
+      // Override import.meta.env.MODE for this test
+      const env = import.meta.env
+      const originalMode = env.MODE
+      env.MODE = 'development'
       
       const socket = useWebSocket()
       
+      // Verify the mock interface structure
+      expect(socket.isConnected).toBeDefined()
       expect(socket.isConnected.value).toBe(false)
+      expect(socket.connectionStatus).toBeDefined()
       expect(socket.connectionStatus.value).toBe('disabled')
+      
+      // Restore original MODE
+      env.MODE = originalMode
     })
   })
 
@@ -107,7 +110,10 @@ describe('useWebSocket', () => {
 
   describe('disconnect', () => {
     it('should disconnect all sockets', () => {
+      mockAuthStore.user = { id: 1 }
+      
       const socket = useWebSocket()
+      socket.connect()
       socket.disconnect()
       
       expect(mockWebSocketBase.disconnect).toHaveBeenCalled()

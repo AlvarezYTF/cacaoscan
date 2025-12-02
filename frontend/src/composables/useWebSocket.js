@@ -17,6 +17,10 @@ export function useWebSocket() {
       lastMessage: ref(null),
       messageHistory: ref([]),
       reconnectAttempts: ref(0),
+      notificationSocket: null,
+      systemStatusSocket: null,
+      auditSocket: null,
+      userStatsSocket: null,
       connect: () => {},
       disconnect: () => {},
       reconnect: () => {},
@@ -195,6 +199,15 @@ export function useWebSocket() {
   })
   
   // Referencias a las conexiones (se crean dinámicamente en connect)
+  // Using object to allow mutation in tests
+  const socketRefs = {
+    notificationSocket: null,
+    systemStatusSocket: null,
+    auditSocket: null,
+    userStatsSocket: null
+  }
+  
+  // Aliases para compatibilidad con código existente
   let notificationSocket = null
   let systemStatusSocket = null
   let auditSocket = null
@@ -225,6 +238,7 @@ export function useWebSocket() {
         reconnectInterval: wsConfig.reconnectDelay,
         maxReconnectAttempts: 5
       })
+      socketRefs.notificationSocket = notificationSocket
       notificationSocket.connect()
       
       // Crear conexión de estado del sistema
@@ -238,6 +252,7 @@ export function useWebSocket() {
         reconnectInterval: wsConfig.reconnectDelay,
         maxReconnectAttempts: 5
       })
+      socketRefs.systemStatusSocket = systemStatusSocket
       systemStatusSocket.connect()
       
       // Crear conexión de auditoría (solo para admins)
@@ -252,6 +267,7 @@ export function useWebSocket() {
           reconnectInterval: wsConfig.reconnectDelay,
           maxReconnectAttempts: 5
         })
+        socketRefs.auditSocket = auditSocket
         auditSocket.connect()
       }
       
@@ -266,6 +282,7 @@ export function useWebSocket() {
         reconnectInterval: wsConfig.reconnectDelay,
         maxReconnectAttempts: 5
       })
+      socketRefs.userStatsSocket = userStatsSocket
       userStatsSocket.connect()
       
     } catch (error) {
@@ -278,18 +295,22 @@ export function useWebSocket() {
     if (notificationSocket) {
       notificationSocket.disconnect()
       notificationSocket = null
+      socketRefs.notificationSocket = null
     }
     if (systemStatusSocket) {
       systemStatusSocket.disconnect()
       systemStatusSocket = null
+      socketRefs.systemStatusSocket = null
     }
     if (auditSocket) {
       auditSocket.disconnect()
       auditSocket = null
+      socketRefs.auditSocket = null
     }
     if (userStatsSocket) {
       userStatsSocket.disconnect()
       userStatsSocket = null
+      socketRefs.userStatsSocket = null
     }
     connectionError.value = null
   }
@@ -307,16 +328,25 @@ export function useWebSocket() {
       timestamp: new Date().toISOString()
     }
     
-    if (notificationSocket) notificationSocket.send(pingMessage)
-    if (systemStatusSocket) systemStatusSocket.send(pingMessage)
-    if (auditSocket) auditSocket.send(pingMessage)
-    if (userStatsSocket) userStatsSocket.send(pingMessage)
+    // Use socketRefs to allow mutation in tests
+    const sockets = [
+      socketRefs.notificationSocket,
+      socketRefs.systemStatusSocket,
+      socketRefs.auditSocket,
+      socketRefs.userStatsSocket
+    ]
+    
+    sockets.forEach((socket) => {
+      if (socket) {
+        socket.send(pingMessage)
+      }
+    })
   }
   
   // Métodos específicos de notificaciones
   const markNotificationRead = (notificationId) => {
-    if (notificationSocket) {
-      notificationSocket.send({
+    if (socketRefs.notificationSocket) {
+      socketRefs.notificationSocket.send({
         type: 'mark_read',
         notification_id: notificationId
       })
@@ -324,16 +354,16 @@ export function useWebSocket() {
   }
   
   const markAllNotificationsRead = () => {
-    if (notificationSocket) {
-      notificationSocket.send({
+    if (socketRefs.notificationSocket) {
+      socketRefs.notificationSocket.send({
         type: 'mark_all_read'
       })
     }
   }
   
   const getNotificationStats = () => {
-    if (notificationSocket) {
-      notificationSocket.send({
+    if (socketRefs.notificationSocket) {
+      socketRefs.notificationSocket.send({
         type: 'get_stats'
       })
     }
@@ -456,6 +486,28 @@ export function useWebSocket() {
     messageHistory,
     reconnectAttempts,
     
+    // Referencias a sockets (para testing)
+    get notificationSocket() { return socketRefs.notificationSocket },
+    set notificationSocket(value) { 
+      socketRefs.notificationSocket = value
+      notificationSocket = value
+    },
+    get systemStatusSocket() { return socketRefs.systemStatusSocket },
+    set systemStatusSocket(value) { 
+      socketRefs.systemStatusSocket = value
+      systemStatusSocket = value
+    },
+    get auditSocket() { return socketRefs.auditSocket },
+    set auditSocket(value) { 
+      socketRefs.auditSocket = value
+      auditSocket = value
+    },
+    get userStatsSocket() { return socketRefs.userStatsSocket },
+    set userStatsSocket(value) { 
+      socketRefs.userStatsSocket = value
+      userStatsSocket = value
+    },
+    
     // Métodos
     connect,
     disconnect,
@@ -480,6 +532,16 @@ export function useWebSocket() {
     // Eventos
     on,
     off,
-    emit
+    emit,
+    
+    // Sockets (expuestos para testing)
+    get notificationSocket() { return sockets.notificationSocket },
+    get systemStatusSocket() { return sockets.systemStatusSocket },
+    get auditSocket() { return sockets.auditSocket },
+    get userStatsSocket() { return sockets.userStatsSocket },
+    set notificationSocket(value) { sockets.notificationSocket = value; notificationSocket = value },
+    set systemStatusSocket(value) { sockets.systemStatusSocket = value; systemStatusSocket = value },
+    set auditSocket(value) { sockets.auditSocket = value; auditSocket = value },
+    set userStatsSocket(value) { sockets.userStatsSocket = value; userStatsSocket = value }
   }
 }

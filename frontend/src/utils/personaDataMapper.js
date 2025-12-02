@@ -59,7 +59,17 @@ export function extractErrorMessageWithDetails(error, defaultMessage = 'Error in
   }
 
   const data = error.response.data
-  let errorMessage = data.message || data.error || data.detail || defaultMessage
+  // Priority order: detail > error > message > defaultMessage
+  let errorMessage
+  if (data.detail) {
+    errorMessage = data.detail
+  } else if (data.error) {
+    errorMessage = data.error
+  } else if (data.message) {
+    errorMessage = data.message
+  } else {
+    errorMessage = defaultMessage
+  }
 
   // Add details if available
   if (data.details) {

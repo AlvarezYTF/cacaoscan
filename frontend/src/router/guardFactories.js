@@ -231,15 +231,21 @@ export const createPermissionGuard = (permission) => {
 export const createCompositeGuard = (...guards) => {
   return async (to, from, next) => {
     for (const guard of guards) {
+      let shouldContinue = true
       await new Promise((resolve) => {
         guard(to, from, (result) => {
           if (result === undefined || result === true) {
             resolve()
           } else {
+            shouldContinue = false
             next(result)
+            resolve()
           }
         })
       })
+      if (!shouldContinue) {
+        return
+      }
     }
     next()
   }

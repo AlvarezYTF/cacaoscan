@@ -63,7 +63,7 @@ describe('useAuthForm', () => {
     })
 
     it('should reject invalid input', () => {
-      const error = authForm.validateEmailOrUsername('invalid')
+      const error = authForm.validateEmailOrUsername('in')
       
       expect(error).toBeTruthy()
     })
@@ -106,7 +106,7 @@ describe('useAuthForm', () => {
     })
 
     it('should fail validation with invalid email', () => {
-      authForm.form.email = 'invalid'
+      authForm.form.email = 'in'
       authForm.form.password = 'password123'
       
       const isValid = authForm.validateAuthForm()

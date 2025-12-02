@@ -132,7 +132,17 @@ export function validateImageDimensions(file, options = {}) {
     const img = new Image()
     const url = URL.createObjectURL(file)
 
+    // Timeout para evitar que la promesa se quede colgada
+    const timeout = setTimeout(() => {
+      URL.revokeObjectURL(url)
+      resolve({
+        isValid: false,
+        errors: ['Timeout al cargar la imagen para validar dimensiones']
+      })
+    }, 5000)
+
     img.onload = () => {
+      clearTimeout(timeout)
       URL.revokeObjectURL(url)
       const errors = []
 
@@ -160,6 +170,7 @@ export function validateImageDimensions(file, options = {}) {
     }
 
     img.onerror = () => {
+      clearTimeout(timeout)
       URL.revokeObjectURL(url)
       resolve({
         isValid: false,

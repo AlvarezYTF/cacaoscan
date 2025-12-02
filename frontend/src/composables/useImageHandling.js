@@ -276,6 +276,8 @@ export function useImageHandling() {
     clearImages,
     previousImage,
     nextImage,
+    navigatePrevious: previousImage,
+    navigateNext: nextImage,
     setCurrentImageIndex,
     uploadImages,
     getImageDimensions

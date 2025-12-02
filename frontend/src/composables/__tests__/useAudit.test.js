@@ -20,7 +20,59 @@ vi.mock('@/services/auditApi', () => ({
   validateDateFilters: vi.fn(() => ({ isValid: true, errors: [] })),
   getActivityLogs: vi.fn(),
   getLoginHistory: vi.fn(),
-  getAuditStats: vi.fn()
+  getAuditStats: vi.fn(),
+  AUDIT_ACTION_TYPES: {
+    LOGIN: 'login',
+    LOGOUT: 'logout',
+    CREATE: 'create',
+    UPDATE: 'update',
+    DELETE: 'delete',
+    VIEW: 'view',
+    DOWNLOAD: 'download',
+    UPLOAD: 'upload',
+    EXPORT: 'export',
+    IMPORT: 'import',
+    TRAIN: 'train',
+    PREDICT: 'predict'
+  },
+  AUDIT_SEVERITY_LEVELS: {
+    INFO: 'info',
+    WARNING: 'warning',
+    ERROR: 'error',
+    CRITICAL: 'critical'
+  },
+  AUDIT_CONFIG: {
+    LOGS_REFRESH_INTERVAL: 30000,
+    DEFAULT_PAGE_SIZE: 50,
+    ACTION_COLORS: {
+      login: 'blue',
+      logout: 'gray',
+      create: 'green',
+      update: 'yellow',
+      delete: 'red',
+      view: 'info',
+      download: 'purple',
+      upload: 'orange',
+      export: 'teal',
+      import: 'cyan',
+      train: 'indigo',
+      predict: 'pink'
+    },
+    ACTION_ICONS: {
+      login: 'sign-in-alt',
+      logout: 'sign-out-alt',
+      create: 'plus-circle',
+      update: 'edit',
+      delete: 'trash',
+      view: 'eye',
+      download: 'download',
+      upload: 'upload',
+      export: 'file-export',
+      import: 'file-import',
+      train: 'cogs',
+      predict: 'brain'
+    }
+  }
 }))
 
 vi.mock('../useDateFormatting', () => ({

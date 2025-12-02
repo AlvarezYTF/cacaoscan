@@ -57,7 +57,7 @@ export function useSidebarNavigation() {
 
   const toggleSidebarCollapse = () => {
     isSidebarCollapsed.value = !isSidebarCollapsed.value
-    localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
+    localStorage.setItem('sidebarCollapsed', String(isSidebarCollapsed.value))
   }
 
   const handleLogout = async () => {

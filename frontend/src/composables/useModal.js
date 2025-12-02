@@ -122,7 +122,8 @@ export function useModal(options = {}) {
     open,
     close,
     toggle,
-    handleBackdropClick
+    handleBackdropClick,
+    handleEscape
   }
 }
 

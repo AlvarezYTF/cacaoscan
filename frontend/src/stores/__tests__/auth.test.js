@@ -29,13 +29,18 @@ vi.mock('@/services/authApi', () => ({
 vi.mock('@/router', () => ({
   default: {
     push: vi.fn(),
-    replace: vi.fn()
+    replace: vi.fn(),
+    currentRoute: {
+      value: {
+        path: '/'
+      }
+    }
   }
 }))
 
 // Mock localStorage
 const localStorageMock = {
-  getItem: vi.fn(),
+  getItem: vi.fn(() => null),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn()
@@ -54,10 +59,10 @@ describe('Auth Store', () => {
   let store
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-    store = useAuthStore()
     vi.clearAllMocks()
     localStorageMock.getItem.mockReturnValue(null)
+    setActivePinia(createPinia())
+    store = useAuthStore()
   })
 
   afterEach(() => {

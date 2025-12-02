@@ -279,13 +279,19 @@ export function useFincas(options = {}) {
     loadFincas,
     loadFinca,
     create,
+    createFinca: create,
     update,
+    updateFinca: update,
     remove,
+    deleteFinca: remove,
     setFilters,
     clearFilters,
     setCurrentFinca,
     clearCurrentFinca,
     reset,
     clearError
+  }
+}
+
   }
 }

@@ -176,21 +176,15 @@ const getTrainingHistory = async (filters = {}) => {
 
 /**
  * Obtiene estado detallado de múltiples jobs (DRY)
- * @param {Array<string>} jobIds - IDs de los jobs
- * @returns {Promise<Array>} Estados de los jobs
+ * @param {Array<string|number>} jobIds - IDs de los jobs
+ * @returns {Promise<Object>} Estados de los jobs indexados por ID
  */
 const getMultipleJobStatus = async (jobIds) => {
   try {
-    const statusPromises = jobIds.map(jobId => baseGetJobStatus(jobId));
-    const results = await Promise.allSettled(statusPromises);
-    
-    return results.map((result, index) => ({
-      job_id: jobIds[index],
-      success: result.status === 'fulfilled',
-      data: result.status === 'fulfilled' ? result.value : null,
-      error: result.status === 'rejected' ? result.reason.message : null
-    }));
-    
+    const response = await fetchPost('/api/train/jobs/status/batch/', {
+      job_ids: jobIds
+    });
+    return response;
   } catch (error) {
     console.error('Error obteniendo estados múltiples:', error);
     throw error;

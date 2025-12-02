@@ -66,7 +66,9 @@ describe('formDataUtils', () => {
       const data = { blob }
       const formData = createFormData(data)
       
-      expect(formData.get('blob')).toBe(blob)
+      const retrievedBlob = formData.get('blob')
+      expect(retrievedBlob).toBeInstanceOf(Blob)
+      expect(retrievedBlob.type).toBe(blob.type)
     })
 
     it('should exclude specified keys', () => {

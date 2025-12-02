@@ -175,8 +175,17 @@ export const apiDelete = async (endpoint, options = {}) => {
 export const fetchGet = async (endpoint, filters = {}, options = {}) => {
   try {
     const queryParams = buildQueryParams(filters)
-    const queryString = queryParams.toString() ? `?${queryParams}` : ''
-    const baseUrl = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`
+    const isAbsoluteUrl = endpoint.startsWith('http')
+    const baseUrl = isAbsoluteUrl ? endpoint : `${API_BASE_URL}${endpoint}`
+    
+    let queryString = ''
+    if (queryParams.toString()) {
+      queryString = `?${queryParams}`
+    } else if (isAbsoluteUrl) {
+      // For absolute URLs, always add ? to facilitate adding params later
+      queryString = '?'
+    }
+    
     const url = `${baseUrl}${queryString}`
     
     const response = await fetch(url, {
@@ -280,11 +289,11 @@ export const fetchDelete = async (endpoint, options = {}) => {
 export const extractErrorMessage = (error, defaultMessage = 'Error inesperado') => {
   if (error.response?.data) {
     const data = error.response.data
-    return data.message || data.error || data.detail || defaultMessage
+    return data.detail || data.error || data.message || defaultMessage
   }
   
   if (error.data) {
-    return error.data.message || error.data.error || error.data.detail || defaultMessage
+    return error.data.detail || error.data.error || error.data.message || defaultMessage
   }
   
   if (error.message) {

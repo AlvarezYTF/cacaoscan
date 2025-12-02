@@ -55,7 +55,8 @@ export function formatCurrency(value, options = {}) {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
+    useGrouping: false
   }).format(numValue)
 }
 
@@ -145,10 +146,17 @@ export function formatChange(change, options = {}) {
     return String(change)
   }
 
-  const sign = numValue >= 0 ? '+' : ''
+  if (numValue === 0) {
+    return '0%'
+  }
+
   const formatted = formatPercentage(Math.abs(numValue), { decimals: 1 })
   
-  return showSign ? `${sign}${formatted}` : formatted
+  if (numValue < 0) {
+    return `-${formatted}`
+  }
+  
+  return showSign ? `+${formatted}` : formatted
 }
 
 /**
@@ -202,14 +210,24 @@ export function parseChange(change) {
     return 0
   }
   
+  const trimmed = change.trim()
   const regex = /^([+-]?)(\d+\.?\d*)/
-  const match = regex.exec(change)
+  const match = regex.exec(trimmed)
   if (!match) {
     return 0
   }
   
   const sign = match[1] === '-' ? -1 : 1
   const value = Number.parseFloat(match[2])
+  
+  if (Number.isNaN(value)) {
+    return 0
+  }
+  
+  return sign * value
+}
+
+
   
   if (Number.isNaN(value)) {
     return 0

@@ -2,7 +2,7 @@
  * Unit tests for useStoreBase composable
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useStoreBase } from '../useStoreBase.js'
 
 describe('useStoreBase', () => {
@@ -120,9 +120,9 @@ describe('useStoreBase', () => {
         throw error
       }
 
-      await storeBase.executeAction(action, { onError })
+      await expect(storeBase.executeAction(action, { onError })).rejects.toThrow()
 
-      expect(onError).toHaveBeenCalled()
+      expect(onError).toHaveBeenCalledWith(error)
     })
   })
 })

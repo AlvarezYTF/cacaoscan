@@ -39,7 +39,11 @@ vi.mock('../datasetApi.js', () => ({
   trainRegressionModel: vi.fn(),
   trainVisionModel: vi.fn(),
   getTrainingJobStatus: vi.fn(),
-  getTrainingJobs: vi.fn()
+  getTrainingJobs: vi.fn(),
+  formatNumber: vi.fn((value, decimals = 2) => {
+    if (value === null || value === undefined || Number.isNaN(value)) return 'N/A'
+    return Number.parseFloat(value).toFixed(decimals)
+  })
 }))
 
 describe('adminApi', () => {

@@ -43,12 +43,12 @@ export function useFilterableStore(options = {}) {
 
         const itemValue = item[key]
 
-        if (typeof value === 'string') {
-          return String(itemValue).toLowerCase().includes(String(value).toLowerCase())
-        }
-
         if (Array.isArray(value)) {
           return value.includes(itemValue)
+        }
+
+        if (typeof value === 'string') {
+          return String(itemValue).toLowerCase() === String(value).toLowerCase()
         }
 
         return itemValue === value

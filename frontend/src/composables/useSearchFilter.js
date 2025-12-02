@@ -28,14 +28,16 @@ export function useSearchFilter(options = {}) {
 
   // Watch search query and debounce
   watch(searchQuery, (newValue) => {
-    if (debounceTimer) {
+    if (debounceTimer !== null) {
       clearTimeout(debounceTimer)
+      debounceTimer = null
     }
     
     debounceTimer = setTimeout(() => {
       debouncedQuery.value = newValue
+      debounceTimer = null
     }, debounceMs)
-  }, { immediate: true })
+  })
 
   /**
    * Clear search query

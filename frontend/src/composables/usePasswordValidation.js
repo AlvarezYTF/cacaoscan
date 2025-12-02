@@ -6,7 +6,7 @@
 /**
  * Password validation rules
  */
-const PASSWORD_RULES = {
+export const PASSWORD_RULES = {
   minLength: 8,
   requireUpperCase: true,
   requireLowerCase: true,
@@ -17,7 +17,7 @@ const PASSWORD_RULES = {
 /**
  * Password validation error messages
  */
-const ERROR_MESSAGES = {
+export const ERROR_MESSAGES = {
   required: 'La contraseña es requerida',
   minLength: 'La contraseña debe tener al menos 8 caracteres',
   uppercase: 'La contraseña debe contener al menos una letra mayúscula',
@@ -135,8 +135,11 @@ export function getPasswordValidationError(password, options = {}) {
 export function validatePasswordConfirmation(password, confirmPassword, options = {}) {
   const { required = true, fieldName = 'confirmación de contraseña' } = options
   
-  if (required && !confirmPassword) {
-    return `La ${fieldName} es requerida`
+  if (!confirmPassword) {
+    if (required) {
+      return `La ${fieldName} es requerida`
+    }
+    return null
   }
   
   if (password !== confirmPassword) {
