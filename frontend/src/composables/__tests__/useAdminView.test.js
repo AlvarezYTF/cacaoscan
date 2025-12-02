@@ -14,7 +14,11 @@ const mockRouter = {
 }
 
 vi.mock('vue-router', () => ({
-  useRouter: () => mockRouter
+  useRouter: () => mockRouter,
+  createRouter: vi.fn((options) => mockRouter),
+  createWebHistory: vi.fn(() => ({})),
+  createWebHashHistory: vi.fn(() => ({})),
+  createMemoryHistory: vi.fn(() => ({}))
 }))
 
 vi.mock('../usePagination', () => ({

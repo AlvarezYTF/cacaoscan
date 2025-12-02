@@ -30,17 +30,31 @@ vi.mock('@/services/predictionApi', () => ({
 }))
 
 // Mock FileReader
-globalThis.FileReader = vi.fn(() => ({
-  readAsDataURL: vi.fn(),
-  onload: null,
-  result: 'data:image/jpeg;base64,test'
-}))
+function createMockFileReader() {
+  const instance = {
+    readAsDataURL: vi.fn(function() {
+      // Simulate async read completion
+      setTimeout(() => {
+        if (this.onload) {
+          this.onload({ target: { result: 'data:image/jpeg;base64,test' } })
+        }
+      }, 0)
+    }),
+    onload: null,
+    result: 'data:image/jpeg;base64,test'
+  }
+  return instance
+}
+
+globalThis.FileReader = vi.fn(createMockFileReader)
 
 describe('usePredictionFlow', () => {
   let flow
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset FileReader mock
+    globalThis.FileReader = vi.fn(createMockFileReader)
     flow = usePredictionFlow()
   })
 
@@ -67,11 +81,15 @@ describe('usePredictionFlow', () => {
   describe('setImage', () => {
     it('should set valid image file', async () => {
       const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
-      const reader = globalThis.FileReader.mock.results[0].value
       
       await flow.setImage(file)
 
       expect(flow.imageFile.value).toEqual(file)
+      expect(globalThis.FileReader).toHaveBeenCalled()
+      expect(globalThis.FileReader.mock.results.length).toBeGreaterThan(0)
+      const readerInstance = globalThis.FileReader.mock.results[0]?.value
+      expect(readerInstance).toBeDefined()
+      expect(readerInstance.readAsDataURL).toHaveBeenCalledWith(file)
     })
 
     it('should reject invalid file type', async () => {

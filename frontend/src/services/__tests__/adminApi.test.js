@@ -214,11 +214,14 @@ describe('adminApi', () => {
 
   describe('estimateTrainingTime', () => {
     it('should estimate training time', () => {
-      const result = estimateTrainingTime({
-        dataset_size: 1000,
-        epochs: 50,
-        batch_size: 32
-      })
+      const result = estimateTrainingTime(
+        'regression',
+        {
+          epochs: 50,
+          batch_size: 32
+        },
+        1000
+      )
 
       expect(result.totalSeconds).toBeGreaterThan(0)
       expect(result.formatted).toBeDefined()

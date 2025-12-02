@@ -21,6 +21,8 @@ vi.mock('@/services/auditApi', () => ({
   getActivityLogs: vi.fn(),
   getLoginHistory: vi.fn(),
   getAuditStats: vi.fn(),
+  formatActivityLog: vi.fn((log) => log),
+  formatLoginHistory: vi.fn((login) => login),
   AUDIT_ACTION_TYPES: {
     LOGIN: 'login',
     LOGOUT: 'logout',
@@ -110,14 +112,43 @@ describe('useAudit', () => {
     it('should load activity logs successfully', async () => {
       const mockLogs = [{ id: 1, accion: 'login' }]
       auditApi.getActivityLogs.mockResolvedValue({
-        results: mockLogs,
-        count: 1
+        success: true,
+        data: {
+          results: mockLogs,
+          count: 1,
+          current_page: 1,
+          total_pages: 1,
+          page_size: 50
+        }
       })
 
       const result = await audit.loadActivityLogs()
 
       expect(auditApi.getActivityLogs).toHaveBeenCalled()
       expect(audit.activityLogs.value).toHaveLength(1)
+      expect(audit.loading.value).toBe(false)
+    })
+
+    it('should handle error when API returns success: false', async () => {
+      auditApi.getActivityLogs.mockResolvedValue({
+        success: false,
+        error: 'API error message'
+      })
+
+      await expect(audit.loadActivityLogs()).rejects.toThrow('API error message')
+
+      expect(audit.error.value).toBeTruthy()
+      expect(audit.loading.value).toBe(false)
+    })
+
+    it('should handle error when API returns success: false without error message', async () => {
+      auditApi.getActivityLogs.mockResolvedValue({
+        success: false
+      })
+
+      await expect(audit.loadActivityLogs()).rejects.toThrow('Error al cargar los logs de actividad')
+
+      expect(audit.error.value).toBeTruthy()
       expect(audit.loading.value).toBe(false)
     })
 
@@ -136,8 +167,14 @@ describe('useAudit', () => {
     it('should load login history successfully', async () => {
       const mockHistory = [{ id: 1, exitoso: true }]
       auditApi.getLoginHistory.mockResolvedValue({
-        results: mockHistory,
-        count: 1
+        success: true,
+        data: {
+          results: mockHistory,
+          count: 1,
+          current_page: 1,
+          total_pages: 1,
+          page_size: 50
+        }
       })
 
       const result = await audit.loadLoginHistory()
@@ -153,7 +190,10 @@ describe('useAudit', () => {
         total_activities: 100,
         total_logins: 50
       }
-      auditApi.getAuditStats.mockResolvedValue(mockStats)
+      auditApi.getAuditStats.mockResolvedValue({
+        success: true,
+        data: mockStats
+      })
 
       await audit.loadStats()
 

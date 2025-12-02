@@ -137,7 +137,7 @@ export function validatePasswordConfirmation(password, confirmPassword, options 
   
   if (!confirmPassword) {
     if (required) {
-      return `La ${fieldName} es requerida`
+    return `La ${fieldName} es requerida`
     }
     return null
   }

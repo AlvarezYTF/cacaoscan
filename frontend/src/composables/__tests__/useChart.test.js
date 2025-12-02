@@ -3,15 +3,37 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { useChart } from '../useChart.js'
-import { Chart } from 'chart.js'
+
+// Use vi.hoisted() to define mocks before vi.mock() hoisting
+const { MockChart } = vi.hoisted(() => {
+  const MockChart = vi.fn(function(ctx, config) {
+    this.destroy = vi.fn()
+    this.update = vi.fn()
+    this.resize = vi.fn()
+    this.toBase64Image = vi.fn(() => 'base64-image')
+    // Initialize data as mutable property that can be reassigned
+    // Use Object.assign to ensure the property is writable
+    if (config?.data) {
+      this.data = { ...config.data }
+    } else {
+      this.data = {}
+    }
+    this.options = config?.options || {}
+    this.config = config
+    return this
+  })
+  MockChart.register = vi.fn()
+  return { MockChart }
+})
 
 // Mock Chart.js
 vi.mock('chart.js', () => ({
-  Chart: {
-    register: vi.fn()
-  }
+  Chart: MockChart,
+  registerables: []
 }))
+
+// Import useChart after mocking chart.js
+import { useChart } from '../useChart.js'
 
 // Mock canvas context
 const mockContext = {
@@ -27,22 +49,11 @@ describe('useChart', () => {
   let chart
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    
-    // Mock Chart constructor
-    globalThis.Chart = vi.fn(function() {
-      this.destroy = vi.fn()
-      this.update = vi.fn()
-      this.resize = vi.fn()
-      this.toBase64Image = vi.fn(() => 'base64-image')
-      this.data = {}
-      this.options = {}
-      this.config = {
-        type: 'line',
-        data: {},
-        options: {}
-      }
-    })
+    // Clear mocks but preserve MockChart constructor
+    mockCanvas.getContext.mockClear()
+    mockContext.fillRect.mockClear()
+    mockContext.clearRect.mockClear()
+    MockChart.mockClear()
     
     chart = useChart({
       chartData: {
@@ -68,7 +79,11 @@ describe('useChart', () => {
     it('should create chart instance', async () => {
       await chart.createChart()
       
-      expect(mockCanvas.getContext).toHaveBeenCalled()
+      expect(mockCanvas.getContext).toHaveBeenCalledWith('2d')
+      expect(MockChart).toHaveBeenCalled()
+      const chartInstance = chart.chartInstance()
+      expect(chartInstance).toBeDefined()
+      expect(chartInstance.destroy).toBeDefined()
     })
 
     it('should not create chart if no chartRef', async () => {
@@ -80,42 +95,32 @@ describe('useChart', () => {
     })
 
     it('should destroy existing chart before creating new', async () => {
-      const mockInstance = {
-        destroy: vi.fn(),
-        update: vi.fn(),
-        resize: vi.fn(),
-        toBase64Image: vi.fn(),
-        data: {},
-        options: {}
-      }
-      
-      // Simulate existing instance
-      chart.chartInstance = () => mockInstance
-      
       await chart.createChart()
+      
+      const firstInstance = chart.chartInstance()
+      await chart.createChart()
+      
+      expect(firstInstance.destroy).toHaveBeenCalled()
     })
   })
 
   describe('updateChart', () => {
-    it('should update chart data', () => {
-      const mockInstance = {
-        data: {},
-        update: vi.fn()
-      }
+    it('should update chart data', async () => {
+      await chart.createChart()
       
-      // Manually set instance for testing
-      chart.chartInstance = () => mockInstance
-      
+      const instance = chart.chartInstance()
+      const initialData = instance.data
       const newData = { labels: ['C'], datasets: [] }
+      
       chart.updateChart(newData)
       
-      expect(mockInstance.data).toEqual(newData)
-      expect(mockInstance.update).toHaveBeenCalled()
+      // Verify that data was reassigned (should be a new reference)
+      expect(instance.data).not.toBe(initialData)
+      expect(instance.data).toEqual(newData)
+      expect(instance.update).toHaveBeenCalled()
     })
 
     it('should not update if no instance', () => {
-      chart.chartInstance = () => null
-      
       chart.updateChart({})
       
       // Should not throw
@@ -124,36 +129,28 @@ describe('useChart', () => {
   })
 
   describe('destroyChart', () => {
-    it('should destroy chart instance', () => {
-      const mockInstance = {
-        destroy: vi.fn()
-      }
+    it('should destroy chart instance', async () => {
+      await chart.createChart()
       
-      chart.chartInstance = () => mockInstance
-      
+      const instance = chart.chartInstance()
       chart.destroyChart()
       
-      expect(mockInstance.destroy).toHaveBeenCalled()
+      expect(instance.destroy).toHaveBeenCalled()
     })
   })
 
   describe('exportChart', () => {
-    it('should export chart as image', () => {
-      const mockInstance = {
-        toBase64Image: vi.fn(() => 'base64-image')
-      }
-      
-      chart.chartInstance = () => mockInstance
+    it('should export chart as image', async () => {
+      await chart.createChart()
       
       const result = chart.exportChart('png')
       
-      expect(mockInstance.toBase64Image).toHaveBeenCalledWith('png')
+      const instance = chart.chartInstance()
+      expect(instance.toBase64Image).toHaveBeenCalledWith('png')
       expect(result).toBe('base64-image')
     })
 
     it('should return null if no instance', () => {
-      chart.chartInstance = () => null
-      
       const result = chart.exportChart()
       
       expect(result).toBe(null)

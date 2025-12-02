@@ -164,8 +164,9 @@ describe('useForm', () => {
       const onSubmit = vi.fn().mockRejectedValue(new Error('Submit failed'))
       const formWithHandler = useForm({ onSubmit })
 
-      await formWithHandler.handleSubmit()
+      await expect(formWithHandler.handleSubmit()).rejects.toThrow('Submit failed')
 
+      expect(onSubmit).toHaveBeenCalled()
       expect(formWithHandler.isSubmitting.value).toBe(false)
     })
   })

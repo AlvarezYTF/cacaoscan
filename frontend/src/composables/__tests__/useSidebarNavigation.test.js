@@ -24,7 +24,11 @@ const mockAuthStore = {
 
 vi.mock('vue-router', () => ({
   useRouter: () => mockRouter,
-  useRoute: () => mockRoute
+  useRoute: () => mockRoute,
+  createRouter: vi.fn((options) => mockRouter),
+  createWebHistory: vi.fn(() => ({})),
+  createWebHashHistory: vi.fn(() => ({})),
+  createMemoryHistory: vi.fn(() => ({}))
 }))
 
 vi.mock('@/stores/auth', () => ({

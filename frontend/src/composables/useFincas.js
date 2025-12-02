@@ -292,6 +292,3 @@ export function useFincas(options = {}) {
     clearError
   }
 }
-
-  }
-}

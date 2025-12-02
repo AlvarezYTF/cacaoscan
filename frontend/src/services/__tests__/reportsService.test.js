@@ -4,7 +4,9 @@ import { ReportsService } from '../reportsService.js'
 // Mock apiConfig to return base URL for testing
 const mockApiBaseUrl = 'https://cacaoscan-backend.onrender.com'
 vi.mock('@/utils/apiConfig', () => ({
-  getApiBaseUrlWithoutPath: vi.fn(() => 'https://cacaoscan-backend.onrender.com')
+  getApiBaseUrl: vi.fn(() => 'https://cacaoscan-backend.onrender.com'),
+  getApiBaseUrlWithoutPath: vi.fn(() => 'https://cacaoscan-backend.onrender.com'),
+  getApiBaseUrlWithPath: vi.fn(() => 'https://cacaoscan-backend.onrender.com/api/v1')
 }))
 
 // Mock auth store
@@ -80,20 +82,9 @@ describe('ReportsService', () => {
     mockAuthStore.token = 'test-token'
   })
 
-  describe('getHeaders', () => {
-    it('should return headers with authorization token', () => {
-      const headers = reportsService.getHeaders()
-
-      expect(headers).toEqual({
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-token'
-      })
-    })
-  })
-
   describe('getReports', () => {
     it('should fetch reports successfully', async () => {
-      const mockReports = {
+      const mockApiResponse = {
         results: [
           { id: 1, tipo_reporte: 'calidad', estado: 'completado' },
           { id: 2, tipo_reporte: 'finca', estado: 'generando' }
@@ -106,7 +97,7 @@ describe('ReportsService', () => {
         headers: new Headers({
           'content-type': 'application/json'
         }),
-        json: vi.fn().mockResolvedValue(mockReports)
+        json: vi.fn().mockResolvedValue(mockApiResponse)
       })
 
       const result = await reportsService.getReports()
@@ -122,7 +113,17 @@ describe('ReportsService', () => {
         })
       )
 
-      expect(result).toEqual(mockReports)
+      // Service normalizes the response to reports and pagination format
+      expect(result).toHaveProperty('reports')
+      expect(result).toHaveProperty('pagination')
+      expect(result.reports).toHaveLength(2)
+      expect(result.pagination.totalItems).toBe(2)
+      expect(result.reports[0].id).toBe(1)
+      expect(result.reports[0].tipo_reporte).toBe('calidad')
+      expect(result.reports[0].estado).toBe('completado')
+      expect(result.reports[1].id).toBe(2)
+      expect(result.reports[1].tipo_reporte).toBe('finca')
+      expect(result.reports[1].estado).toBe('generando')
     })
 
     it('should fetch reports with filters', async () => {
@@ -199,7 +200,18 @@ describe('ReportsService', () => {
         })
       )
 
-      expect(result).toEqual(mockReport)
+      // normalizeReportDTO adds default fields, so we check the important ones
+      expect(result).toMatchObject({
+        id: 1,
+        tipo_reporte: 'calidad',
+        estado: 'completado',
+        fecha_generacion: '2024-01-01'
+      })
+      // Verify that normalization added expected fields
+      expect(result).toHaveProperty('tipo_reporte_display')
+      expect(result).toHaveProperty('estado_display')
+      expect(result).toHaveProperty('formato')
+      expect(result).toHaveProperty('titulo')
     })
 
     it('should handle error when fetching report details', async () => {
@@ -230,12 +242,39 @@ describe('ReportsService', () => {
 
       const mockCreatedReport = {
         id: 1,
-        ...reportData,
-        estado: 'generando'
+        tipo_reporte: 'calidad',
+        tipo_reporte_display: 'calidad',
+        formato: 'pdf',
+        formato_display: 'PDF',
+        titulo: 'Test Report',
+        descripcion: '',
+        estado: 'generando',
+        estado_display: 'generando',
+        fecha_solicitud: null,
+        fecha_generacion: null,
+        fecha_expiracion: null,
+        tiempo_generacion_segundos: 0,
+        tamano_archivo_mb: 0,
+        tamaño_archivo: 0,
+        archivo_url: null,
+        esta_expirado: false,
+        mensaje_error: null,
+        parametros: {},
+        filtros_aplicados: {},
+        usuario_nombre: '',
+        usuario_id: null
       }
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
+        headers: {
+          get: vi.fn((name) => {
+            if (name === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue(mockCreatedReport)
       })
 
@@ -249,7 +288,14 @@ describe('ReportsService', () => {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer test-token'
           }),
-          body: JSON.stringify(reportData)
+          body: JSON.stringify({
+            tipo_reporte: 'calidad',
+            formato: 'pdf',
+            titulo: 'Test Report',
+            descripcion: '',
+            parametros: {},
+            filtros: {}
+          })
         })
       )
 
@@ -261,6 +307,16 @@ describe('ReportsService', () => {
 
       const errorResponse = {
         ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        headers: {
+          get: vi.fn((name) => {
+            if (name === 'content-type') {
+              return 'application/json'
+            }
+            return null
+          })
+        },
         json: vi.fn().mockResolvedValue({ error: 'Invalid data' })
       }
 
@@ -369,10 +425,10 @@ describe('ReportsService', () => {
   describe('getReportsStats', () => {
     it('should fetch reports stats successfully', async () => {
       const mockStats = {
-        total: 100,
-        completados: 80,
-        generando: 15,
-        fallidos: 5
+        total_reportes: 100,
+        reportes_completados: 80,
+        reportes_generando: 15,
+        reportes_fallidos: 5
       }
 
       globalThis.fetch.mockResolvedValue({
@@ -397,7 +453,19 @@ describe('ReportsService', () => {
         })
       )
 
-      expect(result).toEqual(mockStats)
+      expect(result).toEqual({
+        totalReports: 100,
+        reportsChange: 0,
+        completedReports: 80,
+        completedChange: 0,
+        inProgressReports: 15,
+        inProgressChange: 0,
+        errorReports: 5,
+        errorChange: 0,
+        reportsByType: {},
+        reportsByFormat: {},
+        recentReports: []
+      })
     })
   })
 
@@ -457,10 +525,15 @@ describe('ReportsService', () => {
 
       const result = await reportsService.generateQualityReport(title, description, filters)
 
+      // fetchPost constructs the full URL using API_BASE_URL
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        '/api/reportes',
+        `${mockApiBaseUrl}/api/reportes`,
         expect.objectContaining({
           method: 'POST',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer test-token'
+          }),
           body: expect.stringContaining('"tipo_reporte":"calidad"')
         })
       )

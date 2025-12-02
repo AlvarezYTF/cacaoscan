@@ -3,7 +3,7 @@
  * Pure functions with minimal dependencies - deterministic tests
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   validateImageType,
   validateImageSize,
@@ -174,19 +174,53 @@ describe('imageValidationUtils', () => {
   })
 
   describe('validateImageDimensions', () => {
-    it('should validate image dimensions', async () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = 100
-      canvas.height = 100
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
-      const file = new File([blob], 'test.png', { type: 'image/png' })
+    let originalImage
+    let originalCreateObjectURL
+    let originalRevokeObjectURL
 
-      const result = await validateImageDimensions(file, {
+    beforeEach(() => {
+      originalImage = global.Image
+      originalCreateObjectURL = global.URL.createObjectURL
+      originalRevokeObjectURL = global.URL.revokeObjectURL
+    })
+
+    afterEach(() => {
+      global.Image = originalImage
+      global.URL.createObjectURL = originalCreateObjectURL
+      global.URL.revokeObjectURL = originalRevokeObjectURL
+    })
+
+    it('should validate image dimensions', async () => {
+      const mockImage = {
+        width: 100,
+        height: 100,
+        onload: null,
+        onerror: null
+      }
+
+      global.Image = vi.fn(function() {
+        return mockImage
+      })
+
+      global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+      global.URL.revokeObjectURL = vi.fn()
+
+      const file = new File(['test'], 'test.png', { type: 'image/png' })
+
+      const promise = validateImageDimensions(file, {
         minWidth: 50,
         maxWidth: 200,
         minHeight: 50,
         maxHeight: 200
       })
+
+      setTimeout(() => {
+        if (mockImage.onload) {
+          mockImage.onload()
+        }
+      }, 0)
+
+      const result = await promise
 
       expect(result.isValid).toBe(true)
       expect(result.dimensions).toBeDefined()
@@ -201,30 +235,66 @@ describe('imageValidationUtils', () => {
     })
 
     it('should return error for width too small', async () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = 50
-      canvas.height = 100
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
-      const file = new File([blob], 'test.png', { type: 'image/png' })
+      const mockImage = {
+        width: 50,
+        height: 100,
+        onload: null,
+        onerror: null
+      }
 
-      const result = await validateImageDimensions(file, {
+      global.Image = vi.fn(function() {
+        return mockImage
+      })
+
+      global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+      global.URL.revokeObjectURL = vi.fn()
+
+      const file = new File(['test'], 'test.png', { type: 'image/png' })
+
+      const promise = validateImageDimensions(file, {
         minWidth: 100
       })
+
+      setTimeout(() => {
+        if (mockImage.onload) {
+          mockImage.onload()
+        }
+      }, 0)
+
+      const result = await promise
 
       expect(result.isValid).toBe(false)
       expect(result.errors.some(e => e.includes('Ancho mínimo'))).toBe(true)
     })
 
     it('should return error for width too large', async () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = 500
-      canvas.height = 100
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
-      const file = new File([blob], 'test.png', { type: 'image/png' })
+      const mockImage = {
+        width: 500,
+        height: 100,
+        onload: null,
+        onerror: null
+      }
 
-      const result = await validateImageDimensions(file, {
+      global.Image = vi.fn(function() {
+        return mockImage
+      })
+
+      global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+      global.URL.revokeObjectURL = vi.fn()
+
+      const file = new File(['test'], 'test.png', { type: 'image/png' })
+
+      const promise = validateImageDimensions(file, {
         maxWidth: 400
       })
+
+      setTimeout(() => {
+        if (mockImage.onload) {
+          mockImage.onload()
+        }
+      }, 0)
+
+      const result = await promise
 
       expect(result.isValid).toBe(false)
       expect(result.errors.some(e => e.includes('Ancho máximo'))).toBe(true)

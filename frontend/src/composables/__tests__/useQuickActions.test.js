@@ -12,7 +12,11 @@ const mockRouter = {
 }
 
 vi.mock('vue-router', () => ({
-  useRouter: () => mockRouter
+  useRouter: () => mockRouter,
+  createRouter: vi.fn((options) => mockRouter),
+  createWebHistory: vi.fn(() => ({})),
+  createWebHashHistory: vi.fn(() => ({})),
+  createMemoryHistory: vi.fn(() => ({}))
 }))
 
 describe('useQuickActions', () => {
@@ -120,9 +124,9 @@ describe('useQuickActions', () => {
     })
 
     it('should return empty array for unknown role', () => {
-      const actions = actions.getDefaultActions('unknown')
+      const defaultActions = actions.getDefaultActions('unknown')
 
-      expect(Array.isArray(actions)).toBe(true)
+      expect(Array.isArray(defaultActions)).toBe(true)
     })
   })
 })

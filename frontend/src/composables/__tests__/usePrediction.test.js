@@ -80,7 +80,7 @@ describe('usePrediction', () => {
     })
 
     it('should return true when result exists', () => {
-      prediction.result.value = { id: 1 }
+      prediction.resultRef.value = { id: 1 }
       expect(prediction.hasResult.value).toBe(true)
     })
   })

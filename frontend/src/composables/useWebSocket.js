@@ -490,22 +490,18 @@ export function useWebSocket() {
     get notificationSocket() { return socketRefs.notificationSocket },
     set notificationSocket(value) { 
       socketRefs.notificationSocket = value
-      notificationSocket = value
     },
     get systemStatusSocket() { return socketRefs.systemStatusSocket },
     set systemStatusSocket(value) { 
       socketRefs.systemStatusSocket = value
-      systemStatusSocket = value
     },
     get auditSocket() { return socketRefs.auditSocket },
     set auditSocket(value) { 
       socketRefs.auditSocket = value
-      auditSocket = value
     },
     get userStatsSocket() { return socketRefs.userStatsSocket },
     set userStatsSocket(value) { 
       socketRefs.userStatsSocket = value
-      userStatsSocket = value
     },
     
     // Métodos
@@ -532,16 +528,6 @@ export function useWebSocket() {
     // Eventos
     on,
     off,
-    emit,
-    
-    // Sockets (expuestos para testing)
-    get notificationSocket() { return sockets.notificationSocket },
-    get systemStatusSocket() { return sockets.systemStatusSocket },
-    get auditSocket() { return sockets.auditSocket },
-    get userStatsSocket() { return sockets.userStatsSocket },
-    set notificationSocket(value) { sockets.notificationSocket = value; notificationSocket = value },
-    set systemStatusSocket(value) { sockets.systemStatusSocket = value; systemStatusSocket = value },
-    set auditSocket(value) { sockets.auditSocket = value; auditSocket = value },
-    set userStatsSocket(value) { sockets.userStatsSocket = value; userStatsSocket = value }
+    emit
   }
 }

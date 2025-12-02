@@ -9,19 +9,15 @@ import { useWebSocketBase } from '../useWebSocketBase.js'
 const mockWebSocketSend = vi.fn()
 const mockWebSocketClose = vi.fn()
 
-const mockWebSocket = {
-  readyState: 1, // OPEN
-  send: mockWebSocketSend,
-  close: mockWebSocketClose,
-  onopen: null,
-  onmessage: null,
-  onerror: null,
-  onclose: null
-}
+// WebSocket readyState constants
+const CONNECTING = 0
+const OPEN = 1
+const CLOSING = 2
+const CLOSED = 3
 
 globalThis.WebSocket = vi.fn(() => {
   const ws = {
-    readyState: mockWebSocket.readyState,
+    readyState: CONNECTING,
     send: mockWebSocketSend,
     close: mockWebSocketClose,
     onopen: null,
@@ -30,17 +26,23 @@ globalThis.WebSocket = vi.fn(() => {
     onclose: null
   }
   setTimeout(() => {
+    ws.readyState = OPEN
     if (ws.onopen) ws.onopen()
   }, 0)
   return ws
 })
+
+// Add WebSocket constants to global
+globalThis.WebSocket.CONNECTING = CONNECTING
+globalThis.WebSocket.OPEN = OPEN
+globalThis.WebSocket.CLOSING = CLOSING
+globalThis.WebSocket.CLOSED = CLOSED
 
 describe('useWebSocketBase', () => {
   let socketBase
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockWebSocket.readyState = 1
   })
 
   describe('initial state', () => {
@@ -107,7 +109,7 @@ describe('useWebSocketBase', () => {
 
     it('should not send if not connected', () => {
       socketBase = useWebSocketBase({ url: 'ws://test.com' })
-      mockWebSocket.readyState = 0 // CLOSED
+      // Don't call connect(), so socket remains null or not connected
       
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       

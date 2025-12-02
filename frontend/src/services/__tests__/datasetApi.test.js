@@ -11,6 +11,16 @@ vi.mock('@/utils/apiConfig', () => ({
   getApiBaseUrlWithPath: vi.fn(() => 'https://test-api.example.com/api/v1')
 }))
 
+// Mock imageValidationUtils
+// Use real implementation for validateImageFileSingleError to properly test validation logic
+vi.mock('@/utils/imageValidationUtils', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual
+    // Note: Using real validateImageFileSingleError implementation for validation tests
+  }
+})
+
 // Mock localStorage
 const localStorageMock = {
   getItem: vi.fn(() => 'test-token'),
@@ -143,10 +153,14 @@ describe('Dataset API Service', () => {
   describe('deleteDatasetImage', () => {
     it('should delete image successfully', async () => {
       const imageId = 1
+      const mockResponse = { success: true, message: 'Image deleted' }
 
       globalThis.fetch.mockResolvedValue({
         ok: true,
-        headers: { get: () => 'application/json' }
+        headers: new Headers({
+          'content-type': 'application/json'
+        }),
+        json: vi.fn().mockResolvedValue(mockResponse)
       })
 
       await datasetApi.deleteDatasetImage(imageId)
@@ -168,7 +182,9 @@ describe('Dataset API Service', () => {
       globalThis.fetch.mockResolvedValue({
         ok: false,
         status: 404,
-        statusText: 'Not Found'
+        statusText: 'Not Found',
+        headers: { get: () => 'application/json' },
+        json: async () => ({ error: 'Not Found', detail: 'Image not found' })
       })
 
       await expect(datasetApi.deleteDatasetImage(imageId)).rejects.toThrow()
@@ -211,7 +227,8 @@ describe('Dataset API Service', () => {
 
   describe('uploadDatasetImages', () => {
     it('should upload single image successfully', async () => {
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
+      // Create file with valid size (at least 1KB as per MIN_IMAGE_SIZE)
+      const file = new File(['x'.repeat(1024)], 'test.jpg', { type: 'image/jpeg' })
       const files = [file]
       const metadata = {
         lote_id: 5,
@@ -224,9 +241,18 @@ describe('Dataset API Service', () => {
         upload_status: 'completed'
       }
 
+      const mockHeadersGet = vi.fn((name) => {
+        if (name === 'content-type') {
+          return 'application/json'
+        }
+        return null
+      })
+      
       globalThis.fetch.mockResolvedValue({
         ok: true,
-        headers: { get: () => 'application/json' },
+        headers: {
+          get: mockHeadersGet
+        },
         json: async () => mockResponse
       })
 
@@ -252,8 +278,9 @@ describe('Dataset API Service', () => {
     })
 
     it('should upload multiple images', async () => {
-      const file1 = new File(['test1'], 'test1.jpg', { type: 'image/jpeg' })
-      const file2 = new File(['test2'], 'test2.jpg', { type: 'image/jpeg' })
+      // Create files with valid size (at least 1KB as per MIN_IMAGE_SIZE)
+      const file1 = new File(['x'.repeat(1024)], 'test1.jpg', { type: 'image/jpeg' })
+      const file2 = new File(['x'.repeat(1024)], 'test2.jpg', { type: 'image/jpeg' })
       const files = [file1, file2]
 
       const mockResponse = {
@@ -262,22 +289,26 @@ describe('Dataset API Service', () => {
         upload_status: 'completed'
       }
 
-      globalThis.fetch.mockResolvedValue({
+      // Mock fetch to return a value for each call
+      globalThis.fetch.mockImplementation(async () => ({
         ok: true,
         headers: { get: () => 'application/json' },
         json: async () => mockResponse
-      })
+      }))
 
       const results = await datasetApi.uploadDatasetImages(files)
 
       expect(results).toHaveLength(2)
       expect(globalThis.fetch).toHaveBeenCalledTimes(2)
+      expect(results[0].success).toBe(true)
+      expect(results[1].success).toBe(true)
     })
   })
 
   describe('validateImageFile', () => {
     it('should validate valid image file', () => {
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
+      // Create file with valid size (at least 1KB as per MIN_IMAGE_SIZE)
+      const file = new File(['x'.repeat(1024)], 'test.jpg', { type: 'image/jpeg' })
 
       const result = datasetApi.validateImageFile(file)
 

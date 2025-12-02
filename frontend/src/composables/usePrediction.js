@@ -412,6 +412,7 @@ export function usePrediction(options = {}) {
     isLoading: loading,
     error,
     result: predictionResult,
+    resultRef: result, // Expose ref directly for testing
     processingTime,
     imageFile,
     imagePreview,

@@ -99,7 +99,7 @@ export function useAudit(options = {}) {
       const result = await auditApi.getActivityLogs(filters)
       
       if (!result.success) {
-        throw new Error(result.error)
+        throw new Error(result.error || 'Error al cargar los logs de actividad')
       }
       
       const data = result.data
@@ -153,7 +153,7 @@ export function useAudit(options = {}) {
       const result = await auditApi.getLoginHistory(filters)
       
       if (!result.success) {
-        throw new Error(result.error)
+        throw new Error(result.error || 'Error al cargar el historial de logins')
       }
       
       const data = result.data
@@ -199,7 +199,7 @@ export function useAudit(options = {}) {
       const result = await auditApi.getAuditStats(params)
       
       if (!result.success) {
-        throw new Error(result.error)
+        throw new Error(result.error || 'Error al cargar las estadísticas de auditoría')
       }
       
       stats.value = result.data
@@ -234,7 +234,7 @@ export function useAudit(options = {}) {
       const result = await auditApi.generateAuditReport(reportParams)
       
       if (!result.success) {
-        throw new Error(result.error)
+        throw new Error(result.error || 'Error al generar el reporte')
       }
       
       notificationStore.addNotification({
@@ -274,7 +274,7 @@ export function useAudit(options = {}) {
       const result = await auditApi.getUserActivitySummary(userId, params)
       
       if (!result.success) {
-        throw new Error(result.error)
+        throw new Error(result.error || 'Error al obtener el resumen de actividad')
       }
       
       return result.data

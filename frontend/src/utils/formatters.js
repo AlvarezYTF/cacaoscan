@@ -227,12 +227,3 @@ export function parseChange(change) {
   return sign * value
 }
 
-
-  
-  if (Number.isNaN(value)) {
-    return 0
-  }
-  
-  return sign * value
-}
-

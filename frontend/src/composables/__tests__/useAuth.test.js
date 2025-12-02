@@ -9,33 +9,37 @@ import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
 import authApi from '@/services/authApi'
 
-// Mock dependencies
-const mockAuthStore = {
-  isAuthenticated: false,
-  user: null,
-  userRole: null,
-  isAdmin: false,
-  isFarmer: false,
-  isAnalyst: false,
-  isVerified: false,
-  userFullName: '',
-  userInitials: '',
-  login: vi.fn(),
-  register: vi.fn(),
-  logout: vi.fn(),
-  verifyEmail: vi.fn(),
-  verifyEmailFromToken: vi.fn(),
-  clearAll: vi.fn()
-}
+// Use vi.hoisted() to define mocks before vi.mock() hoisting
+const { mockAuthStore, mockNotificationStore, mockRouter } = vi.hoisted(() => {
+  const mockAuthStore = {
+    isAuthenticated: false,
+    user: null,
+    userRole: null,
+    isAdmin: false,
+    isFarmer: false,
+    isAnalyst: false,
+    isVerified: false,
+    userFullName: '',
+    userInitials: '',
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+    verifyEmail: vi.fn(),
+    verifyEmailFromToken: vi.fn(),
+    clearAll: vi.fn()
+  }
 
-const mockNotificationStore = {
-  addNotification: vi.fn()
-}
+  const mockNotificationStore = {
+    addNotification: vi.fn()
+  }
 
-const mockRouter = {
-  push: vi.fn(),
-  replace: vi.fn()
-}
+  const mockRouter = {
+    push: vi.fn(),
+    replace: vi.fn()
+  }
+
+  return { mockAuthStore, mockNotificationStore, mockRouter }
+})
 
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () => mockAuthStore
@@ -46,7 +50,15 @@ vi.mock('@/stores/notifications', () => ({
 }))
 
 vi.mock('vue-router', () => ({
-  useRouter: () => mockRouter
+  useRouter: () => mockRouter,
+  createRouter: vi.fn((options) => mockRouter),
+  createWebHistory: vi.fn(() => ({})),
+  createWebHashHistory: vi.fn(() => ({})),
+  createMemoryHistory: vi.fn(() => ({}))
+}))
+
+vi.mock('@/router', () => ({
+  default: mockRouter
 }))
 
 describe('useAuth', () => {

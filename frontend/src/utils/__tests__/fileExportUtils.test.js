@@ -32,9 +32,7 @@ describe('fileExportUtils', () => {
     }
 
     document.createElement = vi.fn(() => mockLink)
-    document.body = {
-      appendChild: mockAppendChild
-    }
+    document.body.appendChild = mockAppendChild
 
     vi.clearAllMocks()
   })
