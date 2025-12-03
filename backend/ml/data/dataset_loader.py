@@ -111,8 +111,18 @@ class CacaoDatasetLoader:
         logger.info(f"Cargando dataset desde {self.csv_path}")
         
         try:
-            # Cargar CSV con separador coma
-            df = pd.read_csv(self.csv_path, sep=',')
+            # Cargar CSV con separador coma, intentando múltiples encodings
+            encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+            df = None
+            for encoding in encodings:
+                try:
+                    df = pd.read_csv(self.csv_path, sep=',', encoding=encoding)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            if df is None:
+                # Last resort: use utf-8 with errors='replace'
+                df = pd.read_csv(self.csv_path, sep=',', encoding='utf-8', errors='replace')
             
             logger.info(f"CSV cargado: {len(df)} filas, {len(df.columns)} columnas")
             logger.info(f"Columnas encontradas: {list(df.columns)}")

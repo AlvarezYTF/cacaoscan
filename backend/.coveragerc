@@ -8,11 +8,18 @@ omit =
     */tests/*
     */test_*.py
     */conftest.py
-    */manage.py
-    */settings.py
-    */wsgi.py
+    # Archivos sin lógica de negocio que NO deben contar en la cobertura
+    */admin.py
+    */apps.py
+    */__init__.py
     */asgi.py
-    */celery.py
+    */wsgi.py
+    */settings.py
+    */urls.py
+    */routing.py
+    */manage.py
+    */cache_config.py
+    */close_test_db_connections.py
     */check_test_imports.py
     */run_tests.py
     */run_tests.sh
@@ -38,43 +45,6 @@ omit =
     */ml/pipeline/train_all.py
     */training/tests.py
     */api/tests/test_sonarqube/*
-    # Init files (not testable or minimal test)
-    */api/services/__init__.py
-    */api/services/auth/__init__.py
-    */api/services/stats/__init__.py
-    */api/services/email/__init__.py
-    */api/views/ml/mixins/__init__.py
-    */api/tasks/__init__.py
-    */api/serializers/__init__.py
-    */api/views/admin/__init__.py
-    */api/views/notifications/__init__.py
-    */api/views/mixins/__init__.py
-    */api/views/ml/__init__.py
-    */api/views/__init__.py
-    */api/utils/__init__.py
-    */core/utils/__init__.py
-    */fincas_app/views/finca/__init__.py
-    */fincas_app/views/__init__.py
-    */fincas_app/services/finca/__init__.py
-    */fincas_app/services/__init__.py
-    */fincas_app/views/finca/mixins/__init__.py
-    */images_app/views/image/user/__init__.py
-    */images_app/views/image/export/__init__.py
-    */images_app/views/image/batch/__init__.py
-    */images_app/views/image/admin/__init__.py
-    */images_app/views/image/__init__.py
-    */images_app/views/__init__.py
-    */images_app/services/image/__init__.py
-    */images_app/services/__init__.py
-    */auth_app/views/auth/__init__.py
-    */auth_app/views/__init__.py
-    */reports/views/reports/__init__.py
-    */reports/views/__init__.py
-    */reports/services/report/excel/__init__.py
-    */reports/services/report/__init__.py
-    */reports/services/__init__.py
-    */training/services/ml/__init__.py
-    */training/services/__init__.py
 
 [report]
 exclude_lines =

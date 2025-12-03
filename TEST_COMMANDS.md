@@ -10,8 +10,8 @@ pytest
 
 ### Ejecutar tests con coverage (para SonarQube)
 ```bash
-cd backend
-pytest --cov=. --cov-report=xml:coverage.xml --cov-report=term-missing
+cd backendpytest --cov=. --cov-report=xml:coverage.xml --cov-report=term-missing
+
 ```
 
 ### Ejecutar tests específicos

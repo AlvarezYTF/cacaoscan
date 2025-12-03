@@ -83,13 +83,7 @@ class Command(BaseCommand):
                     # Verificar si el email ya está en uso
                     if User.objects.filter(email=email).exists():
                         existing_user = User.objects.get(email=email)
-                        if not no_input:
-                            self.stdout.write(
-                                self.style.WARNING(
-                                    f'⚠️  El email {email} ya está en uso por el usuario {existing_user.username}'
-                                )
-                            )
-                            raise CommandError(f'Email {email} already in use by user {existing_user.username}')
+                        raise CommandError(f'Email {email} already in use by user {existing_user.username}')
                     
                     # Crear nuevo usuario
                     user = User.objects.create_user(

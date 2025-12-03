@@ -284,11 +284,7 @@ class ImageDeleteView(APIView, ImagePermissionMixin):
             
             logger.info(f"Imagen {image_id} eliminada por usuario {request.user.username}")
             
-            return Response({
-                'message': 'Imagen eliminada exitosamente',
-                'deleted_image': image_data,
-                'deleted_prediction': prediction_data
-            }, status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_204_NO_CONTENT)
             
         except Exception as e:
             logger.error(f"Error eliminando imagen {image_id}: {e}")

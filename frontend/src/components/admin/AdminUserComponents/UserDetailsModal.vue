@@ -356,6 +356,7 @@ export default {
       userDetails,
       recentActivities,
       loadUserDetails,
+      loadRecentActivities,
       closeModal,
       editUser,
       formatDateTime,

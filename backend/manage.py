@@ -1,7 +1,12 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+
+# Force UTF-8 encoding
+os.environ["PYTHONUTF8"] = "1"
+os.environ["PYTHONIOENCODING"] = "UTF-8"
 
 
 def main():

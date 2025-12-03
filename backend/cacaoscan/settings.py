@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Django settings for cacaoscan project.
 """
@@ -7,6 +8,11 @@ import sys
 import warnings
 from typing import Optional
 from pathlib import Path
+
+# Force UTF-8 encoding for all operations
+os.environ["PYTHONUTF8"] = "1"
+os.environ["PYTHONIOENCODING"] = "UTF-8"
+os.environ["PGCLIENTENCODING"] = "UTF8"
 
 # Django 5.2 eliminó SecurityWarning, así que creamos uno propio
 class SecurityWarning(UserWarning):
@@ -91,23 +97,53 @@ AUTO_TRAIN_ENABLED=0
             "Crea el archivo .env con las variables necesarias antes de iniciar la aplicación."
         )
 
-# Load .env file with explicit UTF-8 encoding to avoid decode errors
-# Try multiple encodings if UTF-8 fails
-try:
-    load_dotenv(dotenv_path, encoding='utf-8')
-except Exception:
+# Load .env file - robust UTF-8 handling, remove BOM and invalid bytes
+if os.path.exists(dotenv_path):
     try:
-        # Try without BOM
-        with open(dotenv_path, 'r', encoding='utf-8-sig') as f:
-            content = f.read()
-        # Write back with UTF-8 encoding
-        with open(dotenv_path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        load_dotenv(dotenv_path, encoding='utf-8')
-    except Exception as e:
-        print("⚠️ Warning: Error loading .env file:", e)
-        print("Continuing with environment variables...")
-        print("💡 Tip: Recreate .env file with UTF-8 encoding if issues persist")
+        # Read as bytes
+        with open(dotenv_path, 'rb') as f:
+            raw_content = f.read()
+        
+        # Remove UTF-8 BOM (0xEF, 0xBB, 0xBF) if present
+        if raw_content.startswith(b'\xef\xbb\xbf'):
+            raw_content = raw_content[3:]
+        
+        # Remove problematic bytes: 0xf3 (causes UnicodeDecodeError)
+        # Also remove other invalid UTF-8 continuation bytes
+        invalid_bytes = [b'\xf3', b'\xef', b'\xbb', b'\xbf']
+        for invalid_byte in invalid_bytes:
+            if invalid_byte in raw_content:
+                raw_content = raw_content.replace(invalid_byte, b'')
+        
+        # Decode with UTF-8, fallback to latin-1
+        try:
+            content = raw_content.decode('utf-8')
+        except UnicodeDecodeError:
+            # If UTF-8 fails, try latin-1 with replacement
+            content = raw_content.decode('latin-1', errors='replace')
+        
+        # Load environment variables from content
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            if '=' in line:
+                key, value = line.split('=', 1)
+                key = key.strip()
+                # Clean value: remove quotes, invalid chars, BOM, and problematic bytes
+                value = value.strip().strip('"\'').rstrip('\r\n')
+                # Remove any remaining problematic characters
+                value = value.replace('\ufeff', '').replace('\xf3', '').replace('\x00', '')
+                # Remove non-printable ASCII control characters (except space)
+                value = ''.join(char for char in value if ord(char) >= 32 or char in '\t\n\r')
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except Exception:
+        # Fallback: use load_dotenv
+        try:
+            load_dotenv(dotenv_path, override=False)
+        except Exception:
+            pass
 
 
 # Suprimir warnings molestos
@@ -124,9 +160,6 @@ if 'PYTHONPATH' not in os.environ:
 
 # Migrado de pkg_resources (deprecated) a importlib.metadata (Python 3.12+)
 # pkg_resources ya no se usa, eliminado para evitar warnings de deprecación
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY')
@@ -240,115 +273,128 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cacaoscan.wsgi.application'
 
-# Database
-# Helper function to safely decode environment variables as UTF-8 strings
-def safe_env_get(key: str, default: str = '') -> str:
-    """Safely get and decode environment variable as UTF-8 string."""
-    value = os.environ.get(key, default)
-    if value is None:
-        return default
-    if isinstance(value, bytes):
-        # Try UTF-8 first, fallback to latin-1 if that fails
-        try:
-            value = value.decode('utf-8', errors='strict')
-        except (UnicodeDecodeError, AttributeError):
-            try:
-                value = value.decode('latin-1', errors='replace')
-            except Exception:
-                value = value.decode('utf-8', errors='replace')
-    elif not isinstance(value, str):
-        value = str(value)
-    # Ensure the value is a valid UTF-8 string
-    if isinstance(value, str):
-        # Re-encode and decode to ensure valid UTF-8, using replace for safety
-        try:
-            # First try to validate as UTF-8
-            value.encode('utf-8', errors='strict')
-        except (UnicodeEncodeError, UnicodeDecodeError):
-            # If validation fails, replace problematic characters
-            value = value.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
-    return value
-
-# Ensure all database connection parameters are valid UTF-8 strings
-import re
-import unicodedata
-
-def normalize_db_value(value: str, default: str = '') -> str:
+# Database configuration - simple and clean
+def clean_value(value: str) -> str:
     """
-    Normalize database connection parameter to ensure it's safe for psycopg2.
-    
-    Args:
-        value: Value to normalize
-        default: Default value if normalization fails
-        
-    Returns:
-        Normalized string safe for database connection
+    Clean database connection parameter value.
+    Removes invalid bytes, BOM, and ensures UTF-8 safe encoding.
     """
     if not value:
-        return default
+        return value or ""
     
-    # First, ensure it's a valid string
+    # Convert to string if needed - handle bytes explicitly
+    if isinstance(value, bytes):
+        try:
+            # First try UTF-8 with error handling
+            value = value.decode('utf-8', errors='replace')
+        except Exception:
+            try:
+                # Fallback to latin-1
+                value = value.decode('latin-1', errors='replace')
+            except Exception:
+                # Last resort: replace all invalid bytes
+                value = value.decode('utf-8', errors='ignore')
+    
+    # Convert to string if not already
     if not isinstance(value, str):
         try:
             value = str(value)
         except Exception:
-            return default
+            return ""
     
-    # Normalize Unicode characters (NFD -> NFC)
+    # Remove UTF-8 BOM
+    if value.startswith('\ufeff'):
+        value = value[1:]
+    
+    # Remove problematic bytes by converting to bytes and back
+    # This ensures we catch all invalid UTF-8 sequences
     try:
-        value = unicodedata.normalize('NFKC', value)
+        # Encode to bytes to catch invalid sequences
+        value_bytes = value.encode('utf-8', errors='replace')
+        # Remove the problematic byte 0xf3 specifically
+        value_bytes = value_bytes.replace(b'\xf3', b'')
+        # Decode back to string
+        value = value_bytes.decode('utf-8', errors='replace')
     except Exception:
-        pass
+        # If that fails, use a more aggressive approach
+        try:
+            # Remove all non-ASCII bytes if they cause issues
+            value = value.encode('ascii', errors='ignore').decode('ascii')
+        except Exception:
+            # Last resort: empty string
+            value = ""
     
-    # Remove any non-ASCII characters that could cause issues
-    # Keep only ASCII printable characters and common Unicode characters
-    value = re.sub(r'[^\x20-\x7E]', '', value)
+    # Remove specific problematic characters
+    invalid_chars = ['\x00', '\xef', '\xbb', '\xbf']
+    for char in invalid_chars:
+        value = value.replace(char, '')
     
-    # Remove any remaining problematic characters
-    value = value.encode('ascii', errors='ignore').decode('ascii')
+    # Remove non-printable ASCII control characters (keep space, tab, newline)
+    cleaned = []
+    for char in value:
+        ord_val = ord(char)
+        # Keep printable ASCII, tabs, newlines, carriage returns
+        if (32 <= ord_val <= 126) or char in '\t\n\r':
+            cleaned.append(char)
+        # Keep valid UTF-8 characters (basic multilingual plane)
+        elif ord_val > 127:
+            # Validate it's a valid UTF-8 character
+            try:
+                char.encode('utf-8', errors='strict')
+                cleaned.append(char)
+            except UnicodeEncodeError:
+                pass  # Skip invalid UTF-8 characters
     
-    return value if value else default
-
-_db_name = normalize_db_value(safe_env_get('DB_NAME', 'cacaoscan_db'), 'cacaoscan_db')
-_db_user = normalize_db_value(safe_env_get('DB_USER', 'cacaoscan'), 'cacaoscan')
-_db_password = safe_env_get('DB_PASSWORD', '')  # Password can contain special chars, but we'll sanitize it
-_db_host = normalize_db_value(safe_env_get('DB_HOST', 'localhost'), 'localhost')
-_db_port = normalize_db_value(safe_env_get('DB_PORT', '5432'), '5432')
-
-# Sanitize password separately (keep special chars but ensure UTF-8)
-if _db_password:
+    value = ''.join(cleaned)
+    
+    # Final validation: ensure valid UTF-8 encoding
     try:
-        # Ensure password is valid UTF-8
-        _db_password = _db_password.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
-    except Exception:
-        _db_password = ''
+        value.encode('utf-8', errors='strict')
+    except UnicodeEncodeError:
+        # If encoding fails, use replace strategy
+        value = value.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+    
+    return value
 
-# Create a safe test database name (ASCII-only to avoid encoding issues)
-_test_db_name = f"test_{_db_name}" if _db_name else "test_cacaoscan_db"
-# Ensure test database name is ASCII-safe
-_test_db_name = _test_db_name.encode('ascii', errors='ignore').decode('ascii')
-if not _test_db_name or not _test_db_name.startswith('test_'):
-    _test_db_name = 'test_cacaoscan_db'
+# Determinar si estamos en modo test (usado para configuración de logging)
+IS_TESTING = (
+    'test' in sys.argv or 
+    'pytest' in sys.modules or 
+    os.environ.get('DJANGO_TEST_MODE') == '1' or
+    'pytest' in str(sys.modules.get('__main__', {})) or
+    'PYTEST_CURRENT_TEST' in os.environ
+)
+
+# Database configuration - Force PostgreSQL for ALL environments including tests
+# This ensures tests run in the same environment as production
+# Clean all database values to ensure UTF-8 encoding
+_db_name = clean_value(os.getenv("POSTGRES_DB", os.getenv("DB_NAME", "cacaoscan_db")) or "cacaoscan_db")
+_db_user = clean_value(os.getenv("POSTGRES_USER", os.getenv("DB_USER", "postgres")) or "postgres")
+_db_password = clean_value(os.getenv("POSTGRES_PASSWORD", os.getenv("DB_PASSWORD", "postgres")) or "postgres")
+_db_host = clean_value(os.getenv("POSTGRES_HOST", os.getenv("DB_HOST", "127.0.0.1")) or "127.0.0.1")
+_db_port = clean_value(os.getenv("POSTGRES_PORT", os.getenv("DB_PORT", "5432")) or "5432")
+_db_test_name = clean_value(os.getenv("POSTGRES_DB_TEST", "cacaoscan_db_test")) or "cacaoscan_db_test"
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': _db_name,
-        'USER': _db_user,
-        'PASSWORD': _db_password,
-        'HOST': _db_host,
-        'PORT': _db_port,
-        'CONN_MAX_AGE': 600,  # Reuse database connections for 10 minutes
-        'OPTIONS': {
-            'client_encoding': 'UTF8',
-            'connect_timeout': 10,
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": _db_name,
+        "USER": _db_user,
+        "PASSWORD": _db_password,
+        "HOST": _db_host,
+        "PORT": _db_port,
+        "CONN_MAX_AGE": 600,
+        "OPTIONS": {
+            "client_encoding": "UTF8",
+            "connect_timeout": 10,
         },
-        # Ensure test database name is ASCII-safe to avoid encoding issues
-        'TEST': {
-            'NAME': _test_db_name,
+        "TEST": {
+            "NAME": _db_test_name,
         },
     }
 }
+
+# No psycopg2 patches needed - database parameters are already cleaned
 
 # Cache configuration
 # Try to import from cache_config, fallback to default if not available
@@ -512,6 +558,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'EXCEPTION_HANDLER': 'api.exceptions.custom_exception_handler',
 }
 
 # CORS settings
@@ -685,13 +732,7 @@ except OSError as e:
     warnings.warn(f"No se pudo crear el directorio de logs: {e}. Usando solo console handler.")
     LOGS_DIR = None
 
-# Determinar si estamos en modo test
-IS_TESTING = (
-    'test' in sys.argv or 
-    'pytest' in sys.modules or 
-    os.environ.get('DJANGO_TEST_MODE') == '1' or
-    'pytest' in str(sys.modules.get('__main__', {}))
-)
+# IS_TESTING ya está definido arriba para la configuración de DATABASES
 
 # Configurar handlers según disponibilidad
 handlers_config = {

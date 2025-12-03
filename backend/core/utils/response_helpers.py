@@ -13,21 +13,27 @@ def create_error_response(message: str, error_type: str = None, status_code: int
         message: Descriptive error message
         error_type: Error type for debugging (optional)
         status_code: HTTP status code
-        details: Additional error details (optional)
+        details: Additional error details (optional, can be dict or string)
     
     Returns:
-        Response: Standardized error response
+        Response: Standardized error response with format {"error": "...", "details": "..."}
     """
+    # Convert details to string if it's a dict
+    if isinstance(details, dict):
+        # Format dict details as string
+        details_str = '; '.join([f"{k}: {', '.join(v) if isinstance(v, list) else str(v)}" for k, v in details.items()])
+    elif details is None:
+        details_str = message
+    else:
+        details_str = str(details)
+    
     response_data = {
-        'success': False,
-        'message': message
+        'error': message,
+        'details': details_str
     }
     
     if error_type:
         response_data['error_type'] = error_type
-    
-    if details:
-        response_data['details'] = details
     
     return Response(response_data, status=status_code)
 

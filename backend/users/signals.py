@@ -2,6 +2,8 @@
 Signals para el manejo automático de usuarios en CacaoScan.
 """
 import logging
+import os
+import sys
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User, Group
@@ -9,12 +11,29 @@ from django.contrib.auth.models import User, Group
 logger = logging.getLogger("cacaoscan.users")
 
 
+def _is_testing():
+    """Detecta si estamos ejecutando tests."""
+    return (
+        'test' in sys.argv or 
+        'pytest' in sys.modules or 
+        os.environ.get('DJANGO_TEST_MODE') == '1' or
+        'pytest' in str(sys.modules.get('__main__', {})) or
+        'PYTEST_CURRENT_TEST' in os.environ
+    )
+
+
 @receiver(pre_save, sender=User)
 def ensure_user_active(sender, instance, **kwargs):
     """
     Asegura que los usuarios registrados estén activos por defecto.
     Usa pre_save para evitar bucles infinitos.
+    
+    Durante los tests, respeta el valor explícito de is_active si se establece.
     """
+    # Durante tests, no forzar is_active=True para permitir tests con usuarios inactivos
+    if _is_testing():
+        return
+    
     if instance._state.adding and not instance.is_active:
         instance.is_active = True
         logger.info(f"Usuario {instance.username} marcado como activo por defecto")

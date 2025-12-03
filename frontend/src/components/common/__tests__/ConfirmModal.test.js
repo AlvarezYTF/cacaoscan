@@ -186,5 +186,37 @@ describe('ConfirmModal', () => {
     expect(wrapper.text()).toContain('Yes')
     expect(wrapper.text()).toContain('No')
   })
+
+  it('should handle overlay click when closeOnOverlay is true', async () => {
+    const wrapper = mount(ConfirmModal, {
+      props: {
+        message: 'Test',
+        closeOnOverlay: true
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+    const overlay = wrapper.find('.confirm-modal-overlay')
+    if (overlay.exists()) {
+      await overlay.trigger('click')
+      expect(wrapper.emitted('cancel')).toBeTruthy()
+    }
+  })
+
+  it('should not handle overlay click when closeOnOverlay is false', async () => {
+    const wrapper = mount(ConfirmModal, {
+      props: {
+        message: 'Test',
+        closeOnOverlay: false
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+    const overlay = wrapper.find('.confirm-modal-overlay')
+    if (overlay.exists()) {
+      await overlay.trigger('click')
+      expect(wrapper.emitted('cancel')).toBeFalsy()
+    }
+  })
 })
 

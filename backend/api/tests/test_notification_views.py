@@ -35,7 +35,7 @@ class NotificationListCreateViewTest(APITestCase):
             email=TEST_ADMIN_EMAIL,
             password=TEST_ADMIN_PASSWORD
         )
-        self.url = reverse('notification-list-create')
+        self.url = reverse('notifications-list')
     
     def test_notification_list_requires_authentication(self):
         """Test that notification list requires authentication."""

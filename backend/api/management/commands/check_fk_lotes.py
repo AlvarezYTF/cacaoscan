@@ -71,6 +71,8 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(self.style.SUCCESS("\n✅ No se encontraron problemas con las foreign keys"))
             
+        except CommandError:
+            raise
         except Exception as e:
             logger.error(f"Error checking FK constraints: {e}", exc_info=True)
             raise CommandError(f'Error al verificar foreign keys: {str(e)}')
@@ -111,11 +113,18 @@ class Command(BaseCommand):
         Valida y escapa un identificador SQL para prevenir inyección SQL.
         Solo permite caracteres alfanuméricos, guiones bajos y guiones.
         """
-        if not identifier or not isinstance(identifier, str):
+        if identifier is None:
+            raise ValueError("Identifier must be a non-empty string")
+        
+        if not isinstance(identifier, str):
+            raise ValueError("Identifier must be a non-empty string")
+        
+        if not identifier:
             raise ValueError("Identifier must be a non-empty string")
         
         # Solo permitir caracteres alfanuméricos, guiones bajos y guiones
-        if not identifier.replace('_', '').replace('-', '').isalnum():
+        # No permitir guiones (solo guiones bajos)
+        if not identifier.replace('_', '').isalnum():
             raise ValueError(f"Invalid identifier: {identifier} contains invalid characters")
         
         # Escapar comillas dobles en el identificador (PostgreSQL escape)
@@ -191,6 +200,8 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(f"✅ Foreign key creada: {constraint_name}"))
                 logger.info(f"FK created: {constraint_name}")
                 return False
+        except CommandError:
+            raise
         except Exception as e:
             logger.error(f"Error creating FK: {e}", exc_info=True)
             raise CommandError(f'Error al crear foreign key: {str(e)}')
@@ -243,6 +254,8 @@ class Command(BaseCommand):
                     if fix:
                         try:
                             self._fix_incorrect_foreign_key(cursor, constraint_name, foreign_table)
+                        except CommandError:
+                            raise
                         except Exception as e:
                             logger.error(f"Error fixing FK: {e}", exc_info=True)
                             raise CommandError(f'Error al corregir foreign key: {str(e)}')

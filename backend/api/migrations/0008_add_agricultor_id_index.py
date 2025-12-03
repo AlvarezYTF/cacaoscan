@@ -1,4 +1,4 @@
-﻿# Generated manually for optimization
+# Generated manually for optimization
 
 from django.db import migrations, models
 

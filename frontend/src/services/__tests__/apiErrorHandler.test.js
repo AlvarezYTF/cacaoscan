@@ -52,8 +52,18 @@ describe('services/apiErrorHandler', () => {
       expect(getErrorType(error)).toBe(API_ERROR_TYPES.NETWORK)
     })
 
+    it('should detect network error with "Failed to fetch"', () => {
+      const error = { message: 'Failed to fetch' }
+      expect(getErrorType(error)).toBe(API_ERROR_TYPES.NETWORK)
+    })
+
     it('should detect timeout error', () => {
       const error = { code: 'ECONNABORTED' }
+      expect(getErrorType(error)).toBe(API_ERROR_TYPES.TIMEOUT)
+    })
+
+    it('should detect timeout error from message', () => {
+      const error = { message: 'Request timeout' }
       expect(getErrorType(error)).toBe(API_ERROR_TYPES.TIMEOUT)
     })
 
@@ -72,23 +82,53 @@ describe('services/apiErrorHandler', () => {
       expect(getErrorType(error)).toBe(API_ERROR_TYPES.NOT_FOUND)
     })
 
-    it('should detect validation error', () => {
+    it('should detect validation error with status 422', () => {
       const error = { response: { status: 422 } }
       expect(getErrorType(error)).toBe(API_ERROR_TYPES.VALIDATION)
     })
 
-    it('should detect server error', () => {
+    it('should detect validation error with status 400', () => {
+      const error = { response: { status: 400 } }
+      expect(getErrorType(error)).toBe(API_ERROR_TYPES.VALIDATION)
+    })
+
+    it('should detect server error with status 500', () => {
       const error = { response: { status: 500 } }
       expect(getErrorType(error)).toBe(API_ERROR_TYPES.SERVER)
     })
 
-    it('should detect validation error from details', () => {
+    it('should detect server error with status 502', () => {
+      const error = { response: { status: 502 } }
+      expect(getErrorType(error)).toBe(API_ERROR_TYPES.SERVER)
+    })
+
+    it('should detect server error with status 503', () => {
+      const error = { response: { status: 503 } }
+      expect(getErrorType(error)).toBe(API_ERROR_TYPES.SERVER)
+    })
+
+    it('should detect server error with status 504', () => {
+      const error = { response: { status: 504 } }
+      expect(getErrorType(error)).toBe(API_ERROR_TYPES.SERVER)
+    })
+
+    it('should detect validation error from response.data.details', () => {
       const error = { response: { data: { details: {} } } }
+      expect(getErrorType(error)).toBe(API_ERROR_TYPES.VALIDATION)
+    })
+
+    it('should detect validation error from error.data.details', () => {
+      const error = { data: { details: {} } }
       expect(getErrorType(error)).toBe(API_ERROR_TYPES.VALIDATION)
     })
 
     it('should return unknown for unrecognized error', () => {
       const error = {}
+      expect(getErrorType(error)).toBe(API_ERROR_TYPES.UNKNOWN)
+    })
+
+    it('should return unknown for error with status < 500', () => {
+      const error = { response: { status: 418 } }
       expect(getErrorType(error)).toBe(API_ERROR_TYPES.UNKNOWN)
     })
   })
@@ -100,10 +140,34 @@ describe('services/apiErrorHandler', () => {
       expect(message).toContain('conexión')
     })
 
+    it('should return timeout error message', () => {
+      const error = { code: 'ECONNABORTED' }
+      const message = getErrorMessage(error)
+      expect(message).toContain('tardó demasiado')
+    })
+
     it('should return authentication error message', () => {
       const error = { response: { status: 401 } }
       const message = getErrorMessage(error)
       expect(message).toContain('sesión')
+    })
+
+    it('should return authorization error message', () => {
+      const error = { response: { status: 403 } }
+      const message = getErrorMessage(error)
+      expect(message).toContain('permisos')
+    })
+
+    it('should return not found error message', () => {
+      const error = { response: { status: 404 } }
+      const message = getErrorMessage(error)
+      expect(message).toContain('no fue encontrado')
+    })
+
+    it('should return server error message', () => {
+      const error = { response: { status: 500 } }
+      const message = getErrorMessage(error)
+      expect(message).toContain('servidor')
     })
 
     it('should return validation error message', () => {
@@ -162,6 +226,21 @@ describe('services/apiErrorHandler', () => {
       expect(errorInfo.type).toBe(API_ERROR_TYPES.SERVER)
     })
 
+    it('should include validation errors for validation errors', () => {
+      const error = { response: { status: 422, data: { details: { field: ['Error'] } } } }
+      extractValidationErrors.mockReturnValue({ field: ['Error'] })
+      const errorInfo = handleApiError(error)
+      
+      expect(errorInfo.validationErrors).toEqual({ field: ['Error'] })
+    })
+
+    it('should not include validation errors for non-validation errors', () => {
+      const error = { response: { status: 500 } }
+      const errorInfo = handleApiError(error)
+      
+      expect(errorInfo.validationErrors).toBe(null)
+    })
+
     it('should log error by default', () => {
       const error = { response: { status: 500 } }
       handleApiError(error)
@@ -182,6 +261,20 @@ describe('services/apiErrorHandler', () => {
       handleApiError(error, { onError })
       
       expect(onError).toHaveBeenCalled()
+    })
+
+    it('should not call onError callback if not a function', () => {
+      const error = { response: { status: 500 } }
+      const onError = 'not a function'
+      
+      expect(() => handleApiError(error, { onError })).not.toThrow()
+    })
+
+    it('should handle error without response', () => {
+      const error = { message: 'Network Error' }
+      const errorInfo = handleApiError(error)
+      
+      expect(errorInfo.type).toBe(API_ERROR_TYPES.NETWORK)
     })
   })
 })

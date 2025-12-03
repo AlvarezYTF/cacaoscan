@@ -127,7 +127,7 @@ def handle_report_error(e, username, report_type):
     logger.error(f"Error generando reporte de {report_type} para usuario {username}: {e}")
     return Response({
         'error': ERROR_REPORT_GENERATION,
-        'status': 'error'
+        'details': str(e)
     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -384,6 +384,6 @@ class ReportStatsView(APIView):
             logger.error(f"Error obteniendo estadísticas de reportes para usuario {request.user.username}: {e}")
             return Response({
                 'error': 'Error interno del servidor',
-                'status': 'error'
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

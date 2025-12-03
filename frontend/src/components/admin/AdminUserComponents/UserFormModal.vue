@@ -555,6 +555,15 @@ const closeModal = () => {
   emit('close')
 }
 
+// Expose for testing
+defineExpose({
+  errors,
+  formData,
+  processUserErrors,
+  buildUserData,
+  validateForm
+})
+
 // Watchers
 watch(() => props.user, () => {
   initializeForm()

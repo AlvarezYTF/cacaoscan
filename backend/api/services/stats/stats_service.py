@@ -435,8 +435,23 @@ class StatsService(BaseService):
                 'average_confidence': 0,
                 'average_processing_time_ms': 0
             },
+            'fincas': {
+                'total': 0,
+                'this_week': 0,
+                'this_month': 0
+            },
             'top_regions': [],
             'top_fincas': [],
+            'activity_by_day': {
+                'labels': [],
+                'data': []
+            },
+            'quality_distribution': {
+                'excelente': 0,
+                'buena': 0,
+                'regular': 0,
+                'baja': 0
+            },
             'generated_at': timezone.now().isoformat()
         }
 

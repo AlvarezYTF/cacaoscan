@@ -9,6 +9,7 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 from api.tests.test_constants import TEST_USER_PASSWORD
 
 
@@ -22,7 +23,8 @@ class TestModelMetricsViewsErrorResponse(APITestCase):
             email='test@example.com',
             password=TEST_USER_PASSWORD  # NOSONAR - test credential from constants
         )
-        self.client.force_authenticate(user=self.user)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
     
     def test_model_metrics_invalid_data_uses_details(self):
         """Verifica que los errores de validación usan 'details'."""

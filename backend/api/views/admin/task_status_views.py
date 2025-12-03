@@ -93,6 +93,6 @@ class TaskStatusView(APIView):
             logger.error(f"Error consultando estado de tarea {task_id}: {e}")
             return Response({
                 'error': f'Error consultando estado de tarea: {str(e)}',
-                'status': 'error'
+                'details': f'Error consultando estado de tarea: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

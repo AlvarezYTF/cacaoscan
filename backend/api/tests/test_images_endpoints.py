@@ -6,11 +6,12 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 import io
 
-from api.models import CacaoImage, CacaoPrediction
+from api.models import CacaoImage, CacaoPrediction, Finca
 from api.tests.test_constants import (
     TEST_USER_PASSWORD,
     TEST_ADMIN_PASSWORD,
@@ -43,6 +44,16 @@ class ImagesEndpointsTestCase(APITestCase):
             password=TEST_ADMIN_PASSWORD  # NOSONAR(S2068)
         )
         
+        # Crear finca de prueba
+        self.test_finca = Finca.objects.create(
+            nombre='Finca Test',
+            ubicacion='Vereda Test',
+            municipio='Test Municipio',
+            departamento='Test Departamento',
+            hectareas=5.5,
+            agricultor=self.user
+        )
+        
         # Crear imagen de prueba
         self.test_image = self._create_test_image()
         
@@ -54,7 +65,8 @@ class ImagesEndpointsTestCase(APITestCase):
             file_size=1024,
             file_type='image/jpeg',
             processed=True,
-            finca='Finca Test',
+            finca=self.test_finca,
+            finca_nombre='Finca Test',
             region='Región Test'
         )
         
@@ -89,7 +101,8 @@ class ImagesEndpointsTestCase(APITestCase):
     
     def test_images_list_authenticated(self):
         """Test lista de imágenes para usuario autenticado."""
-        self.client.force_authenticate(user=self.user)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         url = reverse('images-list')
         response = self.client.get(url)
         
@@ -107,7 +120,8 @@ class ImagesEndpointsTestCase(APITestCase):
     
     def test_images_list_with_filters(self):
         """Test lista de imágenes con filtros."""
-        self.client.force_authenticate(user=self.user)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         url = reverse('images-list')
         
         # Filtrar por región
@@ -127,7 +141,8 @@ class ImagesEndpointsTestCase(APITestCase):
     
     def test_images_list_pagination(self):
         """Test paginación en lista de imágenes."""
-        self.client.force_authenticate(user=self.user)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         url = reverse('images-list')
         
         response = self.client.get(url, {'page': 1, 'page_size': 10})
@@ -139,7 +154,8 @@ class ImagesEndpointsTestCase(APITestCase):
     
     def test_image_detail_owner_access(self):
         """Test acceso a detalles de imagen por propietario."""
-        self.client.force_authenticate(user=self.user)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         url = reverse('image-detail', kwargs={'image_id': self.cacao_image.id})
         response = self.client.get(url)
         
@@ -149,7 +165,8 @@ class ImagesEndpointsTestCase(APITestCase):
     
     def test_image_detail_admin_access(self):
         """Test acceso a detalles de imagen por admin."""
-        self.client.force_authenticate(user=self.admin_user)
+        token = RefreshToken.for_user(self.admin_user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         url = reverse('image-detail', kwargs={'image_id': self.cacao_image.id})
         response = self.client.get(url)
         
@@ -158,7 +175,8 @@ class ImagesEndpointsTestCase(APITestCase):
     
     def test_image_detail_not_found(self):
         """Test detalles de imagen no encontrada."""
-        self.client.force_authenticate(user=self.user)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         url = reverse('image-detail', kwargs={'image_id': 99999})
         response = self.client.get(url)
         
@@ -174,7 +192,8 @@ class ImagesEndpointsTestCase(APITestCase):
             password=TEST_OTHER_USER_PASSWORD  # NOSONAR(S2068)
         )
         
-        self.client.force_authenticate(user=other_user)
+        token = RefreshToken.for_user(other_user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         url = reverse('image-detail', kwargs={'image_id': self.cacao_image.id})
         response = self.client.get(url)
         
@@ -182,7 +201,8 @@ class ImagesEndpointsTestCase(APITestCase):
     
     def test_images_stats_authenticated(self):
         """Test estadísticas de imágenes para usuario autenticado."""
-        self.client.force_authenticate(user=self.user)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         url = reverse('images-stats')
         response = self.client.get(url)
         
@@ -203,7 +223,8 @@ class ImagesEndpointsTestCase(APITestCase):
     
     def test_images_stats_data_accuracy(self):
         """Test precisión de datos en estadísticas."""
-        self.client.force_authenticate(user=self.user)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         url = reverse('images-stats')
         response = self.client.get(url)
         

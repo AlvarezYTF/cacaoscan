@@ -174,6 +174,13 @@ describe('catalogosApi', () => {
 
       expect(result).toBeUndefined()
     })
+
+    it('should handle error when getting departamento by code', async () => {
+      const error = new Error('Network error')
+      api.get.mockRejectedValue(error)
+
+      await expect(catalogosApi.getDepartamentoPorCodigo('05')).rejects.toThrow('Network error')
+    })
   })
 
   describe('getMunicipiosByDepartamento', () => {
@@ -190,6 +197,13 @@ describe('catalogosApi', () => {
 
       expect(api.get).toHaveBeenCalledWith('/municipios/', { params: { departamento: 1 } })
       expect(result).toEqual(mockResponse.data)
+    })
+
+    it('should handle error when getting municipios by departamento id', async () => {
+      const error = new Error('Network error')
+      api.get.mockRejectedValue(error)
+
+      await expect(catalogosApi.getMunicipiosByDepartamento(1)).rejects.toThrow('Network error')
     })
   })
 

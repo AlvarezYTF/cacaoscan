@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+"""
+Management command to seed Colombia departments and municipalities.
+"""
 from django.core.management.base import BaseCommand
 from catalogos.models import Departamento, Municipio
 

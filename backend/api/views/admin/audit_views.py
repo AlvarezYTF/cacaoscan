@@ -71,20 +71,20 @@ class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
                     'previous': None,
                 }, status=status.HTTP_200_OK)
             
-            queryset = ActivityLog.objects.all().select_related('usuario').order_by('-timestamp')
+            queryset = ActivityLog.objects.all().select_related('user').order_by('-timestamp')
             
             # Aplicar filtros
             usuario = request.GET.get('usuario', '').strip()
             if usuario:
-                queryset = queryset.filter(usuario__username__icontains=usuario)
+                queryset = queryset.filter(user__username__icontains=usuario)
             
             accion = request.GET.get('accion', '').strip()
             if accion:
-                queryset = queryset.filter(accion=accion)
+                queryset = queryset.filter(action=accion)
             
             modelo = request.GET.get('modelo', '').strip()
             if modelo:
-                queryset = queryset.filter(modelo__icontains=modelo)
+                queryset = queryset.filter(resource_type__icontains=modelo)
             
             ip_address = request.GET.get('ip_address', '').strip()
             if ip_address:
@@ -117,16 +117,16 @@ class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
             def serialize_logs(logs):
                 return [{
                     'id': log.id,
-                    'usuario': log.usuario.username if log.usuario else 'Usuario Anónimo',
-                    'accion': log.accion,
-                    'accion_display': log.get_accion_display(),
-                    'modelo': log.modelo,
-                    'objeto_id': log.objeto_id,
-                    'descripcion': log.descripcion,
+                    'usuario': log.user.username if log.user else 'Usuario Anónimo',
+                    'accion': log.action,
+                    'accion_display': log.action,  # No hay método get_accion_display, usar action directamente
+                    'modelo': log.resource_type,
+                    'objeto_id': log.resource_id,
+                    'descripcion': log.details.get('description', '') if isinstance(log.details, dict) else str(log.details),
                     'ip_address': log.ip_address,
                     'timestamp': log.timestamp.isoformat(),
-                    'datos_antes': log.datos_antes,
-                    'datos_despues': log.datos_despues,
+                    'datos_antes': log.details.get('before', {}) if isinstance(log.details, dict) else {},
+                    'datos_despues': log.details.get('after', {}) if isinstance(log.details, dict) else {},
                 } for log in logs]
             
             return self.paginate_queryset(
@@ -175,12 +175,12 @@ class LoginHistoryListView(PaginationMixin, AdminPermissionMixin, APIView):
             if not self.is_admin_user(request.user):
                 return self.admin_permission_denied('No tienes permisos para acceder al historial de logins')
             
-            queryset = LoginHistory.objects.all().select_related('usuario')
+            queryset = LoginHistory.objects.all().select_related('user')
             
             # Aplicar filtros
             usuario = request.GET.get('usuario', '').strip()
             if usuario:
-                queryset = queryset.filter(usuario__username__icontains=usuario)
+                queryset = queryset.filter(user__username__icontains=usuario)
             
             ip_address = request.GET.get('ip_address', '').strip()
             if ip_address:
@@ -189,7 +189,7 @@ class LoginHistoryListView(PaginationMixin, AdminPermissionMixin, APIView):
             success = request.GET.get('success')
             if success is not None:
                 success_bool = success.lower() in ['true', '1', 'yes']
-                queryset = queryset.filter(success=success_bool)
+                queryset = queryset.filter(login_successful=success_bool)
             
             # Filtros de fecha
             fecha_desde = request.GET.get('fecha_desde')
@@ -218,13 +218,13 @@ class LoginHistoryListView(PaginationMixin, AdminPermissionMixin, APIView):
             def serialize_logins(logins):
                 return [{
                     'id': login.id,
-                    'usuario': login.usuario.username,
+                    'usuario': login.user.username if login.user else 'Usuario Anónimo',
                     'ip_address': login.ip_address,
                     'user_agent': login.user_agent,
                     'login_time': login.login_time.isoformat(),
                     'logout_time': login.logout_time.isoformat() if login.logout_time else None,
                     'session_duration': str(login.session_duration) if login.session_duration else None,
-                    'success': login.success,
+                    'success': login.login_successful,  # Usar el campo real
                     'failure_reason': login.failure_reason,
                 } for login in logins]
             
@@ -272,28 +272,28 @@ class AuditStatsView(AdminPermissionMixin, APIView):
             ).count()
             
             activities_by_action = dict(
-                ActivityLog.objects.values('accion')
+                ActivityLog.objects.values('action')
                 .annotate(count=Count('id'))
-                .values_list('accion', 'count')
+                .values_list('action', 'count')
             )
             
             activities_by_model = dict(
-                ActivityLog.objects.values('modelo')
+                ActivityLog.objects.values('resource_type')
                 .annotate(count=Count('id'))
-                .values_list('modelo', 'count')
+                .values_list('resource_type', 'count')
             )
             
             # Top usuarios más activos
             top_active_users = list(
-                ActivityLog.objects.values('usuario__username')
+                ActivityLog.objects.values('user__username')
                 .annotate(count=Count('id'))
                 .order_by('-count')[:10]
             )
             
             # Estadísticas de LoginHistory
             total_logins = LoginHistory.objects.count()
-            successful_logins = LoginHistory.objects.filter(success=True).count()
-            failed_logins = LoginHistory.objects.filter(success=False).count()
+            successful_logins = LoginHistory.objects.filter(login_successful=True).count()
+            failed_logins = LoginHistory.objects.filter(login_successful=False).count()
             
             # Logins por día (últimos 7 días)
             login_stats_by_day = []

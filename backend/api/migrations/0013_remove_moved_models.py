@@ -1,4 +1,5 @@
 # Generated manually - Remove models that were moved to modular apps
+# -*- coding: utf-8 -*-
 # Models moved:
 # - LoginHistory → audit app
 # - ReporteGenerado → reports app

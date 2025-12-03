@@ -1,4 +1,5 @@
 # Generated manually - Move ModelMetrics from api to training app
+# -*- coding: utf-8 -*-
 # The table already exists as 'api_modelmetrics', so we use db_table to maintain compatibility
 
 from django.conf import settings

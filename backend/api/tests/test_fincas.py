@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
-from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.models import Finca
 from api.tests.test_constants import (
@@ -139,8 +139,7 @@ class FincaAPITest(APITestCase):
             is_superuser=True
         )
         
-        self.token = Token.objects.create(user=self.user)
-        self.admin_token = Token.objects.create(user=self.admin_user)
+        # Authentication tokens will be set in setUp if needed
         
         self.finca_data = {
             'nombre': 'Finca Test',
@@ -153,9 +152,10 @@ class FincaAPITest(APITestCase):
     
     def test_create_finca_success(self):
         """Test de creación exitosa de finca."""
-        self.client.force_authenticate(user=self.user, token=self.token)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         
-        response = self.client.post('/api/fincas/', self.finca_data, format='json')
+        response = self.client.post('/api/v1/fincas/', self.finca_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Finca.objects.count(), 1)
@@ -166,13 +166,14 @@ class FincaAPITest(APITestCase):
     
     def test_create_finca_unauthorized(self):
         """Test de creación de finca sin autenticación."""
-        response = self.client.post('/api/fincas/', self.finca_data, format='json')
+        response = self.client.post('/api/v1/fincas/', self.finca_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
     def test_create_finca_invalid_data(self):
         """Test de creación de finca con datos inválidos."""
-        self.client.force_authenticate(user=self.user, token=self.token)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         
         invalid_data = {
             'nombre': '',  # Nombre vacío
@@ -182,7 +183,7 @@ class FincaAPITest(APITestCase):
             'hectareas': -1  # Hectáreas negativas
         }
         
-        response = self.client.post('/api/fincas/', invalid_data, format='json')
+        response = self.client.post('/api/v1/fincas/', invalid_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('details', response.data)
@@ -215,8 +216,9 @@ class FincaAPITest(APITestCase):
             agricultor=other_user
         )
         
-        self.client.force_authenticate(user=self.user, token=self.token)
-        response = self.client.get('/api/fincas/')
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
+        response = self.client.get('/api/v1/fincas/')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
@@ -249,8 +251,9 @@ class FincaAPITest(APITestCase):
             agricultor=other_user
         )
         
-        self.client.force_authenticate(user=self.admin_user, token=self.admin_token)
-        response = self.client.get('/api/fincas/')
+        token = RefreshToken.for_user(self.admin_user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
+        response = self.client.get('/api/v1/fincas/')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 2)
@@ -266,8 +269,9 @@ class FincaAPITest(APITestCase):
             agricultor=self.user
         )
         
-        self.client.force_authenticate(user=self.user, token=self.token)
-        response = self.client.get(f'/api/fincas/{finca.id}/')
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
+        response = self.client.get(f'/api/v1/fincas/{finca.id}/')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['nombre'], 'Finca Test')
@@ -275,8 +279,9 @@ class FincaAPITest(APITestCase):
     
     def test_finca_detail_not_found(self):
         """Test de obtención de detalles de finca inexistente."""
-        self.client.force_authenticate(user=self.user, token=self.token)
-        response = self.client.get('/api/fincas/999/')
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
+        response = self.client.get('/api/v1/fincas/999/')
         
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
@@ -299,8 +304,9 @@ class FincaAPITest(APITestCase):
             'hectareas': 7.0
         }
         
-        self.client.force_authenticate(user=self.user, token=self.token)
-        response = self.client.put(f'/api/fincas/{finca.id}/update/', update_data, format='json')
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
+        response = self.client.put(f'/api/v1/fincas/{finca.id}/update/', update_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
@@ -309,7 +315,7 @@ class FincaAPITest(APITestCase):
         self.assertEqual(finca.hectareas, 7.0)
     
     def test_finca_delete_success(self):
-        """Test de eliminación exitosa de finca."""
+        """Test de eliminación exitosa de finca (soft delete)."""
         finca = Finca.objects.create(
             nombre='Finca Test',
             ubicacion='Vereda Test',
@@ -319,11 +325,21 @@ class FincaAPITest(APITestCase):
             agricultor=self.user
         )
         
-        self.client.force_authenticate(user=self.user, token=self.token)
-        response = self.client.delete(f'/api/fincas/{finca.id}/delete/')
+        # Verificar que la finca está activa inicialmente
+        self.assertTrue(finca.activa)
+        self.assertEqual(Finca.objects.filter(activa=True).count(), 1)
+        
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
+        response = self.client.delete(f'/api/v1/fincas/{finca.id}/delete/')
         
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Finca.objects.count(), 0)
+        
+        # Verificar soft delete: la finca existe pero está desactivada
+        finca.refresh_from_db()
+        self.assertFalse(finca.activa)
+        self.assertEqual(Finca.objects.count(), 1)  # La finca sigue existiendo
+        self.assertEqual(Finca.objects.filter(activa=True).count(), 0)  # Pero no hay fincas activas
     
     def test_finca_stats_success(self):
         """Test de obtención de estadísticas de finca."""
@@ -336,8 +352,9 @@ class FincaAPITest(APITestCase):
             agricultor=self.user
         )
         
-        self.client.force_authenticate(user=self.user, token=self.token)
-        response = self.client.get(f'/api/fincas/{finca.id}/stats/')
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
+        response = self.client.get(f'/api/v1/fincas/{finca.id}/stats/')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('total_lotes', response.data)
@@ -364,20 +381,21 @@ class FincaAPITest(APITestCase):
             agricultor=self.user
         )
         
-        self.client.force_authenticate(user=self.user, token=self.token)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         
         # Test búsqueda por nombre
-        response = self.client.get('/api/fincas/?search=Test')
+        response = self.client.get('/api/v1/fincas/?search=Test')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
         
         # Test filtro por municipio
-        response = self.client.get('/api/fincas/?municipio=Test Municipio')
+        response = self.client.get('/api/v1/fincas/?municipio=Test Municipio')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
         
         # Test filtro por departamento
-        response = self.client.get('/api/fincas/?departamento=Test Departamento')
+        response = self.client.get('/api/v1/fincas/?departamento=Test Departamento')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
     
@@ -394,10 +412,11 @@ class FincaAPITest(APITestCase):
                 agricultor=self.user
             )
         
-        self.client.force_authenticate(user=self.user, token=self.token)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         
         # Test primera página
-        response = self.client.get('/api/fincas/?page=1&page_size=10')
+        response = self.client.get('/api/v1/fincas/?page=1&page_size=10')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 10)
         self.assertEqual(response.data['count'], 25)
@@ -406,7 +425,7 @@ class FincaAPITest(APITestCase):
         self.assertIsNone(response.data['previous'])
         
         # Test segunda página
-        response = self.client.get('/api/fincas/?page=2&page_size=10')
+        response = self.client.get('/api/v1/fincas/?page=2&page_size=10')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 10)
         self.assertIsNotNone(response.data['next'])

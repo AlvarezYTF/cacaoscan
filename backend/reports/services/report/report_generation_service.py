@@ -54,18 +54,48 @@ class ReportGenerationService(BaseService):
             required_fields = ['tipo_reporte', 'fecha_inicio', 'fecha_fin']
             self.validate_required_fields(report_data, required_fields)
             
-            # Validate dates
-            fecha_inicio = report_data['fecha_inicio']
-            fecha_fin = report_data['fecha_fin']
-            
-            if fecha_inicio > fecha_fin:
+            # Validate and parse dates
+            try:
+                fecha_inicio = report_data['fecha_inicio']
+                fecha_fin = report_data['fecha_fin']
+                
+                # Parse dates if they are strings
+                if isinstance(fecha_inicio, str):
+                    fecha_inicio = datetime.fromisoformat(fecha_inicio.replace('Z', '+00:00'))
+                if isinstance(fecha_fin, str):
+                    fecha_fin = datetime.fromisoformat(fecha_fin.replace('Z', '+00:00'))
+                
+                # Convert to timezone-aware if needed
+                if fecha_inicio.tzinfo is None:
+                    fecha_inicio = timezone.make_aware(fecha_inicio)
+                if fecha_fin.tzinfo is None:
+                    fecha_fin = timezone.make_aware(fecha_fin)
+                
+                if fecha_inicio > fecha_fin:
+                    return ServiceResult.validation_error(
+                        "La fecha de inicio debe ser anterior a la fecha de fin",
+                        details={"field": "fecha_inicio"}
+                    )
+            except (ValueError, TypeError, AttributeError) as e:
                 return ServiceResult.validation_error(
-                    "La fecha de inicio debe ser anterior a la fecha de fin",
-                    details={"field": "fecha_inicio"}
+                    "Formato de fecha inválido. Use formato ISO (YYYY-MM-DD o YYYY-MM-DDTHH:MM:SS)",
+                    details={"field": "fecha_inicio" if 'fecha_inicio' in str(e) else "fecha_fin", "error": str(e)}
                 )
             
             # Generate report data according to type
             report_type = report_data['tipo_reporte']
+            
+            # Validate report type
+            if not report_type or not report_type.strip():
+                return ServiceResult.validation_error(
+                    "El tipo de reporte es requerido",
+                    details={"field": "tipo_reporte"}
+                )
+            
+            # Handle analisis_periodo (alias for analisis_general)
+            if report_type == 'analisis_periodo':
+                report_type = 'analisis_general'
+                report_data['tipo_reporte'] = 'analisis_general'
             
             if report_type == 'analisis_general':
                 report_content = self._generate_general_analysis_report(user, fecha_inicio, fecha_fin)
@@ -91,19 +121,22 @@ class ReportGenerationService(BaseService):
                 return ServiceResult.validation_error(
                     f"Tipo de reporte no válido: {report_type}",
                     details={"field": "tipo_reporte", "allowed_types": [
-                        'analisis_general', 'analisis_por_finca', 'analisis_por_lote', 'estadisticas_usuario'
+                        'analisis_general', 'analisis_periodo', 'analisis_por_finca', 'analisis_por_lote', 'estadisticas_usuario'
                     ]}
                 )
             
             # Create report record
+            # Use original tipo_reporte from report_data (may be 'analisis_periodo')
+            original_tipo_reporte = report_data.get('tipo_reporte', report_type)
             reporte = ReporteGenerado(
                 usuario=user,
-                tipo_reporte=report_type,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin,
+                tipo_reporte=original_tipo_reporte,
+                fecha_solicitud=timezone.now(),
+                fecha_generacion=timezone.now(),
                 parametros=report_data,
-                contenido=report_content,
-                formato='json',
+                titulo=report_data.get('titulo', f'Reporte de {original_tipo_reporte}'),
+                descripcion=report_data.get('descripcion', ''),
+                formato=report_data.get('formato', 'json'),
                 estado='completado'
             )
             
@@ -126,14 +159,17 @@ class ReportGenerationService(BaseService):
             
             return ServiceResult.success(
                 data={
-                    'id': reporte.id,
-                    'tipo_reporte': reporte.tipo_reporte,
-                    'fecha_inicio': reporte.fecha_inicio.isoformat(),
-                    'fecha_fin': reporte.fecha_fin.isoformat(),
-                    'contenido': reporte.contenido,
-                    'created_at': reporte.created_at.isoformat(),
-                    'formato': reporte.formato,
-                    'estado': reporte.estado
+                    'reporte': {
+                        'id': reporte.id,
+                        'tipo_reporte': reporte.tipo_reporte,
+                        'fecha_solicitud': reporte.fecha_solicitud.isoformat() if reporte.fecha_solicitud else None,
+                        'fecha_generacion': reporte.fecha_generacion.isoformat() if reporte.fecha_generacion else None,
+                        'formato': reporte.formato,
+                        'estado': reporte.estado,
+                        'titulo': reporte.titulo,
+                        'descripcion': reporte.descripcion,
+                        'created_at': reporte.created_at.isoformat() if hasattr(reporte, 'created_at') else None
+                    }
                 },
                 message="Reporte generado exitosamente"
             )

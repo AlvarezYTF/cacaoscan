@@ -81,10 +81,11 @@ class ModelsStatusView(APIView):
             status_result = ml_service.get_model_status()
             
             if not status_result.success:
+                error_msg = status_result.error.message if status_result.error else 'Models not loaded'
+                error_details = status_result.error.details if status_result.error and hasattr(status_result.error, 'details') else error_msg
                 return Response({
-                    'error': status_result.error.message,
-                    'status': 'error',
-                    'details': status_result.error.details
+                    'error': error_msg,
+                    'details': error_details
                 }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
             
             status_data = status_result.data
@@ -104,7 +105,7 @@ class ModelsStatusView(APIView):
             logger.error(f"Error getting models status: {e}")
             return Response({
                 'error': 'Error obteniendo estado de modelos',
-                'status': 'error'
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -229,18 +230,88 @@ class LoadModelsView(APIView):
                     'status': 'success'
                 })
             else:
+                error_msg = load_result.error.message if load_result.error else 'Error cargando modelos'
+                error_details = load_result.error.details if load_result.error and hasattr(load_result.error, 'details') else error_msg
                 return Response({
-                    'error': load_result.error.message,
-                    'status': 'error',
-                    'details': load_result.error.details
+                    'error': error_msg,
+                    'details': error_details
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
         except Exception as e:
             logger.error(f"Error loading models: {e}")
             return Response({
                 'error': 'Error cargando modelos',
-                'status': 'error'
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UnloadModelsView(APIView):
+    """
+    Endpoint para descargar modelos de memoria.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Descarga los modelos de memoria",
+        operation_summary="Descargar modelos",
+        responses={
+            200: openapi.Response(
+                description="Modelos descargados exitosamente",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'success': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            401: ErrorResponseSerializer,
+            500: ErrorResponseSerializer,
+        },
+        tags=['ML']
+    )
+    @handle_api_errors(
+        error_message="Error descargando modelos",
+        log_message="Error descargando modelos"
+    )
+    def post(self, request):
+        """Descarga los modelos de memoria."""
+        try:
+            ml_service = MLService()
+            # Intentar descargar modelos (si el método existe)
+            # Si no existe, simplemente invalidar el cache
+            try:
+                result = ml_service.unload_models()
+                if result and hasattr(result, 'success') and result.success:
+                    invalidate_models_status_cache()
+                    return Response(
+                        {
+                            'success': True,
+                            'message': 'Modelos descargados exitosamente'
+                        },
+                        status=status.HTTP_200_OK
+                    )
+            except AttributeError:
+                # Si el método no existe, solo invalidar cache
+                pass
+            
+            invalidate_models_status_cache()
+            return Response(
+                {
+                    'success': True,
+                    'message': 'Cache invalidado (método unload no disponible)'
+                },
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            logger.error(f"Error descargando modelos: {e}")
+            return Response(
+                {
+                    'success': False,
+                    'error': str(e)
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class AutoInitializeView(APIView):

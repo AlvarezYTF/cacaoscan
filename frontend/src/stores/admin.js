@@ -264,6 +264,27 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
+  const createUser = async (userData) => {
+    try {
+      loading.value = true
+      error.value = null
+      
+      const response = await api.post('/auth/users/', userData)
+      
+      // Add user to local state
+      if (response.data) {
+        users.value.unshift(response.data)
+      }
+      
+      return response
+    } catch (err) {
+      error.value = err.response?.data?.detail || 'Error al crear usuario'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   const updateUser = async (userId, userData) => {
     try {
       loading.value = true
@@ -525,6 +546,7 @@ export const useAdminStore = defineStore('admin', () => {
     dismissAlert,
     getAllUsers,
     getUserById,
+    createUser,
     updateUser,
     deleteUser,
     getActivityLogs,

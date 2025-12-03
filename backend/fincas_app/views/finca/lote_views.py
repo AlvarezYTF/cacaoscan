@@ -235,9 +235,12 @@ class LoteListCreateView(PaginationMixin, LotePermissionMixin, APIView):
                 
                 logger.info(f"Lote '{lote.identificador}' creado por usuario {request.user.username}")
                 
-                # Devolver datos completos
+                # Devolver datos completos con formato estándar
                 response_serializer = LoteSerializer(lote, context={'request': request})
-                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+                return Response({
+                    'success': True,
+                    'lote': response_serializer.data
+                }, status=status.HTTP_201_CREATED)
             else:
                 return Response({
                     'error': ERROR_INVALID_INPUT,

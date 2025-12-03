@@ -290,8 +290,23 @@ class IncrementalDataUploadView(IncrementalViewMixin, APIView):
             import pandas as pd
             import io
             
-            # Leer CSV
-            csv_content = csv_file.read().decode('utf-8')
+            # Leer CSV de forma segura desde bytes
+            csv_bytes = csv_file.read()
+            if isinstance(csv_bytes, str):
+                csv_content = csv_bytes
+            else:
+                # Try multiple encodings in order
+                encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+                csv_content = None
+                for encoding in encodings:
+                    try:
+                        csv_content = csv_bytes.decode(encoding)
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                if csv_content is None:
+                    # Last resort: use latin-1 with errors='ignore'
+                    csv_content = csv_bytes.decode('latin-1', errors='ignore')
             df = pd.read_csv(io.StringIO(csv_content))
             
             # Validar columnas requeridas

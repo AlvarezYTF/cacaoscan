@@ -22,7 +22,9 @@ vi.mock('@/services/authApi', () => ({
     verifyEmail: vi.fn(),
     verifyEmailFromToken: vi.fn(),
     resendEmailVerification: vi.fn(),
-    updateProfile: vi.fn()
+    updateProfile: vi.fn(),
+    sendOtp: vi.fn(),
+    verifyOtp: vi.fn()
   }
 }))
 
@@ -473,6 +475,388 @@ describe('Auth Store', () => {
       expect(store.refreshToken).toBe(null)
       expect(store.error).toBe(null)
       expect(localStorageMock.removeItem).toHaveBeenCalled()
+    })
+  })
+
+  describe('verifyEmailFromToken', () => {
+    it('should verify email from token successfully when authenticated', async () => {
+      store.user = { id: 1 }
+      store.accessToken = 'token'
+      authApi.verifyEmailFromToken.mockResolvedValue({
+        success: true,
+        message: 'Email verificado'
+      })
+      authApi.getCurrentUser.mockResolvedValue({ id: 1, is_verified: true })
+      
+      const result = await store.verifyEmailFromToken('token123')
+      
+      expect(result.success).toBe(true)
+      expect(authApi.verifyEmailFromToken).toHaveBeenCalledWith('token123')
+    })
+
+    it('should verify email from token when not authenticated', async () => {
+      store.user = null
+      store.accessToken = null
+      authApi.verifyEmailFromToken.mockResolvedValue({
+        success: true,
+        data: { user: { id: 1, email: 'test@example.com' } }
+      })
+      
+      const result = await store.verifyEmailFromToken('token123')
+      
+      expect(result.success).toBe(true)
+      expect(store.user).toBeDefined()
+    })
+
+    it('should handle verifyEmailFromToken error', async () => {
+      authApi.verifyEmailFromToken.mockRejectedValue({
+        response: {
+          data: { message: 'Invalid token' }
+        }
+      })
+      
+      const result = await store.verifyEmailFromToken('invalid')
+      
+      expect(result.success).toBe(false)
+      expect(store.error).toBe('Invalid token')
+    })
+  })
+
+  describe('resendEmailVerification', () => {
+    it('should resend email verification with provided email', async () => {
+      authApi.resendEmailVerification.mockResolvedValue({
+        success: true,
+        message: 'Email enviado'
+      })
+      
+      const result = await store.resendEmailVerification('test@example.com')
+      
+      expect(result.success).toBe(true)
+      expect(authApi.resendEmailVerification).toHaveBeenCalledWith('test@example.com')
+    })
+
+    it('should resend email verification using user email', async () => {
+      store.user = { email: 'user@example.com' }
+      authApi.resendEmailVerification.mockResolvedValue({
+        success: true,
+        message: 'Email enviado'
+      })
+      
+      const result = await store.resendEmailVerification()
+      
+      expect(result.success).toBe(true)
+      expect(authApi.resendEmailVerification).toHaveBeenCalledWith('user@example.com')
+    })
+
+    it('should throw error when no email provided', async () => {
+      store.user = null
+      
+      const result = await store.resendEmailVerification()
+      
+      expect(result.success).toBe(false)
+      expect(store.error).toBeTruthy()
+    })
+  })
+
+  describe('updateProfile', () => {
+    it('should update profile successfully', async () => {
+      store.user = { id: 1 }
+      store.accessToken = 'token'
+      authApi.updateProfile.mockResolvedValue({
+        data: {
+          user: { id: 1, email: 'updated@example.com' }
+        }
+      })
+      authApi.getCurrentUser.mockResolvedValue({ id: 1, email: 'updated@example.com' })
+      
+      const result = await store.updateProfile({ email: 'updated@example.com' })
+      
+      expect(result.success).toBe(true)
+      expect(authApi.updateProfile).toHaveBeenCalled()
+    })
+
+    it('should handle updateProfile error', async () => {
+      authApi.updateProfile.mockRejectedValue({
+        response: {
+          data: { message: 'Update failed' }
+        }
+      })
+      
+      const result = await store.updateProfile({})
+      
+      expect(result.success).toBe(false)
+      expect(store.error).toBeTruthy()
+    })
+  })
+
+  describe('getRedirectPath', () => {
+    beforeEach(() => {
+      router.currentRoute.value = { path: '/' }
+      // Recreate store to ensure latest version with getRedirectPath
+      setActivePinia(createPinia())
+      store = useAuthStore()
+    })
+
+    it('should have getRedirectPath function', () => {
+      expect(typeof store.getRedirectPath).toBe('function')
+    })
+
+    it('should return admin dashboard path for admin role', () => {
+      store.user = { role: 'admin' }
+      
+      const path = store.getRedirectPath()
+      
+      expect(path).toBe('/admin/dashboard')
+    })
+
+    it('should return analyst path for analyst role', () => {
+      store.user = { role: 'analyst' }
+      
+      const path = store.getRedirectPath()
+      
+      expect(path).toBe('/analisis')
+    })
+
+    it('should return farmer dashboard path for farmer role', () => {
+      store.user = { role: 'farmer' }
+      
+      const path = store.getRedirectPath()
+      
+      expect(path).toBe('/agricultor-dashboard')
+    })
+
+    it('should return current path if already on appropriate path', () => {
+      store.user = { role: 'admin' }
+      router.currentRoute.value = { path: '/admin/dashboard' }
+      
+      const path = store.getRedirectPath()
+      
+      expect(path).toBe('/admin/dashboard')
+    })
+
+    it('should return / if no user', () => {
+      store.user = null
+      
+      const path = store.getRedirectPath()
+      
+      expect(path).toBe('/')
+    })
+  })
+
+  describe('checkSessionTimeout', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      store.user = { id: 1 }
+      store.accessToken = 'token'
+      store.lastActivity = Date.now()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('should not timeout if session is active', () => {
+      const result = store.checkSessionTimeout()
+      
+      expect(result).toBe(false)
+    })
+
+    it('should timeout if session is inactive', async () => {
+      store.lastActivity = Date.now() - (31 * 60 * 1000) // 31 minutes ago
+      router.replace.mockResolvedValue()
+      authApi.logout.mockResolvedValue({})
+      
+      const result = store.checkSessionTimeout()
+      
+      expect(result).toBe(true)
+    })
+  })
+
+  describe('hasPermission', () => {
+    it('should return false when not authenticated', () => {
+      store.user = null
+      store.accessToken = null
+      
+      expect(store.hasPermission('upload_images')).toBe(false)
+    })
+
+    it('should check upload_images permission', () => {
+      store.user = { role: 'farmer', is_verified: true }
+      store.accessToken = 'token'
+      
+      expect(store.hasPermission('upload_images')).toBe(true)
+    })
+
+    it('should check manage_users permission', () => {
+      store.user = { role: 'admin' }
+      store.accessToken = 'token'
+      
+      expect(store.hasPermission('manage_users')).toBe(true)
+      
+      store.user = { role: 'farmer' }
+      expect(store.hasPermission('manage_users')).toBe(false)
+    })
+  })
+
+  describe('sendOtp', () => {
+    it('should send OTP successfully', async () => {
+      authApi.sendOtp.mockResolvedValue({
+        success: true,
+        message: 'OTP enviado'
+      })
+      
+      const result = await store.sendOtp('test@example.com')
+      
+      expect(result.success).toBe(true)
+      expect(authApi.sendOtp).toHaveBeenCalledWith('test@example.com')
+    })
+
+    it('should handle sendOtp error', async () => {
+      authApi.sendOtp.mockRejectedValue({
+        response: {
+          data: { message: 'Error sending OTP' }
+        }
+      })
+      
+      const result = await store.sendOtp('test@example.com')
+      
+      expect(result.success).toBe(false)
+      expect(store.error).toBeTruthy()
+    })
+  })
+
+  describe('verifyOtp', () => {
+    it('should verify OTP successfully', async () => {
+      store.user = { id: 1 }
+      store.accessToken = 'token'
+      authApi.verifyOtp.mockResolvedValue({
+        success: true,
+        user: { id: 1, is_verified: true }
+      })
+      
+      const result = await store.verifyOtp('test@example.com', '123456')
+      
+      expect(result.success).toBe(true)
+      expect(authApi.verifyOtp).toHaveBeenCalledWith('test@example.com', '123456')
+    })
+
+    it('should handle verifyOtp error', async () => {
+      authApi.verifyOtp.mockRejectedValue({
+        response: {
+          data: { message: 'Invalid OTP' }
+        }
+      })
+      
+      const result = await store.verifyOtp('test@example.com', 'invalid')
+      
+      expect(result.success).toBe(false)
+      expect(store.error).toBeTruthy()
+    })
+  })
+
+  describe('register edge cases', () => {
+    it('should handle registration with legacy token format', async () => {
+      const userData = { email: 'new@example.com', password: 'password123' }
+      authApi.register.mockResolvedValue({
+        success: true,
+        token: 'legacy-token',
+        refresh: 'legacy-refresh',
+        user: { id: 1, email: 'new@example.com' }
+      })
+      router.push.mockResolvedValue()
+      
+      const result = await store.register(userData)
+      
+      expect(result.success).toBe(true)
+      expect(store.accessToken).toBe('legacy-token')
+    })
+
+    it('should handle registration with access/refresh format', async () => {
+      const userData = { email: 'new@example.com', password: 'password123' }
+      authApi.register.mockResolvedValue({
+        success: true,
+        access: 'access-token',
+        refresh: 'refresh-token'
+      })
+      authApi.getCurrentUser.mockResolvedValue({ id: 1, email: 'new@example.com' })
+      router.push.mockResolvedValue()
+      
+      const result = await store.register(userData)
+      
+      expect(result.success).toBe(true)
+      expect(store.accessToken).toBe('access-token')
+    })
+  })
+
+  describe('refreshAccessToken edge cases', () => {
+    it('should handle refresh token expiration', async () => {
+      store.refreshToken = 'expired-token'
+      authApi.refreshAccessToken.mockRejectedValue({
+        response: { status: 401 }
+      })
+      router.replace.mockResolvedValue()
+      
+      await expect(store.refreshAccessToken()).rejects.toBeDefined()
+      expect(router.replace).toHaveBeenCalled()
+    })
+
+    it('should handle refresh token 403 error', async () => {
+      store.refreshToken = 'invalid-token'
+      authApi.refreshAccessToken.mockRejectedValue({
+        response: { status: 403 }
+      })
+      router.replace.mockResolvedValue()
+      
+      await expect(store.refreshAccessToken()).rejects.toBeDefined()
+    })
+  })
+
+  describe('computed properties edge cases', () => {
+    it('should compute userFullName with missing parts', () => {
+      store.user = { first_name: 'John' }
+      expect(store.userFullName).toBe('John')
+      
+      store.user = { last_name: 'Doe' }
+      expect(store.userFullName).toBe('Doe')
+      
+      store.user = {}
+      expect(store.userFullName).toBe('')
+    })
+
+    it('should compute userInitials with missing parts', () => {
+      store.user = { first_name: 'John' }
+      expect(store.userInitials).toBe('J')
+      
+      store.user = { last_name: 'Doe' }
+      expect(store.userInitials).toBe('D')
+    })
+
+    it('should compute canUploadImages correctly', () => {
+      store.user = { role: 'farmer', is_verified: true }
+      store.accessToken = 'token'
+      expect(store.canUploadImages).toBe(true)
+      
+      store.user = { role: 'farmer', is_verified: false }
+      expect(store.canUploadImages).toBe(false)
+      
+      store.user = { role: 'admin', is_verified: true }
+      expect(store.canUploadImages).toBe(true)
+    })
+  })
+
+  describe('setTokens edge cases', () => {
+    it('should handle string token', () => {
+      store.setTokens('string-token')
+      
+      expect(store.accessToken).toBe('string-token')
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('access_token', 'string-token')
+    })
+
+    it('should handle tokens without refresh', () => {
+      store.setTokens({ access: 'access-only' })
+      
+      expect(store.accessToken).toBe('access-only')
+      expect(store.refreshToken).toBe(null)
     })
   })
 })

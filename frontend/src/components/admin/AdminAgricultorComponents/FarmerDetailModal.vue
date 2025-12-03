@@ -406,7 +406,9 @@ export default {
       closeModal,
       openModal,
       fincasList,
-      persona
+      persona,
+      loadFarmersFincas,
+      loadFarmerDetails
     };
   }
 };

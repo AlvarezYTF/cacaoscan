@@ -197,4 +197,54 @@ describe('SessionExpiredModal', () => {
 
     expect(typeof wrapper.vm.show).toBe('function')
   })
+
+  it('should clear interval when redirecting to login', async () => {
+    wrapper = mount(SessionExpiredModal, {
+      global: {
+        stubs: { 'router-link': true }
+      }
+    })
+
+    wrapper.vm.show()
+    await wrapper.vm.$nextTick()
+    await vi.runOnlyPendingTimersAsync()
+
+    vi.advanceTimersByTime(5000)
+    await wrapper.vm.$nextTick()
+    await vi.runOnlyPendingTimersAsync()
+    vi.advanceTimersByTime(300)
+    await vi.runOnlyPendingTimersAsync()
+
+    expect(mockRouter.push).toHaveBeenCalledWith('/login')
+  })
+
+  it('should handle update:show event', async () => {
+    wrapper = mount(SessionExpiredModal, {
+      global: {
+        stubs: { 'router-link': true }
+      }
+    })
+
+    wrapper.vm.show()
+    await wrapper.vm.$nextTick()
+    await vi.runOnlyPendingTimersAsync()
+
+    wrapper.vm.handleUpdateShow(false)
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.vm.visible).toBe(false)
+  })
+
+  it('should clean up interval on unmount', () => {
+    wrapper = mount(SessionExpiredModal, {
+      global: {
+        stubs: { 'router-link': true }
+      }
+    })
+
+    wrapper.vm.show()
+    wrapper.unmount()
+
+    expect(wrapper.vm.countdownInterval).toBeNull()
+  })
 })

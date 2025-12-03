@@ -28,8 +28,8 @@ class CacaoImage(TimeStampedModel):
         related_name='cacao_images',
         help_text="Finca a la que pertenece esta imagen"
     )
-    finca_nombre = models.CharField(max_length=200, blank=True, help_text="Nombre de la finca (campo de respaldo)")
-    region = models.CharField(max_length=100, blank=True)
+    finca_nombre = models.CharField(max_length=200, blank=True, default="", help_text="Nombre de la finca (campo de respaldo)")
+    region = models.CharField(max_length=100, blank=True, default="")
     lote = models.ForeignKey(
         'fincas_app.Lote', 
         on_delete=models.SET_NULL, 
@@ -38,14 +38,14 @@ class CacaoImage(TimeStampedModel):
         related_name='cacao_images',
         help_text="Lote al que pertenece esta imagen"
     )
-    variedad = models.CharField(max_length=100, blank=True)
-    fecha_cosecha = models.DateField(blank=True)
-    notas = models.TextField(blank=True)
+    variedad = models.CharField(max_length=100, blank=True, default="")
+    fecha_cosecha = models.DateField(blank=True, null=True)
+    notas = models.TextField(blank=True, default="")
     
     # Información técnica del archivo
-    file_name = models.CharField(max_length=255, blank=True)
-    file_size = models.PositiveIntegerField(blank=True)
-    file_type = models.CharField(max_length=50, blank=True)
+    file_name = models.CharField(max_length=255, blank=True, default="")
+    file_size = models.PositiveIntegerField(blank=True, null=True)
+    file_type = models.CharField(max_length=50, blank=True, default="")
     
     class Meta:
         verbose_name = 'Imagen de Cacao'
@@ -71,6 +71,11 @@ class CacaoImage(TimeStampedModel):
     def has_prediction(self):
         """Verificar si tiene predicción asociada."""
         return hasattr(self, 'prediction') and self.prediction is not None
+    
+    @property
+    def filename(self):
+        """Obtener nombre del archivo (compatibilidad con tests)."""
+        return self.file_name if self.file_name else (self.image.name if self.image else "")
 
 
 class CacaoPrediction(models.Model):
@@ -78,12 +83,13 @@ class CacaoPrediction(models.Model):
     Modelo para almacenar resultados de predicciones ML de granos de cacao.
     """
     image = models.OneToOneField(CacaoImage, on_delete=models.CASCADE, related_name='prediction')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='predictions', null=True, blank=True, help_text="Usuario que realizó la predicción")
     
     # Predicciones de dimensiones (en mm)
-    alto_mm = models.DecimalField(max_digits=8, decimal_places=2)
-    ancho_mm = models.DecimalField(max_digits=8, decimal_places=2)
-    grosor_mm = models.DecimalField(max_digits=8, decimal_places=2)
-    peso_g = models.DecimalField(max_digits=8, decimal_places=2)
+    alto_mm = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    ancho_mm = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    grosor_mm = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    peso_g = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     
     # Scores de confianza (0.0 a 1.0)
     confidence_alto = models.DecimalField(max_digits=4, decimal_places=3, default=0.0)
@@ -91,8 +97,25 @@ class CacaoPrediction(models.Model):
     confidence_grosor = models.DecimalField(max_digits=4, decimal_places=3, default=0.0)
     confidence_peso = models.DecimalField(max_digits=4, decimal_places=3, default=0.0)
     
+    # Campos adicionales requeridos por tests
+    quality_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Puntuación de calidad")
+    maturity_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Porcentaje de madurez")
+    defects_count = models.PositiveIntegerField(default=0, help_text="Número de defectos detectados")
+    analysis_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pendiente'),
+            ('processing', 'Procesando'),
+            ('completed', 'Completado'),
+            ('failed', 'Fallido'),
+        ],
+        default='pending',
+        help_text="Estado del análisis"
+    )
+    processing_time = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, help_text="Tiempo de procesamiento en segundos")
+    
     # Metadatos de procesamiento
-    processing_time_ms = models.PositiveIntegerField(help_text="Tiempo de procesamiento en milisegundos")
+    processing_time_ms = models.PositiveIntegerField(null=True, blank=True, help_text="Tiempo de procesamiento en milisegundos")
     crop_url = models.URLField(max_length=500, blank=True, null=True, help_text="URL del crop procesado")
     
     # Información técnica del modelo
@@ -106,6 +129,17 @@ class CacaoPrediction(models.Model):
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     
+    # Alias para compatibilidad con tests
+    @property
+    def created(self):
+        """Alias para created_at (compatibilidad con tests)."""
+        return self.created_at
+    
+    @created.setter
+    def created(self, value):
+        """Setter para created (compatibilidad con tests)."""
+        self.created_at = value
+    
     class Meta:
         verbose_name = 'Predicción de Cacao'
         verbose_name_plural = 'Predicciones de Cacao'
@@ -117,7 +151,10 @@ class CacaoPrediction(models.Model):
         ]
     
     def __str__(self):
-        return f"Predicción {self.id} - {self.image.user.username} ({self.created_at.strftime('%Y-%m-%d %H:%M')})"
+        """Representación string de la predicción."""
+        filename = self.image.filename if hasattr(self.image, 'filename') else f"Imagen {self.image.id}"
+        quality = f"{self.quality_score}" if self.quality_score else "N/A"
+        return f"Predicción para {filename} - Calidad: {quality}"
     
     @property
     def average_confidence(self):

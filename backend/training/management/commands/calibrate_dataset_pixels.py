@@ -86,8 +86,21 @@ class Command(BaseCommand):
         existing_records = {}
         if calibration_file.exists():
             try:
-                with open(calibration_file, 'r', encoding='utf-8') as f:
-                    existing_data = json.load(f)
+                with open(calibration_file, 'rb') as f:
+                    raw_content = f.read()
+                    # Try multiple encodings in order
+                    encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+                    text_content = None
+                    for encoding in encodings:
+                        try:
+                            text_content = raw_content.decode(encoding)
+                            break
+                        except UnicodeDecodeError:
+                            continue
+                    if text_content is None:
+                        # Last resort: use utf-8 with errors='ignore'
+                        text_content = raw_content.decode('utf-8', errors='ignore')
+                    existing_data = json.loads(text_content)
                 for record in existing_data.get('calibration_records', []):
                     existing_records[record['id']] = record
                 self.stdout.write(f'📚 Cargados {len(existing_records)} registros de calibración existentes')

@@ -33,7 +33,7 @@ class FincaSerializerMixin:
         except Exception as e:
             return None, self.handle_finca_error(e, "obteniendo finca", finca_id)
     
-    def serialize_finca_response(self, finca, status_code=status.HTTP_200_OK, serializer_class=FincaSerializer):
+    def serialize_finca_response(self, finca, status_code=status.HTTP_200_OK, serializer_class=FincaSerializer, include_success=False):
         """
         Serialize finca and return response.
         
@@ -41,11 +41,17 @@ class FincaSerializerMixin:
             finca: Finca instance
             status_code: HTTP status code
             serializer_class: Serializer class to use
+            include_success: Whether to include success flag in response
             
         Returns:
             Response with serialized finca data
         """
         serializer = serializer_class(finca, context={'request': self.request})
+        if include_success:
+            return Response({
+                'success': True,
+                'finca': serializer.data
+            }, status=status_code)
         return Response(serializer.data, status=status_code)
     
     def create_finca_response(self, finca, serializer_class=FincaSerializer):
@@ -57,9 +63,13 @@ class FincaSerializerMixin:
             serializer_class: Serializer class to use
             
         Returns:
-            Response with serialized finca data
+            Response with serialized finca data and success flag
         """
-        return self.serialize_finca_response(finca, status.HTTP_201_CREATED, serializer_class)
+        serializer = serializer_class(finca, context={'request': self.request})
+        return Response({
+            'success': True,
+            'finca': serializer.data
+        }, status=status.HTTP_201_CREATED)
     
     def update_finca_response(self, finca, serializer_class=FincaSerializer):
         """
@@ -70,7 +80,11 @@ class FincaSerializerMixin:
             serializer_class: Serializer class to use
             
         Returns:
-            Response with serialized finca data
+            Response with serialized finca data and success flag
         """
-        return self.serialize_finca_response(finca, status.HTTP_200_OK, serializer_class)
+        serializer = serializer_class(finca, context={'request': self.request})
+        return Response({
+            'success': True,
+            'finca': serializer.data
+        }, status=status.HTTP_200_OK)
 

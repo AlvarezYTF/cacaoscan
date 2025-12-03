@@ -29,7 +29,7 @@ class TaskStatusViewTest(APITestCase):
     
     def test_task_status_requires_authentication(self):
         """Test that task status requires authentication."""
-        url = reverse('admin-task-status', kwargs={'task_id': 'test-task-id'})
+        url = reverse('task-status', kwargs={'task_id': 'test-task-id'})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
@@ -43,7 +43,7 @@ class TaskStatusViewTest(APITestCase):
         token = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
-        url = reverse('admin-task-status', kwargs={'task_id': 'test-task-id'})
+        url = reverse('task-status', kwargs={'task_id': 'test-task-id'})
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -61,7 +61,7 @@ class TaskStatusViewTest(APITestCase):
         token = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
-        url = reverse('admin-task-status', kwargs={'task_id': 'test-task-id'})
+        url = reverse('task-status', kwargs={'task_id': 'test-task-id'})
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -79,7 +79,7 @@ class TaskStatusViewTest(APITestCase):
         token = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
-        url = reverse('admin-task-status', kwargs={'task_id': 'test-task-id'})
+        url = reverse('task-status', kwargs={'task_id': 'test-task-id'})
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -97,7 +97,7 @@ class TaskStatusViewTest(APITestCase):
         token = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
-        url = reverse('admin-task-status', kwargs={'task_id': 'test-task-id'})
+        url = reverse('task-status', kwargs={'task_id': 'test-task-id'})
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -50,24 +50,52 @@ class CacaoImageSerializer(serializers.ModelSerializer):
     file_size_mb = serializers.ReadOnlyField()
     has_prediction = serializers.ReadOnlyField()
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    # Alias field for compatibility with tests
+    filename = serializers.CharField(source='file_name', read_only=True)
+    # Handle image.url for SimpleUploadedFile compatibility
+    image_url = serializers.SerializerMethodField()
     
     class Meta:
         model = CacaoImage
         fields = (
-            'id', 'user', 'user_name', 'image', 'uploaded_at', 'processed',
+            'id', 'user', 'user_name', 'image', 'image_url', 'uploaded_at', 'processed',
             'finca', 'region', 'lote_id', 'variedad', 'fecha_cosecha', 'notas',
-            'file_name', 'file_size', 'file_size_mb', 'file_type',
+            'file_name', 'filename', 'file_size', 'file_size_mb', 'file_type',
             'created_at', 'updated_at', 'has_prediction'
         )
         read_only_fields = (
-            'id', 'user', 'uploaded_at', 'processed', 'file_name', 'file_size',
-            'file_type', 'created_at', 'updated_at', 'file_size_mb', 'has_prediction'
+            'id', 'user', 'uploaded_at', 'processed', 'file_name', 'filename', 'file_size',
+            'file_type', 'created_at', 'updated_at', 'file_size_mb', 'has_prediction', 'image_url'
         )
+    
+    def get_image_url(self, obj):
+        """Get image URL, handling SimpleUploadedFile."""
+        if obj.image:
+            # Handle SimpleUploadedFile (used in tests)
+            from django.core.files.uploadedfile import SimpleUploadedFile
+            if isinstance(obj.image, SimpleUploadedFile):
+                # For SimpleUploadedFile, return the name
+                return obj.image.name if hasattr(obj.image, 'name') else None
+            
+            # Handle regular FileField
+            if hasattr(obj.image, 'url'):
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.image.url)
+                return obj.image.url
+        return None
     
     def validate_fecha_cosecha(self, value):
         """Validate harvest date."""
-        if value and value.year < 1900:
+        if value is None:
+            return value
+        if value.year < 1900:
             raise serializers.ValidationError("La fecha de cosecha debe ser posterior a 1900.")
+        # Validate date is not in the future
+        from django.utils import timezone
+        today = timezone.now().date()
+        if value > today:
+            raise serializers.ValidationError("La fecha de cosecha no puede ser futura.")
         return value
 
 

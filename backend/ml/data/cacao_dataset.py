@@ -123,8 +123,21 @@ class CacaoDataset(Dataset):
                 f"Pixel calibration file not found: {calibration_file}"
             )
 
-        with open(calibration_file, 'r', encoding='utf-8') as file:
-            calibration_data = json.load(file)
+        with open(calibration_file, 'rb') as file:
+            raw_content = file.read()
+            # Try multiple encodings in order
+            encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+            text_content = None
+            for encoding in encodings:
+                try:
+                    text_content = raw_content.decode(encoding)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            if text_content is None:
+                # Last resort: use utf-8 with errors='ignore'
+                text_content = raw_content.decode('utf-8', errors='ignore')
+            calibration_data = json.loads(text_content)
 
         calibration_records = calibration_data.get("calibration_records", [])
         calibration_by_id = {rec["id"]: rec for rec in calibration_records}

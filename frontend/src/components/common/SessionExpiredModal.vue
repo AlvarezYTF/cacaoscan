@@ -66,7 +66,7 @@ const visible = ref(false)
 const countdown = ref(5)
 const router = useRouter()
 const authStore = useAuthStore()
-let countdownInterval = null
+const countdownInterval = ref(null)
 
 // Función para mostrar el modal (expuesta al componente)
 const show = () => {
@@ -74,12 +74,12 @@ const show = () => {
   countdown.value = 5
   
   // Limpiar intervalo anterior si existe
-  if (countdownInterval) {
-    clearInterval(countdownInterval)
+  if (countdownInterval.value) {
+    clearInterval(countdownInterval.value)
   }
   
   // Contador regresivo
-  countdownInterval = setInterval(() => {
+  countdownInterval.value = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
       redirectToLogin()
@@ -89,9 +89,9 @@ const show = () => {
 
 function redirectToLogin() {
   // Limpiar intervalo
-  if (countdownInterval) {
-    clearInterval(countdownInterval)
-    countdownInterval = null
+  if (countdownInterval.value) {
+    clearInterval(countdownInterval.value)
+    countdownInterval.value = null
   }
   
   visible.value = false
@@ -109,14 +109,16 @@ const handleUpdateShow = (value) => {
 
 // Limpiar intervalo al desmontar
 onUnmounted(() => {
-  if (countdownInterval) {
-    clearInterval(countdownInterval)
+  if (countdownInterval.value) {
+    clearInterval(countdownInterval.value)
+    countdownInterval.value = null
   }
 })
 
-// Exponer la función show para uso externo
+// Exponer la función show y countdownInterval para uso externo
 defineExpose({
-  show
+  show,
+  countdownInterval
 })
 </script>
 

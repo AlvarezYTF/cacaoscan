@@ -42,7 +42,7 @@ class ActivityLogListViewTest(APITestCase):
             email=TEST_ADMIN_EMAIL,
             password=TEST_ADMIN_PASSWORD
         )
-        self.url = reverse('admin-activity-logs')
+        self.url = reverse('activity-logs-list')
     
     def test_activity_log_list_requires_authentication(self):
         """Test that activity log list requires authentication."""
@@ -60,11 +60,25 @@ class ActivityLogListViewTest(APITestCase):
     @patch('api.views.admin.audit_views.ActivityLog')
     def test_activity_log_list_success(self, mock_activity_log):
         """Test successful activity log list retrieval."""
+        from unittest.mock import MagicMock
+        
         token = RefreshToken.for_user(self.admin_user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
-        mock_queryset = Mock()
-        mock_queryset.select_related.return_value.order_by.return_value = []
+        # Crear un mock queryset que funcione con Django's Paginator
+        # El queryset debe ser iterable y tener count()
+        mock_queryset = MagicMock()
+        mock_queryset.__iter__ = lambda self: iter([])
+        mock_queryset.__len__ = lambda self: 0
+        mock_queryset.count = Mock(return_value=0)
+        
+        # Configurar encadenamiento de métodos: all() -> select_related() -> order_by()
+        mock_ordered = MagicMock()
+        mock_ordered.__iter__ = lambda self: iter([])
+        mock_ordered.__len__ = lambda self: 0
+        mock_ordered.count = Mock(return_value=0)
+        mock_queryset.select_related.return_value.order_by.return_value = mock_ordered
+        
         mock_activity_log.objects.all.return_value = mock_queryset
         
         response = self.client.get(self.url)
@@ -151,7 +165,7 @@ class LoginHistoryListViewTest(APITestCase):
             email=TEST_ADMIN_EMAIL,
             password=TEST_ADMIN_PASSWORD
         )
-        self.url = reverse('admin-login-history')
+        self.url = reverse('login-history-list')
     
     def test_login_history_list_requires_authentication(self):
         """Test that login history list requires authentication."""
@@ -231,7 +245,7 @@ class AuditStatsViewTest(APITestCase):
             email=TEST_ADMIN_EMAIL,
             password=TEST_ADMIN_PASSWORD
         )
-        self.url = reverse('admin-audit-stats')
+        self.url = reverse('audit-stats')
     
     def test_audit_stats_requires_authentication(self):
         """Test that audit stats requires authentication."""

@@ -16,6 +16,13 @@ from .config_views import (
 from .task_status_views import (
     TaskStatusView,
 )
+from .email_views import (
+    EmailStatusView,
+    SendTestEmailView,
+    SendBulkNotificationView,
+    EmailTemplatePreviewView,
+    EmailLogsView,
+)
 
 __all__ = [
     'ActivityLogListView',
@@ -27,5 +34,10 @@ __all__ = [
     'SystemMLConfigView',
     'SystemInfoView',
     'TaskStatusView',
+    'EmailStatusView',
+    'SendTestEmailView',
+    'SendBulkNotificationView',
+    'EmailTemplatePreviewView',
+    'EmailLogsView',
 ]
 

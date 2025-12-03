@@ -85,7 +85,7 @@ class ImagesListView(PaginationMixin, APIView, ImagePermissionMixin):
             queryset = queryset.filter(region__icontains=region)
         
         if finca:
-            queryset = queryset.filter(finca__icontains=finca)
+            queryset = queryset.filter(finca__nombre__icontains=finca)
         
         if processed is not None:
             processed_bool = processed.lower() in ['true', '1', 'yes']

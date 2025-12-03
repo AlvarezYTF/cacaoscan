@@ -13,7 +13,7 @@ from ..utils.model_imports import get_model_safely
 logger = logging.getLogger("cacaoscan.api.tasks.ml")
 
 # Import CacaoDatasetLoader safely
-CacaoDatasetLoader = get_model_safely('ml.dataset.loader.CacaoDatasetLoader')
+CacaoDatasetLoader = get_model_safely('ml.data.dataset_loader.CacaoDatasetLoader')
 
 
 @shared_task(bind=True, name='api.tasks.ml.validate_dataset')

@@ -228,45 +228,61 @@ class CacaoImageModelTest(TestCase):
     
     def test_image_creation(self):
         """Test de creación de imagen."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        
+        test_image = SimpleUploadedFile(
+            'test_image.jpg',
+            b'fake image content',
+            content_type='image/jpeg'
+        )
         image = CacaoImage.objects.create(
             user=self.user,
-            filename='test_image.jpg',
-            file_path='/path/to/test_image.jpg',
+            image=test_image,
+            file_name='test_image.jpg',
             file_size=1024,
-            image_width=800,
-            image_height=600,
-            upload_status='completed'
+            file_type='image/jpeg',
+            processed=True
         )
         
         self.assertEqual(image.user, self.user)
-        self.assertEqual(image.filename, 'test_image.jpg')
-        self.assertEqual(image.file_path, '/path/to/test_image.jpg')
+        self.assertEqual(image.file_name, 'test_image.jpg')
         self.assertEqual(image.file_size, 1024)
-        self.assertEqual(image.image_width, 800)
-        self.assertEqual(image.image_height, 600)
-        self.assertEqual(image.upload_status, 'completed')
+        self.assertEqual(image.file_type, 'image/jpeg')
+        self.assertEqual(image.processed, True)
     
     def test_image_defaults(self):
         """Test de valores por defecto de imagen."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        
+        test_image = SimpleUploadedFile(
+            'test_image.jpg',
+            b'fake image content',
+            content_type='image/jpeg'
+        )
         image = CacaoImage.objects.create(
             user=self.user,
-            filename='test_image.jpg'
+            image=test_image,
+            file_name='test_image.jpg'
         )
         
-        self.assertEqual(image.upload_status, 'pending')
-        self.assertIsNone(image.file_size)
-        self.assertIsNone(image.image_width)
-        self.assertIsNone(image.image_height)
+        self.assertEqual(image.processed, False)
         self.assertIsNotNone(image.uploaded_at)
     
     def test_str_representation(self):
         """Test de representación string del modelo."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        
+        test_image = SimpleUploadedFile(
+            'test_image.jpg',
+            b'fake image content',
+            content_type='image/jpeg'
+        )
         image = CacaoImage.objects.create(
             user=self.user,
-            filename='test_image.jpg'
+            image=test_image
         )
         
-        expected_str = f"Imagen {image.filename} de {self.user.username}"
+        expected_str = f"Imagen {image.id} - {self.user.username} ({image.uploaded_at.strftime('%Y-%m-%d')})"
         self.assertEqual(str(image), expected_str)
 
 
@@ -282,9 +298,17 @@ class CacaoPredictionModelTest(TestCase):
             email=TEST_USER_EMAIL,
             password=user_credential
         )
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        
+        test_image = SimpleUploadedFile(
+            'test_image.jpg',
+            b'fake image content',
+            content_type='image/jpeg'
+        )
         self.image = CacaoImage.objects.create(
             user=self.user,
-            filename='test_image.jpg'
+            image=test_image,
+            file_name='test_image.jpg'
         )
     
     def test_prediction_creation(self):
@@ -352,21 +376,19 @@ class FincaModelTest(TestCase):
         finca = Finca.objects.create(
             nombre='Finca Test',
             ubicacion='Test Location',
-            area_total=Decimal('15.5'),
-            propietario=self.user,
+            municipio='Test Municipio',
+            departamento='Test Departamento',
+            hectareas=Decimal('15.5'),
+            agricultor=self.user,
             descripcion='Test farm description',
             coordenadas_lat=Decimal('0.0'),
-            coordenadas_lng=Decimal('0.0'),
-            altitud=100,
-            tipo_suelo='arcilloso',
-            clima='tropical',
-            estado='activa'
+            coordenadas_lng=Decimal('0.0')
         )
         
         self.assertEqual(finca.nombre, 'Finca Test')
         self.assertEqual(finca.ubicacion, 'Test Location')
-        self.assertEqual(finca.area_total, Decimal('15.5'))
-        self.assertEqual(finca.propietario, self.user)
+        self.assertEqual(finca.hectareas, Decimal('15.5'))
+        self.assertEqual(finca.agricultor, self.user)
         self.assertEqual(finca.descripcion, 'Test farm description')
         self.assertEqual(finca.coordenadas_lat, Decimal('0.0'))
         self.assertEqual(finca.coordenadas_lng, Decimal('0.0'))
@@ -379,21 +401,29 @@ class FincaModelTest(TestCase):
         """Test de valores por defecto de finca."""
         finca = Finca.objects.create(
             nombre='Finca Test',
-            propietario=self.user
+            ubicacion='Test Location',
+            municipio='Test Municipio',
+            departamento='Test Departamento',
+            hectareas=Decimal('10.0'),
+            agricultor=self.user
         )
         
-        self.assertEqual(finca.estado, 'activa')
-        self.assertIsNotNone(finca.fecha_creacion)
-        self.assertIsNotNone(finca.fecha_actualizacion)
+        self.assertEqual(finca.activa, True)
+        self.assertIsNotNone(finca.created_at)
+        self.assertIsNotNone(finca.updated_at)
     
     def test_str_representation(self):
         """Test de representación string del modelo."""
         finca = Finca.objects.create(
             nombre='Finca Test',
-            propietario=self.user
+            ubicacion='Test Location',
+            municipio='Test Municipio',
+            departamento='Test Departamento',
+            hectareas=Decimal('10.0'),
+            agricultor=self.user
         )
         
-        expected_str = f"Finca Test - {self.user.username}"
+        expected_str = f"Finca Test - Test Municipio, Test Departamento"
         self.assertEqual(str(finca), expected_str)
 
 
@@ -411,8 +441,11 @@ class LoteModelTest(TestCase):
         )
         self.finca = Finca.objects.create(
             nombre='Finca Test',
-            propietario=self.user,
-            area_total=Decimal('20.0')
+            ubicacion='Test Location',
+            municipio='Test Municipio',
+            departamento='Test Departamento',
+            hectareas=Decimal('20.0'),
+            agricultor=self.user
         )
     
     def test_lote_creation(self):
@@ -490,36 +523,36 @@ class NotificationModelTest(TestCase):
         """Test de creación de notificación."""
         notification = Notification.objects.create(
             user=self.user,
-            title='Test Notification',
-            message='This is a test notification',
-            notification_type='info',
-            is_read=False
+            titulo='Test Notification',
+            mensaje='This is a test notification',
+            tipo='info',
+            leida=False
         )
         
         self.assertEqual(notification.user, self.user)
-        self.assertEqual(notification.title, 'Test Notification')
-        self.assertEqual(notification.message, 'This is a test notification')
-        self.assertEqual(notification.notification_type, 'info')
-        self.assertFalse(notification.is_read)
+        self.assertEqual(notification.titulo, 'Test Notification')
+        self.assertEqual(notification.mensaje, 'This is a test notification')
+        self.assertEqual(notification.tipo, 'info')
+        self.assertFalse(notification.leida)
     
     def test_notification_defaults(self):
         """Test de valores por defecto de notificación."""
         notification = Notification.objects.create(
             user=self.user,
-            title='Test Notification',
-            message='Test message'
+            titulo='Test Notification',
+            mensaje='Test message'
         )
         
-        self.assertEqual(notification.notification_type, 'info')
-        self.assertFalse(notification.is_read)
-        self.assertIsNotNone(notification.created_at)
+        self.assertEqual(notification.tipo, 'info')
+        self.assertFalse(notification.leida)
+        self.assertIsNotNone(notification.fecha_creacion)
     
     def test_str_representation(self):
         """Test de representación string del modelo."""
         notification = Notification.objects.create(
             user=self.user,
-            title='Test Notification',
-            message='Test message'
+            titulo='Test Notification',
+            mensaje='Test message'
         )
         
         expected_str = f"Notificación para {self.user.username}: Test Notification"

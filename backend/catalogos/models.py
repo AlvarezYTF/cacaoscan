@@ -62,7 +62,7 @@ class Tema(models.Model):
     """
     codigo = models.CharField(max_length=20, unique=True, help_text="Código único del tema (ej: TIPO_DOC)")
     nombre = models.CharField(max_length=100, help_text="Nombre del tema (ej: Tipo de Documento)")
-    descripcion = models.TextField(blank=True, help_text="Descripción del tema")
+    descripcion = models.TextField(blank=True, default="", help_text="Descripción del tema")
     activo = models.BooleanField(default=True, help_text="Indica si el tema está activo")
 
     class Meta:
@@ -92,7 +92,7 @@ class Parametro(models.Model):
                             help_text="Tema al que pertenece este parámetro")
     codigo = models.CharField(max_length=20, help_text="Código del parámetro (ej: CC, M, F)")
     nombre = models.CharField(max_length=100, help_text="Nombre del parámetro (ej: Cédula de Ciudadanía)")
-    descripcion = models.TextField(blank=True, help_text="Descripción adicional del parámetro")
+    descripcion = models.TextField(blank=True, default="", help_text="Descripción adicional del parámetro")
     activo = models.BooleanField(default=True, help_text="Indica si el parámetro está activo")
 
     class Meta:

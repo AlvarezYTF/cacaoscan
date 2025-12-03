@@ -4,6 +4,7 @@ Advanced hybrid trainer with uncertainty-based loss, feature gating, and compreh
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -192,7 +193,14 @@ class HybridTrainer:
                 self.optimizer.step()
             
             # Track gating values
-            gating_values_list.extend(gating_values.detach().cpu().numpy().flatten())
+            # Handle 0D tensor (scalar) - convert to 1D array
+            gating_np = gating_values.detach().cpu().numpy()
+            if gating_np.ndim == 0:
+                # 0D tensor (scalar) - convert to list
+                gating_values_list.append(float(gating_np))
+            else:
+                # 1D or higher tensor - flatten and extend
+                gating_values_list.extend(gating_np.flatten().tolist())
             
             # Validate loss
             if not torch.isfinite(loss):
@@ -244,12 +252,29 @@ class HybridTrainer:
                 n_batches += 1
                 
                 # Store predictions and targets for metrics
+                # Handle 0D tensor (scalar) - ensure it's at least 1D
                 outputs_np = outputs.cpu().numpy()
                 targets_np = targets.cpu().numpy()
                 
+                # Ensure outputs and targets are 2D (batch_size, num_targets)
+                if outputs_np.ndim == 0:
+                    # 0D tensor - convert to 2D
+                    outputs_np = outputs_np.reshape(1, -1) if hasattr(outputs, 'shape') else np.array([[outputs_np]])
+                elif outputs_np.ndim == 1:
+                    # 1D tensor - reshape to 2D
+                    outputs_np = outputs_np.reshape(1, -1)
+                
+                if targets_np.ndim == 0:
+                    # 0D tensor - convert to 2D
+                    targets_np = targets_np.reshape(1, -1) if hasattr(targets, 'shape') else np.array([[targets_np]])
+                elif targets_np.ndim == 1:
+                    # 1D tensor - reshape to 2D
+                    targets_np = targets_np.reshape(1, -1)
+                
                 for i, target in enumerate(self.TARGETS):
-                    all_predictions[target].extend(outputs_np[:, i])
-                    all_targets[target].extend(targets_np[:, i])
+                    if outputs_np.shape[1] > i and targets_np.shape[1] > i:
+                        all_predictions[target].extend(outputs_np[:, i].tolist())
+                        all_targets[target].extend(targets_np[:, i].tolist())
         
         avg_loss = val_loss / max(n_batches, 1)
         
@@ -305,16 +330,22 @@ class HybridTrainer:
         logger.info(f"  Pearson: {pearson_corrs}")
         logger.info(f"  Max Gradient: {max_grad:.4f}, Gating %: {avg_gating*100:.2f}%")
     
-    def train(self, epochs: int) -> Dict[str, List[float]]:
+    def train(self, max_epochs: int = None, epochs: int = None) -> Dict[str, List[float]]:
         """
         Train the model for multiple epochs.
         
         Args:
-            epochs: Number of epochs to train
+            max_epochs: Number of epochs to train (preferred parameter name)
+            epochs: Number of epochs to train (backward compatibility)
             
         Returns:
             Training history
         """
+        # Handle both max_epochs and epochs for backward compatibility
+        if max_epochs is not None:
+            epochs = max_epochs
+        elif epochs is None:
+            epochs = self.config.get('epochs', 50)
         logger.info(f"Starting training for {epochs} epochs")
         start_time = time.time()
         
@@ -355,16 +386,18 @@ class HybridTrainer:
             )
             
             # Save checkpoints
+            is_best_r2 = avg_r2 > self.best_avg_r2
+            
             if is_best_loss:
                 self.best_val_loss = val_loss
                 self.best_epoch_loss = epoch + 1
-                self._save_checkpoint(epoch + 1, "best_loss.pt")
+                checkpoint_path = self._save_checkpoint(epoch + 1, "best_loss.pt", is_best_loss=True)
                 logger.info(f"New best loss model saved (val_loss={val_loss:.4f})")
             
-            if avg_r2 > self.best_avg_r2:
+            if is_best_r2:
                 self.best_avg_r2 = avg_r2
                 self.best_epoch_r2 = epoch + 1
-                self._save_checkpoint(epoch + 1, "best_avg_r2.pt")
+                checkpoint_path = self._save_checkpoint(epoch + 1, "best_avg_r2.pt", is_best_r2=True)
                 logger.info(f"New best R² model saved (avg_r2={avg_r2:.4f})")
             
             # Save last epoch
@@ -394,20 +427,35 @@ class HybridTrainer:
     def _save_checkpoint(
         self,
         epoch: int,
-        filename: str
-    ) -> None:
+        filename: str = None,
+        is_best_loss: bool = False,
+        is_best_r2: bool = False
+    ) -> Optional[Path]:
         """
         Save model checkpoint.
         
         Args:
             epoch: Current epoch number
-            filename: Filename for checkpoint
-            is_best: Whether this is the best model so far
+            filename: Filename for checkpoint (if None, auto-generate based on flags)
+            is_best_loss: Whether this is the best loss model so far
+            is_best_r2: Whether this is the best R² model so far
+            
+        Returns:
+            Path to saved checkpoint or None if save_dir is not set
         """
         if self.save_dir is None:
-            return
+            return None
         
         self.save_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Auto-generate filename if not provided
+        if filename is None:
+            if is_best_loss:
+                filename = "best_loss.pt"
+            elif is_best_r2:
+                filename = "best_avg_r2.pt"
+            else:
+                filename = "last_epoch.pt"
         
         checkpoint = {
             'epoch': epoch,
@@ -427,6 +475,7 @@ class HybridTrainer:
         checkpoint_path = self.save_dir / filename
         torch.save(checkpoint, checkpoint_path)
         logger.debug(f"Saved checkpoint: {checkpoint_path}")
+        return checkpoint_path
     
     def _validate_checkpoint_structure(self, checkpoint: dict, required_keys: list) -> None:
         """Validate checkpoint structure and content."""

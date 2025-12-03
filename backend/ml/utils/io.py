@@ -19,8 +19,21 @@ def save_json(data: Dict[str, Any], file_path: Path) -> None:
 
 def load_json(file_path: Path) -> Dict[str, Any]:
     """Carga datos desde un archivo JSON."""
-    with open(file_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    with open(file_path, 'rb') as f:
+        raw_content = f.read()
+        # Try multiple encodings in order
+        encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+        text_content = None
+        for encoding in encodings:
+            try:
+                text_content = raw_content.decode(encoding)
+                break
+            except UnicodeDecodeError:
+                continue
+        if text_content is None:
+            # Last resort: use utf-8 with errors='ignore'
+            text_content = raw_content.decode('utf-8', errors='ignore')
+        return json.loads(text_content)
 
 
 def save_pickle(data: Any, file_path: Path) -> None:

@@ -254,7 +254,10 @@ class SendBulkNotificationView(APIView):
                         'successful': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'failed': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'batches_processed': openapi.Schema(type=openapi.TYPE_INTEGER),
-                        'errors': openapi.Schema(type=openapi.TYPE_ARRAY)
+                        'errors': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_STRING)
+                        )
                     }
                 )
             ),
@@ -501,7 +504,10 @@ class EmailLogsView(APIView):
                         'total_emails': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'successful': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'failed': openapi.Schema(type=openapi.TYPE_INTEGER),
-                        'logs': openapi.Schema(type=openapi.TYPE_ARRAY)
+                        'logs': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_STRING)
+                        )
                     }
                 )
             ),

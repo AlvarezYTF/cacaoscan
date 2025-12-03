@@ -63,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 // Estado
 const isLoading = ref(false)
@@ -206,6 +206,19 @@ onUnmounted(() => {
 // Exponer métodos globalmente
 globalThis.showGlobalLoading = showLoading
 globalThis.hideGlobalLoading = hideLoading
+
+// Computed properties for testing (aliases)
+const title = computed(() => loadingText.value)
+const message = computed(() => loadingMessage.value)
+
+// Expose component properties for testing
+defineExpose({
+  isLoading,
+  title,
+  message,
+  loadingText,
+  loadingMessage
+})
 </script>
 
 <style scoped>

@@ -52,5 +52,5 @@ class UncertaintyWeightedLossTest(TestCase):
         sigmas = loss.get_sigmas()
         
         self.assertEqual(len(sigmas), 4)
-        self.assertTrue(all(s > 0 for s in sigmas))
+        self.assertTrue(all(v > 0 for v in sigmas.values()))
 

@@ -130,5 +130,203 @@ describe('Pagination', () => {
     // Note: ellipsis variable removed as it was unused
     expect(wrapper.html()).toContain('...')
   })
+
+  it('should sync currentPage with composable', async () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 1,
+        totalPages: 5
+      }
+    })
+
+    await wrapper.setProps({ currentPage: 2 })
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.vm.pagination.currentPage.value).toBe(2)
+  })
+
+  it('should sync totalItems with composable', async () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 1,
+        totalPages: 5,
+        totalItems: 50
+      }
+    })
+
+    await wrapper.setProps({ totalItems: 100 })
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.vm.pagination.totalItems.value).toBe(100)
+  })
+
+  it('should sync itemsPerPage with composable', async () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 1,
+        totalPages: 5,
+        itemsPerPage: 10
+      }
+    })
+
+    await wrapper.setProps({ itemsPerPage: 20 })
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.vm.pagination.itemsPerPage.value).toBe(20)
+  })
+
+  it('should calculate startItem correctly', () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 3,
+        totalPages: 10,
+        totalItems: 100,
+        itemsPerPage: 10
+      }
+    })
+
+    expect(wrapper.vm.startItem).toBe(21)
+  })
+
+  it('should calculate endItem correctly', () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 3,
+        totalPages: 10,
+        totalItems: 100,
+        itemsPerPage: 10
+      }
+    })
+
+    expect(wrapper.vm.endItem).toBe(30)
+  })
+
+  it('should calculate endItem correctly on last page', () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 10,
+        totalPages: 10,
+        totalItems: 95,
+        itemsPerPage: 10
+      }
+    })
+
+    expect(wrapper.vm.endItem).toBe(95)
+  })
+
+  it('should show all pages when totalPages <= maxVisiblePages', () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 1,
+        totalPages: 5,
+        maxVisiblePages: 5
+      }
+    })
+
+    expect(wrapper.vm.visiblePages.length).toBe(5)
+  })
+
+  it('should show first pages when currentPage <= 3', () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 2,
+        totalPages: 20,
+        maxVisiblePages: 5
+      }
+    })
+
+    expect(wrapper.vm.visiblePages).toEqual([1, 2, 3])
+  })
+
+  it('should show last pages when currentPage >= totalPages - 2', () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 19,
+        totalPages: 20,
+        maxVisiblePages: 5
+      }
+    })
+
+    expect(wrapper.vm.visiblePages).toEqual([18, 19, 20])
+  })
+
+  it('should show middle pages when currentPage is in middle', () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 10,
+        totalPages: 20,
+        maxVisiblePages: 5
+      }
+    })
+
+    expect(wrapper.vm.visiblePages).toEqual([9, 10, 11])
+  })
+
+  it('should show page separator when conditions are met', () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 10,
+        totalPages: 20,
+        maxVisiblePages: 5
+      }
+    })
+
+    expect(wrapper.vm.showPageSeparator).toBe(true)
+  })
+
+  it('should not show page separator when conditions are not met', () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 2,
+        totalPages: 20,
+        maxVisiblePages: 5
+      }
+    })
+
+    expect(wrapper.vm.showPageSeparator).toBe(false)
+  })
+
+  it('should emit page-change when goToPage is called with valid page', () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 1,
+        totalPages: 5
+      }
+    })
+
+    wrapper.vm.goToPage(3)
+
+    expect(wrapper.emitted('page-change')).toBeTruthy()
+    expect(wrapper.emitted('page-change')[0]).toEqual([3])
+  })
+
+  it('should not emit page-change when goToPage is called with invalid page', () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 1,
+        totalPages: 5
+      }
+    })
+
+    wrapper.vm.goToPage(0)
+    wrapper.vm.goToPage(6)
+    wrapper.vm.goToPage(1)
+
+    expect(wrapper.emitted('page-change')).toBeFalsy()
+  })
+
+  it('should emit items-per-page-change when handleItemsPerPageChange is called', () => {
+    const wrapper = mount(Pagination, {
+      props: {
+        currentPage: 1,
+        totalPages: 5
+      }
+    })
+
+    wrapper.vm.handleItemsPerPageChange(20)
+
+    expect(wrapper.emitted('items-per-page-change')).toBeTruthy()
+    expect(wrapper.emitted('items-per-page-change')[0]).toEqual([20])
+  })
 })
 

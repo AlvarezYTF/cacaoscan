@@ -34,7 +34,7 @@ class SystemSettingsViewTest(APITestCase):
             email=TEST_ADMIN_EMAIL,
             password=TEST_ADMIN_PASSWORD
         )
-        self.url = reverse('admin-system-settings')
+        self.url = reverse('system-settings')
     
     def test_system_settings_get_requires_authentication(self):
         """Test that system settings GET requires authentication."""
@@ -42,13 +42,20 @@ class SystemSettingsViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
     @patch('api.views.admin.config_views.SystemSettings')
-    def test_system_settings_get_success(self, mock_settings):
+    @patch('api.views.admin.config_views.SystemSettingsSerializer')
+    def test_system_settings_get_success(self, mock_serializer_class, mock_settings):
         """Test successful system settings retrieval."""
         token = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
         mock_instance = Mock()
+        mock_instance.logo = None
         mock_settings.get_singleton.return_value = mock_instance
+        
+        # Mock the serializer
+        mock_serializer = Mock()
+        mock_serializer.data = {'nombre_sistema': 'CacaoScan'}
+        mock_serializer_class.return_value = mock_serializer
         
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -62,17 +69,29 @@ class SystemSettingsViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
     @patch('api.views.admin.config_views.SystemSettings')
-    def test_system_settings_put_success(self, mock_settings):
+    @patch('api.views.admin.config_views.SystemSettingsSerializer')
+    def test_system_settings_put_success(self, mock_serializer_class, mock_settings):
         """Test successful system settings update."""
         token = RefreshToken.for_user(self.admin_user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
+        # Create a proper mock instance with necessary attributes
         mock_instance = Mock()
+        mock_instance.nombre_sistema = 'Test System'
+        mock_instance.logo = None
+        mock_instance.save = Mock(return_value=mock_instance)
         mock_settings.get_singleton.return_value = mock_instance
+        
+        # Mock the serializer
+        mock_serializer = Mock()
+        mock_serializer.is_valid.return_value = True
+        mock_serializer.save.return_value = mock_instance
+        mock_serializer.data = {'nombre_sistema': 'Test System'}
+        mock_serializer_class.return_value = mock_serializer
         
         response = self.client.put(self.url, {
             'nombre_sistema': 'Test System'
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
@@ -86,7 +105,7 @@ class SystemGeneralConfigViewTest(APITestCase):
             email=TEST_ADMIN_EMAIL,
             password=TEST_ADMIN_PASSWORD
         )
-        self.url = reverse('admin-system-general-config')
+        self.url = reverse('system-general-config')
     
     def test_system_general_config_get_public_access(self):
         """Test that general config GET is publicly accessible."""
@@ -115,12 +134,16 @@ class SystemGeneralConfigViewTest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
         mock_instance = Mock()
+        mock_instance.nombre_sistema = 'Updated System'
+        mock_instance.email_contacto = 'test@example.com'
+        mock_instance.lema = 'Test Lema'
         mock_instance.logo = None
+        mock_instance.save = Mock(return_value=mock_instance)
         mock_settings.get_singleton.return_value = mock_instance
         
         response = self.client.put(self.url, {
             'nombre_sistema': 'Updated System'
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
@@ -139,7 +162,7 @@ class SystemSecurityConfigViewTest(APITestCase):
             email=TEST_ADMIN_EMAIL,
             password=TEST_ADMIN_PASSWORD
         )
-        self.url = reverse('admin-system-security-config')
+        self.url = reverse('system-security-config')
     
     def test_security_config_get_requires_authentication(self):
         """Test that security config GET requires authentication."""
@@ -152,7 +175,16 @@ class SystemSecurityConfigViewTest(APITestCase):
         token = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
-        mock_instance = Mock()
+        # Create a simple object with the necessary attributes
+        # This avoids issues with hasattr() on Mock objects
+        class SettingsObject:
+            def __init__(self):
+                self.recaptcha_enabled = True
+                self.session_timeout = 60
+                self.login_attempts = 5
+                self.two_factor_auth = False
+        
+        mock_instance = SettingsObject()
         mock_settings.get_singleton.return_value = mock_instance
         
         response = self.client.get(self.url)
@@ -166,12 +198,17 @@ class SystemSecurityConfigViewTest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
         mock_instance = Mock()
+        mock_instance.recaptcha_enabled = True
+        mock_instance.session_timeout = 60
+        mock_instance.login_attempts = 5
+        mock_instance.two_factor_auth = False
+        mock_instance.save = Mock(return_value=mock_instance)
         mock_settings.get_singleton.return_value = mock_instance
         
         response = self.client.put(self.url, {
             'recaptcha_enabled': True,
             'session_timeout': 60
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
@@ -185,7 +222,7 @@ class SystemMLConfigViewTest(APITestCase):
             email=TEST_USER_EMAIL,
             password=TEST_USER_PASSWORD
         )
-        self.url = reverse('admin-system-ml-config')
+        self.url = reverse('system-ml-config')
     
     def test_ml_config_get_requires_authentication(self):
         """Test that ML config GET requires authentication."""
@@ -198,7 +235,14 @@ class SystemMLConfigViewTest(APITestCase):
         token = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
-        mock_instance = Mock()
+        # Create a simple object with the necessary attributes
+        # This avoids issues with hasattr() on Mock objects
+        class SettingsObject:
+            def __init__(self):
+                self.active_model = 'yolov8'
+                self.last_training = None
+        
+        mock_instance = SettingsObject()
         mock_settings.get_singleton.return_value = mock_instance
         
         response = self.client.get(self.url)
@@ -216,13 +260,16 @@ class SystemMLConfigViewTest(APITestCase):
         token = RefreshToken.for_user(admin_user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
+        from django.utils import timezone
         mock_instance = Mock()
+        mock_instance.active_model = 'yolov8'
         mock_instance.last_training = None
+        mock_instance.save = Mock(return_value=mock_instance)
         mock_settings.get_singleton.return_value = mock_instance
         
         response = self.client.put(self.url, {
             'active_model': 'yolov8'
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
@@ -231,7 +278,7 @@ class SystemInfoViewTest(APITestCase):
     
     def setUp(self):
         """Set up test data."""
-        self.url = reverse('admin-system-info')
+        self.url = reverse('system-info')
     
     def test_system_info_public_access(self):
         """Test that system info is publicly accessible."""

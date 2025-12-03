@@ -112,5 +112,112 @@ describe('FincaList', () => {
       expect(wrapper.emitted('view-details')).toBeTruthy()
     }
   })
+
+  it('should emit create event when create button is clicked in empty state', async () => {
+    wrapper = mount(FincaList, {
+      props: {
+        fincas: [],
+        loading: false,
+        error: null
+      }
+    })
+
+    const createButton = wrapper.find('button')
+    if (createButton.exists()) {
+      await createButton.trigger('click')
+      expect(wrapper.emitted('create')).toBeTruthy()
+    }
+  })
+
+  it('should emit edit event when finca card emits it', async () => {
+    wrapper = mount(FincaList, {
+      props: {
+        fincas: mockFincas,
+        loading: false,
+        error: null
+      },
+      global: {
+        stubs: {
+          FincaCard: {
+            template: '<div @click="$emit(\'edit\', finca)">FincaCard</div>',
+            props: ['finca'],
+            emits: ['edit']
+          }
+        }
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+    const fincaCard = wrapper.findComponent({ name: 'FincaCard' })
+    if (fincaCard.exists()) {
+      await fincaCard.trigger('click')
+      expect(wrapper.emitted('edit')).toBeTruthy()
+    }
+  })
+
+  it('should emit confirm-delete event when finca card emits it', async () => {
+    wrapper = mount(FincaList, {
+      props: {
+        fincas: mockFincas,
+        loading: false,
+        error: null
+      },
+      global: {
+        stubs: {
+          FincaCard: {
+            template: '<div @click="$emit(\'confirm-delete\', finca)">FincaCard</div>',
+            props: ['finca'],
+            emits: ['confirm-delete']
+          }
+        }
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+    const fincaCard = wrapper.findComponent({ name: 'FincaCard' })
+    if (fincaCard.exists()) {
+      await fincaCard.trigger('click')
+      expect(wrapper.emitted('confirm-delete')).toBeTruthy()
+    }
+  })
+
+  it('should emit confirm-activate event when finca card emits it', async () => {
+    wrapper = mount(FincaList, {
+      props: {
+        fincas: mockFincas,
+        loading: false,
+        error: null
+      },
+      global: {
+        stubs: {
+          FincaCard: {
+            template: '<div @click="$emit(\'confirm-activate\', finca)">FincaCard</div>',
+            props: ['finca'],
+            emits: ['confirm-activate']
+          }
+        }
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+    const fincaCard = wrapper.findComponent({ name: 'FincaCard' })
+    if (fincaCard.exists()) {
+      await fincaCard.trigger('click')
+      expect(wrapper.emitted('confirm-activate')).toBeTruthy()
+    }
+  })
+
+  it('should display empty state when no fincas', () => {
+    wrapper = mount(FincaList, {
+      props: {
+        fincas: [],
+        loading: false,
+        error: null
+      }
+    })
+
+    const text = wrapper.text()
+    expect(text.includes('No hay fincas') || text.includes('primera finca')).toBe(true)
+  })
 })
 

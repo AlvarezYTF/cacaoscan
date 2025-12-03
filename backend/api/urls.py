@@ -45,6 +45,8 @@ from .views.admin import (
     ActivityLogListView, LoginHistoryListView, AuditStatsView,
     SystemSettingsView, SystemGeneralConfigView, SystemSecurityConfigView,
     SystemMLConfigView, SystemInfoView, TaskStatusView,
+    EmailStatusView, SendTestEmailView, SendBulkNotificationView,
+    EmailTemplatePreviewView, EmailLogsView,
 )
 from .views.ml import (
     CalibrationStatusView, CalibrationView, CalibratedScanMeasureView,
@@ -55,6 +57,7 @@ from .views.ml import (
     ModelMetricsUpdateView, ModelMetricsDeleteView, ModelMetricsStatsView,
     ModelPerformanceTrendView, ModelComparisonView, BestModelsView,
     ProductionModelsView,
+    ModelsStatusView, LoadModelsView, UnloadModelsView, AutoTrainView,
 )
 
 urlpatterns = [
@@ -64,8 +67,15 @@ urlpatterns = [
     path('models/load/', LoadModelsView.as_view(), name='load-models'),
     path('dataset/validation/', DatasetValidationView.as_view(), name='dataset-validation'),
     
+    # Endpoints ML (alias para compatibilidad con tests)
+    path('ml/models/status/', ModelsStatusView.as_view(), name='ml-models-status'),
+    path('ml/models/load/', LoadModelsView.as_view(), name='ml-models-load'),
+    path('ml/models/unload/', UnloadModelsView.as_view(), name='ml-models-unload'),
+    path('ml/auto-train/', AutoTrainView.as_view(), name='ml-auto-train'),
+    
     # Endpoints de estado de tareas Celery
     path('tasks/<str:task_id>/status/', TaskStatusView.as_view(), name='task-status'),
+    path('admin/tasks/<str:task_id>/status/', TaskStatusView.as_view(), name='admin-task-status'),
     
     # Inicialización automática
     path('auto-initialize/', AutoInitializeView.as_view(), name='auto-initialize'),
@@ -137,9 +147,12 @@ urlpatterns = [
     path('fincas/<int:finca_id>/delete/', FincaDeleteView.as_view(), name='finca-delete'),
     path('fincas/<int:finca_id>/activate/', FincaActivateView.as_view(), name='finca-activate'),
     path('fincas/<int:finca_id>/stats/', FincaStatsView.as_view(), name='finca-stats'),
+    path('fincas/stats/', FincaStatsView.as_view(), name='fincas-stats'),
     
     # Endpoints de gestión de lotes
+    path('lotes/', LoteListCreateView.as_view(), name='lotes-list'),
     path('lotes/', LoteListCreateView.as_view(), name='lotes-list-create'),
+    path('lotes/<int:pk>/', LoteDetailView.as_view(), name='lotes-detail'),
     path('lotes/<int:lote_id>/', LoteDetailView.as_view(), name='lote-detail'),
     path('lotes/<int:lote_id>/update/', LoteUpdateView.as_view(), name='lote-update'),
     path('lotes/<int:lote_id>/delete/', LoteDeleteView.as_view(), name='lote-delete'),
@@ -148,12 +161,18 @@ urlpatterns = [
     
     # Endpoints de gestión de notificaciones
     path('notifications/', NotificationListCreateView.as_view(), name='notifications-list'),
+    path('notifications/<int:pk>/', NotificationDetailView.as_view(), name='notification-detail'),
     path('notifications/<int:notification_id>/', NotificationDetailView.as_view(), name='notification-detail'),
+    path('notifications/<int:pk>/read/', NotificationMarkReadView.as_view(), name='notification-mark-read'),
     path('notifications/<int:notification_id>/read/', NotificationMarkReadView.as_view(), name='notification-mark-read'),
+    path('notifications/mark-all-read/', NotificationMarkAllReadView.as_view(), name='notification-mark-all-read'),
     path('notifications/mark-all-read/', NotificationMarkAllReadView.as_view(), name='notifications-mark-all-read'),
+    path('notifications/unread-count/', NotificationUnreadCountView.as_view(), name='notification-unread-count'),
     path('notifications/unread-count/', NotificationUnreadCountView.as_view(), name='notifications-unread-count'),
+    path('notifications/stats/', NotificationStatsView.as_view(), name='notification-stats'),
     path('notifications/stats/', NotificationStatsView.as_view(), name='notifications-stats'),
     path('notifications/create/', NotificationCreateView.as_view(), name='notification-create'),
+    path('admin/notifications/create/', NotificationCreateView.as_view(), name='admin-notification-create'),
     
     # Endpoints de auditoría (solo administradores)
     path('audit/activity-logs/', ActivityLogListView.as_view(), name='activity-logs-list'),
@@ -162,7 +181,9 @@ urlpatterns = [
     
     # Endpoints de gestión de reportes
     path('reportes/', ReporteListCreateView.as_view(), name='reportes-list-create'),
+    path('reportes/<int:pk>/', ReporteDetailView.as_view(), name='reportes-detail'),
     path('reportes/<int:reporte_id>/', ReporteDetailView.as_view(), name='reporte-detail'),
+    path('reportes/<int:pk>/download/', ReporteDownloadView.as_view(), name='reportes-download'),
     path('reportes/<int:reporte_id>/download/', ReporteDownloadView.as_view(), name='reporte-download'),
     path('reportes/<int:reporte_id>/delete/', ReporteDeleteView.as_view(), name='reporte-delete'),
     path('reportes/stats/', ReporteStatsView.as_view(), name='reportes-stats'),
@@ -176,6 +197,8 @@ urlpatterns = [
     path('calibration/status/', CalibrationStatusView.as_view(), name='calibration-status'),
     path('calibration/', CalibrationView.as_view(), name='calibration'),
     path('scan/measure/calibrated/', CalibratedScanMeasureView.as_view(), name='scan-measure-calibrated'),
+    path('ml/calibration/upload/', CalibrationView.as_view(), name='ml-calibration-upload'),
+    path('ml/calibration/status/', CalibrationStatusView.as_view(), name='ml-calibration-status'),
     
     
     # Endpoints de entrenamiento incremental
@@ -184,6 +207,9 @@ urlpatterns = [
     path('incremental/upload/', IncrementalDataUploadView.as_view(), name='incremental-upload'),
     path('incremental/models/', IncrementalModelVersionsView.as_view(), name='incremental-models'),
     path('incremental/data/', IncrementalDataVersionsView.as_view(), name='incremental-data'),
+    path('ml/incremental/status/', IncrementalTrainingStatusView.as_view(), name='ml-incremental-status'),
+    path('ml/incremental/start/', IncrementalTrainingView.as_view(), name='ml-incremental-start'),
+    path('ml/incremental/stop/', IncrementalTrainingView.as_view(), name='ml-incremental-stop'),
     
     # Endpoints de métricas de modelos
     path('model-metrics/', ModelMetricsListView.as_view(), name='model-metrics-list'),
@@ -197,6 +223,19 @@ urlpatterns = [
     path('model-metrics/best/', BestModelsView.as_view(), name='model-metrics-best'),
     path('model-metrics/production/', ProductionModelsView.as_view(), name='model-metrics-production'),
     
+    # Endpoints ML metrics (alias para compatibilidad con tests)
+    path('ml/metrics/', ModelMetricsListView.as_view(), name='ml-metrics-list'),
+    path('ml/metrics/<int:pk>/', ModelMetricsDetailView.as_view(), name='ml-metrics-detail'),
+    path('ml/metrics/create/', ModelMetricsCreateView.as_view(), name='ml-metrics-create'),
+    path('ml/metrics/<int:pk>/update/', ModelMetricsUpdateView.as_view(), name='ml-metrics-update'),
+    path('ml/metrics/<int:pk>/delete/', ModelMetricsDeleteView.as_view(), name='ml-metrics-delete'),
+    path('ml/metrics/stats/', ModelMetricsStatsView.as_view(), name='ml-metrics-stats'),
+    path('ml/performance-trend/', ModelPerformanceTrendView.as_view(), name='ml-performance-trend'),
+    path('ml/best-models/', BestModelsView.as_view(), name='ml-best-models'),
+    path('ml/production-models/', ProductionModelsView.as_view(), name='ml-production-models'),
+    path('ml/model-comparison/', ModelComparisonView.as_view(), name='ml-model-comparison'),
+    path('ml/model-comparison/batch/', ModelComparisonView.as_view(), name='ml-model-comparison-batch'),
+    
     # Endpoints de análisis batch
     path('analysis/batch/', BatchAnalysisView.as_view(), name='batch-analysis'),
     
@@ -206,6 +245,13 @@ urlpatterns = [
     path('config/security/', SystemSecurityConfigView.as_view(), name='system-security-config'),
     path('config/ml/', SystemMLConfigView.as_view(), name='system-ml-config'),
     path('config/system/', SystemInfoView.as_view(), name='system-info'),
+    
+    # Endpoints de administración de emails
+    path('admin/email/status/', EmailStatusView.as_view(), name='admin-email-status'),
+    path('admin/email/send-test/', SendTestEmailView.as_view(), name='admin-send-test-email'),
+    path('admin/email/bulk-notification/', SendBulkNotificationView.as_view(), name='admin-send-bulk-notification'),
+    path('admin/email/template-preview/', EmailTemplatePreviewView.as_view(), name='admin-email-template-preview'),
+    path('admin/email/logs/', EmailLogsView.as_view(), name='admin-email-logs'),
 ]
 
 

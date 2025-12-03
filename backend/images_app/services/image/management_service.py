@@ -36,13 +36,19 @@ class ImageManagementService(BaseService):
         super().__init__()
         self.allowed_image_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp']
         self.max_file_size = 20 * 1024 * 1024  # 20MB
+        self._default_storage = default_storage
     
-    def upload_image(self, image_file: UploadedFile, user: User, metadata: Dict[str, Any] = None) -> ServiceResult:
+    @property
+    def default_storage(self):
+        """Property for default_storage for backward compatibility with tests."""
+        return self._default_storage
+    
+    def upload_image(self, image_data: Dict[str, Any], user: User, metadata: Dict[str, Any] = None) -> ServiceResult:
         """
         Sube una nueva imagen de cacao.
         
         Args:
-            image_file: Archivo de imagen
+            image_data: Datos de la imagen (puede ser dict con 'file' o UploadedFile directamente)
             user: Usuario que sube la imagen
             metadata: Metadatos adicionales
             
@@ -50,6 +56,36 @@ class ImageManagementService(BaseService):
             ServiceResult con datos de la imagen subida
         """
         try:
+            # Handle both dict and UploadedFile for backward compatibility
+            if isinstance(image_data, dict):
+                image_file = image_data.get('file')
+                filename = image_data.get('filename', '')
+                image_width = image_data.get('image_width')
+                image_height = image_data.get('image_height')
+            else:
+                # Assume it's an UploadedFile (old format)
+                image_file = image_data
+                filename = ''
+                image_width = None
+                image_height = None
+            
+            # Validate file
+            if not image_file:
+                return ServiceResult.validation_error(
+                    "El archivo de imagen es requerido",
+                    details={"field": "file"}
+                )
+            
+            # Validate filename
+            if not filename and hasattr(image_file, 'name'):
+                filename = image_file.name
+            
+            if not filename:
+                return ServiceResult.validation_error(
+                    "El nombre del archivo es requerido",
+                    details={"field": "filename"}
+                )
+            
             # Validar archivo
             validation_result = self._validate_image_file(image_file)
             if not validation_result.success:
@@ -59,11 +95,17 @@ class ImageManagementService(BaseService):
             cacao_image = CacaoImage(
                 user=user,
                 image=image_file,
-                file_name=image_file.name,
-                file_size=image_file.size,
-                file_type=image_file.content_type,
+                file_name=filename,
+                file_size=image_file.size if hasattr(image_file, 'size') else 0,
+                file_type=image_file.content_type if hasattr(image_file, 'content_type') else 'image/jpeg',
                 processed=False
             )
+            
+            # Set image dimensions if provided
+            if image_width:
+                cacao_image.image_width = image_width
+            if image_height:
+                cacao_image.image_height = image_height
             
             # Agregar metadatos si se proporcionan
             if metadata:

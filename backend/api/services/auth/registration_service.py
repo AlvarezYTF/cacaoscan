@@ -619,4 +619,17 @@ Equipo CacaoScan · Proyecto SENNOVA · SENA Guaviare
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+    
+    def register(self, user_data: Dict[str, Any], request=None) -> ServiceResult:
+        """
+        Alias for register_user for backward compatibility with tests.
+        
+        Args:
+            user_data: User data
+            request: Request object to get IP and user agent
+            
+        Returns:
+            ServiceResult with created user data
+        """
+        return self.register_user(user_data, request)
 

@@ -210,3 +210,39 @@ class ModelMetrics(models.Model):
         verbose_name = 'Métricas de Modelo'
         verbose_name_plural = 'Métricas de Modelos'
         ordering = ['-created_at']
+    
+    @classmethod
+    def get_performance_trend(cls, model_name: str, target: str, metric_type: str = 'validation'):
+        """
+        Get performance trend data for a specific model.
+        
+        Args:
+            model_name: Name of the model
+            target: Target variable
+            metric_type: Type of metrics (training, validation, test, incremental)
+            
+        Returns:
+            List of dictionaries with trend data, each containing:
+            - created_at: datetime
+            - r2_score: float
+            - mae: float
+            - rmse: float
+            - mse: float
+        """
+        queryset = cls.objects.filter(
+            model_name=model_name,
+            target=target,
+            metric_type=metric_type
+        ).order_by('created_at')
+        
+        trend_data = []
+        for metric in queryset:
+            trend_data.append({
+                'created_at': metric.created_at.isoformat() if metric.created_at else None,
+                'r2_score': float(metric.r2_score),
+                'mae': float(metric.mae),
+                'rmse': float(metric.rmse),
+                'mse': float(metric.mse),
+            })
+        
+        return trend_data

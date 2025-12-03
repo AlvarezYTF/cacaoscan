@@ -19,6 +19,7 @@ class ReporteGenerado(models.Model):
         ('usuario', 'Reporte de Usuario'),
         ('auditoria', 'Reporte de Auditoría'),
         ('personalizado', 'Reporte Personalizado'),
+        ('analisis_periodo', 'Análisis por Período'),
     ]
     
     FORMATO_CHOICES = [
@@ -29,6 +30,7 @@ class ReporteGenerado(models.Model):
     ]
     
     ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
         ('generando', 'Generando'),
         ('completado', 'Completado'),
         ('fallido', 'Fallido'),
@@ -42,24 +44,25 @@ class ReporteGenerado(models.Model):
         help_text="Usuario que solicitó el reporte"
     )
     tipo_reporte = models.CharField(max_length=20, choices=TIPO_REPORTE_CHOICES)
-    formato = models.CharField(max_length=10, choices=FORMATO_CHOICES)
-    titulo = models.CharField(max_length=200)
-    descripcion = models.TextField(blank=True)
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='generando')
+    formato = models.CharField(max_length=10, choices=FORMATO_CHOICES, default='pdf')
+    titulo = models.CharField(max_length=200, blank=True, default="")
+    descripcion = models.TextField(blank=True, default="")
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
     
     archivo = models.FileField(upload_to='reportes/%Y/%m/%d/', null=True, blank=True)
-    nombre_archivo = models.CharField(max_length=255, blank=True)
-    tamano_archivo = models.PositiveIntegerField(blank=True, db_column='tamaño_archivo')
+    nombre_archivo = models.CharField(max_length=255, blank=True, default="")
+    ruta_archivo = models.CharField(max_length=500, blank=True, default="", help_text="Ruta del archivo generado")
+    tamano_archivo = models.PositiveIntegerField(blank=True, default=0, db_column='tamaño_archivo')
     
     parametros = models.JSONField(default=dict, blank=True)
     filtros_aplicados = models.JSONField(default=dict, blank=True)
     
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
-    fecha_generacion = models.DateTimeField(null=True, blank=True)
+    fecha_generacion = models.DateTimeField(auto_now_add=True, help_text="Fecha de generación del reporte")
     fecha_expiracion = models.DateTimeField(null=True, blank=True)
     tiempo_generacion = models.DurationField(null=True, blank=True)
     
-    mensaje_error = models.TextField(blank=True)
+    mensaje_error = models.TextField(blank=True, default="")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -97,3 +100,51 @@ class ReporteGenerado(models.Model):
         if self.fecha_expiracion:
             return timezone.now() > self.fecha_expiracion
         return False
+    
+    def __str__(self):
+        """Representación string del reporte."""
+        return f"Reporte {self.tipo_reporte} - {self.nombre_archivo}"
+    
+    @staticmethod
+    def generar_reporte(usuario, tipo_reporte, formato, titulo, descripcion='', parametros=None, filtros=None):
+        """
+        Crea un nuevo reporte.
+        
+        Args:
+            usuario: Usuario que solicita el reporte
+            tipo_reporte: Tipo de reporte
+            formato: Formato del reporte
+            titulo: Título del reporte
+            descripcion: Descripción del reporte
+            parametros: Parámetros adicionales
+            filtros: Filtros a aplicar
+            
+        Returns:
+            ReporteGenerado: Instancia del reporte creado
+        """
+        reporte = ReporteGenerado(
+            usuario=usuario,
+            tipo_reporte=tipo_reporte,
+            formato=formato,
+            titulo=titulo,
+            descripcion=descripcion or '',
+            parametros=parametros or {},
+            filtros_aplicados=filtros or {},
+            estado='pendiente'
+        )
+        reporte.save()
+        return reporte
+    
+    def marcar_completado(self, archivo, tiempo_generacion):
+        """Marca el reporte como completado."""
+        self.estado = 'completado'
+        self.archivo = archivo
+        self.tiempo_generacion = tiempo_generacion
+        self.fecha_generacion = timezone.now()
+        self.save()
+    
+    def marcar_fallido(self, mensaje_error):
+        """Marca el reporte como fallido."""
+        self.estado = 'fallido'
+        self.mensaje_error = mensaje_error
+        self.save()

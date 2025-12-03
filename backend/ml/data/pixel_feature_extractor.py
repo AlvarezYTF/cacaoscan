@@ -139,8 +139,21 @@ class PixelFeatureExtractor:
             return False
         
         try:
-            with open(self.calibration_file, 'r') as f:
-                calibration_data = json.load(f)
+            with open(self.calibration_file, 'rb') as f:
+                raw_content = f.read()
+                # Try multiple encodings in order
+                encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+                text_content = None
+                for encoding in encodings:
+                    try:
+                        text_content = raw_content.decode(encoding)
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                if text_content is None:
+                    # Last resort: use utf-8 with errors='ignore'
+                    text_content = raw_content.decode('utf-8', errors='ignore')
+                calibration_data = json.loads(text_content)
             
             calibration_records = calibration_data.get("calibration_records", [])
             

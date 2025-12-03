@@ -28,8 +28,14 @@ class ModelsStatusSerializer(serializers.Serializer):
 
     def validate(self, data):
         # The get_model_info() function now returns this structure
-        if 'status' not in data or 'model' not in data:
-            raise serializers.ValidationError("Respuesta de estado de modelo inválida.")
+        errors = []
+        if 'status' not in data:
+            errors.append("El campo 'status' es requerido.")
+        if 'model' not in data:
+            errors.append("El campo 'model' es requerido.")
+        
+        if errors:
+            raise serializers.ValidationError(errors)
         return data
 
 
@@ -149,7 +155,7 @@ class ModelMetricsSerializer(serializers.ModelSerializer):
         model = ModelMetrics
         fields = [
             'id', 'model_name', 'model_type', 'target', 'version',
-            'training_job', 'created_by', 'created_by_username',
+            'created_by', 'created_by_username',
             'metric_type', 'mae', 'mse', 'rmse', 'r2_score', 'mape',
             'additional_metrics', 'dataset_size', 'train_size',
             'validation_size', 'test_size', 'epochs', 'batch_size',
@@ -192,7 +198,7 @@ class ModelMetricsCreateSerializer(serializers.ModelSerializer):
         model = ModelMetrics
         fields = [
             'model_name', 'model_type', 'target', 'version',
-            'training_job', 'metric_type', 'mae', 'mse', 'rmse',
+            'metric_type', 'mae', 'mse', 'rmse',
             'r2_score', 'mape', 'additional_metrics', 'dataset_size',
             'train_size', 'validation_size', 'test_size', 'epochs',
             'batch_size', 'learning_rate', 'model_params',
@@ -203,6 +209,8 @@ class ModelMetricsCreateSerializer(serializers.ModelSerializer):
     
     def validate(self, data):
         """Validate serializer data."""
+        errors = []
+        
         # Validate that dataset_size equals the sum of train, validation and test
         dataset_size = data.get('dataset_size', 0)
         train_size = data.get('train_size', 0)
@@ -210,19 +218,28 @@ class ModelMetricsCreateSerializer(serializers.ModelSerializer):
         test_size = data.get('test_size', 0)
         
         if dataset_size != (train_size + validation_size + test_size):
-            raise serializers.ValidationError(
-                "El tamaño del dataset debe ser igual a la suma de train_size + validation_size + test_size"
-            )
+            errors.append("El tamaño del dataset debe ser igual a la suma de train_size + validation_size + test_size")
         
         # Validate main metrics
-        if data.get('r2_score', 0) < 0 or data.get('r2_score', 0) > 1:
-            raise serializers.ValidationError("R² score debe estar entre 0 y 1")
+        r2_score = data.get('r2_score')
+        if r2_score is not None:
+            if r2_score < 0 or r2_score > 1:
+                errors.append("R² score debe estar entre 0 y 1")
         
-        if data.get('mae', 0) < 0:
-            raise serializers.ValidationError("MAE debe ser mayor o igual a 0")
+        mae = data.get('mae')
+        if mae is not None and mae < 0:
+            errors.append("MAE debe ser mayor o igual a 0")
         
-        if data.get('rmse', 0) < 0:
-            raise serializers.ValidationError("RMSE debe ser mayor o igual a 0")
+        mse = data.get('mse')
+        if mse is not None and mse < 0:
+            errors.append("MSE debe ser mayor o igual a 0")
+        
+        rmse = data.get('rmse')
+        if rmse is not None and rmse < 0:
+            errors.append("RMSE debe ser mayor o igual a 0")
+        
+        if errors:
+            raise serializers.ValidationError(errors)
         
         return data
 
@@ -240,15 +257,31 @@ class ModelMetricsUpdateSerializer(serializers.ModelSerializer):
     
     def validate(self, data):
         """Validate serializer data."""
+        errors = []
+        
         # Validate main metrics
-        if 'r2_score' in data and (data['r2_score'] < 0 or data['r2_score'] > 1):
-            raise serializers.ValidationError("R² score debe estar entre 0 y 1")
+        if 'r2_score' in data:
+            r2_score = data['r2_score']
+            if r2_score is not None and (r2_score < 0 or r2_score > 1):
+                errors.append("R² score debe estar entre 0 y 1")
         
-        if 'mae' in data and data['mae'] < 0:
-            raise serializers.ValidationError("MAE debe ser mayor o igual a 0")
+        if 'mae' in data:
+            mae = data['mae']
+            if mae is not None and mae < 0:
+                errors.append("MAE debe ser mayor o igual a 0")
         
-        if 'rmse' in data and data['rmse'] < 0:
-            raise serializers.ValidationError("RMSE debe ser mayor o igual a 0")
+        if 'mse' in data:
+            mse = data['mse']
+            if mse is not None and mse < 0:
+                errors.append("MSE debe ser mayor o igual a 0")
+        
+        if 'rmse' in data:
+            rmse = data['rmse']
+            if rmse is not None and rmse < 0:
+                errors.append("RMSE debe ser mayor o igual a 0")
+        
+        if errors:
+            raise serializers.ValidationError(errors)
         
         return data
 

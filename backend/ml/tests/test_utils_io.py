@@ -76,6 +76,8 @@ class IOUtilsTest(TestCase):
         """Test saving and loading image."""
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.png') as f:
             temp_path = Path(f.name)
+        
+        # File handle is closed when exiting the 'with' block
 
         try:
             image = Image.new('RGB', (100, 100), color='red')
@@ -83,8 +85,18 @@ class IOUtilsTest(TestCase):
             
             loaded_image = load_image(temp_path)
             self.assertEqual(loaded_image.size, image.size)
+            # Close the loaded image to release file handle on Windows
+            loaded_image.close()
         finally:
-            temp_path.unlink(missing_ok=True)
+            # Retry deletion in case file is still locked on Windows
+            import time
+            max_retries = 3
+            for _ in range(max_retries):
+                try:
+                    temp_path.unlink(missing_ok=True)
+                    break
+                except PermissionError:
+                    time.sleep(0.1)
 
     def test_write_log(self):
         """Test writing to log file."""
@@ -94,7 +106,7 @@ class IOUtilsTest(TestCase):
         try:
             write_log(temp_path, 'Test log message')
             
-            with open(temp_path, 'r') as f:
+            with open(temp_path, 'r', encoding='utf-8') as f:
                 content = f.read()
                 self.assertIn('Test log message', content)
         finally:

@@ -10,6 +10,7 @@ from django.urls import reverse
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
 from datetime import datetime, timedelta
 import os
@@ -45,22 +46,24 @@ class CacaoImageAPITestCase(APITestCase):
         )
         
         # Crear token de autenticación
-        self.token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
         
         # Crear finca y lote de prueba
         self.finca = Finca.objects.create(
             nombre='Finca Test',
             ubicacion='Test Location',
-            area_total=10.5,
-            propietario=self.user
+            municipio='Test Municipio',
+            departamento='Test Departamento',
+            hectareas=10.5,
+            agricultor=self.user
         )
         
         self.lote = Lote.objects.create(
             identificador='LOTE-001',
             variedad='Criollo',
-            area=2.5,
-            fecha_siembra=timezone.now().date(),
+            area_hectareas=2.5,
+            fecha_plantacion=timezone.now().date(),
             finca=self.finca
         )
         
@@ -96,12 +99,12 @@ class CacaoImageAPITestCase(APITestCase):
         response = self.client.post(url, data, format='multipart')
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(CacaoImage.objects.filter(usuario=self.user).exists())
+        self.assertTrue(CacaoImage.objects.filter(user=self.user).exists())
         
         # Verificar que se creó el log de actividad
         self.assertTrue(ActivityLog.objects.filter(
-            usuario=self.user,
-            accion='upload_image'
+            user=self.user,
+            action='upload_image'
         ).exists())
     
     def test_upload_image_without_authentication(self):
@@ -122,10 +125,10 @@ class CacaoImageAPITestCase(APITestCase):
         # Crear algunas imágenes de prueba
         for i in range(3):
             CacaoImage.objects.create(
-                usuario=self.user,
+                user=self.user,
                 lote=self.lote,
-                imagen=self.image_file,
-                descripcion=f'Imagen {i+1}'
+                image=self.image_file,
+                notas=f'Imagen {i+1}'
             )
         
         url = reverse('cacao-image-list')
@@ -137,28 +140,28 @@ class CacaoImageAPITestCase(APITestCase):
     def test_get_image_detail(self):
         """Test de obtención de detalle de imagen."""
         image = CacaoImage.objects.create(
-            usuario=self.user,
+            user=self.user,
             lote=self.lote,
-            imagen=self.image_file,
-            descripcion='Imagen de prueba'
+            image=self.image_file,
+            notas='Imagen de prueba'
         )
         
-        url = reverse('cacao-image-detail', kwargs={'pk': image.id})
+        url = reverse('image-detail', kwargs={'image_id': image.id})
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['descripcion'], 'Imagen de prueba')
+        self.assertEqual(response.data.get('notas', ''), 'Imagen de prueba')
     
     def test_delete_image(self):
         """Test de eliminación de imagen."""
         image = CacaoImage.objects.create(
-            usuario=self.user,
+            user=self.user,
             lote=self.lote,
-            imagen=self.image_file,
-            descripcion='Imagen de prueba'
+            image=self.image_file,
+            notas='Imagen de prueba'
         )
         
-        url = reverse('cacao-image-detail', kwargs={'pk': image.id})
+        url = reverse('image-delete', kwargs={'image_id': image.id})
         response = self.client.delete(url)
         
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -166,8 +169,8 @@ class CacaoImageAPITestCase(APITestCase):
         
         # Verificar que se creó el log de actividad
         self.assertTrue(ActivityLog.objects.filter(
-            usuario=self.user,
-            accion='delete_image'
+            user=self.user,
+            action='delete_image'
         ).exists())
 
 
@@ -185,28 +188,30 @@ class FincaAPITestCase(APITestCase):
             password=TEST_USER_PASSWORD  # NOSONAR(S2068)
         )
         
-        self.token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
     
     def test_create_finca_success(self):
         """Test de creación exitosa de finca."""
-        url = reverse('finca-list-create')
+        url = reverse('fincas-list-create')
         data = {
             'nombre': 'Finca Nueva',
             'ubicacion': 'Nueva Ubicación',
-            'area_total': 15.5,
+            'municipio': 'Test Municipio',
+            'departamento': 'Test Departamento',
+            'hectareas': 15.5,
             'descripcion': 'Finca de prueba'
         }
         
-        response = self.client.post(url, data)
+        response = self.client.post(url, data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Finca.objects.filter(nombre='Finca Nueva').exists())
         
         # Verificar que se creó el log de actividad
         self.assertTrue(ActivityLog.objects.filter(
-            usuario=self.user,
-            accion='create_finca'
+            user=self.user,
+            action='create_finca'
         ).exists())
     
     def test_get_finca_list(self):
@@ -216,11 +221,13 @@ class FincaAPITestCase(APITestCase):
             Finca.objects.create(
                 nombre=f'Finca {i+1}',
                 ubicacion=f'Ubicación {i+1}',
-                area_total=10.0 + i,
-                propietario=self.user
+                municipio='Test Municipio',
+                departamento='Test Departamento',
+                hectareas=10.0 + i,
+                agricultor=self.user
             )
         
-        url = reverse('finca-list-create')
+        url = reverse('fincas-list-create')
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -231,18 +238,22 @@ class FincaAPITestCase(APITestCase):
         finca = Finca.objects.create(
             nombre='Finca Original',
             ubicacion='Ubicación Original',
-            area_total=10.0,
-            propietario=self.user
+            municipio='Test Municipio',
+            departamento='Test Departamento',
+            hectareas=10.0,
+            agricultor=self.user
         )
         
-        url = reverse('finca-detail', kwargs={'pk': finca.id})
+        url = reverse('finca-update', kwargs={'finca_id': finca.id})
         data = {
             'nombre': 'Finca Actualizada',
             'ubicacion': 'Ubicación Actualizada',
-            'area_total': 12.0
+            'municipio': 'Test Municipio',
+            'departamento': 'Test Departamento',
+            'hectareas': 12.0
         }
         
-        response = self.client.patch(url, data)
+        response = self.client.patch(url, data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         finca.refresh_from_db()
@@ -250,8 +261,8 @@ class FincaAPITestCase(APITestCase):
         
         # Verificar que se creó el log de actividad
         self.assertTrue(ActivityLog.objects.filter(
-            usuario=self.user,
-            accion='update_finca'
+            user=self.user,
+            action='update_finca'
         ).exists())
 
 
@@ -269,12 +280,12 @@ class NotificationAPITestCase(APITestCase):
             password=TEST_USER_PASSWORD  # NOSONAR(S2068)
         )
         
-        self.token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
     
     def test_create_notification(self):
         """Test de creación de notificación."""
-        url = reverse('notification-list-create')
+        url = reverse('notifications-list')
         data = {
             'titulo': 'Notificación de prueba',
             'mensaje': 'Este es un mensaje de prueba',
@@ -282,18 +293,18 @@ class NotificationAPITestCase(APITestCase):
             'datos_extra': {'test': 'value'}
         }
         
-        response = self.client.post(url, data)
+        response = self.client.post(url, data, format="json")
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Notification.objects.filter(
-            usuario=self.user,
+            user=self.user,
             titulo='Notificación de prueba'
         ).exists())
     
     def test_mark_notification_as_read(self):
         """Test de marcar notificación como leída."""
         notification = Notification.objects.create(
-            usuario=self.user,
+            user=self.user,
             titulo='Notificación de prueba',
             mensaje='Mensaje de prueba',
             tipo='info'
@@ -311,7 +322,7 @@ class NotificationAPITestCase(APITestCase):
         """Test de obtención de notificaciones no leídas."""
         # Crear notificaciones leídas y no leídas
         Notification.objects.create(
-            usuario=self.user,
+            user=self.user,
             titulo='Notificación 1',
             mensaje='Mensaje 1',
             tipo='info',
@@ -319,14 +330,14 @@ class NotificationAPITestCase(APITestCase):
         )
         
         Notification.objects.create(
-            usuario=self.user,
+            user=self.user,
             titulo='Notificación 2',
             mensaje='Mensaje 2',
             tipo='warning',
             leida=False
         )
         
-        url = reverse('notification-list-create')
+        url = reverse('notifications-list')
         response = self.client.get(url, {'leida': 'false'})
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -348,8 +359,8 @@ class ReportAPITestCase(APITestCase):
             password=TEST_USER_PASSWORD  # NOSONAR(S2068)
         )
         
-        self.token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
     
     def test_create_report(self):
         """Test de creación de reporte."""
@@ -363,7 +374,7 @@ class ReportAPITestCase(APITestCase):
             'filtros_aplicados': {'fecha_desde': '2024-01-01'}
         }
         
-        response = self.client.post(url, data)
+        response = self.client.post(url, data, format="json")
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(ReporteGenerado.objects.filter(
@@ -427,89 +438,177 @@ class IntegrationWorkflowTestCase(TransactionTestCase):
     def setUp(self):
         """Configuración inicial para cada test."""
         self.client = APIClient()
-        
-        # Using test constant to avoid hard-coded password (SonarQube S2068)
-        self.user = User.objects.create_user(
-            username=TEST_USER_USERNAME,
-            email=TEST_USER_EMAIL,
-            password=TEST_USER_PASSWORD  # NOSONAR(S2068)
-        )
-        
-        self.token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
     
     def test_complete_workflow(self):
-        """Test de flujo de trabajo completo."""
-        # 1. Crear finca
+        """Test de flujo de trabajo completo E2E."""
+        # 1. Registro de usuario
+        register_data = {
+            'username': 'workflow_user',
+            'email': 'workflow@test.com',
+            'password': TEST_USER_PASSWORD,
+            'password_confirm': TEST_USER_PASSWORD,
+            'first_name': 'Workflow',
+            'last_name': 'User'
+        }
+        
+        register_response = self.client.post('/api/v1/auth/register/', register_data, format='json')
+        self.assertEqual(register_response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(register_response.data['success'])
+        self.assertIn('access', register_response.data)
+        self.assertIn('refresh', register_response.data)
+        self.assertIn('user', register_response.data)
+        
+        # Guardar tokens para autenticación
+        access_token = register_response.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+        
+        # Verificar que el usuario fue creado
+        user_id = register_response.data['user']['id']
+        self.assertTrue(User.objects.filter(id=user_id).exists())
+        user = User.objects.get(id=user_id)
+        
+        # Hacer al usuario admin para poder crear notificaciones
+        user.is_staff = True
+        user.is_superuser = True
+        user.save()
+        
+        # 2. Login (opcional, pero verificar que funciona)
+        self.client.credentials()  # Limpiar credenciales
+        login_data = {
+            'username': 'workflow_user',
+            'password': TEST_USER_PASSWORD
+        }
+        
+        login_response = self.client.post('/api/v1/auth/login/', login_data, format='json')
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+        self.assertTrue(login_response.data['success'])
+        self.assertIn('access', login_response.data)
+        self.assertIn('refresh', login_response.data)
+        
+        # Usar token de login
+        access_token = login_response.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+        
+        # 3. Crear finca
         finca_data = {
             'nombre': 'Finca Completa',
             'ubicacion': 'Ubicación Completa',
-            'area_total': 20.0
+            'municipio': 'Test Municipio',
+            'departamento': 'Test Departamento',
+            'hectareas': 20.0
         }
         
-        finca_response = self.client.post('/api/fincas/', finca_data)
+        finca_response = self.client.post('/api/v1/fincas/', finca_data, format='json')
         self.assertEqual(finca_response.status_code, status.HTTP_201_CREATED)
-        finca_id = finca_response.data['id']
+        self.assertTrue(finca_response.data['success'])
+        self.assertIn('finca', finca_response.data)
+        finca_id = finca_response.data['finca']['id']
         
-        # 2. Crear lote
+        # 4. Crear lote
         lote_data = {
             'identificador': 'LOTE-COMPLETO',
             'variedad': 'Criollo',
             'area': 5.0,
-            'fecha_siembra': timezone.now().date().isoformat(),
-            'finca': finca_id
+            'finca': finca_id  # El endpoint espera 'finca', no 'finca_id'
         }
         
-        lote_response = self.client.post('/api/lotes/', lote_data)
+        lote_response = self.client.post('/api/v1/lotes/', lote_data, format='json')
         self.assertEqual(lote_response.status_code, status.HTTP_201_CREATED)
-        lote_id = lote_response.data['id']
+        self.assertTrue(lote_response.data['success'])
+        self.assertIn('lote', lote_response.data)
+        lote_id = lote_response.data['lote']['id']
         
-        # 3. Subir imagen
+        # 5. Subir imagen usando el servicio directamente
+        # (El endpoint /api/images/ solo tiene GET, no POST)
         image_file = self.create_test_image()
-        image_data = {
-            'imagen': image_file,
-            'lote': lote_id,
-            'descripcion': 'Imagen del flujo completo'
-        }
+        from images_app.services.image.management_service import ImageManagementService
         
-        image_response = self.client.post('/api/images/', image_data, format='multipart')
-        self.assertEqual(image_response.status_code, status.HTTP_201_CREATED)
-        image_id = image_response.data['id']
+        image_service = ImageManagementService()
+        upload_result = image_service.upload_image(
+            image_file=image_file,
+            user=user,
+            metadata={'lote_id': lote_id, 'notas': 'Imagen del flujo completo'}
+        )
         
-        # 4. Crear notificación
+        self.assertTrue(upload_result.success)
+        self.assertIn('id', upload_result.data)
+        image_id = upload_result.data['id']
+        
+        # Verificar que la imagen fue creada
+        self.assertTrue(CacaoImage.objects.filter(id=image_id).exists())
+        
+        # Verificar que se puede obtener el detalle de la imagen
+        image_detail_response = self.client.get(f'/api/v1/images/{image_id}/')
+        self.assertEqual(image_detail_response.status_code, status.HTTP_200_OK)
+        
+        # 6. Análisis de imagen usando el servicio
+        from api.services.analysis_service import AnalysisService
+        analysis_service = AnalysisService()
+        analysis_result = analysis_service.analyze_image(image_id, user)
+        
+        self.assertTrue(analysis_result.success)
+        self.assertIn('prediction', analysis_result.data)
+        prediction_id = analysis_result.data['prediction']['id']
+        
+        # Verificar que se creó la predicción
+        self.assertTrue(CacaoPrediction.objects.filter(id=prediction_id).exists())
+        
+        # 7. Crear notificación (usar endpoint admin ya que el usuario es admin)
         notification_data = {
+            'user': user.id,
             'titulo': 'Flujo completado',
             'mensaje': 'El flujo de trabajo se completó exitosamente',
             'tipo': 'success'
         }
         
-        notification_response = self.client.post('/api/notifications/', notification_data)
+        notification_response = self.client.post('/api/admin/notifications/create/', notification_data, format="json")
         self.assertEqual(notification_response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(notification_response.data['success'])
+        self.assertIn('notification', notification_response.data)
         
-        # 5. Crear reporte
+        # 8. Crear reporte usando el endpoint
         report_data = {
-            'tipo_reporte': 'finca',
-            'formato': 'pdf',
+            'tipo_reporte': 'calidad',
+            'formato': 'json',
             'titulo': 'Reporte del flujo completo',
+            'descripcion': 'Reporte generado del flujo E2E',
             'parametros': {'finca_id': finca_id}
         }
         
-        report_response = self.client.post('/api/reportes/', report_data)
+        report_response = self.client.post('/api/v1/reportes/', report_data, format='json')
         self.assertEqual(report_response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(report_response.data['success'])
+        self.assertIn('reporte', report_response.data)
+        reporte_id = report_response.data['reporte']['id']
+        
+        # Verificar que el reporte fue creado
+        self.assertTrue(ReporteGenerado.objects.filter(id=reporte_id).exists())
         
         # Verificar que todos los objetos fueron creados
         self.assertTrue(Finca.objects.filter(id=finca_id).exists())
         self.assertTrue(Lote.objects.filter(id=lote_id).exists())
         self.assertTrue(CacaoImage.objects.filter(id=image_id).exists())
-        self.assertTrue(Notification.objects.filter(usuario=self.user).exists())
-        self.assertTrue(ReporteGenerado.objects.filter(usuario=self.user).exists())
+        self.assertTrue(CacaoPrediction.objects.filter(id=prediction_id).exists())
+        self.assertTrue(Notification.objects.filter(user=user).exists())
+        self.assertTrue(ReporteGenerado.objects.filter(usuario=user).exists())
         
         # Verificar logs de actividad
-        self.assertTrue(ActivityLog.objects.filter(usuario=self.user).exists())
+        self.assertTrue(ActivityLog.objects.filter(user=user).exists())
     
     def create_test_image(self):
         """Crea un archivo de imagen de prueba."""
-        from django.core.files.base import ContentFile
-        return ContentFile(b'fake image content', name='test.jpg')
+        from PIL import Image
+        import io
+        
+        img = Image.new('RGB', (100, 100), color='red')
+        img_io = io.BytesIO()
+        img.save(img_io, format='JPEG')
+        img_io.seek(0)
+        
+        return SimpleUploadedFile(
+            'test_image.jpg',
+            img_io.getvalue(),
+            content_type='image/jpeg'
+        )
 
 

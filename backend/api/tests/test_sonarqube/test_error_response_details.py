@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 import secrets
 
 from core.utils import create_error_response
@@ -84,7 +85,8 @@ class TestIncrementalViewsErrorResponse(APITestCase):
             # NOSONAR
             password=TEST_USER_PASSWORD
         )
-        self.client.force_authenticate(user=self.user)
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
     
     @patch('ml.pipeline.train_all.run_incremental_training_pipeline')
     def test_incremental_training_error_uses_details(self, mock_training):

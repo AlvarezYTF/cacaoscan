@@ -71,6 +71,7 @@ class CheckTrainingCommandTest(TestCase):
         mock_job.job_id = 'test-job-123'
         mock_job.status = 'running'
         mock_job.get_job_type_display.return_value = 'Training'
+        mock_job.progress_percentage = 50.0  # Add numeric value for progress
         mock_job.created_at = timezone.now()
         mock_job.started_at = None
         mock_job.completed_at = None

@@ -84,9 +84,12 @@ class FincaListCreateView(PaginationMixin, FincaPermissionMixin, APIView):
         """Listar fincas con filtros optimizados."""
         try:
             # Optimización: obtener solo los campos necesarios
+            # Incluir agricultor y sus campos necesarios para evitar conflicto con select_related
+            # El serializer FincaListSerializer solo necesita agricultor_id, así que incluimos eso
             queryset = self.get_queryset().only(
                 'id', 'nombre', 'municipio', 'departamento', 'hectareas', 
-                'ubicacion', 'activa', 'fecha_registro'
+                'ubicacion', 'activa', 'fecha_registro', 'coordenadas_lat', 'coordenadas_lng',
+                'agricultor', 'agricultor__id'
             )
             
             # Aplicar filtros
@@ -183,8 +186,7 @@ class FincaListCreateView(PaginationMixin, FincaPermissionMixin, APIView):
                 except User.DoesNotExist:
                     return Response({
                         'error': 'Agricultor no encontrado',
-                        'details': {'agricultor': ['El ID de agricultor proporcionado no existe']},
-                        'status': 'error'
+                        'details': 'El ID de agricultor proporcionado no existe'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
             logger.info(f"Creando finca con datos: {request.data}, agricultor: {agricultor.id}")
@@ -337,7 +339,7 @@ class FincaDeleteView(FincaPermissionMixin, APIView):
             
             logger.info(f"Finca '{finca_nombre}' desactivada (soft delete) por usuario {request.user.username}")
             
-            return create_success_response(message='Finca desactivada correctamente')
+            return Response(status=status.HTTP_204_NO_CONTENT)
             
         except Finca.DoesNotExist:
             return self.handle_finca_not_found(finca_id)

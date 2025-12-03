@@ -44,7 +44,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   const userFullName = computed(() => {
     if (!user.value) return ''
-    return `${user.value.first_name} ${user.value.last_name}`.trim()
+    const firstName = user.value.first_name || ''
+    const lastName = user.value.last_name || ''
+    return `${firstName} ${lastName}`.trim()
   })
 
   const userInitials = computed(() => {
@@ -484,11 +486,9 @@ export const useAuthStore = defineStore('auth', () => {
       // Actualizar datos del usuario si la respuesta incluye data
       if (response.data?.user) {
         setUser(response.data.user)
-        setSuccess('Perfil actualizado exitosamente')
         return { success: true, data: response.data.user }
       } else if (response.user) {
         setUser(response.user)
-        setSuccess('Perfil actualizado exitosamente')
         return { success: true, data: response.user }
       }
       
@@ -672,6 +672,7 @@ export const useAuthStore = defineStore('auth', () => {
     updateLastActivity,
     checkSessionTimeout,
     hasPermission,
+    getRedirectPath,
     clearAll,
     clearTokens,
     setError,

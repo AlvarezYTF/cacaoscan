@@ -62,21 +62,21 @@ class ReporteDownloadView(APIView):
             if reporte.estado != 'completado':
                 return Response({
                     'error': 'El reporte aún no está listo para descarga',
-                    'status': 'error'
+                    'details': 'El reporte aún no está listo para descarga'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Verify if expired
             if reporte.esta_expirado:
                 return Response({
                     'error': 'El reporte ha expirado y ya no está disponible',
-                    'status': 'error'
+                    'details': 'El reporte ha expirado y ya no está disponible'
                 }, status=status.HTTP_410_GONE)
             
             # Verify file exists
             if not reporte.archivo:
                 return Response({
                     'error': 'El archivo del reporte no está disponible',
-                    'status': 'error'
+                    'details': 'El archivo del reporte no está disponible'
                 }, status=status.HTTP_404_NOT_FOUND)
             
             # Prepare download response
@@ -103,13 +103,13 @@ class ReporteDownloadView(APIView):
         except ReporteGenerado.DoesNotExist:
             return Response({
                 'error': 'Reporte no encontrado',
-                'status': 'error'
+                'details': 'El reporte solicitado no existe o no tienes permiso para acceder a él'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error descargando reporte {reporte_id}: {e}")
             return Response({
                 'error': 'Error interno del servidor',
-                'status': 'error'
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

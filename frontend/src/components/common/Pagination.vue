@@ -125,8 +125,8 @@ const pagination = usePagination({
 
 // Sync composable state with props
 watch(() => props.currentPage, (newPage) => {
-  if (newPage !== pagination.currentPage.value) {
-    pagination.goToPage(newPage)
+  if (newPage !== pagination.currentPage.value && newPage >= 1 && newPage <= props.totalPages) {
+    pagination.currentPage.value = newPage
   }
 }, { immediate: true })
 

@@ -449,25 +449,64 @@ class ImprovedCacaoDataset(Dataset):
         
         # Si hay pixel_features, agregarlos
         if self.pixel_features is not None:
-            # Detectar si son features básicos o extendidos
+            # Detectar el formato de pixel_features
+            # Caso 1: dict con keys como str(path) -> array (test format)
+            image_path_str = str(self.image_paths[idx])
+            if image_path_str in self.pixel_features:
+                # Features como array directo (10 features según test)
+                pixel_feat_array = self.pixel_features[image_path_str]
+                if isinstance(pixel_feat_array, np.ndarray):
+                    pixel_feat_values = pixel_feat_array.tolist()
+                elif isinstance(pixel_feat_array, (list, tuple)):
+                    pixel_feat_values = list(pixel_feat_array)
+                else:
+                    pixel_feat_values = [float(pixel_feat_array)]
+                # Asegurar que tenga 10 elementos
+                if len(pixel_feat_values) == 10:
+                    pixel_feat = torch.tensor(pixel_feat_values, dtype=torch.float32)
+                    return image_tensor, targets_tensor, pixel_feat
+                elif len(pixel_feat_values) == 5:
+                    pixel_feat = torch.tensor(pixel_feat_values, dtype=torch.float32)
+                    return image_tensor, targets_tensor, pixel_feat
+                else:
+                    # Padding o truncar a 10
+                    if len(pixel_feat_values) < 10:
+                        pixel_feat_values.extend([0.0] * (10 - len(pixel_feat_values)))
+                    else:
+                        pixel_feat_values = pixel_feat_values[:10]
+                    pixel_feat = torch.tensor(pixel_feat_values, dtype=torch.float32)
+                    return image_tensor, targets_tensor, pixel_feat
+            
+            # Caso 2: dict con keys específicos (features extendidos o básicos)
             if all(k in self.pixel_features for k in [
                 "grain_area_pixels", "width_pixels", "height_pixels",
                 "bbox_area_pixels", "aspect_ratio", "original_total_pixels",
                 "background_pixels", "background_ratio", "alto_mm_per_pixel",
                 "ancho_mm_per_pixel", "average_mm_per_pixel", "segmentation_confidence"
             ]):
-                # Features extendidos (12)
+                # Features extendidos (12) - tomar solo los primeros 10 para compatibilidad
                 pixel_feat_values = [
                     float(self.pixel_features[key][idx])
                     for key in [
                         "grain_area_pixels", "width_pixels", "height_pixels",
                         "bbox_area_pixels", "aspect_ratio", "original_total_pixels",
                         "background_pixels", "background_ratio", "alto_mm_per_pixel",
-                        "ancho_mm_per_pixel", "average_mm_per_pixel", "segmentation_confidence"
+                        "ancho_mm_per_pixel"
                     ]
                 ]
-            else:
+            elif all(k in self.pixel_features for k in [
+                "pixel_width", "pixel_height", "pixel_area", "scale_factor", "aspect_ratio"
+            ]):
                 # Features básicos (5)
+                pixel_feat_values = [
+                    float(self.pixel_features["pixel_width"][idx]),
+                    float(self.pixel_features["pixel_height"][idx]),
+                    float(self.pixel_features["pixel_area"][idx]),
+                    float(self.pixel_features["scale_factor"][idx]),
+                    float(self.pixel_features["aspect_ratio"][idx]),
+                ]
+            else:
+                # Fallback: intentar obtener features básicos con defaults
                 pixel_feat_values = [
                     float(self.pixel_features.get("pixel_width", [0.0] * len(self.image_paths))[idx]),
                     float(self.pixel_features.get("pixel_height", [0.0] * len(self.image_paths))[idx]),
@@ -481,17 +520,20 @@ class ImprovedCacaoDataset(Dataset):
         
         return image_tensor, targets_tensor
     
-    def get_target_ranges(self) -> Dict[str, Tuple[float, float]]:
+    def get_target_ranges(self) -> Dict[str, Dict[str, float]]:
         """
         Obtiene los rangos (min, max) de cada target.
         
         Returns:
-            Diccionario con rangos por target
+            Diccionario con rangos por target en formato {'min': ..., 'max': ...}
         """
         ranges = {}
         for target in self.TARGET_ORDER:
             values = self.targets[target]
-            ranges[target] = (float(np.min(values)), float(np.max(values)))
+            ranges[target] = {
+                'min': float(np.min(values)),
+                'max': float(np.max(values))
+            }
         return ranges
     
     def validate_with_calibration(

@@ -6,71 +6,128 @@ optimizando la creación de datos de prueba y reduciendo duplicación.
 """
 import os
 import sys
+import warnings
+import django
 from pathlib import Path
 from decimal import Decimal
 from typing import Optional
 import pytest
 
-# Añadir el directorio del proyecto al path
-project_root = Path(__file__).parent
-sys.path.insert(0, str(project_root))
+# Force UTF-8 encoding for all operations before Django setup
+os.environ["PYTHONUTF8"] = "1"
+os.environ["PYTHONIOENCODING"] = "UTF-8"
+os.environ["PGCLIENTENCODING"] = "UTF8"
 
-# Configurar Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cacaoscan.settings')
+def clean_env_value(value):
+    """Clean environment variable value to ensure UTF-8 encoding."""
+    if not value:
+        return value
+    if isinstance(value, bytes):
+        try:
+            value = value.decode('utf-8', errors='replace')
+        except Exception:
+            value = value.decode('latin-1', errors='replace')
+    if not isinstance(value, str):
+        value = str(value)
+    # Remove problematic bytes
+    value_bytes = value.encode('utf-8', errors='replace')
+    value_bytes = value_bytes.replace(b'\xf3', b'')
+    value = value_bytes.decode('utf-8', errors='replace')
+    return value
 
-# Ensure database environment variables are properly encoded before Django setup
-def sanitize_env_for_db():
-    """Sanitize environment variables for database connection."""
-    db_vars = ['DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST', 'DB_PORT']
-    for var in db_vars:
-        value = os.environ.get(var)
-        if value and isinstance(value, bytes):
-            try:
-                os.environ[var] = value.decode('utf-8', errors='replace')
-            except Exception:
-                os.environ[var] = value.decode('latin-1', errors='replace')
+# Clean critical database environment variables before Django setup
+_db_env_vars = [
+    'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_HOST', 'POSTGRES_PORT',
+    'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST', 'DB_PORT',
+    'POSTGRES_DB_TEST'
+]
+for var in _db_env_vars:
+    if var in os.environ:
+        os.environ[var] = clean_env_value(os.environ[var])
 
-sanitize_env_for_db()
+# Añadir el directorio raíz del proyecto al PYTHONPATH
+# Esto permite importar 'cacaoscan.settings' cuando pytest se ejecuta desde la raíz
+project_root = Path(__file__).resolve().parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
-try:
-    import django
-    django.setup()
-except SyntaxError as e:
-    # Error de sintaxis - mostrar información detallada
-    import warnings
-    warnings.warn(
-        f"Error de sintaxis en settings.py: {e}\n"
-        f"Archivo: {e.filename}, Línea: {e.lineno}\n"
-        f"Texto: {e.text}",
-        category=UserWarning
-    )
-    raise  # Re-raise para que pytest muestre el error completo
-except Exception as e:
-    # Otros errores - solo advertir, pytest intentará configurar Django de nuevo
-    import warnings
-    warnings.warn(f"Error configurando Django en conftest: {e}", category=UserWarning)
+# Configurar Django settings module
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cacaoscan.settings")
+django.setup()
 
 
 def pytest_configure(config):
     """Configuración de pytest."""
-    import django
-    from django.conf import settings
-    
-    # Registrar marcadores personalizados explícitamente
+    # Registrar marcadores personalizados
     config.addinivalue_line("markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')")
     config.addinivalue_line("markers", "integration: marks tests as integration tests")
     config.addinivalue_line("markers", "unit: marks tests as unit tests")
     
-    if not settings.configured:
-        try:
-            django.setup()
-        except Exception as e:
-            import warnings
-            warnings.warn(f"Error en pytest_configure al configurar Django: {e}")
+    # Suprimir advertencias conocidas de librerías externas y Django
+    # Estas advertencias no afectan la funcionalidad y son de librerías de terceros
+    warnings.filterwarnings(
+        "ignore",
+        message=".*pkg_resources.declare_namespace.*",
+        category=DeprecationWarning
+    )
+    warnings.filterwarnings(
+        "ignore",
+        message=".*load_module.*",
+        category=DeprecationWarning
+    )
+    warnings.filterwarnings(
+        "ignore",
+        message=".*ast.NameConstant.*",
+        category=DeprecationWarning
+    )
+    # Advertencias de Django 6.0 sobre CheckConstraint.check (migraciones antiguas)
+    # RemovedInDjango60Warning es una categoría específica de Django
+    # Intentar importar la categoría específica de Django
+    try:
+        from django.utils.deprecation import RemovedInDjango60Warning
+        warnings.filterwarnings("ignore", category=RemovedInDjango60Warning)
+    except (ImportError, AttributeError):
+        # Si la versión de Django no tiene esta categoría, usar filtro por mensaje
+        # Esto funciona para versiones anteriores de Django
+        pass
+    
+    # Filtro adicional por mensaje para asegurar que se capturen todas las variantes
+    # Este filtro funciona independientemente de la versión de Django
+    warnings.filterwarnings(
+        "ignore",
+        message=".*CheckConstraint.check is deprecated.*",
+    )
+    warnings.filterwarnings(
+        "ignore",
+        message=".*RemovedInDjango60Warning.*",
+    )
+    # Filtro general para todas las advertencias de deprecación de Django relacionadas con constraints
+    warnings.filterwarnings(
+        "ignore",
+        message=".*CheckConstraint.*",
+        module=".*migrations.*",
+    )
+    # Advertencia sobre directorio staticfiles (se crea automáticamente si es necesario)
+    warnings.filterwarnings(
+        "ignore",
+        message=".*No directory at.*staticfiles.*",
+        category=UserWarning
+    )
+    
+    # Crear directorio staticfiles si no existe (para evitar UserWarning)
+    # Esto debe hacerse después de que Django esté configurado
+    try:
+        from django.conf import settings
+        static_root = Path(settings.STATIC_ROOT)
+        if not static_root.exists():
+            static_root.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        # Si Django aún no está completamente configurado, ignorar
+        pass
 
 
 # ============================================================================
-# FIXTURES CENTRALIZADOS - Fase 5: Optimización Final
+# FIXTURES CENTRALIZADOS
 # ============================================================================
 
 @pytest.fixture

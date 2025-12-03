@@ -85,8 +85,21 @@ for test_file in test_files:
         print(f"\n📄 Verificando {test_file}...")
         try:
             # Leer el archivo y extraer imports
-            with open(test_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+            # Try multiple encodings to read the file
+            encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+            content = None
+            for encoding in encodings:
+                try:
+                    with open(test_path, 'r', encoding=encoding) as f:
+                        content = f.read()
+                    break
+                except UnicodeDecodeError:
+                    continue
+            if content is None:
+                # Last resort: read as bytes and decode with errors='replace'
+                with open(test_path, 'rb') as f:
+                    raw_content = f.read()
+                content = raw_content.decode('utf-8', errors='replace')
                 # Buscar imports de ml.
                 if 'from ml.' in content or 'import ml.' in content:
                     print("  ✅ Archivo encontrado")

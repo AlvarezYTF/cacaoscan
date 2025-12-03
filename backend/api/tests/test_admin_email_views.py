@@ -44,7 +44,7 @@ class EmailStatusViewTest(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
-    @patch('api.views.admin.email_views.settings')
+    @patch('django.conf.settings')
     @patch('api.views.admin.email_views.email_service')
     def test_email_status_success(self, mock_email_service, mock_settings):
         """Test successful email status retrieval."""
@@ -65,7 +65,9 @@ class EmailStatusViewTest(APITestCase):
         
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('email_enabled', response.data['data'])
+        # create_success_response does update(data), so keys are at top level, not in 'data'
+        self.assertIn('email_enabled', response.data)
+        self.assertTrue(response.data['success'])
 
 
 class SendTestEmailViewTest(APITestCase):
@@ -170,7 +172,7 @@ class SendBulkNotificationViewTest(APITestCase):
         response = self.client.post(self.url, {
             'notification_type': 'welcome',
             'user_emails': ['test1@example.com', 'test2@example.com']
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data['success'])
 
@@ -224,7 +226,8 @@ class EmailTemplatePreviewViewTest(APITestCase):
             'template_type': 'welcome'
         })
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('html_content', response.data['data'])
+        # create_success_response does update(data), so keys are at top level, not in 'data'
+        self.assertIn('html_content', response.data)
 
 
 class EmailLogsViewTest(APITestCase):
@@ -259,5 +262,6 @@ class EmailLogsViewTest(APITestCase):
         
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('total_emails', response.data['data'])
+        # create_success_response does update(data), so keys are at top level, not in 'data'
+        self.assertIn('total_emails', response.data)
 

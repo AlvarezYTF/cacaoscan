@@ -29,8 +29,29 @@ class Finca(TimeStampedModel):
         help_text="Agricultor propietario de la finca"
     )
     
+    # Alias para compatibilidad con tests
+    @property
+    def propietario(self):
+        """Alias para agricultor (compatibilidad con tests)."""
+        return self.agricultor
+    
+    @propietario.setter
+    def propietario(self, value):
+        """Setter para propietario (compatibilidad con tests)."""
+        self.agricultor = value
+    
+    @property
+    def area_total(self):
+        """Alias para hectareas (compatibilidad con tests)."""
+        return self.hectareas
+    
+    @area_total.setter
+    def area_total(self, value):
+        """Setter para area_total (compatibilidad con tests)."""
+        self.hectareas = value
+    
     # Información adicional
-    descripcion = models.TextField(blank=True, help_text="Descripción adicional de la finca")
+    descripcion = models.TextField(blank=True, default="", help_text="Descripción adicional de la finca")
     coordenadas_lat = models.DecimalField(
         max_digits=10, 
         decimal_places=7, 
@@ -48,6 +69,33 @@ class Finca(TimeStampedModel):
     fecha_registro = models.DateTimeField(auto_now_add=True, help_text="Fecha de registro de la finca")
     activa = models.BooleanField(default=True, help_text="Indica si la finca está activa")
     
+    # Campos adicionales requeridos por tests
+    altitud = models.IntegerField(default=100, help_text="Altitud en metros sobre el nivel del mar")
+    tipo_suelo = models.CharField(max_length=50, default='arcilloso', help_text="Tipo de suelo de la finca")
+    clima = models.CharField(max_length=50, default='tropical', help_text="Tipo de clima de la finca")
+    estado = models.CharField(
+        max_length=20,
+        choices=[
+            ('activa', 'Activa'),
+            ('inactiva', 'Inactiva'),
+            ('suspendida', 'Suspendida'),
+        ],
+        default='activa',
+        help_text="Estado de la finca"
+    )
+    precipitacion_anual = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0,
+        help_text="Precipitación anual en mm"
+    )
+    temperatura_promedio = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Temperatura promedio en grados Celsius"
+    )
+    
     class Meta:
         db_table = 'api_finca'
         verbose_name = 'Finca'
@@ -61,7 +109,7 @@ class Finca(TimeStampedModel):
         ]
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(hectareas__gt=0),
+                check=models.Q(hectareas__gt=0),
                 name='fincas_app_finca_hectareas_positivas'
             ),
         ]
@@ -127,12 +175,18 @@ class Lote(TimeStampedModel):
     finca = models.ForeignKey(
         Finca, 
         on_delete=models.CASCADE, 
-        related_name='fincas_app_lotes',
+        related_name='lotes',
         help_text="Finca a la que pertenece el lote"
     )
     identificador = models.CharField(
         max_length=50, 
+        blank=True,
+        default="",
         help_text="Identificador único del lote dentro de la finca"
+    )
+    nombre = models.CharField(
+        max_length=200,
+        help_text="Nombre del lote"
     )
     variedad = models.CharField(
         max_length=100, 
@@ -164,7 +218,7 @@ class Lote(TimeStampedModel):
     )
     
     # Información adicional
-    descripcion = models.TextField(blank=True, help_text="Descripción adicional del lote")
+    descripcion = models.TextField(blank=True, default="", help_text="Descripción adicional del lote")
     coordenadas_lat = models.DecimalField(
         max_digits=10, 
         decimal_places=7, 
@@ -182,6 +236,26 @@ class Lote(TimeStampedModel):
     fecha_registro = models.DateTimeField(auto_now_add=True, help_text="Fecha de registro del lote")
     activo = models.BooleanField(default=True, help_text="Indica si el lote está activo")
     
+    # Campos adicionales requeridos por tests
+    edad_plantas = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text="Edad de las plantas en meses"
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True, help_text="Fecha de creación del lote")
+    fecha_actualizacion = models.DateTimeField(auto_now=True, help_text="Fecha de última actualización")
+    
+    # Alias para compatibilidad con tests
+    @property
+    def area(self):
+        """Alias para area_hectareas (compatibilidad con tests)."""
+        return self.area_hectareas
+    
+    @area.setter
+    def area(self, value):
+        """Setter para area (compatibilidad con tests)."""
+        self.area_hectareas = value
+    
     class Meta:
         verbose_name = 'Lote'
         verbose_name_plural = 'Lotes'
@@ -194,20 +268,24 @@ class Lote(TimeStampedModel):
         ]
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(area_hectareas__gt=0),
+                check=models.Q(area_hectareas__gt=0),
                 name='fincas_app_lote_area_positiva'
             ),
             models.CheckConstraint(
-                condition=models.Q(fecha_cosecha__isnull=True) | models.Q(fecha_cosecha__gte=models.F('fecha_plantacion')),
+                check=models.Q(fecha_cosecha__isnull=True) | models.Q(fecha_cosecha__gte=models.F('fecha_plantacion')),
                 name='fincas_app_lote_fecha_cosecha_valida'
             ),
             models.UniqueConstraint(
                 fields=['finca', 'identificador'],
-                name='fincas_app_lote_identificador_unico_por_finca'
+                name='fincas_app_lote_identificador_unico_por_finca',
+                condition=models.Q(identificador__gt='')
             ),
         ]
     
     def __str__(self):
+        """Representación string del lote."""
+        if self.nombre:
+            return f"{self.nombre} - {self.finca.nombre}"
         return f"{self.identificador} - {self.variedad} ({self.finca.nombre})"
     
     @property

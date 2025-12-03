@@ -54,53 +54,97 @@ class LoteService(BaseService):
             ServiceResult with created lote data
         """
         try:
+            # Handle finca_id and area for backward compatibility
+            finca_id = lote_data.get('finca_id') or lote_data.get('finca')
+            area_hectareas = lote_data.get('area') or lote_data.get('area_hectareas') or lote_data.get('hectareas')
+            nombre = lote_data.get('nombre', '')
+            identificador = lote_data.get('identificador', '')
+            
             # Validate required fields
-            required_fields = ['finca', 'identificador', 'variedad', 'fecha_plantacion', 'hectareas']
-            self.validate_required_fields(lote_data, required_fields)
+            if not finca_id:
+                return ServiceResult.validation_error(
+                    "El ID de la finca es requerido",
+                    details={"field": "finca_id"}
+                )
+            
+            if not area_hectareas:
+                return ServiceResult.validation_error(
+                    "El área es requerida",
+                    details={"field": "area"}
+                )
+            
+            if not nombre and not identificador:
+                return ServiceResult.validation_error(
+                    "El nombre o identificador del lote es requerido",
+                    details={"field": "nombre"}
+                )
             
             # Validate that the finca belongs to the user (optimized)
             try:
                 if user.is_superuser or user.is_staff:
-                    finca = Finca.objects.select_related('agricultor').get(id=lote_data['finca'])
+                    finca = Finca.objects.select_related('agricultor').get(id=finca_id)
                 else:
-                    finca = Finca.objects.select_related('agricultor').get(id=lote_data['finca'], agricultor=user)
+                    finca = Finca.objects.select_related('agricultor').get(id=finca_id, agricultor=user)
             except Finca.DoesNotExist:
                 return ServiceResult.not_found_error(ERROR_FINCA_NOT_FOUND)
             
-            # Validate unique identifier in the finca
-            if Lote.objects.filter(finca=finca, identificador=lote_data['identificador']).exists():
+            # Validate area
+            from decimal import Decimal
+            try:
+                area_hectareas = Decimal(str(area_hectareas))
+                if area_hectareas < 0:
+                    return ServiceResult.validation_error(
+                        "El área debe ser mayor o igual a 0",
+                        details={"field": "area"}
+                    )
+                # Check if area exceeds finca area
+                if area_hectareas > finca.hectareas:
+                    return ServiceResult.validation_error(
+                        "El área del lote no puede exceder el área de la finca",
+                        details={"field": "area", "finca_area": float(finca.hectareas)}
+                    )
+            except (ValueError, TypeError):
                 return ServiceResult.validation_error(
-                    "A lote with this identifier already exists in the finca",
+                    "El área debe ser un número válido",
+                    details={"field": "area"}
+                )
+            
+            # Validate unique identifier in the finca (if provided)
+            if identificador and Lote.objects.filter(finca=finca, identificador=identificador).exists():
+                return ServiceResult.validation_error(
+                    "Ya existe un lote con este identificador en la finca",
                     details={"field": "identificador"}
                 )
             
-            # Validate values
-            validations = {
-                'identificador': {'min_length': 1, 'max_length': 50},
-                'variedad': {'min_length': 2, 'max_length': 100},
-                'hectareas': {'type': (int, float), 'min': 0.01}
-            }
-            self.validate_field_values(lote_data, validations)
+            # Validate nombre (if provided)
+            if nombre and len(nombre.strip()) < 2:
+                return ServiceResult.validation_error(
+                    "El nombre del lote debe tener al menos 2 caracteres",
+                    details={"field": "nombre"}
+                )
+            
+            # Validate variedad
+            variedad = lote_data.get('variedad', '')
+            if not variedad or len(variedad.strip()) < 2:
+                return ServiceResult.validation_error(
+                    "La variedad es requerida y debe tener al menos 2 caracteres",
+                    details={"field": "variedad"}
+                )
             
             # Create lote
             lote = Lote(
                 finca=finca,
-                identificador=lote_data['identificador'],
-                variedad=lote_data['variedad'],
-                fecha_plantacion=lote_data['fecha_plantacion'],
-                hectareas=lote_data['hectareas'],
+                nombre=nombre or identificador,
+                identificador=identificador or nombre,
+                variedad=variedad,
+                area_hectareas=area_hectareas,
                 estado=lote_data.get('estado', 'activo'),
                 descripcion=lote_data.get('descripcion', ''),
-                coordenadas=lote_data.get('coordenadas', {}),
-                tipo_suelo=lote_data.get('tipo_suelo', ''),
-                altitud=lote_data.get('altitud', 0),
-                precipitacion_anual=lote_data.get('precipitacion_anual', 0),
-                temperatura_promedio=lote_data.get('temperatura_promedio', 0),
-                rendimiento_esperado=lote_data.get('rendimiento_esperado', 0),
+                coordenadas_lat=lote_data.get('coordenadas_lat'),
+                coordenadas_lng=lote_data.get('coordenadas_lng'),
+                fecha_plantacion=lote_data.get('fecha_plantacion'),
                 fecha_cosecha=lote_data.get('fecha_cosecha'),
-                rendimiento_real=lote_data.get('rendimiento_real', 0),
-                calidad_cacao=lote_data.get('calidad_cacao', ''),
-                notas=lote_data.get('notas', '')
+                edad_plantas=lote_data.get('edad_plantas', 0)
             )
             
             lote.save()
@@ -114,7 +158,8 @@ class LoteService(BaseService):
                 details={
                     'identificador': lote.identificador,
                     'variedad': lote.variedad,
-                    'hectareas': lote.hectareas,
+                    'area_hectareas': lote.area_hectareas,
+                    'area': lote.area_hectareas,
                     'finca_id': finca.id,
                     'finca_nombre': finca.nombre
                 }
@@ -287,11 +332,40 @@ class LoteService(BaseService):
                         details={"field": "identificador"}
                     )
             
+            # Handle area and finca_id for backward compatibility
+            if 'area' in lote_data:
+                lote_data['area_hectareas'] = lote_data.pop('area')
+            if 'finca_id' in lote_data:
+                lote_data['finca'] = lote_data.pop('finca_id')
+            
+            # Validate area if provided
+            if 'area_hectareas' in lote_data:
+                from decimal import Decimal
+                try:
+                    area_hectareas = Decimal(str(lote_data['area_hectareas']))
+                    if area_hectareas < 0:
+                        return ServiceResult.validation_error(
+                            "El área debe ser mayor o igual a 0",
+                            details={"field": "area"}
+                        )
+                    # Check if area exceeds finca area
+                    if area_hectareas > lote.finca.hectareas:
+                        return ServiceResult.validation_error(
+                            "El área del lote no puede exceder el área de la finca",
+                            details={"field": "area", "finca_area": float(lote.finca.hectareas)}
+                        )
+                    lote_data['area_hectareas'] = area_hectareas
+                except (ValueError, TypeError):
+                    return ServiceResult.validation_error(
+                        "El área debe ser un número válido",
+                        details={"field": "area"}
+                    )
+            
             # Save original data for log
             original_data = {
                 'identificador': lote.identificador,
                 'variedad': lote.variedad,
-                'hectareas': lote.hectareas,
+                'area_hectareas': lote.area_hectareas if hasattr(lote, 'area_hectareas') else getattr(lote, 'area', 0),
                 'estado': lote.estado
             }
             
@@ -359,7 +433,7 @@ class LoteService(BaseService):
                 details={
                     'identificador': lote.identificador,
                     'variedad': lote.variedad,
-                    'hectareas': lote.hectareas,
+                    'hectareas': lote.area_hectareas if hasattr(lote, 'area_hectareas') else getattr(lote, 'area', 0),
                     'finca_id': lote.finca.id,
                     'finca_nombre': lote.finca.nombre
                 }
@@ -413,8 +487,8 @@ class LoteService(BaseService):
                 'lotes_activos': queryset.filter(estado='activo').count(),
                 'lotes_cosechados': queryset.filter(estado='cosechado').count(),
                 'lotes_inactivos': queryset.filter(estado='inactivo').count(),
-                'total_hectareas': queryset.aggregate(total=Sum('hectareas'))['total'] or 0,
-                'promedio_hectareas': queryset.aggregate(avg=Avg('hectareas'))['avg'] or 0,
+                'total_hectareas': queryset.aggregate(total=Sum('area_hectareas'))['total'] or 0,
+                'promedio_hectareas': queryset.aggregate(avg=Avg('area_hectareas'))['avg'] or 0,
                 'variedades': dict(queryset.values('variedad').annotate(count=Count('id')).values_list('variedad', 'count')),
                 'estados': dict(queryset.values('estado').annotate(count=Count('id')).values_list('estado', 'count')),
                 'promedio_edad': queryset.aggregate(avg=Avg('edad_plantas'))['avg'] or 0,
@@ -457,7 +531,7 @@ class LoteService(BaseService):
             # Get lote statistics
             lotes_stats = finca.lotes.aggregate(
                 total_lotes=Count('id'),
-                hectareas_cultivadas=Sum('hectareas'),
+                hectareas_cultivadas=Sum('area_hectareas'),
                 promedio_edad=Avg('edad_plantas')
             )
             
@@ -470,7 +544,7 @@ class LoteService(BaseService):
                     'id': lote.id,
                     'identificador': lote.identificador,
                     'variedad': lote.variedad,
-                    'hectareas': lote.hectareas,
+                    'hectareas': lote.area_hectareas if hasattr(lote, 'area_hectareas') else getattr(lote, 'area', 0),
                     'fecha_plantacion': lote.fecha_plantacion.isoformat(),
                     'edad_plantas': lote.edad_plantas,
                     'estado': lote.estado
@@ -517,26 +591,22 @@ class LoteService(BaseService):
         """
         return {
             'id': lote.id,
-            'identificador': lote.identificador,
-            'variedad': lote.variedad,
-            'fecha_plantacion': lote.fecha_plantacion.isoformat(),
-            'hectareas': lote.hectareas,
-            'estado': lote.estado,
-            'edad_plantas': lote.edad_plantas,
-            'descripcion': lote.descripcion,
-            'coordenadas': lote.coordenadas,
-            'tipo_suelo': lote.tipo_suelo,
-            'altitud': lote.altitud,
-            'precipitacion_anual': lote.precipitacion_anual,
-            'temperatura_promedio': lote.temperatura_promedio,
-            'rendimiento_esperado': lote.rendimiento_esperado,
-            'fecha_cosecha': lote.fecha_cosecha.isoformat() if lote.fecha_cosecha else None,
-            'rendimiento_real': lote.rendimiento_real,
-            'calidad_cacao': lote.calidad_cacao,
-            'notas': lote.notas,
-            'created_at': lote.created_at.isoformat(),
-            'updated_at': lote.updated_at.isoformat(),
             'finca_id': lote.finca.id,
-            'finca_nombre': lote.finca.nombre
+            'finca_nombre': lote.finca.nombre,
+            'identificador': lote.identificador,
+            'nombre': lote.nombre,
+            'variedad': lote.variedad,
+            'area_hectareas': lote.area_hectareas,
+            'area': lote.area_hectareas,  # Alias for backward compatibility
+            'hectareas': lote.area_hectareas,  # Alias for backward compatibility
+            'estado': lote.estado,
+            'descripcion': lote.descripcion,
+            'fecha_plantacion': lote.fecha_plantacion.isoformat() if lote.fecha_plantacion else None,
+            'fecha_cosecha': lote.fecha_cosecha.isoformat() if lote.fecha_cosecha else None,
+            'edad_plantas': lote.edad_plantas,
+            'coordenadas_lat': float(lote.coordenadas_lat) if lote.coordenadas_lat else None,
+            'coordenadas_lng': float(lote.coordenadas_lng) if lote.coordenadas_lng else None,
+            'created_at': lote.created_at.isoformat() if hasattr(lote, 'created_at') else None,
+            'updated_at': lote.updated_at.isoformat() if hasattr(lote, 'updated_at') else None
         }
 

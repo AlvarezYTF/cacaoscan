@@ -201,4 +201,18 @@ class LoginService(BaseService):
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+    
+    def login(self, username_or_email: str, password: str, request=None) -> ServiceResult:
+        """
+        Alias for login_user for backward compatibility with tests.
+        
+        Args:
+            username_or_email: Username or email
+            password: Password
+            request: Request object to get IP and user agent
+            
+        Returns:
+            ServiceResult with tokens and user data
+        """
+        return self.login_user(username_or_email, password, request)
 

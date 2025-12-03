@@ -89,14 +89,14 @@ class ReporteListCreateView(PaginationMixin, APIView):
         if tipo_reporte not in valid_types:
             return Response({
                 'error': f'Tipo de reporte inválido. Opciones válidas: {", ".join(valid_types)}',
-                'status': 'error'
+                'details': f'Tipo de reporte inválido. Opciones válidas: {", ".join(valid_types)}'
             }, status=status.HTTP_400_BAD_REQUEST)
         
         valid_formats = [choice[0] for choice in ReporteGenerado.FORMATO_CHOICES]
         if formato not in valid_formats:
             return Response({
                 'error': f'Formato inválido. Opciones válidas: {", ".join(valid_formats)}',
-                'status': 'error'
+                'details': f'Formato inválido. Opciones válidas: {", ".join(valid_formats)}'
             }, status=status.HTTP_400_BAD_REQUEST)
         
         return None
@@ -147,7 +147,7 @@ class ReporteListCreateView(PaginationMixin, APIView):
             logger.error(f"Error listando reportes: {e}")
             return Response({
                 'error': ERROR_INTERNAL_SERVER,
-                'status': 'error'
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @swagger_auto_schema(
@@ -183,7 +183,7 @@ class ReporteListCreateView(PaginationMixin, APIView):
             if not tipo_reporte or not formato or not titulo:
                 return Response({
                     'error': 'Los campos tipo_reporte, formato y titulo son requeridos',
-                    'status': 'error'
+                    'details': 'Los campos tipo_reporte, formato y titulo son requeridos'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Validate report type and format
@@ -208,21 +208,23 @@ class ReporteListCreateView(PaginationMixin, APIView):
             logger.info(f"Reporte '{titulo}' creado por usuario {request.user.username}")
             
             return Response({
-                'id': reporte.id,
-                'tipo_reporte': reporte.tipo_reporte,
-                'formato': reporte.formato,
-                'titulo': reporte.titulo,
-                'estado': reporte.estado,
-                'fecha_solicitud': reporte.fecha_solicitud.isoformat(),
-                'message': 'Reporte creado exitosamente. Se generará en segundo plano.',
-                'status': 'success'
+                'success': True,
+                'reporte': {
+                    'id': reporte.id,
+                    'tipo_reporte': reporte.tipo_reporte,
+                    'formato': reporte.formato,
+                    'titulo': reporte.titulo,
+                    'estado': reporte.estado,
+                    'fecha_solicitud': reporte.fecha_solicitud.isoformat(),
+                },
+                'message': 'Reporte creado exitosamente. Se generará en segundo plano.'
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
             logger.error(f"Error creando reporte: {e}")
             return Response({
                 'error': ERROR_INTERNAL_SERVER,
-                'status': 'error'
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def _generate_report_async(self, reporte):
@@ -360,12 +362,12 @@ class ReporteDeleteView(APIView):
         except ReporteGenerado.DoesNotExist:
             return Response({
                 'error': 'Reporte no encontrado',
-                'status': 'error'
+                'details': 'El reporte solicitado no existe o no tienes permiso para acceder a él'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error eliminando reporte {reporte_id}: {e}")
             return Response({
                 'error': ERROR_INTERNAL_SERVER,
-                'status': 'error'
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

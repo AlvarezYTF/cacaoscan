@@ -460,6 +460,7 @@ export default {
       lastActivity,
       visiblePages,
       loadActivities,
+      getStartDate,
       clearFilters,
       changePage,
       exportActivities,

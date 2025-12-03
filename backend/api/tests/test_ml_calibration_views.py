@@ -55,23 +55,30 @@ class CalibrationUploadViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('error', response.data)
     
-    @patch('api.views.ml.calibration_views.process_calibration_image')
-    def test_calibration_upload_success(self, mock_process):
+    @patch('ml.prediction.calibrated_predict.get_calibrated_predictor')
+    def test_calibration_upload_success(self, mock_get_predictor):
         """Test successful calibration upload."""
-        mock_process.return_value = {
+        mock_predictor = MagicMock()
+        mock_predictor.calibrate_image.return_value = {
             'success': True,
-            'pixel_calibration': {'width': 512, 'height': 512}
+            'pixels_per_mm': 5.0,
+            'confidence': 0.95,
+            'method': 'coin_detection',
+            'reference_object': 'COIN_1000_COP',
+            'calibration_image_path': '/path/to/calibration.jpg'
         }
+        mock_get_predictor.return_value = mock_predictor
         
         token = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         
         image_file = SimpleUploadedFile('test.jpg', b'fake image content', content_type='image/jpeg')
         url = reverse('ml-calibration-upload')
-        response = self.client.post(url, {'image': image_file})
+        response = self.client.post(url, {'image': image_file}, format='multipart')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('pixel_calibration', response.data)
+        self.assertIn('pixels_per_mm', response.data)
+        self.assertTrue(response.data['success'])
 
 
 class CalibrationStatusViewTest(APITestCase):
@@ -91,13 +98,20 @@ class CalibrationStatusViewTest(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
-    @patch('api.views.ml.calibration_views.get_calibration_status')
-    def test_calibration_status_success(self, mock_get_status):
+    @patch('ml.prediction.calibrated_predict.get_calibrated_predictor')
+    def test_calibration_status_success(self, mock_get_predictor):
         """Test successful calibration status retrieval."""
-        mock_get_status.return_value = {
-            'calibrated': True,
-            'last_calibration': '2024-01-01T00:00:00Z'
+        mock_predictor = MagicMock()
+        mock_predictor.get_calibration_status.return_value = {
+            'calibration_enabled': True,
+            'calibration_loaded': True,
+            'pixels_per_mm': 5.0,
+            'method': 'coin_detection',
+            'confidence': 0.95,
+            'timestamp': '2024-01-01T00:00:00Z',
+            'validation_score': 0.98
         }
+        mock_get_predictor.return_value = mock_predictor
         
         token = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
@@ -106,5 +120,5 @@ class CalibrationStatusViewTest(APITestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('calibrated', response.data)
+        self.assertIn('calibration_enabled', response.data)
 
