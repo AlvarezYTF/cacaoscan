@@ -784,26 +784,34 @@ const buildRegistrationPayload = () => {
     genero: form.value.genero,
     fecha_nacimiento: form.value.fechaNacimiento || '',
     municipio: municipioSeleccionado?.id || null,
-    departamento: departamentoSeleccionado?.id || null
+    departamento: departamentoSeleccionado?.id || null,
+    acepto_terminos: form.value.acceptTerms
   }
 }
 
 const handleRegistrationSuccess = async (result) => {
-  const email = result.data?.email || form.value.email.trim()
+  // Registro exitoso - redirigir al login
+  setStatusMessage('¡Cuenta creada exitosamente! Ya puedes iniciar sesión.', 'success')
   
-  try {
-    await authApi.sendOtp(email)
-  } catch (error) {
-    console.error('Error enviando código OTP:', error)
-  }
-  
-  router.push({ 
-    name: 'VerifyEmailOTP', 
-    query: { email } 
-  })
+  // Redirigir al login después de 2 segundos
+  setTimeout(() => {
+    router.push({ 
+      name: 'Login',
+      query: { 
+        message: 'Tu cuenta ha sido creada exitosamente. Por favor inicia sesión.',
+        registered: 'true'
+      }
+    })
+  }, 2000)
 }
 
 const extractErrorMessage = (responseData) => {
+  // El backend ahora devuelve {"errors": {...}, "detail": "Datos inválidos"}
+  if (responseData.errors && typeof responseData.errors === 'object') {
+    // Si hay errores específicos, no retornar mensaje genérico
+    // Dejar que mapFieldErrors los maneje
+    return null
+  }
   if (responseData.detail) return responseData.detail
   if (responseData.error) return responseData.error
   if (typeof responseData === 'string') return responseData
@@ -830,20 +838,41 @@ const mapFieldErrors = (responseData) => {
     'municipio': 'municipio'
   }
   
-  for (const key of Object.keys(responseData)) {
-    const fieldError = responseData[key]
+  // El backend puede devolver {"errors": {...}} o directamente los errores
+  const errorsToMap = responseData.errors || responseData
+  
+  let firstError = null
+  
+  for (const key of Object.keys(errorsToMap)) {
+    // Ignorar campos que no son errores de campos
+    if (key === 'detail' || key === 'error' || key === 'non_field_errors') {
+      continue
+    }
+    
+    const fieldError = errorsToMap[key]
     const errorText = Array.isArray(fieldError) ? fieldError[0] : fieldError
+    
+    // Mapear al campo del frontend
     const frontendField = fieldMapping[key] || key
     errors[frontendField] = errorText
+    
+    // Guardar el primer error para el mensaje general
+    if (!firstError) {
+      firstError = errorText
+    }
   }
   
-  const firstKey = Object.keys(responseData)[0]
-  const firstError = responseData[firstKey]
-  return Array.isArray(firstError) ? firstError[0] : firstError
+  // Si hay non_field_errors, usarlos
+  if (errorsToMap.non_field_errors && Array.isArray(errorsToMap.non_field_errors)) {
+    firstError = errorsToMap.non_field_errors[0]
+  }
+  
+  return firstError || responseData.detail || 'Error al procesar el registro'
 }
 
 const handleRegistrationError = (error) => {
   console.error('Error en registro:', error)
+  console.error('Error response data:', error.response?.data)
   clearErrors()
   
   if (!error.response?.data) {
@@ -851,13 +880,17 @@ const handleRegistrationError = (error) => {
   }
   
   const responseData = error.response.data
-  const directMessage = extractErrorMessage(responseData)
   
-  if (directMessage) {
+  // Mapear errores de campos primero
+  const generalMessage = mapFieldErrors(responseData)
+  
+  // Si hay un mensaje directo y no hay errores de campos específicos, usarlo
+  const directMessage = extractErrorMessage(responseData)
+  if (directMessage && Object.keys(errors).length === 0) {
     return directMessage
   }
   
-  return mapFieldErrors(responseData)
+  return generalMessage
 }
 
 const handleSubmit = async () => {
@@ -873,7 +906,11 @@ const handleSubmit = async () => {
 
   try {
     const payload = buildRegistrationPayload()
+    console.log('📤 [RegisterForm] Enviando payload:', payload)
+    
     const result = await authStore.register(payload)
+    
+    console.log('✅ [RegisterForm] Resultado del registro:', result)
 
     if (result.success) {
       await handleRegistrationSuccess(result)
@@ -881,6 +918,8 @@ const handleSubmit = async () => {
       setStatusMessage(result.error || 'Error al crear la cuenta', 'error')
     }
   } catch (error) {
+    console.error('❌ [RegisterForm] Error capturado:', error)
+    console.error('❌ [RegisterForm] Error response:', error.response?.data)
     const errorMessage = handleRegistrationError(error)
     setStatusMessage(errorMessage, 'error')
   } finally {

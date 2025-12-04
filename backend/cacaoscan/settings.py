@@ -893,6 +893,10 @@ MANAGERS = ADMINS
 # Configuración de templates de email
 EMAIL_TEMPLATES_DIR = BASE_DIR / 'api' / 'templates' / 'emails'
 
+# Configuración de verificación de email (deshabilitada)
+ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_EMAIL_REQUIRED = True
+
 # Configuración de notificaciones por email
 EMAIL_NOTIFICATIONS_ENABLED = os.environ.get('EMAIL_NOTIFICATIONS_ENABLED', 'True').lower() == 'true'
 EMAIL_NOTIFICATION_TYPES = [

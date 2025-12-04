@@ -213,51 +213,51 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.register(userData)
       
-      // Verificar si se requiere verificación de email
-      if (response.verification_required || response.data?.verification_required) {
-        // No hacer login automático, retornar datos para que el componente maneje la redirección
-        return { 
-          success: true, 
-          data: {
-            email: response.data?.email || response.email || userData.email,
-            verification_required: true
+      // Si el registro fue exitoso
+      if (response.success) {
+        // Si NO se requiere verificación (registro directo sin email verification)
+        if (!response.verification_required && !response.data?.verification_required) {
+          // Retornar éxito - el componente manejará la redirección al login
+          return {
+            success: true,
+            data: {
+              email: response.email || response.data?.email || userData.email,
+              message: response.message || 'Usuario creado exitosamente.',
+              verification_required: false
+            }
           }
         }
-      }
-      
-      // El nuevo backend devuelve token directamente en el registro (caso legacy)
-      if (response.success && response.token && response.user) {
-        // Guardar tokens (access y refresh si están disponibles)
-        setTokens({
-          access: response.token,
-          refresh: response.refresh,
-          user: response.user
-        })
         
-        updateLastActivity()
+        // Si se requiere verificación (caso legacy)
+        if (response.verification_required || response.data?.verification_required) {
+          return { 
+            success: true, 
+            data: {
+              email: response.data?.email || response.email || userData.email,
+              verification_required: true
+            }
+          }
+        }
         
-        // Redirigir automáticamente al dashboard de agricultor
-        await router.push({ name: 'AgricultorDashboard' })
-        
-        return { success: true }
-      } else {
-        // Fallback para formato anterior
-        if (response.access && response.refresh) {
-          setTokens(response)
-          await getCurrentUser()
+        // Caso con tokens (registro con login automático - legacy)
+        if (response.token && response.user) {
+          setTokens({
+            access: response.token,
+            refresh: response.refresh,
+            user: response.user
+          })
           updateLastActivity()
           await router.push({ name: 'AgricultorDashboard' })
           return { success: true }
         }
         
-        if (response.success) {
-          // Si no hay tokens, asumir que necesita verificación
-          return {
-            success: true,
-            data: {
-              email: response.email || userData.email,
-              verification_required: true
-            }
+        // Fallback: retornar respuesta exitosa
+        return {
+          success: true,
+          data: {
+            email: response.email || response.data?.email || userData.email,
+            message: response.message,
+            verification_required: false
           }
         }
       }
@@ -265,8 +265,31 @@ export const useAuthStore = defineStore('auth', () => {
       return response
     } catch (err) {
       console.error('Error en registro:', err)
-      setError(err.response?.data?.message || err.message || 'Error en el registro')
-      return { success: false, error: error.value }
+      console.error('Error response data:', err.response?.data)
+      
+      // Extraer mensaje de error más descriptivo
+      let errorMessage = 'Error en el registro'
+      if (err.response?.data) {
+        const errorData = err.response.data
+        // Priorizar mensajes específicos
+        if (errorData.detail) {
+          errorMessage = errorData.detail
+        } else if (errorData.message) {
+          errorMessage = errorData.message
+        } else if (errorData.errors && typeof errorData.errors === 'object') {
+          // Si hay errores de campos, usar el primero
+          const firstErrorKey = Object.keys(errorData.errors)[0]
+          const firstError = errorData.errors[firstErrorKey]
+          errorMessage = Array.isArray(firstError) ? firstError[0] : firstError
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData
+        }
+      } else if (err.message) {
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
     } finally {
       isLoading.value = false
     }

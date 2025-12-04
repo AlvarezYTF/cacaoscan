@@ -110,7 +110,17 @@ export const apiPost = async (endpoint, data = {}, options = {}) => {
     const response = await api.post(endpoint, data, options)
     return response.data
   } catch (error) {
-    console.error(`[apiClient] POST ${endpoint} error:`, error)
+    // Log detallado del error para debugging
+    if (error.response) {
+      console.error(`[apiClient] POST ${endpoint} error:`, {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        url: error.config?.url
+      })
+    } else {
+      console.error(`[apiClient] POST ${endpoint} error:`, error)
+    }
     throw error
   }
 }

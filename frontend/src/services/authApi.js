@@ -40,24 +40,40 @@ function buildLoginPayload(credentials) {
  * @returns {Object} Register payload
  */
 function buildRegisterPayload(userData) {
+  // Convertir municipio y departamento a números o null
+  const municipio = userData.municipio 
+    ? (typeof userData.municipio === 'number' ? userData.municipio : parseInt(userData.municipio, 10))
+    : null
+  const departamento = userData.departamento
+    ? (typeof userData.departamento === 'number' ? userData.departamento : parseInt(userData.departamento, 10))
+    : null
+  
+  // Limpiar campos vacíos - convertir strings vacíos a null para campos opcionales
+  const fechaNacimiento = userData.fecha_nacimiento || userData.birthdate
+  const fechaNacimientoClean = fechaNacimiento && fechaNacimiento.trim() !== '' 
+    ? fechaNacimiento 
+    : null
+  
   return {
     // Datos del usuario
-    email: userData.email,
-    password: userData.password,
+    email: userData.email?.trim() || '',
+    password: userData.password || '',
     
-    // Datos de la persona
+    // Datos de la persona (campos requeridos)
     tipo_documento: userData.tipo_documento || 'CC',
-    numero_documento: userData.numero_documento || '',
+    numero_documento: userData.numero_documento?.trim() || '',
     primer_nombre: userData.first_name || userData.primer_nombre || '',
-    segundo_nombre: userData.segundo_nombre || userData.middle_name || '',
     primer_apellido: userData.last_name || userData.primer_apellido || '',
-    segundo_apellido: userData.segundo_apellido || userData.last_name_2 || '',
     telefono: userData.phone_number || userData.telefono || '',
-    direccion: userData.direccion || userData.address || '',
     genero: userData.genero || 'M',
-    fecha_nacimiento: userData.fecha_nacimiento || userData.birthdate || '',
-    municipio: userData.municipio || '',
-    departamento: userData.departamento || ''
+    
+    // Campos opcionales (convertir vacíos a null)
+    segundo_nombre: userData.segundo_nombre || userData.middle_name || null,
+    segundo_apellido: userData.segundo_apellido || userData.last_name_2 || null,
+    direccion: userData.direccion || userData.address || null,
+    fecha_nacimiento: fechaNacimientoClean,
+    municipio: municipio,
+    departamento: departamento
   }
 }
 
@@ -85,9 +101,13 @@ const authApi = {
   async register(userData) {
     try {
       const payload = buildRegisterPayload(userData)
+      console.log('📤 [authApi] Payload de registro:', payload)
       const response = await apiPost('/personas/registrar/', payload)
+      console.log('✅ [authApi] Respuesta del backend:', response)
       return normalizeRegisterResponse(response, userData)
     } catch (error) {
+      console.error('❌ [authApi] Error en registro:', error)
+      console.error('❌ [authApi] Error response data:', error.response?.data)
       throw normalizeAuthError(error)
     }
   },

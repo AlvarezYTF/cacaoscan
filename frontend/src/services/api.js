@@ -7,6 +7,31 @@ import axios from 'axios'
 import router from '@/router'
 import { getApiBaseUrl } from '@/utils/apiConfig'
 
+// Importación estática del store de auth usando ES modules
+// Importación lazy para evitar dependencias circulares
+let useAuthStoreFn = null
+let authStorePromise = null
+
+// Función para obtener useAuthStore de forma lazy usando import dinámico
+const getUseAuthStore = () => {
+  if (!useAuthStoreFn && !authStorePromise) {
+    // Usar import dinámico (ES modules) en lugar de require()
+    authStorePromise = import('@/stores/auth')
+      .then((module) => {
+        if (module && module.useAuthStore) {
+          useAuthStoreFn = module.useAuthStore
+          return useAuthStoreFn
+        }
+        return null
+      })
+      .catch((err) => {
+        console.warn('⚠️ [API] No se pudo importar auth store:', err)
+        return null
+      })
+  }
+  return useAuthStoreFn
+}
+
 // Obtener URL del API (se evalúa en tiempo de importación)
 const apiBaseUrl = getApiBaseUrl()
 
@@ -195,7 +220,9 @@ const saveTokens = (accessToken, refreshToken) => {
   api.defaults.headers.Authorization = 'Bearer ' + accessToken
   
   const authStore = getAuthStore()
-  authStore.setTokens({ access: accessToken, refresh: refreshToken })
+  if (authStore) {
+    authStore.setTokens({ access: accessToken, refresh: refreshToken })
+  }
 }
 
 const handleRefreshSuccess = async (newAccessToken, newRefreshToken, originalRequest) => {
@@ -325,9 +352,22 @@ const handleNetworkError = (error) => {
 
 // Función para obtener el store de auth dinámicamente
 const getAuthStore = () => {
-  // Importación dinámica para evitar dependencias circulares
-  const { useAuthStore } = require('@/stores/auth')
-  return useAuthStore()
+  // Si useAuthStoreFn no está disponible, intentar obtenerlo
+  if (!useAuthStoreFn) {
+    getUseAuthStore()
+    // Si aún no está disponible, retornar null de forma segura
+    if (!useAuthStoreFn) {
+      return null
+    }
+  }
+  
+  try {
+    const store = useAuthStoreFn()
+    return store
+  } catch (e) {
+    console.warn('⚠️ [API] Error al obtener auth store:', e)
+    return null
+  }
 }
 
 // Interceptor de Request (segundo - autenticación y logging)
@@ -407,15 +447,18 @@ api.interceptors.response.use(
       contentType: contentType
     })
 
-    // Actualizar actividad del usuario
+    // Actualizar actividad del usuario (solo si el store está disponible)
     try {
       const authStore = getAuthStore()
-      if (authStore.isAuthenticated) {
+      if (authStore && authStore.isAuthenticated) {
         authStore.updateLastActivity()
       }
     } catch (error) {
       // Log error for debugging transparency - activity update is non-critical
-      console.warn('⚠️ [API] Failed to update user activity:', error.message, error)
+      // No mostrar error si el store simplemente no está disponible aún
+      if (error.message && !error.message.includes('null')) {
+        console.warn('⚠️ [API] Failed to update user activity:', error.message)
+      }
     }
 
     return response

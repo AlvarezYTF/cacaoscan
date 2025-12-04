@@ -212,19 +212,57 @@ class PersonaRegistroSerializer(serializers.Serializer):
     - municipio: ID del municipio
     """
     # Campos para crear el usuario
-    email = serializers.EmailField(required=True)
-    password = serializers.CharField(write_only=True, min_length=8, required=True)
+    email = serializers.EmailField(
+        required=True,
+        error_messages={
+            "required": "El email es obligatorio.",
+            "invalid": "El email no tiene formato válido."
+        }
+    )
+    password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        required=True,
+        error_messages={
+            "required": "La contraseña es obligatoria.",
+            "min_length": "La contraseña debe tener al menos 8 caracteres."
+        }
+    )
     
     # Campos para crear la persona
-    tipo_documento = serializers.CharField(required=True, help_text="Código del parámetro TIPO_DOC (ej: CC, CE)")
-    numero_documento = serializers.CharField(required=True, max_length=20)
-    primer_nombre = serializers.CharField(required=True, max_length=50)
+    tipo_documento = serializers.CharField(
+        required=True,
+        help_text="Código del parámetro TIPO_DOC (ej: CC, CE)",
+        error_messages={"required": "El tipo de documento es obligatorio."}
+    )
+    numero_documento = serializers.CharField(
+        required=True,
+        max_length=20,
+        error_messages={"required": "El número de documento es obligatorio."}
+    )
+    primer_nombre = serializers.CharField(
+        required=True,
+        max_length=50,
+        error_messages={"required": "El primer nombre es obligatorio."}
+    )
     segundo_nombre = serializers.CharField(required=False, allow_blank=True, max_length=50)
-    primer_apellido = serializers.CharField(required=True, max_length=50)
+    primer_apellido = serializers.CharField(
+        required=True,
+        max_length=50,
+        error_messages={"required": "El primer apellido es obligatorio."}
+    )
     segundo_apellido = serializers.CharField(required=False, allow_blank=True, max_length=50)
-    telefono = serializers.CharField(required=True, max_length=15)
+    telefono = serializers.CharField(
+        required=True,
+        max_length=15,
+        error_messages={"required": "El teléfono es obligatorio."}
+    )
     direccion = serializers.CharField(required=False, allow_blank=True, max_length=255)
-    genero = serializers.CharField(required=True, help_text="Código del parámetro SEXO (ej: M, F, O)")
+    genero = serializers.CharField(
+        required=True,
+        help_text="Código del parámetro SEXO (ej: M, F, O)",
+        error_messages={"required": "El género es obligatorio."}
+    )
     fecha_nacimiento = serializers.DateField(required=False, allow_null=True)
     
     # Ubicación (IDs de departamento y municipio)
@@ -234,18 +272,19 @@ class PersonaRegistroSerializer(serializers.Serializer):
     def validate_email(self, value):
         """Validar que el email no exista y tenga formato válido."""
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Este correo ya está registrado.")
-        
-        # Validación adicional de formato de email
-        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        if not re.match(email_regex, value):
-            raise serializers.ValidationError("El formato del correo electrónico no es válido.")
+            raise serializers.ValidationError("Este email ya está registrado.")
         
         return value
     
     def validate_numero_documento(self, value):
         """Validar que el número de documento sea único y válido."""
-        return validate_documento_number(value)
+        try:
+            return validate_documento_number(value)
+        except serializers.ValidationError as e:
+            # Asegurar mensaje claro para duplicados
+            if "ya está registrado" in str(e):
+                raise serializers.ValidationError("Este número de documento ya está registrado.")
+            raise
     
     def validate_password(self, value):
         """
@@ -348,74 +387,15 @@ class PersonaRegistroSerializer(serializers.Serializer):
         # Verificar si se debe omitir la verificación de email (para admins)
         skip_email_verification = self.context.get('skip_email_verification', False)
         
-        # Crear el usuario (username será el email)
+        # Crear el usuario (username será el email) - siempre activo, sin verificación
         user = User.objects.create_user(
             username=email,
             email=email,
             password=password,
             first_name=validated_data.get('primer_nombre', ''),
             last_name=validated_data.get('primer_apellido', ''),
-            is_active=True if skip_email_verification else False  # Activo si es admin
+            is_active=True  # Usuario activo directamente, sin verificación de email
         )
-        
-        # Crear token de verificación de email
-        from api.models import EmailVerificationToken
-        verification_token = EmailVerificationToken.create_for_user(user)
-        
-        # Si es creación por admin, marcar como verificado
-        if skip_email_verification:
-            verification_token.is_verified = True
-            verification_token.verified_at = timezone.now()
-            verification_token.save()
-        
-        # Enviar email de verificación solo si no se omite
-        if not skip_email_verification:
-            try:
-                from django.conf import settings
-                from api.services.email import send_custom_email
-                
-                verification_url = f"{settings.FRONTEND_URL}/verify-email/{verification_token.token}"
-                
-                html_content = f"""
-                <html>
-                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                        <h2 style="color: #4CAF50;">¡Bienvenido a CacaoScan, {user.get_full_name() or user.username}!</h2>
-                        <p>Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu dirección de correo electrónico haciendo clic en el siguiente enlace:</p>
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="{verification_url}" style="background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Verificar mi correo</a>
-                        </div>
-                        <p>O copia y pega este enlace en tu navegador:</p>
-                        <p style="word-break: break-all; color: #666;">{verification_url}</p>
-                        <p style="margin-top: 30px; font-size: 12px; color: #999;">Este enlace expirará en 24 horas.</p>
-                        <p style="font-size: 12px; color: #999;">Si no creaste esta cuenta, puedes ignorar este correo.</p>
-                    </div>
-                </body>
-                </html>
-                """
-                
-                text_content = f"""
-Bienvenido a CacaoScan, {user.get_full_name() or user.username}!
-
-Gracias por registrarte en nuestra plataforma. Para completar tu registro, por favor verifica tu dirección de correo electrónico visitando el siguiente enlace:
-
-{verification_url}
-
-Este enlace expirará en 24 horas.
-
-Si no creaste esta cuenta, puedes ignorar este correo.
-                """
-                
-                send_custom_email(
-                    to_emails=[user.email],
-                    subject="Verifica tu correo electrónico - CacaoScan",
-                    html_content=html_content,
-                    text_content=text_content
-                )
-            except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Error enviando email de verificación: {e}")
         
         # Crear la persona asociada al usuario con catálogos y ubicaciones normalizadas
         persona = Persona.objects.create(
@@ -441,7 +421,6 @@ Si no creaste esta cuenta, puedes ignorar este correo.
         return {
             'id': instance.id,
             'email': instance.user.email,
-            'verification_required': True,  # Siempre se requiere verificación ahora
             'user': {
                 'id': instance.user.id,
                 'email': instance.user.email

@@ -48,11 +48,18 @@ export function normalizeLoginResponse(rawResponse) {
 export function normalizeRegisterResponse(rawResponse, userData = {}) {
   const data = rawResponse.data || rawResponse
   
+  // El nuevo backend devuelve {message, email, persona_id, user_id} sin verification_required
+  // Si no hay verification_required explícito, asumir que no se requiere (registro directo)
+  const verificationRequired = data.verification_required === true
+  
   return {
     success: true,
-    verification_required: data.verification_required !== false,
+    verification_required: verificationRequired,
     email: data.email || userData.email,
-    message: data.message || 'Registro exitoso. Por favor verifica tu correo electrónico.'
+    message: data.message || (verificationRequired 
+      ? 'Registro exitoso. Por favor verifica tu correo electrónico.'
+      : 'Registro exitoso. Ya puedes iniciar sesión.'),
+    data: data // Incluir datos completos para compatibilidad
   }
 }
 

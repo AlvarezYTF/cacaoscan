@@ -28,96 +28,37 @@ class PersonaRegistroView(APIView):
     """
     permission_classes = [AllowAny]
 
-    def _is_admin(self, user):
-        """Verificar si el usuario es administrador."""
-        if not user or not user.is_authenticated:
-            return False
-        return user.is_superuser or user.is_staff
 
     def post(self, request):
-        """Dispara envío de OTP guardando el formulario en temp_data sin reenviar la request."""
+        """Crear usuario y persona directamente sin verificación de email."""
         try:
-            email = request.data.get('email')
-            if not email:
-                return Response({'detail': 'Email es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Prevenir si ya existe usuario
-            from django.contrib.auth import get_user_model
-            user_model = get_user_model()
-            if user_model.objects.filter(email=email).exists():
-                return Response({'detail': 'El email ya está registrado.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Si el usuario es admin, crear directamente sin verificación
-            if self._is_admin(request.user):
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.info(f"Admin {request.user.username} creando usuario: {email}")
-
-                # Validar y crear usando el serializer
-                serializer = PersonaRegistroSerializer(
-                    data=request.data,
-                    context={'skip_email_verification': True}
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            # Validar y crear usando el serializer
+            serializer = PersonaRegistroSerializer(
+                data=request.data,
+                context={'skip_email_verification': True}
+            )
+            
+            if not serializer.is_valid():
+                return Response(
+                    {"errors": serializer.errors, "detail": "Datos inválidos"},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
-                if not serializer.is_valid():
-                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-                # Crear usuario y persona directamente (sin verificación de email)
-                # El serializer ya maneja la activación y verificación cuando skip_email_verification=True
-                persona = serializer.save()
+            # Crear usuario y persona directamente (sin verificación de email)
+            persona = serializer.save()
 
-                logger.info(f"Usuario {email} creado exitosamente por admin {request.user.username}")
+            email = persona.user.email
+            logger.info(f"Usuario {email} creado exitosamente")
 
-                return Response({
-                    'message': 'Agricultor creado exitosamente.',
-                    'email': email,
-                    'persona_id': persona.id,
-                    'user_id': persona.user.id
-                }, status=status.HTTP_201_CREATED)
-
-            # Si no es admin, seguir flujo OTP normal
-            # Rate limit y creación/actualización del pending
-            from auth_app.models import PendingEmailVerification
-            existing = PendingEmailVerification.objects.filter(email=email).first()
-            if existing:
-                elapsed = (timezone.now() - existing.last_sent).total_seconds()
-                if elapsed < 60:
-                    return Response({
-                        'detail': f'Espera {int(60 - elapsed)} segundos antes de reenviar el código.'
-                    }, status=status.HTTP_429_TOO_MANY_REQUESTS)
-
-            code = PendingEmailVerification.generate_code()
-            PendingEmailVerification.objects.update_or_create(
-                email=email,
-                defaults={'otp_code': code, 'temp_data': request.data}
-            )
-
-            # Enviar email con servicio centralizado
-            from api.services.email import email_service
-            email_service.send_email(
-                to_emails=[email],
-                subject='Verificación de cuenta CacaoScan',
-                html_content=f"""
-                <html>
-                <body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333;\">
-                    <div style=\"max-width: 600px; margin: 0 auto; padding: 20px;\">
-                        <h2 style=\"color: #22c55e;\">Verificación de cuenta CacaoScan</h2>
-                        <p>Hola ',</p>
-                        <p>Tu código de verificación es:</p>
-                        <div style=\"background-color: #f3f4f6; border: 2px solid #22c55e; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;\">
-                            <h1 style=\"color: #22c55e; font-size: 32px; margin: 0; letter-spacing: 5px;\">{code}</h1>
-                        </div>
-                        <p>Este código expirará en <strong>10 minutos</strong>.</p>
-                        <p style=\"color: #6b7280; font-size: 14px;\">Si no solicitaste este código, puedes ignorar este email.</p>
-                        <hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;\">
-                        <p style=\"color: #6b7280; font-size: 12px;\">é {timezone.now().year} CacaoScan - Sistema de análisis de cacao</p>
-                    </div>
-                </body>
-                </html>
-                """,
-                text_content=f"Hola, tu código de verificación es: {code}. Este código expirará en 10 minutos."
-            )
-
-            return Response({'message': 'Código enviado con éxito al correo.', 'email': email}, status=status.HTTP_202_ACCEPTED)
+            return Response({
+                'message': 'Usuario creado exitosamente.',
+                'email': email,
+                'persona_id': persona.id,
+                'user_id': persona.user.id
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             import logging
