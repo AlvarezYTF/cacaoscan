@@ -27,21 +27,39 @@ describe('apiConfig', () => {
     })
 
     it('should use build-time variable if runtime URL not available', () => {
-      // This test checks that build-time variable is used when runtime URL is not available
-      // Since we can't modify import.meta.env in tests, we verify the fallback behavior
-      // The function will use the production fallback if no runtime URL is set
+      // This test checks that production fallback is used when no runtime URL and no build-time variable
       delete globalThis.__API_BASE_URL__
+      delete globalThis.location
+      
+      // Clear build-time variable to test fallback behavior
+      const originalEnv = { ...import.meta.env }
+      const originalViteApiBaseUrl = import.meta.env.VITE_API_BASE_URL
+      import.meta.env.VITE_API_BASE_URL = undefined
       
       const url = getApiBaseUrl()
 
-      // Should use production fallback when no runtime URL and no build-time variable in test
+      // Should use production fallback when no runtime URL and no build-time variable
       expect(url).toBe('https://cacaoscan-backend.onrender.com/api/v1')
+      
+      // Restore original env
+      import.meta.env.VITE_API_BASE_URL = originalViteApiBaseUrl
     })
 
     it('should use production fallback if no other URL available', () => {
+      // Ensure no runtime URL and no build-time variable
+      delete globalThis.__API_BASE_URL__
+      delete globalThis.location
+      
+      // Clear build-time variable to test fallback behavior
+      const originalViteApiBaseUrl = import.meta.env.VITE_API_BASE_URL
+      import.meta.env.VITE_API_BASE_URL = undefined
+
       const url = getApiBaseUrl()
 
       expect(url).toBe('https://cacaoscan-backend.onrender.com/api/v1')
+      
+      // Restore original env
+      import.meta.env.VITE_API_BASE_URL = originalViteApiBaseUrl
     })
 
     it('should correct relative runtime URL', () => {

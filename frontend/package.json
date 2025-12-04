@@ -30,7 +30,7 @@
     "test:security": "cypress run --spec 'cypress/e2e/security/**/*.cy.js'",
     "test:settings": "cypress run --spec 'cypress/e2e/settings/**/*.cy.js'",
     "test:accessibility": "cypress run --spec 'cypress/e2e/accessibility/**/*.cy.js'",
-    "test:all:coverage": "vitest run --coverage && cypress run",
+    "test:all:coverage": "vitest run --coverage --reporter=verbose && cypress run --config exitOnError=true",
     "test:fast:failed": "vitest --rerun-failed",
     "test:fast:changed": "vitest --changed",
     "test:fast:smart": "vitest --changed --rerun-failed",

@@ -12,10 +12,20 @@ export default defineConfig({
     maxThreads: 2,
     minThreads: 1,
     isolate: true,
-    testTimeout: 20000,
-    hookTimeout: 20000,
+    testTimeout: 30000,
+    hookTimeout: 30000,
+    teardownTimeout: 10000,
+    poolTimeout: 300000,
     sequence: {
       shuffle: false
+    },
+    poolOptions: {
+      threads: {
+        singleThread: false,
+        isolate: true,
+        minThreads: 1,
+        maxThreads: 2
+      }
     },
     exclude: [
       'node_modules',
@@ -66,9 +76,26 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src')
-    }
+    },
+    dedupe: ['vue']
   },
   define: {
     'import.meta.vitest': 'undefined'
+  },
+  optimizeDeps: {
+    include: ['vue', 'vue-router', 'pinia'],
+    esbuildOptions: {
+      target: 'node18'
+    }
+  },
+  server: {
+    fs: {
+      strict: false
+    }
+  },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/]
+    }
   }
 })

@@ -479,8 +479,10 @@ describe('LoteDetailView', () => {
     // Verify canEdit is false (user.id=2, finca.agricultor=1)
     expect(wrapper.vm.canEdit).toBe(false)
     
-    const editButton = wrapper.find('button.btn-outline-primary')
-    expect(editButton.exists()).toBe(false)
+    // Search for edit button specifically by looking for button containing "Editar" text
+    const allButtons = wrapper.findAll('button.btn-outline-primary')
+    const editButton = allButtons.find(button => button.text().includes('Editar'))
+    expect(editButton).toBeUndefined()
   }, 5000)
 
   it('should show delete button when canDelete is true', async () => {

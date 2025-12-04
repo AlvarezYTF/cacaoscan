@@ -80,8 +80,21 @@ globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }))
 
-// Mock global de fetch
-globalThis.fetch = vi.fn()
+// Mock global de fetch - return resolved promise to avoid hanging
+globalThis.fetch = vi.fn(() => Promise.resolve({
+  ok: true,
+  status: 200,
+  json: () => Promise.resolve({}),
+  text: () => Promise.resolve(''),
+  blob: () => Promise.resolve(new Blob()),
+  arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+  headers: new Headers(),
+  redirected: false,
+  statusText: 'OK',
+  type: 'default',
+  url: '',
+  clone: vi.fn()
+}))
 
 // Mock global de localStorage
 const localStorageMock = {

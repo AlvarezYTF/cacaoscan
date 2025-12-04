@@ -235,6 +235,8 @@ describe('AdminAgricultores', () => {
 
   describe('farmer management', () => {
     let openModalSpy
+    let viewModalSpy
+    let editModalSpy
     
     beforeEach(async () => {
       const authApi = await import('@/services/authApi')
@@ -244,6 +246,8 @@ describe('AdminAgricultores', () => {
       fincasApi.getFincas.mockResolvedValue({ results: [] })
       
       openModalSpy = vi.fn()
+      viewModalSpy = vi.fn()
+      editModalSpy = vi.fn()
 
       wrapper = mount(AdminAgricultores, {
         global: {
@@ -260,20 +264,49 @@ describe('AdminAgricultores', () => {
                 openModal: openModalSpy
               }
             },
-            FarmerDetailModal: true,
-            EditFarmerModal: true
+            FarmerDetailModal: {
+              template: '<div></div>',
+              methods: {
+                openModal: viewModalSpy
+              }
+            },
+            EditFarmerModal: {
+              template: '<div></div>',
+              methods: {
+                openModal: editModalSpy
+              }
+            }
           }
         }
       })
 
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      // Set up the ref after mount - Vue 3 template refs are accessible via $refs
+      // Set up the refs after mount - Vue 3 template refs need to be configured
       await wrapper.vm.$nextTick()
-      if (wrapper.vm.$refs && wrapper.vm.$refs.createFarmerModalRef) {
-        // Ensure the ref has the openModal method
-        wrapper.vm.$refs.createFarmerModalRef.openModal = openModalSpy
+      
+      // Import ref from vue to create refs if they don't exist
+      const { ref } = await import('vue')
+      
+      // Configure createFarmerModalRef
+      if (!wrapper.vm.createFarmerModalRef) {
+        wrapper.vm.createFarmerModalRef = ref(null)
       }
+      wrapper.vm.createFarmerModalRef.value = { openModal: openModalSpy }
+      
+      // Configure farmerDetailModalRef
+      if (!wrapper.vm.farmerDetailModalRef) {
+        wrapper.vm.farmerDetailModalRef = ref(null)
+      }
+      wrapper.vm.farmerDetailModalRef.value = { openModal: viewModalSpy }
+      
+      // Configure editFarmerModalRef
+      if (!wrapper.vm.editFarmerModalRef) {
+        wrapper.vm.editFarmerModalRef = ref(null)
+      }
+      wrapper.vm.editFarmerModalRef.value = { openModal: editModalSpy }
+      
+      await wrapper.vm.$nextTick()
     })
 
     it('should open create farmer modal', async () => {
@@ -321,26 +354,44 @@ describe('AdminAgricultores', () => {
 
     it('should view farmer', async () => {
       const farmer = { id: 1, name: 'Farmer One' }
-      const openModalSpy = vi.fn()
-      wrapper.vm.farmerDetailModalRef.value = { openModal: openModalSpy }
+      
+      // Clear any previous calls
+      viewModalSpy.mockClear()
+      
+      // Verify the ref is set correctly (configured in beforeEach)
+      expect(wrapper.vm.farmerDetailModalRef).toBeDefined()
+      expect(wrapper.vm.farmerDetailModalRef.value).toBeDefined()
+      expect(wrapper.vm.farmerDetailModalRef.value.openModal).toBe(viewModalSpy)
 
       await wrapper.vm.handleViewFarmer(farmer)
       await wrapper.vm.$nextTick() // Wait for nextTick inside handleViewFarmer
+      await wrapper.vm.$nextTick() // Additional tick for async operations
       
       expect(wrapper.vm.selectedFarmer).toStrictEqual(farmer)
-      expect(openModalSpy).toHaveBeenCalled()
+      expect(viewModalSpy).toHaveBeenCalled()
     })
 
     it('should edit farmer', async () => {
       const farmer = { id: 1, name: 'Farmer One' }
-      const openModalSpy = vi.fn()
-      wrapper.vm.editFarmerModalRef.value = { openModal: openModalSpy }
+      
+      // Clear any previous calls
+      editModalSpy.mockClear()
+      
+      // Ensure the ref is set correctly (configured in beforeEach, but verify and ensure it's available)
+      expect(wrapper.vm.editFarmerModalRef).toBeDefined()
+      if (!wrapper.vm.editFarmerModalRef.value) {
+        wrapper.vm.editFarmerModalRef.value = { openModal: editModalSpy }
+      }
+      expect(wrapper.vm.editFarmerModalRef.value).toBeDefined()
+      expect(wrapper.vm.editFarmerModalRef.value.openModal).toBe(editModalSpy)
+      await wrapper.vm.$nextTick()
 
       await wrapper.vm.handleEditFarmer(farmer)
       await wrapper.vm.$nextTick() // Wait for nextTick inside handleEditFarmer
+      await wrapper.vm.$nextTick() // Additional tick for async operations
       
       expect(wrapper.vm.selectedFarmerForEdit).toStrictEqual(farmer)
-      expect(openModalSpy).toHaveBeenCalled()
+      expect(editModalSpy).toHaveBeenCalled()
     })
 
     it('should handle farmer updated', async () => {

@@ -53,8 +53,9 @@ export const getApiBaseUrl = () => {
   }
   
   // Prioridad 2: Build-time variable (Vite inyecta esto durante el build)
-  if (import.meta.env.VITE_API_BASE_URL) {
-    let url = import.meta.env.VITE_API_BASE_URL
+  const buildTimeUrl = import.meta.env.VITE_API_BASE_URL
+  if (buildTimeUrl && buildTimeUrl.trim() !== '') {
+    let url = buildTimeUrl.trim()
     console.log('🔧 [API Config] Build-time API URL encontrada:', url)
     
     // Validar y corregir si es relativa
