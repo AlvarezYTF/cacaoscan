@@ -269,8 +269,8 @@ describe('UserActivityModal', () => {
     document.createElement = originalCreateElement
     document.body.appendChild = originalAppendChild
     document.body.removeChild = originalRemoveChild
-    global.URL.createObjectURL = originalCreateObjectURL
-    global.URL.revokeObjectURL = originalRevokeObjectURL
+    globalThis.URL.createObjectURL = originalCreateObjectURL
+    globalThis.URL.revokeObjectURL = originalRevokeObjectURL
   })
 
   it('should handle error when exporting activities', async () => {

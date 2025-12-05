@@ -4,7 +4,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useConfigStoreWrapper } from '../useConfigStoreWrapper.js'
-import { useConfigStore } from '@/stores/config'
 
 // Mock dependencies
 const mockStore = {

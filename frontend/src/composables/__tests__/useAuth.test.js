@@ -5,9 +5,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useAuth } from '../useAuth.js'
-import { useAuthStore } from '@/stores/auth'
-import { useNotificationStore } from '@/stores/notifications'
-import authApi from '@/services/authApi'
 
 // Use vi.hoisted() to define mocks before vi.mock() hoisting
 const { mockAuthStore, mockNotificationStore, mockRouter, mockAuthApi } = vi.hoisted(() => {
@@ -335,7 +332,7 @@ describe('useAuth', () => {
     })
 
     it('should handle errors without message', async () => {
-      const error = new Error()
+      const error = new Error('Login failed')
       mockAuthStore.login.mockRejectedValue(error)
       
       await expect(auth.login({ email: 'test@example.com', password: 'pass' })).rejects.toThrow()

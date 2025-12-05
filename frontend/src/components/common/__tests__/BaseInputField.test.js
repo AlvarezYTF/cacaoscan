@@ -89,7 +89,7 @@ describe('BaseInputField', () => {
   describe('Input Types', () => {
     const types = ['text', 'email', 'password', 'number', 'tel', 'url', 'search', 'date', 'time', 'datetime-local']
 
-    types.forEach(type => {
+    for (const type of types) {
       it(`should render ${type} input type`, () => {
         wrapper = mount(BaseInputField, {
           props: {
@@ -157,7 +157,7 @@ describe('BaseInputField', () => {
   describe('Sizes', () => {
     const sizes = ['sm', 'md', 'lg']
 
-    sizes.forEach(size => {
+    for (const size of sizes) {
       it(`should apply ${size} size classes`, () => {
         wrapper = mount(BaseInputField, {
           props: {

@@ -47,7 +47,7 @@ const props = defineProps({
 
 watch(() => props.data, (value) => {
   if (!Array.isArray(value)) {
-    throw new Error('TrendChart: data prop must be an array')
+    throw new TypeError('TrendChart: data prop must be an array')
   }
   if (value.length === 0) {
     throw new Error('TrendChart: data prop must have at least one element')

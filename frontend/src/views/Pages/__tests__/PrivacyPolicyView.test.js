@@ -1,7 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PrivacyPolicyView from '../PrivacyPolicyView.vue'
-import LegalLayout from '@/components/legal/LegalLayout.vue'
 
 vi.mock('@/components/legal/LegalLayout.vue', () => ({
   default: {
@@ -337,6 +336,8 @@ describe('PrivacyPolicyView', () => {
             }
             return false
           } catch (e) {
+            // Log error for debugging but continue
+            console.error('Error checking router link:', e)
             return false
           }
         })

@@ -1,7 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PieChart from '../PieChart.vue'
-import BaseChart from '@/components/common/BaseChart.vue'
 
 vi.mock('@/components/common/BaseChart.vue', () => ({
   default: {

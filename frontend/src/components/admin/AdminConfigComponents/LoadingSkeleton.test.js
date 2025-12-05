@@ -27,7 +27,7 @@ describe('LoadingSkeleton', () => {
       }
     })
 
-    const title = wrapper.find('.h-4.bg-gray-200.w-1\\/4')
+    const title = wrapper.find(String.raw`.h-4.bg-gray-200.w-1\/4`)
     expect(title.exists()).toBe(false)
   })
 

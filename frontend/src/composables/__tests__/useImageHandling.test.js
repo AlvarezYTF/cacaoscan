@@ -130,21 +130,21 @@ describe('useImageHandling', () => {
     })
 
     it('should revoke blob URLs', () => {
-      global.URL.revokeObjectURL = vi.fn()
+      globalThis.URL.revokeObjectURL = vi.fn()
       imageHandling.imagePreviews.value = ['blob:url1', 'blob:url2']
       
       imageHandling.clearImages()
       
-      expect(global.URL.revokeObjectURL).toHaveBeenCalledTimes(2)
+      expect(globalThis.URL.revokeObjectURL).toHaveBeenCalledTimes(2)
     })
 
     it('should not revoke non-blob URLs', () => {
-      global.URL.revokeObjectURL = vi.fn()
+      globalThis.URL.revokeObjectURL = vi.fn()
       imageHandling.imagePreviews.value = ['data:image/jpeg;base64,test']
       
       imageHandling.clearImages()
       
-      expect(global.URL.revokeObjectURL).not.toHaveBeenCalled()
+      expect(globalThis.URL.revokeObjectURL).not.toHaveBeenCalled()
     })
   })
 
@@ -201,7 +201,7 @@ describe('useImageHandling', () => {
         onload: null,
         result: 'data:image/jpeg;base64,test'
       }
-      global.FileReader = vi.fn(() => mockFileReader)
+      globalThis.FileReader = vi.fn(() => mockFileReader)
       
       const result = imageHandling.addImages(file)
       
@@ -228,7 +228,7 @@ describe('useImageHandling', () => {
         onerror: null,
         result: 'data:image/jpeg;base64,test'
       }
-      global.FileReader = vi.fn(() => mockFileReader)
+      globalThis.FileReader = vi.fn(() => mockFileReader)
       
       const promise = imageHandling.createPreview(file)
       
@@ -246,7 +246,7 @@ describe('useImageHandling', () => {
         onload: null,
         onerror: null
       }
-      global.FileReader = vi.fn(() => mockFileReader)
+      globalThis.FileReader = vi.fn(() => mockFileReader)
       
       await expect(imageHandling.createPreview(file)).rejects.toThrow()
     })
@@ -275,13 +275,13 @@ describe('useImageHandling', () => {
     })
 
     it('should revoke preview URL when removing', () => {
-      global.URL.revokeObjectURL = vi.fn()
+      globalThis.URL.revokeObjectURL = vi.fn()
       imageHandling.selectedImages.value = [new File([''], 'test.jpg')]
       imageHandling.imagePreviews.value = ['blob:url']
       
       imageHandling.removeImage(0)
       
-      expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('blob:url')
+      expect(globalThis.URL.revokeObjectURL).toHaveBeenCalledWith('blob:url')
     })
   })
 
@@ -383,7 +383,7 @@ describe('useImageHandling', () => {
         onerror: null,
         src: ''
       }
-      global.Image = vi.fn(() => mockImage)
+      globalThis.Image = vi.fn(() => mockImage)
       
       const promise = imageHandling.getImageDimensions('http://example.com/image.jpg')
       
@@ -404,7 +404,7 @@ describe('useImageHandling', () => {
         onerror: null,
         src: ''
       }
-      global.Image = vi.fn(() => mockImage)
+      globalThis.Image = vi.fn(() => mockImage)
       
       const mockFileReader = {
         readAsDataURL: vi.fn(function() {
@@ -413,7 +413,7 @@ describe('useImageHandling', () => {
         onload: null,
         onerror: null
       }
-      global.FileReader = vi.fn(() => mockFileReader)
+      globalThis.FileReader = vi.fn(() => mockFileReader)
       
       const promise = imageHandling.getImageDimensions(file)
       
@@ -431,7 +431,7 @@ describe('useImageHandling', () => {
         onerror: null,
         src: ''
       }
-      global.Image = vi.fn(() => mockImage)
+      globalThis.Image = vi.fn(() => mockImage)
       
       const promise = imageHandling.getImageDimensions('http://example.com/image.jpg')
       

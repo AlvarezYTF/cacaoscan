@@ -34,16 +34,16 @@ class MockDataTransfer {
     // Return a FileList-like object
     const fileList = Object.create(Array.prototype)
     fileList.length = this._files.length
-    this._files.forEach((file, index) => {
-      fileList[index] = file
-    })
+    for (let index = 0; index < this._files.length; index++) {
+      fileList[index] = this._files[index]
+    }
     fileList.item = (index) => this._files[index] || null
     return fileList
   }
 }
 
 // Make DataTransfer available globally
-global.DataTransfer = MockDataTransfer
+globalThis.DataTransfer = MockDataTransfer
 
 describe('ImageUploader', () => {
   let wrapper
@@ -202,7 +202,7 @@ describe('ImageUploader', () => {
 
   it('should get image URL from File object', () => {
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
-    global.URL.createObjectURL = vi.fn().mockReturnValue('blob:test-url')
+    globalThis.URL.createObjectURL = vi.fn().mockReturnValue('blob:test-url')
 
     wrapper = mount(ImageUploader, {
       props: {

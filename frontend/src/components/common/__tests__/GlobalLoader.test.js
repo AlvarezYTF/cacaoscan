@@ -79,15 +79,16 @@ describe('GlobalLoader', () => {
     globalThis.dispatchEvent = (event) => {
       // Call stored handlers first
       const handlers = eventListeners.get(event.type) || []
-      handlers.forEach(handler => {
+      for (const handler of handlers) {
         if (typeof handler === 'function') {
           try {
             handler(event)
           } catch (error) {
             console.error('Error in event handler:', error)
+            throw error
           }
         }
-      })
+      }
       // Also call original if it exists
       if (originalDispatchEvent && typeof originalDispatchEvent === 'function') {
         return originalDispatchEvent.call(globalThis, event)
@@ -110,7 +111,9 @@ describe('GlobalLoader', () => {
     }
     // Clean up any teleported content
     const teleported = document.querySelectorAll('.fixed')
-    teleported.forEach(el => el.remove())
+    for (const el of teleported) {
+      el.remove()
+    }
     // Clean up global functions
     delete globalThis.showGlobalLoading
     delete globalThis.hideGlobalLoading

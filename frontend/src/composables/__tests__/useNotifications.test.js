@@ -4,7 +4,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useNotifications } from '../useNotifications.js'
-import { useNotificationsStore } from '@/stores/notifications'
 
 // Mock notifications store
 const mockStore = {

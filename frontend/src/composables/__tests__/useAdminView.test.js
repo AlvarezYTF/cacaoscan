@@ -399,7 +399,7 @@ describe('useAdminView', () => {
         }
       }
       
-      const view = useAdminView({
+      useAdminView({
         store: mockStore
       })
       

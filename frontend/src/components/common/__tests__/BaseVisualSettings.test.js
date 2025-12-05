@@ -1,7 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BaseVisualSettings from '../BaseVisualSettings.vue'
-import BasePreferencesWrapper from '../BasePreferencesWrapper.vue'
 
 vi.mock('../BasePreferencesWrapper.vue', () => ({
   default: {

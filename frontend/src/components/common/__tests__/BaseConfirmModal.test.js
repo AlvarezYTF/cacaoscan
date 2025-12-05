@@ -115,7 +115,7 @@ describe('BaseConfirmModal', () => {
   describe('Variants', () => {
     const variants = ['danger', 'warning', 'info', 'success', 'default']
 
-    variants.forEach(variant => {
+    for (const variant of variants) {
       it(`should apply correct variant class for ${variant}`, () => {
         wrapper = mount(BaseConfirmModal, {
           props: {
@@ -129,7 +129,7 @@ describe('BaseConfirmModal', () => {
         expect(header.exists()).toBe(true)
         expect(header.classes()).toContain(`variant-${variant}`)
       })
-    })
+    }
   })
 
   describe('Buttons', () => {
@@ -171,9 +171,9 @@ describe('BaseConfirmModal', () => {
       })
 
       const buttons = wrapper.findAll('button')
-      buttons.forEach(button => {
+      for (const button of buttons) {
         expect(button.attributes('disabled')).toBeDefined()
-      })
+      }
     })
   })
 

@@ -5,7 +5,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useDataset } from '../useDataset.js'
 import { getDatasetImages, getDatasetImage, updateDatasetImage, deleteDatasetImage } from '@/services/datasetApi'
-import { handleApiError } from '@/services/apiErrorHandler'
 
 // Mock dependencies
 vi.mock('@/services/datasetApi', () => ({

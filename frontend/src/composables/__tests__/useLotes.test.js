@@ -4,8 +4,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useLotes } from '../useLotes.js'
-import { useAuthStore } from '@/stores/auth'
-import { useNotificationStore } from '@/stores/notifications'
 import * as lotesApi from '@/services/lotesApi'
 
 // Mock dependencies
@@ -303,8 +301,7 @@ describe('useLotes', () => {
     })
 
     it('should handle analisis error', async () => {
-      new Error('Analisis error')
-      // Mock the analisis loading to throw
+      // Mock the analisis loading to return empty array
       await expect(lotes.loadAnalisis(1)).resolves.toEqual([])
     })
   })

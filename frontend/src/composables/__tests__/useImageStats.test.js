@@ -3,7 +3,6 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { useAuthStore } from '@/stores/auth'
 import axios from '@/services/api'
 
 // Mock dependencies
@@ -205,8 +204,8 @@ describe('useImageStats', () => {
 
   describe('generateReport', () => {
     beforeEach(() => {
-      global.URL.createObjectURL = vi.fn(() => 'blob:url')
-      global.URL.revokeObjectURL = vi.fn()
+      globalThis.URL.createObjectURL = vi.fn(() => 'blob:url')
+      globalThis.URL.revokeObjectURL = vi.fn()
       document.createElement = vi.fn(() => ({
         href: '',
         download: '',

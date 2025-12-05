@@ -5,7 +5,6 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
 import AuditoriaView from '../AuditoriaView.vue'
 
 const { mockAuditStore, mockUseAdminView, mockUseAdminSidebarProps, mockCalculatePeriodDates, mockSwal } = vi.hoisted(() => {
@@ -628,14 +627,14 @@ describe('AuditoriaView', () => {
     it('should handle page change', async () => {
       // Get the paginationComposable from the composable instance
       const composableInstance = mockUseAdminView.mock.results[0]?.value
-      if (!composableInstance?.paginationComposable) {
-        // If not available, create a spy on the mock
-        const goToPageSpy = vi.fn()
-        composableInstance.paginationComposable = { goToPage: goToPageSpy }
+      if (composableInstance?.paginationComposable) {
+        const goToPageSpy = vi.spyOn(composableInstance.paginationComposable, 'goToPage')
         await wrapper.vm.handlePageChange(2)
         expect(goToPageSpy).toHaveBeenCalledWith(2)
       } else {
-        const goToPageSpy = vi.spyOn(composableInstance.paginationComposable, 'goToPage')
+        // If not available, create a spy on the mock
+        const goToPageSpy = vi.fn()
+        composableInstance.paginationComposable = { goToPage: goToPageSpy }
         await wrapper.vm.handlePageChange(2)
         expect(goToPageSpy).toHaveBeenCalledWith(2)
       }

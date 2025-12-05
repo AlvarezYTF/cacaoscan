@@ -108,19 +108,22 @@ class Command(BaseCommand):
         """, [table_name])
         return cursor.fetchone() is not None
     
+    # Constant for validation error message
+    IDENTIFIER_ERROR_MSG = "Identifier must be a non-empty string"
+    
     def _validate_identifier(self, identifier: str) -> str:
         """
         Valida y escapa un identificador SQL para prevenir inyección SQL.
         Solo permite caracteres alfanuméricos, guiones bajos y guiones.
         """
         if identifier is None:
-            raise ValueError("Identifier must be a non-empty string")
+            raise ValueError(self.IDENTIFIER_ERROR_MSG)
         
         if not isinstance(identifier, str):
-            raise ValueError("Identifier must be a non-empty string")
+            raise ValueError(self.IDENTIFIER_ERROR_MSG)
         
         if not identifier:
-            raise ValueError("Identifier must be a non-empty string")
+            raise ValueError(self.IDENTIFIER_ERROR_MSG)
         
         # Solo permitir caracteres alfanuméricos, guiones bajos y guiones
         # No permitir guiones (solo guiones bajos)

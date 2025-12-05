@@ -5,7 +5,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useFincas } from '../useFincas.js'
 import { getFincas, getFincaById, createFinca, updateFinca, deleteFinca } from '@/services/fincasApi'
-import { handleApiError } from '@/services/apiErrorHandler'
 
 // Mock dependencies
 vi.mock('@/services/fincasApi', () => ({

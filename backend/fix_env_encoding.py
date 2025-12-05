@@ -36,7 +36,7 @@ if b'\xf3' in raw_content:
         print(f"   Hex: {context.hex()}")
         try:
             print(f"   Como UTF-8: {repr(context.decode('utf-8', errors='replace'))}")
-        except:
+        except Exception:
             pass
 
 # Intentar múltiples codificaciones

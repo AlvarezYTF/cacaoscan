@@ -36,6 +36,7 @@ class HybridTrainer:
     """
     
     TARGETS = ["alto", "ancho", "grosor", "peso"]
+    CHECKPOINT_BEST_LOSS = "best_loss.pt"
     
     def __init__(
         self,
@@ -391,7 +392,7 @@ class HybridTrainer:
             if is_best_loss:
                 self.best_val_loss = val_loss
                 self.best_epoch_loss = epoch + 1
-                self._save_checkpoint(epoch + 1, "best_loss.pt", is_best_loss=True)
+                self._save_checkpoint(epoch + 1, self.CHECKPOINT_BEST_LOSS, is_best_loss=True)
                 logger.info(f"New best loss model saved (val_loss={val_loss:.4f})")
             
             if is_best_r2:
@@ -410,7 +411,7 @@ class HybridTrainer:
             
             # Update rollback checkpoint
             if is_best_loss:
-                self.rollback_checkpoint = self.save_dir / "best_loss.pt" if self.save_dir else None
+                self.rollback_checkpoint = self.save_dir / self.CHECKPOINT_BEST_LOSS if self.save_dir else None
             
             # Early stopping
             if should_stop:
@@ -451,7 +452,7 @@ class HybridTrainer:
         # Auto-generate filename if not provided
         if filename is None:
             if is_best_loss:
-                filename = "best_loss.pt"
+                filename = self.CHECKPOINT_BEST_LOSS
             elif is_best_r2:
                 filename = "best_avg_r2.pt"
             else:

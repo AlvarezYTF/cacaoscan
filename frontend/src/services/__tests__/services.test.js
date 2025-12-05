@@ -2,7 +2,6 @@
  * Tests unitarios para servicios de CacaoScan Frontend.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import axios from 'axios'
 
 // Mock de axios antes de importar api
 // Create the mock instance directly in the mock factory

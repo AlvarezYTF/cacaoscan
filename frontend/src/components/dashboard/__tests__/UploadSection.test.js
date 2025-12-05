@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import UploadSection from '../UploadSection.vue'
 
@@ -6,9 +6,9 @@ import UploadSection from '../UploadSection.vue'
 class MockFileList {
   constructor(files = []) {
     this.length = files.length
-    files.forEach((file, index) => {
-      this[index] = file
-    })
+    for (let index = 0; index < files.length; index++) {
+      this[index] = files[index]
+    }
   }
 
   item(index) {
@@ -61,8 +61,8 @@ class MockDataTransfer {
 }
 
 // Make DataTransfer and FileList available globally
-global.DataTransfer = MockDataTransfer
-global.FileList = MockFileList
+globalThis.DataTransfer = MockDataTransfer
+globalThis.FileList = MockFileList
 
 describe('UploadSection', () => {
   let wrapper

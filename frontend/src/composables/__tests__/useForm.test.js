@@ -186,7 +186,9 @@ describe('useForm', () => {
         mockErrors[field] = error
       })
       const mockClearErrors = vi.fn(() => {
-        Object.keys(mockErrors).forEach(key => delete mockErrors[key])
+        for (const key of Object.keys(mockErrors)) {
+          delete mockErrors[key]
+        }
       })
       const mockScrollToFirstError = vi.fn()
       const mockValidateNameField = vi.fn(() => 'Error')

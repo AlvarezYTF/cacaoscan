@@ -70,7 +70,7 @@ describe('RecentAnalyses', () => {
     if (wrapper) {
       try {
         wrapper.unmount()
-      } catch (e) {
+      } catch {
         // Ignore unmount errors
       }
       wrapper = null

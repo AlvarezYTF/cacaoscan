@@ -513,7 +513,8 @@ describe('useReports composable', () => {
       // Clear all timers before switching back to real timers
       vi.clearAllTimers()
       vi.useRealTimers()
-      // Clear unhandled rejections
+      // Verify no unhandled rejections occurred
+      expect(unhandledRejections).toHaveLength(0)
       unhandledRejections = []
     })
 

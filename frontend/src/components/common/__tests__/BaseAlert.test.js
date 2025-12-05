@@ -51,7 +51,7 @@ describe('BaseAlert', () => {
   describe('Variants', () => {
     const variants = ['error', 'success', 'warning', 'info', 'critical']
 
-    variants.forEach(variant => {
+    for (const variant of variants) {
       it(`should apply correct classes for ${variant} variant`, () => {
         wrapper = mount(BaseAlert, {
           props: {

@@ -316,7 +316,7 @@ describe('AdminAgricultores', () => {
       const mockModal = { openModal: openModalSpy }
       
       // Set the ref value - try both $refs and direct access
-      if (wrapper.vm.$refs && wrapper.vm.$refs.createFarmerModalRef) {
+      if (wrapper.vm.$refs?.createFarmerModalRef) {
         // If ref exists in $refs, update it
         Object.assign(wrapper.vm.$refs.createFarmerModalRef, mockModal)
       }

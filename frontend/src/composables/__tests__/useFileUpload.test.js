@@ -294,7 +294,7 @@ describe('useFileUpload', () => {
 
     it('should create preview when enabled', async () => {
       const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' })
-      global.FileReader = createSuccessFileReader()
+      globalThis.FileReader = createSuccessFileReader()
       
       const result = await upload.processFile(file)
       
@@ -304,7 +304,7 @@ describe('useFileUpload', () => {
 
     it('should handle preview error gracefully', async () => {
       const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' })
-      global.FileReader = createErrorFileReader()
+      globalThis.FileReader = createErrorFileReader()
       
       const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const result = await upload.processFile(file)
@@ -370,7 +370,7 @@ describe('useFileUpload', () => {
   describe('createPreview', () => {
     it('should create preview for image file', async () => {
       const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' })
-      global.FileReader = createSuccessFileReader()
+      globalThis.FileReader = createSuccessFileReader()
       
       const preview = await upload.processFile(file)
       expect(preview).toBe(true)
@@ -378,7 +378,7 @@ describe('useFileUpload', () => {
 
     it('should reject preview on FileReader error', async () => {
       const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' })
-      global.FileReader = createErrorFileReader()
+      globalThis.FileReader = createErrorFileReader()
       
       const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       await upload.processFile(file)

@@ -106,9 +106,9 @@ describe('usePasswordValidation', () => {
     it('should show unmet requirements for empty password', () => {
       const requirements = getPasswordRequirements('')
       
-      requirements.forEach(req => {
+      for (const req of requirements) {
         expect(req.met).toBe(false)
-      })
+      }
     })
   })
 

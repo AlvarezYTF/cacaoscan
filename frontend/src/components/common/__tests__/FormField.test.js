@@ -136,7 +136,7 @@ describe('FormField', () => {
     it('should support different input types', () => {
       const types = ['text', 'email', 'password', 'number', 'date', 'time']
       
-      types.forEach((type) => {
+      for (const type of types) {
         wrapper = mount(FormField, {
           props: {
             id: `test-${type}`,

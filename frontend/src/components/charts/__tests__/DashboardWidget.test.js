@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DashboardWidget from '../DashboardWidget.vue'
 
@@ -571,7 +571,7 @@ describe('DashboardWidget', () => {
     it('should accept valid variant values', () => {
       const validVariants = ['default', 'primary', 'success', 'warning', 'danger', 'info']
       
-      validVariants.forEach(variant => {
+      for (const variant of validVariants) {
         wrapper = mount(DashboardWidget, {
           props: {
             title: 'Test Widget',
@@ -582,13 +582,13 @@ describe('DashboardWidget', () => {
         expect(wrapper.exists()).toBe(true)
         expect(wrapper.classes()).toContain(`widget-${variant}`)
         wrapper.unmount()
-      })
+      }
     })
 
     it('should accept valid size values', () => {
       const validSizes = ['small', 'medium', 'large', 'full']
       
-      validSizes.forEach(size => {
+      for (const size of validSizes) {
         wrapper = mount(DashboardWidget, {
           props: {
             title: 'Test Widget',
@@ -599,7 +599,7 @@ describe('DashboardWidget', () => {
         expect(wrapper.exists()).toBe(true)
         expect(wrapper.classes()).toContain(`widget-${size}`)
         wrapper.unmount()
-      })
+      }
     })
   })
 })

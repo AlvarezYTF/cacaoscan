@@ -463,7 +463,8 @@ const startMLTraining = async (config = {}) => {
 }
 
 // Re-exportar funciones base necesarias para compatibilidad (DRY)
-// Using export...from would require separate statements for aliases, so keeping this structure
+// NOSONAR: Cannot use export...from with aliases - requires explicit export statement
+// Using export...from would require separate statements for each alias, which is less maintainable
 export {
   baseTrainRegression as trainRegressionModel,
   baseTrainVision as trainVisionModel,

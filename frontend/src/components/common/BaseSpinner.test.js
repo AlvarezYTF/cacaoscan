@@ -98,7 +98,7 @@ describe('BaseSpinner', () => {
   it('should apply all size classes correctly', () => {
     const sizes = ['xs', 'sm', 'md', 'lg', 'xl']
     
-    sizes.forEach(size => {
+    for (const size of sizes) {
       const wrapper = mount(BaseSpinner, {
         props: { size }
       })
@@ -112,13 +112,13 @@ describe('BaseSpinner', () => {
       }
       
       expect(wrapper.vm.spinnerClasses).toContain(sizeClasses[size])
-    })
+    }
   })
 
   it('should apply all color classes correctly', () => {
     const colors = ['white', 'gray', 'blue', 'green', 'red', 'yellow', 'purple']
     
-    colors.forEach(color => {
+    for (const color of colors) {
       const wrapper = mount(BaseSpinner, {
         props: { color }
       })

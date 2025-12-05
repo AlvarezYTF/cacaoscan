@@ -97,7 +97,7 @@ describe('LoadingSpinner', () => {
     it('should accept valid size values', () => {
       const validSizes = ['xs', 'sm', 'md', 'lg', 'xl']
       
-      validSizes.forEach(size => {
+      for (const size of validSizes) {
         wrapper = mount(LoadingSpinner, {
           props: { size }
         })
@@ -106,13 +106,13 @@ describe('LoadingSpinner', () => {
         const baseSpinner = wrapper.findComponent({ name: 'BaseSpinner' })
         expect(baseSpinner.props('size')).toBe(size)
         wrapper.unmount()
-      })
+      }
     })
 
     it('should accept valid color values', () => {
       const validColors = ['white', 'gray', 'blue', 'green', 'red', 'yellow', 'purple']
       
-      validColors.forEach(color => {
+      for (const color of validColors) {
         wrapper = mount(LoadingSpinner, {
           props: { color }
         })
@@ -121,7 +121,7 @@ describe('LoadingSpinner', () => {
         const baseSpinner = wrapper.findComponent({ name: 'BaseSpinner' })
         expect(baseSpinner.props('color')).toBe(color)
         wrapper.unmount()
-      })
+      }
     })
   })
 })

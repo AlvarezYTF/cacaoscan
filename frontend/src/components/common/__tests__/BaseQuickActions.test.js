@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BaseQuickActions from '../BaseQuickActions.vue'
 
@@ -127,9 +127,9 @@ describe('BaseQuickActions', () => {
     })
 
     const buttons = wrapper.findAll('button')
-    buttons.forEach(button => {
+    for (const button of buttons) {
       expect(button.attributes('disabled')).toBeDefined()
-    })
+    }
   })
 
   it('should apply primary variant styles', () => {

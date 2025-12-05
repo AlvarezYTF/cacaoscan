@@ -2,7 +2,7 @@
  * Unit tests for usePagination composable
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { usePagination } from '../usePagination.js'
 
 describe('usePagination', () => {
@@ -575,8 +575,8 @@ describe('usePagination', () => {
       const pagination = usePagination()
       
       // Mock require to throw error
-      const originalRequire = global.require
-      global.require = vi.fn(() => {
+      const originalRequire = globalThis.require
+      globalThis.require = vi.fn(() => {
         throw new Error('Module not found')
       })
 
@@ -584,7 +584,7 @@ describe('usePagination', () => {
 
       expect(consoleWarn).toHaveBeenCalled()
       
-      global.require = originalRequire
+      globalThis.require = originalRequire
       consoleWarn.mockRestore()
     })
 

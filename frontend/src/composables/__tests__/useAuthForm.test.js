@@ -4,7 +4,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useAuthForm } from '../useAuthForm.js'
-import { useForm } from '../useForm'
 
 // Mock dependencies
 vi.mock('../useForm', () => ({

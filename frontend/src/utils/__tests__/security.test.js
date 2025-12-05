@@ -159,12 +159,12 @@ describe('security', () => {
     })
 
     it('should reject paths with backslashes', () => {
-      expect(isValidFilename('path\\to\\file.txt')).toBe(false)
-      expect(isValidFilename('C:\\Windows\\file.txt')).toBe(false)
+      expect(isValidFilename(String.raw`path\to\file.txt`)).toBe(false)
+      expect(isValidFilename(String.raw`C:\Windows\file.txt`)).toBe(false)
     })
 
     it('should reject null bytes', () => {
-      expect(isValidFilename('test\0file.txt')).toBe(false)
+      expect(isValidFilename(String.raw`test\0file.txt`)).toBe(false)
     })
 
     it('should reject dangerous characters', () => {
