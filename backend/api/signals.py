@@ -70,7 +70,7 @@ if CacaoPrediction:
                     }
                 }
                 
-                notification = realtime_service.create_and_send_notification(
+                realtime_service.create_and_send_notification(
                     user_id=instance.image.user.id,
                     tipo=tipo,
                     titulo=titulo,
@@ -118,80 +118,93 @@ if CacaoPrediction:
                 logger.error(f"Error enviando notificación de análisis completado: {e}")
 
 
+def _send_training_complete_email(instance):
+    """Send email notification for completed training job."""
+    try:
+        from .services.email import send_email_notification
+        
+        email_context = {
+            'user_name': instance.created_by.get_full_name() or instance.created_by.username,
+            'user_email': instance.created_by.email,
+            'model_name': instance.model_name,
+            'job_id': instance.job_id,
+            'metrics': instance.metrics,
+            'duration': instance.duration_formatted if hasattr(instance, 'duration_formatted') else 'N/A',
+            'completion_date': instance.updated_at.strftime('%d/%m/%Y %H:%M'),
+            'status': instance.status
+        }
+        
+        email_result = send_email_notification(
+            user_email=instance.created_by.email,
+            notification_type='training_complete',
+            context=email_context
+        )
+        
+        if email_result['success']:
+            logger.info(f"Email de entrenamiento completado enviado a {instance.created_by.email}")
+        else:
+            logger.warning(f"Error enviando email de entrenamiento: {email_result.get('error')}")
+            
+    except Exception as e:
+        logger.error(f"Error en envío de email de entrenamiento: {e}")
+
+
+def _notify_admins_training_complete(instance):
+    """Notify administrators about important training jobs."""
+    if instance.job_type not in ['full_training', 'model_update']:
+        return
+    
+    if not Notification:
+        return
+    
+    admins = User.objects.filter(is_superuser=True)
+    for admin in admins:
+        if admin != instance.created_by:
+            Notification.create_notification(
+                user=admin,
+                tipo='info',
+                titulo='Nuevo Modelo Entrenado',
+                mensaje=f'El usuario {instance.created_by.username} ha completado el entrenamiento del modelo "{instance.model_name}".',
+                datos_extra={
+                    'job_id': instance.job_id,
+                    'created_by': instance.created_by.username,
+                    'model_name': instance.model_name
+                }
+            )
+
+
 if TrainingJob:
     @receiver(post_save, sender=TrainingJob)
     def notify_training_completed(sender, instance, created, **kwargs):
         """
         Notificar cuando se completa un trabajo de entrenamiento.
         """
-        if not created and instance.status == 'completed':
-            try:
-                # Notificar al usuario que creó el trabajo
-                datos_extra = {
-                    'job_id': instance.job_id,
-                    'model_name': instance.model_name,
-                    'metrics': instance.metrics,
-                    'duration': instance.duration_formatted if hasattr(instance, 'duration_formatted') else None
-                }
-                
-                notification = realtime_service.create_and_send_notification(
-                    user_id=instance.created_by.id,
-                    tipo='training_complete',
-                    titulo='Entrenamiento de Modelo Completado',
-                    mensaje=f'El entrenamiento del modelo "{instance.model_name}" ha sido completado exitosamente. El modelo está listo para usar.',
-                    datos_extra=datos_extra
-                )
-                
-                # Enviar email de notificación si está habilitado
-                try:
-                    from .services.email import send_email_notification
-                    
-                    email_context = {
-                        'user_name': instance.created_by.get_full_name() or instance.created_by.username,
-                        'user_email': instance.created_by.email,
-                        'model_name': instance.model_name,
-                        'job_id': instance.job_id,
-                        'metrics': instance.metrics,
-                        'duration': instance.duration_formatted if hasattr(instance, 'duration_formatted') else 'N/A',
-                        'completion_date': instance.updated_at.strftime('%d/%m/%Y %H:%M'),
-                        'status': instance.status
-                    }
-                    
-                    email_result = send_email_notification(
-                        user_email=instance.created_by.email,
-                        notification_type='training_complete',
-                        context=email_context
-                    )
-                    
-                    if email_result['success']:
-                        logger.info(f"Email de entrenamiento completado enviado a {instance.created_by.email}")
-                    else:
-                        logger.warning(f"Error enviando email de entrenamiento: {email_result.get('error')}")
-                        
-                except Exception as e:
-                    logger.error(f"Error en envío de email de entrenamiento: {e}")
-                
-                # Si es un trabajo importante, también notificar a los administradores
-                if instance.job_type in ['full_training', 'model_update']:
-                    admins = User.objects.filter(is_superuser=True)
-                    for admin in admins:
-                        if admin != instance.created_by:  # No duplicar notificación
-                            Notification.create_notification(
-                                user=admin,
-                                tipo='info',
-                                titulo='Nuevo Modelo Entrenado',
-                                mensaje=f'El usuario {instance.created_by.username} ha completado el entrenamiento del modelo "{instance.model_name}".',
-                                datos_extra={
-                                    'job_id': instance.job_id,
-                                    'created_by': instance.created_by.username,
-                                    'model_name': instance.model_name
-                                }
-                            )
-                
-                logger.info(f"Notificación de entrenamiento completado enviada a usuario {instance.created_by.username}")
-                
-            except Exception as e:
-                logger.error(f"Error enviando notificación de entrenamiento completado: {e}")
+        if created or instance.status != 'completed':
+            return
+        
+        try:
+            datos_extra = {
+                'job_id': instance.job_id,
+                'model_name': instance.model_name,
+                'metrics': instance.metrics,
+                'duration': instance.duration_formatted if hasattr(instance, 'duration_formatted') else None
+            }
+            
+            realtime_service.create_and_send_notification(
+                user_id=instance.created_by.id,
+                tipo='training_complete',
+                titulo='Entrenamiento de Modelo Completado',
+                mensaje=f'El entrenamiento del modelo "{instance.model_name}" ha sido completado exitosamente. El modelo está listo para usar.',
+                datos_extra=datos_extra
+            )
+            
+            _send_training_complete_email(instance)
+            _notify_admins_training_complete(instance)
+            
+            logger.info(f"Notificación de entrenamiento completado enviada a usuario {instance.created_by.username}")
+            
+        except Exception as e:
+            logger.error(f"Error enviando notificación de entrenamiento completado: {e}")
 
 
 if TrainingJob:

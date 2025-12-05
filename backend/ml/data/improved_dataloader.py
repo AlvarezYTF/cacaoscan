@@ -389,37 +389,21 @@ class ImprovedCacaoDataset(Dataset):
     def __len__(self) -> int:
         return len(self.image_paths)
     
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, ...]:
-        """
-        Obtiene un item del dataset.
-        
-        Returns:
-            Tuple con:
-            - image_tensor: Tensor de imagen normalizada [C, H, W]
-            - targets_tensor: Tensor de targets en orden [alto, ancho, grosor, peso]
-            - pixel_features (opcional): Tensor de features de píxeles
-        """
-        # Cargar imagen
-        image_path = self.image_paths[idx]
-        
+    def _load_and_transform_image(self, image_path: Path) -> torch.Tensor:
+        """Load and transform image to tensor."""
         try:
-            # Abrir imagen y convertir a RGB explícitamente
             image = Image.open(image_path)
             
-            # Validar que la imagen sea válida
             if image is None:
                 raise ValueError(f"Imagen no se pudo cargar: {image_path}")
             
-            # Convertir a RGB (asegura 3 canales)
             if image.mode != 'RGB':
                 logger.debug(f"Convirtiendo imagen {image_path.name} de {image.mode} a RGB")
                 image = image.convert('RGB')
             
-            # Aplicar transformaciones (deben incluir ToTensor y Normalize)
             if self.transform is not None:
                 image_tensor = self.transform(image)
             else:
-                # Transformación básica si no se proporciona
                 transform_basic = transforms.Compose([
                     transforms.Resize((224, 224)),
                     transforms.ToTensor(),
@@ -430,89 +414,147 @@ class ImprovedCacaoDataset(Dataset):
                 ])
                 image_tensor = transform_basic(image)
             
-            # Validar formato del tensor
             if image_tensor.shape[0] != 3:
                 raise ValueError(
                     f"Imagen debe tener 3 canales RGB, obtuvo {image_tensor.shape[0]} canales"
                 )
             
+            return image_tensor
+            
         except Exception as e:
             logger.error(f"Error cargando imagen {image_path}: {e}")
             raise
-        
-        # Obtener targets en orden correcto
+    
+    def _get_targets_tensor(self, idx: int) -> torch.Tensor:
+        """Get targets tensor in correct order."""
         targets_list = [
             float(self.targets[target][idx])
             for target in self.TARGET_ORDER
         ]
-        targets_tensor = torch.tensor(targets_list, dtype=torch.float32)
+        return torch.tensor(targets_list, dtype=torch.float32)
+    
+    def _normalize_pixel_feat_length(self, pixel_feat_values: list) -> list:
+        """Normalize pixel features to length 10."""
+        if len(pixel_feat_values) == 10 or len(pixel_feat_values) == 5:
+            return pixel_feat_values
         
-        # Si hay pixel_features, agregarlos
-        if self.pixel_features is not None:
-            # Detectar el formato de pixel_features
-            # Caso 1: dict con keys como str(path) -> array (test format)
-            image_path_str = str(self.image_paths[idx])
-            if image_path_str in self.pixel_features:
-                # Features como array directo (10 features según test)
-                pixel_feat_array = self.pixel_features[image_path_str]
-                if isinstance(pixel_feat_array, np.ndarray):
-                    pixel_feat_values = pixel_feat_array.tolist()
-                elif isinstance(pixel_feat_array, (list, tuple)):
-                    pixel_feat_values = list(pixel_feat_array)
-                else:
-                    pixel_feat_values = [float(pixel_feat_array)]
-                # Asegurar que tenga 10 elementos
-                if len(pixel_feat_values) == 10 or len(pixel_feat_values) == 5:
-                    pixel_feat = torch.tensor(pixel_feat_values, dtype=torch.float32)
-                    return image_tensor, targets_tensor, pixel_feat
-                else:
-                    # Padding o truncar a 10
-                    if len(pixel_feat_values) < 10:
-                        pixel_feat_values.extend([0.0] * (10 - len(pixel_feat_values)))
-                    else:
-                        pixel_feat_values = pixel_feat_values[:10]
-                    pixel_feat = torch.tensor(pixel_feat_values, dtype=torch.float32)
-                    return image_tensor, targets_tensor, pixel_feat
-            
-            # Caso 2: dict con keys específicos (features extendidos o básicos)
-            if all(k in self.pixel_features for k in [
-                "grain_area_pixels", "width_pixels", "height_pixels",
-                "bbox_area_pixels", "aspect_ratio", "original_total_pixels",
-                "background_pixels", "background_ratio", "alto_mm_per_pixel",
-                "ancho_mm_per_pixel", "average_mm_per_pixel", "segmentation_confidence"
-            ]):
-                # Features extendidos (12) - tomar solo los primeros 10 para compatibilidad
-                pixel_feat_values = [
-                    float(self.pixel_features[key][idx])
-                    for key in [
-                        "grain_area_pixels", "width_pixels", "height_pixels",
-                        "bbox_area_pixels", "aspect_ratio", "original_total_pixels",
-                        "background_pixels", "background_ratio", "alto_mm_per_pixel",
-                        "ancho_mm_per_pixel"
-                    ]
-                ]
-            elif all(k in self.pixel_features for k in [
-                "pixel_width", "pixel_height", "pixel_area", "scale_factor", "aspect_ratio"
-            ]):
-                # Features básicos (5)
-                pixel_feat_values = [
-                    float(self.pixel_features["pixel_width"][idx]),
-                    float(self.pixel_features["pixel_height"][idx]),
-                    float(self.pixel_features["pixel_area"][idx]),
-                    float(self.pixel_features["scale_factor"][idx]),
-                    float(self.pixel_features["aspect_ratio"][idx]),
-                ]
-            else:
-                # Fallback: intentar obtener features básicos con defaults
-                pixel_feat_values = [
-                    float(self.pixel_features.get("pixel_width", [0.0] * len(self.image_paths))[idx]),
-                    float(self.pixel_features.get("pixel_height", [0.0] * len(self.image_paths))[idx]),
-                    float(self.pixel_features.get("pixel_area", [0.0] * len(self.image_paths))[idx]),
-                    float(self.pixel_features.get("scale_factor", [0.0] * len(self.image_paths))[idx]),
-                    float(self.pixel_features.get("aspect_ratio", [0.0] * len(self.image_paths))[idx]),
-                ]
-            
-            pixel_feat = torch.tensor(pixel_feat_values, dtype=torch.float32)
+        if len(pixel_feat_values) < 10:
+            pixel_feat_values.extend([0.0] * (10 - len(pixel_feat_values)))
+        else:
+            pixel_feat_values = pixel_feat_values[:10]
+        
+        return pixel_feat_values
+    
+    def _get_pixel_features_from_path(self, idx: int) -> Optional[torch.Tensor]:
+        """Get pixel features when using path as key (test format)."""
+        image_path_str = str(self.image_paths[idx])
+        if image_path_str not in self.pixel_features:
+            return None
+        
+        pixel_feat_array = self.pixel_features[image_path_str]
+        
+        if isinstance(pixel_feat_array, np.ndarray):
+            pixel_feat_values = pixel_feat_array.tolist()
+        elif isinstance(pixel_feat_array, (list, tuple)):
+            pixel_feat_values = list(pixel_feat_array)
+        else:
+            pixel_feat_values = [float(pixel_feat_array)]
+        
+        pixel_feat_values = self._normalize_pixel_feat_length(pixel_feat_values)
+        return torch.tensor(pixel_feat_values, dtype=torch.float32)
+    
+    def _get_extended_pixel_features(self, idx: int) -> Optional[torch.Tensor]:
+        """Get extended pixel features (12 features)."""
+        extended_keys = [
+            "grain_area_pixels", "width_pixels", "height_pixels",
+            "bbox_area_pixels", "aspect_ratio", "original_total_pixels",
+            "background_pixels", "background_ratio", "alto_mm_per_pixel",
+            "ancho_mm_per_pixel", "average_mm_per_pixel", "segmentation_confidence"
+        ]
+        
+        if not all(k in self.pixel_features for k in extended_keys):
+            return None
+        
+        feature_keys = [
+            "grain_area_pixels", "width_pixels", "height_pixels",
+            "bbox_area_pixels", "aspect_ratio", "original_total_pixels",
+            "background_pixels", "background_ratio", "alto_mm_per_pixel",
+            "ancho_mm_per_pixel"
+        ]
+        
+        pixel_feat_values = [
+            float(self.pixel_features[key][idx])
+            for key in feature_keys
+        ]
+        
+        return torch.tensor(pixel_feat_values, dtype=torch.float32)
+    
+    def _get_basic_pixel_features(self, idx: int) -> Optional[torch.Tensor]:
+        """Get basic pixel features (5 features)."""
+        basic_keys = [
+            "pixel_width", "pixel_height", "pixel_area", "scale_factor", "aspect_ratio"
+        ]
+        
+        if not all(k in self.pixel_features for k in basic_keys):
+            return None
+        
+        pixel_feat_values = [
+            float(self.pixel_features["pixel_width"][idx]),
+            float(self.pixel_features["pixel_height"][idx]),
+            float(self.pixel_features["pixel_area"][idx]),
+            float(self.pixel_features["scale_factor"][idx]),
+            float(self.pixel_features["aspect_ratio"][idx]),
+        ]
+        
+        return torch.tensor(pixel_feat_values, dtype=torch.float32)
+    
+    def _get_pixel_features_fallback(self, idx: int) -> torch.Tensor:
+        """Get pixel features with fallback defaults."""
+        pixel_feat_values = [
+            float(self.pixel_features.get("pixel_width", [0.0] * len(self.image_paths))[idx]),
+            float(self.pixel_features.get("pixel_height", [0.0] * len(self.image_paths))[idx]),
+            float(self.pixel_features.get("pixel_area", [0.0] * len(self.image_paths))[idx]),
+            float(self.pixel_features.get("scale_factor", [0.0] * len(self.image_paths))[idx]),
+            float(self.pixel_features.get("aspect_ratio", [0.0] * len(self.image_paths))[idx]),
+        ]
+        
+        return torch.tensor(pixel_feat_values, dtype=torch.float32)
+    
+    def _get_pixel_features(self, idx: int) -> Optional[torch.Tensor]:
+        """Get pixel features using appropriate method."""
+        if self.pixel_features is None:
+            return None
+        
+        pixel_feat = self._get_pixel_features_from_path(idx)
+        if pixel_feat is not None:
+            return pixel_feat
+        
+        pixel_feat = self._get_extended_pixel_features(idx)
+        if pixel_feat is not None:
+            return pixel_feat
+        
+        pixel_feat = self._get_basic_pixel_features(idx)
+        if pixel_feat is not None:
+            return pixel_feat
+        
+        return self._get_pixel_features_fallback(idx)
+    
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, ...]:
+        """
+        Obtiene un item del dataset.
+        
+        Returns:
+            Tuple con:
+            - image_tensor: Tensor de imagen normalizada [C, H, W]
+            - targets_tensor: Tensor de targets en orden [alto, ancho, grosor, peso]
+            - pixel_features (opcional): Tensor de features de píxeles
+        """
+        image_path = self.image_paths[idx]
+        image_tensor = self._load_and_transform_image(image_path)
+        targets_tensor = self._get_targets_tensor(idx)
+        
+        pixel_feat = self._get_pixel_features(idx)
+        if pixel_feat is not None:
             return image_tensor, targets_tensor, pixel_feat
         
         return image_tensor, targets_tensor

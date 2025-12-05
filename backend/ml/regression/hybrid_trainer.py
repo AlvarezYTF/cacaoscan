@@ -216,6 +216,53 @@ class HybridTrainer:
         
         return avg_loss, max_grad, avg_gating
     
+    def _normalize_tensor_to_2d(self, tensor_np, tensor_original):
+        """Normalize tensor to 2D shape for metrics calculation."""
+        if tensor_np.ndim == 0:
+            return tensor_np.reshape(1, -1) if hasattr(tensor_original, 'shape') else np.array([[tensor_np]])
+        if tensor_np.ndim == 1:
+            return tensor_np.reshape(1, -1)
+        return tensor_np
+    
+    def _process_validation_batch(self, batch_data, all_predictions, all_targets):
+        """Process a single validation batch and update predictions/targets."""
+        if len(batch_data) != 3:
+            return 0.0, False
+        
+        images, pixel_features, targets = batch_data
+        images = images.to(self.device, non_blocking=True)
+        pixel_features = pixel_features.to(self.device, non_blocking=True)
+        targets = targets.to(self.device, non_blocking=True)
+        
+        if self.use_mixed_precision:
+            with autocast():
+                outputs, _ = self.model(images, pixel_features)
+                loss, _ = self.criterion(outputs, targets)
+        else:
+            outputs, _ = self.model(images, pixel_features)
+            loss, _ = self.criterion(outputs, targets)
+        
+        outputs_np = self._normalize_tensor_to_2d(outputs.cpu().numpy(), outputs)
+        targets_np = self._normalize_tensor_to_2d(targets.cpu().numpy(), targets)
+        
+        for i, target in enumerate(self.TARGETS):
+            if outputs_np.shape[1] > i and targets_np.shape[1] > i:
+                all_predictions[target].extend(outputs_np[:, i].tolist())
+                all_targets[target].extend(targets_np[:, i].tolist())
+        
+        return loss.item(), True
+    
+    def _calculate_pearson_correlations(self, all_targets, all_predictions):
+        """Calculate Pearson correlations for all targets."""
+        pearson_corrs = {}
+        for target in self.TARGETS:
+            try:
+                corr, _ = pearsonr(all_targets[target], all_predictions[target])
+                pearson_corrs[target] = float(corr)
+            except Exception:
+                pearson_corrs[target] = 0.0
+        return pearson_corrs
+    
     def validate_epoch(self) -> Tuple[float, Dict[str, Dict[str, float]], Dict[str, float]]:
         """
         Validate for one epoch.
@@ -232,66 +279,14 @@ class HybridTrainer:
         
         with torch.no_grad():
             for batch_data in self.val_loader:
-                if len(batch_data) != 3:
-                    continue
-                
-                images, pixel_features, targets = batch_data
-                images = images.to(self.device, non_blocking=True)
-                pixel_features = pixel_features.to(self.device, non_blocking=True)
-                targets = targets.to(self.device, non_blocking=True)
-                
-                # Forward pass
-                if self.use_mixed_precision:
-                    with autocast():
-                        outputs, _ = self.model(images, pixel_features)
-                        loss, _ = self.criterion(outputs, targets)
-                else:
-                    outputs, _ = self.model(images, pixel_features)
-                    loss, _ = self.criterion(outputs, targets)
-                
-                val_loss += loss.item()
-                n_batches += 1
-                
-                # Store predictions and targets for metrics
-                # Handle 0D tensor (scalar) - ensure it's at least 1D
-                outputs_np = outputs.cpu().numpy()
-                targets_np = targets.cpu().numpy()
-                
-                # Ensure outputs and targets are 2D (batch_size, num_targets)
-                if outputs_np.ndim == 0:
-                    # 0D tensor - convert to 2D
-                    outputs_np = outputs_np.reshape(1, -1) if hasattr(outputs, 'shape') else np.array([[outputs_np]])
-                elif outputs_np.ndim == 1:
-                    # 1D tensor - reshape to 2D
-                    outputs_np = outputs_np.reshape(1, -1)
-                
-                if targets_np.ndim == 0:
-                    # 0D tensor - convert to 2D
-                    targets_np = targets_np.reshape(1, -1) if hasattr(targets, 'shape') else np.array([[targets_np]])
-                elif targets_np.ndim == 1:
-                    # 1D tensor - reshape to 2D
-                    targets_np = targets_np.reshape(1, -1)
-                
-                for i, target in enumerate(self.TARGETS):
-                    if outputs_np.shape[1] > i and targets_np.shape[1] > i:
-                        all_predictions[target].extend(outputs_np[:, i].tolist())
-                        all_targets[target].extend(targets_np[:, i].tolist())
+                loss_value, processed = self._process_validation_batch(batch_data, all_predictions, all_targets)
+                if processed:
+                    val_loss += loss_value
+                    n_batches += 1
         
         avg_loss = val_loss / max(n_batches, 1)
-        
-        # Calculate metrics per target
         metrics = calculate_metrics_per_target(all_targets, all_predictions)
-        
-        # Calculate Pearson correlations
-        pearson_corrs = {}
-        for target in self.TARGETS:
-            try:
-                corr, _ = pearsonr(all_targets[target], all_predictions[target])
-                pearson_corrs[target] = float(corr)
-            except Exception:
-                pearson_corrs[target] = 0.0
-        
-        # Get sigmas
+        pearson_corrs = self._calculate_pearson_correlations(all_targets, all_predictions)
         sigmas = self.criterion.get_sigmas()
         
         return avg_loss, metrics, sigmas, pearson_corrs
@@ -331,6 +326,90 @@ class HybridTrainer:
         logger.info(f"  Pearson: {pearson_corrs}")
         logger.info(f"  Max Gradient: {max_grad:.4f}, Gating %: {avg_gating*100:.2f}%")
     
+    def _resolve_epochs(self, max_epochs: int = None, epochs: int = None) -> int:
+        """Resolve number of epochs from parameters."""
+        if max_epochs is not None:
+            return max_epochs
+        if epochs is not None:
+            return epochs
+        return self.config.get('epochs', 50)
+    
+    def _save_best_loss_checkpoint(self, epoch: int, val_loss: float):
+        """Save best loss checkpoint."""
+        self.best_val_loss = val_loss
+        self.best_epoch_loss = epoch
+        self._save_checkpoint(epoch, self.CHECKPOINT_BEST_LOSS, is_best_loss=True)
+        logger.info(f"New best loss model saved (val_loss={val_loss:.4f})")
+        if self.save_dir:
+            self.rollback_checkpoint = self.save_dir / self.CHECKPOINT_BEST_LOSS
+    
+    def _save_best_r2_checkpoint(self, epoch: int, avg_r2: float):
+        """Save best R² checkpoint."""
+        self.best_avg_r2 = avg_r2
+        self.best_epoch_r2 = epoch
+        self._save_checkpoint(epoch, "best_avg_r2.pt", is_best_r2=True)
+        logger.info(f"New best R² model saved (avg_r2={avg_r2:.4f})")
+    
+    def _save_best_checkpoints(self, epoch: int, val_loss: float, avg_r2: float):
+        """Save best loss and best R² checkpoints."""
+        if val_loss < self.best_val_loss:
+            self._save_best_loss_checkpoint(epoch, val_loss)
+        
+        if avg_r2 > self.best_avg_r2:
+            self._save_best_r2_checkpoint(epoch, avg_r2)
+    
+    def _handle_early_stopping(self, epoch: int, val_loss: float, metrics: Dict[str, Dict[str, float]]) -> bool:
+        """Handle early stopping logic and return True if should stop."""
+        r2_scores = {target: metrics[target]['r2'] for target in self.TARGETS}
+        should_stop, _, _, should_rollback = self.early_stopping(
+            epoch, val_loss, r2_scores, self.optimizer
+        )
+        
+        if should_rollback and self.rollback_checkpoint is not None:
+            logger.warning("Rolling back to best checkpoint")
+            self._load_checkpoint(self.rollback_checkpoint)
+        
+        if should_stop:
+            logger.info(f"Early stopping triggered at epoch {epoch}")
+        
+        return should_stop
+    
+    def _train_single_epoch(self, epoch: int, epochs: int) -> bool:
+        """
+        Train and validate for a single epoch.
+        
+        Args:
+            epoch: Current epoch index (0-based)
+            epochs: Total number of epochs
+            
+        Returns:
+            True if training should stop (early stopping), False otherwise
+        """
+        epoch_start = time.time()
+        
+        train_loss, max_grad, avg_gating = self.train_epoch()
+        val_loss, metrics, sigmas, pearson_corrs = self.validate_epoch()
+        
+        self.scheduler.step()
+        current_lr = self.optimizer.param_groups[0]['lr']
+        avg_r2 = np.mean([metrics[target]['r2'] for target in self.TARGETS])
+        
+        self._update_training_history(
+            train_loss, val_loss, current_lr, avg_r2, max_grad, avg_gating,
+            metrics, pearson_corrs, sigmas
+        )
+        
+        epoch_time = time.time() - epoch_start
+        self._log_epoch_metrics(
+            epoch, epochs, train_loss, val_loss, avg_r2, current_lr, epoch_time,
+            metrics, sigmas, pearson_corrs, max_grad, avg_gating
+        )
+        
+        self._save_best_checkpoints(epoch + 1, val_loss, avg_r2)
+        self._save_checkpoint(epoch + 1, "last_epoch.pt")
+        
+        return self._handle_early_stopping(epoch + 1, val_loss, metrics)
+    
     def train(self, max_epochs: int = None, epochs: int = None) -> Dict[str, List[float]]:
         """
         Train the model for multiple epochs.
@@ -342,80 +421,12 @@ class HybridTrainer:
         Returns:
             Training history
         """
-        # Handle both max_epochs and epochs for backward compatibility
-        if max_epochs is not None:
-            epochs = max_epochs
-        elif epochs is None:
-            epochs = self.config.get('epochs', 50)
+        epochs = self._resolve_epochs(max_epochs, epochs)
         logger.info(f"Starting training for {epochs} epochs")
         start_time = time.time()
         
         for epoch in range(epochs):
-            epoch_start = time.time()
-            
-            # Train
-            train_loss, max_grad, avg_gating = self.train_epoch()
-            
-            # Validate
-            val_loss, metrics, sigmas, pearson_corrs = self.validate_epoch()
-            
-            # Update scheduler
-            self.scheduler.step()
-            current_lr = self.optimizer.param_groups[0]['lr']
-            
-            # Calculate average R² and update history
-            avg_r2 = np.mean([metrics[target]['r2'] for target in self.TARGETS])
-            self._update_training_history(
-                train_loss, val_loss, current_lr, avg_r2, max_grad, avg_gating,
-                metrics, pearson_corrs, sigmas
-            )
-            
-            # Log comprehensive metrics
-            epoch_time = time.time() - epoch_start
-            self._log_epoch_metrics(
-                epoch, epochs, train_loss, val_loss, avg_r2, current_lr, epoch_time,
-                metrics, sigmas, pearson_corrs, max_grad, avg_gating
-            )
-            
-            # Check early stopping
-            r2_scores = {target: metrics[target]['r2'] for target in self.TARGETS}
-            should_stop, is_best_loss, _, should_rollback = self.early_stopping(
-                epoch + 1,
-                val_loss,
-                r2_scores,
-                self.optimizer
-            )
-            
-            # Save checkpoints
-            is_best_r2 = avg_r2 > self.best_avg_r2
-            
-            if is_best_loss:
-                self.best_val_loss = val_loss
-                self.best_epoch_loss = epoch + 1
-                self._save_checkpoint(epoch + 1, self.CHECKPOINT_BEST_LOSS, is_best_loss=True)
-                logger.info(f"New best loss model saved (val_loss={val_loss:.4f})")
-            
-            if is_best_r2:
-                self.best_avg_r2 = avg_r2
-                self.best_epoch_r2 = epoch + 1
-                self._save_checkpoint(epoch + 1, "best_avg_r2.pt", is_best_r2=True)
-                logger.info(f"New best R² model saved (avg_r2={avg_r2:.4f})")
-            
-            # Save last epoch
-            self._save_checkpoint(epoch + 1, "last_epoch.pt")
-            
-            # Rollback if needed
-            if should_rollback and self.rollback_checkpoint is not None:
-                logger.warning("Rolling back to best checkpoint")
-                self._load_checkpoint(self.rollback_checkpoint)
-            
-            # Update rollback checkpoint
-            if is_best_loss:
-                self.rollback_checkpoint = self.save_dir / self.CHECKPOINT_BEST_LOSS if self.save_dir else None
-            
-            # Early stopping
-            if should_stop:
-                logger.info(f"Early stopping triggered at epoch {epoch+1}")
+            if self._train_single_epoch(epoch, epochs):
                 break
         
         total_time = time.time() - start_time

@@ -66,23 +66,41 @@ def _is_mock_queryset(queryset) -> bool:
     return False
 
 
-def _get_mock_count(queryset) -> int:
-    """Get count from mock queryset, defaulting to 0."""
+def _is_valid_numeric(value) -> bool:
+    """Check if value is a valid numeric type (int or float, but not bool)."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _get_count_from_method(queryset, method_name: str) -> Optional[int]:
+    """Get count from queryset method (count or __len__)."""
+    if not hasattr(queryset, method_name):
+        return None
+    
+    method = getattr(queryset, method_name)
+    if not callable(method):
+        return None
+    
     try:
-        if hasattr(queryset, 'count') and callable(queryset.count):
-            count_result = queryset.count()
-            if isinstance(count_result, (int, float)) and not isinstance(count_result, bool):
-                return int(count_result)
-            if _MOCK_TYPES and isinstance(count_result, _MOCK_TYPES):
-                return 0
-        elif hasattr(queryset, '__len__'):
-            len_result = len(queryset)
-            if isinstance(len_result, (int, float)) and not isinstance(len_result, bool):
-                return int(len_result)
-            if _MOCK_TYPES and isinstance(len_result, _MOCK_TYPES):
-                return 0
+        result = method()
+        if _is_valid_numeric(result):
+            return int(result)
+        if _MOCK_TYPES and isinstance(result, _MOCK_TYPES):
+            return 0
     except (TypeError, AttributeError, ValueError):
         pass
+    return None
+
+
+def _get_mock_count(queryset) -> int:
+    """Get count from mock queryset, defaulting to 0."""
+    count = _get_count_from_method(queryset, 'count')
+    if count is not None:
+        return count
+    
+    count = _get_count_from_method(queryset, '__len__')
+    if count is not None:
+        return count
+    
     return 0
 
 
