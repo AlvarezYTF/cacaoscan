@@ -45,19 +45,33 @@ def view():
 
 def test_validate_image_file_success(view, request_factory, image_file):
     """Test _validate_image_file with valid file."""
-    request = request_factory.post('/api/scan/')
-    request.FILES = {'image': image_file}
+    from rest_framework.test import APIRequestFactory
+    from rest_framework.test import force_authenticate
+    from django.contrib.auth.models import User
+    
+    api_factory = APIRequestFactory()
+    user = User.objects.create_user(username='testuser', password='testpass')
+    request = api_factory.post('/api/scan/', {'image': image_file}, format='multipart')
+    force_authenticate(request, user=user)
     
     file, error = view._validate_image_file(request)
     
-    assert file == image_file
+    # Compare file attributes instead of object identity
+    assert file is not None
+    assert file.name == image_file.name
     assert error is None
 
 
 def test_validate_image_file_missing(view, request_factory):
     """Test _validate_image_file without file."""
-    request = request_factory.post('/api/scan/')
-    request.FILES = {}
+    from rest_framework.test import APIRequestFactory
+    from rest_framework.test import force_authenticate
+    from django.contrib.auth.models import User
+    
+    api_factory = APIRequestFactory()
+    user = User.objects.create_user(username='testuser', password='testpass')
+    request = api_factory.post('/api/scan/', {}, format='multipart')
+    force_authenticate(request, user=user)
     
     file, error = view._validate_image_file(request)
     
@@ -111,7 +125,7 @@ def test_build_email_context(view, user):
     assert 'confidence' in context
 
 
-@patch('images_app.views.image.user.scan_views.send_email_notification')
+@patch('api.services.email.email_service.send_email_notification')
 def test_send_analysis_email_success(mock_send_email, view, user):
     """Test _send_analysis_email with success."""
     mock_send_email.return_value = {'success': True}
@@ -129,7 +143,7 @@ def test_send_analysis_email_success(mock_send_email, view, user):
     mock_send_email.assert_called_once()
 
 
-@patch('images_app.views.image.user.scan_views.send_email_notification')
+@patch('api.services.email.email_service.send_email_notification')
 def test_send_analysis_email_failure(mock_send_email, view, user):
     """Test _send_analysis_email with failure."""
     mock_send_email.return_value = {'success': False, 'error': 'Email error'}
@@ -183,8 +197,11 @@ def test_map_error_to_status_code_default(view):
 
 
 @patch('images_app.views.image.user.scan_views.AnalysisService')
-def test_post_success(mock_service_class, view, request_factory, user, image_file):
+def test_post_success(mock_service_class, view, user, image_file):
     """Test POST with successful analysis."""
+    from rest_framework.test import APIRequestFactory
+    from rest_framework.test import force_authenticate
+    
     mock_service = Mock()
     mock_service_class.return_value = mock_service
     mock_service.process_image_with_segmentation.return_value = Mock(
@@ -194,13 +211,25 @@ def test_post_success(mock_service_class, view, request_factory, user, image_fil
             'ancho_mm': 20.3,
             'grosor_mm': 15.2,
             'peso_g': 8.5,
-            'confidences': {'alto': 0.9, 'ancho': 0.8, 'grosor': 0.7, 'peso': 0.85}
+            'confidences': {'alto': 0.9, 'ancho': 0.8, 'grosor': 0.7, 'peso': 0.85},
+            'crop_url': 'http://example.com/crop.jpg',
+            'debug': {
+                'segmented': True,
+                'yolo_conf': 0.95,
+                'latency_ms': 150,
+                'models_version': 'v1.0',
+                'device': 'cpu',
+                'total_time_s': 0.3
+            },
+            'saved_to_database': True
         }
     )
     
-    request = request_factory.post('/api/scan/')
+    api_factory = APIRequestFactory()
+    request = api_factory.post('/api/scan/', {'image': image_file}, format='multipart')
+    force_authenticate(request, user=user)
+    # Ensure request.user is set (force_authenticate should do this, but set it explicitly)
     request.user = user
-    request.FILES = {'image': image_file}
     
     with patch.object(view, '_send_analysis_email'):
         response = view.post(request)
@@ -209,11 +238,14 @@ def test_post_success(mock_service_class, view, request_factory, user, image_fil
 
 
 @patch('images_app.views.image.user.scan_views.AnalysisService')
-def test_post_no_image(mock_service_class, view, request_factory, user):
+def test_post_no_image(mock_service_class, view, user):
     """Test POST without image file."""
-    request = request_factory.post('/api/scan/')
-    request.user = user
-    request.FILES = {}
+    from rest_framework.test import APIRequestFactory
+    from rest_framework.test import force_authenticate
+    
+    api_factory = APIRequestFactory()
+    request = api_factory.post('/api/scan/', {}, format='multipart')
+    force_authenticate(request, user=user)
     
     response = view.post(request)
     
@@ -221,8 +253,11 @@ def test_post_no_image(mock_service_class, view, request_factory, user):
 
 
 @patch('images_app.views.image.user.scan_views.AnalysisService')
-def test_post_service_error(mock_service_class, view, request_factory, user, image_file):
+def test_post_service_error(mock_service_class, view, user, image_file):
     """Test POST with service error."""
+    from rest_framework.test import APIRequestFactory
+    from rest_framework.test import force_authenticate
+    
     mock_service = Mock()
     mock_service_class.return_value = mock_service
     mock_service.process_image_with_segmentation.return_value = Mock(
@@ -234,9 +269,11 @@ def test_post_service_error(mock_service_class, view, request_factory, user, ima
         )
     )
     
-    request = request_factory.post('/api/scan/')
+    api_factory = APIRequestFactory()
+    request = api_factory.post('/api/scan/', {'image': image_file}, format='multipart')
+    force_authenticate(request, user=user)
+    # Ensure request.user is set
     request.user = user
-    request.FILES = {'image': image_file}
     
     response = view.post(request)
     

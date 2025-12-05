@@ -94,7 +94,7 @@ DB_PORT=5432
 Aplica las migraciones:
 
 ```bash
-python manage.py makemigrations
+  python manage.py makemigrations
 python manage.py migrate
 ```
 
@@ -128,6 +128,253 @@ pnpm dev
 ```
 
 ✅ El frontend estará disponible en: **http://127.0.0.1:5173**
+
+---
+
+## 📦 Dependencias del Proyecto
+
+Esta sección documenta todas las dependencias utilizadas en CacaoScan, sus versiones, propósitos y cómo gestionarlas.
+
+### 🎨 Dependencias del Frontend (Vue.js)
+
+El frontend utiliza **pnpm** como gestor de paquetes. Las dependencias están definidas en `frontend/package.json`.
+
+#### Dependencias Principales (Producción)
+
+| Dependencia | Versión | Propósito | Obligatoria |
+|-------------|---------|-----------|-------------|
+| **vue** | ^3.5.18 | Framework principal de Vue.js 3 | ✅ Sí |
+| **vue-router** | ^4.5.1 | Enrutamiento y navegación SPA | ✅ Sí |
+| **pinia** | ^3.0.3 | Gestión de estado global | ✅ Sí |
+| **axios** | ^1.12.2 | Cliente HTTP para comunicación con API | ✅ Sí |
+| **tailwindcss** | ^4.1.11 | Framework CSS utility-first | ✅ Sí |
+| **@tailwindcss/vite** | ^4.1.11 | Plugin de TailwindCSS para Vite | ✅ Sí |
+| **chart.js** | ^4.5.0 | Gráficos y visualización de datos | ⚠️ Opcional |
+| **leaflet** | ^1.9.4 | Mapas interactivos | ⚠️ Opcional |
+| **sweetalert2** | ^11.26.3 | Alertas y modales elegantes | ⚠️ Opcional |
+| **ionicons** | ^8.0.13 | Iconos vectoriales | ⚠️ Opcional |
+
+#### Dependencias de Desarrollo
+
+| Dependencia | Versión | Propósito | Obligatoria |
+|-------------|---------|-----------|-------------|
+| **vite** | ^7.0.6 | Build tool y servidor de desarrollo | ✅ Sí |
+| **@vitejs/plugin-vue** | ^6.0.1 | Plugin Vue para Vite | ✅ Sí |
+| **vitest** | ^2.1.8 | Framework de testing | ⚠️ Opcional |
+| **@vue/test-utils** | ^2.4.6 | Utilidades para testing Vue | ⚠️ Opcional |
+| **eslint** | ^9.31.0 | Linter de código | ⚠️ Opcional |
+| **prettier** | 3.6.2 | Formateador de código | ⚠️ Opcional |
+
+#### Instalación de Dependencias Frontend
+
+```bash
+cd frontend
+pnpm install
+```
+
+#### Actualización de Dependencias Frontend
+
+```bash
+# Actualizar todas las dependencias
+pnpm update
+
+# Actualizar una dependencia específica
+pnpm update vue@latest
+
+# Verificar dependencias desactualizadas
+pnpm outdated
+```
+
+#### Restricciones y Compatibilidades Frontend
+
+- **Node.js**: Requiere Node.js `^20.19.0` o `>=22.12.0` (verificado en `engines`)
+- **pnpm**: Se recomienda usar pnpm en lugar de npm o yarn para consistencia
+- **Vue 3**: El proyecto utiliza Composition API y requiere Vue 3.5+
+
+---
+
+### 🐍 Dependencias del Backend (Django/Python)
+
+El backend utiliza **pip** y **requirements.txt** para gestionar dependencias. Requiere **Python 3.12**.
+
+#### Dependencias Principales (Producción)
+
+##### Framework y API
+
+| Dependencia | Versión | Propósito | Obligatoria |
+|-------------|---------|-----------|-------------|
+| **Django** | 5.2.9 | Framework web principal | ✅ Sí |
+| **djangorestframework** | 3.16.1 | Framework para APIs REST | ✅ Sí |
+| **djangorestframework_simplejwt** | 5.5.1 | Autenticación JWT | ✅ Sí |
+| **django-cors-headers** | 4.9.0 | Manejo de CORS | ✅ Sí |
+| **django-filter** | 25.2 | Filtrado avanzado de querysets | ⚠️ Opcional |
+| **drf-yasg** | 1.21.7 | Documentación Swagger/OpenAPI | ⚠️ Opcional |
+
+##### Base de Datos
+
+| Dependencia | Versión | Propósito | Obligatoria |
+|-------------|---------|-----------|-------------|
+| **psycopg2-binary** | 2.9.11 | Adaptador PostgreSQL | ✅ Sí |
+| **django-redis** | 6.0.0 | Cache con Redis | ⚠️ Opcional |
+| **redis** | 7.1.0 | Cliente Redis | ⚠️ Opcional |
+
+##### Machine Learning y Visión por Computadora
+
+| Dependencia | Versión | Propósito | Obligatoria |
+|-------------|---------|-----------|-------------|
+| **torch** | 2.5.1 | PyTorch - Framework de deep learning | ✅ Sí |
+| **torchvision** | 0.20.1 | Utilidades de visión para PyTorch | ✅ Sí |
+| **ultralytics** | 8.3.234 | YOLOv8 para detección de objetos | ✅ Sí |
+| **opencv-python** | 4.12.0.88 | Procesamiento de imágenes | ✅ Sí |
+| **opencv-python-headless** | 4.12.0.88 | OpenCV sin GUI (para servidores) | ✅ Sí |
+| **scikit-learn** | 1.7.2 | Machine learning tradicional | ✅ Sí |
+| **scikit-image** | 0.25.2 | Procesamiento de imágenes | ✅ Sí |
+| **albumentations** | 2.0.8 | Data augmentation para imágenes | ⚠️ Opcional |
+| **timm** | 0.9.12 | Modelos pre-entrenados | ⚠️ Opcional |
+
+##### Procesamiento de Datos
+
+| Dependencia | Versión | Propósito | Obligatoria |
+|-------------|---------|-----------|-------------|
+| **numpy** | 2.1.3 | Computación numérica | ✅ Sí |
+| **pandas** | 2.3.3 | Manipulación de datos | ✅ Sí |
+| **polars** | 1.35.2 | Procesamiento de datos rápido | ⚠️ Opcional |
+| **scipy** | 1.16.2 | Computación científica | ⚠️ Opcional |
+
+##### Visualización y Reportes
+
+| Dependencia | Versión | Propósito | Obligatoria |
+|-------------|---------|-----------|-------------|
+| **matplotlib** | 3.10.7 | Visualización de datos | ⚠️ Opcional |
+| **seaborn** | 0.13.2 | Visualización estadística | ⚠️ Opcional |
+| **openpyxl** | 3.1.5 | Generación de archivos Excel | ✅ Sí |
+| **XlsxWriter** | 3.1.9 | Escritura avanzada de Excel | ⚠️ Opcional |
+| **reportlab** | 4.0.4 | Generación de PDFs | ⚠️ Opcional |
+
+##### Tareas Asíncronas y WebSockets
+
+| Dependencia | Versión | Propósito | Obligatoria |
+|-------------|---------|-----------|-------------|
+| **celery** | 5.6.0 | Tareas asíncronas en background | ⚠️ Opcional |
+| **channels** | 4.3.2 | WebSockets y protocolos asíncronos | ⚠️ Opcional |
+| **channels_redis** | 4.3.0 | Backend Redis para Channels | ⚠️ Opcional |
+
+##### Servidor y Despliegue
+
+| Dependencia | Versión | Propósito | Obligatoria |
+|-------------|---------|-----------|-------------|
+| **gunicorn** | 23.0.0 | Servidor WSGI para producción | ✅ Sí (producción) |
+| **whitenoise** | 6.8.2 | Servir archivos estáticos | ⚠️ Opcional |
+| **django-storages** | 1.14.2 | Almacenamiento en cloud (S3, etc.) | ⚠️ Opcional |
+
+##### Utilidades y Otros
+
+| Dependencia | Versión | Propósito | Obligatoria |
+|-------------|---------|-----------|-------------|
+| **python-dotenv** | 1.2.1 | Gestión de variables de entorno | ✅ Sí |
+| **pillow** | 12.0.0 | Procesamiento de imágenes | ✅ Sí |
+| **requests** | 2.32.5 | Cliente HTTP | ⚠️ Opcional |
+| **sendgrid** | 6.11.0 | Envío de emails | ⚠️ Opcional |
+| **pydantic** | 2.12.5 | Validación de datos | ⚠️ Opcional |
+
+##### Testing
+
+| Dependencia | Versión | Propósito | Obligatoria |
+|-------------|---------|-----------|-------------|
+| **pytest** | 9.0.1 | Framework de testing | ⚠️ Opcional |
+| **pytest-django** | 4.11.1 | Plugin pytest para Django | ⚠️ Opcional |
+| **pytest-cov** | 7.0.0 | Cobertura de código | ⚠️ Opcional |
+| **pytest-xdist** | 3.8.0 | Testing paralelo | ⚠️ Opcional |
+| **coverage** | 7.12.0 | Análisis de cobertura | ⚠️ Opcional |
+
+#### Instalación de Dependencias Backend
+
+```bash
+cd backend
+python3.12 -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+# Linux/Mac
+source venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+#### Actualización de Dependencias Backend
+
+```bash
+# Actualizar todas las dependencias
+pip install --upgrade -r requirements.txt
+
+# Actualizar una dependencia específica
+pip install --upgrade Django==5.2.10
+
+# Generar nuevo requirements.txt con versiones actualizadas
+pip freeze > requirements.txt
+
+# Verificar dependencias desactualizadas
+pip list --outdated
+```
+
+#### Restricciones y Compatibilidades Backend
+
+- **Python**: Requiere **Python 3.12** exactamente (no 3.11 ni 3.13)
+- **Django**: Compatible con Django 5.2.x
+- **PyTorch**: Requiere CUDA 11.8+ para GPU (opcional, funciona con CPU)
+- **PostgreSQL**: Requiere PostgreSQL 15 o superior
+- **Redis**: Opcional, requerido solo si se usan tareas asíncronas o cache
+- **Sistema Operativo**: Compatible con Windows, Linux y macOS
+
+#### Dependencias Opcionales por Funcionalidad
+
+| Funcionalidad | Dependencias Opcionales |
+|---------------|------------------------|
+| **Mapas interactivos** | `leaflet` (frontend) |
+| **Gráficos avanzados** | `chart.js` (frontend) |
+| **Tareas asíncronas** | `celery`, `redis` (backend) |
+| **WebSockets** | `channels`, `channels_redis` (backend) |
+| **Envío de emails** | `sendgrid` (backend) |
+| **Almacenamiento cloud** | `django-storages`, `boto3` (backend) |
+| **Testing** | `pytest`, `pytest-django`, `vitest` |
+
+---
+
+### 🔄 Gestión de Dependencias
+
+#### Buenas Prácticas
+
+1. **Versionado**: Todas las dependencias están fijadas a versiones específicas para garantizar reproducibilidad
+2. **Actualizaciones**: Revisar changelogs antes de actualizar dependencias críticas
+3. **Seguridad**: Ejecutar `pip audit` o `pnpm audit` regularmente para detectar vulnerabilidades
+4. **Entornos**: Usar entornos virtuales (Python) y lockfiles (pnpm) para aislamiento
+
+#### Comandos Útiles
+
+```bash
+# Frontend - Verificar vulnerabilidades
+pnpm audit
+
+# Frontend - Actualizar dependencias de forma segura
+pnpm update --latest
+
+# Backend - Verificar vulnerabilidades
+pip audit
+
+# Backend - Actualizar dependencias de forma segura
+pip install --upgrade package-name
+
+# Generar requirements.txt actualizado
+pip freeze > requirements.txt
+```
+
+#### Notas Importantes
+
+- ⚠️ **No actualizar PyTorch sin verificar compatibilidad con CUDA** si se usa GPU
+- ⚠️ **Django 5.2.x** tiene cambios breaking respecto a versiones anteriores
+- ⚠️ **Vue 3.5+** requiere Node.js 20.19+ o 22.12+
+- ✅ Las dependencias marcadas como "Opcional" pueden eliminarse si no se usan sus funcionalidades
 
 ---
 

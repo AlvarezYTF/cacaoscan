@@ -67,17 +67,20 @@ class TestImageStorageService:
     
     def test_save_uploaded_image_with_segmentation_success(self, storage_service, mock_image_file, user):
         """Test successful image save with segmentation."""
-        with patch('images_app.services.image.storage_service.CacaoImage') as mock_model:
-            mock_instance = Mock()
-            mock_instance.id = 1
-            mock_instance.image = Mock()
-            mock_instance.image.path = '/path/to/image.jpg'
-            mock_instance.save = Mock()
-            mock_model.return_value = mock_instance
-            
+        # Patch CacaoImage to return a mock instance when instantiated
+        mock_instance = Mock()
+        mock_instance.id = 1
+        mock_instance.image = Mock()
+        mock_instance.image.path = '/path/to/image.jpg'
+        mock_instance.save = Mock()
+        
+        # Create a mock class that returns mock_instance when instantiated
+        mock_cacao_image_class = Mock(return_value=mock_instance)
+        
+        with patch('images_app.services.image.storage_service.CacaoImage', mock_cacao_image_class):
             with patch('core.utils.invalidate_dataset_validation_cache'):
                 with patch('core.utils.invalidate_system_stats_cache'):
-                    with patch('images_app.services.image.storage_service.segment_and_crop_cacao_bean', return_value='/path/to/segmented.png'):
+                    with patch('ml.segmentation.processor.segment_and_crop_cacao_bean', return_value='/path/to/segmented.png'):
                         result = storage_service.save_uploaded_image_with_segmentation(mock_image_file, user)
                         
                         assert result.success is True
@@ -86,17 +89,20 @@ class TestImageStorageService:
     
     def test_save_uploaded_image_with_segmentation_segmentation_error(self, storage_service, mock_image_file, user):
         """Test image save with segmentation error."""
-        with patch('images_app.services.image.storage_service.CacaoImage') as mock_model:
-            mock_instance = Mock()
-            mock_instance.id = 1
-            mock_instance.image = Mock()
-            mock_instance.image.path = '/path/to/image.jpg'
-            mock_instance.save = Mock()
-            mock_model.return_value = mock_instance
-            
+        # Patch CacaoImage to return a mock instance when instantiated
+        mock_instance = Mock()
+        mock_instance.id = 1
+        mock_instance.image = Mock()
+        mock_instance.image.path = '/path/to/image.jpg'
+        mock_instance.save = Mock()
+        
+        # Create a mock class that returns mock_instance when instantiated
+        mock_cacao_image_class = Mock(return_value=mock_instance)
+        
+        with patch('images_app.services.image.storage_service.CacaoImage', mock_cacao_image_class):
             with patch('core.utils.invalidate_dataset_validation_cache'):
                 with patch('core.utils.invalidate_system_stats_cache'):
-                    with patch('images_app.services.image.storage_service.segment_and_crop_cacao_bean', side_effect=Exception("Segmentation error")):
+                    with patch('ml.segmentation.processor.segment_and_crop_cacao_bean', side_effect=Exception("Segmentation error")):
                         result = storage_service.save_uploaded_image_with_segmentation(mock_image_file, user)
                         
                         # Should still succeed but without segmentation

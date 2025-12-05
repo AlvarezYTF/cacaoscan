@@ -148,7 +148,7 @@ describe('FormField', () => {
         const input = wrapper.find(`input[type="${type}"]`)
         expect(input.exists()).toBe(true)
         wrapper.unmount()
-      })
+      }
     })
   })
 

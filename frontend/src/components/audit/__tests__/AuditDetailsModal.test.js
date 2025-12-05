@@ -340,7 +340,9 @@ describe('AuditDetailsModal', () => {
     })
 
     it('should detect suspicious IP', () => {
-      const data = { ...createActivityData(), ip_address: MOCK_IP_ADDRESS }
+      // Use an IP that contains '192.168' as per the implementation
+      const suspiciousIP = '192.168.1.1'
+      const data = { ...createActivityData(), ip_address: suspiciousIP }
       wrapper = mount(AuditDetailsModal, {
         props: {
           data,

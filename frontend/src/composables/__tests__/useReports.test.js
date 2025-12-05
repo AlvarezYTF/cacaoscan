@@ -498,21 +498,42 @@ describe('useReports composable', () => {
 
   describe('pollForCompletion', () => {
     let unhandledRejections = []
+    let rejectionHandler = null
 
     beforeEach(() => {
       vi.useFakeTimers()
       unhandledRejections = []
       // Capture unhandled rejections
-      process.listeners('unhandledRejection')
-      process.on('unhandledRejection', (reason) => {
+      rejectionHandler = (reason) => {
         unhandledRejections.push(reason)
-      })
+      }
+      process.on('unhandledRejection', rejectionHandler)
     })
 
-    afterEach(() => {
+    afterEach(async () => {
+      // Wait for any pending async operations before cleaning up
+      await nextTick()
+      
       // Clear all timers before switching back to real timers
       vi.clearAllTimers()
+      
+      // Run any remaining timers that might have been scheduled
+      try {
+        await vi.advanceTimersByTimeAsync(10000)
+      } catch {
+        // Ignore errors
+      }
+      
+      await nextTick()
+      
+      // Remove the handler
+      if (rejectionHandler) {
+        process.removeListener('unhandledRejection', rejectionHandler)
+        rejectionHandler = null
+      }
+      
       vi.useRealTimers()
+      
       // Verify no unhandled rejections occurred
       expect(unhandledRejections).toHaveLength(0)
       unhandledRejections = []
@@ -547,19 +568,31 @@ describe('useReports composable', () => {
       const { pollForCompletion } = useReports()
 
       const pollPromise = pollForCompletion(1, 100, 10)
+      
+      // Capture the promise rejection BEFORE advancing timers to prevent unhandled rejection
+      // expect().rejects will handle the rejection properly
+      const testAssertion = expect(pollPromise).rejects.toThrow('Generation failed')
 
-      // Start the polling
+      // Start the polling - this will trigger the rejection
       await vi.advanceTimersByTimeAsync(0)
       
       // Wait for the promise to reject
-      await expect(pollPromise).rejects.toThrow('Generation failed')
+      await testAssertion
       
       // Clear all timers immediately after rejection
       vi.clearAllTimers()
       
-      // Wait for any pending async operations
+      // Wait for any pending async operations and microtasks
       await nextTick()
-      await vi.advanceTimersByTimeAsync(0)
+      
+      // Ensure all timers are processed
+      try {
+        await vi.advanceTimersByTimeAsync(1000)
+      } catch {
+        // Ignore errors from advancing timers
+      }
+      
+      await nextTick()
     })
 
     it('should reject on timeout', async () => {
@@ -568,22 +601,35 @@ describe('useReports composable', () => {
       const { pollForCompletion } = useReports()
 
       const pollPromise = pollForCompletion(1, 100, 2)
+      
+      // Capture the promise rejection BEFORE advancing timers to prevent unhandled rejection
+      // expect().rejects will handle the rejection properly
+      const testAssertion = expect(pollPromise).rejects.toThrow('Tiempo de espera agotado')
 
       // Start the polling (first attempt)
       await vi.advanceTimersByTimeAsync(0)
       
       // Advance to trigger the second attempt (maxAttempts = 2)
+      // After second attempt, it should check attempts >= maxAttempts and reject
       await vi.advanceTimersByTimeAsync(100)
       
       // Wait for the promise to reject
-      await expect(pollPromise).rejects.toThrow('Tiempo de espera agotado')
+      await testAssertion
       
-      // Clear all timers immediately after rejection
+      // Clear all timers immediately to prevent any scheduled polls
       vi.clearAllTimers()
       
-      // Wait for any pending async operations
+      // Wait for any pending async operations and microtasks
       await nextTick()
-      await vi.advanceTimersByTimeAsync(0)
+      
+      // Ensure all timers are processed
+      try {
+        await vi.advanceTimersByTimeAsync(1000)
+      } catch {
+        // Ignore errors from advancing timers
+      }
+      
+      await nextTick()
     })
   })
 

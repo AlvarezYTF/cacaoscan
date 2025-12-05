@@ -90,10 +90,12 @@ def test_can_access_image_other_user(view, user, db):
 
 
 @patch('images_app.views.image.mixins.CacaoImage')
-def test_get_user_images_queryset_admin(view, admin_user, mock_cacao_image, db):
+def test_get_user_images_queryset_admin(mock_cacao_image, view, admin_user, db):
     """Test get_user_images_queryset returns all images for admin."""
     mock_queryset = Mock()
-    mock_cacao_image.objects.select_related.return_value.prefetch_related.return_value = mock_queryset
+    mock_prefetch = Mock()
+    mock_prefetch.prefetch_related.return_value = mock_queryset
+    mock_cacao_image.objects.select_related.return_value = mock_prefetch
     
     result = view.get_user_images_queryset(admin_user)
     
@@ -101,10 +103,12 @@ def test_get_user_images_queryset_admin(view, admin_user, mock_cacao_image, db):
 
 
 @patch('images_app.views.image.mixins.CacaoImage')
-def test_get_user_images_queryset_analyst(view, analyst_user, mock_cacao_image, db):
+def test_get_user_images_queryset_analyst(mock_cacao_image, view, analyst_user, db):
     """Test get_user_images_queryset returns all images for analyst."""
     mock_queryset = Mock()
-    mock_cacao_image.objects.select_related.return_value.prefetch_related.return_value = mock_queryset
+    mock_prefetch = Mock()
+    mock_prefetch.prefetch_related.return_value = mock_queryset
+    mock_cacao_image.objects.select_related.return_value = mock_prefetch
     
     result = view.get_user_images_queryset(analyst_user)
     
@@ -112,11 +116,13 @@ def test_get_user_images_queryset_analyst(view, analyst_user, mock_cacao_image, 
 
 
 @patch('images_app.views.image.mixins.CacaoImage')
-def test_get_user_images_queryset_regular_user(view, user, mock_cacao_image, db):
+def test_get_user_images_queryset_regular_user(mock_cacao_image, view, user, db):
     """Test get_user_images_queryset filters by user for regular user."""
     mock_base_queryset = Mock()
     mock_filtered_queryset = Mock()
-    mock_cacao_image.objects.select_related.return_value.prefetch_related.return_value = mock_base_queryset
+    mock_prefetch = Mock()
+    mock_prefetch.prefetch_related.return_value = mock_base_queryset
+    mock_cacao_image.objects.select_related.return_value = mock_prefetch
     mock_base_queryset.filter.return_value = mock_filtered_queryset
     
     result = view.get_user_images_queryset(user)

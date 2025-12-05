@@ -561,7 +561,10 @@ defineExpose({
   formData,
   processUserErrors,
   buildUserData,
-  validateForm
+  validateForm,
+  validateCreatePassword,
+  validateEditPassword,
+  validateBasicFields
 })
 
 // Watchers

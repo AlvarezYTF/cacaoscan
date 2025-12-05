@@ -337,7 +337,8 @@ describe('useAuth', () => {
     })
 
     it('should handle errors without message', async () => {
-      const error = new Error('Login failed')
+      const error = Object.create(Error.prototype)
+      error.message = ''
       mockAuthStore.login.mockRejectedValue(error)
       
       await expect(auth.login({ email: 'test@example.com', password: MOCK_PASSWORD })).rejects.toThrow()

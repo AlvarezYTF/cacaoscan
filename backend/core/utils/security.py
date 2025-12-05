@@ -24,6 +24,10 @@ def sanitize_filename(filename: str, default: str = "file") -> str:
     if not filename or not isinstance(filename, str):
         raise ValueError("Filename must be a non-empty string")
     
+    # Check for path traversal attempts BEFORE applying basename
+    if ".." in filename:
+        raise ValueError("Filename cannot contain path traversal sequences (..)")
+    
     # Remove any path components (directory separators) first
     filename = os.path.basename(filename)
     
@@ -37,7 +41,7 @@ def sanitize_filename(filename: str, default: str = "file") -> str:
     # Remove leading/trailing whitespace and dots
     filename = filename.strip(' .')
     
-    # Check for path traversal attempts after sanitization
+    # Check for path traversal attempts after sanitization (redundant but safe)
     if ".." in filename:
         raise ValueError("Filename cannot contain path traversal sequences (..)")
     

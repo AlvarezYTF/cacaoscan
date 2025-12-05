@@ -170,6 +170,7 @@ class TestImagesExportView:
     
     def test_post_export_csv(self, request_factory, user):
         """Test POST export CSV."""
+        view_instance = ImagesExportView()
         view = ImagesExportView.as_view()
         data = {
             'format': 'csv',
@@ -179,11 +180,13 @@ class TestImagesExportView:
         request = request_factory.post('/api/images/export/', data, format='json')
         force_authenticate(request, user=user)
         
-        with patch.object(ImagesExportView, 'get_user_images_queryset') as mock_queryset:
+        with patch.object(ImagesExportView, 'get_user_images_queryset') as mock_queryset_method:
             mock_query = Mock()
-            mock_query.filter.return_value.order_by.return_value = []
+            mock_query.filter.return_value = mock_query
+            mock_query.order_by.return_value = mock_query
+            mock_query.select_related.return_value = []
             mock_query.count.return_value = 0
-            mock_queryset.return_value = mock_query
+            mock_queryset_method.return_value = mock_query
             
             response = view(request)
             assert response.status_code == status.HTTP_200_OK
@@ -214,11 +217,13 @@ class TestImagesExportView:
         request = request_factory.post('/api/images/export/', data, format='json')
         force_authenticate(request, user=user)
         
-        with patch.object(ImagesExportView, 'get_user_images_queryset') as mock_queryset:
+        with patch.object(ImagesExportView, 'get_user_images_queryset') as mock_queryset_method:
             mock_query = Mock()
-            mock_query.filter.return_value.order_by.return_value = []
+            mock_query.filter.return_value = mock_query
+            mock_query.order_by.return_value = mock_query
+            mock_query.select_related.return_value = []
             mock_query.count.return_value = 0
-            mock_queryset.return_value = mock_query
+            mock_queryset_method.return_value = mock_query
             
             response = view(request)
             assert response.status_code == status.HTTP_200_OK

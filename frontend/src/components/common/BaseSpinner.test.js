@@ -134,7 +134,7 @@ describe('BaseSpinner', () => {
       }
       
       expect(wrapper.vm.spinnerClasses).toContain(colorClasses[color])
-    })
+    }
   })
 })
 

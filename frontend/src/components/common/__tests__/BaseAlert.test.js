@@ -49,33 +49,69 @@ describe('BaseAlert', () => {
   })
 
   describe('Variants', () => {
-    const variants = ['error', 'success', 'warning', 'info', 'critical']
-
-    for (const variant of variants) {
-      it(`should apply correct classes for ${variant} variant`, () => {
-        wrapper = mount(BaseAlert, {
-          props: {
-            message: 'Test message',
-            variant
-          }
-        })
-
-        const alertElement = wrapper.find('.border-l-4')
-        expect(alertElement.exists()).toBe(true)
-        let expectedBorderClass
-        if (variant === 'critical') {
-          expectedBorderClass = 'border-red-600'
-        } else if (variant === 'error') {
-          expectedBorderClass = 'border-red-400'
-        } else if (variant === 'success') {
-          expectedBorderClass = 'border-green-400'
-        } else if (variant === 'warning') {
-          expectedBorderClass = 'border-yellow-400'
-        } else {
-          expectedBorderClass = 'border-blue-400'
+    it('should apply correct classes for error variant', () => {
+      wrapper = mount(BaseAlert, {
+        props: {
+          message: 'Test message',
+          variant: 'error'
         }
-        expect(alertElement.classes()).toContain(expectedBorderClass)
       })
+
+      const alertElement = wrapper.find('.border-l-4')
+      expect(alertElement.exists()).toBe(true)
+      expect(alertElement.classes()).toContain('border-red-400')
+    })
+
+    it('should apply correct classes for success variant', () => {
+      wrapper = mount(BaseAlert, {
+        props: {
+          message: 'Test message',
+          variant: 'success'
+        }
+      })
+
+      const alertElement = wrapper.find('.border-l-4')
+      expect(alertElement.exists()).toBe(true)
+      expect(alertElement.classes()).toContain('border-green-400')
+    })
+
+    it('should apply correct classes for warning variant', () => {
+      wrapper = mount(BaseAlert, {
+        props: {
+          message: 'Test message',
+          variant: 'warning'
+        }
+      })
+
+      const alertElement = wrapper.find('.border-l-4')
+      expect(alertElement.exists()).toBe(true)
+      expect(alertElement.classes()).toContain('border-yellow-400')
+    })
+
+    it('should apply correct classes for info variant', () => {
+      wrapper = mount(BaseAlert, {
+        props: {
+          message: 'Test message',
+          variant: 'info'
+        }
+      })
+
+      const alertElement = wrapper.find('.border-l-4')
+      expect(alertElement.exists()).toBe(true)
+      expect(alertElement.classes()).toContain('border-blue-400')
+    })
+
+    it('should apply correct classes for critical variant', () => {
+      wrapper = mount(BaseAlert, {
+        props: {
+          message: 'Test message',
+          variant: 'critical'
+        }
+      })
+
+      const alertElement = wrapper.find('.border-l-4')
+      expect(alertElement.exists()).toBe(true)
+      expect(alertElement.classes()).toContain('border-red-600')
     })
   })
 
@@ -137,4 +173,3 @@ describe('BaseAlert', () => {
     })
   })
 })
-

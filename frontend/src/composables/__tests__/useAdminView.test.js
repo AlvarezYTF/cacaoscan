@@ -37,11 +37,28 @@ vi.mock('sweetalert2', () => ({
   }
 }))
 
+// Mock auth store - use vi.hoisted to ensure it's available for dynamic imports
+const { mockAuthStoreInstance } = vi.hoisted(() => {
+  return {
+    mockAuthStoreInstance: {
+      logout: vi.fn().mockResolvedValue(undefined)
+    }
+  }
+})
+
+vi.mock('@/stores/auth', () => ({
+  useAuthStore: () => mockAuthStoreInstance
+}))
+
 describe('useAdminView', () => {
   let adminView
 
   beforeEach(() => {
     vi.clearAllMocks()
+    
+    // Reset auth store mock
+    mockAuthStoreInstance.logout.mockReset()
+    mockAuthStoreInstance.logout.mockResolvedValue(undefined)
     
     const mockStore = {
       stats: {},
@@ -117,34 +134,26 @@ describe('useAdminView', () => {
     })
   })
 
-  const createAuthStoreMock = (mockAuthStore) => ({
-    useAuthStore: () => mockAuthStore
-  })
-
   describe('handleLogout', () => {
     it('should logout and redirect to login', async () => {
-      const mockAuthStore = {
-        logout: vi.fn().mockResolvedValue()
-      }
-      
-      vi.doMock('@/stores/auth', createAuthStoreMock(mockAuthStore))
+      mockAuthStoreInstance.logout.mockClear()
+      mockAuthStoreInstance.logout.mockResolvedValue(undefined)
       
       await adminView.handleLogout()
       
+      expect(mockAuthStoreInstance.logout).toHaveBeenCalled()
       expect(mockRouter.push).toHaveBeenCalledWith('/login')
     })
 
     it('should handle logout error', async () => {
-      const mockAuthStore = {
-        logout: vi.fn().mockRejectedValue(new Error('Logout failed'))
-      }
+      mockAuthStoreInstance.logout.mockClear()
+      mockAuthStoreInstance.logout.mockRejectedValue(new Error('Logout failed'))
       
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
       
-      vi.doMock('@/stores/auth', createAuthStoreMock(mockAuthStore))
-      
       await adminView.handleLogout()
       
+      expect(mockAuthStoreInstance.logout).toHaveBeenCalled()
       expect(consoleError).toHaveBeenCalled()
       consoleError.mockRestore()
     })

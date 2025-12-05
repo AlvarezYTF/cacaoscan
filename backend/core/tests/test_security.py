@@ -45,19 +45,23 @@ def test_sanitize_filename_strips_whitespace():
     result = sanitize_filename("  test_file.jpg  ")
     assert result == "test_file.jpg"
     
-    result = sanitize_filename("...test_file.jpg...")
+    # Note: "..." contains ".." so it will raise ValueError
+    # Use single dots instead
+    result = sanitize_filename(".test_file.jpg.")
     assert result == "test_file.jpg"
 
 
 def test_sanitize_filename_empty_after_sanitization():
     """Test sanitizing filename that becomes empty."""
+    # Use only dots (not "..") that will become empty after strip
     with pytest.raises(ValueError, match="empty after sanitization"):
-        sanitize_filename("...", default=None)
+        sanitize_filename("   ", default=None)
 
 
 def test_sanitize_filename_empty_with_default():
     """Test sanitizing empty filename with default."""
-    result = sanitize_filename("...", default="default_file.txt")
+    # Whitespace after strip becomes empty, so default is used
+    result = sanitize_filename("   ", default="default_file.txt")
     assert result == "default_file.txt"
 
 

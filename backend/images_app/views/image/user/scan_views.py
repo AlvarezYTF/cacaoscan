@@ -116,8 +116,8 @@ class ScanMeasureView(APIView):
                 return status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
             return status.HTTP_400_BAD_REQUEST
         
-        error_msg_lower = result.error.message.lower()
-        if 'not_available' in error_msg_lower or 'no disponible' in error_msg_lower:
+        error_msg_lower = str(result.error.message).lower() if result.error.message else ''
+        if 'not_available' in error_msg_lower or 'no disponible' in error_msg_lower or 'service not available' in error_msg_lower:
             return status.HTTP_503_SERVICE_UNAVAILABLE
         
         return status.HTTP_500_INTERNAL_SERVER_ERROR

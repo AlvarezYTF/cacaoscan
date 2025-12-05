@@ -77,7 +77,10 @@ class TestVerificationService:
     
     def test_verify_email_exception(self, verification_service):
         """Test email verification with exception."""
-        with patch('api.services.auth.verification_service.get_models_safely', side_effect=Exception("Database error")):
+        # Patch get_models_safely where it's imported inside the method
+        # The import is: from ...utils.model_imports import get_models_safely
+        # So we need to patch it at the module level where it's used
+        with patch('api.utils.model_imports.get_models_safely', side_effect=Exception("Database error")):
             result = verification_service.verify_email('token')
             
             assert result.success is False

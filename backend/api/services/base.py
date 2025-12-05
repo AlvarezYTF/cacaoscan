@@ -121,14 +121,24 @@ class BaseService:
                 details={"missing_fields": missing_fields}
             )
     
-    def _validate_field_type(self, field: str, value: Any, expected_type: type):
+    def _validate_field_type(self, field: str, value: Any, expected_type):
         """Valida el tipo de un campo."""
-        if not isinstance(value, expected_type):
-            raise ValidationServiceError(
-                f"Campo '{field}' debe ser de tipo {expected_type.__name__}",
-                error_code="invalid_field_type",
-                details={"field": field, "expected_type": expected_type.__name__, "actual_type": type(value).__name__}
-            )
+        # Handle tuple of types (e.g., (int, float, Decimal))
+        if isinstance(expected_type, tuple):
+            if not isinstance(value, expected_type):
+                type_names = ', '.join(t.__name__ for t in expected_type)
+                raise ValidationServiceError(
+                    f"Campo '{field}' debe ser uno de los tipos: {type_names}",
+                    error_code="invalid_field_type",
+                    details={"field": field, "expected_types": [t.__name__ for t in expected_type], "actual_type": type(value).__name__}
+                )
+        else:
+            if not isinstance(value, expected_type):
+                raise ValidationServiceError(
+                    f"Campo '{field}' debe ser de tipo {expected_type.__name__}",
+                    error_code="invalid_field_type",
+                    details={"field": field, "expected_type": expected_type.__name__, "actual_type": type(value).__name__}
+                )
     
     def _validate_field_range(self, field: str, value: Any, validation: Dict[str, Any]):
         """Valida el rango de un campo."""
@@ -247,9 +257,34 @@ class BaseService:
             }
         }
     
+    def _serialize_for_json(self, value: Any) -> Any:
+        """
+        Serializa un valor para JSON, convirtiendo Decimal y otros tipos no serializables.
+        
+        Args:
+            value: Valor a serializar
+            
+        Returns:
+            Valor serializable para JSON
+        """
+        from decimal import Decimal
+        from datetime import date, datetime
+        
+        if isinstance(value, Decimal):
+            return float(value)
+        elif isinstance(value, (date, datetime)):
+            return value.isoformat()
+        elif isinstance(value, dict):
+            return {k: self._serialize_for_json(v) for k, v in value.items()}
+        elif isinstance(value, (list, tuple)):
+            return [self._serialize_for_json(item) for item in value]
+        else:
+            return value
+    
     def create_audit_log(self, user: User, action: str, resource_type: str, resource_id: Any = None, details: Dict[str, Any] = None):
         """
         Crea un log de auditoría.
+        Se ejecuta después de que la transacción se complete para evitar problemas con bloques atómicos.
         
         Args:
             user: Usuario que realiza la acción
@@ -258,26 +293,35 @@ class BaseService:
             resource_id: ID del recurso (opcional)
             details: Detalles adicionales (opcional)
         """
-        try:
+        def _create_log():
             try:
-                from audit.models import ActivityLog as activity_log_model
-            except ImportError:
-                activity_log_model = None
-            
-            if activity_log_model is None:
-                self.log_debug("Servicio de auditoría no disponible; se omite creación de log")
-                return
-            
-            activity_log_model.objects.create(
-                user=user,
-                action=action,
-                resource_type=resource_type,
-                resource_id=str(resource_id) if resource_id else None,
-                details=details or {},
-                timestamp=timezone.now()
-            )
-        except Exception as e:
-            self.log_warning(f"Error creando log de auditoría: {str(e)}")
+                try:
+                    from audit.models import ActivityLog as activity_log_model
+                except ImportError:
+                    activity_log_model = None
+                
+                if activity_log_model is None:
+                    self.log_debug("Servicio de auditoría no disponible; se omite creación de log")
+                    return
+                
+                # Serialize details to ensure JSON compatibility
+                serialized_details = {}
+                if details:
+                    serialized_details = self._serialize_for_json(details)
+                
+                activity_log_model.objects.create(
+                    user=user,
+                    action=action,
+                    resource_type=resource_type,
+                    resource_id=str(resource_id) if resource_id else None,
+                    details=serialized_details,
+                    timestamp=timezone.now()
+                )
+            except Exception as e:
+                self.log_warning(f"Error creando log de auditoría: {str(e)}")
+        
+        # Execute after transaction commits to avoid atomic block issues
+        transaction.on_commit(_create_log)
 
 
 class ServiceResult:

@@ -127,38 +127,48 @@ class TestTrainingJobCreateView:
     
     def test_create_job_admin_success(self, request_factory, admin_user):
         """Test successful creation of training job by admin."""
+        from rest_framework.test import APIRequestFactory, force_authenticate
+        api_factory = APIRequestFactory()
         view = TrainingJobCreateView()
-        request = request_factory.post('/api/training/jobs/', {
+        request = api_factory.post('/api/training/jobs/', {
             'job_type': 'regression',
             'model_name': 'test_model',
             'epochs': 150,
             'batch_size': 16
         }, format='json')
-        request.user = admin_user
+        force_authenticate(request, user=admin_user)
+        # Initialize request to convert to DRF Request with .data attribute
+        request = view.initialize_request(request)
         
         with patch.object(view, 'is_admin_user', return_value=True):
             with patch('api.views.ml.training_views.TrainingJob') as mock_job:
-                mock_job.objects.create.return_value = Mock(
-                    job_id='job_123',
-                    id=1
-                )
+                # Create a proper mock instance for TrainingJob
+                mock_job_instance = Mock()
+                mock_job_instance.job_id = 'job_123'
+                mock_job_instance.id = 1
+                mock_job.objects.create.return_value = mock_job_instance
                 
-                with patch('api.views.ml.training_views.TrainingJobCreateSerializer') as mock_serializer:
+                with patch('api.views.ml.training_views.TrainingJobCreateSerializer') as mock_serializer_class:
                     mock_serializer_instance = Mock()
-                    mock_serializer.return_value = mock_serializer_instance
+                    mock_serializer_class.return_value = mock_serializer_instance
                     mock_serializer_instance.is_valid.return_value = True
                     mock_serializer_instance.validated_data = {
                         'job_type': 'regression',
                         'model_name': 'test_model',
                         'epochs': 150,
-                        'batch_size': 16
+                        'batch_size': 16,
+                        'config_params': {}
                     }
                     
-                    with patch('api.views.ml.training_views.TrainingJobSerializer') as mock_response_serializer:
-                        mock_response_serializer.return_value.data = {'id': 1}
+                    with patch('api.views.ml.training_views.TrainingJobSerializer') as mock_response_serializer_class:
+                        mock_response_serializer_instance = Mock()
+                        mock_response_serializer_instance.data = {'id': 1, 'job_id': 'job_123'}
+                        mock_response_serializer_class.return_value = mock_response_serializer_instance
                         
-                        with patch('api.tasks.train_model_task') as mock_task:
-                            mock_task.delay = Mock(return_value=Mock())
+                        # Patch the import inside the post method
+                        # The import is: from api.tasks import train_model_task
+                        with patch('api.tasks.train_model_task') as mock_task_func:
+                            mock_task_func.delay = Mock(return_value=Mock())
                             response = view.post(request)
                             
                             assert response.status_code == status.HTTP_201_CREATED
@@ -176,14 +186,18 @@ class TestTrainingJobCreateView:
     
     def test_create_job_invalid_data(self, request_factory, admin_user):
         """Test creation with invalid data."""
+        from rest_framework.test import APIRequestFactory, force_authenticate
+        api_factory = APIRequestFactory()
         view = TrainingJobCreateView()
-        request = request_factory.post('/api/training/jobs/', {}, format='json')
-        request.user = admin_user
+        request = api_factory.post('/api/training/jobs/', {'invalid': 'data'}, format='json')
+        force_authenticate(request, user=admin_user)
+        # Initialize request to convert to DRF Request with .data attribute
+        request = view.initialize_request(request)
         
         with patch.object(view, 'is_admin_user', return_value=True):
-            with patch('api.views.ml.training_views.TrainingJobCreateSerializer') as mock_serializer:
+            with patch('api.views.ml.training_views.TrainingJobCreateSerializer') as mock_serializer_class:
                 mock_serializer_instance = Mock()
-                mock_serializer.return_value = mock_serializer_instance
+                mock_serializer_class.return_value = mock_serializer_instance
                 mock_serializer_instance.is_valid.return_value = False
                 mock_serializer_instance.errors = {'field': ['error']}
                 
@@ -210,8 +224,11 @@ class TestTrainingJobStatusView:
     
     def test_get_status_success(self, request_factory, admin_user):
         """Test successful retrieval of training job status."""
+        from rest_framework.test import force_authenticate
         view = TrainingJobStatusView()
         request = request_factory.get('/api/training/jobs/job_123/')
+        force_authenticate(request, user=admin_user)
+        # Ensure request.user is set
         request.user = admin_user
         
         with patch('api.views.ml.training_views.TrainingJob') as mock_job:
@@ -221,14 +238,24 @@ class TestTrainingJobStatusView:
             mock_job_instance.is_active = True
             mock_job_instance.logs = 'Log line 1\nLog line 2'
             mock_job_instance.created_by = admin_user
+            mock_job_instance.progress_percentage = 50
+            mock_job_instance.started_at = None
+            # Create proper DoesNotExist exception
+            class MockDoesNotExist(Exception):
+                pass
+            mock_job.DoesNotExist = MockDoesNotExist
             mock_query = Mock()
             mock_query.get.return_value = mock_job_instance
             mock_job.objects.select_related.return_value = mock_query
             
-            with patch('api.views.ml.training_views.TrainingJobStatusSerializer') as mock_serializer:
+            with patch('api.views.ml.training_views.TrainingJobStatusSerializer') as mock_serializer_class:
                 mock_serializer_instance = Mock()
-                mock_serializer_instance.data = {'status': 'running'}
-                mock_serializer.return_value = mock_serializer_instance
+                mock_serializer_instance.data = {
+                    'status': 'running',
+                    'job_id': 'job_123',
+                    'progress_percentage': 50
+                }
+                mock_serializer_class.return_value = mock_serializer_instance
                 
                 with patch.object(view, 'is_admin_user', return_value=True):
                     response = view.get(request, job_id='job_123')
@@ -243,8 +270,12 @@ class TestTrainingJobStatusView:
         request.user = admin_user
         
         with patch('api.views.ml.training_views.TrainingJob') as mock_job:
+            # Create a proper DoesNotExist exception
+            class MockDoesNotExist(Exception):
+                pass
+            mock_job.DoesNotExist = MockDoesNotExist
             mock_query = Mock()
-            mock_query.get.side_effect = mock_job.DoesNotExist()
+            mock_query.get.side_effect = MockDoesNotExist()
             mock_job.objects.select_related.return_value = mock_query
             
             response = view.get(request, job_id='job_123')
@@ -280,22 +311,38 @@ class TestTrainingJobStatusView:
     
     def test_estimate_completion_completed(self, request_factory, admin_user):
         """Test completion estimation for completed job."""
+        from rest_framework.test import force_authenticate
         view = TrainingJobStatusView()
         request = request_factory.get('/api/training/jobs/job_123/')
+        force_authenticate(request, user=admin_user)
+        # Ensure request.user is set
         request.user = admin_user
         
         with patch('api.views.ml.training_views.TrainingJob') as mock_job:
             mock_job_instance = Mock()
+            mock_job_instance.job_id = 'job_123'
             mock_job_instance.status = 'completed'
             mock_job_instance.created_by = admin_user
+            mock_job_instance.is_active = True
+            mock_job_instance.logs = ''
+            mock_job_instance.progress_percentage = 100
+            mock_job_instance.started_at = None
+            # Create proper DoesNotExist exception
+            class MockDoesNotExist(Exception):
+                pass
+            mock_job.DoesNotExist = MockDoesNotExist
             mock_query = Mock()
             mock_query.get.return_value = mock_job_instance
             mock_job.objects.select_related.return_value = mock_query
             
-            with patch('api.views.ml.training_views.TrainingJobStatusSerializer') as mock_serializer:
+            with patch('api.views.ml.training_views.TrainingJobStatusSerializer') as mock_serializer_class:
                 mock_serializer_instance = Mock()
-                mock_serializer_instance.data = {'status': 'completed'}
-                mock_serializer.return_value = mock_serializer_instance
+                mock_serializer_instance.data = {
+                    'status': 'completed',
+                    'job_id': 'job_123',
+                    'progress_percentage': 100
+                }
+                mock_serializer_class.return_value = mock_serializer_instance
                 with patch.object(view, 'is_admin_user', return_value=True):
                     response = view.get(request, job_id='job_123')
                     
@@ -304,8 +351,11 @@ class TestTrainingJobStatusView:
     
     def test_estimate_completion_in_progress(self, request_factory, admin_user):
         """Test completion estimation for job in progress."""
+        from rest_framework.test import force_authenticate
         view = TrainingJobStatusView()
         request = request_factory.get('/api/training/jobs/job_123/')
+        force_authenticate(request, user=admin_user)
+        # Ensure request.user is set
         request.user = admin_user
         
         with patch('api.views.ml.training_views.TrainingJob') as mock_job:
@@ -313,18 +363,29 @@ class TestTrainingJobStatusView:
             from datetime import timedelta
             
             mock_job_instance = Mock()
+            mock_job_instance.job_id = 'job_123'
             mock_job_instance.status = 'running'
             mock_job_instance.progress_percentage = 50
             mock_job_instance.started_at = timezone.now() - timedelta(minutes=30)
             mock_job_instance.created_by = admin_user
+            mock_job_instance.is_active = True
+            mock_job_instance.logs = ''
+            # Create proper DoesNotExist exception
+            class MockDoesNotExist(Exception):
+                pass
+            mock_job.DoesNotExist = MockDoesNotExist
             mock_query = Mock()
             mock_query.get.return_value = mock_job_instance
             mock_job.objects.select_related.return_value = mock_query
             
-            with patch('api.views.ml.training_views.TrainingJobStatusSerializer') as mock_serializer:
+            with patch('api.views.ml.training_views.TrainingJobStatusSerializer') as mock_serializer_class:
                 mock_serializer_instance = Mock()
-                mock_serializer_instance.data = {'status': 'running'}
-                mock_serializer.return_value = mock_serializer_instance
+                mock_serializer_instance.data = {
+                    'status': 'running',
+                    'job_id': 'job_123',
+                    'progress_percentage': 50
+                }
+                mock_serializer_class.return_value = mock_serializer_instance
                 with patch.object(view, 'is_admin_user', return_value=True):
                     response = view.get(request, job_id='job_123')
                     

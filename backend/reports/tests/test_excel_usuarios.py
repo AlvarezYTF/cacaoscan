@@ -178,12 +178,18 @@ class TestExcelUsuariosGenerator:
         excel_generator._create_workbook("Test")
         excel_generator.ws['A1'] = 'Test'
         
-        # Create a mock columns object that raises exception when iterated
-        mock_columns = Mock()
-        mock_columns.__iter__ = Mock(side_effect=Exception("Error"))
+        # Patch the columns iteration to raise exception
+        # Since columns is a property that returns an iterator, we need to patch it at the class level
+        original_columns = excel_generator.ws.columns
         
-        # Patch the columns property on the worksheet instance
-        with patch.object(excel_generator.ws, 'columns', mock_columns, create=True):
+        # Create a mock that raises when iterated
+        class MockColumns:
+            def __iter__(self):
+                raise Exception("Error")
+        
+        # Replace the columns property temporarily
+        with patch.object(type(excel_generator.ws), 'columns', property(lambda self: MockColumns())):
+            # The method should handle the exception gracefully
             excel_generator._auto_adjust_columns()
         # Should not raise, just log warning
     

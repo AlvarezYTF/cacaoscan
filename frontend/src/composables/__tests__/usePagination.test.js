@@ -498,6 +498,30 @@ describe('usePagination', () => {
   })
 
   describe('syncWithQuery', () => {
+    let originalRequire
+
+    beforeEach(() => {
+      // Save original require if it exists
+      originalRequire = globalThis.require
+      // Mock require to throw error when vue-router is requested
+      // This won't interfere with tests that pass route and router mocks
+      // because the code won't call require if route and router are provided
+      globalThis.require = vi.fn((module) => {
+        if (module === 'vue-router') {
+          throw new Error('Module not found')
+        }
+        throw new Error(`Module ${module} not found`)
+      })
+    })
+
+    afterEach(() => {
+      if (originalRequire !== undefined) {
+        globalThis.require = originalRequire
+      } else {
+        delete globalThis.require
+      }
+    })
+
     it('should sync from query params', () => {
       const mockRoute = {
         query: {
@@ -559,7 +583,7 @@ describe('usePagination', () => {
       }
 
       const pagination = usePagination()
-      pagination.syncWithQuery(mockRoute, mockRouter)
+      const updateQuery = pagination.syncWithQuery(mockRoute, mockRouter)
 
       expect(typeof updateQuery).toBe('function')
       
@@ -574,17 +598,11 @@ describe('usePagination', () => {
       
       const pagination = usePagination()
       
-      // Mock require to throw error
-      const originalRequire = globalThis.require
-      globalThis.require = vi.fn(() => {
-        throw new Error('Module not found')
-      })
-
+      // require is already mocked in beforeEach to throw error
       pagination.syncWithQuery()
 
       expect(consoleWarn).toHaveBeenCalled()
       
-      globalThis.require = originalRequire
       consoleWarn.mockRestore()
     })
 
@@ -598,7 +616,7 @@ describe('usePagination', () => {
 
       const pagination = usePagination()
       pagination.currentPage.value = 1
-      pagination.syncWithQuery(mockRoute, mockRouter)
+      const updateQuery = pagination.syncWithQuery(mockRoute, mockRouter)
       updateQuery()
 
       const replaceCall = mockRouter.replace.mock.calls[0][0]
@@ -615,7 +633,7 @@ describe('usePagination', () => {
 
       const pagination = usePagination({ initialItemsPerPage: 10 })
       pagination.itemsPerPage.value = 10
-      pagination.syncWithQuery(mockRoute, mockRouter)
+      const updateQuery = pagination.syncWithQuery(mockRoute, mockRouter)
       updateQuery()
 
       const replaceCall = mockRouter.replace.mock.calls[0][0]

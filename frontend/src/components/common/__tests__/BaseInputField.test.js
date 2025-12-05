@@ -87,20 +87,124 @@ describe('BaseInputField', () => {
   })
 
   describe('Input Types', () => {
-    const types = ['text', 'email', 'password', 'number', 'tel', 'url', 'search', 'date', 'time', 'datetime-local']
-
-    for (const type of types) {
-      it(`should render ${type} input type`, () => {
-        wrapper = mount(BaseInputField, {
-          props: {
-            modelValue: '',
-            type
-          }
-        })
-
-        const input = wrapper.find('input')
-        expect(input.attributes('type')).toBe(type)
+    it('should render text input type', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          type: 'text'
+        }
       })
+
+      const input = wrapper.find('input')
+      expect(input.attributes('type')).toBe('text')
+    })
+
+    it('should render email input type', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          type: 'email'
+        }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.attributes('type')).toBe('email')
+    })
+
+    it('should render password input type', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          type: 'password'
+        }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.attributes('type')).toBe('password')
+    })
+
+    it('should render number input type', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          type: 'number'
+        }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.attributes('type')).toBe('number')
+    })
+
+    it('should render tel input type', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          type: 'tel'
+        }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.attributes('type')).toBe('tel')
+    })
+
+    it('should render url input type', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          type: 'url'
+        }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.attributes('type')).toBe('url')
+    })
+
+    it('should render search input type', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          type: 'search'
+        }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.attributes('type')).toBe('search')
+    })
+
+    it('should render date input type', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          type: 'date'
+        }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.attributes('type')).toBe('date')
+    })
+
+    it('should render time input type', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          type: 'time'
+        }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.attributes('type')).toBe('time')
+    })
+
+    it('should render datetime-local input type', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          type: 'datetime-local'
+        }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.attributes('type')).toBe('datetime-local')
     })
   })
 
@@ -155,20 +259,40 @@ describe('BaseInputField', () => {
   })
 
   describe('Sizes', () => {
-    const sizes = ['sm', 'md', 'lg']
-
-    for (const size of sizes) {
-      it(`should apply ${size} size classes`, () => {
-        wrapper = mount(BaseInputField, {
-          props: {
-            modelValue: '',
-            size
-          }
-        })
-
-        const input = wrapper.find('input')
-        expect(input.exists()).toBe(true)
+    it('should apply sm size classes', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          size: 'sm'
+        }
       })
+
+      const input = wrapper.find('input')
+      expect(input.exists()).toBe(true)
+    })
+
+    it('should apply md size classes', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          size: 'md'
+        }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.exists()).toBe(true)
+    })
+
+    it('should apply lg size classes', () => {
+      wrapper = mount(BaseInputField, {
+        props: {
+          modelValue: '',
+          size: 'lg'
+        }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.exists()).toBe(true)
     })
   })
 
@@ -294,4 +418,3 @@ describe('BaseInputField', () => {
     })
   })
 })
-

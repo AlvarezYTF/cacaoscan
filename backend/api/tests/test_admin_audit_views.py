@@ -207,6 +207,7 @@ class TestAuditStatsView:
         """Test GET request with admin permission."""
         from audit.models import ActivityLog, LoginHistory
         from django.db.models import Count
+        from datetime import timedelta
         
         factory = RequestFactory()
         request = factory.get('/api/admin/audit/stats/')
@@ -214,6 +215,8 @@ class TestAuditStatsView:
         
         with patch('api.views.admin.audit_views.ActivityLog') as mock_activity_log:
             with patch('api.views.admin.audit_views.LoginHistory') as mock_login_history:
+                # Ensure ActivityLog is not None
+                mock_activity_log.is_None = False
                 # Mock ActivityLog queries - configure multiple return values for different calls
                 mock_activity_log.objects.count.return_value = 100
                 
@@ -238,7 +241,8 @@ class TestAuditStatsView:
                 mock_user_values = Mock()
                 mock_user_annotate = Mock()
                 mock_user_order = Mock()
-                mock_user_order.__getitem__.return_value = [{'user__username': 'testuser', 'count': 5}]
+                # Configure __getitem__ to return list when sliced
+                mock_user_order.__getitem__ = Mock(return_value=[{'user__username': 'testuser', 'count': 5}])
                 mock_user_annotate.order_by.return_value = mock_user_order
                 mock_user_values.annotate.return_value = mock_user_annotate
                 
@@ -257,19 +261,29 @@ class TestAuditStatsView:
                 # Mock LoginHistory queries
                 mock_login_history.objects.count.return_value = 200
                 
-                # For filter().count() - multiple calls
+                # For filter().count() - multiple calls (for successful_logins, failed_logins, and day_logins)
                 mock_login_filter = Mock()
                 mock_login_filter.count.return_value = 180
-                mock_login_history.objects.filter.return_value = mock_login_filter
                 
-                # For aggregate()
-                mock_login_history.objects.aggregate.return_value = {}
+                # For aggregate() - return dict with avg_duration
+                from datetime import timedelta
+                mock_avg_duration = timedelta(minutes=30)
+                mock_session_filter = Mock()
+                mock_session_filter.aggregate.return_value = {'avg_duration': mock_avg_duration}
+                
+                # Make filter return different mocks based on the filter condition
+                def login_filter_side_effect(*args, **kwargs):
+                    if 'session_duration__isnull' in kwargs:
+                        return mock_session_filter
+                    return mock_login_filter
+                mock_login_history.objects.filter.side_effect = login_filter_side_effect
                 
                 # For values('ip_address').annotate().order_by()[:10]
                 mock_ip_values = Mock()
                 mock_ip_annotate = Mock()
                 mock_ip_order = Mock()
-                mock_ip_order.__getitem__.return_value = [{'ip_address': '127.0.0.1', 'count': 50}]
+                # Configure __getitem__ to return list when sliced
+                mock_ip_order.__getitem__ = Mock(return_value=[{'ip_address': '127.0.0.1', 'count': 50}])
                 mock_ip_annotate.order_by.return_value = mock_ip_order
                 mock_ip_values.annotate.return_value = mock_ip_annotate
                 mock_login_history.objects.values.return_value = mock_ip_values

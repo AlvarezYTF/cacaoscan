@@ -75,6 +75,9 @@ vi.mock('sweetalert2', () => {
   }
 })
 
+// Import Swal after mock to use in tests
+import Swal from 'sweetalert2'
+
 // Mock vue-router - define mockRouter inside factory to avoid hoisting issues
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual('vue-router')
@@ -209,7 +212,6 @@ describe('AdminAgricultores', () => {
 
     it('should handle error loading farmers', async () => {
       const authApi = await import('@/services/authApi')
-      await import('sweetalert2')
       
       authApi.default.getUsers.mockRejectedValue(new Error('Load error'))
 
@@ -342,7 +344,6 @@ describe('AdminAgricultores', () => {
     it('should handle farmer created', async () => {
       const authApi = await import('@/services/authApi')
       const fincasApi = await import('@/services/fincasApi')
-      await import('sweetalert2')
       
       authApi.default.getUsers.mockResolvedValue({ results: [] })
       fincasApi.getFincas.mockResolvedValue({ results: [] })
@@ -439,7 +440,7 @@ describe('AdminAgricultores', () => {
     })
 
     it('should delete farmer when confirmed', async () => {
-      await import('sweetalert2')
+      const Swal = await import('sweetalert2')
       const authApi = await import('@/services/authApi')
       
       Swal.default.fire.mockResolvedValue({ isConfirmed: true })
@@ -454,7 +455,7 @@ describe('AdminAgricultores', () => {
     })
 
     it('should handle delete error', async () => {
-      await import('sweetalert2')
+      const Swal = await import('sweetalert2')
       const authApi = await import('@/services/authApi')
       
       Swal.default.fire.mockResolvedValue({ isConfirmed: true })
@@ -501,7 +502,7 @@ describe('AdminAgricultores', () => {
     })
 
     it('should toggle farmer status', async () => {
-      await import('sweetalert2')
+      const Swal = await import('sweetalert2')
       const authApi = await import('@/services/authApi')
       
       authApi.default.toggleUserStatus.mockResolvedValue({})
@@ -517,7 +518,7 @@ describe('AdminAgricultores', () => {
     })
 
     it('should handle toggle error', async () => {
-      await import('sweetalert2')
+      const Swal = await import('sweetalert2')
       const authApi = await import('@/services/authApi')
       
       const error = { response: { data: { error: 'Toggle failed' } } }
@@ -559,7 +560,7 @@ describe('AdminAgricultores', () => {
     })
 
     it('should download report', async () => {
-      await import('sweetalert2')
+      const Swal = await import('sweetalert2')
       const reportsApi = await import('@/services/reportsApi')
       
       // Ensure the mock is set up
@@ -572,7 +573,7 @@ describe('AdminAgricultores', () => {
     })
 
     it('should handle download error', async () => {
-      await import('sweetalert2')
+      const Swal = await import('sweetalert2')
       const reportsApi = await import('@/services/reportsApi')
       
       // Ensure the mock is set up

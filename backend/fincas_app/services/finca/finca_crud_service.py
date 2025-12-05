@@ -100,7 +100,7 @@ class FincaCRUDService(BaseService):
             
             finca.save()
             
-            # Create audit log
+            # Create audit log (will execute after transaction commits)
             self.create_audit_log(
                 user=user,
                 action="finca_created",
@@ -108,7 +108,7 @@ class FincaCRUDService(BaseService):
                 resource_id=finca.id,
                 details={
                     'nombre': finca.nombre,
-                    'hectareas': finca.hectareas,
+                    'hectareas': finca.hectareas,  # Will be serialized to float in create_audit_log
                     'municipio': finca.municipio,
                     'departamento': finca.departamento
                 }
@@ -297,14 +297,14 @@ class FincaCRUDService(BaseService):
             
             finca.save()
             
-            # Create audit log
+            # Create audit log (will execute after transaction commits)
             self.create_audit_log(
                 user=user,
                 action="finca_updated",
                 resource_type="finca",
                 resource_id=finca_id,
                 details={
-                    'original_data': original_data,
+                    'original_data': original_data,  # Will be serialized in create_audit_log
                     'updated_fields': list(finca_data.keys())
                 }
             )
@@ -352,7 +352,7 @@ class FincaCRUDService(BaseService):
                     details={"lotes_count": lotes_count}
                 )
             
-            # Create audit log before deleting
+            # Create audit log before deleting (will execute after transaction commits)
             self.create_audit_log(
                 user=user,
                 action="finca_deleted",
@@ -362,7 +362,7 @@ class FincaCRUDService(BaseService):
                     'nombre': finca.nombre,
                     'municipio': finca.municipio,
                     'departamento': finca.departamento,
-                    'hectareas': finca.hectareas
+                    'hectareas': finca.hectareas  # Will be serialized to float in create_audit_log
                 }
             )
             

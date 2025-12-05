@@ -66,8 +66,8 @@ export function sanitizeHTML(html) {
       if ((attr.name === 'href' || attr.name === 'src') && attr.value.toLowerCase().startsWith('javascript:')) {
         element.removeAttribute(attr.name)
       }
-    })
-  })
+    }
+  }
   
   // Extract text content and escape it
   const textContent = container.textContent || container.innerText || ''

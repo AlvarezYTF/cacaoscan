@@ -30,10 +30,20 @@ class FincaValidationService(BaseService):
             Dict with 'valid' (bool) and 'error' (str) if invalid
         """
         try:
+            # Handle area_total alias for backward compatibility
+            if 'area_total' in finca_data and 'hectareas' not in finca_data:
+                finca_data['hectareas'] = finca_data['area_total']
+            
             if is_create:
                 # Validate required fields for creation
-                required_fields = ['nombre', 'ubicacion', 'municipio', 'departamento', 'hectareas']
+                # Check if hectareas or area_total is present
+                has_hectareas = 'hectareas' in finca_data or 'area_total' in finca_data
+                required_fields = ['nombre', 'ubicacion', 'municipio', 'departamento']
                 self.validate_required_fields(finca_data, required_fields)
+                
+                # Validate hectareas separately
+                if not has_hectareas:
+                    raise ValidationServiceError("Las hectáreas (area_total) son requeridas", details={"field": "hectareas"})
             
             # Validate field values
             validations = {}

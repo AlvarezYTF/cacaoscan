@@ -114,13 +114,19 @@ class TestExcelAgricultoresGenerator:
     
     def test_get_farmer_name_with_exception(self, excel_generator):
         """Test _get_farmer_name with exception."""
-        from unittest.mock import PropertyMock
         farmer = Mock()
         farmer.id = 1
         farmer.username = None
         # Configure mock to raise exception when accessing first_name or last_name
-        farmer.first_name = PropertyMock(side_effect=Exception("Error"))
-        farmer.last_name = PropertyMock(side_effect=Exception("Error"))
+        # Use property descriptors that raise exceptions
+        class ExceptionProperty:
+            def __get__(self, obj, objtype=None):
+                raise Exception("Error")
+        
+        # Patch the attributes directly on the mock
+        type(farmer).first_name = ExceptionProperty()
+        type(farmer).last_name = ExceptionProperty()
+        
         name = excel_generator._get_farmer_name(farmer)
         assert name == f'Usuario {farmer.id}'
     
@@ -128,11 +134,10 @@ class TestExcelAgricultoresGenerator:
         """Test _get_farmer_phone with profile."""
         profile = Mock()
         profile.phone_number = '1234567890'
-        def get_auth_profile():
-            return profile
-        user.auth_profile = property(get_auth_profile)
-        phone = excel_generator._get_farmer_phone(user)
-        assert phone == '1234567890'
+        # Use patch to mock the auth_profile property
+        with patch.object(type(user), 'auth_profile', property(lambda self: profile)):
+            phone = excel_generator._get_farmer_phone(user)
+            assert phone == '1234567890'
     
     def test_get_farmer_phone_without_profile(self, excel_generator, user):
         """Test _get_farmer_phone without profile."""

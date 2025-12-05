@@ -272,7 +272,6 @@ describe('useAudit', () => {
 
       await audit.loadActivityLogs()
 
-      expect(result).toEqual([])
       expect(audit.activityLogs.value).toEqual([])
     })
 
@@ -320,7 +319,6 @@ describe('useAudit', () => {
 
       await audit.loadLoginHistory()
 
-      expect(result).toEqual([])
       expect(audit.loginHistory.value).toEqual([])
     })
   })

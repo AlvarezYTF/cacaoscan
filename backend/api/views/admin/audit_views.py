@@ -290,6 +290,13 @@ class AuditStatsView(AdminPermissionMixin, APIView):
             if not self.is_admin_user(request.user):
                 return self.admin_permission_denied('No tienes permisos para acceder a las estadísticas de auditoría')
             
+            # Check if models are available
+            if ActivityLog is None:
+                return Response({
+                    'error': 'Modelo ActivityLog no disponible',
+                    'status': 'error'
+                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            
             # Estadísticas de ActivityLog
             total_activities = ActivityLog.objects.count()
             activities_today = ActivityLog.objects.filter(

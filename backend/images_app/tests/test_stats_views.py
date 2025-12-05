@@ -47,22 +47,49 @@ class TestImagesStatsView:
         request = request_factory.get('/api/images/stats/')
         request.user = user
         
-        with patch.object(view, 'get_user_images_queryset') as mock_queryset:
+        with patch.object(view, 'get_user_images_queryset') as mock_queryset_method:
             mock_qs = Mock()
-            mock_queryset.return_value = mock_qs
+            mock_queryset_method.return_value = mock_qs
             
-            mock_qs.count.return_value = 10
-            mock_qs.filter.return_value.count.return_value = 8
+            # Mock count() method properly - it should return a value directly
+            mock_qs.count = Mock(return_value=10)
+            
+            # Mock filter() to return a new queryset that also has count()
+            # Each filter call should return a new queryset with count()
+            def create_filtered_mock(count_value):
+                filtered = Mock()
+                filtered.count = Mock(return_value=count_value)
+                # Chain filter calls
+                filtered.filter = Mock(return_value=filtered)
+                return filtered
+            
+            # Main queryset filter returns a filtered queryset
+            # The filter is called multiple times with different arguments
+            # We need to handle all filter calls properly
+            filtered_mock = create_filtered_mock(8)
+            mock_qs.filter = Mock(return_value=filtered_mock)
             
             with patch('images_app.views.image.user.stats_views.CacaoPrediction') as mock_prediction:
                 mock_pred_qs = Mock()
                 mock_prediction.objects.filter.return_value = mock_pred_qs
                 mock_pred_qs.aggregate.return_value = {
                     'avg_confidence': 0.85,
-                    'avg_time': 150.0
+                    'avg_time': 150.0,
+                    'avg_alto': 25.5,
+                    'avg_ancho': 20.3,
+                    'avg_grosor': 15.2,
+                    'avg_peso': 8.5
                 }
-                mock_pred_qs.values.return_value.annotate.return_value.order_by.return_value = []
-                mock_pred_qs.values.return_value.annotate.return_value.order_by.return_value.__getitem__.return_value = []
+                # Mock values().annotate().order_by() chain
+                mock_values_result = Mock()
+                mock_annotate_result = Mock()
+                mock_order_by_result = []
+                mock_annotate_result.order_by.return_value = mock_order_by_result
+                mock_values_result.annotate.return_value = mock_annotate_result
+                mock_pred_qs.values.return_value = mock_values_result
+                
+                # Mock values().annotate() for region_stats and finca_stats
+                mock_qs.values = Mock(return_value=mock_values_result)
                 
                 response = view.get(request)
                 

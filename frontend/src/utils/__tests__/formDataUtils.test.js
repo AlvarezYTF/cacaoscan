@@ -286,7 +286,7 @@ describe('formDataUtils', () => {
     })
 
     it('should validate with custom validator', () => {
-      const data = { password: TEST_PASSWORD_SHORT }
+      const data = { password: 'Short' }
       const rules = {
         password: {
           validator: (value) => value.length >= 8 || 'Password must be at least 8 characters'

@@ -100,15 +100,28 @@ class FincaSerializer(serializers.ModelSerializer):
         from core.utils import validate_longitude
         return validate_longitude(value)
     
-    def _validate_required_fields(self, attrs, errors):
+    def _validate_required_fields(self, attrs, errors, is_partial=False):
         """Validate required fields."""
-        municipio = attrs.get('municipio', '')
-        if not municipio or (isinstance(municipio, str) and not municipio.strip()):
-            errors['municipio'] = ["El municipio es requerido."]
-        
-        departamento = attrs.get('departamento', '')
-        if not departamento or (isinstance(departamento, str) and not departamento.strip()):
-            errors['departamento'] = ["El departamento es requerido."]
+        # In partial mode, only validate fields that are being updated
+        if is_partial:
+            if 'municipio' in attrs:
+                municipio = attrs.get('municipio', '')
+                if not municipio or (isinstance(municipio, str) and not municipio.strip()):
+                    errors['municipio'] = ["El municipio es requerido."]
+            
+            if 'departamento' in attrs:
+                departamento = attrs.get('departamento', '')
+                if not departamento or (isinstance(departamento, str) and not departamento.strip()):
+                    errors['departamento'] = ["El departamento es requerido."]
+        else:
+            # In full mode, all required fields must be present
+            municipio = attrs.get('municipio', '')
+            if not municipio or (isinstance(municipio, str) and not municipio.strip()):
+                errors['municipio'] = ["El municipio es requerido."]
+            
+            departamento = attrs.get('departamento', '')
+            if not departamento or (isinstance(departamento, str) and not departamento.strip()):
+                errors['departamento'] = ["El departamento es requerido."]
 
     def _handle_coordinate_validation_error(self, e, errors):
         """Handle coordinate validation errors."""
@@ -127,7 +140,10 @@ class FincaSerializer(serializers.ModelSerializer):
         from core.utils import validate_coordinates
         errors = {}
         
-        self._validate_required_fields(attrs, errors)
+        # Check if this is a partial update
+        is_partial = self.partial
+        
+        self._validate_required_fields(attrs, errors, is_partial=is_partial)
         
         try:
             validate_coordinates(attrs)

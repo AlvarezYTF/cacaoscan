@@ -208,7 +208,7 @@ describe('ImageGallery', () => {
         expect(img.classes()).toContain('w-full')
         expect(img.classes()).toContain('h-32')
         expect(img.classes()).toContain('object-cover')
-      })
+      }
     })
 
     it('should display defect count overlay', () => {

@@ -8,17 +8,23 @@ import { useAuthForm } from '../useAuthForm.js'
 // Test-only mock values - not actual passwords, used exclusively for unit testing
 // NOSONAR S2068 - These are test fixtures, not hardcoded production passwords
 const TEST_PASSWORD_VALID = 'ExampleValue#123' // NOSONAR S2068
-const TEST_PASSWORD_SHORT = 'MockValue_55' // NOSONAR S2068
+const TEST_PASSWORD_SHORT = 'abc12' // NOSONAR S2068 - 5 characters, less than minimum 6
 
 // Mock dependencies
+const mockForm = { email: '', password: '' }
+const mockClearErrors = vi.fn()
+const mockSetError = vi.fn()
+const mockScrollToFirstError = vi.fn()
+const mockHandleSubmit = vi.fn().mockResolvedValue({ success: true })
+
 vi.mock('../useForm', () => ({
   useForm: vi.fn(() => ({
-    form: { email: '', password: '' },
+    form: mockForm,
     isSubmitting: { value: false },
-    clearErrors: vi.fn(),
-    setError: vi.fn(),
-    scrollToFirstError: vi.fn(),
-    handleSubmit: vi.fn().mockResolvedValue({ success: true })
+    clearErrors: mockClearErrors,
+    setError: mockSetError,
+    scrollToFirstError: mockScrollToFirstError,
+    handleSubmit: mockHandleSubmit
   }))
 }))
 
@@ -27,6 +33,9 @@ describe('useAuthForm', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset mock form
+    mockForm.email = ''
+    mockForm.password = ''
     authForm = useAuthForm()
   })
 
@@ -134,13 +143,23 @@ describe('useAuthForm', () => {
     })
 
     it('should prevent submission if validation fails', async () => {
+      // Set invalid values directly on the form object
+      // Since authForm.form should be the same reference as mockForm (spread operator copies by reference for objects)
+      // We modify both to ensure they're in sync
+      mockForm.email = 'invalid'
+      mockForm.password = TEST_PASSWORD_SHORT
       authForm.form.email = 'invalid'
       authForm.form.password = TEST_PASSWORD_SHORT
+      
+      // Verify that the form values are set correctly
+      expect(authForm.form.email).toBe('invalid')
+      expect(authForm.form.password).toBe(TEST_PASSWORD_SHORT)
       
       const result = await authForm.handleAuthSubmit()
       
       expect(result).toBe(false)
       expect(authForm.scrollToFirstError).toHaveBeenCalled()
+      expect(mockSetError).toHaveBeenCalled()
     })
   })
 })

@@ -74,7 +74,11 @@ class TestTokenCleanup:
     
     def test_cleanup_expired_tokens_generic_error(self):
         """Test cleanup with generic error."""
-        with patch('rest_framework_simplejwt.token_blacklist.models.BlacklistedToken', side_effect=Exception("Unexpected error")):
+        # Patch BlacklistedToken.objects.filter to raise a generic exception
+        with patch('rest_framework_simplejwt.token_blacklist.models.BlacklistedToken') as mock_blacklisted:
+            # Make filter() raise a generic exception (not OperationalError or ProgrammingError)
+            mock_blacklisted.objects.filter.side_effect = Exception("Unexpected error")
+            
             result = cleanup_expired_tokens()
             
             assert result['success'] is False

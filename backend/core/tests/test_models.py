@@ -68,11 +68,18 @@ def test_system_settings_created_at_auto(db):
 
 def test_system_settings_updated_at_auto(db):
     """Test that updated_at is set automatically."""
+    import time
     settings = SystemSettings.get_singleton()
     original_updated = settings.updated_at
     
+    # Add a small delay to ensure timestamp difference
+    time.sleep(0.01)
+    
     settings.nombre_sistema = 'Updated Name'
     settings.save()
+    
+    # Refresh from database to get updated timestamp
+    settings.refresh_from_db()
     
     assert settings.updated_at > original_updated
 

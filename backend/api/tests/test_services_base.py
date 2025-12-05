@@ -300,39 +300,50 @@ class TestBaseService:
         mock_activity_log.objects.create = Mock()
         
         with patch('audit.models.ActivityLog', mock_activity_log):
-            service.create_audit_log(
-                user=user,
-                action='test_action',
-                resource_type='test_resource',
-                resource_id=123,
-                details={'key': 'value'}
-            )
-            mock_activity_log.objects.create.assert_called_once()
+            with patch('django.db.transaction.on_commit') as mock_on_commit:
+                # Capture the callback function
+                callback_capture = []
+                def capture_callback(callback):
+                    callback_capture.append(callback)
+                mock_on_commit.side_effect = capture_callback
+                
+                service.create_audit_log(
+                    user=user,
+                    action='test_action',
+                    resource_type='test_resource',
+                    resource_id=123,
+                    details={'key': 'value'}
+                )
+                
+                # Verify on_commit was called
+                assert len(callback_capture) == 1
+                # Execute the callback to verify it works
+                callback_capture[0]()
+                mock_activity_log.objects.create.assert_called_once()
     
     def test_create_audit_log_model_not_available(self, user):
         """Test create_audit_log when audit model is not available."""
         service = BaseService()
         
-        # Patch sys.modules to simulate missing audit module
-        import sys
-        original_audit = sys.modules.get('audit.models')
-        
-        try:
-            # Remove audit.models from sys.modules to force ImportError
-            if 'audit.models' in sys.modules:
-                del sys.modules['audit.models']
-            
-            with patch.object(service, 'log_debug') as mock_debug:
-                service.create_audit_log(
-                    user=user,
-                    action='test_action',
-                    resource_type='test_resource'
-                )
-                mock_debug.assert_called_once()
-        finally:
-            # Restore original module
-            if original_audit:
-                sys.modules['audit.models'] = original_audit
+        # Patch the import to raise ImportError
+        with patch('builtins.__import__', side_effect=ImportError("No module named 'audit'")):
+            with patch('django.db.transaction.on_commit') as mock_on_commit:
+                callback_capture = []
+                def capture_callback(callback):
+                    callback_capture.append(callback)
+                mock_on_commit.side_effect = capture_callback
+                
+                with patch.object(service, 'log_debug') as mock_debug:
+                    service.create_audit_log(
+                        user=user,
+                        action='test_action',
+                        resource_type='test_resource'
+                    )
+                    # Execute the callback to trigger log_debug
+                    assert len(callback_capture) == 1
+                    callback_capture[0]()
+                    # The code should call log_debug when import fails
+                    mock_debug.assert_called_once()
     
     def test_create_audit_log_exception(self, user):
         """Test create_audit_log with exception."""
@@ -343,13 +354,22 @@ class TestBaseService:
         mock_activity_log.objects.create.side_effect = Exception('Database error')
         
         with patch('audit.models.ActivityLog', mock_activity_log):
-            with patch.object(service, 'log_warning') as mock_warning:
-                service.create_audit_log(
-                    user=user,
-                    action='test_action',
-                    resource_type='test_resource'
-                )
-                mock_warning.assert_called_once()
+            with patch('django.db.transaction.on_commit') as mock_on_commit:
+                callback_capture = []
+                def capture_callback(callback):
+                    callback_capture.append(callback)
+                mock_on_commit.side_effect = capture_callback
+                
+                with patch.object(service, 'log_warning') as mock_warning:
+                    service.create_audit_log(
+                        user=user,
+                        action='test_action',
+                        resource_type='test_resource'
+                    )
+                    # Execute the callback to trigger the exception
+                    assert len(callback_capture) == 1
+                    callback_capture[0]()
+                    mock_warning.assert_called_once()
 
 
 class TestServiceResult:

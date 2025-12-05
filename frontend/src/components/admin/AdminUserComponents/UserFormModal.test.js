@@ -4,7 +4,7 @@ import { reactive } from 'vue'
 
 // Neutral mock values for testing – formatted to avoid S2068 detection. Not actual passwords.
 const MOCK_VALID_PASSWORD = 'ExampleValue#123'
-const MOCK_SHORT_PASSWORD = 'MockValue_55'
+const MOCK_SHORT_PASSWORD = 'Short1' // Less than 8 characters
 const MOCK_DIFFERENT_PASSWORD = 'SampleValue_A'
 const MOCK_NEW_PASSWORD = 'AnotherValue_Y'
 
@@ -222,7 +222,7 @@ describe('UserFormModal', () => {
     expect(wrapper.vm.errors.username).toBeTruthy()
   })
 
-  it('should validate create password', () => {
+  it('should validate create password', async () => {
     wrapper = mount(UserFormModal, {
       props: {
         mode: 'create',
@@ -236,11 +236,24 @@ describe('UserFormModal', () => {
       }
     })
 
+    await wrapper.vm.$nextTick()
+
     wrapper.vm.formData.password = MOCK_SHORT_PASSWORD
     wrapper.vm.formData.password_confirm = MOCK_DIFFERENT_PASSWORD
 
     wrapper.vm.validateCreatePassword()
+    await wrapper.vm.$nextTick()
 
+    // Verify that setError was called
+    expect(mockSetError).toHaveBeenCalledWith('password', 'La contraseña debe tener al menos 8 caracteres')
+    expect(mockSetError).toHaveBeenCalledWith('password_confirm', 'Las contraseñas no coinciden')
+    
+    // Verify errors were set in mockErrors (which should be the same reference as wrapper.vm.errors)
+    expect(mockErrors.password).toBeTruthy()
+    expect(mockErrors.password_confirm).toBeTruthy()
+    
+    // Also verify wrapper.vm.errors (they should be the same object)
+    expect(wrapper.vm.errors).toBe(mockErrors)
     expect(wrapper.vm.errors.password).toBeTruthy()
     expect(wrapper.vm.errors.password_confirm).toBeTruthy()
   })
@@ -264,9 +277,10 @@ describe('UserFormModal', () => {
 
     wrapper.vm.validateEditPassword()
 
-    // Verify setError was called
+    // Verify setError was called with both errors (order doesn't matter)
     expect(mockSetError).toHaveBeenCalledWith('new_password', 'La contraseña debe tener al menos 8 caracteres')
     expect(mockSetError).toHaveBeenCalledWith('new_password_confirm', 'Las contraseñas no coinciden')
+    expect(mockSetError).toHaveBeenCalledTimes(2)
     
     // Verify errors were set in mockErrors (which should be the same reference as wrapper.vm.errors)
     expect(mockErrors.new_password).toBeTruthy()

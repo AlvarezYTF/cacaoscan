@@ -347,19 +347,27 @@ describe('FincaLotesView', () => {
     wrapper = createWrapper()
 
     await wrapper.vm.$nextTick()
-    // Set lotes directly
-    wrapper.vm.lotes = mockLotes
+    await flushPromises()
+    
+    // Set lotes directly - ensure it's set as an array
+    if (Array.isArray(wrapper.vm.lotes)) {
+      wrapper.vm.lotes.splice(0, wrapper.vm.lotes.length, ...mockLotes)
+    } else {
+      wrapper.vm.lotes = [...mockLotes]
+    }
     wrapper.vm.loading = false
     await wrapper.vm.$nextTick()
+    await flushPromises()
     
     // Verify lotes are set correctly
+    expect(Array.isArray(wrapper.vm.lotes)).toBe(true)
     expect(wrapper.vm.lotes.length).toBe(3)
     expect(wrapper.vm.filteredLotes.length).toBe(3) // All lotes should be visible before filtering
     
     // Then set filter and wait for computed to update
     wrapper.vm.filters.search = 'LOTE-001'
     await wrapper.vm.$nextTick()
-    await wrapper.vm.$nextTick() // Extra tick to ensure computed updates
+    await flushPromises()
 
     expect(wrapper.vm.filteredLotes.length).toBe(1)
     expect(wrapper.vm.filteredLotes[0].identificador).toBe('LOTE-001')
