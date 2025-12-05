@@ -149,7 +149,7 @@ describe('security', () => {
 
     it('should reject path traversal attempts', () => {
       expect(isValidFilename('../etc/passwd')).toBe(false)
-      expect(isValidFilename('..\\windows\\system32')).toBe(false)
+      expect(isValidFilename(String.raw`..\windows\system32`)).toBe(false)
       expect(isValidFilename('../../secret')).toBe(false)
     })
 
@@ -208,7 +208,7 @@ describe('security', () => {
 
     it('should remove path components', () => {
       expect(sanitizeFilename('/path/to/file.txt')).toBe('file.txt')
-      expect(sanitizeFilename('C:\\Windows\\file.txt')).toBe('file.txt')
+      expect(sanitizeFilename(String.raw`C:\Windows\file.txt`)).toBe('file.txt')
       expect(sanitizeFilename('../etc/passwd')).toBe('passwd')
     })
 
@@ -222,7 +222,7 @@ describe('security', () => {
     })
 
     it('should remove path traversal attempts', () => {
-      expect(sanitizeFilename('..\\file.txt')).toBe('file.txt')
+      expect(sanitizeFilename(String.raw`..\file.txt`)).toBe('file.txt')
       expect(sanitizeFilename('../file.txt')).toBe('file.txt')
     })
 

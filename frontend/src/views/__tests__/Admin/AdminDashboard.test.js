@@ -174,7 +174,9 @@ describe('AdminDashboard', () => {
       delete storage[key]
     })
     localStorage.clear = vi.fn(() => {
-      Object.keys(storage).forEach(key => delete storage[key])
+      for (const key of Object.keys(storage)) {
+        delete storage[key]
+      }
     })
     localStorage.setItem('sidebarCollapsed', 'false')
   })
@@ -1001,10 +1003,10 @@ describe('AdminDashboard', () => {
     await wrapper.vm.$nextTick()
 
     // Ensure stats.value.activity_by_day is not set so getActivityData is called
-    if (!wrapper.vm.stats) {
-      wrapper.vm.stats = {}
-    } else {
+    if (wrapper.vm.stats) {
       wrapper.vm.stats.activity_by_day = undefined
+    } else {
+      wrapper.vm.stats = {}
     }
     vi.clearAllMocks()
     

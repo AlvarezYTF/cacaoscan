@@ -41,7 +41,7 @@ vi.mock('@/composables/usePasswordValidation', () => ({
       length: password && password.length >= 8,
       uppercase: password && /[A-Z]/.test(password),
       lowercase: password && /[a-z]/.test(password),
-      number: password && /[0-9]/.test(password),
+      number: password && /\d/.test(password),
       specialChar: false
     })),
     getPasswordValidationError: vi.fn(() => null),

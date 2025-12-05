@@ -48,16 +48,16 @@ export function sanitizeHTML(html) {
   
   // Remove dangerous tags and their content
   const dangerousTags = container.querySelectorAll('script, style, iframe, object, embed, form')
-  dangerousTags.forEach((tag) => {
+  for (const tag of dangerousTags) {
     tag.remove()
-  })
+  }
   
   // Remove event handler attributes from all elements (including container)
   const allElements = [container, ...Array.from(container.querySelectorAll('*'))]
-  allElements.forEach((element) => {
+  for (const element of allElements) {
     // Get all attributes
     const attributes = Array.from(element.attributes)
-    attributes.forEach((attr) => {
+    for (const attr of attributes) {
       // Remove event handlers (onclick, onerror, etc.)
       if (attr.name.toLowerCase().startsWith('on') && attr.name.length > 2) {
         element.removeAttribute(attr.name)

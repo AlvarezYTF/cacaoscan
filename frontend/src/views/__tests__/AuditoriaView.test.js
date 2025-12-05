@@ -734,7 +734,7 @@ describe('AuditoriaView', () => {
       expect(wrapper.vm.realTimeInterval).not.toBeNull()
       
       // Spy on clearInterval to verify it's called
-      const clearIntervalSpy = vi.spyOn(global, 'clearInterval')
+      const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval')
       
       wrapper.unmount()
       

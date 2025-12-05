@@ -179,15 +179,15 @@ describe('imageValidationUtils', () => {
     let originalRevokeObjectURL
 
     beforeEach(() => {
-      originalImage = global.Image
-      originalCreateObjectURL = global.URL.createObjectURL
-      originalRevokeObjectURL = global.URL.revokeObjectURL
+      originalImage = globalThis.Image
+      originalCreateObjectURL = globalThis.URL.createObjectURL
+      originalRevokeObjectURL = globalThis.URL.revokeObjectURL
     })
 
     afterEach(() => {
-      global.Image = originalImage
-      global.URL.createObjectURL = originalCreateObjectURL
-      global.URL.revokeObjectURL = originalRevokeObjectURL
+      globalThis.Image = originalImage
+      globalThis.URL.createObjectURL = originalCreateObjectURL
+      globalThis.URL.revokeObjectURL = originalRevokeObjectURL
     })
 
     it('should validate image dimensions', async () => {
@@ -198,12 +198,12 @@ describe('imageValidationUtils', () => {
         onerror: null
       }
 
-      global.Image = vi.fn(function() {
+      globalThis.Image = vi.fn(function() {
         return mockImage
       })
 
-      global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
-      global.URL.revokeObjectURL = vi.fn()
+      globalThis.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+      globalThis.URL.revokeObjectURL = vi.fn()
 
       const file = new File(['test'], 'test.png', { type: 'image/png' })
 
@@ -242,12 +242,12 @@ describe('imageValidationUtils', () => {
         onerror: null
       }
 
-      global.Image = vi.fn(function() {
+      globalThis.Image = vi.fn(function() {
         return mockImage
       })
 
-      global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
-      global.URL.revokeObjectURL = vi.fn()
+      globalThis.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+      globalThis.URL.revokeObjectURL = vi.fn()
 
       const file = new File(['test'], 'test.png', { type: 'image/png' })
 
@@ -275,12 +275,12 @@ describe('imageValidationUtils', () => {
         onerror: null
       }
 
-      global.Image = vi.fn(function() {
+      globalThis.Image = vi.fn(function() {
         return mockImage
       })
 
-      global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
-      global.URL.revokeObjectURL = vi.fn()
+      globalThis.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+      globalThis.URL.revokeObjectURL = vi.fn()
 
       const file = new File(['test'], 'test.png', { type: 'image/png' })
 
@@ -404,7 +404,7 @@ describe('imageValidationUtils', () => {
 
     it('should handle filename with path', () => {
       expect(isImageFile('/path/to/image.jpg')).toBe(true)
-      expect(isImageFile('C:\\path\\to\\image.png')).toBe(true)
+      expect(isImageFile(String.raw`C:\path\to\image.png`)).toBe(true)
     })
   })
 })

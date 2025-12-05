@@ -2,9 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vite
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AgricultorConfiguracion from '../../Agricultor/AgricultorConfiguracion.vue'
-import { useAuthStore } from '@/stores/auth'
 import { personasApi, authApi } from '@/services'
-import { useSidebarNavigation } from '@/composables/useSidebarNavigation'
 
 // Mock dependencies
 const mockAuthStore = {

@@ -182,7 +182,7 @@ describe('FincaLotesView', () => {
         await wrapper.unmount()
         // Force cleanup of Vue instance
         wrapper = null
-      } catch (e) {
+      } catch {
         // Ignore unmount errors
         wrapper = null
       }
@@ -694,7 +694,7 @@ describe('FincaLotesView', () => {
     wrapper = createWrapper()
 
     await wrapper.vm.$nextTick()
-    wrapper.vm.lotes = new Array(25).fill(null).map((_, i) => ({
+    wrapper.vm.lotes = Array.from({ length: 25 }, (_, i) => ({
       id: i + 1,
       identificador: `LOTE-${i + 1}`,
       variedad: 'Criollo',
