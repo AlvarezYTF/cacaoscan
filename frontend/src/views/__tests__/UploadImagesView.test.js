@@ -219,10 +219,14 @@ describe('UploadImagesView', () => {
       expect(wrapper.vm.uploadStatus.type).toBe('error')
     })
 
+    const createDelayedUploadResponse = (delay = 100) => {
+      return new Promise(resolve => setTimeout(resolve, delay))
+    }
+
     it('should set isUploading state', async () => {
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
       wrapper.vm.files = [file]
-      vi.mocked(api.post).mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
+      vi.mocked(api.post).mockImplementation(() => createDelayedUploadResponse())
 
       const uploadPromise = wrapper.vm.uploadImages()
       expect(wrapper.vm.isUploading).toBe(true)

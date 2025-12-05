@@ -216,18 +216,27 @@ describe('useImageHandling', () => {
       expect(result).toBe(null)
     })
 
-    it('should create preview URL', async () => {
-      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
-      const mockFileReader = {
+    const createMockFileReader = (onLoadCallback, onErrorCallback) => {
+      return {
         readAsDataURL: vi.fn(function() {
           setTimeout(() => {
-            this.onload({ target: { result: 'data:image/jpeg;base64,test' } })
+            if (onLoadCallback) {
+              this.onload({ target: { result: 'data:image/jpeg;base64,test' } })
+            }
+            if (onErrorCallback) {
+              this.onerror(new Error('Read error'))
+            }
           }, 0)
         }),
         onload: null,
         onerror: null,
         result: 'data:image/jpeg;base64,test'
       }
+    }
+
+    it('should create preview URL', async () => {
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      const mockFileReader = createMockFileReader(true, false)
       globalThis.FileReader = vi.fn(() => mockFileReader)
       
       const promise = imageHandling.createPreview(file)
@@ -237,15 +246,7 @@ describe('useImageHandling', () => {
 
     it('should handle FileReader error', async () => {
       const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
-      const mockFileReader = {
-        readAsDataURL: vi.fn(function() {
-          setTimeout(() => {
-            this.onerror(new Error('Read error'))
-          }, 0)
-        }),
-        onload: null,
-        onerror: null
-      }
+      const mockFileReader = createMockFileReader(false, true)
       globalThis.FileReader = vi.fn(() => mockFileReader)
       
       await expect(imageHandling.createPreview(file)).rejects.toThrow()

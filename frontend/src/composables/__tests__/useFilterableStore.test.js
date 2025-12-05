@@ -74,11 +74,15 @@ describe('useFilterableStore', () => {
       expect(filtered).toHaveLength(2)
     })
 
-    it('should use custom filter function', () => {
-      const items = [{ value: 1 }, { value: 2 }, { value: 3 }]
-      const customFilterFn = (items, filters) => {
+    const createCustomFilterFn = () => {
+      return (items, filters) => {
         return items.filter(item => item.value > filters.minValue)
       }
+    }
+
+    it('should use custom filter function', () => {
+      const items = [{ value: 1 }, { value: 2 }, { value: 3 }]
+      const customFilterFn = createCustomFilterFn()
 
       const store = useFilterableStore({ filterFn: customFilterFn })
       store.setFilter('minValue', 2)

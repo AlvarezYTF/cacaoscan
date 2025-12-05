@@ -277,8 +277,13 @@ describe('Dataset API Service', () => {
       expect(results[0].error).toBeDefined()
     })
 
+    const createMockUploadResponse = (mockResponse) => ({
+      ok: true,
+      headers: { get: () => 'application/json' },
+      json: async () => mockResponse
+    })
+
     it('should upload multiple images', async () => {
-      // Create files with valid size (at least 1KB as per MIN_IMAGE_SIZE)
       const file1 = new File(['x'.repeat(1024)], 'test1.jpg', { type: 'image/jpeg' })
       const file2 = new File(['x'.repeat(1024)], 'test2.jpg', { type: 'image/jpeg' })
       const files = [file1, file2]
@@ -289,12 +294,7 @@ describe('Dataset API Service', () => {
         upload_status: 'completed'
       }
 
-      // Mock fetch to return a value for each call
-      globalThis.fetch.mockImplementation(async () => ({
-        ok: true,
-        headers: { get: () => 'application/json' },
-        json: async () => mockResponse
-      }))
+      globalThis.fetch.mockImplementation(async () => createMockUploadResponse(mockResponse))
 
       const results = await datasetApi.uploadDatasetImages(files)
 

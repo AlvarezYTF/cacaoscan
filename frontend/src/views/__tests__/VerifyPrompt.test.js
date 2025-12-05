@@ -90,10 +90,12 @@ describe('VerifyPrompt', () => {
     expect(mockAuthStore.resendEmailVerification).toHaveBeenCalledWith('test@example.com')
   })
 
+  const createDelayedVerificationResponse = (delay = 100) => {
+    return new Promise(resolve => setTimeout(() => resolve({ success: true }), delay))
+  }
+
   it('should show loading state while resending', async () => {
-    mockAuthStore.resendEmailVerification.mockImplementation(() => 
-      new Promise(resolve => setTimeout(() => resolve({ success: true }), 100))
-    )
+    mockAuthStore.resendEmailVerification.mockImplementation(() => createDelayedVerificationResponse())
     
     const wrapper = mount(VerifyPrompt, {
       global: {

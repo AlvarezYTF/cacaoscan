@@ -117,15 +117,17 @@ describe('useAdminView', () => {
     })
   })
 
+  const createAuthStoreMock = (mockAuthStore) => ({
+    useAuthStore: () => mockAuthStore
+  })
+
   describe('handleLogout', () => {
     it('should logout and redirect to login', async () => {
       const mockAuthStore = {
         logout: vi.fn().mockResolvedValue()
       }
       
-      vi.doMock('@/stores/auth', () => ({
-        useAuthStore: () => mockAuthStore
-      }))
+      vi.doMock('@/stores/auth', createAuthStoreMock(mockAuthStore))
       
       await adminView.handleLogout()
       
@@ -139,10 +141,7 @@ describe('useAdminView', () => {
       
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
       
-      const createAuthStoreMock = () => ({
-        useAuthStore: () => mockAuthStore
-      })
-      vi.doMock('@/stores/auth', createAuthStoreMock)
+      vi.doMock('@/stores/auth', createAuthStoreMock(mockAuthStore))
       
       await adminView.handleLogout()
       
@@ -151,16 +150,20 @@ describe('useAdminView', () => {
     })
   })
 
+  const createAdminViewWithMocks = (loadStats, loadData) => {
+    return useAdminView({
+      store: { stats: {} },
+      loadStats,
+      loadData
+    })
+  }
+
   describe('loadInitialData', () => {
     it('should load data and stats', async () => {
       const loadStats = vi.fn().mockResolvedValue()
       const loadData = vi.fn().mockResolvedValue()
       
-      const view = useAdminView({
-        store: { stats: {} },
-        loadStats,
-        loadData
-      })
+      const view = createAdminViewWithMocks(loadStats, loadData)
       
       await view.loadInitialData()
       

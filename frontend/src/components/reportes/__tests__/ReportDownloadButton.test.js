@@ -349,6 +349,12 @@ describe('ReportDownloadButton', () => {
       expect(createElementSpy).toHaveBeenCalledWith('a')
     })
 
+    const createMockDownloadResponse = () => ({
+      ok: true,
+      headers: { get: vi.fn(() => null) },
+      blob: vi.fn().mockResolvedValue(new Blob())
+    })
+
     it('should disable button while downloading', async () => {
       wrapper = createWrapper({
         estado: 'completado',
@@ -360,13 +366,7 @@ describe('ReportDownloadButton', () => {
         resolveDownload = resolve
       })
 
-      const createMockResponse = () => ({
-        ok: true,
-        headers: { get: vi.fn(() => null) },
-        blob: vi.fn().mockResolvedValue(new Blob())
-      })
-
-      globalThis.fetch.mockReturnValueOnce(downloadPromise.then(createMockResponse))
+      globalThis.fetch.mockReturnValueOnce(downloadPromise.then(createMockDownloadResponse))
 
       const button = wrapper.find('button')
       await button.trigger('click')

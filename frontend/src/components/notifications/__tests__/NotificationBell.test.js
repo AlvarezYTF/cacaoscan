@@ -220,15 +220,17 @@ describe('NotificationBell', () => {
     })
   })
 
+  const createDelayedNotificationsResponse = (delay = 100) => {
+    return () => new Promise(resolve => {
+      setTimeout(() => {
+        resolve(createMockNotificationsResponse([]))
+      }, delay)
+    })
+  }
+
   describe('Loading state', () => {
     it('should show loading state when fetching notifications', async () => {
-      mockNotificationStore.getNotifications.mockImplementation(() => {
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve(createMockNotificationsResponse([]))
-          }, 100)
-        })
-      })
+      mockNotificationStore.getNotifications.mockImplementation(createDelayedNotificationsResponse())
 
       wrapper = mount(NotificationBell)
       

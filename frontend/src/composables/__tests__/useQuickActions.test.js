@@ -91,9 +91,13 @@ describe('useQuickActions', () => {
     })
   })
 
+  const createDelayedHandler = (delay = 100) => {
+    return vi.fn(() => new Promise(resolve => setTimeout(resolve, delay)))
+  }
+
   describe('isActionExecuting', () => {
     it('should return true when action is executing', async () => {
-      const handler = vi.fn(() => new Promise(resolve => setTimeout(resolve, 100)))
+      const handler = createDelayedHandler()
       const action = {
         key: 'test-action',
         handler
