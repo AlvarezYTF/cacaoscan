@@ -1,50 +1,75 @@
 # Comandos para Ejecutar Tests - CacaoScan
 
-## 🐍 Backend (Python/pytest)
+## 🐍 Backend (Python/pytest) | 🎨 Frontend (Vue/Vitest)
 
-### Ejecutar todos los tests
+<table>
+<tr>
+<td width="50%">
+
+### Backend
+
+#### Ejecutar todos los tests
 ```bash
 cd backend
 pytest
 ```
 
-### Ejecutar tests con coverage (para SonarQube)
+#### Ejecutar tests con coverage (para SonarQube)
 ```bash
 cd backend
-pytest --cov=. --cov-report=xml:coverage.xml --cov-report=term-missing
+pytest --cov=. --cov-report=xml:coverage.xml --cov-report=term-missing -v --tb=short
 ```
 
-### Ejecutar tests específicos
+#### Ejecutar tests con errores completos (debugging)
+```bash
+cd backend
+pytest --cov=. --cov-report=xml:coverage.xml --cov-report=term-missing -v --tb=long --showlocals
+```
+
+#### Ejecutar tests específicos
 ```bash
 cd backend
 pytest tests/test_prediction_scalers.py
 pytest tests/test_api.py -v
-pytest tests/ -k "test_prediction"  # Tests que contengan "test_prediction"
+pytest tests/ -k "test_prediction"
 ```
 
-### Ejecutar tests excluyendo los lentos
+#### Ejecutar tests excluyendo los lentos
 ```bash
 cd backend
 pytest -m "not slow"
 ```
 
-### Ejecutar solo tests de integración
+#### Ejecutar solo tests de integración
 ```bash
 cd backend
 pytest -m integration
 ```
 
-### Usar script de Windows
+#### Usar script de Windows
 ```bash
 cd backend
 run_tests.bat
 ```
 
----
+#### Generar Coverage para SonarQube
+```bash
+cd backend
+pytest --cov=. --cov-report=xml:coverage.xml
+# Archivo: backend/coverage.xml
+```
 
-## 🎨 Frontend (Vue/Vitest)
+#### Verificar que los tests pasan
+```bash
+cd backend
+pytest -v
+# Meta: 0 errores, 0 fails, solo skips permitidos
+```
 
-### Tests Unitarios (Vitest)
+</td>
+<td width="50%">
+
+### Frontend
 
 #### Ejecutar todos los tests unitarios
 ```bash
@@ -70,72 +95,74 @@ cd frontend
 pnpm test:coverage
 ```
 
-### Ejecutar todos los tests
+#### Ejecutar todos los tests
 ```bash
 cd frontend
 pnpm test:all
 ```
 
----
-
-## 📊 Generar Coverage para SonarQube
-
-### Backend
-```bash
-cd backend
-pytest --cov=. --cov-report=xml:coverage.xml
-# El archivo coverage.xml se genera en backend/coverage.xml
-```
-
-### Frontend
+#### Generar Coverage para SonarQube
 ```bash
 cd frontend
 pnpm test:unit:coverage
-# El archivo lcov.info se genera en frontend/coverage/lcov.info
+# Archivo: frontend/coverage/lcov.info
 ```
 
----
-
-## 🔍 Verificar que los tests pasan
-
-### Backend
-```bash
-cd backend
-pytest -v
-# Debe terminar con: "passed", "failed", "skipped"
-# Meta: 0 errores, 0 fails, solo skips permitidos
-```
-
-### Frontend - Unitarios
+#### Verificar que los tests pasan
 ```bash
 cd frontend
 pnpm test:unit
 # Debe mostrar todos los tests pasando
 ```
 
+</td>
+</tr>
+</table>
 
 ---
 
 ## ⚠️ Notas Importantes
 
-1. **Backend**: Asegúrate de tener el entorno virtual activado
-   ```bash
-   cd backend
-   # Windows
-   venv\Scripts\activate
-   # Linux/Mac
-   source venv/bin/activate
-   ```
+<table>
+<tr>
+<td width="50%">
 
-2. **Frontend**: Asegúrate de tener las dependencias instaladas
-   ```bash
-   cd frontend
-   pnpm install
-   ```
+### Backend
 
-3. **Coverage**: Los archivos de coverage se generan automáticamente:
-   - Backend: `backend/coverage.xml`
-   - Frontend: `frontend/coverage/lcov.info`
+**Activar entorno virtual:**
+```bash
+cd backend
+# Windows
+venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
+```
 
-4. **Tests lentos**: Algunos tests están marcados como `@pytest.mark.slow` y pueden tardar más tiempo.
+**Coverage:**
+- Archivo generado: `backend/coverage.xml`
 
+**Tests lentos:**
+- Algunos tests están marcados como `@pytest.mark.slow`
+
+</td>
+<td width="50%">
+
+### Frontend
+
+**Instalar dependencias:**
+```bash
+cd frontend
+pnpm install
+```
+
+**Coverage:**
+- Archivo generado: `frontend/coverage/lcov.info`
+
+**Comandos disponibles:**
+- `pnpm test:unit` - Tests unitarios
+- `pnpm test:coverage` - Tests con coverage
+- `pnpm test:unit:watch` - Modo watch
+
+</td>
+</tr>
+</table>

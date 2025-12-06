@@ -42,7 +42,12 @@ class ProfileService(BaseService):
                 user_profile = user.profile
             except user_profile_model.DoesNotExist:
                 # If no profile exists, create empty one
-                user_profile = UserProfile.objects.create(user=user)
+                if user_profile_model is None:
+                    # If model is not available, return error
+                    return ServiceResult.error(
+                        ValidationServiceError("Modelo UserProfile no disponible")
+                    )
+                user_profile = user_profile_model.objects.create(user=user)
             
             profile_data = {
                 'id': user.id,

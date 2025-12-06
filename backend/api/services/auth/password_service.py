@@ -212,11 +212,11 @@ class PasswordService(BaseService):
                 user_agent = request.META.get('HTTP_USER_AGENT', '')
             
             LoginHistory.objects.create(
-                usuario=user,
+                user=user,
                 ip_address=ip_address,
                 user_agent=user_agent,
                 login_time=timezone.now(),
-                success=True
+                login_successful=True
             )
         except Exception as e:
             self.log_warning(f"Error registrando solicitud de restablecimiento: {str(e)}")

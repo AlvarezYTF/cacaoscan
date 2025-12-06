@@ -147,6 +147,8 @@ class PersonaSerializer(serializers.ModelSerializer):
     departamento_info = serializers.SerializerMethodField()
     municipio_info = serializers.SerializerMethodField()
     email = serializers.EmailField(source='user.email', read_only=True)
+    # Explicitly define telefono to avoid validation issues
+    telefono = serializers.CharField(read_only=True)
     
     class Meta:
         model = Persona
@@ -158,7 +160,7 @@ class PersonaSerializer(serializers.ModelSerializer):
             'departamento', 'departamento_info', 'municipio', 'municipio_info',
             'fecha_creacion'
         ]
-        read_only_fields = ['user', 'fecha_creacion', 'email']
+        read_only_fields = ['user', 'fecha_creacion', 'email', 'telefono']
     
     def get_tipo_documento_info(self, obj):
         """Devuelve información del tipo de documento."""
@@ -359,8 +361,15 @@ class PersonaRegistroSerializer(serializers.Serializer):
         )
         
         # Crear token de verificación de email
-        from api.models import EmailVerificationToken
-        verification_token = EmailVerificationToken.create_for_user(user)
+        from api.utils.model_imports import get_models_safely
+        models = get_models_safely({
+            'EmailVerificationToken': 'api.models.EmailVerificationToken'
+        })
+        email_verification_token_model = models.get('EmailVerificationToken')
+        if email_verification_token_model:
+            verification_token = email_verification_token_model.create_for_user(user)
+        else:
+            verification_token = None
         
         # Si es creación por admin, marcar como verificado
         if skip_email_verification:
@@ -423,11 +432,11 @@ Si no creaste esta cuenta, puedes ignorar este correo.
             tipo_documento=tipo_documento,
             numero_documento=validated_data.get('numero_documento'),
             primer_nombre=validated_data.get('primer_nombre'),
-            segundo_nombre=validated_data.get('segundo_nombre', None),
+            segundo_nombre=validated_data.get('segundo_nombre', '') or '',
             primer_apellido=validated_data.get('primer_apellido'),
-            segundo_apellido=validated_data.get('segundo_apellido', None),
+            segundo_apellido=validated_data.get('segundo_apellido', '') or '',
             telefono=validated_data.get('telefono'),
-            direccion=validated_data.get('direccion', None),
+            direccion=validated_data.get('direccion', '') or '',
             genero=genero,
             fecha_nacimiento=validated_data.get('fecha_nacimiento', None),
             departamento=departamento,

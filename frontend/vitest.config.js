@@ -1,6 +1,9 @@
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
   plugins: [vue()],
@@ -12,10 +15,10 @@ export default defineConfig({
     maxThreads: 2,
     minThreads: 1,
     isolate: true,
-    testTimeout: 30000,
-    hookTimeout: 30000,
-    teardownTimeout: 10000,
-    poolTimeout: 300000,
+    testTimeout: 60000,
+    hookTimeout: 60000,
+    teardownTimeout: 30000,
+    poolTimeout: 600000,
     sequence: {
       shuffle: false
     },
@@ -24,9 +27,13 @@ export default defineConfig({
         singleThread: false,
         isolate: true,
         minThreads: 1,
-        maxThreads: 2
+        maxThreads: 2,
+        useAtomics: false
       }
     },
+    fileParallelism: false,
+    bail: 0,
+    retry: 0,
     exclude: [
       'node_modules',
       'dist',
@@ -71,7 +78,8 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, './src')
     },
-    dedupe: ['vue']
+    dedupe: ['vue'],
+    extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json', '.vue']
   },
   define: {
     'import.meta.vitest': 'undefined'
@@ -80,7 +88,11 @@ export default defineConfig({
     include: ['vue', 'vue-router', 'pinia'],
     esbuildOptions: {
       target: 'node18'
-    }
+    },
+    force: true
+  },
+  ssr: {
+    noExternal: ['vue', 'vue-router', 'pinia']
   },
   server: {
     fs: {

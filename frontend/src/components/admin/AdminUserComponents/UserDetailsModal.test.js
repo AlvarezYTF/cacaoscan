@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import UserDetailsModal from './UserDetailsModal.vue'
 
@@ -30,14 +30,26 @@ describe('UserDetailsModal', () => {
     last_name: 'User'
   }
 
+  let wrapper
+
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.useFakeTimers()
     mockGetUserById.mockResolvedValue({ data: { ...mockUser, role: 'admin' } })
     mockGetActivityLogs.mockResolvedValue({ data: { results: [] } })
   })
 
+  afterEach(() => {
+    if (wrapper) {
+      wrapper.unmount()
+      wrapper = null
+    }
+    vi.useRealTimers()
+    vi.clearAllTimers()
+  })
+
   it('should render modal', () => {
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
@@ -47,13 +59,15 @@ describe('UserDetailsModal', () => {
   })
 
   it('should load user details on mount', async () => {
-    mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
     })
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await wrapper.vm.$nextTick()
+    vi.advanceTimersByTime(100)
+    await wrapper.vm.$nextTick()
 
     expect(mockGetUserById).toHaveBeenCalledWith(mockUser.id)
   })
@@ -67,14 +81,15 @@ describe('UserDetailsModal', () => {
       }
     })
 
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
     })
 
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 100))
+    vi.advanceTimersByTime(100)
+    await wrapper.vm.$nextTick()
 
     expect(mockGetActivityLogs).toHaveBeenCalled()
   })
@@ -82,14 +97,15 @@ describe('UserDetailsModal', () => {
   it('should handle error when loading user details', async () => {
     mockGetUserById.mockRejectedValue(new Error('Network error'))
 
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
     })
 
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 100))
+    vi.advanceTimersByTime(100)
+    await wrapper.vm.$nextTick()
 
     expect(wrapper.vm.loading).toBe(false)
   })
@@ -97,7 +113,7 @@ describe('UserDetailsModal', () => {
   it('should handle error when loading activities', async () => {
     mockGetActivityLogs.mockRejectedValue(new Error('Network error'))
 
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
@@ -111,7 +127,7 @@ describe('UserDetailsModal', () => {
   })
 
   it('should close modal and emit close event', async () => {
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
@@ -123,7 +139,7 @@ describe('UserDetailsModal', () => {
   })
 
   it('should emit edit event', async () => {
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
@@ -136,7 +152,7 @@ describe('UserDetailsModal', () => {
   })
 
   it('should format date time correctly', () => {
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
@@ -149,7 +165,7 @@ describe('UserDetailsModal', () => {
   })
 
   it('should return correct role badge class', () => {
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
@@ -162,7 +178,7 @@ describe('UserDetailsModal', () => {
   })
 
   it('should return connection status for user without last_login', () => {
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
@@ -173,7 +189,7 @@ describe('UserDetailsModal', () => {
   })
 
   it('should return "En línea" for recent login', () => {
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
@@ -185,7 +201,7 @@ describe('UserDetailsModal', () => {
   })
 
   it('should return "Reciente" for login within hour', () => {
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
@@ -197,7 +213,7 @@ describe('UserDetailsModal', () => {
   })
 
   it('should return "Desconectado" for old login', () => {
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
@@ -209,7 +225,7 @@ describe('UserDetailsModal', () => {
   })
 
   it('should return correct connection status class', () => {
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }
@@ -228,7 +244,7 @@ describe('UserDetailsModal', () => {
   })
 
   it('should return correct activity icon', () => {
-    const wrapper = mount(UserDetailsModal, {
+    wrapper = mount(UserDetailsModal, {
       props: {
         user: mockUser
       }

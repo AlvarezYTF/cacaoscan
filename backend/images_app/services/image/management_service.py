@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional, List
 from django.core.files.uploadedfile import UploadedFile
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-from django.db.models import Q, Count, Avg, Min, Max
+from django.db.models import Q, Count, Avg, Min, Max, Sum
 from django.utils import timezone
 from datetime import timedelta
 from PIL import Image
@@ -86,6 +86,11 @@ class ImageManagementService(BaseService):
                     details={"field": "filename"}
                 )
             
+            if CacaoImage is None:
+                return ServiceResult.error(
+                    ValidationServiceError("Modelo CacaoImage no disponible")
+                )
+            
             # Validar archivo
             validation_result = self._validate_image_file(image_file)
             if not validation_result.success:
@@ -108,8 +113,13 @@ class ImageManagementService(BaseService):
                 cacao_image.image_height = image_height
             
             # Agregar metadatos si se proporcionan
+            # Note: CacaoImage model doesn't have a metadata field, so we skip this
+            # If metadata is needed, it should be stored in notas or another field
             if metadata:
-                cacao_image.metadata = metadata
+                # Store metadata in notas field if available
+                if hasattr(cacao_image, 'notas'):
+                    import json
+                    cacao_image.notas = json.dumps(metadata) if isinstance(metadata, dict) else str(metadata)
             
             cacao_image.save()
             
@@ -137,7 +147,7 @@ class ImageManagementService(BaseService):
                     'processed': cacao_image.processed,
                     'created_at': cacao_image.created_at.isoformat(),
                     'image_url': cacao_image.image.url if cacao_image.image else None,
-                    'metadata': cacao_image.metadata
+                    'metadata': cacao_image.notas if hasattr(cacao_image, 'notas') else ''
                 },
                 message="Imagen subida exitosamente"
             )
@@ -164,6 +174,10 @@ class ImageManagementService(BaseService):
             ServiceResult con imágenes paginadas
         """
         try:
+            if CacaoImage is None:
+                return ServiceResult.error(
+                    ValidationServiceError("Modelo CacaoImage no disponible")
+                )
             # Construir queryset (optimizado)
             queryset = CacaoImage.objects.filter(user=user).select_related(
                 'finca',
@@ -171,7 +185,7 @@ class ImageManagementService(BaseService):
                 'lote',
                 'lote__finca',
                 'lote__finca__agricultor'
-            ).prefetch_related('prediction').order_by('-created_at')
+            ).select_related('prediction').order_by('-created_at')
             
             # Aplicar filtros
             if filters:
@@ -187,7 +201,8 @@ class ImageManagementService(BaseService):
                     search_term = filters['search']
                     queryset = queryset.filter(
                         Q(file_name__icontains=search_term) |
-                        Q(metadata__icontains=search_term)
+                        Q(notas__icontains=search_term) |
+                        Q(finca_nombre__icontains=search_term)
                     )
             
             # Paginar resultados
@@ -205,7 +220,7 @@ class ImageManagementService(BaseService):
                     'created_at': image.created_at.isoformat(),
                     'updated_at': image.updated_at.isoformat(),
                     'image_url': image.image.url if image.image else None,
-                    'metadata': image.metadata
+                    'metadata': image.notas if hasattr(image, 'notas') else ''
                 })
             
             return ServiceResult.success(
@@ -232,16 +247,19 @@ class ImageManagementService(BaseService):
         Returns:
             List of predictions or empty list
         """
-        if not hasattr(image, 'predictions'):
+        # CacaoImage has a OneToOneField with related_name='prediction' (singular)
+        # So we check for 'prediction' not 'predictions'
+        if not hasattr(image, 'prediction'):
             return []
         
         try:
-            all_result = image.predictions.all()
-            if all_result is None:
+            # Get the single prediction if it exists
+            prediction = image.prediction
+            if prediction is None:
                 return []
             
-            ordered_result = all_result.order_by('-created_at')
-            return self._safe_convert_to_list(ordered_result)
+            # Return as list for consistency with the interface
+            return [prediction]
         except Exception:
             return []
     
@@ -314,7 +332,7 @@ class ImageManagementService(BaseService):
             'created_at': image.created_at.isoformat(),
             'updated_at': image.updated_at.isoformat(),
             'image_url': image.image.url if image.image else None,
-            'metadata': image.metadata,
+            'metadata': image.notas if hasattr(image, 'notas') else '',
             'predictions': prediction_data,
             'predictions_count': len(prediction_data)
         }
@@ -331,6 +349,10 @@ class ImageManagementService(BaseService):
             ServiceResult con detalles de la imagen
         """
         try:
+            if CacaoImage is None:
+                return ServiceResult.error(
+                    ValidationServiceError("Modelo CacaoImage no disponible")
+                )
             image = self._get_image_by_id(image_id, user)
             if image is None:
                 return ServiceResult.not_found_error(ERROR_IMAGE_NOT_FOUND)
@@ -362,6 +384,8 @@ class ImageManagementService(BaseService):
             CacaoImage instance or None if not found
         """
         try:
+            if CacaoImage is None:
+                return None
             return CacaoImage.objects.select_related(
                 'finca',
                 'finca__agricultor',
@@ -369,7 +393,7 @@ class ImageManagementService(BaseService):
                 'lote__finca',
                 'lote__finca__agricultor'
             ).get(id=image_id, user=user)
-        except CacaoImage.DoesNotExist:
+        except (CacaoImage.DoesNotExist, AttributeError, TypeError):
             return None
     
     def update_image_metadata(self, image_id: int, user: User, metadata: Dict[str, Any]) -> ServiceResult:
@@ -392,13 +416,23 @@ class ImageManagementService(BaseService):
                     'lote',
                     'lote__finca',
                     'lote__finca__agricultor'
-                ).prefetch_related('prediction').get(id=image_id, user=user)
+                ).select_related('prediction').get(id=image_id, user=user)
             except CacaoImage.DoesNotExist:
                 return ServiceResult.not_found_error(ERROR_IMAGE_NOT_FOUND)
             
             # Actualizar metadatos
-            old_metadata = image.metadata.copy() if image.metadata else {}
-            image.metadata = metadata
+            # Store metadata in notas field since CacaoImage doesn't have metadata field
+            old_metadata = {}
+            if hasattr(image, 'notas') and image.notas:
+                try:
+                    import json
+                    old_metadata = json.loads(image.notas) if isinstance(image.notas, str) else {}
+                except (json.JSONDecodeError, TypeError):
+                    old_metadata = {'raw': image.notas}
+            
+            if hasattr(image, 'notas'):
+                import json
+                image.notas = json.dumps(metadata) if isinstance(metadata, dict) else str(metadata)
             image.save()
             
             # Crear log de auditoría
@@ -419,7 +453,7 @@ class ImageManagementService(BaseService):
                 data={
                     'id': image.id,
                     'file_name': image.file_name,
-                    'metadata': image.metadata,
+                    'metadata': image.notas if hasattr(image, 'notas') else '',
                     'updated_at': image.updated_at.isoformat()
                 },
                 message="Metadatos actualizados exitosamente"
@@ -443,6 +477,10 @@ class ImageManagementService(BaseService):
             ServiceResult con resultado de la eliminación
         """
         try:
+            if CacaoImage is None:
+                return ServiceResult.error(
+                    ValidationServiceError("Modelo CacaoImage no disponible")
+                )
             try:
                 # Obtener imagen sin prefetch_related para evitar problemas con mocks
                 image = CacaoImage.objects.select_related(
@@ -457,14 +495,9 @@ class ImageManagementService(BaseService):
             
             # Obtener información para el log de forma segura
             try:
-                if hasattr(image, 'predictions') and hasattr(image.predictions, 'count'):
-                    try:
-                        predictions_count = image.predictions.count()
-                        # Asegurar que es un número válido
-                        if not isinstance(predictions_count, (int, float)):
-                            predictions_count = 0
-                    except (TypeError, AttributeError):
-                        predictions_count = 0
+                # CacaoImage has OneToOneField with related_name='prediction' (singular)
+                if hasattr(image, 'prediction') and image.prediction is not None:
+                    predictions_count = 1  # OneToOneField, so only one prediction
                 else:
                     predictions_count = 0
             except (AttributeError, TypeError):
@@ -510,6 +543,10 @@ class ImageManagementService(BaseService):
             ServiceResult con estadísticas
         """
         try:
+            if CacaoImage is None:
+                return ServiceResult.error(
+                    ValidationServiceError("Modelo CacaoImage no disponible")
+                )
             # Construir queryset base (optimizado)
             queryset = CacaoImage.objects.filter(user=user).select_related(
                 'finca',
@@ -517,7 +554,7 @@ class ImageManagementService(BaseService):
                 'lote',
                 'lote__finca',
                 'lote__finca__agricultor'
-            ).prefetch_related('prediction')
+            ).select_related('prediction')
             
             # Aplicar filtros
             if filters:
@@ -580,7 +617,7 @@ class ImageManagementService(BaseService):
                 'lote',
                 'lote__finca',
                 'lote__finca__agricultor'
-            ).prefetch_related('prediction')
+            ).select_related('prediction')
             
             if len(images) != len(image_ids):
                 return ServiceResult.validation_error(

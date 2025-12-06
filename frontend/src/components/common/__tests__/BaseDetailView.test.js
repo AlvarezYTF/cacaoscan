@@ -24,28 +24,24 @@ const mockRouter = {
   }
 }
 
-vi.mock('vue-router', async () => {
-  const actual = await vi.importActual('vue-router')
-  return {
-    ...actual,
-    useRouter: () => mockRouter,
-    useRoute: () => ({
-      path: '/',
-      name: 'home',
-      params: {},
-      query: {}
-    }),
-    RouterLink: {
-      name: 'RouterLink',
-      template: '<a><slot></slot></a>',
-      props: ['to']
-    },
-    RouterView: {
-      name: 'RouterView',
-      template: '<div></div>'
-    }
+vi.mock('vue-router', () => ({
+  useRouter: () => mockRouter,
+  useRoute: () => ({
+    path: '/',
+    name: 'home',
+    params: {},
+    query: {}
+  }),
+  RouterLink: {
+    name: 'RouterLink',
+    template: '<a><slot></slot></a>',
+    props: ['to']
+  },
+  RouterView: {
+    name: 'RouterView',
+    template: '<div></div>'
   }
-})
+}))
 
 describe('BaseDetailView', () => {
   let wrapper

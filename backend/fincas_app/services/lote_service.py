@@ -168,6 +168,11 @@ class LoteService(BaseService):
                 return error
             
             # Create lote
+            from datetime import date
+            fecha_plantacion = lote_data.get('fecha_plantacion')
+            if not fecha_plantacion:
+                fecha_plantacion = date.today()
+            
             lote = Lote(
                 finca=finca,
                 nombre=nombre or identificador,
@@ -178,7 +183,7 @@ class LoteService(BaseService):
                 descripcion=lote_data.get('descripcion', ''),
                 coordenadas_lat=lote_data.get('coordenadas_lat'),
                 coordenadas_lng=lote_data.get('coordenadas_lng'),
-                fecha_plantacion=lote_data.get('fecha_plantacion'),
+                fecha_plantacion=fecha_plantacion,
                 fecha_cosecha=lote_data.get('fecha_cosecha'),
                 edad_plantas=lote_data.get('edad_plantas', 0)
             )
@@ -532,6 +537,10 @@ class LoteService(BaseService):
             ServiceResult with statistics
         """
         try:
+            if Lote is None:
+                return ServiceResult.error(
+                    ValidationServiceError("Modelo Lote no disponible")
+                )
             # Build base queryset (optimized)
             if user.is_superuser or user.is_staff:
                 queryset = Lote.objects.all().select_related('finca', 'finca__agricultor')
@@ -558,7 +567,7 @@ class LoteService(BaseService):
                 'variedades': dict(queryset.values('variedad').annotate(count=Count('id')).values_list('variedad', 'count')),
                 'estados': dict(queryset.values('estado').annotate(count=Count('id')).values_list('estado', 'count')),
                 'promedio_edad': queryset.aggregate(avg=Avg('edad_plantas'))['avg'] or 0,
-                'rendimiento_promedio': queryset.aggregate(avg=Avg('rendimiento_real'))['avg'] or 0,
+                'rendimiento_promedio': 0,  # rendimiento_real field doesn't exist in Lote model
                 'recent_lotes': queryset.filter(created_at__gte=timezone.now() - timedelta(days=30)).count()
             }
             
