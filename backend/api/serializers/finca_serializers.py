@@ -106,28 +106,22 @@ class FincaSerializer(serializers.ModelSerializer):
         from core.utils import validate_longitude
         return validate_longitude(value)
     
+    def _validate_field(self, attrs, field_name, error_message, errors):
+        """Validate a single required field."""
+        field_value = attrs.get(field_name, '')
+        if not field_value or (isinstance(field_value, str) and not field_value.strip()):
+            errors[field_name] = [error_message]
+    
     def _validate_required_fields(self, attrs, errors, is_partial=False):
         """Validate required fields."""
-        # In partial mode, only validate fields that are being updated
         if is_partial:
             if 'municipio' in attrs:
-                municipio = attrs.get('municipio', '')
-                if not municipio or (isinstance(municipio, str) and not municipio.strip()):
-                    errors['municipio'] = ["El municipio es requerido."]
-            
+                self._validate_field(attrs, 'municipio', "El municipio es requerido.", errors)
             if 'departamento' in attrs:
-                departamento = attrs.get('departamento', '')
-                if not departamento or (isinstance(departamento, str) and not departamento.strip()):
-                    errors['departamento'] = ["El departamento es requerido."]
+                self._validate_field(attrs, 'departamento', "El departamento es requerido.", errors)
         else:
-            # In full mode, all required fields must be present
-            municipio = attrs.get('municipio', '')
-            if not municipio or (isinstance(municipio, str) and not municipio.strip()):
-                errors['municipio'] = ["El municipio es requerido."]
-            
-            departamento = attrs.get('departamento', '')
-            if not departamento or (isinstance(departamento, str) and not departamento.strip()):
-                errors['departamento'] = ["El departamento es requerido."]
+            self._validate_field(attrs, 'municipio', "El municipio es requerido.", errors)
+            self._validate_field(attrs, 'departamento', "El departamento es requerido.", errors)
 
     def _handle_coordinate_validation_error(self, e, errors):
         """Handle coordinate validation errors."""

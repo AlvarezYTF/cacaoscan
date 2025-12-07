@@ -52,7 +52,6 @@ def protect_explicit_username(sender, instance, **kwargs):
     # Solo generar username automático si no existe
     # Esta función puede ser extendida en el futuro para generar usernames
     # pero nunca sobreescribirá un username explícito
-    pass
 
 
 @receiver(post_save, sender=User)

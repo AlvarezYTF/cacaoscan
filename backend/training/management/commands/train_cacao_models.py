@@ -409,20 +409,17 @@ class Command(BaseCommand):
         
         return targets
     
-    def _validate_config(self, config: TrainingConfig) -> None:
-        """Valida la configuración."""
-        import os
-        from ml.utils.paths import get_datasets_dir
-        
-        # Validar parámetros básicos primero (estos siempre deben validarse)
+    def _validate_basic_params(self, config: TrainingConfig) -> None:
+        """Validate basic training parameters."""
         if config.get('epochs', 0) < 1:
             raise CommandError("Número de épocas debe ser >= 1")
         if config.get('batch_size', 0) < 1:
             raise CommandError("Tamaño de batch debe ser >= 1")
         if config.get('learning_rate', 0) <= 0:
             raise CommandError("Learning rate debe ser > 0")
-        
-        # Validar dependencias de modelos
+    
+    def _validate_model_dependencies(self, config: TrainingConfig) -> None:
+        """Validate model dependencies."""
         if config.get('model_type') == 'convnext_tiny' or config.get('hybrid', False):
             try:
                 import timm
@@ -430,16 +427,23 @@ class Command(BaseCommand):
                 raise CommandError(
                     "timm es requerido para ConvNeXt o Modelos Híbridos. Instalar con: pip install timm"
                 )
-        
-        # Verificar dataset solo si existe (en tests puede no existir)
+    
+    def _find_dataset_csv(self) -> Optional[Path]:
+        """Find dataset CSV file."""
+        import os
+        from ml.utils.paths import get_datasets_dir
         datasets_dir = get_datasets_dir()
-        csv_path = datasets_dir / "dataset_cacao.clean.csv"
-        if not os.path.exists(csv_path):
-            csv_path = datasets_dir / "dataset_cacao.csv"
-        if not os.path.exists(csv_path):
-            csv_path = datasets_dir / "dataset.csv"
-        if not os.path.exists(csv_path):
-            # En modo test sin dataset, retornar temprano
+        for csv_name in ["dataset_cacao.clean.csv", "dataset_cacao.csv", "dataset.csv"]:
+            csv_path = datasets_dir / csv_name
+            if os.path.exists(csv_path):
+                return csv_path
+        return None
+    
+    def _validate_dataset_files(self) -> None:
+        """Validate dataset files exist."""
+        import os
+        csv_path = self._find_dataset_csv()
+        if not csv_path:
             return
         
         raw_dir = get_raw_images_dir()
@@ -452,12 +456,15 @@ class Command(BaseCommand):
                 f"Muy pocas imágenes raw disponibles: {len(raw_files)}. "
                 "Se necesitan al menos 10 para entrenamiento."
             )
-        
+    
+    def _validate_dataset_records(self) -> None:
+        """Validate dataset records."""
         from ml.data.dataset_loader import CacaoDatasetLoader
+        loader = CacaoDatasetLoader()
+        if loader.csv_path == "mock":
+            return
+        
         try:
-            loader = CacaoDatasetLoader()
-            if loader.csv_path == "mock":
-                return
             df = loader.load_dataset()
             if len(df) < 10:
                 raise CommandError(
@@ -466,9 +473,8 @@ class Command(BaseCommand):
                 )
         except Exception as e:
             raise CommandError(f"Error cargando dataset: {e}")
-
+        
         try:
-            loader = CacaoDatasetLoader()
             valid_records = loader.get_valid_records()
             if len(valid_records) < 10:
                 raise CommandError(
@@ -478,6 +484,13 @@ class Command(BaseCommand):
             logger.info(f"✅ {len(valid_records)} registros válidos encontrados. Los crops se generarán automáticamente si faltan.")
         except Exception as e:
             raise CommandError(f"Error validando registros: {e}")
+    
+    def _validate_config(self, config: TrainingConfig) -> None:
+        """Valida la configuración."""
+        self._validate_basic_params(config)
+        self._validate_model_dependencies(config)
+        self._validate_dataset_files()
+        self._validate_dataset_records()
     
     def _display_config(self, config: TrainingConfig) -> None:
         """Muestra la configuración del entrenamiento."""

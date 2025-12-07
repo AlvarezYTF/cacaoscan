@@ -40,6 +40,9 @@ from ml.utils.logs import get_ml_logger
 
 logger = get_ml_logger("cacaoscan.ml.commands.unet")
 
+# Constants
+MODEL_FILENAME = "cacao_unet.pth"
+
 
 def save_model(model, path: Path) -> None:
     """
@@ -153,7 +156,7 @@ class Command(BaseCommand):
         """Check if model already exists. Returns model_path if exists and should skip, None otherwise."""
         project_root = get_project_root()
         segmentation_dir = project_root / "ml" / "segmentation"
-        model_path = segmentation_dir / "cacao_unet.pth"
+        model_path = segmentation_dir / MODEL_FILENAME
         
         if model_path.exists() and not options.get('force', False):
             file_size_mb = model_path.stat().st_size / (1024 * 1024)

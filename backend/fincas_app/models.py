@@ -315,7 +315,7 @@ class Lote(TimeStampedModel):
                 avg_quality=Avg('prediction__average_confidence')
             )['avg_quality']
             return round(float(avg_confidence or 0) * 100, 2)
-        except (ValueError, TypeError, AttributeError, Exception):
+        except (ValueError, TypeError, AttributeError):
             return 0.0
     
     @property

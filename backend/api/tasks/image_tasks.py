@@ -92,6 +92,43 @@ def _calculate_statistics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         'total_weight': stats['total_weight']
     }
 
+def _process_single_image(self, image_data, idx, total_images, user, lote, predictor):
+    """Process a single image and return result."""
+    def safe_update_state(state: str, meta: Dict[str, Any]) -> None:
+        """Safely update task state, only if task_id exists (not in test mode)."""
+        if not hasattr(self, 'request') or not getattr(self.request, 'id', None):
+            return
+        if hasattr(self, 'update_state'):
+            self.update_state(state=state, meta=meta)
+    
+    import os
+    try:
+        safe_update_state(
+            'PROGRESS',
+            {
+                'current': idx + 1,
+                'total': total_images,
+                'status': f'Processing image {idx + 1}/{total_images}...'
+            }
+        )
+        
+        temp_path = image_data.get('temp_path')
+        if not temp_path or not os.path.exists(temp_path):
+            return {'success': False, 'error': 'Image file not found'}
+        
+        with transaction.atomic():
+            cacao_image, error = _create_cacao_image(user, lote, image_data, temp_path)
+            if error:
+                return error
+            
+            result, _ = _process_image_with_ml(predictor, temp_path, cacao_image)
+            _cleanup_temp_file(temp_path)
+            return result
+            
+    except Exception as e:
+        logger.error(f"Error processing image {idx + 1}: {e}", exc_info=True)
+        return {'success': False, 'error': str(e)}
+
 @shared_task(bind=True, name='api.tasks.image.process_batch_analysis')
 def process_batch_analysis_task(
     self,
@@ -117,14 +154,12 @@ def process_batch_analysis_task(
     def safe_update_state(state: str, meta: Dict[str, Any]) -> None:
         """Safely update task state, only if task_id exists (not in test mode)."""
         if not hasattr(self, 'request') or not getattr(self.request, 'id', None):
-            # We are in test mode, return without using backend
             return
         if hasattr(self, 'update_state'):
             self.update_state(state=state, meta=meta)
     
     try:
         start_time = time.time()
-        import os
         
         safe_update_state(
             'PROGRESS',
@@ -147,41 +182,8 @@ def process_batch_analysis_task(
         total_images = len(images_data)
         
         for idx, image_data in enumerate(images_data):
-            try:
-                safe_update_state(
-                    'PROGRESS',
-                    {
-                        'current': idx + 1,
-                        'total': total_images,
-                        'status': f'Processing image {idx + 1}/{total_images}...'
-                    }
-                )
-                
-                temp_path = image_data.get('temp_path')
-                if not temp_path or not os.path.exists(temp_path):
-                    results.append({
-                        'success': False,
-                        'error': 'Image file not found'
-                    })
-                    continue
-                
-                with transaction.atomic():
-                    cacao_image, error = _create_cacao_image(user, lote, image_data, temp_path)
-                    if error:
-                        results.append(error)
-                        continue
-                    
-                    result, _ = _process_image_with_ml(predictor, temp_path, cacao_image)
-                    results.append(result)
-                
-                _cleanup_temp_file(temp_path)
-                
-            except Exception as e:
-                logger.error(f"Error processing image {idx + 1}: {e}", exc_info=True)
-                results.append({
-                    'success': False,
-                    'error': str(e)
-                })
+            result = _process_single_image(self, image_data, idx, total_images, user, lote, predictor)
+            results.append(result)
         
         processed_images = sum(1 for r in results if r.get('success', False))
         failed_images = total_images - processed_images

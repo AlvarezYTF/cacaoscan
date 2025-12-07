@@ -46,7 +46,7 @@ class Command(BaseCommand):
         # - [a-zA-Z_]: primer carácter debe ser letra (a-z, A-Z) o guion bajo (_)
         # - [a-zA-Z0-9_]*: seguido de cero o más caracteres que sean letras, números o guiones bajos
         # - $: fin de cadena
-        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', identifier):
+        if not re.match(r'^[a-zA-Z_]\w*$', identifier):
             raise ValueError(f'Identificador SQL inválido: {identifier}. Solo se permiten letras, números y guiones bajos, y debe comenzar con letra o guion bajo.')
         
         return identifier

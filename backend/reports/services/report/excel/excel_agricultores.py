@@ -56,6 +56,14 @@ class ExcelAgricultoresGenerator(ExcelBaseGenerator):
                 logger.error(f"Error getting users: {query_error}")
                 return []
     
+    def _get_fallback_name(self, farmer):
+        """Get fallback name from username or ID."""
+        username = getattr(farmer, 'username', None) or ''
+        if username:
+            return username
+        farmer_id = getattr(farmer, 'id', None) or 0
+        return f'Usuario {farmer_id}'
+    
     def _get_farmer_name(self, farmer):
         """Get farmer name safely."""
         try:
@@ -63,34 +71,17 @@ class ExcelAgricultoresGenerator(ExcelBaseGenerator):
             nombres = getattr(farmer, 'first_name', None) or ''
             apellidos = getattr(farmer, 'last_name', None) or ''
             
-            # If both nombres and apellidos are empty, return username or Usuario {id}
+            # If both nombres and apellidos are empty, return fallback
             if not nombres and not apellidos:
-                username = getattr(farmer, 'username', None) or ''
-                if username:
-                    return username
-                else:
-                    farmer_id = getattr(farmer, 'id', None) or 0
-                    return f'Usuario {farmer_id}'
+                return self._get_fallback_name(farmer)
             
             # Build name from nombres and apellidos
             name = f"{nombres} {apellidos}".strip()
             if name:
                 return name
-            else:
-                username = getattr(farmer, 'username', None) or ''
-                if username:
-                    return username
-                else:
-                    farmer_id = getattr(farmer, 'id', None) or 0
-                    return f'Usuario {farmer_id}'
+            return self._get_fallback_name(farmer)
         except Exception:
-            # On exception, return username or Usuario {id} as fallback
-            username = getattr(farmer, 'username', None) or ''
-            if username:
-                return username
-            else:
-                farmer_id = getattr(farmer, 'id', None) or 0
-                return f'Usuario {farmer_id}'
+            return self._get_fallback_name(farmer)
     
     def _get_farmer_phone(self, farmer):
         """Get farmer phone safely."""

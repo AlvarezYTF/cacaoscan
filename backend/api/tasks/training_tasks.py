@@ -16,6 +16,21 @@ logger = logging.getLogger("cacaoscan.api.tasks.training")
 TrainingJob = get_model_safely('training.models.TrainingJob')
 
 
+def _get_training_config(config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Get training configuration with defaults."""
+    if config is not None:
+        return config
+    return {
+        'epochs': 150,
+        'batch_size': 16,
+        'learning_rate': 0.001,
+        'multi_head': False,
+        'model_type': 'resnet18',
+        'img_size': 224,
+        'early_stopping_patience': 25,
+        'save_best_only': True
+    }
+
 def get_task_id(self) -> Optional[str]:
     """
     Safely get task_id from self.request.id with fallback.
@@ -32,6 +47,38 @@ def get_task_id(self) -> Optional[str]:
         pass
     return None
 
+
+def _is_does_not_exist_exception(exception: Exception) -> bool:
+    """Check if exception is a DoesNotExist exception."""
+    if TrainingJob is None or not hasattr(TrainingJob, 'DoesNotExist'):
+        return False
+    try:
+        does_not_exist_class = TrainingJob.DoesNotExist
+        if isinstance(does_not_exist_class, type) and issubclass(does_not_exist_class, BaseException):
+            return isinstance(exception, does_not_exist_class)
+    except (TypeError, AttributeError):
+        pass
+    return False
+
+def _handle_training_exception(self, exception: Exception, job_id: str, log_message, job=None) -> Dict[str, Any]:
+    """Handle training exceptions."""
+    if _is_does_not_exist_exception(exception):
+        error_msg = f"TrainingJob {job_id} not found"
+        logger.error(error_msg)
+        log_message(error_msg)
+        safe_update_state(self, 'FAILURE', {'status': error_msg, 'progress': 0})
+        return {'status': 'failed', 'error': error_msg}
+    
+    error_msg = str(exception)
+    logger.error(f"Error in training for job {job_id}: {error_msg}", exc_info=True)
+    log_message(f"Error in training for job {job_id}: {error_msg}")
+    if job is not None:
+        try:
+            job.mark_failed(error_msg)
+        except Exception:
+            pass
+    safe_update_state(self, 'FAILURE', {'status': error_msg, 'progress': 0})
+    return {'status': 'failed', 'error': error_msg}
 
 def safe_update_state(self, state: str, meta: Dict[str, Any]) -> None:
     """
@@ -168,43 +215,7 @@ def train_model_task(self, job_id: str, dataset_id: Optional[str] = None, *args:
             }
             
     except Exception as e:
-        # Check if it's a DoesNotExist exception (valid Django model exception)
-        # Handle both real Django models and test mocks safely
-        is_does_not_exist = False
-        if TrainingJob is not None and hasattr(TrainingJob, 'DoesNotExist'):
-            try:
-                does_not_exist_class = TrainingJob.DoesNotExist
-                # Verify it's a valid exception class (inherits from BaseException)
-                if isinstance(does_not_exist_class, type) and issubclass(does_not_exist_class, BaseException):
-                    is_does_not_exist = isinstance(e, does_not_exist_class)
-            except (TypeError, AttributeError):
-                # If DoesNotExist is not a valid exception class, treat as regular exception
-                pass
-        
-        if is_does_not_exist:
-            error_msg = f"TrainingJob {job_id} not found"
-            logger.error(error_msg)
-            log_message(error_msg)
-            safe_update_state(self, 'FAILURE', {'status': error_msg, 'progress': 0})
-            return {
-                'status': 'failed',
-                'error': error_msg
-            }
-        
-        # Handle all other exceptions
-        error_msg = str(e)
-        logger.error(f"Error in training for job {job_id}: {error_msg}", exc_info=True)
-        log_message(f"Error in training for job {job_id}: {error_msg}")
-        if 'job' in locals():
-            try:
-                job.mark_failed(error_msg)
-            except Exception:
-                pass
-        safe_update_state(self, 'FAILURE', {'status': error_msg, 'progress': 0})
-        return {
-            'status': 'failed',
-            'error': error_msg
-        }
+        return _handle_training_exception(self, e, job_id, log_message, locals().get('job'))
 
 
 @shared_task(bind=True, name='api.tasks.auto_train_model')
@@ -294,20 +305,7 @@ def auto_train_model_task(self, save_results: bool = True, config: Optional[Dict
         log_message(f"Found {len(bmp_files)} .bmp images for training")
         safe_update_state(self, 'PROGRESS', {'status': f'Found {len(bmp_files)} images for training', 'progress': 10})
         
-        # Use custom configuration if provided, otherwise default values
-        if config is not None:
-            training_config = config
-        else:
-            training_config = {
-                'epochs': 150,
-                'batch_size': 16,
-                'learning_rate': 0.001,
-                'multi_head': False,
-                'model_type': 'resnet18',
-                'img_size': 224,
-                'early_stopping_patience': 25,
-                'save_best_only': True
-            }
+        training_config = _get_training_config(config)
         
         # Execute training using run_training_pipeline
         safe_update_state(self, 'PROGRESS', {'status': 'Running training pipeline...', 'progress': 20})

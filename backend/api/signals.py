@@ -35,6 +35,37 @@ from .realtime_service import realtime_service
 logger = logging.getLogger("cacaoscan.api")
 
 
+def _check_frame_for_django_dispatcher(caller_file, caller_name):
+    """Check if frame is from Django dispatcher."""
+    return 'django' in caller_file and ('dispatch' in caller_file or 'dispatch' in caller_name)
+
+def _check_frame_for_test_file(caller_file):
+    """Check if frame is from test file."""
+    return ('test' in caller_file and ('test_' in caller_file or 'tests' in caller_file or 'pytest' in caller_file)) or \
+           ('pytest' in caller_file)
+
+def _analyze_call_stack(frame):
+    """Analyze call stack to determine if called from Django dispatcher or test."""
+    django_dispatcher_found = False
+    test_file_found = False
+    current = frame
+    
+    for _ in range(6):  # Revisar hasta 6 frames hacia arriba
+        if current is None:
+            break
+        current = current.f_back
+        if current is None:
+            break
+        caller_file = current.f_code.co_filename.lower()
+        caller_name = current.f_code.co_name.lower()
+        
+        if _check_frame_for_django_dispatcher(caller_file, caller_name):
+            django_dispatcher_found = True
+        if _check_frame_for_test_file(caller_file):
+            test_file_found = True
+    
+    return django_dispatcher_found, test_file_found
+
 def _is_testing():
     """
     Verifica si estamos en modo test.
@@ -47,36 +78,12 @@ def _is_testing():
         return False
     
     # Si estamos en modo test, verificar si fue llamada automáticamente o directamente
-    # Revisar el stack trace para ver si viene de un test o de Django dispatcher
     frame = inspect.currentframe()
     try:
-        # Revisar varios frames hacia arriba para encontrar el origen
-        current = frame
-        django_dispatcher_found = False
-        test_file_found = False
-        
-        for i in range(6):  # Revisar hasta 6 frames hacia arriba
-            if current is None:
-                break
-            current = current.f_back
-            if current is None:
-                break
-            caller_file = current.f_code.co_filename.lower()
-            caller_name = current.f_code.co_name.lower()
-            
-            # Si encontramos Django dispatcher, es automático
-            if 'django' in caller_file and ('dispatch' in caller_file or 'dispatch' in caller_name):
-                django_dispatcher_found = True
-            # Si encontramos un archivo de test, es llamada directa
-            if ('test' in caller_file and ('test_' in caller_file or 'tests' in caller_file or 'pytest' in caller_file)) or \
-               ('pytest' in caller_file):
-                test_file_found = True
-        
+        django_dispatcher_found, test_file_found = _analyze_call_stack(frame)
         # Si encontramos Django dispatcher y no encontramos archivo de test, bloquear
         if django_dispatcher_found and not test_file_found:
             return True
-        
-        # En cualquier otro caso (test file encontrado o no podemos determinar), permitir ejecución
         return False
     finally:
         del frame

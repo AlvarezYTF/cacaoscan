@@ -25,6 +25,7 @@ logger = logging.getLogger("cacaoscan.services.image.management")
 
 # Error message constants
 ERROR_IMAGE_NOT_FOUND = "Imagen no encontrada"
+ERROR_CACAO_IMAGE_MODEL_UNAVAILABLE = "Modelo CacaoImage no disponible"
 
 
 class ImageManagementService(BaseService):
@@ -43,6 +44,62 @@ class ImageManagementService(BaseService):
         """Property for default_storage for backward compatibility with tests."""
         return self._default_storage
     
+    def _parse_image_data(self, image_data: Dict[str, Any] | UploadedFile) -> tuple:
+        """Parse image data from dict or UploadedFile."""
+        if isinstance(image_data, dict):
+            return (
+                image_data.get('file'),
+                image_data.get('filename', ''),
+                image_data.get('image_width'),
+                image_data.get('image_height')
+            )
+        return (image_data, '', None, None)
+    
+    def _validate_image_input(self, image_file, filename):
+        """Validate image file and filename."""
+        if not image_file:
+            return ServiceResult.validation_error(
+                "El archivo de imagen es requerido",
+                details={"field": "file"}
+            )
+        
+        if not filename and hasattr(image_file, 'name'):
+            filename = image_file.name
+        
+        if not filename:
+            return ServiceResult.validation_error(
+                "El nombre del archivo es requerido",
+                details={"field": "filename"}
+            )
+        
+        return None
+    
+    def _create_cacao_image_instance(self, image_file, filename, image_width, image_height, user):
+        """Create CacaoImage instance."""
+        cacao_image = CacaoImage(
+            user=user,
+            image=image_file,
+            file_name=filename,
+            file_size=image_file.size if hasattr(image_file, 'size') else 0,
+            file_type=image_file.content_type if hasattr(image_file, 'content_type') else 'image/jpeg',
+            processed=False
+        )
+        
+        if image_width:
+            cacao_image.image_width = image_width
+        if image_height:
+            cacao_image.image_height = image_height
+        
+        return cacao_image
+    
+    def _set_image_metadata(self, cacao_image, metadata):
+        """Set metadata on cacao image."""
+        if not metadata:
+            return
+        if hasattr(cacao_image, 'notas'):
+            import json
+            cacao_image.notas = json.dumps(metadata) if isinstance(metadata, dict) else str(metadata)
+    
     def upload_image(self, image_data: Dict[str, Any], user: User, metadata: Dict[str, Any] = None) -> ServiceResult:
         """
         Sube una nueva imagen de cacao.
@@ -56,74 +113,25 @@ class ImageManagementService(BaseService):
             ServiceResult con datos de la imagen subida
         """
         try:
-            # Handle both dict and UploadedFile for backward compatibility
-            if isinstance(image_data, dict):
-                image_file = image_data.get('file')
-                filename = image_data.get('filename', '')
-                image_width = image_data.get('image_width')
-                image_height = image_data.get('image_height')
-            else:
-                # Assume it's an UploadedFile (old format)
-                image_file = image_data
-                filename = ''
-                image_width = None
-                image_height = None
+            image_file, filename, image_width, image_height = self._parse_image_data(image_data)
             
-            # Validate file
-            if not image_file:
-                return ServiceResult.validation_error(
-                    "El archivo de imagen es requerido",
-                    details={"field": "file"}
-                )
-            
-            # Validate filename
-            if not filename and hasattr(image_file, 'name'):
-                filename = image_file.name
-            
-            if not filename:
-                return ServiceResult.validation_error(
-                    "El nombre del archivo es requerido",
-                    details={"field": "filename"}
-                )
+            validation_error = self._validate_image_input(image_file, filename)
+            if validation_error:
+                return validation_error
             
             if CacaoImage is None:
                 return ServiceResult.error(
-                    ValidationServiceError("Modelo CacaoImage no disponible")
+                    ValidationServiceError(ERROR_CACAO_IMAGE_MODEL_UNAVAILABLE)
                 )
             
-            # Validar archivo
             validation_result = self._validate_image_file(image_file)
             if not validation_result.success:
                 return validation_result
             
-            # Crear imagen
-            cacao_image = CacaoImage(
-                user=user,
-                image=image_file,
-                file_name=filename,
-                file_size=image_file.size if hasattr(image_file, 'size') else 0,
-                file_type=image_file.content_type if hasattr(image_file, 'content_type') else 'image/jpeg',
-                processed=False
-            )
-            
-            # Set image dimensions if provided
-            if image_width:
-                cacao_image.image_width = image_width
-            if image_height:
-                cacao_image.image_height = image_height
-            
-            # Agregar metadatos si se proporcionan
-            # Note: CacaoImage model doesn't have a metadata field, so we skip this
-            # If metadata is needed, it should be stored in notas or another field
-            if metadata:
-                # Store metadata in notas field if available
-                if hasattr(cacao_image, 'notas'):
-                    import json
-                    cacao_image.notas = json.dumps(metadata) if isinstance(metadata, dict) else str(metadata)
-            
+            cacao_image = self._create_cacao_image_instance(image_file, filename, image_width, image_height, user)
+            self._set_image_metadata(cacao_image, metadata)
             cacao_image.save()
             
-            # Crear log de auditoría
             self.create_audit_log(
                 user=user,
                 action="image_uploaded",
@@ -160,6 +168,42 @@ class ImageManagementService(BaseService):
                 ValidationServiceError("Error interno subiendo imagen", details={"original_error": str(e)})
             )
     
+    def _apply_filters_to_queryset(self, queryset, filters: Dict[str, Any]):
+        """Apply filters to queryset."""
+        if not filters:
+            return queryset
+        
+        if 'processed' in filters:
+            queryset = queryset.filter(processed=filters['processed'])
+        if 'file_type' in filters:
+            queryset = queryset.filter(file_type=filters['file_type'])
+        if 'date_from' in filters:
+            queryset = queryset.filter(created_at__gte=filters['date_from'])
+        if 'date_to' in filters:
+            queryset = queryset.filter(created_at__lte=filters['date_to'])
+        if 'search' in filters:
+            search_term = filters['search']
+            queryset = queryset.filter(
+                Q(file_name__icontains=search_term) |
+                Q(notas__icontains=search_term) |
+                Q(finca_nombre__icontains=search_term)
+            )
+        return queryset
+    
+    def _format_image_data(self, image):
+        """Format image data for response."""
+        return {
+            'id': image.id,
+            'file_name': image.file_name,
+            'file_size': image.file_size,
+            'file_type': image.file_type,
+            'processed': image.processed,
+            'created_at': image.created_at.isoformat(),
+            'updated_at': image.updated_at.isoformat(),
+            'image_url': image.image.url if image.image else None,
+            'metadata': image.notas if hasattr(image, 'notas') else ''
+        }
+    
     def get_user_images(self, user: User, page: int = 1, page_size: int = 20, filters: Dict[str, Any] = None) -> ServiceResult:
         """
         Obtiene imágenes de un usuario.
@@ -176,7 +220,7 @@ class ImageManagementService(BaseService):
         try:
             if CacaoImage is None:
                 return ServiceResult.error(
-                    ValidationServiceError("Modelo CacaoImage no disponible")
+                    ValidationServiceError(ERROR_CACAO_IMAGE_MODEL_UNAVAILABLE)
                 )
             # Construir queryset (optimizado)
             queryset = CacaoImage.objects.filter(user=user).select_related(
@@ -187,41 +231,13 @@ class ImageManagementService(BaseService):
                 'lote__finca__agricultor'
             ).select_related('prediction').order_by('-created_at')
             
-            # Aplicar filtros
-            if filters:
-                if 'processed' in filters:
-                    queryset = queryset.filter(processed=filters['processed'])
-                if 'file_type' in filters:
-                    queryset = queryset.filter(file_type=filters['file_type'])
-                if 'date_from' in filters:
-                    queryset = queryset.filter(created_at__gte=filters['date_from'])
-                if 'date_to' in filters:
-                    queryset = queryset.filter(created_at__lte=filters['date_to'])
-                if 'search' in filters:
-                    search_term = filters['search']
-                    queryset = queryset.filter(
-                        Q(file_name__icontains=search_term) |
-                        Q(notas__icontains=search_term) |
-                        Q(finca_nombre__icontains=search_term)
-                    )
+            queryset = self._apply_filters_to_queryset(queryset, filters)
             
             # Paginar resultados
             paginated_data = self.paginate_results(queryset, page, page_size)
             
             # Formatear datos
-            images = []
-            for image in paginated_data['results']:
-                images.append({
-                    'id': image.id,
-                    'file_name': image.file_name,
-                    'file_size': image.file_size,
-                    'file_type': image.file_type,
-                    'processed': image.processed,
-                    'created_at': image.created_at.isoformat(),
-                    'updated_at': image.updated_at.isoformat(),
-                    'image_url': image.image.url if image.image else None,
-                    'metadata': image.notas if hasattr(image, 'notas') else ''
-                })
+            images = [self._format_image_data(image) for image in paginated_data['results']]
             
             return ServiceResult.success(
                 data={
@@ -351,7 +367,7 @@ class ImageManagementService(BaseService):
         try:
             if CacaoImage is None:
                 return ServiceResult.error(
-                    ValidationServiceError("Modelo CacaoImage no disponible")
+                    ValidationServiceError(ERROR_CACAO_IMAGE_MODEL_UNAVAILABLE)
                 )
             image = self._get_image_by_id(image_id, user)
             if image is None:
@@ -479,7 +495,7 @@ class ImageManagementService(BaseService):
         try:
             if CacaoImage is None:
                 return ServiceResult.error(
-                    ValidationServiceError("Modelo CacaoImage no disponible")
+                    ValidationServiceError(ERROR_CACAO_IMAGE_MODEL_UNAVAILABLE)
                 )
             try:
                 # Obtener imagen sin prefetch_related para evitar problemas con mocks
@@ -545,7 +561,7 @@ class ImageManagementService(BaseService):
         try:
             if CacaoImage is None:
                 return ServiceResult.error(
-                    ValidationServiceError("Modelo CacaoImage no disponible")
+                    ValidationServiceError(ERROR_CACAO_IMAGE_MODEL_UNAVAILABLE)
                 )
             # Construir queryset base (optimizado)
             queryset = CacaoImage.objects.filter(user=user).select_related(

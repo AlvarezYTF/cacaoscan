@@ -9,7 +9,7 @@ CORREGIDO:
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional, Union
+from typing import List, Dict, Tuple, Optional
 import logging
 import glob
 import os
@@ -80,7 +80,7 @@ class CacaoDatasetLoader:
         
         logger.info(f"Dataset loader inicializado con CSV: {self.csv_path}")
     
-    def _detect_csv_file(self) -> Union[Optional[Path], str]:
+    def _detect_csv_file(self) -> Optional[Path] | str:
         """
         Detecta automáticamente archivos CSV en media/datasets/.
         Returns "mock" as string if CSV not found (for testing).

@@ -31,20 +31,9 @@ from auth_app.views import (
 # They are available in __all__ but imported on demand via __getattr__
 _images_views = None
 
-from fincas_app.views import (
-    FincaListCreateView,
-    FincaDetailView,
-    FincaUpdateView,
-    FincaDeleteView,
-    FincaActivateView,
-    FincaStatsView,
-    LoteListCreateView,
-    LoteDetailView,
-    LoteUpdateView,
-    LoteDeleteView,
-    LoteStatsView,
-    LotesPorFincaView,
-)
+# Fincas app views imported lazily to avoid circular dependency
+# They are available in __all__ but imported on demand via __getattr__
+_fincas_views = None
 
 # Reports views imported lazily to avoid circular dependency
 # They are available in __all__ but imported on demand via __getattr__
@@ -244,6 +233,40 @@ def _lazy_import_images_views():
     return _images_views
 
 
+def _lazy_import_fincas_views():
+    """Lazy import of fincas app views to avoid circular dependency."""
+    global _fincas_views
+    if _fincas_views is None:
+        from fincas_app.views import (
+            FincaListCreateView,
+            FincaDetailView,
+            FincaUpdateView,
+            FincaDeleteView,
+            FincaActivateView,
+            FincaStatsView,
+            LoteListCreateView,
+            LoteDetailView,
+            LoteUpdateView,
+            LoteDeleteView,
+            LoteStatsView,
+            LotesPorFincaView,
+        )
+        _fincas_views = {
+            'FincaListCreateView': FincaListCreateView,
+            'FincaDetailView': FincaDetailView,
+            'FincaUpdateView': FincaUpdateView,
+            'FincaDeleteView': FincaDeleteView,
+            'FincaActivateView': FincaActivateView,
+            'FincaStatsView': FincaStatsView,
+            'LoteListCreateView': LoteListCreateView,
+            'LoteDetailView': LoteDetailView,
+            'LoteUpdateView': LoteUpdateView,
+            'LoteDeleteView': LoteDeleteView,
+            'LoteStatsView': LoteStatsView,
+            'LotesPorFincaView': LotesPorFincaView,
+        }
+    return _fincas_views
+
 def _lazy_import_reports_views():
     """Lazy import of reports app views to avoid circular dependency."""
     global _reports_views
@@ -272,10 +295,14 @@ def _lazy_import_reports_views():
 
 
 def __getattr__(name: str):
-    """Lazy import for images and reports app views to avoid circular dependency."""
+    """Lazy import for images, fincas and reports app views to avoid circular dependency."""
     images_views = _lazy_import_images_views()
     if name in images_views:
         return images_views[name]
+    
+    fincas_views = _lazy_import_fincas_views()
+    if name in fincas_views:
+        return fincas_views[name]
     
     reports_views = _lazy_import_reports_views()
     if name in reports_views:
