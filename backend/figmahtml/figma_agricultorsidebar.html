@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sidebar Agricultor - CacaoScan</title>
+    <link rel="stylesheet" href="../figmacss/figma_agricultorsidebar.css">
+</head>
+<body>
+    <aside id="sidebar" class="sidebar fixed top-0 left-0 z-40 h-screen transition-all duration-300 w-64" aria-label="Sidebar">
+        <div class="h-full px-3 py-6 overflow-y-auto bg-gray-50 border-r border-gray-200 shadow-sm">
+            <!-- Logo y Branding -->
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center justify-center">
+                    <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center shadow-md hover:shadow-lg cursor-pointer hover:bg-green-700 transition-all duration-200">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <span class="ml-3 text-xl font-bold text-gray-900">CacaoScan</span>
+                </div>
+                <!-- Toggle Button -->
+                <button 
+                    class="p-2 text-gray-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition-all duration-200"
+                    title="Colapsar menú"
+                    type="button"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Navigation Menu -->
+            <nav class="space-y-1">
+                <!-- Resumen -->
+                <button
+                    type="button"
+                    class="menu-item flex items-center rounded-lg group transition-all duration-200 cursor-pointer w-full text-left border-0 bg-transparent px-3 py-3 text-green-700 bg-green-100 border-r-3 border-green-600 shadow-sm"
+                >
+                    <svg class="w-5 h-5 transition-colors duration-200 text-green-700" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+                    </svg>
+                    <span class="ml-3 flex-1 text-sm font-semibold">Resumen</span>
+                </button>
+
+                <!-- Análisis -->
+                <button
+                    type="button"
+                    class="menu-item flex items-center rounded-lg group transition-all duration-200 cursor-pointer w-full text-left border-0 bg-transparent px-3 py-3 text-gray-700 hover:bg-green-50 hover:text-green-700"
+                >
+                    <svg class="w-5 h-5 transition-colors duration-200 text-gray-500 group-hover:text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                    <span class="ml-3 flex-1 text-sm font-semibold">Análisis</span>
+                </button>
+
+                <!-- Fincas -->
+                <button
+                    type="button"
+                    class="menu-item flex items-center rounded-lg group transition-all duration-200 cursor-pointer w-full text-left border-0 bg-transparent px-3 py-3 text-gray-700 hover:bg-green-50 hover:text-green-700"
+                >
+                    <svg class="w-5 h-5 transition-colors duration-200 text-gray-500 group-hover:text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="ml-3 flex-1 text-sm font-semibold">Fincas</span>
+                </button>
+
+                <!-- Reportes -->
+                <button
+                    type="button"
+                    class="menu-item flex items-center rounded-lg group transition-all duration-200 cursor-pointer w-full text-left border-0 bg-transparent px-3 py-3 text-gray-700 hover:bg-green-50 hover:text-green-700"
+                >
+                    <svg class="w-5 h-5 transition-colors duration-200 text-gray-500 group-hover:text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="ml-3 flex-1 text-sm font-semibold">Reportes</span>
+                </button>
+
+                <!-- Historial -->
+                <button
+                    type="button"
+                    class="menu-item flex items-center rounded-lg group transition-all duration-200 cursor-pointer w-full text-left border-0 bg-transparent px-3 py-3 text-gray-700 hover:bg-green-50 hover:text-green-700"
+                >
+                    <svg class="w-5 h-5 transition-colors duration-200 text-gray-500 group-hover:text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="ml-3 flex-1 text-sm font-semibold">Historial</span>
+                </button>
+
+                <!-- Configuración -->
+                <button
+                    type="button"
+                    class="menu-item flex items-center rounded-lg group transition-all duration-200 cursor-pointer w-full text-left border-0 bg-transparent px-3 py-3 text-gray-700 hover:bg-green-50 hover:text-green-700"
+                >
+                    <svg class="w-5 h-5 transition-colors duration-200 text-gray-500 group-hover:text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="ml-3 flex-1 text-sm font-semibold">Configuración</span>
+                </button>
+            </nav>
+
+            <!-- User Section -->
+            <div class="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-5">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200">
+                        <span class="text-sm font-bold text-white">JP</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-gray-900 truncate">Juan Pérez</p>
+                        <p class="text-xs text-gray-600 font-medium truncate capitalize">agricultor</p>
+                    </div>
+                    <button 
+                        class="p-2.5 text-gray-500 hover:text-white hover:bg-red-600 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        title="Cerrar Sesión"
+                        type="button"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+</body>
+</html>
+
