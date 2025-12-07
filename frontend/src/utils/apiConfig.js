@@ -24,8 +24,9 @@ function isGlobalThisAvailable() {
  * @returns {string} URL base del API
  */
 export const getApiBaseUrl = () => {
-  // URL absoluta del backend en producción (fallback seguro)
+  // URLs por defecto
   const PRODUCTION_BACKEND_URL = 'https://cacaoscan-backend.onrender.com/api/v1'
+  const LOCAL_BACKEND_URL = 'http://localhost:8000/api/v1'
   
   // Prioridad 1: Runtime injection (mejor para producción, permite cambios sin rebuild)
   if (isGlobalThisAvailable() && globalThis.__API_BASE_URL__) {
@@ -47,12 +48,17 @@ export const getApiBaseUrl = () => {
       return url
     }
     
-    // Usar fallback de producción
-    console.warn('⚠️ [API Config] Usando fallback de producción:', PRODUCTION_BACKEND_URL)
-    return PRODUCTION_BACKEND_URL
+    // Usar fallback según entorno
+    const isLocalhost = isGlobalThisAvailable() && 
+                        globalThis.location?.hostname &&
+                        (globalThis.location.hostname.includes('localhost') || 
+                         globalThis.location.hostname === '127.0.0.1')
+    const fallbackUrl = isLocalhost ? LOCAL_BACKEND_URL : PRODUCTION_BACKEND_URL
+    console.warn('⚠️ [API Config] Usando fallback:', fallbackUrl)
+    return fallbackUrl
   }
   
-  // Prioridad 2: Build-time variable (Vite inyecta esto durante el build)
+  // Prioridad 2: Build-time variable (Vite inyecta esto desde .env)
   const buildTimeUrl = import.meta.env.VITE_API_BASE_URL
   if (buildTimeUrl && buildTimeUrl.trim() !== '') {
     let url = buildTimeUrl.trim()
@@ -64,22 +70,26 @@ export const getApiBaseUrl = () => {
       return url
     }
     
-    console.error('❌ [API Config] Build-time URL es relativa, usando fallback')
-    return PRODUCTION_BACKEND_URL
+    console.error('❌ [API Config] Build-time URL es relativa, usando detección automática')
+    // Continuar con detección automática
   }
   
-  // Prioridad 3: Detectar si estamos en producción y usar URL absoluta
+  // Prioridad 3: Detección automática según hostname
   if (isGlobalThisAvailable() && globalThis.location?.hostname) {
-    const isLocalhost = globalThis.location.hostname.includes('localhost')
+    const isLocalhost = globalThis.location.hostname.includes('localhost') || 
+                        globalThis.location.hostname === '127.0.0.1'
     if (isLocalhost) {
-      // En localhost, usar fallback de producción
-      return PRODUCTION_BACKEND_URL
+      // En localhost, usar backend local
+      console.log('🏠 [API Config] Detectado localhost, usando backend local:', LOCAL_BACKEND_URL)
+      return LOCAL_BACKEND_URL
     }
     // En producción, usar URL absoluta
     console.log('🌍 [API Config] Detectado entorno de producción, usando URL absoluta del backend')
     return PRODUCTION_BACKEND_URL
   }
 
+  // Fallback: si no se puede detectar, usar producción
+  console.warn('⚠️ [API Config] No se pudo detectar el entorno, usando fallback de producción')
   return PRODUCTION_BACKEND_URL
 }
 

@@ -187,19 +187,25 @@ const refreshTokenFlow = async (refreshToken) => {
   return response.data
 }
 
-const saveTokens = (accessToken, refreshToken) => {
+const saveTokens = async (accessToken, refreshToken) => {
   localStorage.setItem('access_token', accessToken)
   if (refreshToken) {
     localStorage.setItem('refresh_token', refreshToken)
   }
   api.defaults.headers.Authorization = 'Bearer ' + accessToken
   
-  const authStore = getAuthStore()
-  authStore.setTokens({ access: accessToken, refresh: refreshToken })
+  try {
+    const authStore = await getAuthStore()
+    if (authStore) {
+      authStore.setTokens({ access: accessToken, refresh: refreshToken })
+    }
+  } catch (error) {
+    console.warn('⚠️ [API] Failed to update auth store:', error)
+  }
 }
 
 const handleRefreshSuccess = async (newAccessToken, newRefreshToken, originalRequest) => {
-  saveTokens(newAccessToken, newRefreshToken)
+  await saveTokens(newAccessToken, newRefreshToken)
   console.log('🔄 Token JWT refrescado automáticamente')
   processQueue(null, newAccessToken)
   
@@ -324,10 +330,15 @@ const handleNetworkError = (error) => {
 }
 
 // Función para obtener el store de auth dinámicamente
-const getAuthStore = () => {
+const getAuthStore = async () => {
   // Importación dinámica para evitar dependencias circulares
-  const { useAuthStore } = require('@/stores/auth')
-  return useAuthStore()
+  try {
+    const { useAuthStore } = await import('@/stores/auth')
+    return useAuthStore()
+  } catch (error) {
+    console.warn('⚠️ [API] Failed to import auth store:', error)
+    return null
+  }
 }
 
 // Interceptor de Request (segundo - autenticación y logging)
@@ -385,7 +396,7 @@ api.interceptors.request.use(
 
 // Interceptor de Response
 api.interceptors.response.use(
-  (response) => {
+  async (response) => {
     // Calcular tiempo de respuesta
     const endTime = new Date()
     const duration = endTime - response.config.metadata.startTime
@@ -409,8 +420,8 @@ api.interceptors.response.use(
 
     // Actualizar actividad del usuario
     try {
-      const authStore = getAuthStore()
-      if (authStore.isAuthenticated) {
+      const authStore = await getAuthStore()
+      if (authStore && authStore.isAuthenticated) {
         authStore.updateLastActivity()
       }
     } catch (error) {
