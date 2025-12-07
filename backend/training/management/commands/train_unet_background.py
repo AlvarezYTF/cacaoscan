@@ -338,7 +338,7 @@ class Command(BaseCommand):
         project_root = get_project_root()
         segmentation_dir = project_root / "ml" / "segmentation"
         ensure_dir_exists(segmentation_dir)
-        model_path_final = segmentation_dir / "cacao_unet.pth"
+        model_path_final = segmentation_dir / MODEL_FILENAME
         
         torch.save(model.state_dict(), model_path_final)
         
@@ -417,7 +417,7 @@ class Command(BaseCommand):
             project_root = get_project_root()
             segmentation_dir = project_root / "ml" / "segmentation"
             ensure_dir_exists(segmentation_dir)
-            model_path_final = segmentation_dir / "cacao_unet.pth"
+            model_path_final = segmentation_dir / MODEL_FILENAME
             
             # Guardar modelo - usar método seguro que maneja mocks
             try:

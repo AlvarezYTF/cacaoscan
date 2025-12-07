@@ -302,121 +302,160 @@ Esta tabla incluye todas las dependencias listadas en `backend/requirements.txt`
 
 | Dependencia | Versión | Categoría | Descripción |
 |-------------|---------|-----------|-------------|
-| **albucore** | 0.0.24 | ML - Data augmentation | Core library for albumentations image transformations |
-| **albumentations** | 2.0.8 | ML - Data augmentation | Fast image augmentation library for deep learning |
-| **amqp** | 5.3.1 | Async - Message queue | Advanced Message Queuing Protocol client library |
-| **annotated-types** | 0.7.0 | Utilidad - Type hints | Runtime validation for type annotations |
-| **asgiref** | 3.11.0 | Framework - Django ASGI | ASGI specification reference implementation for Django |
-| **billiard** | 4.2.4 | Async - Celery multiprocessing | Multiprocessing pool implementation for Celery |
-| **celery** | 5.6.0 | Async - Task queue | Distributed task queue for asynchronous job processing |
-| **certifi** | 2025.11.12 | Utilidad - SSL certificates | SSL certificate bundle for Python |
-| **channels** | 4.3.2 | Async - WebSockets | WebSocket and async protocol support for Django |
-| **channels_redis** | 4.3.0 | Async - Redis backend | Redis channel layer backend for Django Channels |
-| **charset-normalizer** | 3.4.4 | Utilidad - Encoding | Character encoding detection and normalization |
-| **click** | 8.3.0 | Utilidad - CLI framework | Command-line interface creation framework |
-| **click-didyoumean** | 0.3.1 | Utilidad - CLI suggestions | Typo suggestions for Click commands |
-| **click-plugins** | 1.1.1.2 | Utilidad - CLI plugins | Plugin system for Click CLI framework |
-| **click-repl** | 0.3.0 | Utilidad - CLI REPL | REPL support for Click applications |
-| **colorama** | 0.4.6 | Utilidad - Terminal colors | Cross-platform colored terminal text |
-| **contourpy** | 1.3.3 | Visualización - Matplotlib | Fast contouring algorithm for Matplotlib |
-| **coverage** | 7.12.0 | Testing - Code coverage | Code coverage measurement tool |
-| **cycler** | 1.2.1 | Visualización - Matplotlib | Composable style cycles for Matplotlib |
-| **Django** | 5.2.9 | Framework - Web framework | High-level Python web framework |
-| **django-cors-headers** | 4.9.0 | Framework - CORS handling | Cross-Origin Resource Sharing headers for Django |
-| **django-filter** | 25.2 | Framework - Query filtering | Advanced filtering for Django REST Framework |
-| **django-redis** | 6.0.0 | Framework - Redis cache | Redis cache backend for Django |
-| **django-storages** | 1.14.2 | Framework - Cloud storage | Custom storage backends for Django (S3, Azure, etc.) |
-| **djangorestframework** | 3.16.1 | Framework - REST API | Powerful toolkit for building Web APIs |
-| **djangorestframework_simplejwt** | 5.5.1 | Framework - JWT auth | JWT authentication for Django REST Framework |
-| **drf-yasg** | 1.21.7 | Framework - API docs | Swagger/OpenAPI documentation for Django REST Framework |
-| **et_xmlfile** | 2.0.0 | Utilidad - Excel support | Low-level XML file reader for openpyxl |
-| **exceptiongroup** | 1.3.1 | Utilidad - Exception handling | Exception groups and except* syntax support |
-| **execnet** | 2.1.2 | Testing - Parallel execution | Distributed execution and testing across processes |
-| **filelock** | 3.20.0 | Utilidad - File locking | Platform-independent file locking |
-| **fonttools** | 4.60.1 | Visualización - Font handling | Font manipulation and conversion library |
-| **fsspec** | 2025.10.0 | Utilidad - File system | Unified interface for local and remote filesystems |
-| **gunicorn** | 23.0.0 | Servidor - WSGI server | Python WSGI HTTP Server for production |
-| **huggingface-hub** | 0.36.0 | ML - Model hub | Client library for Hugging Face model repository |
-| **idna** | 3.11 | Utilidad - IDN support | Internationalized Domain Names support |
-| **ImageIO** | 2.37.2 | Utilidad - Image I/O | Library for reading and writing image data |
-| **inflection** | 0.5.1 | Utilidad - String inflection | String transformation library (pluralize, singularize, etc.) |
-| **iniconfig** | 2.3.0 | Testing - Config parser | INI file parser for pytest configuration |
-| **intel-openmp** | 2021.4.0 | ML - Intel optimizations | Intel OpenMP runtime library for parallel computing |
-| **Jinja2** | 3.1.6 | Utilidad - Template engine | Modern templating engine for Python |
-| **joblib** | 1.5.2 | ML - Parallel processing | Lightweight pipelining for parallel computing |
-| **kiwisolver** | 1.4.9 | Visualización - Layout solver | Fast constraint solver for layout problems |
-| **kombu** | 5.6.1 | Async - Celery messaging | Messaging library for Celery task queue |
-| **lazy_loader** | 0.4 | Utilidad - Lazy imports | Lazy import utilities for large packages |
-| **MarkupSafe** | 3.0.3 | Utilidad - Safe strings | Safely render untrusted XML/HTML strings |
-| **matplotlib** | 3.10.7 | Visualización - Plotting | Comprehensive plotting library for Python |
-| **mkl** | 2021.4.0 | ML - Intel Math Kernel | Intel Math Kernel Library for optimized math operations |
-| **mpmath** | 1.3.0 | Utilidad - Arbitrary precision | Arbitrary-precision floating-point arithmetic |
-| **msgpack** | 1.1.2 | Utilidad - Serialization | Fast binary serialization format |
-| **networkx** | 3.6 | Utilidad - Graph algorithms | Graph and network analysis library |
-| **numpy** | 2.1.3 | ML - Numerical computing | Fundamental package for scientific computing |
-| **opencv-python** | 4.12.0.88 | ML - Computer vision | OpenCV library for computer vision tasks |
-| **opencv-python-headless** | 4.12.0.88 | ML - OpenCV headless | OpenCV without GUI dependencies (server use) |
-| **openpyxl** | 3.1.5 | Utilidad - Excel files | Library for reading/writing Excel files |
-| **packaging** | 25.0 | Utilidad - Package metadata | Core utilities for Python packages |
-| **pandas** | 2.3.3 | Utilidad - Data analysis | Data manipulation and analysis library |
-| **pillow** | 12.0.0 | Utilidad - Image processing | Python Imaging Library fork for image processing |
-| **pluggy** | 1.6.0 | Testing - Plugin system | Plugin and hook calling mechanism |
-| **polars** | 1.35.2 | Utilidad - Fast dataframes | Fast multi-threaded DataFrame library |
-| **polars-runtime-32** | 1.35.2 | Utilidad - Polars runtime | Runtime components for Polars library |
-| **prompt_toolkit** | 3.0.52 | Utilidad - CLI interface | Building powerful interactive command lines |
-| **psutil** | 7.1.3 | Utilidad - System info | Cross-platform system and process utilities |
-| **psycopg2-binary** | 2.9.11 | Base de datos - PostgreSQL | PostgreSQL adapter for Python |
-| **py-cpuinfo** | 9.0.0 | Utilidad - CPU information | CPU information gathering library |
-| **pydantic** | 2.12.5 | Utilidad - Data validation | Data validation using Python type annotations |
-| **pydantic_core** | 2.41.5 | Utilidad - Pydantic core | Core validation engine for Pydantic |
-| **Pygments** | 2.19.2 | Utilidad - Syntax highlighting | Syntax highlighting library |
-| **PyJWT** | 2.10.1 | Framework - JWT tokens | JSON Web Token implementation |
-| **pyparsing** | 3.2.5 | Utilidad - Parsing | General parsing framework |
-| **pytest** | 9.0.1 | Testing - Test framework | Testing framework for Python |
-| **pytest-cov** | 7.0.0 | Testing - Coverage plugin | Coverage plugin for pytest |
-| **pytest-django** | 4.11.1 | Testing - Django plugin | Django plugin for pytest |
-| **pytest-xdist** | 3.8.0 | Testing - Parallel tests | Parallel test execution for pytest |
-| **python-dateutil** | 2.9.0.post0 | Utilidad - Date parsing | Extensions to the standard datetime module |
-| **python-dotenv** | 1.2.1 | Utilidad - Environment vars | Load environment variables from .env file |
-| **python-http-client** | 3.3.7 | Utilidad - HTTP client | HTTP client library for SendGrid |
-| **pytz** | 2025.2 | Utilidad - Timezone handling | World timezone definitions and calculations |
-| **PyYAML** | 6.0.3 | Utilidad - YAML parser | YAML parser and emitter for Python |
-| **qudida** | 0.0.4 | ML - Data augmentation | Quality-preserving data augmentation |
-| **redis** | 7.1.0 | Base de datos - Redis client | Python client for Redis database |
-| **reportlab** | 4.0.4 | Utilidad - PDF generation | PDF generation library |
-| **requests** | 2.32.5 | Utilidad - HTTP library | HTTP library for making requests |
-| **safetensors** | 0.7.0 | ML - Safe tensor storage | Safe and fast tensor storage format |
-| **scikit-image** | 0.25.2 | ML - Image processing | Image processing algorithms for Python |
-| **scikit-learn** | 1.7.2 | ML - Machine learning | Machine learning library for Python |
-| **scipy** | 1.16.2 | ML - Scientific computing | Scientific computing library |
-| **seaborn** | 0.13.2 | Visualización - Statistical plots | Statistical data visualization library |
-| **sendgrid** | 6.11.0 | Utilidad - Email service | SendGrid API client for email delivery |
-| **setuptools** | 80.9.0 | Utilidad - Package setup | Python packaging and distribution tool |
-| **simsimd** | 6.5.3 | ML - SIMD optimizations | SIMD-accelerated similarity search |
-| **six** | 1.17.0 | Utilidad - Python 2/3 compat | Python 2 and 3 compatibility utilities |
-| **sqlparse** | 0.5.3 | Framework - SQL parsing | Non-validating SQL parser for Django |
-| **starkbank-ecdsa** | 2.2.0 | Utilidad - Cryptography | ECDSA cryptographic library |
-| **stringzilla** | 4.4.0 | Utilidad - String operations | Fast string operations library |
-| **sympy** | 1.13.1 | Utilidad - Symbolic math | Symbolic mathematics library |
+| **albucore** | 0.0.24 | ML - Data augmentation | Biblioteca core para transformaciones de imágenes de albumentations |
+| **albumentations** | 2.0.8 | ML - Data augmentation | Biblioteca rápida de aumento de datos para aprendizaje profundo |
+| **amqp** | 5.3.1 | Async - Message queue | Biblioteca cliente del protocolo avanzado de cola de mensajes |
+| **annotated-types** | 0.7.0 | Utilidad - Type hints | Validación en tiempo de ejecución para anotaciones de tipo |
+| **asgiref** | 3.11.0 | Framework - Django ASGI | Implementación de referencia de la especificación ASGI para Django |
+| **billiard** | 4.2.4 | Async - Celery multiprocessing | Implementación de pool de multiprocesamiento para Celery |
+| **celery** | 5.6.0 | Async - Task queue | Cola de tareas distribuida para procesamiento asíncrono de trabajos |
+| **certifi** | 2025.11.12 | Utilidad - SSL certificates | Paquete de certificados SSL para Python |
+| **channels** | 4.3.2 | Async - WebSockets | Soporte de WebSocket y protocolos asíncronos para Django |
+| **channels_redis** | 4.3.0 | Async - Redis backend | Backend de capa de canales Redis para Django Channels |
+| **charset-normalizer** | 3.4.4 | Utilidad - Encoding | Detección y normalización de codificación de caracteres |
+| **click** | 8.3.0 | Utilidad - CLI framework | Framework para crear interfaces de línea de comandos |
+| **click-didyoumean** | 0.3.1 | Utilidad - CLI suggestions | Sugerencias de errores tipográficos para comandos Click |
+| **click-plugins** | 1.1.1.2 | Utilidad - CLI plugins | Sistema de plugins para el framework CLI Click |
+| **click-repl** | 0.3.0 | Utilidad - CLI REPL | Soporte REPL para aplicaciones Click |
+| **colorama** | 0.4.6 | Utilidad - Terminal colors | Texto de terminal con colores multiplataforma |
+| **contourpy** | 1.3.3 | Visualización - Matplotlib | Algoritmo rápido de contornos para Matplotlib |
+| **coverage** | 7.12.0 | Testing - Code coverage | Herramienta de medición de cobertura de código |
+| **cycler** | 1.2.1 | Visualización - Matplotlib | Ciclos de estilo componibles para Matplotlib |
+| **Django** | 5.2.9 | Framework - Web framework | Framework web de alto nivel para Python |
+| **django-cors-headers** | 4.9.0 | Framework - CORS handling | Encabezados de intercambio de recursos de origen cruzado para Django |
+| **django-filter** | 25.2 | Framework - Query filtering | Filtrado avanzado para Django REST Framework |
+| **django-redis** | 6.0.0 | Framework - Redis cache | Backend de caché Redis para Django |
+| **django-storages** | 1.14.2 | Framework - Cloud storage | Backends de almacenamiento personalizados para Django (S3, Azure, etc.) |
+| **djangorestframework** | 3.16.1 | Framework - REST API | Kit de herramientas potente para construir APIs web |
+| **djangorestframework_simplejwt** | 5.5.1 | Framework - JWT auth | Autenticación JWT para Django REST Framework |
+| **drf-yasg** | 1.21.7 | Framework - API docs | Documentación Swagger/OpenAPI para Django REST Framework |
+| **et_xmlfile** | 2.0.0 | Utilidad - Excel support | Lector de archivos XML de bajo nivel para openpyxl |
+| **exceptiongroup** | 1.3.1 | Utilidad - Exception handling | Grupos de excepciones y soporte de sintaxis except* |
+| **execnet** | 2.1.2 | Testing - Parallel execution | Ejecución y pruebas distribuidas entre procesos |
+| **filelock** | 3.20.0 | Utilidad - File locking | Bloqueo de archivos independiente de plataforma |
+| **fonttools** | 4.60.1 | Visualización - Font handling | Biblioteca de manipulación y conversión de fuentes |
+| **fsspec** | 2025.10.0 | Utilidad - File system | Interfaz unificada para sistemas de archivos locales y remotos |
+| **gunicorn** | 23.0.0 | Servidor - WSGI server | Servidor HTTP WSGI de Python para producción |
+| **huggingface-hub** | 0.36.0 | ML - Model hub | Biblioteca cliente para el repositorio de modelos Hugging Face |
+| **idna** | 3.11 | Utilidad - IDN support | Soporte de nombres de dominio internacionalizados |
+| **ImageIO** | 2.37.2 | Utilidad - Image I/O | Biblioteca para leer y escribir datos de imagen |
+| **inflection** | 0.5.1 | Utilidad - String inflection | Biblioteca de transformación de cadenas (pluralizar, singularizar, etc.) |
+| **iniconfig** | 2.3.0 | Testing - Config parser | Analizador de archivos INI para configuración de pytest |
+| **intel-openmp** | 2021.4.0 | ML - Intel optimizations | Biblioteca de tiempo de ejecución Intel OpenMP para computación paralela |
+| **Jinja2** | 3.1.6 | Utilidad - Template engine | Motor de plantillas moderno para Python |
+| **joblib** | 1.5.2 | ML - Parallel processing | Pipeline ligero para computación paralela |
+| **kiwisolver** | 1.4.9 | Visualización - Layout solver | Solucionador rápido de restricciones para problemas de diseño |
+| **kombu** | 5.6.1 | Async - Celery messaging | Biblioteca de mensajería para la cola de tareas Celery |
+| **lazy_loader** | 0.4 | Utilidad - Lazy imports | Utilidades de importación diferida para paquetes grandes |
+| **MarkupSafe** | 3.0.3 | Utilidad - Safe strings | Renderizar de forma segura cadenas XML/HTML no confiables |
+| **matplotlib** | 3.10.7 | Visualización - Plotting | Biblioteca completa de gráficos para Python |
+| **mkl** | 2021.4.0 | ML - Intel Math Kernel | Biblioteca Intel Math Kernel para operaciones matemáticas optimizadas |
+| **mpmath** | 1.3.0 | Utilidad - Arbitrary precision | Aritmética de punto flotante de precisión arbitraria |
+| **msgpack** | 1.1.2 | Utilidad - Serialization | Formato de serialización binaria rápida |
+| **networkx** | 3.6 | Utilidad - Graph algorithms | Biblioteca de análisis de grafos y redes |
+| **numpy** | 2.1.3 | ML - Numerical computing | Paquete fundamental para computación científica |
+| **opencv-python** | 4.12.0.88 | ML - Computer vision | Biblioteca OpenCV para tareas de visión por computadora |
+| **opencv-python-headless** | 4.12.0.88 | ML - OpenCV headless | OpenCV sin dependencias de GUI (uso en servidor) |
+| **openpyxl** | 3.1.5 | Utilidad - Excel files | Biblioteca para leer/escribir archivos Excel |
+| **packaging** | 25.0 | Utilidad - Package metadata | Utilidades principales para paquetes de Python |
+| **pandas** | 2.3.3 | Utilidad - Data analysis | Biblioteca de manipulación y análisis de datos |
+| **pillow** | 12.0.0 | Utilidad - Image processing | Fork de Python Imaging Library para procesamiento de imágenes |
+| **pluggy** | 1.6.0 | Testing - Plugin system | Mecanismo de llamada de plugins y hooks |
+| **polars** | 1.35.2 | Utilidad - Fast dataframes | Biblioteca DataFrame rápida multi-hilo |
+| **polars-runtime-32** | 1.35.2 | Utilidad - Polars runtime | Componentes de tiempo de ejecución para la biblioteca Polars |
+| **prompt_toolkit** | 3.0.52 | Utilidad - CLI interface | Construcción de líneas de comando interactivas potentes |
+| **psutil** | 7.1.3 | Utilidad - System info | Utilidades multiplataforma de sistema y procesos |
+| **psycopg2-binary** | 2.9.11 | Base de datos - PostgreSQL | Adaptador de PostgreSQL para Python |
+| **py-cpuinfo** | 9.0.0 | Utilidad - CPU information | Biblioteca de recopilación de información de CPU |
+| **pydantic** | 2.12.5 | Utilidad - Data validation | Validación de datos usando anotaciones de tipo de Python |
+| **pydantic_core** | 2.41.5 | Utilidad - Pydantic core | Motor de validación core para Pydantic |
+| **Pygments** | 2.19.2 | Utilidad - Syntax highlighting | Biblioteca de resaltado de sintaxis |
+| **PyJWT** | 2.10.1 | Framework - JWT tokens | Implementación de JSON Web Token |
+| **pyparsing** | 3.2.5 | Utilidad - Parsing | Framework de análisis general |
+| **pytest** | 9.0.1 | Testing - Test framework | Framework de pruebas para Python |
+| **pytest-cov** | 7.0.0 | Testing - Coverage plugin | Plugin de cobertura para pytest |
+| **pytest-django** | 4.11.1 | Testing - Django plugin | Plugin de Django para pytest |
+| **pytest-xdist** | 3.8.0 | Testing - Parallel tests | Ejecución de pruebas en paralelo para pytest |
+| **python-dateutil** | 2.9.0.post0 | Utilidad - Date parsing | Extensiones al módulo datetime estándar |
+| **python-dotenv** | 1.2.1 | Utilidad - Environment vars | Cargar variables de entorno desde archivo .env |
+| **python-http-client** | 3.3.7 | Utilidad - HTTP client | Biblioteca cliente HTTP para SendGrid |
+| **pytz** | 2025.2 | Utilidad - Timezone handling | Definiciones y cálculos de zonas horarias mundiales |
+| **PyYAML** | 6.0.3 | Utilidad - YAML parser | Analizador y emisor YAML para Python |
+| **qudida** | 0.0.4 | ML - Data augmentation | Aumento de datos que preserva la calidad |
+| **redis** | 7.1.0 | Base de datos - Redis client | Cliente Python para la base de datos Redis |
+| **reportlab** | 4.0.4 | Utilidad - PDF generation | Biblioteca de generación de PDF |
+| **requests** | 2.32.5 | Utilidad - HTTP library | Biblioteca HTTP para realizar solicitudes |
+| **safetensors** | 0.7.0 | ML - Safe tensor storage | Formato de almacenamiento de tensores seguro y rápido |
+| **scikit-image** | 0.25.2 | ML - Image processing | Algoritmos de procesamiento de imágenes para Python |
+| **scikit-learn** | 1.7.2 | ML - Machine learning | Biblioteca de aprendizaje automático para Python |
+| **scipy** | 1.16.2 | ML - Scientific computing | Biblioteca de computación científica |
+| **seaborn** | 0.13.2 | Visualización - Statistical plots | Biblioteca de visualización de datos estadísticos |
+| **sendgrid** | 6.11.0 | Utilidad - Email service | Cliente API de SendGrid para entrega de correo electrónico |
+| **setuptools** | 80.9.0 | Utilidad - Package setup | Herramienta de empaquetado y distribución de Python |
+| **simsimd** | 6.5.3 | ML - SIMD optimizations | Búsqueda de similitud acelerada por SIMD |
+| **six** | 1.17.0 | Utilidad - Python 2/3 compat | Utilidades de compatibilidad entre Python 2 y 3 |
+| **sqlparse** | 0.5.3 | Framework - SQL parsing | Analizador SQL no validante para Django |
+| **starkbank-ecdsa** | 2.2.0 | Utilidad - Cryptography | Biblioteca criptográfica ECDSA |
+| **stringzilla** | 4.4.0 | Utilidad - String operations | Biblioteca de operaciones de cadenas rápida |
+| **sympy** | 1.13.1 | Utilidad - Symbolic math | Biblioteca de matemáticas simbólicas |
 | **tbb** | 2021.13.1 | ML - Threading library | Intel Threading Building Blocks |
-| **threadpoolctl** | 3.6.0 | ML - Thread pool control | Control thread pool size for native libraries |
-| **tifffile** | 2025.10.16 | Utilidad - TIFF file support | Read and write TIFF files |
-| **timm** | 0.9.12 | ML - Pre-trained models | PyTorch image models and pretrained weights |
-| **torch** | 2.5.1 | ML - PyTorch framework | Deep learning framework |
-| **torchvision** | 0.20.1 | ML - Vision utilities | Datasets, transforms, and models for computer vision |
-| **tqdm** | 4.67.1 | Utilidad - Progress bars | Fast, extensible progress bar library |
-| **typing-inspection** | 0.4.2 | Utilidad - Type inspection | Runtime type inspection utilities |
-| **typing_extensions** | 4.15.0 | Utilidad - Type hints | Backported type hints for older Python versions |
-| **tzdata** | 2025.2 | Utilidad - Timezone data | Time zone database |
-| **tzlocal** | 5.3.1 | Utilidad - Local timezone | Local timezone information |
-| **ultralytics** | 8.3.234 | ML - YOLO models | YOLOv8 object detection and segmentation |
-| **ultralytics-thop** | 2.0.18 | ML - Model profiling | Model profiling tool for Ultralytics |
-| **uritemplate** | 4.2.0 | Utilidad - URI templates | URI template parsing and expansion |
-| **urllib3** | 2.2.3 | Utilidad - HTTP client | HTTP client library with connection pooling |
-| **vine** | 5.1.0 | Async - Celery dependency | Promise library for Celery |
-| **wcwidth** | 0.2.14 | Utilidad - Character width | Determine printable width of wide characters |
-| **whitenoise** | 6.8.2 | Servidor - Static files | Static file serving for Django |
-| **XlsxWriter** | 3.1.9 | Utilidad - Excel writer | Write Excel files with formatting |
+| **threadpoolctl** | 3.6.0 | ML - Thread pool control | Control del tamaño del pool de hilos para bibliotecas nativas |
+| **tifffile** | 2025.10.16 | Utilidad - TIFF file support | Leer y escribir archivos TIFF |
+| **timm** | 0.9.12 | ML - Pre-trained models | Modelos de imagen PyTorch y pesos preentrenados |
+| **torch** | 2.5.1 | ML - PyTorch framework | Framework de aprendizaje profundo |
+| **torchvision** | 0.20.1 | ML - Vision utilities | Conjuntos de datos, transformaciones y modelos para visión por computadora |
+| **tqdm** | 4.67.1 | Utilidad - Progress bars | Biblioteca de barras de progreso rápida y extensible |
+| **typing-inspection** | 0.4.2 | Utilidad - Type inspection | Utilidades de inspección de tipos en tiempo de ejecución |
+| **typing_extensions** | 4.15.0 | Utilidad - Type hints | Anotaciones de tipo retrocompatibles para versiones anteriores de Python |
+| **tzdata** | 2025.2 | Utilidad - Timezone data | Base de datos de zonas horarias |
+| **tzlocal** | 5.3.1 | Utilidad - Local timezone | Información de zona horaria local |
+| **ultralytics** | 8.3.234 | ML - YOLO models | Detección de objetos y segmentación YOLOv8 |
+| **ultralytics-thop** | 2.0.18 | ML - Model profiling | Herramienta de perfilado de modelos para Ultralytics |
+| **uritemplate** | 4.2.0 | Utilidad - URI templates | Análisis y expansión de plantillas URI |
+| **urllib3** | 2.2.3 | Utilidad - HTTP client | Biblioteca cliente HTTP con agrupación de conexiones |
+| **vine** | 5.1.0 | Async - Celery dependency | Biblioteca de promesas para Celery |
+| **wcwidth** | 0.2.14 | Utilidad - Character width | Determinar el ancho imprimible de caracteres anchos |
+| **whitenoise** | 6.8.2 | Servidor - Static files | Servicio de archivos estáticos para Django |
+| **XlsxWriter** | 3.1.9 | Utilidad - Excel writer | Escribir archivos Excel con formato |
+
+#### Dependencias Frontend (package.json)
+
+Esta tabla incluye todas las dependencias listadas en `frontend/package.json`:
+
+##### Dependencias de Producción
+
+| Dependencia | Versión | Categoría | Descripción |
+|-------------|---------|-----------|-------------|
+| **@tailwindcss/vite** | ^4.1.11 | Desarrollo - Build tools | Plugin de Vite para Tailwind CSS |
+| **axios** | ^1.12.2 | Utilidad - HTTP client | Cliente HTTP basado en promesas para el navegador y Node.js |
+| **chart.js** | ^4.5.0 | UI - Gráficos | Biblioteca de gráficos interactivos y responsivos |
+| **ionicons** | ^8.0.13 | UI - Iconos | Conjunto de iconos de código abierto optimizados para aplicaciones web |
+| **leaflet** | ^1.9.4 | UI - Mapas | Biblioteca de código abierto para mapas interactivos |
+| **pinia** | ^3.0.3 | Framework - State management | Store de estado para Vue.js |
+| **sweetalert2** | ^11.26.3 | UI - Alertas | Biblioteca de alertas y diálogos modernos y personalizables |
+| **tailwindcss** | ^4.1.11 | UI - Styling | Framework CSS utility-first para diseño rápido |
+| **vue** | ^3.5.18 | Framework - Vue.js | Framework progresivo de JavaScript para construir interfaces de usuario |
+| **vue-router** | ^4.5.1 | Framework - Routing | Router oficial para aplicaciones Vue.js |
+
+##### Dependencias de Desarrollo
+
+| Dependencia | Versión | Categoría | Descripción |
+|-------------|---------|-----------|-------------|
+| **@eslint/js** | ^9.31.0 | Desarrollo - Linting | Configuración base de ESLint en JavaScript |
+| **@tailwindcss/postcss** | ^4.1.11 | Desarrollo - Build tools | Plugin de PostCSS para Tailwind CSS |
+| **@vitejs/plugin-vue** | ^6.0.1 | Desarrollo - Build tools | Plugin oficial de Vite para soporte de Vue.js |
+| **@vitest/coverage-v8** | ^2.1.8 | Testing - Coverage | Plugin de cobertura de código para Vitest usando V8 |
+| **@vue/eslint-config-prettier** | ^10.2.0 | Desarrollo - Linting | Configuración de Prettier para ESLint con Vue |
+| **@vue/test-utils** | ^2.4.6 | Testing - Test utilities | Utilidades de prueba oficiales para Vue.js |
+| **eslint** | ^9.31.0 | Desarrollo - Linting | Linter de JavaScript y JSX pluggeable |
+| **eslint-plugin-vue** | ~10.3.0 | Desarrollo - Linting | Plugin de ESLint para Vue.js |
+| **globals** | ^16.3.0 | Desarrollo - Linting | Variables globales para ESLint |
+| **jsdom** | ^25.0.1 | Testing - DOM simulation | Implementación de DOM pura en JavaScript para Node.js |
+| **prettier** | 3.6.2 | Desarrollo - Formatting | Formateador de código opinado |
+| **start-server-and-test** | ^2.0.12 | Testing - Test utilities | Iniciar servidor, esperar URL, ejecutar comando de prueba |
+| **vite** | ^7.0.6 | Desarrollo - Build tools | Herramienta de construcción frontend rápida y ligera |
+| **vite-plugin-vue-devtools** | ^8.0.0 | Desarrollo - DevTools | Plugin de Vite para Vue DevTools |
+| **vitest** | ^2.1.8 | Testing - Test framework | Framework de pruebas unitarias rápido y ligero |
 
 #### Instalación de Dependencias Backend
 
@@ -456,6 +495,47 @@ pip list --outdated
 - **PyTorch**: Requiere CUDA 11.8+ para GPU (opcional, funciona con CPU)
 - **PostgreSQL**: Requiere PostgreSQL 15 o superior
 - **Redis**: Opcional, requerido solo si se usan tareas asíncronas o cache
+- **Sistema Operativo**: Compatible con Windows, Linux y macOS
+
+#### Instalación de Dependencias Frontend
+
+```bash
+cd frontend
+
+# Instalar todas las dependencias (producción y desarrollo)
+npm install
+
+# O usando pnpm (recomendado)
+pnpm install
+```
+
+#### Actualización de Dependencias Frontend
+
+```bash
+cd frontend
+
+# Verificar dependencias desactualizadas
+npm outdated
+
+# Actualizar todas las dependencias
+npm update
+
+# Actualizar una dependencia específica
+npm install axios@latest
+
+# Actualizar package.json y package-lock.json
+npm install --save-dev vitest@latest
+
+# Usando pnpm
+pnpm update
+pnpm add axios@latest
+```
+
+#### Restricciones y Compatibilidades Frontend
+
+- **Node.js**: Requiere **Node.js ^20.19.0 o >=22.12.0**
+- **npm/pnpm**: Se recomienda usar pnpm para mejor rendimiento
+- **Navegadores**: Compatible con navegadores modernos (Chrome, Firefox, Safari, Edge)
 - **Sistema Operativo**: Compatible con Windows, Linux y macOS
 
 #### Dependencias Opcionales por Funcionalidad

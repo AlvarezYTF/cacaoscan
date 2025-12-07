@@ -218,6 +218,27 @@ def train_model_task(self, job_id: str, dataset_id: Optional[str] = None, *args:
         return _handle_training_exception(self, e, job_id, log_message, locals().get('job'))
 
 
+def _validate_training_prerequisites(datasets_dir: Path, raw_images_dir: Path) -> Optional[Dict[str, Any]]:
+    """Validate training prerequisites. Returns error dict if validation fails, None otherwise."""
+    clean_csv_path = datasets_dir / "dataset_cacao.clean.csv"
+    
+    if not clean_csv_path.exists():
+        return {
+            'status': 'skipped',
+            'message': f"Dataset not found in {clean_csv_path}"
+        }
+    
+    bmp_files = list(raw_images_dir.rglob('*.bmp')) + list(raw_images_dir.rglob('*.BMP'))
+    
+    if not raw_images_dir.exists() or not bmp_files:
+        return {
+            'status': 'skipped',
+            'message': f"No .bmp images found in {raw_images_dir}"
+        }
+    
+    return None
+
+
 @shared_task(bind=True, name='api.tasks.auto_train_model')
 def auto_train_model_task(self, save_results: bool = True, config: Optional[Dict[str, Any]] = None, *args: Any, **kwargs: Any) -> Dict[str, Any]:
     """
@@ -268,40 +289,24 @@ def auto_train_model_task(self, save_results: bool = True, config: Optional[Dict
     
     try:
         from ml.pipeline.train_all import run_training_pipeline
-        from ml.utils.paths import get_datasets_dir
+        from ml.utils.paths import get_datasets_dir, get_raw_images_dir
         
         log_message("Starting automatic model training")
         safe_update_state(self, 'PROGRESS', {'status': 'Starting automatic model training', 'progress': 0})
         
-        # Verify dataset exists
+        # Verify prerequisites
         datasets_dir = get_datasets_dir()
-        clean_csv_path = datasets_dir / "dataset_cacao.clean.csv"
-        
-        if not clean_csv_path.exists():
-            error_msg = f"Dataset not found in {clean_csv_path}"
-            logger.warning(error_msg)
-            log_message(error_msg)
-            safe_update_state(self, 'SKIPPED', {'status': error_msg, 'progress': 0})
-            return {
-                'status': 'skipped',
-                'message': error_msg
-            }
-        
-        # Verify there are .bmp images in raw
-        from ml.utils.paths import get_raw_images_dir
         raw_images_dir = get_raw_images_dir()
-        bmp_files = list(raw_images_dir.rglob('*.bmp')) + list(raw_images_dir.rglob('*.BMP'))
+        validation_error = _validate_training_prerequisites(datasets_dir, raw_images_dir)
         
-        if not raw_images_dir.exists() or not bmp_files:
-            error_msg = f"No .bmp images found in {raw_images_dir}"
+        if validation_error:
+            error_msg = validation_error['message']
             logger.warning(error_msg)
             log_message(error_msg)
             safe_update_state(self, 'SKIPPED', {'status': error_msg, 'progress': 0})
-            return {
-                'status': 'skipped',
-                'message': error_msg
-            }
+            return validation_error
         
+        bmp_files = list(raw_images_dir.rglob('*.bmp')) + list(raw_images_dir.rglob('*.BMP'))
         log_message(f"Found {len(bmp_files)} .bmp images for training")
         safe_update_state(self, 'PROGRESS', {'status': f'Found {len(bmp_files)} images for training', 'progress': 10})
         

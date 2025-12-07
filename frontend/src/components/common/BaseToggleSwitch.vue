@@ -12,7 +12,7 @@
         :id="fieldId"
         type="button"
         role="switch"
-        :aria-checked="String(modelValue)"
+        :aria-checked="modelValue ? 'true' : 'false'"
         :aria-label="ariaLabel"
         :aria-disabled="disabled ? 'true' : 'false'"
         :class="[
