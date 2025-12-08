@@ -84,7 +84,6 @@ describe('GlobalLoader', () => {
           try {
             handler(event)
           } catch (error) {
-            console.error('Error in event handler:', error)
             throw error
           }
         }

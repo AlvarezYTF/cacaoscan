@@ -143,8 +143,6 @@ const startAdvancedTraining = async (modelType, config, dataFilters = {}, experi
       model_versioning: true
     };
     
-    console.log(`Iniciando entrenamiento avanzado de ${modelType}:`, trainingParams);
-    
     // Usar funciones base pero con parámetros extendidos (DRY)
     if (modelType === 'regression') {
       return await trainRegressionModel(trainingParams);
@@ -155,7 +153,6 @@ const startAdvancedTraining = async (modelType, config, dataFilters = {}, experi
     }
     
   } catch (error) {
-    console.error('Error en entrenamiento avanzado:', error);
     throw error;
   }
 };
@@ -186,7 +183,6 @@ const getMultipleJobStatus = async (jobIds) => {
     });
     return response;
   } catch (error) {
-    console.error('Error obteniendo estados múltiples:', error);
     throw error;
   }
 };
@@ -269,7 +265,6 @@ const getExperiments = async (filters = {}) => {
     
     return await response.json();
   } catch (error) {
-    console.error('Error obteniendo experimentos:', error);
     throw error;
   }
 };
@@ -456,9 +451,7 @@ const startMLTraining = async (config = {}) => {
     }
   }
   
-  console.log('Iniciando entrenamiento ML con configuración mejorada:', trainingConfig)
   const data = await fetchPost('/ml/train/', trainingConfig)
-  console.log('Entrenamiento iniciado exitosamente:', data)
   return data
 }
 

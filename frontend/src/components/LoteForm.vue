@@ -334,7 +334,6 @@ const loadFincas = async () => {
   try {
     await loadFincasComposable()
   } catch (error) {
-    console.error('Error loading fincas:', error)
     showError('No se pudieron cargar las fincas')
   }
 }
@@ -381,8 +380,6 @@ const handleSubmit = async () => {
     
     emit('saved')
   } catch (error) {
-    console.error('Error saving lote:', error)
-    
     // Manejar errores de validación del servidor
     if (error.response?.data) {
       const serverErrors = error.response.data

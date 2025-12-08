@@ -14,17 +14,14 @@ const catalogosApi = {
       // Ruta principal: query por tema
       return await apiGet('/parametros/', { tema: codigoTema })
     } catch (error_) {
-      console.warn(`[catalogosApi] Fallback 1 para tema ${codigoTema} tras error:`, error_?.response?.status)
       try {
         // Fallback 1: endpoint REST por tema
         return await apiGet(`/parametros/tema/${codigoTema}/`)
       } catch (error_) {
-        console.warn(`[catalogosApi] Fallback 2 para tema ${codigoTema} tras error:`, error_?.response?.status)
         try {
           // Fallback 2: parámetros anidados bajo tema
           return await apiGet(`/temas/${codigoTema}/parametros/`)
         } catch (error_) {
-          console.error(`Error obteniendo parámetros del tema ${codigoTema}:`, error_)
           throw error_
         }
       }
@@ -39,7 +36,6 @@ const catalogosApi = {
     try {
       return await apiGet('/temas/')
     } catch (error) {
-      console.error('Error obteniendo temas:', error)
       throw error
     }
   },
@@ -52,7 +48,6 @@ const catalogosApi = {
     try {
       return await apiGet('/departamentos/')
     } catch (error) {
-      console.error('Error obteniendo departamentos:', error)
       throw error
     }
   },
@@ -66,7 +61,6 @@ const catalogosApi = {
     try {
       return await apiGet('/municipios/', { departamento: codigoDepartamento })
     } catch (error) {
-      console.error(`Error obteniendo municipios del departamento ${codigoDepartamento}:`, error)
       throw error
     }
   },
@@ -81,7 +75,6 @@ const catalogosApi = {
       const departamentos = await apiGet('/departamentos/')
       return departamentos.find(dept => dept.codigo === codigo)
     } catch (error) {
-      console.error(`Error obteniendo departamento ${codigo}:`, error)
       throw error
     }
   },
@@ -95,7 +88,6 @@ const catalogosApi = {
     try {
       return await apiGet('/municipios/', { departamento: idDepartamento })
     } catch (error) {
-      console.error(`Error obteniendo municipios del departamento ${idDepartamento}:`, error)
       throw error
     }
   },

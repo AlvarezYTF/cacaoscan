@@ -212,7 +212,6 @@ const handleSubmit = async (email) => {
       errorMessage.value = result.error || 'Error al enviar instrucciones'
     }
   } catch (error) {
-    console.error('Error en password reset:', error)
     errorMessage.value = 'Error inesperado. Intenta nuevamente.'
   } finally {
     isLoading.value = false

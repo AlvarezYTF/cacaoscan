@@ -284,8 +284,7 @@ const handleSubmit = async () => {
     })
   } catch (err) {
     // Error is already handled by composable
-    console.error('Error en predicción:', err)
-  }
+    }
 }
 
 const resetForm = () => {

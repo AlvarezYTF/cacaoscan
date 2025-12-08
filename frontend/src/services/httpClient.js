@@ -88,12 +88,10 @@ function createHttpClient() {
 
           case 403:
             // Forbidden - show access denied
-            console.warn('Access denied:', standardError.message)
             break
 
           case 404:
             // Not found
-            console.warn('Resource not found:', standardError.message)
             break
 
           case 422:
@@ -102,12 +100,10 @@ function createHttpClient() {
 
           case 500:
             // Server error
-            console.error('Server error:', standardError.message)
             break
 
           default:
-            console.error('API error:', standardError.message)
-        }
+            }
       } else if (error.request) {
         // Network error
         standardError.message = 'Error de conexión. Verifica tu conexión a internet.'

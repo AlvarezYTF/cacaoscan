@@ -82,8 +82,7 @@ export function useDashboardStats() {
       stats.value = response.data
     } catch (err) {
       error.value = err.message
-      console.error('Error loading general stats:', err)
-    } finally {
+      } finally {
       loading.value = false
     }
   }
@@ -102,8 +101,7 @@ export function useDashboardStats() {
         }]
       }
     } catch (err) {
-      console.error('Error loading activity data:', err)
-    }
+      }
   }
 
   const loadQualityData = async () => {
@@ -127,8 +125,7 @@ export function useDashboardStats() {
         }]
       }
     } catch (err) {
-      console.error('Error loading quality data:', err)
-    }
+      }
   }
 
   const loadRegionData = async () => {
@@ -143,8 +140,7 @@ export function useDashboardStats() {
         }]
       }
     } catch (err) {
-      console.error('Error loading region data:', err)
-    }
+      }
   }
 
   const loadTrendsData = async (period = '30', metric = 'quality') => {
@@ -161,8 +157,7 @@ export function useDashboardStats() {
         }]
       }
     } catch (err) {
-      console.error('Error loading trends data:', err)
-    }
+      }
   }
 
   const loadActiveUsers = async (limit = 10) => {
@@ -170,8 +165,7 @@ export function useDashboardStats() {
       const response = await dashboardStatsService.getActiveUsers(limit)
       activeUsers.value = response.data
     } catch (err) {
-      console.error('Error loading active users:', err)
-    }
+      }
   }
 
   const loadTopFincas = async (limit = 10) => {
@@ -179,8 +173,7 @@ export function useDashboardStats() {
       const response = await dashboardStatsService.getTopFincas(limit)
       topFincas.value = response.data
     } catch (err) {
-      console.error('Error loading top fincas:', err)
-    }
+      }
   }
 
   const loadRecentUsers = async (limit = 10) => {
@@ -188,8 +181,7 @@ export function useDashboardStats() {
       const response = await dashboardStatsService.getRecentUsers(limit)
       recentUsers.value = response.data
     } catch (err) {
-      console.error('Error loading recent users:', err)
-    }
+      }
   }
 
   const loadRecentActivities = async (limit = 10) => {
@@ -197,8 +189,7 @@ export function useDashboardStats() {
       const response = await dashboardStatsService.getRecentActivities(limit)
       recentActivities.value = response.data
     } catch (err) {
-      console.error('Error loading recent activities:', err)
-    }
+      }
   }
 
   const loadSystemAlerts = async () => {
@@ -206,8 +197,7 @@ export function useDashboardStats() {
       const response = await dashboardStatsService.getSystemAlerts()
       alerts.value = response.data
     } catch (err) {
-      console.error('Error loading system alerts:', err)
-    }
+      }
   }
 
   const loadReportStats = async () => {
@@ -215,8 +205,7 @@ export function useDashboardStats() {
       const response = await dashboardStatsService.getReportStats()
       reportStats.value = response.data
     } catch (err) {
-      console.error('Error loading report stats:', err)
-    }
+      }
   }
 
   // Método para cargar todos los datos
@@ -240,8 +229,7 @@ export function useDashboardStats() {
       ])
     } catch (err) {
       error.value = err.message
-      console.error('Error loading all dashboard data:', err)
-    } finally {
+      } finally {
       loading.value = false
     }
   }
@@ -252,7 +240,6 @@ export function useDashboardStats() {
       await dashboardStatsService.dismissAlert(alertId)
       alerts.value = alerts.value.filter(alert => alert.id !== alertId)
     } catch (err) {
-      console.error('Error dismissing alert:', err)
       throw err
     }
   }
@@ -271,7 +258,6 @@ export function useDashboardStats() {
       link.remove()
       globalThis.URL.revokeObjectURL(url)
     } catch (err) {
-      console.error('Error exporting data:', err)
       throw err
     }
   }

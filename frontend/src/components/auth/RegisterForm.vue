@@ -789,18 +789,22 @@ const buildRegistrationPayload = () => {
 }
 
 const handleRegistrationSuccess = async (result) => {
-  const email = result.data?.email || form.value.email.trim()
-  
-  try {
-    await authApi.sendOtp(email)
-  } catch (error) {
-    console.error('Error enviando código OTP:', error)
+  // Si el registro incluye tokens, el store ya hizo login y redirigió
+  // Solo manejar el caso de verificación requerida
+  if (result.data?.verification_required) {
+    const email = result.data?.email || form.value.email.trim()
+    
+    try {
+      await authApi.sendOtp(email)
+    } catch (error) {
+      }
+    
+    router.push({ 
+      name: 'VerifyEmailOTP', 
+      query: { email } 
+    })
   }
-  
-  router.push({ 
-    name: 'VerifyEmailOTP', 
-    query: { email } 
-  })
+  // Si no hay verification_required, el store ya redirigió al dashboard
 }
 
 const extractErrorMessage = (responseData) => {
@@ -843,7 +847,6 @@ const mapFieldErrors = (responseData) => {
 }
 
 const handleRegistrationError = (error) => {
-  console.error('Error en registro:', error)
   clearErrors()
   
   if (!error.response?.data) {

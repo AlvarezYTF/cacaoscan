@@ -416,7 +416,6 @@ export default {
           period: selectedPeriod.value
         });
       } catch (error) {
-        console.error('Error loading reports data:', error);
         throw error;
       }
     };
@@ -489,7 +488,6 @@ export default {
           loadFincas()
         ]);
       } catch (error) {
-        console.error('Error loading initial data:', error);
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -522,8 +520,7 @@ export default {
         const response = await reportsStore.fetchUsers();
         users.value = response.data.results || [];
       } catch (error) {
-        console.error('Error loading users:', error);
-      }
+        }
     };
 
     const loadFincas = async () => {
@@ -531,8 +528,7 @@ export default {
         const response = await reportsStore.fetchFincas();
         fincas.value = response.data.results || [];
       } catch (error) {
-        console.error('Error loading fincas:', error);
-      }
+        }
     };
 
     const loadLotes = async (fincaId) => {
@@ -544,7 +540,6 @@ export default {
         const response = await reportsStore.fetchLotesByFinca(fincaId);
         lotes.value = response.data.results || [];
       } catch (error) {
-        console.error('Error loading lotes:', error);
         lotes.value = [];
       }
     };
@@ -590,7 +585,6 @@ export default {
           text: 'El archivo se está descargando'
         });
       } catch (error) {
-        console.error('Error downloading report:', error);
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -616,7 +610,6 @@ export default {
           text: 'El reporte ha sido eliminado correctamente'
         });
       } catch (error) {
-        console.error('Error deleting report:', error);
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -635,8 +628,7 @@ export default {
           sort_order: order
         });
       } catch (error) {
-        console.error('Error sorting reports:', error);
-      }
+        }
     };
 
     const handleSelectReport = (reportId) => {
@@ -661,8 +653,7 @@ export default {
         paginationComposable.goToPage(page);
         await loadReportsData({ ...filters.value, page });
       } catch (error) {
-        console.error('Error changing page:', error);
-      }
+        }
     };
 
     const refreshReports = async () => {
@@ -681,7 +672,6 @@ export default {
           text: 'El archivo se está generando'
         });
       } catch (error) {
-        console.error('Error exporting reports:', error);
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -704,7 +694,6 @@ export default {
           text: 'Los archivos se están generando'
         });
       } catch (error) {
-        console.error('Error bulk exporting reports:', error);
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -735,7 +724,6 @@ export default {
             text: 'Los reportes han sido eliminados correctamente'
           });
         } catch (error) {
-          console.error('Error bulk deleting reports:', error);
           Swal.fire({
             icon: 'error',
             title: 'Error',

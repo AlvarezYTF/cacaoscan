@@ -613,8 +613,6 @@ const handleSubmit = async () => {
     resetForm()
     closeModal()
   } catch (error) {
-    console.error('Error creando agricultor:', error)
-
     clearErrors()
 
     if (error.response?.data) {

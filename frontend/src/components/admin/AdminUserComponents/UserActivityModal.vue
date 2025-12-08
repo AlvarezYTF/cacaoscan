@@ -334,8 +334,7 @@ export default {
         })
         
       } catch (error) {
-        console.error('Error loading activities:', error)
-      } finally {
+        } finally {
         loading.value = false
       }
     }
@@ -387,8 +386,7 @@ export default {
         globalThis.URL.revokeObjectURL(url)
         
       } catch (error) {
-        console.error('Error exporting activities:', error)
-      }
+        }
     }
 
     const closeModal = () => {

@@ -203,7 +203,6 @@ describe('LoteDetailView', () => {
         wrapper = null
       } catch (e) {
         // Log error for debugging but continue cleanup
-        console.error('Error unmounting wrapper:', e)
         wrapper = null
       }
     }

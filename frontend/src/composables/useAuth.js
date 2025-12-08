@@ -5,7 +5,6 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useNotificationStore } from '@/stores/notifications'
 import authApi from '@/services/authApi'
 
 /**
@@ -16,7 +15,6 @@ import authApi from '@/services/authApi'
 export function useAuth(options = {}) {
   const router = useRouter()
   const authStore = useAuthStore()
-  const notificationStore = useNotificationStore()
   
   // Local state
   const loading = ref(false)
@@ -49,26 +47,21 @@ export function useAuth(options = {}) {
       
       const result = await authStore.login(credentials)
       
-      if (result.success) {
-        notificationStore.addNotification({
-          type: 'success',
-          title: 'Bienvenido',
-          message: `Hola ${authStore.userFullName || 'Usuario'}!`
-        })
-      }
-      
+      // Success is handled by the component, no need for notification here
       return result
     } catch (err) {
-      const errorMessage = err.message || 'Error al iniciar sesión'
+      // Extract error message from normalized error or response
+      const errorMessage = err.message || 
+                          err.response?.data?.error ||
+                          err.response?.data?.message || 
+                          err.response?.data?.detail ||
+                          'Error al iniciar sesión'
       error.value = errorMessage
       
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error de autenticación',
-        message: errorMessage
-      })
-      
-      throw err
+      // Re-throw with message for form handling
+      const authError = new Error(errorMessage)
+      authError.originalError = err
+      throw authError
     } finally {
       loading.value = false
     }
@@ -85,26 +78,10 @@ export function useAuth(options = {}) {
       error.value = null
       
       const result = await authStore.register(userData)
-      
-      if (result.success) {
-        notificationStore.addNotification({
-          type: 'success',
-          title: 'Registro exitoso',
-          message: result.message || 'Por favor verifica tu correo electrónico'
-        })
-      }
-      
       return result
     } catch (err) {
       const errorMessage = err.message || 'Error al registrar usuario'
       error.value = errorMessage
-      
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error de registro',
-        message: errorMessage
-      })
-      
       throw err
     } finally {
       loading.value = false
@@ -122,14 +99,7 @@ export function useAuth(options = {}) {
       error.value = null
       
       await authStore.logout(redirectToLogin)
-      
-      notificationStore.addNotification({
-        type: 'info',
-        title: 'Sesión cerrada',
-        message: 'Has cerrado sesión correctamente'
-      })
     } catch (err) {
-      console.error('Error en logout:', err)
       // Still clear local state even if API call fails
       authStore.clearAll()
       if (redirectToLogin) {
@@ -152,24 +122,10 @@ export function useAuth(options = {}) {
       error.value = null
       
       const result = await authStore.verifyEmail(uid, token)
-      
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Email verificado',
-        message: 'Tu correo electrónico ha sido verificado exitosamente'
-      })
-      
       return result
     } catch (err) {
       const errorMessage = err.message || 'Error al verificar el email'
       error.value = errorMessage
-      
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error de verificación',
-        message: errorMessage
-      })
-      
       throw err
     } finally {
       loading.value = false
@@ -187,13 +143,6 @@ export function useAuth(options = {}) {
       error.value = null
       
       const result = await authStore.verifyEmailFromToken(token)
-      
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Email verificado',
-        message: 'Tu correo electrónico ha sido verificado exitosamente'
-      })
-      
       return result
     } catch (err) {
       const errorMessage = err.message || 'Error al verificar el email'
@@ -216,23 +165,10 @@ export function useAuth(options = {}) {
       
       const result = await authStore.resendEmailVerification(email)
       
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Email enviado',
-        message: 'Se ha enviado un nuevo email de verificación'
-      })
-      
       return result
     } catch (err) {
       const errorMessage = err.message || 'Error al reenviar el email'
       error.value = errorMessage
-      
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
-      
       throw err
     } finally {
       loading.value = false
@@ -251,23 +187,10 @@ export function useAuth(options = {}) {
       
       const result = await authStore.requestPasswordReset(email)
       
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Email enviado',
-        message: 'Se ha enviado un email con instrucciones para restablecer tu contraseña'
-      })
-      
       return result
     } catch (err) {
       const errorMessage = err.message || 'Error al solicitar restablecimiento'
       error.value = errorMessage
-      
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
-      
       throw err
     } finally {
       loading.value = false
@@ -290,12 +213,6 @@ export function useAuth(options = {}) {
       
       const result = await authApi.confirmPasswordReset(resetData)
       
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Contraseña restablecida',
-        message: 'Tu contraseña ha sido restablecida exitosamente. Puedes iniciar sesión ahora.'
-      })
-      
       // Redirect to login after successful reset
       setTimeout(() => {
         router.push('/login')
@@ -305,13 +222,6 @@ export function useAuth(options = {}) {
     } catch (err) {
       const errorMessage = err.message || 'Error al restablecer la contraseña'
       error.value = errorMessage
-      
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
-      
       throw err
     } finally {
       loading.value = false
@@ -333,23 +243,10 @@ export function useAuth(options = {}) {
       
       const result = await authStore.changePassword(passwordData)
       
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Contraseña actualizada',
-        message: 'Tu contraseña ha sido actualizada exitosamente'
-      })
-      
       return result
     } catch (err) {
       const errorMessage = err.message || 'Error al cambiar la contraseña'
       error.value = errorMessage
-      
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
-      
       throw err
     } finally {
       loading.value = false
@@ -368,23 +265,10 @@ export function useAuth(options = {}) {
       
       const result = await authStore.updateProfile(profileData)
       
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Perfil actualizado',
-        message: 'Tu perfil ha sido actualizado exitosamente'
-      })
-      
       return result
     } catch (err) {
       const errorMessage = err.message || 'Error al actualizar el perfil'
       error.value = errorMessage
-      
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
-      
       throw err
     } finally {
       loading.value = false
@@ -431,12 +315,6 @@ export function useAuth(options = {}) {
       
       const result = await authStore.sendOtp(email)
       
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Código enviado',
-        message: 'Se ha enviado un código de verificación a tu correo'
-      })
-      
       return result
     } catch (err) {
       const errorMessage = err.message || 'Error al enviar el código'
@@ -459,13 +337,6 @@ export function useAuth(options = {}) {
       error.value = null
       
       const result = await authStore.verifyOtp(email, code)
-      
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Email verificado',
-        message: 'Tu correo electrónico ha sido verificado exitosamente'
-      })
-      
       return result
     } catch (err) {
       const errorMessage = err.message || 'Código inválido o expirado'
@@ -484,7 +355,6 @@ export function useAuth(options = {}) {
     try {
       return await authStore.refreshAccessToken()
     } catch (err) {
-      console.error('Error refreshing token:', err)
       return false
     }
   }

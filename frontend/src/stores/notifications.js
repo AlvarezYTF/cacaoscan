@@ -71,7 +71,6 @@ export const useNotificationsStore = defineStore('notifications', {
         return response
       } catch (error) {
         this.error = error.response?.data?.detail || 'Error al cargar notificaciones'
-        console.error('Error fetching notifications:', error)
         throw error
       } finally {
         this.loading = false
@@ -83,7 +82,6 @@ export const useNotificationsStore = defineStore('notifications', {
         const response = await api.get(`/notifications/${id}/`)
         return response
       } catch (error) {
-        console.error('Error fetching notification details:', error)
         throw error
       }
     },
@@ -102,7 +100,6 @@ export const useNotificationsStore = defineStore('notifications', {
         
         return true
       } catch (error) {
-        console.error('Error marking notification as read:', error)
         throw error
       }
     },
@@ -120,7 +117,6 @@ export const useNotificationsStore = defineStore('notifications', {
         
         return true
       } catch (error) {
-        console.error('Error marking all notifications as read:', error)
         throw error
       }
     },
@@ -131,7 +127,6 @@ export const useNotificationsStore = defineStore('notifications', {
         this.unreadCount = response.data.unread_count
         return response.data.unread_count
       } catch (error) {
-        console.error('Error getting unread count:', error)
         throw error
       }
     },
@@ -142,7 +137,6 @@ export const useNotificationsStore = defineStore('notifications', {
         this.stats = response.data
         return response.data
       } catch (error) {
-        console.error('Error getting notification stats:', error)
         throw error
       }
     },
@@ -157,7 +151,6 @@ export const useNotificationsStore = defineStore('notifications', {
         
         return response.data
       } catch (error) {
-        console.error('Error creating notification:', error)
         throw error
       }
     },
@@ -242,7 +235,6 @@ export const useNotificationsStore = defineStore('notifications', {
         this.notifications = response.data.results || response.data
         return response
       } catch (error) {
-        console.error('Error searching notifications:', error)
         throw error
       }
     },
@@ -256,7 +248,6 @@ export const useNotificationsStore = defineStore('notifications', {
         this.notifications = response.data.results || response.data
         return response
       } catch (error) {
-        console.error('Error filtering notifications by type:', error)
         throw error
       }
     },
@@ -270,7 +261,6 @@ export const useNotificationsStore = defineStore('notifications', {
         this.notifications = response.data.results || response.data
         return response
       } catch (error) {
-        console.error('Error filtering notifications by read status:', error)
         throw error
       }
     },
@@ -281,7 +271,6 @@ export const useNotificationsStore = defineStore('notifications', {
         const response = await this.fetchNotifications({ page })
         return response
       } catch (error) {
-        console.error('Error going to page:', error)
         throw error
       }
     },
@@ -295,7 +284,6 @@ export const useNotificationsStore = defineStore('notifications', {
         })
         return response
       } catch (error) {
-        console.error('Error changing page size:', error)
         throw error
       }
     },
@@ -312,7 +300,6 @@ export const useNotificationsStore = defineStore('notifications', {
 
         return true
       } catch (error) {
-        console.error('Error exporting notifications:', error)
         throw error
       }
     }

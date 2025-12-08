@@ -143,6 +143,7 @@ const router = createRouter({
     createAuthRoute('/fincas', 'Fincas', FincasView, 'Gestión de Fincas'),
     createAuthRoute('/fincas/:id', 'FincaDetail', () => import('../views/FincaDetailView.vue'), 'Detalle de Finca', { requiresRole: 'farmer', requiresVerification: true }),
     createAuthRoute('/fincas/:id/lotes', 'FincaLotes', () => import('../views/FincaLotesView.vue'), 'Lotes de Finca', { requiresRole: 'farmer', requiresVerification: true }),
+    createAuthRoute('/fincas/:id/lotes/new', 'CreateLote', () => import('../views/CreateLoteView.vue'), 'Crear Lote', { requiresRole: 'farmer', requiresVerification: true }),
     createAuthRoute('/lotes', 'Lotes', LotesView, 'Gestión de Lotes', { requiresRole: 'farmer', requiresVerification: true }),
     createAuthRoute('/lotes/:id', 'LoteDetail', () => import('../views/LoteDetailView.vue'), 'Detalle de Lote', { requiresRole: 'farmer', requiresVerification: true }),
     createAuthRoute('/lotes/:id/analisis', 'LoteAnalisis', () => import('../views/LoteAnalisisView.vue'), 'Análisis de Lote', { requiresRole: 'farmer', requiresVerification: true }),
@@ -210,7 +211,6 @@ const handleAuthRequired = async (to, authStore) => {
     try {
       await authStore.getCurrentUser()
     } catch (error) {
-      console.error('Error obteniendo usuario en guard:', error)
       authStore.clearAll()
       return {
         name: 'Login',
@@ -236,7 +236,17 @@ const handleAuthRequired = async (to, authStore) => {
       : String(requiredRole).toLowerCase().trim()
     const normalizedUserRole = normalizeRole(userRole)
 
-    if (normalizedUserRole !== normalizedRequiredRole) {
+    // Define allowed roles for each required role
+    // Admins can access farmer and analyst routes
+    const rolePermissions = {
+      'farmer': ['farmer', 'admin'],
+      'analyst': ['analyst', 'admin'],
+      'admin': ['admin']
+    }
+
+    const allowedRoles = rolePermissions[normalizedRequiredRole] || [normalizedRequiredRole]
+    
+    if (!allowedRoles.includes(normalizedUserRole)) {
       return {
         path: '/acceso-denegado',
         replace: true,
@@ -293,12 +303,6 @@ router.beforeEach(async (to, from) => {
     const errorMessage = error instanceof Error ? error.message : String(error)
     const errorStack = error instanceof Error ? error.stack : undefined
     
-    console.error('Navigation guard error:', {
-      message: errorMessage,
-      stack: errorStack,
-      route: to.path,
-      error
-    })
     
     // Redirect to access denied page with error context
     return { 

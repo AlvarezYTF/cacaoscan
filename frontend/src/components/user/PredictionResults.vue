@@ -456,7 +456,6 @@ export default {
     };
 
     const onImageError = (event) => {
-      console.error('Error cargando imagen:', event);
       event.target.style.display = 'none';
     };
 

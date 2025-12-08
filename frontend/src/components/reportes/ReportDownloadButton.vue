@@ -116,7 +116,6 @@ export default {
         })
         
       } catch (err) {
-        console.error('Error descargando reporte:', err)
         error.value = err.message
         notificationStore.addNotification({
           type: 'error',

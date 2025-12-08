@@ -208,7 +208,6 @@ class ReportsService {
       
       return true
     } catch (error) {
-      console.error('Error descargando archivo de reporte:', error)
       throw error
     }
   }
@@ -229,7 +228,6 @@ class ReportsService {
         mensaje_error: report.mensaje_error
       }
     } catch (error) {
-      console.error('Error verificando estado del reporte:', error)
       throw error
     }
   }

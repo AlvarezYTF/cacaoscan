@@ -64,7 +64,6 @@ export function useSidebarNavigation() {
     try {
       await authStore.logout()
     } catch (err) {
-      console.error('Error durante logout:', err)
       // Continuar con logout aunque haya error
     }
   }

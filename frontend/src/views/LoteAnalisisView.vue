@@ -346,8 +346,7 @@ const loadAnalisis = async () => {
     
   } catch (err) {
     error.value = err.message
-    console.error('Error cargando análisis:', err)
-  } finally {
+    } finally {
     loading.value = false
   }
 }
@@ -365,8 +364,7 @@ const loadFinca = async (fincaId) => {
       finca.value = await response.json()
     }
   } catch (err) {
-    console.error('Error cargando finca:', err)
-  }
+    }
 }
 
 const loadAnalisisData = async () => {
@@ -406,8 +404,7 @@ const loadAnalisisData = async () => {
       }
     }
   } catch (err) {
-    console.error('Error cargando análisis:', err)
-  }
+    }
 }
 
 const generateRecomendaciones = () => {

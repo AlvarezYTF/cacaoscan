@@ -119,7 +119,6 @@ const loading = ref(false)
 
 // Usamos SweetAlert2 para notificaciones
 onMounted(async () => {
-  console.debug('[Fincas] CreateFincaForm mounted')
   if (auth.user?.role === 'admin') {
     try {
       const res = await getAgricultores()
@@ -132,9 +131,7 @@ onMounted(async () => {
       } else {
         agricultores.value = data?.results || []
       }
-      console.debug('[Fincas] Agricultores cargados:', agricultores.value.length)
-    } catch (e) {
-      console.error('[Fincas] Error cargando agricultores:', e)
+      } catch (e) {
       showError('No se pudo cargar la lista de agricultores')
     }
   }
@@ -142,14 +139,12 @@ onMounted(async () => {
 
 const submitForm = async () => {
   loading.value = true
-  console.debug('[Fincas] SubmitForm - Datos:', form.value)
   try {
     await createFinca(form.value)
     showSuccess('Finca creada correctamente')
     form.value = { nombre: '', agricultor: '' }
     emit('saved')
   } catch (error) {
-    console.error('[Fincas] Error creando finca:', error)
     showError('Error al crear la finca')
   } finally {
     loading.value = false

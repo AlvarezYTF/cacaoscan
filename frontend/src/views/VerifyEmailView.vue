@@ -184,7 +184,6 @@ const verifyCode = async () => {
       errorMessage.value = response.error || response.message || 'Código incorrecto o expirado'
     }
   } catch (error) {
-    console.error('Error verificando código OTP:', error)
     const errorMsg = error.response?.data?.message || error.response?.data?.error || error.response?.data?.detail || 'Código incorrecto o expirado'
     errorMessage.value = errorMsg
   } finally {
@@ -209,7 +208,6 @@ const resendCode = async () => {
       errorMessage.value = response.error || response.message || 'Error al reenviar código'
     }
   } catch (error) {
-    console.error('Error reenviando código OTP:', error)
     const errorMsg = error.response?.data?.message || error.response?.data?.error || error.response?.data?.detail || 'Error al reenviar código'
     errorMessage.value = errorMsg
   } finally {

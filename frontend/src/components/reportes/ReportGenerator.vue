@@ -241,8 +241,7 @@ const cargarFincas = async () => {
   try {
     await loadFincas({}, 1, 100) // Load first 100 fincas
   } catch (err) {
-    console.error('Error cargando fincas:', err)
-  }
+    }
 }
 
 const generarReporte = async () => {
@@ -251,8 +250,7 @@ const generarReporte = async () => {
     reporteGenerado.value = result
     emit('reporte-generado', result)
   } catch (err) {
-    console.error('Error generando reporte:', err)
-  }
+    }
 }
 
 const limpiarFormulario = () => {

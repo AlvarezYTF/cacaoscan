@@ -8,6 +8,9 @@
     </div>
     <div class="chart-body">
       <canvas ref="chartRef"></canvas>
+      <div v-if="!hasValidData" class="chart-empty-state">
+        <p class="text-gray-500 text-sm">No hay datos disponibles</p>
+      </div>
     </div>
     <div v-if="showLegend && legendPosition === 'bottom'" class="chart-legend">
       <slot name="legend"></slot>
@@ -120,6 +123,27 @@ const containerStyle = computed(() => {
   return hasHeightClass ? {} : { height: props.height }
 })
 
+// Check if chart has valid data
+const hasValidData = computed(() => {
+  if (!props.chartData || !props.chartData.datasets || !Array.isArray(props.chartData.datasets)) {
+    return false
+  }
+  
+  // Check if at least one dataset has data
+  const hasData = props.chartData.datasets.some(dataset => {
+    if (!dataset.data || !Array.isArray(dataset.data)) {
+      return false
+    }
+    // Check if there's at least one non-zero value OR if we have labels (show chart even with zeros)
+    const hasNonZero = dataset.data.some(value => value !== 0 && value !== null && value !== undefined)
+    const hasLabels = props.chartData.labels && props.chartData.labels.length > 0
+    // Show chart if we have labels, even if all values are zero (for empty state visualization)
+    return hasLabels && dataset.data.length > 0
+  })
+  
+  return hasData
+})
+
 // Chart ref for template
 const chartRef = ref(null)
 
@@ -222,6 +246,15 @@ defineExpose({
 .chart-body {
   padding: 20px;
   position: relative;
+}
+
+.chart-empty-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 1;
 }
 
 .chart-legend {

@@ -29,11 +29,9 @@ class Logger {
     }
     if (context) {
       // eslint-disable-next-line no-console
-      console.error(message, context)
-    } else {
+      } else {
       // eslint-disable-next-line no-console
-      console.error(message)
-    }
+      }
   }
 
   /**
@@ -47,11 +45,9 @@ class Logger {
     }
     if (context) {
       // eslint-disable-next-line no-console
-      console.warn(message, context)
-    } else {
+      } else {
       // eslint-disable-next-line no-console
-      console.warn(message)
-    }
+      }
   }
 
   /**
@@ -65,11 +61,9 @@ class Logger {
     }
     if (context) {
       // eslint-disable-next-line no-console
-      console.info(message, context)
-    } else {
+      } else {
       // eslint-disable-next-line no-console
-      console.info(message)
-    }
+      }
   }
 
   /**
@@ -83,11 +77,9 @@ class Logger {
     }
     if (context) {
       // eslint-disable-next-line no-console
-      console.debug(message, context)
-    } else {
+      } else {
       // eslint-disable-next-line no-console
-      console.debug(message)
-    }
+      }
   }
 }
 

@@ -261,7 +261,6 @@ const handleSubmit = async () => {
     await handleSubmitFromComposable()
     emit('submit', form)
   } catch (error) {
-    console.error('Form submission error:', error)
     // Error is already handled by useForm composable
   }
 }

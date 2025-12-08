@@ -87,8 +87,7 @@ const loadRecentAnalyses = async () => {
       ...image
     }))
   } catch (error) {
-    console.error('Error loading recent analyses:', error)
-  } finally {
+    } finally {
     imagesLoading.value = false
   }
 }
@@ -98,8 +97,7 @@ const refreshData = () => {
 }
 
 const handleImageSelected = (image) => {
-  console.log('Imagen seleccionada:', image)
-}
+  }
 
 // Lifecycle
 onMounted(() => {

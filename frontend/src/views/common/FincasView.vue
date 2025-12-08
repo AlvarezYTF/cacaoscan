@@ -246,7 +246,6 @@ const confirmDelete = async (finca) => {
       const params = buildLoadParams()
       await loadFincas(params)
     } catch (err) {
-      console.error('Error desactivando finca:', err)
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -284,7 +283,6 @@ const confirmActivate = async (finca) => {
       const params = buildLoadParams()
       await loadFincas(params)
     } catch (err) {
-      console.error('Error activando finca:', err)
       Swal.fire({
         icon: 'error',
         title: 'Error',

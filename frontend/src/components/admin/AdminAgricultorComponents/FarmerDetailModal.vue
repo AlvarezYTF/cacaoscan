@@ -365,7 +365,6 @@ export default {
         const data = await authApi.getUser(userId);
         persona.value = data?.persona || null;
       } catch (error) {
-        console.error('❌ [FarmerDetailModal] Error cargando persona:', error);
         persona.value = null;
       } finally {
         loading.value = false;
@@ -377,17 +376,14 @@ export default {
     const loadFarmersFincas = async (agricultorId) => {
       try {
         const response = await getFincas({ agricultor: agricultorId });
-        console.log('✅ [FarmerDetailModal] Fincas cargadas:', response.results);
         fincasList.value = response.results || [];
       } catch (error) {
-        console.error('❌ [FarmerDetailModal] Error cargando fincas:', error);
         fincasList.value = [];
       }
     };
 
     watch(() => props.farmer, async (newFarmer) => {
       if (newFarmer && newFarmer.id) {
-        console.log('Loading details for farmer:', newFarmer);
         // Cargar las fincas del agricultor
         await loadFarmersFincas(newFarmer.id);
         // Cargar datos de persona

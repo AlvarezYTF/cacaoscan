@@ -33,9 +33,7 @@ export async function getFincaById(fincaId) {
  * @returns {Promise<Object>} - Finca creada
  */
 export async function createFinca(fincaData) {
-  console.log('📤 [fincasApi] Enviando datos al backend:', fincaData)
   const data = await apiPost('/fincas/', fincaData)
-  console.log('✅ [fincasApi] Respuesta del backend:', data)
   return data
 }
 

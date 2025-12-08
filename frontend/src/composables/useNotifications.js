@@ -13,59 +13,75 @@ export function useNotifications() {
   const store = useNotificationsStore()
 
   /**
-   * Shows a success notification
+   * Shows a success notification (local toast, not persisted)
    * @param {string} message - Notification message
    * @param {number} duration - Duration in milliseconds (optional)
    * @returns {void}
    */
-  const showSuccess = (message, duration = null) => {
-    store.createNotification({
-      tipo: 'success',
-      mensaje: message,
-      duracion: duration
-    })
+  const showSuccess = (message, duration = 5000) => {
+    if (typeof globalThis !== 'undefined' && globalThis.showNotification) {
+      globalThis.showNotification({
+        type: 'success',
+        title: 'Éxito',
+        message: message,
+        duration: duration
+      })
+    } else {
+      }
   }
 
   /**
-   * Shows an error notification
+   * Shows an error notification (local toast, not persisted)
    * @param {string} message - Notification message
    * @param {number} duration - Duration in milliseconds (optional)
    * @returns {void}
    */
-  const showError = (message, duration = null) => {
-    store.createNotification({
-      tipo: 'error',
-      mensaje: message,
-      duracion: duration
-    })
+  const showError = (message, duration = 8000) => {
+    if (typeof globalThis !== 'undefined' && globalThis.showNotification) {
+      globalThis.showNotification({
+        type: 'error',
+        title: 'Error',
+        message: message,
+        duration: duration
+      })
+    } else {
+      }
   }
 
   /**
-   * Shows a warning notification
+   * Shows a warning notification (local toast, not persisted)
    * @param {string} message - Notification message
    * @param {number} duration - Duration in milliseconds (optional)
    * @returns {void}
    */
-  const showWarning = (message, duration = null) => {
-    store.createNotification({
-      tipo: 'warning',
-      mensaje: message,
-      duracion: duration
-    })
+  const showWarning = (message, duration = 6000) => {
+    if (typeof globalThis !== 'undefined' && globalThis.showNotification) {
+      globalThis.showNotification({
+        type: 'warning',
+        title: 'Advertencia',
+        message: message,
+        duration: duration
+      })
+    } else {
+      }
   }
 
   /**
-   * Shows an info notification
+   * Shows an info notification (local toast, not persisted)
    * @param {string} message - Notification message
    * @param {number} duration - Duration in milliseconds (optional)
    * @returns {void}
    */
-  const showInfo = (message, duration = null) => {
-    store.createNotification({
-      tipo: 'info',
-      mensaje: message,
-      duracion: duration
-    })
+  const showInfo = (message, duration = 5000) => {
+    if (typeof globalThis !== 'undefined' && globalThis.showNotification) {
+      globalThis.showNotification({
+        type: 'info',
+        title: 'Información',
+        message: message,
+        duration: duration
+      })
+    } else {
+      }
   }
 
   /**
@@ -76,13 +92,27 @@ export function useNotifications() {
     store.reset()
   }
 
+  /**
+   * Creates a persistent notification in the backend
+   * Use this only when you need to save a notification to the database
+   * For temporary messages, use showSuccess/showError/showWarning/showInfo instead
+   * @param {Object} notificationData - Notification data (user, tipo, titulo, mensaje, datos_extra)
+   * @returns {Promise} Promise that resolves with the created notification
+   */
+  const createPersistentNotification = async (notificationData) => {
+    return await store.createNotification(notificationData)
+  }
+
   return {
-    // Convenience methods
+    // Convenience methods for local toast notifications (not persisted)
     showSuccess,
     showError,
     showWarning,
     showInfo,
     clearAll,
+    
+    // Method for creating persistent notifications in backend
+    createPersistentNotification,
     
     // Store state (read-only access)
     notifications: computed(() => store.notifications),

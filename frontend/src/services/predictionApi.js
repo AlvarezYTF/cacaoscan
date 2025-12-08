@@ -50,20 +50,12 @@ export async function predictImage(formData) {
       detail: { type: 'prediction', message: 'Analizando imagen de cacao...' }
     }))
 
-    console.log('📤 Enviando imagen para predicción:', {
-      fileName: imageFile.name,
-      fileSize: `${(imageFile.size / 1024).toFixed(1)}KB`,
-      fileType: imageFile.type
-    })
-
     const response = await apiPost(API_ENDPOINTS.predict, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
       timeout: 60000 // 60 segundos para procesamiento ML
     })
-
-    console.log('✅ Predicción completada:', response)
 
     return {
       success: true,
@@ -115,20 +107,12 @@ export async function predictImageYolo(formData) {
       detail: { type: 'yolo-prediction', message: 'Analizando imagen con YOLOv8...' }
     }))
 
-    console.log('📤 Enviando imagen para predicción YOLOv8:', {
-      fileName: imageFile.name,
-      fileSize: `${(imageFile.size / 1024).toFixed(1)}KB`,
-      fileType: imageFile.type
-    })
-
     const response = await apiPost(API_ENDPOINTS.predictYolo, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
       timeout: 120000 // 120 segundos para YOLOv8
     })
-
-    console.log('✅ Predicción YOLOv8 completada:', response)
 
     return {
       success: true,
@@ -189,21 +173,12 @@ export async function predictImageSmart(formData, options = {}) {
       detail: { type: 'smart-prediction', message: 'Analizando imagen con recorte inteligente...' }
     }))
 
-    console.log('📤 Enviando imagen para predicción con recorte inteligente:', {
-      fileName: imageFile.name,
-      fileSize: `${(imageFile.size / 1024).toFixed(1)}KB`,
-      fileType: imageFile.type,
-      options
-    })
-
     const response = await apiPost(API_ENDPOINTS.predictSmart, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
       timeout: 150000 // 150 segundos para recorte inteligente
     })
-
-    console.log('✅ Predicción con recorte inteligente completada:', response)
 
     return {
       success: true,
@@ -232,14 +207,7 @@ export async function predictImageSmart(formData, options = {}) {
  */
 export async function getImages(params = {}) {
   try {
-    console.log('📋 Obteniendo lista de imágenes:', params)
-
     const response = await apiGet(API_ENDPOINTS.images, params)
-
-    console.log('✅ Imágenes obtenidas:', {
-      count: response.results?.length || 0,
-      total: response.count || 0
-    })
 
     return {
       success: true,
@@ -283,11 +251,7 @@ export async function getImageDetails(imageId) {
       throw new Error('ID de imagen requerido')
     }
 
-    console.log('🔍 Obteniendo detalles de imagen:', imageId)
-
     const response = await apiGet(`${API_ENDPOINTS.images}${imageId}/`)
-
-    console.log('✅ Detalles de imagen obtenidos')
 
     return {
       success: true,
@@ -317,11 +281,7 @@ export async function deleteImage(imageId) {
       throw new Error('ID de imagen requerido')
     }
 
-    console.log('🗑️ Eliminando imagen:', imageId)
-
     await apiDelete(`${API_ENDPOINTS.images}${imageId}/`)
-
-    console.log('✅ Imagen eliminada exitosamente')
 
     return {
       success: true,
@@ -347,11 +307,7 @@ export async function deleteImage(imageId) {
  */
 export async function getStats(params = {}) {
   try {
-    console.log('📊 Obteniendo estadísticas:', params)
-
     const data = await apiGet(API_ENDPOINTS.stats, params)
-
-    console.log('✅ Estadísticas obtenidas')
 
     return {
       success: true,
@@ -382,11 +338,7 @@ export async function updateImageMetadata(imageId, data) {
       throw new Error('ID de imagen requerido')
     }
 
-    console.log('✏️ Actualizando metadatos de imagen:', imageId, data)
-
     const responseData = await apiPatch(`${API_ENDPOINTS.images}${imageId}/`, data)
-
-    console.log('✅ Metadatos actualizados exitosamente')
 
     return {
       success: true,
@@ -416,8 +368,6 @@ export async function downloadImage(imageId, type = 'original') {
     if (!imageId) {
       throw new Error('ID de imagen requerido')
     }
-
-    console.log('⬇️ Descargando imagen:', imageId, type)
 
     const response = await api.get(`${API_ENDPOINTS.images}${imageId}/download/`, {
       params: { type },
@@ -450,8 +400,6 @@ export async function downloadImage(imageId, type = 'original') {
     link.remove()
     globalThis.URL.revokeObjectURL(url)
 
-    console.log('✅ Descarga completada')
-
     return {
       success: true,
       message: 'Descarga completada exitosamente'
@@ -476,8 +424,6 @@ export async function downloadImage(imageId, type = 'original') {
  */
 export async function exportResults(options = {}) {
   try {
-    console.log('📤 Exportando resultados:', options)
-
     const response = await api.post(`${API_ENDPOINTS.images}export/`, options, {
       responseType: 'blob'
     })
@@ -501,8 +447,6 @@ export async function exportResults(options = {}) {
     // Limpiar
     link.remove()
     globalThis.URL.revokeObjectURL(url)
-
-    console.log('✅ Exportación completada')
 
     return {
       success: true,

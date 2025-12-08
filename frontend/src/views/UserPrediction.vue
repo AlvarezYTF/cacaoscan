@@ -429,7 +429,6 @@ export default {
         if (selectedMethod.value === 'cacaoscan') {
           cacaoScanResult.value = result;
           showSuccess('¡Análisis CacaoScan completado exitosamente!');
-          console.log('Resultado CacaoScan:', result);
           return;
         }
         
@@ -439,16 +438,12 @@ export default {
         // Show success message
         showSuccess('¡Análisis completado exitosamente!');
         
-        console.log('Predicción guardada en store:', result);
-        
-      } catch (error) {
-        console.error('Error manejando resultado:', error);
+        } catch (error) {
         predictionStore.setError('Error al procesar el resultado de la predicción');
       }
     };
     
     const handlePredictionError = (error) => {
-      console.error('Error en predicción:', error);
       predictionStore.setError(error.message || 'Error desconocido en la predicción');
     };
     
@@ -495,8 +490,7 @@ export default {
         const nextPage = predictionStore.pagination.currentPage + 1;
         await predictionStore.loadHistory(nextPage);
       } catch (error) {
-        console.warn('Error cargando más historial:', error);
-      }
+        }
     };
     
     // Utility functions

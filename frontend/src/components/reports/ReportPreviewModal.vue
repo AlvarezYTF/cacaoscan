@@ -255,7 +255,6 @@ export default {
         const response = await reportsStore.getReportPreview(props.report.id)
         previewData.value = response.data
       } catch (err) {
-        console.error('Error loading preview:', err)
         error.value = err.response?.data?.detail || 'Error al cargar la vista previa'
       } finally {
         loading.value = false

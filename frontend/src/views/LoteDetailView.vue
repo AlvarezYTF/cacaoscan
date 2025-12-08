@@ -306,8 +306,6 @@ const loadLote = async () => {
     await loadAnalisisRecientes()
     
   } catch (err) {
-    console.error('Error cargando lote:', err)
-    
     // Manejar diferentes tipos de errores
     if (err.response) {
       if (err.response.status === 404) {
@@ -322,7 +320,7 @@ const loadLote = async () => {
           authStore.logout(false)
         }, 2000)
       } else {
-        error.value = err.response.data?.detail || `Error ${err.response.status}`
+        error.value = err.response.data?.error || err.response.data?.detail || `Error ${err.response.status}`
       }
     } else if (err.request) {
       error.value = 'No se pudo conectar al servidor. Verifica tu conexión.'
@@ -339,7 +337,6 @@ const loadFinca = async (fincaId) => {
     const response = await api.get(`/api/v1/fincas/${fincaId}/`)
     finca.value = response.data
   } catch (err) {
-    console.error('Error cargando finca:', err)
     // Ignorar - no es crítico
   }
 }
@@ -349,7 +346,6 @@ const loadAnalisisRecientes = async () => {
     const response = await api.get(`/lotes/${route.params.id}/analisis/`)
     analisisRecientes.value = response.data.results?.slice(0, 5) || []
   } catch (err) {
-    console.error('Error cargando análisis:', err)
     // Ignorar - no es crítico
   }
 }
@@ -394,7 +390,6 @@ const generateReport = async () => {
     
     router.push('/reportes')
   } catch (err) {
-    console.error('Error generando reporte:', err)
     await Swal.fire({
       title: 'Error',
       text: 'No se pudo generar el reporte',
@@ -427,7 +422,6 @@ const deleteLote = async () => {
       
       router.push(`/fincas/${lote.value.finca}/lotes`)
     } catch (err) {
-      console.error('Error eliminando lote:', err)
       await Swal.fire({
         title: 'Error',
         text: 'No se pudo eliminar el lote',

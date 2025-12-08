@@ -7,55 +7,6 @@ import { apiGet, apiPost } from './apiClient'
 const DASHBOARD_BASE = '/api/dashboard'
 
 class DashboardStatsService {
-  constructor() {
-    try {
-      this.client = axios.create({
-        baseURL: `${API_BASE_URL}/dashboard`,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
-
-      // Verificar que el cliente se creó correctamente
-      if (!this.client?.interceptors) {
-        throw new Error('Failed to create axios instance')
-      }
-
-      // Interceptor para agregar token de autenticación
-      this.client.interceptors.request.use((config) => {
-        const token = localStorage.getItem('access_token')
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`
-        }
-        return config
-      })
-
-      // Interceptor para manejar errores
-      this.client.interceptors.response.use(
-        (response) => response,
-        (error) => {
-          if (error.response?.status === 401) {
-            localStorage.removeItem('access_token')
-            if (typeof globalThis !== 'undefined' && globalThis.location) {
-              globalThis.location.href = '/login'
-            }
-          }
-          return Promise.reject(error)
-        }
-      )
-    } catch (error) {
-      console.error('Error initializing DashboardStatsService:', error)
-      // Crear un cliente mock para evitar errores en tests
-      this.client = {
-        get: () => Promise.reject(new Error('Service not initialized')),
-        post: () => Promise.reject(new Error('Service not initialized')),
-        interceptors: {
-          request: { use: () => {} },
-          response: { use: () => {} }
-        }
-      }
-    }
-  }
 
   /**
    * Obtiene estadísticas generales del dashboard

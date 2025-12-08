@@ -268,9 +268,14 @@ class LoteDetailView(LotePermissionMixin, APIView):
         },
         tags=['Lotes']
     )
-    def get(self, request, lote_id):
+    def get(self, request, lote_id=None, pk=None):
         """Obtener detalles de lote."""
         try:
+            # Support both lote_id and pk parameters for URL compatibility
+            lote_id = lote_id or pk
+            if not lote_id:
+                return create_error_response('ID de lote requerido', status.HTTP_400_BAD_REQUEST)
+            
             queryset = self.get_queryset()
             lote = queryset.get(id=lote_id)
             
@@ -469,13 +474,32 @@ class LotesPorFincaView(LotePermissionMixin, APIView):
     def get(self, request, finca_id):
         """Obtener lotes de una finca."""
         try:
+            is_admin = self.is_admin_user(request.user)
+            logger.info(f"Usuario {request.user.username} (admin: {is_admin}) solicitando lotes de finca {finca_id}")
+            
             # Verificar que la finca existe y pertenece al usuario
-            if self.is_admin_user(request.user):
-                finca = Finca.objects.get(id=finca_id)
+            if is_admin:
+                # Admin puede ver lotes de cualquier finca
+                try:
+                    finca = Finca.objects.get(id=finca_id)
+                    logger.info(f"Admin accediendo a finca {finca_id}: {finca.nombre}")
+                except Finca.DoesNotExist:
+                    logger.warning(f"Admin intentó acceder a finca inexistente: {finca_id}")
+                    return create_error_response('Finca no encontrada', status.HTTP_404_NOT_FOUND)
             else:
-                finca = Finca.objects.get(id=finca_id, agricultor=request.user)
+                # Agricultor solo puede ver lotes de sus fincas
+                try:
+                    finca = Finca.objects.get(id=finca_id, agricultor=request.user)
+                    logger.info(f"Agricultor {request.user.username} accediendo a su finca {finca_id}: {finca.nombre}")
+                except Finca.DoesNotExist:
+                    logger.warning(f"Agricultor {request.user.username} intentó acceder a finca {finca_id} que no le pertenece")
+                    return create_error_response(
+                        'Finca no encontrada o no tienes permisos para acceder a esta finca', 
+                        status.HTTP_404_NOT_FOUND
+                    )
             
             lotes = Lote.objects.filter(finca=finca).select_related('finca', 'finca__agricultor')
+            logger.info(f"Encontrados {lotes.count()} lotes para finca {finca_id}")
             
             serializer = LoteListSerializer(lotes, many=True)
             
@@ -490,8 +514,10 @@ class LotesPorFincaView(LotePermissionMixin, APIView):
             }, status=status.HTTP_200_OK)
             
         except Finca.DoesNotExist:
+            logger.error(f"Finca {finca_id} no encontrada para usuario {request.user.username}")
             return create_error_response('Finca no encontrada', status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            logger.error(f"Error obteniendo lotes de finca {finca_id} para usuario {request.user.username}: {e}", exc_info=True)
             return handle_exception(e, request.user.username, "obteniendo lotes de finca", finca_id)
 
 

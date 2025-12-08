@@ -136,12 +136,21 @@ class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
             if ActivityLog is None:
                 return self._get_empty_response()
             
-            queryset = ActivityLog.objects.all().select_related('user').order_by('-timestamp')
+            # Get ordering parameter from request
+            ordering = request.GET.get('ordering', '-timestamp')
+            # Validate ordering field (security: only allow specific fields)
+            allowed_orderings = ['timestamp', '-timestamp', 'action', '-action', 'user__username', '-user__username']
+            if ordering not in allowed_orderings:
+                ordering = '-timestamp'  # Default to most recent first
+            
+            queryset = ActivityLog.objects.all().select_related('user').order_by(ordering)
             queryset = self._apply_text_filters(queryset, request)
             
             queryset, error_response = self._apply_date_filters(queryset, request)
             if error_response:
                 return error_response
+            
+            logger.info(f"[ActivityLogListView] Querying {queryset.count()} activity logs")
             
             return self.paginate_queryset(
                 request,

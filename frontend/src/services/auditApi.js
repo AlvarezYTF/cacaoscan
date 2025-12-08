@@ -46,8 +46,6 @@ function normalizePaginatedResponse(data, params = {}) {
  * @returns {Error} Formatted error
  */
 function handleApiError(error, defaultMessage, logContext) {
-  console.error(`Error ${logContext}:`, error)
-  
   const errorMessage = error.response?.data?.detail || 
                       error.response?.data?.error || 
                       error.message || 
@@ -262,8 +260,6 @@ export function validateDateFilters(params) {
  */
 export async function generateAuditReport(params) {
   try {
-    console.log('📄 Generando reporte de auditoría:', params)
-
     // Determinar endpoint según tipo
     const endpoint = params.tipo === 'login' 
       ? `${API_ENDPOINTS.loginHistory}export/`
@@ -277,8 +273,6 @@ export async function generateAuditReport(params) {
       },
       responseType: params.formato === 'pdf' ? 'blob' : 'json'
     })
-
-    console.log('✅ Reporte de auditoría generado')
 
     // Si es blob (PDF), crear URL de descarga
     if (params.formato === 'pdf') {
@@ -320,11 +314,7 @@ export async function getUserActivitySummary(userId, params = {}) {
       throw new Error('ID de usuario requerido')
     }
 
-    console.log('📊 Obteniendo resumen de actividad del usuario:', userId)
-
     const response = await api.get(`/audit/users/${userId}/summary/`, { params })
-
-    console.log('✅ Resumen de actividad obtenido')
 
     return {
       success: true,

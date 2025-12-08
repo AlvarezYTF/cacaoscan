@@ -381,7 +381,6 @@ const loadFarmersFincas = async (agricultorId) => {
     const response = await getFincas({ agricultor: agricultorId })
     fincasList.value = response.results || []
   } catch (error) {
-    console.error('Error cargando fincas:', error)
     fincasList.value = []
   }
 }
@@ -416,11 +415,9 @@ watch(() => props.farmer, async (newFarmer) => {
 
       if (statusCode === 404) {
         // 404 is expected - persona doesn't exist yet and will be created on save
-        console.warn('Persona no encontrada para el usuario, se podrá crear al guardar')
-      } else {
+        } else {
         // Handle unexpected errors by showing notification to user
         const errorMessage = extractErrorMessage(error, 'Error al cargar los datos de la persona')
-        console.error('Error al cargar datos de persona:', errorMessage, error)
         showError(errorMessage)
       }
     }
@@ -471,7 +468,6 @@ const handleCreateFinca = async () => {
     emit('farmer-updated', { type: 'finca-created' })
 
   } catch (error) {
-    console.error('Error creando finca:', error)
     const errorMessage = extractErrorMessageWithDetails(error, 'Error al crear la finca')
     showError(errorMessage)
   } finally {
@@ -507,7 +503,8 @@ const handleUpdate = async () => {
       try {
         await personasApi.updatePersonaByUserId(props.farmer.id, personaPayload)
       } catch (e) {
-        console.warn('Error actualizando persona (continuando):', e)
+        // Error updating persona data
+        throw e
       }
     }
 
@@ -516,7 +513,6 @@ const handleUpdate = async () => {
     emit('farmer-updated', { type: 'user-updated', user: response.user })
     closeModal()
   } catch (error) {
-    console.error('Error actualizando agricultor:', error)
     const errorMessage = extractErrorMessageWithDetails(error, 'Error al actualizar el agricultor')
     showError(errorMessage)
   } finally {

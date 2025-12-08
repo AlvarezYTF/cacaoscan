@@ -35,7 +35,7 @@ class PersonaRegistroView(APIView):
         return user.is_superuser or user.is_staff
 
     def post(self, request):
-        """Dispara envío de OTP guardando el formulario en temp_data sin reenviar la request."""
+        """Crea usuario y persona directamente sin verificación de email, generando tokens JWT."""
         try:
             email = request.data.get('email')
             if not email:
@@ -47,77 +47,66 @@ class PersonaRegistroView(APIView):
             if user_model.objects.filter(email=email).exists():
                 return Response({'detail': 'El email ya está registrado.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Si el usuario es admin, crear directamente sin verificación
-            if self._is_admin(request.user):
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.info(f"Admin {request.user.username} creando usuario: {email}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Creando usuario sin verificación de email: {email}")
 
-                # Validar y crear usando el serializer
-                serializer = PersonaRegistroSerializer(
-                    data=request.data,
-                    context={'skip_email_verification': True}
-                )
-                if not serializer.is_valid():
-                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-                # Crear usuario y persona directamente (sin verificación de email)
-                # El serializer ya maneja la activación y verificación cuando skip_email_verification=True
-                persona = serializer.save()
-
-                logger.info(f"Usuario {email} creado exitosamente por admin {request.user.username}")
-
-                return Response({
-                    'message': 'Agricultor creado exitosamente.',
-                    'email': email,
-                    'persona_id': persona.id,
-                    'user_id': persona.user.id
-                }, status=status.HTTP_201_CREATED)
-
-            # Si no es admin, seguir flujo OTP normal
-            # Rate limit y creación/actualización del pending
-            from auth_app.models import PendingEmailVerification
-            existing = PendingEmailVerification.objects.filter(email=email).first()
-            if existing:
-                elapsed = (timezone.now() - existing.last_sent).total_seconds()
-                if elapsed < 60:
-                    return Response({
-                        'detail': f'Espera {int(60 - elapsed)} segundos antes de reenviar el código.'
-                    }, status=status.HTTP_429_TOO_MANY_REQUESTS)
-
-            code = PendingEmailVerification.generate_code()
-            PendingEmailVerification.objects.update_or_create(
-                email=email,
-                defaults={'otp_code': code, 'temp_data': request.data}
+            # Validar y crear usando el serializer con skip_email_verification=True
+            serializer = PersonaRegistroSerializer(
+                data=request.data,
+                context={'skip_email_verification': True}
             )
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            # Enviar email con servicio centralizado
-            from api.services.email import email_service
-            email_service.send_email(
-                to_emails=[email],
-                subject='Verificación de cuenta CacaoScan',
-                html_content=f"""
-                <html>
-                <body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333;\">
-                    <div style=\"max-width: 600px; margin: 0 auto; padding: 20px;\">
-                        <h2 style=\"color: #22c55e;\">Verificación de cuenta CacaoScan</h2>
-                        <p>Hola ',</p>
-                        <p>Tu código de verificación es:</p>
-                        <div style=\"background-color: #f3f4f6; border: 2px solid #22c55e; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;\">
-                            <h1 style=\"color: #22c55e; font-size: 32px; margin: 0; letter-spacing: 5px;\">{code}</h1>
-                        </div>
-                        <p>Este código expirará en <strong>10 minutos</strong>.</p>
-                        <p style=\"color: #6b7280; font-size: 14px;\">Si no solicitaste este código, puedes ignorar este email.</p>
-                        <hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;\">
-                        <p style=\"color: #6b7280; font-size: 12px;\">é {timezone.now().year} CacaoScan - Sistema de análisis de cacao</p>
-                    </div>
-                </body>
-                </html>
-                """,
-                text_content=f"Hola, tu código de verificación es: {code}. Este código expirará en 10 minutos."
-            )
+            # Crear usuario y persona directamente (sin verificación de email)
+            persona = serializer.save()
 
-            return Response({'message': 'Código enviado con éxito al correo.', 'email': email}, status=status.HTTP_202_ACCEPTED)
+            # Asegurar que el rol farmer esté asignado (el signal debería hacerlo, pero lo verificamos)
+            from django.contrib.auth.models import Group
+            user = persona.user
+            user.refresh_from_db()  # Refrescar para obtener los grupos asignados por el signal
+            
+            # Verificar si tiene el rol farmer, si no, asignarlo explícitamente
+            farmer_group, _ = Group.objects.get_or_create(name="farmer")
+            if not user.groups.filter(name="farmer").exists():
+                user.groups.add(farmer_group)
+                user.refresh_from_db()  # Refrescar nuevamente para cargar el grupo
+                logger.info(f"Rol 'farmer' asignado explícitamente a usuario {email}")
+            
+            # Obtener el rol del usuario usando la misma lógica que UserSerializer
+            if user.is_superuser or user.is_staff:
+                user_role = 'admin'
+            elif user.groups.filter(name="analyst").exists():
+                user_role = 'analyst'
+            else:
+                user_role = 'farmer'  # Por defecto para usuarios nuevos
+
+            # Generar tokens JWT para login automático
+            from rest_framework_simplejwt.tokens import RefreshToken
+            refresh = RefreshToken.for_user(user)
+            access_token = refresh.access_token
+
+            logger.info(f"Usuario {email} creado exitosamente con tokens JWT y rol {user_role}")
+
+            return Response({
+                'success': True,
+                'message': 'Usuario registrado exitosamente.',
+                'email': email,
+                'persona_id': persona.id,
+                'user_id': user.id,
+                'access': str(access_token),
+                'refresh': str(refresh),
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'is_active': user.is_active,
+                    'role': user_role
+                },
+                'verification_required': False
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             import logging

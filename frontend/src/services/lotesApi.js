@@ -34,7 +34,9 @@ export async function getLoteStats(loteId) {
 export function validateLoteData(loteData) {
   const errors = []
 
-  if (!loteData.finca?.id) {
+  // Aceptar tanto finca como número o como objeto con id
+  const fincaId = loteData.finca?.id || loteData.finca
+  if (!fincaId) {
     errors.push('La finca es requerida')
   }
 

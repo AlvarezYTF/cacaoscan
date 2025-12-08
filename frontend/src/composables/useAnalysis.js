@@ -93,7 +93,6 @@ export function useAnalysis() {
             onProgress(i + 1, images.length)
           }
         } catch (err) {
-          console.error(`Error analyzing image ${i + 1}:`, err)
           results.push({ error: err.message, image: images[i] })
         }
       }

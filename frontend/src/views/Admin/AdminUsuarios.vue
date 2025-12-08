@@ -358,7 +358,6 @@ const loadUserStats = async () => {
           new_today: stats.new_today || 0
         }
       } catch (error) {
-        console.error('Error loading user stats:', error)
         // Establecer valores por defecto en caso de error
         userStats.value = {
           total: 0,
@@ -394,8 +393,6 @@ const loadUserStats = async () => {
         })
 
       } catch (error) {
-        console.error('Error loading users:', error)
-        
         // Si es error de conexión, establecer arrays vacíos
         if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
           users.value = []
@@ -553,7 +550,6 @@ const loadUserStats = async () => {
         })
 
       } catch (error) {
-        console.error('Error deleting user:', error)
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -587,7 +583,6 @@ const loadUserStats = async () => {
         })
 
       } catch (error) {
-        console.error('Error bulk activating users:', error)
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -621,7 +616,6 @@ const loadUserStats = async () => {
         })
 
       } catch (error) {
-        console.error('Error bulk deactivating users:', error)
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -666,7 +660,6 @@ const loadUserStats = async () => {
           })
 
         } catch (error) {
-          console.error('Error bulk deleting users:', error)
           Swal.fire({
             icon: 'error',
             title: 'Error',
@@ -677,10 +670,7 @@ const loadUserStats = async () => {
     }
 
     const handleToggleStatus = async (user) => {
-      console.log('Toggle status for user:', user);
-      
       if (!user) {
-        console.error('User is undefined or null');
         return;
       }
       
@@ -697,8 +687,6 @@ const loadUserStats = async () => {
         // Actualizar estado local sin recargar
         user.is_active = newStatus;
         
-        console.log(`✅ Estado actualizado para usuario ${user.username}: ${newStatus ? 'Activo' : 'Inactivo'}`);
-        
         // Mostrar notificación de éxito
         Swal.fire({
           icon: 'success',
@@ -710,8 +698,6 @@ const loadUserStats = async () => {
         });
         
       } catch (error) {
-        console.error('Error cambiando estado:', error);
-        
         // Mostrar error
         const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error al cambiar el estado del usuario';
         
@@ -756,7 +742,6 @@ const loadUserStats = async () => {
         })
 
       } catch (error) {
-        console.error('Error exporting users:', error)
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -796,7 +781,6 @@ const loadUserStats = async () => {
 
     // Sidebar event handlers
     const handleMenuClick = (menuItem) => {
-      console.log('Menu clicked:', menuItem)
       router.push(menuItem.route)
     }
 
@@ -837,22 +821,15 @@ const loadUserStats = async () => {
     onMounted(() => {
       // Verificar permisos de administrador usando el sistema de roles
       if (!authStore.isAdmin) {
-        console.warn('🚫 Usuario sin permisos de admin:', {
-          userRole: authStore.userRole,
-          isAdmin: authStore.isAdmin,
-          user: authStore.user
-        })
         router.push('/acceso-denegado')
         return
       }
 
       // Load data with error handling to prevent unhandled promise rejections
       loadUserStats().catch(err => {
-        console.error('Error loading user stats on mount:', err)
-      })
+        })
       loadUsers().catch(err => {
-        console.error('Error loading users on mount:', err)
-      })
+        })
       
       // Conectar a WebSocket para estadísticas en tiempo real
       setupWebSocketConnection()
@@ -868,7 +845,6 @@ const loadUserStats = async () => {
         statsPollingInterval = setInterval(() => {
           try {
             loadUserStats().catch(err => {
-              console.error('Error en polling de estadísticas:', err)
               // Detener polling si hay errores persistentes
               stopPolling()
             })
@@ -876,11 +852,9 @@ const loadUserStats = async () => {
             // Solo recargar usuarios si están en la primera página
             if (pagination.currentPage.value === 1) {
               loadUsers().catch(err => {
-                console.error('Error en polling de usuarios:', err)
-              })
+                })
             }
           } catch (error) {
-            console.error('Error en polling:', error)
             stopPolling()
           }
         }, 60000) // Actualizar cada 60 segundos (reducido de 30)
@@ -916,7 +890,6 @@ const loadUserStats = async () => {
     }
     
     const handleStatsUpdate = (data) => {
-      console.log('📊 Actualización de estadísticas recibida:', data)
       userStats.value = {
         total: data.total || 0,
         active: data.active || 0,

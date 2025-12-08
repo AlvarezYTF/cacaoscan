@@ -61,10 +61,8 @@ export function handleApiError(error, context = '', defaultMessage = 'Error ines
   const errorMessage = extractErrorMessage(error, defaultMessage)
   
   if (context) {
-    console.error(`❌ [${context}] Error:`, errorMessage, error)
-  } else {
-    console.error('❌ API Error:', errorMessage, error)
-  }
+    } else {
+    }
 
   return {
     success: false,

@@ -59,7 +59,6 @@ export const useConfigStore = defineStore('config', {
   actions: {
     _handleAuthStoreImportError(err) {
       if (err.code === 'MODULE_NOT_FOUND' || err.message?.includes('Cannot find module')) {
-        console.warn('No se pudo cargar authStore, usando permisos mínimos:', err.message)
         return null
       }
       throw err
@@ -152,12 +151,6 @@ export const useConfigStore = defineStore('config', {
         const authStore = await this._loadAuthStore()
         const canAccessConfig = this._canAccessConfig(authStore)
 
-        console.log('🔐 Cargando configuración con permisos:', {
-          isAdmin: authStore?.isAdmin || false,
-          isAnalyst: authStore?.isAnalyst || false,
-          canAccessConfig
-        })
-
         const promises = this._buildConfigPromises(canAccessConfig)
         const results = await Promise.all(promises)
         const configs = this._processConfigResults(results, canAccessConfig)
@@ -165,13 +158,10 @@ export const useConfigStore = defineStore('config', {
         this._updateConfigState(configs.general, configs.security, configs.ml, configs.system)
         
         this.lastUpdate = new Date()
-        console.log('✅ Configuración del sistema cargada:', this.brandName)
-        
         return { success: true, loaded: true }
       } catch (error) {
         if (error.response?.status !== 403 && error.response?.status !== 500) {
-          console.error('Error inesperado cargando configuración:', error)
-        }
+          }
         return { success: false, loaded: false, error: error.message }
       } finally {
         this.loading = false
@@ -191,8 +181,6 @@ export const useConfigStore = defineStore('config', {
           this.general.logo_url = saved.logo_url || this.general.logo_url
           
           this.lastUpdate = new Date()
-          console.log('✅ Configuración general actualizada:', this.brandName)
-          
           // Emitir evento de actualización global
           globalThis.dispatchEvent(new CustomEvent('config-updated', { 
             detail: { section: 'general', data: this.general }
@@ -201,7 +189,6 @@ export const useConfigStore = defineStore('config', {
         
         return saved
       } catch (error) {
-        console.error('Error guardando configuración general:', error)
         throw error
       }
     },
@@ -223,7 +210,6 @@ export const useConfigStore = defineStore('config', {
         
         return saved
       } catch (error) {
-        console.error('Error guardando configuración de seguridad:', error)
         throw error
       }
     },
@@ -245,7 +231,6 @@ export const useConfigStore = defineStore('config', {
         
         return saved
       } catch (error) {
-        console.error('Error guardando configuración ML:', error)
         throw error
       }
     },

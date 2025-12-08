@@ -34,6 +34,23 @@
       <!-- Form -->
       <form @submit.prevent="handleSubmit" class="p-6">
         <div class="space-y-8">
+          <!-- Alerta de errores generales -->
+          <div v-if="Object.keys(errors).length > 0" class="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg mb-6">
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div class="ml-3 flex-1">
+                <h3 class="text-sm font-medium text-red-800">Por favor, corrige los siguientes errores:</h3>
+                <ul class="mt-2 text-sm text-red-700 list-disc list-inside space-y-1">
+                  <li v-for="(error, field) in errors" :key="field">{{ error }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           <!-- Información básica -->
           <div class="bg-gray-50 rounded-lg p-6">
             <div class="flex items-center mb-4">
@@ -469,20 +486,106 @@ const mapValidationErrorToField = (error) => {
 }
 
 const validateForm = () => {
-  const formattedData = fincasApi.formatFincaData(formData)
-  const validation = fincasApi.validateFincaData(formattedData)
+  // Limpiar errores previos
+  errors.value = {}
+  let isValid = true
   
-  if (!validation.isValid) {
-    for (const error of validation.errors) {
-      const field = mapValidationErrorToField(error)
-      if (field) {
-        errors[field] = error
-      }
-    }
-    return false
+  // Validar nombre
+  if (!formData.nombre || formData.nombre.trim().length === 0) {
+    errors.value.nombre = 'El nombre de la finca es requerido'
+    isValid = false
+  } else if (formData.nombre.trim().length < 3) {
+    errors.value.nombre = 'El nombre debe tener al menos 3 caracteres'
+    isValid = false
+  } else if (formData.nombre.trim().length > 200) {
+    errors.value.nombre = 'El nombre no puede exceder 200 caracteres'
+    isValid = false
   }
   
-  return true
+  // Validar ubicación
+  if (!formData.ubicacion || formData.ubicacion.trim().length === 0) {
+    errors.value.ubicacion = 'La ubicación es requerida'
+    isValid = false
+  } else if (formData.ubicacion.trim().length < 5) {
+    errors.value.ubicacion = 'La ubicación debe tener al menos 5 caracteres'
+    isValid = false
+  } else if (formData.ubicacion.trim().length > 300) {
+    errors.value.ubicacion = 'La ubicación no puede exceder 300 caracteres'
+    isValid = false
+  }
+  
+  // Validar departamento
+  if (!formData.departamento || formData.departamento.trim().length === 0) {
+    errors.value.departamento = 'El departamento es requerido'
+    isValid = false
+  }
+  
+  // Validar municipio
+  if (!formData.municipio || formData.municipio.trim().length === 0) {
+    errors.value.municipio = 'El municipio es requerido'
+    isValid = false
+  }
+  
+  // Validar hectáreas
+  const hectareasNum = parseFloat(formData.hectareas)
+  if (!formData.hectareas || formData.hectareas.toString().trim().length === 0) {
+    errors.value.hectareas = 'Las hectáreas son requeridas'
+    isValid = false
+  } else if (isNaN(hectareasNum)) {
+    errors.value.hectareas = 'Las hectáreas deben ser un número válido'
+    isValid = false
+  } else if (hectareasNum <= 0) {
+    errors.value.hectareas = 'Las hectáreas deben ser mayor a 0'
+    isValid = false
+  } else if (hectareasNum > 999999.99) {
+    errors.value.hectareas = 'Las hectáreas no pueden exceder 999,999.99'
+    isValid = false
+  }
+  
+  // Validar agricultor (solo para admin en creación)
+  if (isAdmin.value && !props.isEditing) {
+    if (!formData.agricultor || formData.agricultor.toString().trim().length === 0) {
+      errors.value.agricultor = 'Debes seleccionar un agricultor'
+      isValid = false
+    }
+  }
+  
+  // Validar coordenadas GPS (opcional, pero si se proporcionan deben ser válidas)
+  if (formData.coordenadas_lat && formData.coordenadas_lat.toString().trim().length > 0) {
+    const lat = parseFloat(formData.coordenadas_lat)
+    if (isNaN(lat)) {
+      errors.value.coordenadas_lat = 'La latitud debe ser un número válido'
+      isValid = false
+    } else if (lat < -90 || lat > 90) {
+      errors.value.coordenadas_lat = 'La latitud debe estar entre -90 y 90'
+      isValid = false
+    }
+  }
+  
+  if (formData.coordenadas_lng && formData.coordenadas_lng.toString().trim().length > 0) {
+    const lng = parseFloat(formData.coordenadas_lng)
+    if (isNaN(lng)) {
+      errors.value.coordenadas_lng = 'La longitud debe ser un número válido'
+      isValid = false
+    } else if (lng < -180 || lng > 180) {
+      errors.value.coordenadas_lng = 'La longitud debe estar entre -180 y 180'
+      isValid = false
+      }
+    }
+  
+  // Validar descripción (opcional, pero si se proporciona tiene límite)
+  if (formData.descripcion && formData.descripcion.length > 1000) {
+    errors.value.descripcion = 'La descripción no puede exceder 1000 caracteres'
+    isValid = false
+  }
+  
+  // Si hay errores, mostrar alerta y hacer scroll al primer error
+  if (!isValid) {
+    showError('Por favor, corrige los errores en el formulario antes de continuar')
+    scrollToFirstError('finca-form')
+  }
+  
+  return isValid
 }
 
 // Helper functions to reduce complexity
@@ -552,16 +655,11 @@ const handleSubmit = async () => {
   try {
     const formattedData = fincasApi.formatFincaData(formData)
     
-    console.log('📤 [FincaForm] Datos a enviar:', formattedData)
-    console.log('📤 [FincaForm] Datos originales del formulario:', JSON.stringify(formData, null, 2))
     
     await saveFinca(formattedData)
     // showSuccessNotification ya se llama desde los callbacks del composable
     emit('saved')
   } catch (error) {
-    console.error('❌ [FincaForm] Error saving finca:', error)
-    console.error('❌ [FincaForm] Error completo:', JSON.stringify(error.response?.data, null, 2))
-    console.error('❌ [FincaForm] Error response status:', error.response?.status)
     
     handleServerError(error)
   } finally {
@@ -591,9 +689,7 @@ const loadAgricultores = async () => {
       } else {
         agricultores.value = data?.results || []
       }
-      console.debug('[Fincas] Agricultores cargados:', agricultores.value.length)
     } catch (e) {
-      console.error('[Fincas] Error cargando agricultores:', e)
     }
   }
 }

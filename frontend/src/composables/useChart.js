@@ -47,7 +47,12 @@ export function useChart(config) {
       chartInstance = null
     }
 
-    if (!chartRef.value || !data) {
+    if (!chartRef.value) {
+      return
+    }
+
+    // Validate data structure - ensure it has datasets array
+    if (!data || !data.datasets || !Array.isArray(data.datasets) || data.datasets.length === 0) {
       return
     }
 

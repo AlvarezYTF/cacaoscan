@@ -447,7 +447,6 @@ const cargarCatalogos = async () => {
     const deptos = await catalogosApi.getDepartamentos()
     departamentos.value = deptos
   } catch (error) {
-    console.error('Error cargando catálogos:', error)
     setStatusMessage('Error al cargar los catálogos', 'error')
   }
 }
@@ -462,7 +461,6 @@ const onDepartamentoChange = async () => {
       const munis = await catalogosApi.getMunicipiosByDepartamento(form.value.departamento)
       municipios.value = munis
     } catch (error) {
-      console.error('Error cargando municipios:', error)
       setStatusMessage('Error al cargar los municipios', 'error')
     }
   }
@@ -471,8 +469,6 @@ const onDepartamentoChange = async () => {
 // Inicializar datos
 watch(() => props.personaData, async (newData) => {
   if (newData && Object.keys(newData).length > 0) {
-    console.log('📥 Datos recibidos de persona:', newData)
-    
     form.value = {
       primer_nombre: newData.primer_nombre || '',
       segundo_nombre: newData.segundo_nombre || '',
@@ -492,8 +488,6 @@ watch(() => props.personaData, async (newData) => {
       // municipio_info contiene {id, codigo, nombre}
       municipio: newData.municipio_info?.id || null
     }
-
-    console.log('📝 Formulario inicializado:', form.value)
 
     // Cargar municipios si hay departamento
     if (form.value.departamento) {

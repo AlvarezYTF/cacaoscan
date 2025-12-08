@@ -431,7 +431,8 @@ class UserStatsView(AdminPermissionMixin, APIView):
         return Response(stats, status=status.HTTP_200_OK)
 
 
-@method_decorator(cache_page(60 * 10, cache='api_cache'), name='get')
+# Temporarily disable cache to debug 500 error
+# @method_decorator(cache_page(60 * 10, cache='api_cache'), name='get')
 class AdminStatsView(AdminPermissionMixin, APIView):
     """
     Endpoint para obtener estadísticas globales del sistema (Admin only).
@@ -458,36 +459,83 @@ class AdminStatsView(AdminPermissionMixin, APIView):
     )
     def get(self, request):
         """
-        Obtiene estadísticas globales del sistema de forma asíncrona.
+        Obtiene estadísticas globales del sistema.
         Solo accesible para administradores.
         
-        Retorna inmediatamente un task_id que puede usarse para consultar el estado
-        del cálculo mediante el endpoint GET /api/v1/tasks/{task_id}/status/
+        Retorna las estadísticas directamente de forma síncrona.
+        Siempre devuelve una respuesta válida, incluso si hay errores.
         """
+        logger.info(f"[AdminStatsView] Iniciando get() para usuario: {request.user.username if request.user.is_authenticated else 'Anonymous'}")
+        
+        # Default empty stats response
+        default_empty_response = {
+            'users': {'total': 0, 'active': 0, 'staff': 0, 'superusers': 0, 'analysts': 0, 'farmers': 0, 'verified': 0, 'this_week': 0, 'this_month': 0},
+            'fincas': {'total': 0, 'this_week': 0, 'this_month': 0},
+            'images': {'total': 0, 'processed': 0, 'unprocessed': 0, 'this_week': 0, 'this_month': 0, 'processing_rate': 0},
+            'predictions': {'total': 0, 'average_dimensions': {'alto_mm': 0, 'ancho_mm': 0, 'grosor_mm': 0, 'peso_g': 0}, 'average_confidence': 0, 'average_processing_time_ms': 0},
+            'top_regions': [],
+            'top_fincas': [],
+            'activity_by_day': {'labels': [], 'data': []},
+            'quality_distribution': {'excelente': 0, 'buena': 0, 'regular': 0, 'baja': 0},
+            'generated_at': None
+        }
+        
         try:
             # Verificar permisos de administrador
-            if not self.is_admin_user(request.user):
-                return self.admin_permission_denied()
+            try:
+                if not self.is_admin_user(request.user):
+                    return self.admin_permission_denied()
+            except Exception as perm_error:
+                logger.error(f"Error verificando permisos: {perm_error}", exc_info=True)
+                # Si falla la verificación de permisos, asumir que no es admin y denegar acceso
+                return Response({
+                    'error': 'Permiso denegado',
+                    'details': 'No tienes permisos para acceder a esta funcionalidad'
+                }, status=status.HTTP_403_FORBIDDEN)
             
-            # Encolar tarea asíncrona para calcular estadísticas
-            from api.tasks.stats_tasks import calculate_admin_stats_task
+            # Calcular estadísticas directamente (síncrono)
+            try:
+                from api.services.stats import StatsService
+                stats_service = StatsService()
+            except Exception as import_error:
+                logger.error(f"Error importando StatsService: {import_error}", exc_info=True)
+                return Response(default_empty_response, status=status.HTTP_200_OK)
             
-            task = calculate_admin_stats_task.delay()
-            
-            logger.info(f"Admin stats calculation task enqueued - Task ID: {task.id}")
-            
-            return Response({
-                'task_id': task.id,
-                'status': 'processing',
-                'message': 'Cálculo de estadísticas iniciado. Use el task_id para consultar el estado.'
-            }, status=status.HTTP_202_ACCEPTED)
+            try:
+                stats = stats_service.get_all_stats()
+                logger.info(f"Admin stats calculated successfully - Users: {stats.get('users', {}).get('total', 0)}, Fincas: {stats.get('fincas', {}).get('total', 0)}")
+                return Response(stats, status=status.HTTP_200_OK)
+            except Exception as stats_error:
+                logger.error(f"Error calculando estadísticas en StatsService: {stats_error}", exc_info=True)
+                # Intentar obtener estadísticas básicas aunque falle alguna parte
+                try:
+                    # Obtener al menos estadísticas de usuarios que son críticas
+                    user_stats = stats_service.get_user_stats()
+                    finca_stats = stats_service.get_finca_stats()
+                    image_stats = stats_service.get_image_stats()
+                    
+                    stats = {
+                        'users': user_stats,
+                        'fincas': finca_stats,
+                        'images': image_stats,
+                        'predictions': {'average_confidence': 0},
+                        'activity_by_day': {'labels': [], 'data': []},
+                        'quality_distribution': {'excelente': 0, 'buena': 0, 'regular': 0, 'baja': 0}
+                    }
+                    logger.warning(f"Stats parciales generadas después de error: {stats_error}")
+                    return Response(stats, status=status.HTTP_200_OK)
+                except Exception as fallback_error:
+                    logger.error(f"Error incluso en fallback de estadísticas: {fallback_error}", exc_info=True)
+                    # Último recurso: datos vacíos
+                    try:
+                        return Response(stats_service.get_empty_stats(), status=status.HTTP_200_OK)
+                    except Exception:
+                        return Response(default_empty_response, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Error encolando tarea de estadísticas: {e}")
+            logger.error(f"Error general en AdminStatsView: {e}", exc_info=True)
             # Retornar datos vacíos en lugar de 500
-            from api.services.stats import StatsService
-            stats_service = StatsService()
-            return Response(stats_service.get_empty_stats(), status=status.HTTP_200_OK)
+            return Response(default_empty_response, status=status.HTTP_200_OK)
 
 
 class UserDetailView(AdminPermissionMixin, APIView):

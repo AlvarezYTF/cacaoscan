@@ -259,8 +259,7 @@ const loadUsersFallback = async (fincas, agricultoresMap) => {
       }
     }
   } catch (e) {
-    console.warn('Fallback getUser por ID falló parcialmente', e)
-  }
+    }
 }
 
 const getAgricultorIdFromFinca = (finca) => {
@@ -313,7 +312,6 @@ const loadFarmers = async () => {
     farmers.value = Array.from(agricultoresMap.values())
     allFincas.value = fincasResponse.results || []
   } catch (error) {
-    console.error('Error cargando agricultores:', error)
     Swal.fire({
       icon: 'error',
       title: 'Error',
@@ -387,8 +385,7 @@ const handleLogout = async () => {
     await authStore.logout()
     router.push('/login')
   } catch (error) {
-    console.error('Error al cerrar sesión:', error)
-  }
+    }
 }
 
 const toggleSidebarCollapse = () => {
@@ -419,7 +416,6 @@ const descargarReporteAgricultores = async () => {
       showConfirmButton: false
     })
   } catch (error) {
-    console.error('Error descargando reporte:', error)
     Swal.fire({
       icon: 'error',
       title: 'Error',
@@ -521,7 +517,6 @@ const handleDeleteFarmer = async (farmer) => {
       await loadFarmers()
     }
   } catch (error) {
-    console.error('Error eliminando agricultor:', error)
     const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error al eliminar el agricultor'
     Swal.fire({
       icon: 'error',
@@ -551,7 +546,6 @@ const handleToggleStatus = async (farmer) => {
       showConfirmButton: false
     })
   } catch (error) {
-    console.error('Error cambiando estado:', error)
     const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error al cambiar el estado del agricultor'
     Swal.fire({
       icon: 'error',
@@ -585,8 +579,7 @@ const checkScreenSize = () => {
       localStorage.setItem('sidebarCollapsed', 'false')
     }
   } catch (err) {
-    console.warn('Error en checkScreenSize:', err)
-  }
+    }
 }
 </script>
 

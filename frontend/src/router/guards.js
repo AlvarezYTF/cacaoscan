@@ -29,8 +29,6 @@ export const requireGuest = async (to, from, next) => {
   const authStore = useAuthStore()
 
   if (authStore.isAuthenticated) {
-    console.log('👤 Usuario ya autenticado, redirigiendo...')
-    
     // Redirigir según rol usando router.replace para evitar historial
     const redirectPath = getRedirectPathByRole(authStore.userRole)
     next({ path: redirectPath, replace: true })
@@ -171,8 +169,7 @@ export const updateActivity = async (to, from, next) => {
     
     // Log de actividad en desarrollo
     if (import.meta.env.DEV) {
-      console.log(`👤 Activity updated for ${authStore.user?.email} on ${to.path}`)
-    }
+      }
   }
 
   next()
@@ -190,7 +187,6 @@ export const checkTokenValidity = async (to, from, next) => {
       await authStore.getCurrentUser()
       next()
     } catch (error) {
-      console.warn('Token inválido, limpiando sesión y redirigiendo al login:', error)
       authStore.clearAll()
       
       // Evitar loops de redirección

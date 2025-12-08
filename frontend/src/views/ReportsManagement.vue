@@ -486,7 +486,6 @@ export default {
         }
         
       } catch (err) {
-        console.error('Error cargando reportes:', err)
         notificationStore.addNotification({
           type: 'error',
           title: 'Error',
@@ -510,8 +509,7 @@ export default {
           estadisticas.value = data
         }
       } catch (err) {
-        console.error('Error cargando estadísticas:', err)
-      }
+        }
     }
     
     const aplicarFiltros = () => {
@@ -551,7 +549,6 @@ export default {
           throw new Error('Error al cargar detalles del reporte')
         }
       } catch (err) {
-        console.error('Error cargando detalles:', err)
         notificationStore.addNotification({
           type: 'error',
           title: 'Error',
@@ -585,7 +582,6 @@ export default {
           throw new Error('Error al eliminar el reporte')
         }
       } catch (err) {
-        console.error('Error eliminando reporte:', err)
         notificationStore.addNotification({
           type: 'error',
           title: 'Error',

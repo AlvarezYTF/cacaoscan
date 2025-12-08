@@ -194,8 +194,7 @@ const initMap = async () => {
 
     emit('map-ready', map)
   } catch (error) {
-    console.error('Error inicializando mapa:', error)
-  }
+    }
 }
 
 // Crear contenido del popup

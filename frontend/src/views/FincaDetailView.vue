@@ -207,7 +207,6 @@ const loadFinca = async () => {
     await loadFincaData(route.params.id)
     await loadLotesRecientes()
   } catch (err) {
-    console.error('Error loading finca:', err)
     if (err.response?.status === 404) {
       router.push({ name: 'Fincas', query: { notFound: 'true' } })
     } else if (err.response?.status === 403) {
@@ -224,7 +223,6 @@ const loadLotesRecientes = async () => {
     const lotes = await loadLotesByFinca(finca.value.id)
     lotesRecientes.value = lotes.slice(0, 5)
   } catch (err) {
-    console.error('Error loading recent lotes:', err)
     lotesRecientes.value = []
   }
 }
@@ -281,7 +279,6 @@ const generateReport = async () => {
       throw new Error('Error generando reporte')
     }
   } catch (err) {
-    console.error('Error generating report:', err)
     await Swal.fire({
       title: 'Error',
       text: err.message || 'No se pudo generar el reporte',

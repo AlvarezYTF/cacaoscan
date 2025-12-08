@@ -244,7 +244,6 @@ export function useForm(options = {}) {
     } catch (err) {
       // Error already handled in handleFormSubmitValidation
       // Log error for debugging and re-throw to allow caller to handle
-      console.error('Form submission error:', err)
       throw err
     } finally {
       isSubmitting.value = false

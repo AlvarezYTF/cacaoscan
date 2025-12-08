@@ -30,7 +30,6 @@ export function useCatalogos() {
       generos.value = gens || []
       departamentos.value = deptos || []
     } catch (e) {
-      console.error('Error cargando catálogos:', e)
       error.value = 'Error al cargar catálogos'
       // Valores por defecto
       tiposDocumento.value = []
@@ -75,7 +74,6 @@ export function useCatalogos() {
         }
       }
     } catch (e) {
-      console.error('Error cargando municipios:', e)
       municipios.value = []
     }
   }

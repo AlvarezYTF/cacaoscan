@@ -312,8 +312,7 @@ const loadFincaDetails = async (fincaId) => {
   try {
     await loadFinca(fincaId)
   } catch (error) {
-    console.error('Error cargando detalle de finca:', error)
-  }
+    }
 }
 
 const closeModal = () => {

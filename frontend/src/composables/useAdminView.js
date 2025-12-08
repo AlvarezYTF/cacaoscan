@@ -93,8 +93,7 @@ export function useAdminView(options) {
       await authStore.logout()
       router.push('/login')
     } catch (error) {
-      console.error('Error al cerrar sesión:', error)
-    }
+      }
   }
 
   const handleRefresh = async () => {
@@ -117,7 +116,6 @@ export function useAdminView(options) {
       if (loadData) promises.push(loadData(filters.value))
       await Promise.all(promises)
     } catch (error) {
-      console.error('Error loading initial data:', error)
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -135,7 +133,6 @@ export function useAdminView(options) {
         await loadData(filters.value)
       }
     } catch (error) {
-      console.error('Error applying filters:', error)
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -159,8 +156,7 @@ export function useAdminView(options) {
         await loadData({ ...filters.value, page })
       }
     } catch (error) {
-      console.error('Error changing page:', error)
-    }
+      }
   }
 
   return {

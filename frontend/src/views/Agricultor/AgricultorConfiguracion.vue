@@ -165,10 +165,8 @@ const loadUserProfile = async () => {
     const perfilData = await personasApi.getPerfil()
     personaData.value = perfilData
   } catch (error) {
-    console.error('Error cargando perfil:', error)
     // Si no hay datos de persona, mostrar mensaje
     if (error.response?.status === 404) {
-      console.warn('Este usuario no tiene un perfil de persona asociado')
       // Inicializar con datos básicos del usuario para compatibilidad
       personaData.value = {
         email: authStore.user?.email || '',
@@ -264,7 +262,6 @@ const updateOrCreateProfile = async (dataToUpdate) => {
     return await personasApi.actualizarPerfil(dataToUpdate)
   } catch (updateError) {
     if (isNotFoundError(updateError)) {
-      console.log('📝 Perfil no existe, creando...')
       return await personasApi.crearPerfil(dataToUpdate)
     }
     throw updateError
@@ -318,7 +315,6 @@ const handleProfileSuccess = (result) => {
 }
 
 const handleProfileError = (error) => {
-  console.error('Error al guardar perfil:', error)
   const errorMessage = extractProfileErrorMessage(error)
   if (profileSectionRef.value) {
     profileSectionRef.value.setStatusMessage(errorMessage, 'error')
@@ -455,7 +451,6 @@ const handlePasswordChange = async (passwordData) => {
       throw new Error(result.error || 'Error al cambiar la contraseña')
     }
   } catch (error) {
-    console.error('Error al cambiar contraseña:', error)
     const errorMessage = extractErrorMessage(error)
     showPasswordError(errorMessage)
   } finally {
@@ -484,11 +479,9 @@ const saveScanPreferences = async () => {
     // Pendiente: Implementar endpoint PATCH /api/v1/agricultores/configuracion/
     // Cuando esté disponible, usar:
     // await api.patch('/agricultores/configuracion/', scanPreferences.value)
-    console.log('Guardando preferencias de escaneo:', scanPreferences.value)
     await new Promise(resolve => setTimeout(resolve, 1000))
     alert('Preferencias de escaneo guardadas')
   } catch (error) {
-    console.error('Error al guardar preferencias:', error)
     alert('Error al guardar las preferencias')
   } finally {
     isSavingScanPrefs.value = false
@@ -502,11 +495,9 @@ const saveNotifications = async () => {
     // Pendiente: Implementar endpoint PATCH /api/v1/agricultores/notificaciones/
     // Cuando esté disponible, usar:
     // await api.patch('/agricultores/notificaciones/', notifications.value)
-    console.log('Guardando notificaciones:', notifications.value)
     await new Promise(resolve => setTimeout(resolve, 1000))
     alert('Preferencias de notificaciones guardadas')
   } catch (error) {
-    console.error('Error al guardar notificaciones:', error)
     alert('Error al guardar las notificaciones')
   } finally {
     isSavingNotifs.value = false
@@ -517,12 +508,10 @@ const saveNotifications = async () => {
 const syncData = async () => {
   isSyncing.value = true
   try {
-    console.log('Sincronizando datos...')
     await new Promise(resolve => setTimeout(resolve, 2000))
     lastSync.value = 'Hace un momento'
     alert('Datos sincronizados exitosamente')
   } catch (error) {
-    console.error('Error al sincronizar:', error)
     alert('Error al sincronizar los datos')
   } finally {
     isSyncing.value = false
@@ -531,20 +520,16 @@ const syncData = async () => {
 
 const exportToCSV = async () => {
   try {
-    console.log('Exportando a CSV...')
     alert('Archivo CSV descargado')
   } catch (error) {
-    console.error('Error al exportar CSV:', error)
     alert('Error al exportar el archivo CSV')
   }
 }
 
 const exportToPDF = async () => {
   try {
-    console.log('Exportando a PDF...')
     alert('Archivo PDF descargado')
   } catch (error) {
-    console.error('Error al exportar PDF:', error)
     alert('Error al exportar el archivo PDF')
   }
 }

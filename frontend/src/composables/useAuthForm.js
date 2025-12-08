@@ -333,7 +333,6 @@ export function useAuthForm(options = {}) {
       const result = await baseForm.handleSubmit(event)
       return result
     } catch (error) {
-      console.error('Error in auth form submission:', error)
       setStatusMessage(error.message || 'Error al procesar la solicitud', 'error')
       throw error
     }

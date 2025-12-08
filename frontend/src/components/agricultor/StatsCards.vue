@@ -1,5 +1,20 @@
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+    <!-- Card Fincas Totales -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-1">Fincas Totales</h3>
+          <p class="text-2xl font-bold text-gray-900">{{ totalFincas }}</p>
+        </div>
+      </div>
+    </div>
+    
     <!-- Card Lotes Totales -->
     <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
       <div class="flex items-center gap-4">
@@ -10,7 +25,7 @@
         </div>
         <div>
           <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-1">Lotes Totales</h3>
-          <p class="text-2xl font-bold text-gray-900">{{ totalBatches }}</p>
+          <p class="text-2xl font-bold text-gray-900">{{ totalLotes }}</p>
         </div>
       </div>
     </div>
@@ -51,6 +66,14 @@
 export default {
   name: 'StatsCards',
   props: {
+    totalFincas: {
+      type: Number,
+      default: 0
+    },
+    totalLotes: {
+      type: Number,
+      default: 0
+    },
     totalBatches: {
       type: Number,
       default: 0

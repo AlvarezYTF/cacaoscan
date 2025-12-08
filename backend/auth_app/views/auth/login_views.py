@@ -55,10 +55,15 @@ class LoginView(APIView):
         Autentica un usuario y devuelve tokens JWT.
         """
         try:
+            # Log de datos recibidos (sin password por seguridad)
+            login_identifier = request.data.get('email') or request.data.get('username', 'N/A')
+            logger.info(f"Intento de login para: {login_identifier}")
+            
             serializer = LoginSerializer(data=request.data)
             
             if serializer.is_valid():
                 user = serializer.validated_data['user']
+                logger.info(f"Login exitoso para usuario: {user.username} (ID: {user.id}, Activo: {user.is_active})")
                 
                 # Generar tokens JWT
                 refresh = RefreshToken.for_user(user)
@@ -77,6 +82,9 @@ class LoginView(APIView):
                         'refresh_expires_at': refresh['exp']
                     }
                 )
+            
+            # Log de errores de validación para diagnóstico
+            logger.warning(f"Login fallido para: {login_identifier}. Errores: {serializer.errors}")
             
             return create_error_response(
                 message='Credenciales inválidas',

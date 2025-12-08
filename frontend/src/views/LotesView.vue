@@ -255,8 +255,7 @@ const loadLotes = async () => {
     lotes.value = response.results || response
   } catch (err) {
     error.value = 'Error al cargar los lotes. Intenta nuevamente.'
-    console.error('Error loading lotes:', err)
-  } finally {
+    } finally {
     loading.value = false
   }
 }
@@ -266,8 +265,7 @@ const loadFincas = async () => {
     const response = await fincasApi.getFincas()
     fincas.value = response.results || response
   } catch (err) {
-    console.error('Error loading fincas:', err)
-  }
+    }
 }
 
 const applyFilters = () => {

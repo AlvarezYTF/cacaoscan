@@ -14,7 +14,6 @@ const handleExpectedError = (error, defaultReturn = null) => {
   if (error.response?.status === 500 || error.response?.status === 403) {
     return defaultReturn
   }
-  console.error('Error en configuración:', error)
   throw error
 }
 
@@ -76,7 +75,6 @@ const configApi = {
           database: 'PostgreSQL 16'
         }
       }
-      console.error('Error obteniendo configuración del sistema:', error)
       throw error
     }
   }

@@ -11,8 +11,6 @@ import { getApiBaseUrl } from '@/utils/apiConfig'
 const apiBaseUrl = getApiBaseUrl()
 
 // Log de configuración inicial
-console.log('🚀 [API Service] Initializing with baseURL:', apiBaseUrl)
-
 // Configuración base de Axios
 const api = axios.create({
   baseURL: apiBaseUrl,
@@ -27,19 +25,14 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : config.url
-    console.log('📤 [API Request]', config.method?.toUpperCase(), fullUrl)
-    console.log('📤 [API Request] baseURL:', config.baseURL, 'url:', config.url)
-    
     // Validar que baseURL sea una URL absoluta
     if (config.baseURL && !config.baseURL.startsWith('http://') && !config.baseURL.startsWith('https://')) {
-      console.error('❌ [API Error] baseURL no es una URL absoluta:', config.baseURL)
-      console.error('❌ [API Error] Esto causará que las peticiones vayan al frontend en lugar del backend')
+      // Invalid baseURL format
     }
     
     return config
   },
   (error) => {
-    console.error('❌ [API Request Error]', error)
     return Promise.reject(error)
   }
 )
@@ -127,7 +120,8 @@ const isStatsEndpoint = (url) => url?.includes('/stats/')
 const isNonCriticalEndpoint = (url) => isConfigEndpoint(url) || isStatsEndpoint(url)
 
 const handleSilent500Error = (originalRequest, error) => {
-  if (error.response?.status === 500 && isNonCriticalEndpoint(originalRequest.url)) {
+  // Don't silently handle errors for stats endpoint - we need to see the actual error
+  if (error.response?.status === 500 && isNonCriticalEndpoint(originalRequest.url) && !isStatsEndpoint(originalRequest.url)) {
     return {
       data: {},
       status: 200,
@@ -138,11 +132,20 @@ const handleSilent500Error = (originalRequest, error) => {
 }
 
 const handleAuthEndpointError = (originalRequest) => {
-  const authEndpoints = ['/auth/login/', '/auth/register/', '/auth/refresh/']
-  const isAuthEndpoint = authEndpoints.some(endpoint => originalRequest.url.includes(endpoint))
+  const authEndpoints = [
+    '/auth/login/', 
+    '/auth/register/', 
+    '/auth/refresh/', 
+    '/auth/verify-email/', 
+    '/auth/resend-verification/', 
+    '/auth/forgot-password/', 
+    '/auth/reset-password/', 
+    '/auth/send-otp/', 
+    '/auth/verify-otp/'
+  ]
+  const isAuthEndpoint = authEndpoints.some(endpoint => originalRequest.url?.includes(endpoint))
   
-  if (isAuthEndpoint && originalRequest.url.includes('/auth/refresh/')) {
-    console.error('🚫 Refresh token inválido o expirado, cerrando sesión.')
+  if (isAuthEndpoint && originalRequest.url?.includes('/auth/refresh/')) {
     showSessionExpiredModal()
     throw new Error('Refresh token expired')
   }
@@ -166,7 +169,6 @@ const showSessionExpiredModal = () => {
 }
 
 const handleNoRefreshToken = () => {
-  console.warn('⚠️ No hay refresh token disponible, mostrando modal...')
   showSessionExpiredModal()
 }
 
@@ -187,20 +189,24 @@ const refreshTokenFlow = async (refreshToken) => {
   return response.data
 }
 
-const saveTokens = (accessToken, refreshToken) => {
+const saveTokens = async (accessToken, refreshToken) => {
   localStorage.setItem('access_token', accessToken)
   if (refreshToken) {
     localStorage.setItem('refresh_token', refreshToken)
   }
   api.defaults.headers.Authorization = 'Bearer ' + accessToken
   
-  const authStore = getAuthStore()
-  authStore.setTokens({ access: accessToken, refresh: refreshToken })
+  try {
+    const authStore = await getAuthStore()
+    if (authStore) {
+      authStore.setTokens({ access: accessToken, refresh: refreshToken })
+    }
+  } catch (error) {
+    }
 }
 
 const handleRefreshSuccess = async (newAccessToken, newRefreshToken, originalRequest) => {
-  saveTokens(newAccessToken, newRefreshToken)
-  console.log('🔄 Token JWT refrescado automáticamente')
+  await saveTokens(newAccessToken, newRefreshToken)
   processQueue(null, newAccessToken)
   
   originalRequest.headers.Authorization = 'Bearer ' + newAccessToken
@@ -208,7 +214,6 @@ const handleRefreshSuccess = async (newAccessToken, newRefreshToken, originalReq
 }
 
 const handleRefreshError = (refreshError) => {
-  console.error('❌ Error refrescando token:', refreshError)
   processQueue(refreshError, null)
   showSessionExpiredModal()
   throw refreshError
@@ -263,8 +268,7 @@ const handle403Error = (error) => {
   const isConfig = isConfigEndpoint(error.config?.url)
   
   if (!isConfig) {
-    console.warn('🚫 Acceso denegado:', errorMessage)
-  }
+    }
   
   if (errorMessage.includes('verificada')) {
     router.push({
@@ -324,10 +328,14 @@ const handleNetworkError = (error) => {
 }
 
 // Función para obtener el store de auth dinámicamente
-const getAuthStore = () => {
+const getAuthStore = async () => {
   // Importación dinámica para evitar dependencias circulares
-  const { useAuthStore } = require('@/stores/auth')
-  return useAuthStore()
+  try {
+    const { useAuthStore } = await import('@/stores/auth')
+    return useAuthStore()
+  } catch (error) {
+    return null
+  }
 }
 
 // Interceptor de Request (segundo - autenticación y logging)
@@ -338,15 +346,12 @@ api.interceptors.request.use(
     
     // Forzar actualización de baseURL si no es una URL absoluta
     if (!currentApiUrl.startsWith('http://') && !currentApiUrl.startsWith('https://')) {
-      console.error('❌ [API] baseURL no es absoluta, forzando actualización')
       const fallbackUrl = 'https://cacaoscan-backend.onrender.com/api/v1'
-      console.warn('⚠️ [API] Usando fallback absoluto:', fallbackUrl)
       api.defaults.baseURL = fallbackUrl
       config.baseURL = fallbackUrl
     } else {
       // Actualizar si cambió
       if (api.defaults.baseURL !== currentApiUrl) {
-        console.log('🔄 [API] Updating baseURL from', api.defaults.baseURL, 'to', currentApiUrl)
         api.defaults.baseURL = currentApiUrl
       }
       // Asegurar que config.baseURL sea absoluta
@@ -355,16 +360,22 @@ api.interceptors.request.use(
     
     // Validación final: asegurar que config.baseURL sea absoluta
     if (config.baseURL && !config.baseURL.startsWith('http://') && !config.baseURL.startsWith('https://')) {
-      console.error('❌ [API] CRITICAL: baseURL sigue siendo relativa:', config.baseURL)
-      console.error('❌ [API] Forzando URL absoluta del backend')
       config.baseURL = 'https://cacaoscan-backend.onrender.com/api/v1'
     }
     
-    // Obtener token de localStorage
-    const token = localStorage.getItem('access_token')
+    // Endpoints de autenticación que NO deben incluir token de autorización
+    const authEndpoints = ['/auth/login/', '/auth/register/', '/auth/refresh/', '/auth/verify-email/', '/auth/resend-verification/', '/auth/forgot-password/', '/auth/reset-password/', '/auth/send-otp/', '/auth/verify-otp/']
+    const isAuthEndpoint = authEndpoints.some(endpoint => config.url?.includes(endpoint))
     
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    // Solo agregar token si NO es un endpoint de autenticación
+    if (!isAuthEndpoint) {
+      const token = localStorage.getItem('access_token')
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+    } else {
+      // Para endpoints de autenticación, asegurar que NO haya token
+      delete config.headers.Authorization
     }
 
     // Agregar timestamp para debugging
@@ -372,20 +383,18 @@ api.interceptors.request.use(
 
     // Log de request (siempre para debug)
     const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : config.url
-    console.log(`🚀 [API Request] ${config.method?.toUpperCase()} ${fullUrl}`)
 
     return config
   },
   (error) => {
     activeRequests = Math.max(0, activeRequests - 1)
-    console.error('❌ Request Error:', error)
     return Promise.reject(error)
   }
 )
 
 // Interceptor de Response
 api.interceptors.response.use(
-  (response) => {
+  async (response) => {
     // Calcular tiempo de respuesta
     const endTime = new Date()
     const duration = endTime - response.config.metadata.startTime
@@ -393,29 +402,17 @@ api.interceptors.response.use(
     // Validar que la respuesta sea JSON, no HTML
     const contentType = response.headers['content-type'] || ''
     if (contentType.includes('text/html')) {
-      console.error('❌ [API Error] Respuesta es HTML en lugar de JSON!')
-      console.error('❌ [API Error] URL:', response.config.baseURL + response.config.url)
-      console.error('❌ [API Error] Esto significa que la petición fue interceptada por Nginx del frontend')
-      console.error('❌ [API Error] baseURL debería ser:', getApiBaseUrl())
       throw new Error('La respuesta del servidor es HTML en lugar de JSON. Verifica que baseURL esté configurada correctamente.')
     }
 
-    // Log de response
-    console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.baseURL}${response.config.url}`, {
-      status: response.status,
-      duration: `${duration}ms`,
-      contentType: contentType
-    })
-
     // Actualizar actividad del usuario
     try {
-      const authStore = getAuthStore()
-      if (authStore.isAuthenticated) {
+      const authStore = await getAuthStore()
+      if (authStore && authStore.isAuthenticated) {
         authStore.updateLastActivity()
       }
     } catch (error) {
       // Log error for debugging transparency - activity update is non-critical
-      console.warn('⚠️ [API] Failed to update user activity:', error.message, error)
     }
 
     return response
@@ -499,12 +496,6 @@ export async function predictImage(formData) {
     globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
       detail: { type: 'prediction', message: 'Analizando imagen de cacao...' }
     }))
-
-    console.log('📤 Enviando imagen para predicción:', {
-      fileName: imageFile.name,
-      fileSize: `${(imageFile.size / 1024).toFixed(1)}KB`,
-      fileType: imageFile.type
-    })
 
     // Realizar la petición al endpoint de predicción
     const response = await api.post('/api/predict/', formData, {

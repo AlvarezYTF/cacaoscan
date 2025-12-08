@@ -324,7 +324,6 @@ export default {
         totalPages.value = Math.ceil(totalCount.value / pageSize.value)
         
       } catch (error) {
-        console.error('Error loading notifications:', error)
         showError('No se pudieron cargar las notificaciones')
       } finally {
         loading.value = false
@@ -334,8 +333,7 @@ export default {
     const refreshNotifications = () => {
       // Handle potential errors to prevent unhandled promise rejections
       loadNotifications().catch(err => {
-        console.error('Error refreshing notifications:', err)
-      })
+        })
     }
 
     const setFilter = (filter) => {
@@ -368,7 +366,6 @@ export default {
         }
         
       } catch (error) {
-        console.error('Error marking notification as read:', error)
         showError('No se pudo marcar la notificación como leída')
       }
     }
@@ -388,7 +385,6 @@ export default {
         showSuccess('Todas las notificaciones han sido marcadas como leídas')
         
       } catch (error) {
-        console.error('Error marking all notifications as read:', error)
         showError('No se pudieron marcar todas las notificaciones como leídas')
       }
     }
@@ -416,7 +412,6 @@ export default {
           showSuccess('La notificación ha sido eliminada exitosamente')
           
         } catch (error) {
-          console.error('Error deleting notification:', error)
           showError('No se pudo eliminar la notificación')
         }
       }
@@ -429,7 +424,6 @@ export default {
         showSuccess('Las preferencias de notificaciones han sido guardadas')
         
       } catch (error) {
-        console.error('Error updating notification settings:', error)
         showError('No se pudieron actualizar las preferencias')
       }
     }
@@ -485,8 +479,7 @@ export default {
     onMounted(() => {
       // Handle potential errors to prevent unhandled promise rejections
       loadNotifications().catch(err => {
-        console.error('Error loading notifications on mount:', err)
-      })
+        })
       connectWebSocket()
     })
 

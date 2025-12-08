@@ -58,7 +58,6 @@ export const createAuthGuard = (options = {}) => {
 
     // Check token
     if (!authStore.accessToken) {
-      console.warn('🚫 Acceso denegado: No hay token de acceso')
       next({
         name: 'Login',
         query: {
@@ -72,10 +71,8 @@ export const createAuthGuard = (options = {}) => {
     // Get user if not loaded
     if (!authStore.user) {
       try {
-        console.log('🔄 Verificando token y obteniendo datos de usuario...')
         await authStore.getCurrentUser()
       } catch (error) {
-        console.warn('❌ Token inválido o expirado:', error)
         authStore.clearAll()
         next({
           name: 'Login',
@@ -91,7 +88,6 @@ export const createAuthGuard = (options = {}) => {
 
     // Check session timeout
     if (checkSessionTimeout && authStore.checkSessionTimeout()) {
-      console.warn('⏰ Sesión expirada por inactividad')
       return
     }
 
@@ -115,7 +111,6 @@ export const createRoleGuard = (allowedRoles, options = {}) => {
     const authStore = useAuthStore()
 
     if (!authStore.isAuthenticated) {
-      console.warn('🚫 Acceso denegado: Usuario no autenticado')
       next({
         name: 'Login',
         query: {
@@ -130,7 +125,7 @@ export const createRoleGuard = (allowedRoles, options = {}) => {
     const hasRequiredRole = allowedRoles.includes(userRole)
 
     if (!hasRequiredRole) {
-      console.warn(`🚫 Acceso denegado: Rol '${userRole}' no autorizado. Roles permitidos: ${allowedRoles.join(', ')}`)
+      }`)
       
       const errorPath = getErrorPathByRole(userRole)
       next({
@@ -157,7 +152,6 @@ export const createVerifiedGuard = () => {
     const authStore = useAuthStore()
 
     if (!authStore.isAuthenticated) {
-      console.warn('🚫 Acceso denegado: Usuario no autenticado')
       next({
         name: 'Login',
         query: {
@@ -169,7 +163,6 @@ export const createVerifiedGuard = () => {
     }
 
     if (!authStore.isVerified) {
-      console.warn('📧 Acceso denegado: Usuario no verificado')
       next({
         name: 'EmailVerification',
         query: {
@@ -193,7 +186,6 @@ export const createPermissionGuard = (permission) => {
     const authStore = useAuthStore()
 
     if (!authStore.isAuthenticated) {
-      console.warn('🚫 Acceso denegado: Usuario no autenticado')
       next({
         name: 'Login',
         query: {
@@ -205,8 +197,6 @@ export const createPermissionGuard = (permission) => {
     }
 
     if (!authStore.hasPermission(permission)) {
-      console.warn(`🚫 Acceso denegado: Sin permiso '${permission}'`)
-      
       const errorPath = getErrorPathByRole(authStore.userRole)
       next({
         path: errorPath,

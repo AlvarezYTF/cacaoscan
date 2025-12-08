@@ -260,8 +260,7 @@ export default {
         await loadRecentActivities()
         
       } catch (error) {
-        console.error('Error loading user details:', error)
-      } finally {
+        } finally {
         loading.value = false
       }
     }
@@ -274,8 +273,7 @@ export default {
         })
         recentActivities.value = response.data.results
       } catch (error) {
-        console.error('Error loading recent activities:', error)
-      }
+        }
     }
 
     const closeModal = () => {

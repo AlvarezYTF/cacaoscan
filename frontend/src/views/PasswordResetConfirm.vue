@@ -358,8 +358,6 @@ const handleSubmit = async () => {
     }, 3000)
     
   } catch (error) {
-    console.error('Error confirmando reset de contraseña:', error)
-    
     if (error.response?.status === 400) {
       tokenStatus.value = 'invalid'
     } else {

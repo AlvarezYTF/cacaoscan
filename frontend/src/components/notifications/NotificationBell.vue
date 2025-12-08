@@ -135,8 +135,7 @@ export default {
         })
         recentNotifications.value = response.data.results || []
       } catch (error) {
-        console.error('Error loading recent notifications:', error)
-      } finally {
+        } finally {
         loading.value = false
       }
     }
@@ -161,8 +160,7 @@ export default {
         }
         
       } catch (error) {
-        console.error('Error marking all notifications as read:', error)
-      }
+        }
     }
 
     const handleNotificationClick = async (notification) => {
@@ -173,8 +171,7 @@ export default {
           notification.leida = true
           notification.fecha_lectura = new Date().toISOString()
         } catch (error) {
-          console.error('Error marking notification as read:', error)
-        }
+          }
       }
 
       // Handle navigation based on notification type
@@ -302,8 +299,7 @@ export default {
             
             // Refresh notifications with error handling
             loadRecentNotifications().catch(err => {
-              console.error('Error refreshing notifications from websocket:', err)
-            })
+              })
           }
         }
       }
@@ -320,8 +316,7 @@ export default {
     onMounted(() => {
       // Handle potential errors to prevent unhandled promise rejections
       loadRecentNotifications().catch(err => {
-        console.error('Error loading recent notifications on mount:', err)
-      })
+        })
       connectWebSocket()
       document.addEventListener('click', handleClickOutside)
     })

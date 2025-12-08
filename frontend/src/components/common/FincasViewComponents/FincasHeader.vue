@@ -33,7 +33,6 @@
 const emit = defineEmits(['create'])
 
 const handleCreate = () => {
-  console.debug('[Fincas] Click Nueva Finca')
   emit('create')
 }
 </script>

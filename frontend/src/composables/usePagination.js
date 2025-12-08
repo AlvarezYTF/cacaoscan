@@ -135,8 +135,7 @@ export function usePagination(options = {}) {
         const apiTotalPages = responseData.total_pages || responseData.totalPages
         const computedTotalPages = totalPages.value
         if (Math.abs(apiTotalPages - computedTotalPages) > 1) {
-          console.warn('Pagination mismatch: API total_pages does not match computed value')
-        }
+          }
       }
     }
   }
@@ -185,7 +184,6 @@ export function usePagination(options = {}) {
         routeObj = routeObj || useRoute()
         routerObj = routerObj || useRouter()
       } catch (error) {
-        console.warn('Vue Router not available for query sync:', error)
         return
       }
     }

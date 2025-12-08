@@ -531,8 +531,7 @@ export default {
         await authStore.logout()
         router.push('/login')
       } catch (error) {
-        console.error('Error al cerrar sesión:', error)
-      }
+        }
     }
 
     const loadConfigurations = async () => {
@@ -554,9 +553,7 @@ export default {
             : '15 de Noviembre, 2024'
         }
         
-        console.log('✅ Configuraciones cargadas exitosamente')
-      } catch (error) {
-        console.error('Error cargando configuraciones:', error)
+        } catch (error) {
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -683,7 +680,6 @@ export default {
           `
         })
       } catch (error) {
-        console.error('Error verificando estado del sistema:', error)
         Swal.fire({
           icon: 'error',
           title: 'Error',

@@ -24,7 +24,7 @@ export function useImageStats() {
     error.value = null
     
     try {
-      const response = await axios.get('/api/v1/images/stats/')
+      const response = await axios.get('/images/stats/')
       
       stats.value = response.data
     } catch (err) {
@@ -41,7 +41,6 @@ export function useImageStats() {
         }
         error.value = null
       } else {
-        console.error('Error fetching image stats:', err)
         error.value = err.response?.data?.error || 'Error al obtener estadísticas'
       }
     } finally {
@@ -74,13 +73,12 @@ export function useImageStats() {
         }
       }
       
-      const response = await axios.get(`/api/v1/images/?${params}`)
+      const response = await axios.get(`/images/?${params}`)
       
       return response.data
     } catch (err) {
       // Si es error 500, retornar objeto vacío sin loggear
       if (err.response?.status !== 500) {
-        console.error('Error fetching images:', err)
         error.value = err.response?.data?.error || 'Error al obtener imágenes'
       }
       return { results: [], count: 0, totalPages: 0 }
@@ -110,7 +108,6 @@ export function useImageStats() {
     } catch (err) {
       // Si es error 500, retornar null sin loggear
       if (err.response?.status !== 500) {
-        console.error('Error fetching report stats:', err)
         error.value = err.response?.data?.error || 'Error al obtener estadísticas de reportes'
       }
       return null
@@ -145,7 +142,6 @@ export function useImageStats() {
       
       return true
     } catch (err) {
-      console.error('Error generating report:', err)
       error.value = err.response?.data?.error || 'Error al generar reporte'
       return false
     } finally {

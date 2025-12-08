@@ -220,7 +220,6 @@ const uploadImages = async () => {
       }
     }
   } catch (error) {
-    console.error('Error al subir imágenes:', error)
     uploadStatus.value = {
       type: 'error',
       title: '❌ Error al subir imágenes',

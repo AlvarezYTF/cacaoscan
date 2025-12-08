@@ -262,8 +262,8 @@
                   <!-- File Upload Tab -->
                   <div v-if="currentTab === 'upload'" class="bg-gray-50 border border-gray-200 rounded-2xl p-8">
                     <ImageUploader
-                      v-model="images"
-                      @update:modelValue="updateImages"
+                      :model-value="images"
+                      @update:modelValue="handleImageUpdate"
                     />
                   </div>
 
@@ -273,33 +273,39 @@
                       <CameraCapture @capture="handleCapturedImage" />
                     </div>
 
-                    <!-- Captured Images Preview -->
-                    <div v-if="capturedImages.length > 0" class="bg-white border-2 border-gray-200 rounded-2xl p-8 shadow-sm">
+                    <!-- All Images Preview -->
+                    <div v-if="images.length > 0" class="bg-white border-2 border-gray-200 rounded-2xl p-8 shadow-sm">
                       <div class="flex items-center gap-3 mb-6">
                         <div class="p-2 bg-green-100 rounded-xl">
                           <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                           </svg>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900">Fotos capturadas</h3>
-                        <span class="px-3 py-1 bg-green-600 text-white rounded-full text-sm font-bold">{{ capturedImages.length }}</span>
+                        <h3 class="text-xl font-bold text-gray-900">Todas las imágenes</h3>
+                        <span class="px-3 py-1 bg-green-600 text-white rounded-full text-sm font-bold">{{ images.length }}</span>
                       </div>
                       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        <div v-for="(img, index) in capturedImages" :key="getImageKey(img, index)" class="relative group">
+                        <div v-for="(img, index) in images" :key="getImageKey(img, index)" class="relative group">
                           <div class="aspect-square rounded-2xl overflow-hidden bg-gray-200 border-2 border-gray-200 group-hover:border-green-300 transition-all duration-300">
-                            <img :src="URL.createObjectURL(img)" :alt="`Foto capturada ${index + 1} del análisis de cacao`" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                            <img 
+                              :src="getImageUrl(img, index)" 
+                              :alt="`Imagen ${index + 1} del análisis de cacao`" 
+                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              @error="handleImageError"
+                              @load="handleImageLoad"
+                            />
                           </div>
                           <button
-                            @click="removeCapturedImage(index)"
+                            @click.stop="removeImageByIndex(index)"
                             type="button"
-                            class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-lg hover:bg-red-600 hover:scale-110 transition-all duration-200 opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                            class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-lg hover:bg-red-600 hover:scale-110 transition-all duration-200 z-10"
                             title="Eliminar foto"
                           >
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
                           </button>
-                          <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 rounded-2xl"></div>
+                          <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 rounded-2xl pointer-events-none"></div>
                         </div>
                       </div>
                     </div>
@@ -339,7 +345,7 @@
                   {{ isSubmitting ? 'Procesando análisis...' : 'Iniciar Análisis de Calidad' }}
                 </button>
                 
-                <div v-if="!isFormValid" class="mt-4 text-center">
+                <div v-if="!isFormValid && (isSubmitting || Object.keys(formErrors).length > 0)" class="mt-4 text-center">
                   <div class="inline-flex items-center px-5 py-3 bg-amber-50 border-2 border-amber-300 rounded-xl shadow-sm">
                     <div class="p-1.5 bg-amber-200 rounded-lg mr-3">
                       <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,10 +354,10 @@
                     </div>
                     <p class="text-sm text-amber-800 font-bold">
                       Falta: {{ 
-                        !batchData.name ? 'Nombre del lote' :
+                        !batchData.name || !batchData.name.trim() ? 'Nombre del lote' :
                         !batchData.collectionDate ? 'Fecha de recolección' :
                         !batchData.farm ? 'Finca' :
-                        !batchData.genetics ? 'Genética' :
+                        !batchData.genetics || !batchData.genetics.trim() ? 'Genética' :
                         !images.length ? 'Al menos una imagen' : ''
                       }}
                     </p>
@@ -387,7 +393,7 @@
 
 <script setup>
 // 1. Vue core
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 
 // 2. Vue router
 import { useRouter, useRoute } from 'vue-router'
@@ -441,6 +447,7 @@ const isSubmitting = ref(false)
 const formErrors = ref({})
 const analysisResult = ref(null)
 const activeSection = ref('analysis')
+const imageUrls = ref({})
 
 // Tabs configuration
 const tabs = [
@@ -449,18 +456,99 @@ const tabs = [
 ]
 
 // Watch for changes in captured images and update the main images array
-watch(capturedImages, (newVal) => {
-  const uploadedImages = images.value.filter(img => !capturedImages.value.includes(img))
+watch(capturedImages, (newVal, oldVal) => {
+  // Crear claves para comparar
+  const newCapturedKeys = newVal.map(img => {
+    if (img instanceof File) {
+      return `${img.name}-${img.size}-${img.lastModified}`
+    }
+    return ''
+  }).filter(key => key !== '')
+  
+  // Filtrar imágenes que no son capturadas (son archivos subidos)
+  const uploadedImages = images.value.filter(img => {
+    if (img instanceof File) {
+      const imgKey = `${img.name}-${img.size}-${img.lastModified}`
+      return !newCapturedKeys.includes(imgKey)
+    }
+    return true
+  })
+  
+  // Combinar imágenes subidas con capturadas
   images.value = [...uploadedImages, ...newVal]
+  
+  // Actualizar URLs cuando cambian las imágenes
+  nextTick(() => {
+    updateImageUrls()
+  })
 }, { deep: true })
+
+// Watcher para actualizar URLs cuando cambia el tab
+watch(currentTab, async () => {
+  await nextTick()
+  updateImageUrls()
+})
+
+// Función para actualizar todas las URLs de imágenes
+const updateImageUrls = async () => {
+  // Limpiar URLs antiguas (solo blob URLs, no data URLs)
+  Object.keys(imageUrls.value).forEach((key) => {
+    const index = parseInt(key)
+    const url = imageUrls.value[index]
+    if (url && typeof url === 'string' && url.startsWith('blob:')) {
+      try {
+        URL.revokeObjectURL(url)
+      } catch (error) {
+        // Ignorar errores al revocar
+      }
+      delete imageUrls.value[index]
+    }
+  })
+  
+  // Crear nuevas URLs para todas las imágenes usando FileReader (data URLs)
+  const promises = images.value.map(async (img, index) => {
+    if (img instanceof File) {
+      // Si ya tenemos una data URL, no regenerarla
+      if (imageUrls.value[index] && imageUrls.value[index].startsWith('data:')) {
+        return
+      }
+      
+      // Generar data URL usando FileReader
+      return new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            imageUrls.value[index] = e.target.result
+            resolve()
+          } else {
+            resolve()
+          }
+        }
+        reader.onerror = () => {
+          // Fallback a blob URL si FileReader falla
+          try {
+            const blobUrl = URL.createObjectURL(img)
+            imageUrls.value[index] = blobUrl
+          } catch (error) {
+            // Ignorar errores
+          }
+          resolve()
+        }
+        reader.readAsDataURL(img)
+      })
+    }
+  })
+  
+  await Promise.all(promises)
+}
 
 // Computed properties
 const isFormValid = computed(() => {
   return (
-    batchData.value.name.trim() !== '' &&
+    batchData.value.name && batchData.value.name.trim() !== '' &&
     batchData.value.collectionDate &&
     batchData.value.farm &&
-    batchData.value.genetics &&
+    batchData.value.genetics && batchData.value.genetics.trim() !== '' &&
     images.value.length > 0
   )
 })
@@ -491,37 +579,275 @@ const getImageKey = (img, index) => {
   return img.id || img.url || `img-${index}`
 }
 
+// Helper function to create object URL for File objects
+// Cache de URLs para evitar crear múltiples URLs para el mismo archivo
+const imageUrlCache = new Map()
+
+const getImageUrl = (img, index = null) => {
+  if (!img) return ''
+  
+  if (img instanceof File) {
+    // Prioridad 1: Si tenemos un índice y existe en imageUrls, usar esa URL
+    if (index !== null && imageUrls.value[index]) {
+      const cachedUrl = imageUrls.value[index]
+      if (cachedUrl) {
+        return cachedUrl
+      }
+    }
+    
+    // Prioridad 2: Crear una clave única para el archivo y buscar en cache
+    const cacheKey = `${img.name}-${img.size}-${img.lastModified}`
+    if (imageUrlCache.has(cacheKey)) {
+      const cachedUrl = imageUrlCache.get(cacheKey)
+      // Si tenemos índice, también guardarlo en imageUrls
+      if (index !== null && cachedUrl) {
+        imageUrls.value[index] = cachedUrl
+      }
+      return cachedUrl
+    }
+    
+    // Prioridad 3: Crear blob URL inmediatamente (síncrono)
+    try {
+      const blobUrl = URL.createObjectURL(img)
+      imageUrlCache.set(cacheKey, blobUrl)
+      
+      if (index !== null) {
+        imageUrls.value[index] = blobUrl
+      }
+      
+      // Generar data URL en segundo plano usando FileReader
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          // Revocar blob URL
+          URL.revokeObjectURL(blobUrl)
+          // Guardar data URL
+          const dataUrl = e.target.result
+          imageUrlCache.set(cacheKey, dataUrl)
+          if (index !== null) {
+            // Actualizar reactivamente
+            imageUrls.value[index] = dataUrl
+          }
+        }
+      }
+      reader.onerror = () => {
+        // Si falla FileReader, mantener el blob URL
+      }
+      reader.readAsDataURL(img)
+      
+      return blobUrl
+    } catch (error) {
+      return ''
+    }
+  }
+  
+  if (typeof img === 'string') {
+    return img
+  }
+  
+  return img.url || img || ''
+}
+
+const handleImageError = (event) => {
+  // Si hay un error cargando la imagen, mostrar un placeholder
+  event.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect width="200" height="200" fill="%23e5e7eb"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="14"%3EError al cargar%3C/text%3E%3C/svg%3E'
+}
+
+const handleImageLoad = (event) => {
+  // Imagen cargada correctamente - no hacer nada
+}
+
 // Functions
 const updateBatchData = (data) => {
   batchData.value = { ...data }
 }
 
-const updateImages = (newImages) => {
-  const nonCapturedImages = newImages.filter(img => !capturedImages.value.includes(img))
-  images.value = [...nonCapturedImages, ...capturedImages.value]
+const handleImageUpdate = (newImages) => {
+  // Crear claves de imágenes capturadas
+  const capturedImageKeys = capturedImages.value.map(img => {
+    if (img instanceof File) {
+      return `${img.name}-${img.size}-${img.lastModified}`
+    }
+    return ''
+  }).filter(key => key !== '')
+  
+  // Separar imágenes subidas de las capturadas
+  const uploadedImages = newImages.filter(img => {
+    if (img instanceof File) {
+      const imgKey = `${img.name}-${img.size}-${img.lastModified}`
+      return !capturedImageKeys.includes(imgKey)
+    }
+    return true
+  })
+  
+  // Si se eliminó una imagen, verificar si era una capturada
+  const currentImageKeys = images.value.map(img => {
+    if (img instanceof File) {
+      return `${img.name}-${img.size}-${img.lastModified}`
+    }
+    return ''
+  }).filter(key => key !== '')
+  
+  const newImageKeys = newImages.map(img => {
+    if (img instanceof File) {
+      return `${img.name}-${img.size}-${img.lastModified}`
+    }
+    return ''
+  }).filter(key => key !== '')
+  
+  // Encontrar imágenes eliminadas que eran capturadas
+  const removedKeys = currentImageKeys.filter(key => !newImageKeys.includes(key) && capturedImageKeys.includes(key))
+  
+  // Eliminar de capturedImages las que fueron removidas
+  if (removedKeys.length > 0) {
+    capturedImages.value = capturedImages.value.filter(img => {
+      if (img instanceof File) {
+        const imgKey = `${img.name}-${img.size}-${img.lastModified}`
+        return !removedKeys.includes(imgKey)
+      }
+      return true
+    })
+  }
+  
+  // Combinar imágenes subidas con capturadas actualizadas
+  images.value = [...uploadedImages, ...capturedImages.value]
 }
 
-const handleCapturedImage = (imageFile) => {
-  if (!capturedImages.value.some(img => img.name === imageFile.name && img.size === imageFile.size)) {
+const updateImages = handleImageUpdate
+
+const handleCapturedImage = async (imageFile) => {
+  // Verificar que el archivo sea válido
+  if (!imageFile || !(imageFile instanceof File)) {
+    return
+  }
+  
+  // Usar una comparación más robusta para evitar duplicados
+  const isDuplicate = capturedImages.value.some(img => {
+    if (img instanceof File && imageFile instanceof File) {
+      // Comparar por nombre y tamaño, o por nombre completo si tienen timestamp
+      return img.name === imageFile.name && img.size === imageFile.size
+    }
+    return false
+  })
+  
+  if (!isDuplicate) {
+    // Generar data URL inmediatamente usando FileReader
+    const dataUrl = await new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          resolve(e.target.result)
+        } else {
+          // Fallback a blob URL si FileReader falla
+          try {
+            resolve(URL.createObjectURL(imageFile))
+          } catch (error) {
+            resolve('')
+          }
+        }
+      }
+      reader.onerror = () => {
+        // Fallback a blob URL si FileReader falla
+        try {
+          resolve(URL.createObjectURL(imageFile))
+        } catch (error) {
+          resolve('')
+        }
+      }
+      reader.readAsDataURL(imageFile)
+    })
+    
+    if (!dataUrl) {
+      return
+    }
+    
+    // Agregar la imagen capturada
     capturedImages.value = [...capturedImages.value, imageFile]
+    // También actualizar el array principal de imágenes
+    const newIndex = images.value.length
+    images.value = [...images.value, imageFile]
+    
+    // Guardar la data URL en imageUrls inmediatamente
+    imageUrls.value[newIndex] = dataUrl
+    
+    // También guardar en el cache
+    const cacheKey = `${imageFile.name}-${imageFile.size}-${imageFile.lastModified}`
+    imageUrlCache.set(cacheKey, dataUrl)
+    
+    // Forzar reactividad adicional
+    await nextTick()
   }
 }
 
 const removeCapturedImage = (index) => {
-  const updatedImages = [...capturedImages.value]
-  updatedImages.splice(index, 1)
-  capturedImages.value = updatedImages
+  if (index < 0 || index >= capturedImages.value.length) return
+  
+  const imageToRemove = capturedImages.value[index]
+  const updatedCapturedImages = [...capturedImages.value]
+  updatedCapturedImages.splice(index, 1)
+  capturedImages.value = updatedCapturedImages
+  
+  // También eliminar del array principal de imágenes
+  const imageIndex = images.value.findIndex(img => {
+    if (img instanceof File && imageToRemove instanceof File) {
+      return img.name === imageToRemove.name && img.size === imageToRemove.size && img.lastModified === imageToRemove.lastModified
+    }
+    return false
+  })
+  
+  if (imageIndex > -1) {
+    images.value.splice(imageIndex, 1)
+  }
+}
+
+const removeImageByIndex = (index) => {
+  if (index < 0 || index >= images.value.length) return
+  
+  const imageToRemove = images.value[index]
+  
+  // Revocar URL del objeto si es un File
+  if (imageToRemove instanceof File) {
+    const cacheKey = `${imageToRemove.name}-${imageToRemove.size}-${imageToRemove.lastModified}`
+    if (imageUrlCache.has(cacheKey)) {
+      const url = imageUrlCache.get(cacheKey)
+      URL.revokeObjectURL(url)
+      imageUrlCache.delete(cacheKey)
+    }
+  }
+  
+  // Eliminar del array principal
+  images.value.splice(index, 1)
+  
+  // Si es una imagen capturada, también eliminarla de capturedImages
+  const capturedIndex = capturedImages.value.findIndex(img => {
+    if (img instanceof File && imageToRemove instanceof File) {
+      return img.name === imageToRemove.name && img.size === imageToRemove.size && img.lastModified === imageToRemove.lastModified
+    }
+    return false
+  })
+  
+  if (capturedIndex > -1) {
+    capturedImages.value.splice(capturedIndex, 1)
+  }
 }
 
 const validateForm = () => {
   const errors = {}
 
-  if (!batchData.value.name.trim()) {
+  if (!batchData.value.name || !batchData.value.name.trim()) {
     errors.name = 'El nombre del lote es requerido'
   }
 
   if (!batchData.value.collectionDate) {
     errors.collectionDate = 'La fecha de recolección es requerida'
+  }
+
+  if (!batchData.value.farm) {
+    errors.farm = 'La finca es requerida'
+  }
+
+  if (!batchData.value.genetics || !batchData.value.genetics.trim()) {
+    errors.genetics = 'La genética es requerida'
   }
 
   if (images.value.length === 0) {
@@ -550,8 +876,7 @@ const submitAnalysis = async () => {
       resetForm()
     }
   } catch (error) {
-    console.error('Error submitting analysis:', error)
-  } finally {
+    } finally {
     isSubmitting.value = false
   }
 }
@@ -583,6 +908,8 @@ const resetAndCreateNew = () => {
 // Lifecycle
 onMounted(() => {
   analysisStore.clearBatch()
+  // Inicializar URLs de imágenes al montar
+  updateImageUrls()
 })
 </script>
 

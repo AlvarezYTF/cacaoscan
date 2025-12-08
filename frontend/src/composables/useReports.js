@@ -344,7 +344,6 @@ export function useReports(options = {}) {
     try {
       return await reportsService.checkReportStatus(reportId)
     } catch (err) {
-      console.error('Error checking report status:', err)
       throw err
     }
   }
@@ -441,7 +440,6 @@ export function useReports(options = {}) {
         
         intervalId = setTimeout(watch, 3000)
       } catch (err) {
-        console.error('Error watching report status:', err)
         stopWatching()
       }
     }

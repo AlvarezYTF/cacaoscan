@@ -250,7 +250,12 @@ const authForm = useAuthForm({
       
       return result
     } catch (err) {
-      authForm.setStatusMessage(err.message || 'Error inesperado al iniciar sesión', 'error')
+      const errorMessage = err.message || 
+                          err.response?.data?.error ||
+                          err.response?.data?.message || 
+                          err.response?.data?.detail ||
+                          'Error inesperado al iniciar sesión'
+      authForm.setStatusMessage(errorMessage, 'error')
       throw err
     } finally {
       globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
@@ -273,7 +278,6 @@ const handleSubmit = async () => {
   try {
     await authForm.handleAuthSubmit()
   } catch (err) {
-    console.error('Error en login:', err)
     // Error is already handled by useAuthForm
   }
 }

@@ -175,8 +175,6 @@ const successMessage = ref('')
 
 // Functions
 const handlePredictionResult = (result) => {
-  console.log('Predicción recibida:', result)
-  
   currentPrediction.value = result
   
   // Agregar a historial reciente (al principio)
@@ -195,7 +193,6 @@ const handlePredictionResult = (result) => {
 }
 
 const handlePredictionError = (error) => {
-  console.error('Error en predicción:', error)
   globalError.value = error.message || 'Error desconocido en la predicción'
   currentPrediction.value = null
 }
@@ -235,7 +232,6 @@ const loadRecentPredictions = async () => {
       recentPredictions.value = response.results
     }
   } catch (error) {
-    console.warn('No se pudo cargar el historial:', error.message)
     // No mostrar error al usuario, ya que es opcional
   }
 }

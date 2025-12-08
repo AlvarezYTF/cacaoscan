@@ -24,11 +24,15 @@ function buildLoginPayload(credentials) {
   }
   
   // Priorizar email sobre username
+  // Normalizar a lowercase para coincidir con el backend
   if (credentials.email) {
-    loginData.email = credentials.email
-    loginData.username = credentials.email
+    const normalizedEmail = credentials.email.toLowerCase().trim()
+    loginData.email = normalizedEmail
+    // El backend puede usar email o username, enviar ambos para compatibilidad
+    loginData.username = normalizedEmail
   } else if (credentials.username) {
-    loginData.username = credentials.username
+    const normalizedUsername = credentials.username.toLowerCase().trim()
+    loginData.username = normalizedUsername
   }
   
   return loginData
@@ -73,7 +77,14 @@ const authApi = {
       const response = await apiPost('/auth/login/', loginData)
       return normalizeLoginResponse(response)
     } catch (error) {
-      throw normalizeAuthError(error)
+      const normalizedError = normalizeAuthError(error)
+      // Create a new Error with the message so it can be properly caught
+      const authError = new Error(normalizedError.message)
+      authError.type = normalizedError.type
+      authError.status = normalizedError.status
+      authError.fieldErrors = normalizedError.fieldErrors
+      authError.response = error.response // Preserve original response
+      throw authError
     }
   },
 
@@ -101,7 +112,6 @@ const authApi = {
       return await apiPost('/auth/logout/')
     } catch (error) {
       // Don't throw on logout errors - always allow logout
-      console.error('Logout error:', error)
       return { success: true }
     }
   },

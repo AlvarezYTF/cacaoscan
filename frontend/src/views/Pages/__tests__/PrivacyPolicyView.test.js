@@ -337,7 +337,6 @@ describe('PrivacyPolicyView', () => {
             return false
           } catch (e) {
             // Log error for debugging but continue
-            console.error('Error checking router link:', e)
             return false
           }
         })

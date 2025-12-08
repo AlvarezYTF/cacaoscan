@@ -105,9 +105,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const setUser = (userData) => {
+    // Ensure role is set (default to 'farmer' if missing)
+    if (userData && !userData.role) {
+      userData.role = 'farmer'
+    }
     user.value = userData
     localStorage.setItem('user', JSON.stringify(userData))
-  }
+    }
 
   const clearUser = () => {
     user.value = null
@@ -139,7 +143,6 @@ export const useAuthStore = defineStore('auth', () => {
         accessToken.value = storedToken
       }
     } catch (error) {
-      console.error('Error inicializando desde localStorage:', error)
       clearAll()
     }
   }
@@ -152,18 +155,10 @@ export const useAuthStore = defineStore('auth', () => {
       
       // Si hay token pero no hay usuario, intentar obtener el usuario actual
       if (accessToken.value && !user.value) {
-        console.log('🔄 Restaurando sesión desde token...')
         await getCurrentUser()
       }
       
-      console.log('✅ Autenticación inicializada:', {
-        hasToken: !!accessToken.value,
-        hasUser: !!user.value,
-        isAuthenticated: isAuthenticated.value
-      })
-      
-    } catch (error) {
-      console.error('❌ Error inicializando autenticación:', error)
+      } catch (error) {
       // Si hay error durante la inicialización, limpiar el estado completo
       // para evitar datos inconsistentes o tokens inválidos en el store
       clearAll()
@@ -197,9 +192,17 @@ export const useAuthStore = defineStore('auth', () => {
         throw new Error('Respuesta de login inválida')
       }
     } catch (err) {
-      console.error('Error en login:', err)
-      setError(err.response?.data?.message || err.message || 'Error al iniciar sesión')
-      return { success: false, error: error.value }
+      // Extract error message from normalized error or response
+      const errorMessage = err.message || 
+                          err.response?.data?.error ||
+                          err.response?.data?.message || 
+                          err.response?.data?.detail ||
+                          'Error al iniciar sesión'
+      setError(errorMessage)
+      // Throw error so it can be caught by the component
+      const loginError = new Error(errorMessage)
+      loginError.originalError = err
+      throw loginError
     } finally {
       isLoading.value = false
     }
@@ -213,6 +216,37 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.register(userData)
       
+      // Si el backend devuelve tokens (registro sin verificación de email)
+      if (response.access && response.refresh) {
+        // Guardar tokens y hacer login automático
+        const userData = response.user || {}
+        
+        // Asegurar que el usuario tenga el rol (normalizar a 'farmer' si no viene)
+        if (!userData.role) {
+          userData.role = 'farmer'
+        }
+        
+        setTokens({
+          access: response.access,
+          refresh: response.refresh,
+          user: userData
+        })
+        
+        // Obtener usuario completo desde el backend para asegurar que tenga todos los datos
+        try {
+          await getCurrentUser()
+        } catch (err) {
+          // Si falla getCurrentUser, usar el usuario del registro
+          }
+        
+        updateLastActivity()
+        
+        // Redirigir automáticamente al dashboard de agricultor
+        await router.push({ name: 'AgricultorDashboard' })
+        
+        return { success: true }
+      }
+      
       // Verificar si se requiere verificación de email
       if (response.verification_required || response.data?.verification_required) {
         // No hacer login automático, retornar datos para que el componente maneje la redirección
@@ -225,9 +259,8 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
       
-      // El nuevo backend devuelve token directamente en el registro (caso legacy)
+      // Fallback para formato anterior con token
       if (response.success && response.token && response.user) {
-        // Guardar tokens (access y refresh si están disponibles)
         setTokens({
           access: response.token,
           refresh: response.refresh,
@@ -235,36 +268,24 @@ export const useAuthStore = defineStore('auth', () => {
         })
         
         updateLastActivity()
-        
-        // Redirigir automáticamente al dashboard de agricultor
         await router.push({ name: 'AgricultorDashboard' })
         
         return { success: true }
-      } else {
-        // Fallback para formato anterior
-        if (response.access && response.refresh) {
-          setTokens(response)
-          await getCurrentUser()
-          updateLastActivity()
-          await router.push({ name: 'AgricultorDashboard' })
-          return { success: true }
-        }
-        
-        if (response.success) {
-          // Si no hay tokens, asumir que necesita verificación
-          return {
-            success: true,
-            data: {
-              email: response.email || userData.email,
-              verification_required: true
-            }
+      }
+      
+      // Si no hay tokens, asumir que necesita verificación
+      if (response.success) {
+        return {
+          success: true,
+          data: {
+            email: response.email || userData.email,
+            verification_required: true
           }
         }
       }
 
       return response
     } catch (err) {
-      console.error('Error en registro:', err)
       setError(err.response?.data?.message || err.message || 'Error en el registro')
       return { success: false, error: error.value }
     } finally {
@@ -282,7 +303,6 @@ export const useAuthStore = defineStore('auth', () => {
         await authApi.logout()
       }
     } catch (err) {
-      console.error('Error en logout del servidor:', err)
       // Continuar con logout local aunque falle el servidor
     } finally {
       // Limpiar estado local
@@ -311,12 +331,16 @@ export const useAuthStore = defineStore('auth', () => {
       
       const userData = response.data || response
       
+      // Ensure role is present (UserSerializer should return it, but ensure it)
+      if (!userData.role) {
+        // Default to 'farmer' if role is missing
+        userData.role = 'farmer'
+        }
+      
       setUser(userData)
       updateLastActivity()
       return userData
     } catch (err) {
-      console.error('Error obteniendo usuario actual:', err)
-      
       // Si el token no es válido, hacer logout
       if (err.response?.status === 401) {
         await logout(false)
@@ -351,7 +375,6 @@ export const useAuthStore = defineStore('auth', () => {
       
       throw new Error('Respuesta inválida del servidor')
     } catch (err) {
-      console.error('❌ Error refrescando token:', err)
       // Si el refresh token expiró o fue rechazado, limpiar el estado completo
       // y forzar logout para que el usuario se autentique nuevamente
       if (err.response?.status === 401 || err.response?.status === 403) {
@@ -370,7 +393,6 @@ export const useAuthStore = defineStore('auth', () => {
       await authApi.changePassword(passwordData)
       return { success: true }
     } catch (err) {
-      console.error('Error cambiando contraseña:', err)
       setError(err.response?.data?.detail || 'Error al cambiar contraseña')
       return { success: false, error: error.value }
     } finally {
@@ -387,7 +409,6 @@ export const useAuthStore = defineStore('auth', () => {
       await authApi.requestPasswordReset(email)
       return { success: true }
     } catch (err) {
-      console.error('Error solicitando reset de contraseña:', err)
       setError(err.response?.data?.detail || 'Error al solicitar restablecimiento')
       return { success: false, error: error.value }
     } finally {
@@ -410,7 +431,6 @@ export const useAuthStore = defineStore('auth', () => {
       
       return { success: true }
     } catch (err) {
-      console.error('Error verificando email:', err)
       setError(err.response?.data?.message || err.response?.data?.detail || 'Error al verificar email')
       return { success: false, error: error.value }
     } finally {
@@ -439,7 +459,6 @@ export const useAuthStore = defineStore('auth', () => {
         message: response.message || 'Email verificado exitosamente' 
       }
     } catch (err) {
-      console.error('Error verificando email desde token:', err)
       const errorMessage = err.response?.data?.message || err.response?.data?.detail || 'Error al verificar email'
       setError(errorMessage)
       return { success: false, error: errorMessage }
@@ -466,7 +485,6 @@ export const useAuthStore = defineStore('auth', () => {
         throw new Error('Email requerido para reenviar verificación')
       }
     } catch (err) {
-      console.error('Error reenviando verificación:', err)
       const errorMessage = err.response?.data?.message || err.response?.data?.detail || 'Error al reenviar verificación'
       setError(errorMessage)
       return { success: false, error: errorMessage }
@@ -499,7 +517,6 @@ export const useAuthStore = defineStore('auth', () => {
       
       return { success: true }
     } catch (err) {
-      console.error('Error actualizando perfil:', err)
       setError(err.response?.data?.message || err.message || 'Error al actualizar perfil')
       return { success: false, error: error.value }
     } finally {
@@ -600,7 +617,6 @@ export const useAuthStore = defineStore('auth', () => {
         return { success: false, error: error.value }
       }
     } catch (err) {
-      console.error('Error enviando código OTP:', err)
       setError(err.response?.data?.message || err.message || 'Error al enviar código OTP')
       return { success: false, error: error.value }
     } finally {
@@ -623,7 +639,6 @@ export const useAuthStore = defineStore('auth', () => {
         return { success: false, error: error.value }
       }
     } catch (err) {
-      console.error('Error verificando código OTP:', err)
       const errorMessage = err.response?.data?.message || err.message || 'Código OTP inválido o expirado'
       setError(errorMessage)
       return { success: false, error: errorMessage }

@@ -238,7 +238,12 @@ const allMenuItems = {
 
 // Computed properties
 const menuItems = computed(() => {
-  const normalizedRole = normalizeRole(props.userRole) || 'agricultor'
+  // Normalize role: convert 'farmer' to 'agricultor' for menu lookup
+  let normalizedRole = normalizeRole(props.userRole) || 'agricultor'
+  // Convert 'farmer' to 'agricultor' for menu items lookup
+  if (normalizedRole === 'farmer') {
+    normalizedRole = 'agricultor'
+  }
   return allMenuItems[normalizedRole] || []
 })
 

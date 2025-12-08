@@ -782,3 +782,325 @@
 - Dispositivos: iOS 13+, Android 10+, Desktop (Windows 10+, macOS 10.15+, Linux)
 - Formatos: JPEG, PNG, WebP para imágenes; PDF, Excel, CSV, JSON para exportación
 
+---
+
+## Requisitos No Funcionales Generalizados
+
+### Rendimiento – Tiempos de Respuesta y Procesamiento
+
+**Descripción breve:**
+
+El sistema debe garantizar tiempos de respuesta rápidos y eficientes para todas las operaciones, optimizando el procesamiento de datos, imágenes y consultas para mantener una experiencia de usuario fluida.
+
+**Prioridad:**
+
+Alta
+
+**Criterios de aceptación:**
+
+• Las operaciones CRUD simples deben completarse en menos de 2 segundos bajo carga normal.
+
+• Las validaciones de formularios deben ejecutarse en menos de 500 milisegundos en el cliente.
+
+• Las operaciones complejas (análisis de imágenes, generación de reportes) deben completarse en menos de 30 segundos.
+
+• Las consultas y búsquedas deben devolver resultados en menos de 2 segundos para hasta 10,000 registros.
+
+• El procesamiento de imágenes debe completarse en menos de 15 segundos para imágenes de hasta 10 MB.
+
+• El sistema debe implementar paginación eficiente mostrando entre 20 y 25 registros por página.
+
+• El sistema debe soportar procesamiento en paralelo de hasta 5 imágenes simultáneas por servidor.
+
+---
+
+### Seguridad – Protección de Datos y Accesos
+
+**Descripción breve:**
+
+El sistema debe implementar medidas de seguridad integrales para proteger datos sensibles, prevenir accesos no autorizados y garantizar la integridad de la información mediante cifrado, autenticación robusta y auditoría completa.
+
+**Prioridad:**
+
+Alta
+
+**Criterios de aceptación:**
+
+• Todas las comunicaciones deben usar protocolo HTTPS con cifrado TLS 1.2 o superior.
+
+• Los datos sensibles deben almacenarse cifrados en reposo utilizando AES-256.
+
+• Las contraseñas deben almacenarse con algoritmos de hash unidireccionales (bcrypt, Argon2) con factor de costo mínimo de 12.
+
+• El sistema debe implementar autenticación mediante tokens JWT con expiración configurable.
+
+• El sistema debe implementar autorización basada en roles (RBAC) con auditoría completa de accesos.
+
+• El sistema debe prevenir ataques comunes: rate limiting, protección CSRF, XSS y SQL injection.
+
+• El sistema debe validar archivos subidos mediante verificación de tipo MIME real y firma de archivo (magic bytes).
+
+• El sistema debe registrar todos los accesos y operaciones críticas con timestamp, usuario e IP para auditoría.
+
+• El sistema debe implementar bloqueo de cuentas después de múltiples intentos fallidos de autenticación.
+
+---
+
+### Usabilidad – Experiencia de Usuario
+
+**Descripción breve:**
+
+El sistema debe proporcionar una interfaz intuitiva, accesible y responsive que facilite la interacción del usuario, con retroalimentación clara, validaciones en tiempo real y soporte para diferentes dispositivos.
+
+**Prioridad:**
+
+Alta
+
+**Criterios de aceptación:**
+
+• La interfaz debe ser responsive y funcionar correctamente en dispositivos móviles, tablets y desktop.
+
+• Los mensajes de error deben ser claros, específicos y accionables, mostrándose en menos de 1 segundo.
+
+• El sistema debe proporcionar retroalimentación visual durante operaciones asíncronas (barras de progreso, notificaciones).
+
+• Los formularios deben incluir validación en tiempo real con mensajes contextuales.
+
+• El sistema debe permitir cancelar operaciones en curso cuando sea aplicable.
+
+• El sistema debe implementar guardado automático de borradores para prevenir pérdida de datos.
+
+• La navegación debe ser intuitiva con máximo 3 pasos para completar tareas principales.
+
+• El sistema debe ofrecer búsqueda con autocompletado y sugerencias mientras el usuario escribe.
+
+---
+
+### Confiabilidad – Estabilidad y Precisión
+
+**Descripción breve:**
+
+El sistema debe mantener altos niveles de confiabilidad en sus operaciones, garantizando precisión en los análisis, recuperación ante fallos y preservación de datos mediante mecanismos de validación y reintentos automáticos.
+
+**Prioridad:**
+
+Alta
+
+**Criterios de aceptación:**
+
+• El sistema debe mantener una tasa de éxito mínima del 99% para operaciones críticas bajo condiciones normales.
+
+• El sistema debe implementar reintentos automáticos (máximo 3 intentos) para fallos transitorios.
+
+• En caso de fallo, el sistema debe preservar los datos ingresados (excepto información sensible) para evitar pérdida de información.
+
+• El sistema debe mantener una precisión mínima del 85% en la clasificación de calidad de granos de cacao mediante modelos de ML.
+
+• El sistema debe validar la integridad de datos mediante checksums antes y después de operaciones críticas.
+
+• En caso de baja confianza del modelo (< 60%), el sistema debe alertar al usuario y sugerir revisión manual.
+
+• El sistema debe implementar control de concurrencia (optimistic locking) para prevenir conflictos en ediciones simultáneas.
+
+• El sistema debe registrar todos los errores con detalles técnicos suficientes para diagnóstico sin exponer información sensible.
+
+---
+
+### Disponibilidad – Tiempo de Actividad
+
+**Descripción breve:**
+
+El sistema debe garantizar alta disponibilidad mediante SLAs definidos según criticidad del servicio, con mecanismos de recuperación rápida y manejo de picos de carga sin degradación del servicio.
+
+**Prioridad:**
+
+Alta
+
+**Criterios de aceptación:**
+
+• Los servicios críticos (autenticación, análisis) deben estar disponibles el 99.9% del tiempo durante horario laboral.
+
+• Los servicios estándar deben estar disponibles el 99.5% del tiempo.
+
+• El tiempo de recuperación (RTO) debe ser menor a 4 horas para servicios críticos.
+
+• El punto de recuperación (RPO) debe ser menor a 1 hora para garantizar mínima pérdida de datos.
+
+• El sistema debe manejar picos de carga de hasta 200 operaciones simultáneas sin degradación del servicio.
+
+• El sistema debe implementar mecanismos de caché para mejorar tiempos de respuesta en consultas frecuentes.
+
+• El sistema debe soportar mantenimiento programado sin afectar la disponibilidad mediante redundancia o despliegues sin downtime.
+
+---
+
+### Mantenibilidad – Código y Documentación
+
+**Descripción breve:**
+
+El sistema debe estar diseñado para facilitar el mantenimiento, actualización y extensión del código mediante arquitectura modular, pruebas automatizadas, logging estructurado y documentación adecuada.
+
+**Prioridad:**
+
+Media
+
+**Criterios de aceptación:**
+
+• El código debe tener una cobertura de pruebas unitarias mínima del 80% para módulos críticos.
+
+• El código debe estar modularizado siguiendo principios SOLID, permitiendo agregar funcionalidades sin modificar código existente.
+
+• El sistema debe registrar logs estructurados con timestamp, nivel, contexto y detalles suficientes para auditoría y depuración.
+
+• El código debe seguir patrones de diseño consistentes (Repository, Strategy) para facilitar testing y mantenimiento.
+
+• El sistema debe registrar métricas de rendimiento y uso para facilitar optimización y análisis.
+
+• El código debe seguir principios DRY (Don't Repeat Yourself) y KISS (Keep It Simple, Stupid).
+
+• Los logs deben almacenarse por períodos mínimos definidos (90 días para auditoría, 30 días para depuración).
+
+---
+
+### Escalabilidad – Crecimiento y Carga
+
+**Descripción breve:**
+
+El sistema debe ser capaz de escalar horizontal y verticalmente para manejar crecimiento en usuarios, datos y carga de trabajo sin requerir cambios arquitectónicos significativos.
+
+**Prioridad:**
+
+Alta
+
+**Criterios de aceptación:**
+
+• El sistema debe soportar escalado horizontal mediante balanceo de carga y distribución de servicios.
+
+• El sistema debe manejar crecimiento de datos históricos sin degradación de rendimiento mediante particionamiento y archiving.
+
+• El sistema debe soportar procesamiento distribuido para operaciones intensivas (entrenamiento de modelos, análisis en lote).
+
+• El sistema debe implementar colas de procesamiento con priorización para manejar picos de carga.
+
+• El sistema debe ser compatible con servicios en la nube (AWS, Azure, GCP) para escalado elástico.
+
+• El sistema debe soportar hasta 10,000 usuarios concurrentes mediante arquitectura escalable.
+
+• El sistema debe implementar caché distribuido para mejorar rendimiento en alta carga.
+
+---
+
+### Compatibilidad – Navegadores y Dispositivos
+
+**Descripción breve:**
+
+El sistema debe ser compatible con navegadores modernos, dispositivos móviles y diferentes sistemas operativos, garantizando funcionalidad consistente y acceso universal.
+
+**Prioridad:**
+
+Alta
+
+**Criterios de aceptación:**
+
+• El sistema debe funcionar correctamente en navegadores Chrome 90+, Firefox 88+, Safari 14+ y Edge 90+.
+
+• El sistema debe ser compatible con dispositivos móviles iOS 13+ y Android 10+ manteniendo funcionalidad completa.
+
+• El sistema debe ser compatible con sistemas operativos desktop: Windows 10+, macOS 10.15+ y Linux.
+
+• El sistema debe aceptar formatos de imagen estándar: JPEG, PNG y WebP con resoluciones desde 320x240 hasta 8192x8192 píxeles.
+
+• El sistema debe soportar exportación de datos en formatos PDF, Excel (.xlsx), CSV y JSON.
+
+• El sistema debe ser compatible con estándares web modernos (HTML5, CSS3, ES6+) sin requerir plugins adicionales.
+
+• El sistema debe funcionar correctamente con diferentes velocidades de conexión, optimizando carga para conexiones lentas.
+
+---
+
+### Portabilidad – Despliegue y Entornos
+
+**Descripción breve:**
+
+El sistema debe ser portable entre diferentes entornos de despliegue, sistemas operativos y plataformas de infraestructura sin requerir modificaciones significativas al código.
+
+**Prioridad:**
+
+Media
+
+**Criterios de aceptación:**
+
+• El sistema debe poder desplegarse en entornos Linux, Windows Server y contenedores Docker sin modificaciones al código.
+
+• El sistema debe ser compatible con diferentes bases de datos relacionales (PostgreSQL, MySQL) mediante abstracción de capa de datos.
+
+• El sistema de almacenamiento debe ser compatible con sistemas de archivos locales, S3-compatible y Azure Blob Storage mediante abstracción.
+
+• El sistema debe poder ejecutarse en CPU y GPU (CUDA, OpenCL) para optimización de rendimiento en procesamiento ML.
+
+• El sistema debe ser compatible con servicios de ML en la nube (AWS SageMaker, Azure ML, Google Colab) para escalabilidad.
+
+• El sistema debe poder desplegarse en infraestructura on-premise y cloud sin cambios arquitectónicos.
+
+• El sistema debe ser compatible con orquestadores de contenedores (Kubernetes, Docker Swarm) para despliegue escalable.
+
+---
+
+### Accesibilidad – Inclusión y Estándares
+
+**Descripción breve:**
+
+El sistema debe ser accesible para usuarios con diferentes capacidades, cumpliendo con estándares internacionales de accesibilidad web y proporcionando alternativas para interacción.
+
+**Prioridad:**
+
+Media
+
+**Criterios de aceptación:**
+
+• El sistema debe cumplir con WCAG 2.1 nivel AA como mínimo para accesibilidad web.
+
+• Todos los elementos interactivos deben ser accesibles mediante teclado sin requerir mouse.
+
+• El sistema debe proporcionar texto alternativo para imágenes y elementos visuales importantes.
+
+• El sistema debe mantener contraste de color adecuado (ratio mínimo 4.5:1) para texto y elementos de interfaz.
+
+• El sistema debe ser compatible con lectores de pantalla mediante etiquetas ARIA apropiadas.
+
+• El sistema debe permitir ajuste de tamaño de fuente sin romper el diseño de la interfaz.
+
+• Los mensajes de error y validación deben ser claros y accesibles mediante múltiples canales (visual, textual).
+
+• El sistema debe proporcionar navegación por teclado con orden lógico y indicadores de foco visibles.
+
+---
+
+### Cumplimiento Legal – Regulaciones y Privacidad
+
+**Descripción breve:**
+
+El sistema debe cumplir con normativas legales aplicables de protección de datos, privacidad y regulaciones sectoriales, implementando mecanismos para gestión de consentimiento y derechos de los usuarios.
+
+**Prioridad:**
+
+Alta
+
+**Criterios de aceptación:**
+
+• El sistema debe cumplir con normativas de protección de datos (GDPR, LOPD) para manejo de información personal.
+
+• El sistema debe implementar gestión de consentimiento explícito para procesamiento de datos personales.
+
+• El sistema debe proporcionar funcionalidad para ejercicio de derechos de usuarios: acceso, rectificación, supresión y portabilidad de datos.
+
+• El sistema debe registrar y mantener historial de consentimientos y cambios en políticas de privacidad.
+
+• El sistema debe implementar políticas de retención de datos según normativas aplicables.
+
+• El sistema debe proporcionar mecanismos para notificación de brechas de seguridad según plazos legales.
+
+• El sistema debe documentar todas las transferencias de datos y bases legales para procesamiento.
+
+• El sistema debe cumplir con regulaciones sectoriales aplicables al sector agrícola y procesamiento de datos de producción.
+

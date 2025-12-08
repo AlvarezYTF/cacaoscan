@@ -221,7 +221,6 @@ const handleSubmit = () => {
   if (hasErrors) {
     return
   }
-  console.log('Formulario válido:', form)
   alert('Formulario enviado correctamente')
 }
 </script>

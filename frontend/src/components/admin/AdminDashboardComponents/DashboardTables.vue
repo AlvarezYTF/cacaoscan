@@ -34,6 +34,11 @@
             </tr>
           </thead>
           <tbody>
+            <tr v-if="recentUsers.length === 0">
+              <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">
+                No hay usuarios recientes para mostrar
+              </td>
+            </tr>
             <tr 
               v-for="user in recentUsers" 
               :key="user.id" 
@@ -48,9 +53,9 @@
                   </div>
                   <div>
                     <div class="text-sm font-medium text-gray-900">
-                      {{ user.first_name }} {{ user.last_name }}
+                      {{ user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Usuario' }}
                     </div>
-                    <div class="text-sm text-gray-500">@{{ user.username }}</div>
+                    <div class="text-sm text-gray-500">@{{ user.username || user.email?.split('@')[0] || 'N/A' }}</div>
                   </div>
                 </div>
               </td>

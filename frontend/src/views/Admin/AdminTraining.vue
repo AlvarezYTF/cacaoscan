@@ -557,8 +557,7 @@ export default {
     };
 
     const handleSearch = (query) => {
-      console.log('Search:', query);
-    };
+      };
 
     const handleRefresh = () => {
       refreshTrainingData();
@@ -571,8 +570,7 @@ export default {
         const history = await getTrainingHistory();
         trainingHistory.value = history;
       } catch (error) {
-        console.error('Error loading training history:', error);
-      } finally {
+        } finally {
         isRefreshing.value = false;
       }
     };
@@ -622,7 +620,6 @@ export default {
     };
 
     const viewJobDetails = (job) => {
-      console.log('View job details:', job);
       // Implement job details view
     };
 
@@ -631,8 +628,7 @@ export default {
         await cancelTrainingJob(jobId);
         await refreshTrainingData();
       } catch (error) {
-        console.error('Error cancelling job:', error);
-      }
+        }
     };
 
     const compareModels = async () => {
@@ -640,11 +636,9 @@ export default {
 
       try {
         const comparison = await compareModelsApi(selectedJobsForComparison.value);
-        console.log('Model comparison:', comparison);
         // Implement comparison view
       } catch (error) {
-        console.error('Error comparing models:', error);
-      }
+        }
     };
 
     // Dataset preparation methods
@@ -726,18 +720,14 @@ export default {
         }
 
         // Submit dataset to API
-        console.log('Submitting dataset with:', uploadedImages.value.length, 'samples');
-
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Reset after submission
         uploadedImages.value = [];
 
-        console.log('Dataset submitted successfully');
-      } catch (error) {
-        console.error('Error submitting dataset:', error);
-      } finally {
+        } catch (error) {
+        } finally {
         isSubmittingDataset.value = false;
       }
     };
@@ -758,7 +748,6 @@ export default {
       lastTrainingResult.value = null;
 
       try {
-        console.log('Iniciando entrenamiento ML...');
         const result = await startMLTraining();
         
         // El backend devuelve job_id directamente o en job.job_id
@@ -810,14 +799,12 @@ export default {
                 refreshIntervalRef.value = null;
               }
             } catch (error) {
-              console.error('Error en actualización periódica:', error);
               // No detener polling en caso de error, solo continuar
             }
           }, 5000);
         }
 
       } catch (error) {
-        console.error('Error iniciando entrenamiento:', error);
         lastTrainingResult.value = {
           success: false,
           message: error.message || 'Error al iniciar el entrenamiento. Verifica que el worker de Celery esté corriendo.',

@@ -49,10 +49,14 @@ export function normalizeRegisterResponse(rawResponse, userData = {}) {
   const data = rawResponse.data || rawResponse
   
   return {
-    success: true,
+    success: data.success !== false,
     verification_required: data.verification_required !== false,
     email: data.email || userData.email,
-    message: data.message || 'Registro exitoso. Por favor verifica tu correo electrónico.'
+    message: data.message || 'Registro exitoso. Por favor verifica tu correo electrónico.',
+    access: data.access || null,
+    refresh: data.refresh || null,
+    user: data.user || null,
+    token: data.access || data.token || null
   }
 }
 
@@ -114,13 +118,26 @@ function extractErrorMessage(errorData) {
     return errorData
   }
   
+  if (!errorData || typeof errorData !== 'object') {
+    return null
+  }
+  
   // Check error fields in priority order
-  const errorFields = ['detail', 'error', 'non_field_errors']
+  // Backend uses 'error' in create_error_response, but also check other common fields
+  const errorFields = ['error', 'message', 'detail', 'non_field_errors']
   for (const field of errorFields) {
     if (errorData[field]) {
-      return field === 'non_field_errors' 
-        ? extractNonFieldErrors(errorData[field])
-        : errorData[field]
+      const value = errorData[field]
+      if (typeof value === 'string') {
+        return value
+      }
+      if (field === 'non_field_errors') {
+        return extractNonFieldErrors(value)
+      }
+      // If it's an array, get first element
+      if (Array.isArray(value) && value.length > 0) {
+        return typeof value[0] === 'string' ? value[0] : String(value[0])
+      }
     }
   }
   
@@ -174,16 +191,19 @@ function extractFieldErrors(errorData) {
  * @returns {Object} Normalized error object
  */
 export function normalizeAuthError(error) {
+  // If no response, return error message directly
   if (!error.response?.data) {
     return {
       message: error.message || 'Error de autenticación',
-      type: 'unknown'
+      type: 'unknown',
+      status: error.response?.status || 0
     }
   }
   
   const errorData = error.response.data
   const status = error.response.status
   
+  // Extract message with priority: error, message, detail, non_field_errors
   const message = extractErrorMessage(errorData) || 
                   (status ? getStatusMessage(status) : 'Error de autenticación')
   const fieldErrors = extractFieldErrors(errorData)

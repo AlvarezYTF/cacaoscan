@@ -534,8 +534,6 @@ const saveUser = async () => {
     emit('saved', response.data)
     closeModal()
   } catch (error) {
-    console.error('Error saving user:', error)
-    
     if (error.response?.data) {
       const errorData = error.response.data
       processUserErrors(errorData)

@@ -22,14 +22,6 @@ const parseErrorBlob = async (errorBlob) => {
     const parseErrorMessage = parseError instanceof Error ? parseError.message : String(parseError)
     const parseErrorStack = parseError instanceof Error ? parseError.stack : undefined
     
-    console.error('Error parsing error response JSON:', {
-      parseError,
-      message: parseErrorMessage,
-      stack: parseErrorStack,
-      blobType: errorBlob?.type,
-      blobSize: errorBlob?.size
-    })
-    
     // Throw error with parse error context
     const reportError = new Error(`Error al generar el reporte Excel: no se pudo parsear la respuesta de error del servidor (${parseErrorMessage})`)
     if (parseError instanceof Error) {
@@ -88,8 +80,6 @@ const reportsApi = {
       
       return { success: true }
     } catch (error) {
-      console.error('Error descargando reporte de agricultores:', error)
-      
       // Si el error tiene respuesta, intentar mostrar el mensaje del servidor
       if (error.response) {
         // Si la respuesta es un blob con un JSON de error, leerlo
@@ -132,7 +122,6 @@ const reportsApi = {
       
       return { success: true }
     } catch (error) {
-      console.error('Error descargando reporte de usuarios:', error)
       throw error
     }
   }

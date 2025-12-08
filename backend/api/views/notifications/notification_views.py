@@ -303,12 +303,14 @@ class NotificationStatsView(APIView):
 
 class NotificationCreateView(AdminPermissionMixin, APIView):
     """
-    Vista para crear notificaciones (solo administradores).
+    Vista para crear notificaciones.
+    - Administradores pueden crear notificaciones para cualquier usuario
+    - Usuarios regulares pueden crear notificaciones solo para sí mismos
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Crea una nueva notificación (solo administradores)",
+        operation_description="Crea una nueva notificación. Los administradores pueden crear para cualquier usuario, los usuarios regulares solo para sí mismos.",
         operation_summary="Crear notificación",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -332,8 +334,18 @@ class NotificationCreateView(AdminPermissionMixin, APIView):
     def post(self, request):
         """Crear nueva notificación."""
         try:
-            if not self.is_admin_user(request.user):
-                return self.admin_permission_denied('No tienes permisos para crear notificaciones')
+            # Administradores pueden crear notificaciones para cualquier usuario
+            # Usuarios regulares solo pueden crear notificaciones para sí mismos
+            is_admin = self.is_admin_user(request.user)
+            user_id = request.data.get('user')
+            
+            if not is_admin:
+                # Usuario regular: solo puede crear notificaciones para sí mismo
+                if not user_id or int(user_id) != request.user.id:
+                    return Response({
+                        'error': 'Permiso denegado',
+                        'details': 'Solo puedes crear notificaciones para ti mismo'
+                    }, status=status.HTTP_403_FORBIDDEN)
             
             serializer = NotificationCreateSerializer(data=request.data)
             

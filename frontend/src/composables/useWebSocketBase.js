@@ -84,8 +84,7 @@ export function useWebSocketBase(options = {}) {
         onMessage(data)
       }
     } catch (err) {
-      console.error('Error parsing WebSocket message:', err)
-    }
+      }
   }
 
   /**
@@ -168,7 +167,6 @@ export function useWebSocketBase(options = {}) {
       socket.value.onerror = handleError
       socket.value.onclose = handleClose
     } catch (err) {
-      console.error('Error creating WebSocket:', err)
       connectionError.value = err.message
       isConnecting.value = false
       handleClose()
@@ -216,8 +214,7 @@ export function useWebSocketBase(options = {}) {
     if (socket.value && socket.value.readyState === WebSocket.OPEN) {
       socket.value.send(JSON.stringify(data))
     } else {
-      console.warn('WebSocket is not connected')
-    }
+      }
   }
 
   // Cleanup on unmount

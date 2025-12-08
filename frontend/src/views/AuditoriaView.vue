@@ -409,7 +409,6 @@ export default {
           ]);
         }
       } catch (error) {
-        console.error('Error loading audit data:', error);
         throw error;
       }
     };
@@ -500,8 +499,7 @@ export default {
           sort_order: order
         });
       } catch (error) {
-        console.error('Error sorting data:', error);
-      }
+        }
     };
 
     const handlePageChange = async (page) => {
@@ -509,8 +507,7 @@ export default {
         paginationComposable.goToPage(page);
         await loadAuditData({ ...filters.value, page });
       } catch (error) {
-        console.error('Error changing page:', error);
-      }
+        }
     };
 
     const refreshData = async () => {
@@ -527,8 +524,7 @@ export default {
             await auditStore.fetchStats();
             await loadAuditData(filters.value);
           } catch (error) {
-            console.error('Error in real-time update:', error);
-          }
+            }
         }, 30000);
       } else if (realTimeInterval.value) {
         // Detener actualización en tiempo real
@@ -559,7 +555,6 @@ export default {
           text: 'El archivo se está generando'
         });
       } catch (error) {
-        console.error('Error exporting audit data:', error);
         Swal.fire({
           icon: 'error',
           title: 'Error',

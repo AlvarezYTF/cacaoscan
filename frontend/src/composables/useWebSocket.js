@@ -5,8 +5,6 @@ import { useWebSocketBase } from './useWebSocketBase'
 export function useWebSocket() {
   // Deshabilitar WebSockets en modo desarrollo para evitar reconexiones infinitas
   if (import.meta.env.MODE === 'development') {
-    console.log('🔌 WebSockets deshabilitados en modo desarrollo')
-    
     // Retornar un objeto mock con la misma interfaz
     return {
       isConnected: ref(false),
@@ -76,8 +74,7 @@ export function useWebSocket() {
         try {
           callback(data)
         } catch (error) {
-          console.error(`Error en listener de evento ${event}:`, error)
-        }
+          }
       }
     }
   }
@@ -128,8 +125,7 @@ export function useWebSocket() {
       if (eventName) {
         emit(eventName, data.data)
       } else {
-        console.log(`Mensaje de ${logContext} no manejado:`, data)
-      }
+        }
     }
   }
   
@@ -216,7 +212,6 @@ export function useWebSocket() {
   // Métodos principales
   const connect = () => {
     if (!authStore.user) {
-      console.warn('No hay usuario autenticado, no se puede conectar WebSocket')
       return
     }
     
@@ -286,7 +281,6 @@ export function useWebSocket() {
       userStatsSocket.connect()
       
     } catch (error) {
-      console.error('Error conectando WebSockets:', error)
       connectionError.value = error.message
     }
   }
@@ -436,7 +430,6 @@ export function useWebSocket() {
             try {
               ping()
             } catch (error) {
-              console.error('Error en heartbeat:', error)
               if (heartbeatInterval) {
                 clearInterval(heartbeatInterval)
                 heartbeatInterval = null
@@ -471,7 +464,6 @@ export function useWebSocket() {
         try {
           connect()
         } catch (error) {
-          console.warn('⚠️ No se pudieron conectar los WebSockets. La aplicación seguirá funcionando sin actualizaciones en tiempo real:', error.message)
           connectionError.value = 'WebSockets no disponibles (modo offline)'
         }
       }, 1000)

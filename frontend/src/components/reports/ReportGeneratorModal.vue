@@ -846,8 +846,7 @@ const loadInitialData = async () => {
         fincas.value = fincasResponse.data.results || []
         users.value = usersResponse.data.results || []
       } catch (error) {
-        console.error('Error loading initial data:', error)
-      }
+        }
     }
 
 const loadLotes = async () => {
@@ -860,7 +859,6 @@ const loadLotes = async () => {
     const response = await reportsStore.fetchLotesByFinca(formData.parametros.finca_id)
     lotes.value = response.data.results || []
   } catch (error) {
-    console.error('Error loading lotes:', error)
     lotes.value = []
   }
 }
@@ -1024,8 +1022,6 @@ const generateReport = async () => {
     closeModal()
 
   } catch (error) {
-    console.error('Error creating report:', error)
-    
     if (error.response?.data) {
       const errorData = error.response.data
       processReportErrors(errorData)

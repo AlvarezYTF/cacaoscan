@@ -446,10 +446,11 @@ Si no creaste esta cuenta, puedes ignorar este correo.
     
     def to_representation(self, instance):
         """Personalizar la representación de la respuesta."""
+        skip_email_verification = self.context.get('skip_email_verification', False)
         return {
             'id': instance.id,
             'email': instance.user.email,
-            'verification_required': True,  # Siempre se requiere verificación ahora
+            'verification_required': not skip_email_verification,
             'user': {
                 'id': instance.user.id,
                 'email': instance.user.email

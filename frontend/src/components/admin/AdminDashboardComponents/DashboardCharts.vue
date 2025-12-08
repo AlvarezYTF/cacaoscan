@@ -45,8 +45,29 @@
           </button>
         </div>
       </div>
-      <div class="h-80">
+      <div class="h-80 relative">
+        <!-- Mensaje cuando no hay actividades -->
+        <div 
+          v-if="!hasActivityData" 
+          class="w-full h-full flex flex-col items-center justify-center bg-gray-50 rounded-xl"
+        >
+          <div class="text-center p-8">
+            <div class="mb-4">
+              <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+            </div>
+            <h4 class="text-lg font-semibold text-gray-700 mb-2">No hay actividades registradas</h4>
+            <p class="text-sm text-gray-500 max-w-md mx-auto">
+              Aún no se han registrado actividades de usuarios en el sistema. 
+              Las actividades se mostrarán aquí cuando los usuarios comiencen a utilizar la plataforma.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Gráfico cuando hay datos -->
         <BaseChart
+          v-else
           ref="activityChartRef"
           :chart-data="activityChartData"
           :options="mergedActivityOptions"
@@ -157,6 +178,45 @@ const emit = defineEmits(['activity-chart-type-change', 'activity-refresh', 'qua
 const activityChartRef = ref(null)
 const qualityChartRef = ref(null)
 const activityChartType = ref(props.initialActivityChartType)
+
+// Check if there's actual activity data (not just zeros)
+const hasActivityData = computed(() => {
+  try {
+    // Si no hay chartData, no hay datos
+    if (!props.activityChartData) {
+      return false
+    }
+    
+    // Si no hay datasets o está vacío, no hay datos
+    if (!props.activityChartData.datasets || !Array.isArray(props.activityChartData.datasets) || props.activityChartData.datasets.length === 0) {
+      return false
+    }
+    
+    // Verificar si hay al menos un dataset con datos no-cero
+    let hasNonZeroData = false
+    
+    for (const dataset of props.activityChartData.datasets) {
+      if (!dataset || !dataset.data || !Array.isArray(dataset.data) || dataset.data.length === 0) {
+        continue
+      }
+      
+      // Verificar si hay al menos un valor mayor a 0
+      for (const value of dataset.data) {
+        const numValue = Number(value)
+        if (!isNaN(numValue) && numValue > 0) {
+          hasNonZeroData = true
+          break
+        }
+      }
+      
+      if (hasNonZeroData) break
+    }
+    
+    return hasNonZeroData
+  } catch (error) {
+    return false
+  }
+})
 
 // Merged options
 const mergedActivityOptions = computed(() => {

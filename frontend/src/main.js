@@ -8,16 +8,9 @@ import router from './router'
 
 // Verificar configuración del API al iniciar
 if (typeof globalThis !== 'undefined') {
-  console.log('🔍 [Main] Verificando configuración del API...')
-  console.log('🔍 [Main] globalThis.__API_BASE_URL__:', globalThis.__API_BASE_URL__)
-  console.log('🔍 [Main] import.meta.env.VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
-  console.log('🔍 [Main] globalThis.location.hostname:', globalThis.location.hostname)
-  
   // Validar que config.js se haya cargado
   if (!globalThis.__API_BASE_URL__ && !import.meta.env.VITE_API_BASE_URL) {
-    console.error('❌ [Main] ADVERTENCIA: No se encontró configuración del API!')
-    console.error('❌ [Main] El frontend usará localhost por defecto')
-  }
+    }
 }
 
 // Crear la app
@@ -46,16 +39,12 @@ const initApp = async () => {
     // Cargar configuración del sistema (silenciar errores esperados)
     try {
       await configStore.loadAll()
-      console.log('✅ Configuración del sistema cargada:', configStore.brandName)
-    } catch (err) {
+      } catch (err) {
       // Ignorar errores de configuración - usar valores por defecto
-      console.log('ℹ️ Usando configuración por defecto:', err)
-    }
+      }
     
   } catch (error) {
-    console.error('Error inicializando aplicación:', error)
-    console.error('❌ Error inicializando aplicación:', error)
-  }
+    }
 
   // Montar la aplicación
   app.mount('#app')
@@ -64,8 +53,6 @@ const initApp = async () => {
 // Configurar notificaciones globales
 globalThis.showNotification = (notification) => {
   // Placeholder para sistema de notificaciones
-  console.log('🔔 Notification:', notification)
-  
   // Aquí se puede integrar con una librería de notificaciones
   // como vue-toastification o similar
 }

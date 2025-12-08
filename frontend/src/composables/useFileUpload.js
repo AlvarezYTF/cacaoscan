@@ -106,7 +106,6 @@ export function useFileUpload(options = {}) {
       try {
         imagePreview.value = await createPreview(file)
       } catch (err) {
-        console.warn('Error creating preview:', err)
         imagePreview.value = null
       }
     }

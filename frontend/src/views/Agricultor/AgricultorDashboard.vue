@@ -4,7 +4,7 @@
     <Sidebar
       :brand-name="'CacaoScan'"
       :user-name="farmerName"
-      :user-role="'agricultor'"
+      :user-role="computedUserRole"
       :current-route="route.path"
       :active-section="activeSection"
       :collapsed="isSidebarCollapsed"
@@ -20,6 +20,8 @@
         <WelcomeHeader :farmer-name="farmerName" />
         
         <StatsCards 
+          :total-fincas="farmerStats.totalFincas"
+          :total-lotes="farmerStats.totalLotes"
           :total-batches="formattedStats.totalBatches"
           :avg-quality="formattedStats.avgQuality"
           :defect-rate="formattedStats.defectRate"
@@ -50,7 +52,11 @@ import { useRoute, useRouter } from 'vue-router'
 // 3. Stores
 import { useAuthStore } from '@/stores/auth'
 
-// 4. Composables
+// 4. Services
+import { getFincas } from '@/services/fincasApi'
+import { getLotes } from '@/services/lotesApi'
+
+// 5. Composables
 import { useImageStats } from '@/composables/useImageStats'
 
 // 5. Components
@@ -95,8 +101,25 @@ const activeSection = ref(sectionParam || 'overview')
 const recentAnalyses = ref([])
 const imagesLoading = ref(false)
 
+// Estadísticas del agricultor
+const farmerStats = ref({
+  totalFincas: 0,
+  totalLotes: 0
+})
+const loadingStats = ref(false)
+
 // Computed
 const farmerName = computed(() => authStore.userFullName || 'Usuario')
+
+// Normalize user role for sidebar (convert 'farmer' to 'agricultor')
+const computedUserRole = computed(() => {
+  const role = authStore.userRole || 'farmer'
+  // Convert 'farmer' to 'agricultor' for sidebar compatibility
+  if (role === 'farmer') {
+    return 'agricultor'
+  }
+  return role === 'admin' ? 'admin' : 'agricultor'
+})
 
 // Función helper para calcular cambio porcentual
 const calculatePercentageChange = (current, previous) => {
@@ -152,7 +175,6 @@ const loadRecentAnalyses = async () => {
       recentAnalyses.value = []
     }
   } catch (err) {
-    console.error('Error loading recent analyses:', err)
     recentAnalyses.value = []
   } finally {
     imagesLoading.value = false
@@ -160,21 +182,44 @@ const loadRecentAnalyses = async () => {
 }
 
 const handleGenerateReport = async (reportType) => {
-  const success = await generateReport(reportType, {})
-  if (success) {
-    console.log(`Reporte ${reportType} generado exitosamente`)
+  await generateReport(reportType, {})
+}
+
+const loadFarmerStats = async () => {
+  loadingStats.value = true
+  try {
+    // Cargar fincas del agricultor
+    const fincasResponse = await getFincas({ activa: true })
+    const totalFincas = fincasResponse.count || (fincasResponse.results ? fincasResponse.results.length : 0)
+    
+    // Cargar lotes del agricultor
+    const lotesResponse = await getLotes({ activo: true })
+    const totalLotes = lotesResponse.count || (lotesResponse.results ? lotesResponse.results.length : 0)
+    
+    farmerStats.value = {
+      totalFincas,
+      totalLotes
+    }
+  } catch (error) {
+    farmerStats.value = {
+      totalFincas: 0,
+      totalLotes: 0
+    }
+  } finally {
+    loadingStats.value = false
   }
 }
 
 const refreshData = async () => {
   await Promise.all([
     fetchStats(),
-    loadRecentAnalyses()
+    loadRecentAnalyses(),
+    loadFarmerStats()
   ])
 }
 
 const handleImageSelected = (image) => {
-  console.log('Imagen seleccionada:', image)
+  // Image selected handler
 }
 
 const handleSelectAnalysis = (analysis) => {
@@ -188,8 +233,10 @@ const handleSelectAnalysis = (analysis) => {
 }
 
 const handleNuevoAnalisis = () => {
-  // Navegar a la vista de análisis de predicción
-  router.push({ name: 'Prediction' })
+  router.push('/analisis')
+    .catch(() => {
+      router.push({ name: 'Analisis' })
+    })
 }
 
 const handleGestionarFincas = () => {
@@ -231,7 +278,6 @@ const logout = async () => {
   try {
     await authStore.logout()
   } catch (error) {
-    console.error('Error al cerrar sesión:', error)
     authStore.clearAll()
   }
 }
@@ -243,7 +289,8 @@ onMounted(async () => {
   
   await Promise.all([
     fetchStats(),
-    loadRecentAnalyses()
+    loadRecentAnalyses(),
+    loadFarmerStats()
   ])
 })
 
