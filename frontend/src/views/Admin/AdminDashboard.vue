@@ -120,10 +120,10 @@
 
 <script setup>
 // 1. Vue core
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, onActivated } from 'vue'
 
 // 2. Vue router
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 // 3. Components
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue'
@@ -145,6 +145,7 @@ import Swal from 'sweetalert2'
 
 // Router and stores
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const adminStore = useAdminStore()
 const configStore = useConfigStore()
@@ -694,7 +695,12 @@ const loadQualityData = async () => {
 }
 
 const updateActivityChartFromStats = () => {
+  console.log('🔄 [Dashboard] updateActivityChartFromStats llamado')
+  console.log('📊 [Dashboard] stats.value:', stats.value)
+  console.log('📊 [Dashboard] stats.value?.activity_by_day:', stats.value?.activity_by_day)
+  
   const activity = stats.value?.activity_by_day || { labels: [], data: [] }
+  console.log('📊 [Dashboard] activity object:', activity)
   
   // Ensure we always have valid data for the chart
   const labels = activity.labels && activity.labels.length > 0 
@@ -704,6 +710,9 @@ const updateActivityChartFromStats = () => {
   const data = activity.data && activity.data.length > 0 
     ? activity.data 
     : [0, 0, 0, 0, 0, 0, 0]
+  
+  console.log('📊 [Dashboard] Chart labels:', labels)
+  console.log('📊 [Dashboard] Chart data:', data)
   
   activityData.value = {
     labels,
@@ -721,6 +730,9 @@ const updateActivityChartFromStats = () => {
       pointBorderWidth: 2
     }]
   }
+  
+  console.log('✅ [Dashboard] activityData.value actualizado:', activityData.value)
+  console.log('✅ [Dashboard] activityData.value.datasets:', activityData.value.datasets)
 }
 
 const updateActivityChart = async () => {
@@ -971,14 +983,15 @@ const stopAutoRefresh = () => {
   }
 }
 
-// Lifecycle
-onMounted(async () => {
+// Función para inicializar el dashboard
+const initializeDashboard = async () => {
   if (!authStore.isAdmin) {
     console.warn('🚫 Usuario sin permisos de admin')
     router.push('/acceso-denegado')
     return
   }
 
+  console.log('🔄 [Dashboard] Inicializando dashboard...')
   await loadDashboardData()
   
   if (websocket && authStore.user?.id) {
@@ -990,6 +1003,27 @@ onMounted(async () => {
   }
   
   setupRealtimeUpdates()
+}
+
+// Lifecycle
+onMounted(async () => {
+  await initializeDashboard()
+})
+
+// Si el componente está dentro de keep-alive, se ejecuta cuando se activa
+onActivated(async () => {
+  console.log('🔄 [Dashboard] Componente activado, recargando datos...')
+  // Recargar datos cuando se vuelve a la vista
+  await initializeDashboard()
+})
+
+// Watch para detectar cambios de ruta
+watch(() => route.path, async (newPath, oldPath) => {
+  // Si volvemos al dashboard desde otra ruta, recargar datos
+  if (newPath === '/admin/dashboard' && oldPath !== newPath) {
+    console.log('🔄 [Dashboard] Ruta cambiada a dashboard, recargando datos...')
+    await initializeDashboard()
+  }
 })
 
 onUnmounted(() => {

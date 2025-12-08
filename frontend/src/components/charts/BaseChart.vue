@@ -126,17 +126,26 @@ const containerStyle = computed(() => {
 // Check if chart has valid data
 const hasValidData = computed(() => {
   if (!props.chartData || !props.chartData.datasets || !Array.isArray(props.chartData.datasets)) {
+    console.log('⚠️ [BaseChart] No chartData or datasets:', { chartData: props.chartData })
     return false
   }
   
   // Check if at least one dataset has data
-  return props.chartData.datasets.some(dataset => {
+  const hasData = props.chartData.datasets.some(dataset => {
     if (!dataset.data || !Array.isArray(dataset.data)) {
+      console.log('⚠️ [BaseChart] Dataset sin data array:', dataset)
       return false
     }
-    // Check if there's at least one non-zero value
-    return dataset.data.some(value => value !== 0 && value !== null && value !== undefined)
+    // Check if there's at least one non-zero value OR if we have labels (show chart even with zeros)
+    const hasNonZero = dataset.data.some(value => value !== 0 && value !== null && value !== undefined)
+    const hasLabels = props.chartData.labels && props.chartData.labels.length > 0
+    console.log('📊 [BaseChart] Dataset check:', { hasNonZero, hasLabels, dataLength: dataset.data.length, labelsLength: props.chartData.labels?.length })
+    // Show chart if we have labels, even if all values are zero (for empty state visualization)
+    return hasLabels && dataset.data.length > 0
   })
+  
+  console.log('📊 [BaseChart] hasValidData:', hasData)
+  return hasData
 })
 
 // Chart ref for template

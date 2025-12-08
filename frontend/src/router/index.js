@@ -143,6 +143,7 @@ const router = createRouter({
     createAuthRoute('/fincas', 'Fincas', FincasView, 'Gestión de Fincas'),
     createAuthRoute('/fincas/:id', 'FincaDetail', () => import('../views/FincaDetailView.vue'), 'Detalle de Finca', { requiresRole: 'farmer', requiresVerification: true }),
     createAuthRoute('/fincas/:id/lotes', 'FincaLotes', () => import('../views/FincaLotesView.vue'), 'Lotes de Finca', { requiresRole: 'farmer', requiresVerification: true }),
+    createAuthRoute('/fincas/:id/lotes/new', 'CreateLote', () => import('../views/CreateLoteView.vue'), 'Crear Lote', { requiresRole: 'farmer', requiresVerification: true }),
     createAuthRoute('/lotes', 'Lotes', LotesView, 'Gestión de Lotes', { requiresRole: 'farmer', requiresVerification: true }),
     createAuthRoute('/lotes/:id', 'LoteDetail', () => import('../views/LoteDetailView.vue'), 'Detalle de Lote', { requiresRole: 'farmer', requiresVerification: true }),
     createAuthRoute('/lotes/:id/analisis', 'LoteAnalisis', () => import('../views/LoteAnalisisView.vue'), 'Análisis de Lote', { requiresRole: 'farmer', requiresVerification: true }),

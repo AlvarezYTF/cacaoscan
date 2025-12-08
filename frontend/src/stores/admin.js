@@ -180,14 +180,30 @@ export const useAdminStore = defineStore('admin', () => {
       loading.value = true
       error.value = null
       
-      const response = await api.get('/audit/activity-logs/')
+      console.log('🔄 [admin store] getActivityData llamado, period:', period)
+      
+      const response = await api.get('/audit/activity-logs/', {
+        params: {
+          page_size: 100, // Get more activities to process
+          page: 1,
+          ordering: '-timestamp'
+        }
+      })
+      
+      console.log('📊 [admin store] getActivityData response:', response)
+      console.log('📊 [admin store] getActivityData response.data:', response.data)
+      console.log('📊 [admin store] getActivityData results count:', response.data?.results?.length || 0)
       
       return response
     } catch (err) {
+      console.error('❌ [admin store] Error en getActivityData:', err)
+      console.error('❌ [admin store] Error response:', err.response)
+      
       const errorInfo = handleApiError(err, { logError: false })
       
       // Si es error 500 o el endpoint no está disponible, retornar vacío silenciosamente
       if (err.response?.status === 500) {
+        console.warn('⚠️ [admin store] Activity logs endpoint returned 500')
         return { data: { results: [] } }
       }
       

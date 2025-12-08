@@ -67,12 +67,23 @@ export function normalizeApiResponse(responseData, alwaysWrap = false) {
  * Handles both {results: [...]} and [...] formats
  * For paginated responses, returns the full object with results, count, etc.
  * For array responses, returns an object with results array
+ * For custom formats like {lotes: [...], finca: {...}}, returns as is
  * @param {Object|Array} data - Response data (can be paginated object or array)
  * @returns {Object|Array} Normalized response (object for paginated, array for simple lists)
  */
 export function normalizeResponse(data) {
   // If it's a paginated response with results, return the full object
   if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
+    return data
+  }
+  // If it's a custom object format (like {lotes: [...], finca: {...}}), return as is
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    // Check if it has custom keys that indicate it's not a simple paginated response
+    const hasCustomFormat = 'lotes' in data || 'finca' in data || 'total' in data
+    if (hasCustomFormat) {
+      return data
+    }
+    // Otherwise return as is for other object formats
     return data
   }
   // If it's a simple array, wrap it in an object for consistency
@@ -84,10 +95,6 @@ export function normalizeResponse(data) {
       page_size: data.length,
       total_pages: 1
     }
-  }
-  // If it's an object but not paginated, return as is
-  if (data && typeof data === 'object') {
-    return data
   }
   // Fallback: return empty paginated structure
   return {

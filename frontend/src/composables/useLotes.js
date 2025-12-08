@@ -4,7 +4,7 @@
  */
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useNotificationStore } from '@/stores/notifications'
+import { useNotifications } from '@/composables/useNotifications'
 import * as lotesApi from '@/services/lotesApi'
 import { useDateFormatting } from './useDateFormatting'
 
@@ -15,7 +15,7 @@ import { useDateFormatting } from './useDateFormatting'
  */
 export function useLotes(options = {}) {
   const authStore = useAuthStore()
-  const notificationStore = useNotificationStore()
+  const { showSuccess, showError } = useNotifications()
   const { formatDate } = useDateFormatting()
   
   // State
@@ -84,11 +84,7 @@ export function useLotes(options = {}) {
       const errorMessage = err.response?.data?.detail || err.message || 'Error al cargar los lotes'
       error.value = errorMessage
       
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
+      showError(errorMessage)
       
       throw err
     } finally {
@@ -173,22 +169,14 @@ export function useLotes(options = {}) {
       
       const result = await lotesApi.createLote(formatted)
       
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Lote creado',
-        message: 'El lote ha sido creado exitosamente'
-      })
+      showSuccess('El lote ha sido creado exitosamente')
       
       return result
     } catch (err) {
       const errorMessage = err.response?.data?.detail || err.message || 'Error al crear el lote'
       error.value = errorMessage
       
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
+      showError(errorMessage)
       
       throw err
     } finally {
@@ -223,22 +211,14 @@ export function useLotes(options = {}) {
         lote.value = result
       }
       
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Lote actualizado',
-        message: 'El lote ha sido actualizado exitosamente'
-      })
+      showSuccess('El lote ha sido actualizado exitosamente')
       
       return result
     } catch (err) {
       const errorMessage = err.response?.data?.detail || err.message || 'Error al actualizar el lote'
       error.value = errorMessage
       
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
+      showError(errorMessage)
       
       throw err
     } finally {
@@ -264,22 +244,14 @@ export function useLotes(options = {}) {
         lote.value = null
       }
       
-      notificationStore.addNotification({
-        type: 'success',
-        title: 'Lote eliminado',
-        message: 'El lote ha sido eliminado exitosamente'
-      })
+      showSuccess('El lote ha sido eliminado exitosamente')
       
       return true
     } catch (err) {
       const errorMessage = err.response?.data?.detail || err.message || 'Error al eliminar el lote'
       error.value = errorMessage
       
-      notificationStore.addNotification({
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      })
+      showError(errorMessage)
       
       throw err
     } finally {
