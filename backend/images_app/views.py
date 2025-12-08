@@ -41,7 +41,9 @@ class CacaoImageUploadView(APIView):
             except Finca.DoesNotExist:
                 pass
     
-    def _process_single_image(self, request, image_file, idx: int) -> Tuple[Optional[dict], Optional[dict]]:
+    def _process_single_image(self, req
+    
+    6uest, image_file, idx: int) -> Tuple[Optional[dict], Optional[dict]]:
         """Procesa una sola imagen."""
         try:
             size_error = self._validate_file_size(image_file)
