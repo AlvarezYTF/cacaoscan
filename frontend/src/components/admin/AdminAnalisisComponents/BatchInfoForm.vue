@@ -1,16 +1,16 @@
 <template>
   <div class="space-y-6">
-    <!-- Alerta de errores generales -->
-    <div v-if="Object.keys(errors).length > 0" class="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+    <!-- Alerta informativa de campos requeridos -->
+    <div v-if="Object.keys(errors).length > 0" class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg">
       <div class="flex items-start">
         <div class="flex-shrink-0">
-          <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          <svg class="h-5 w-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
         <div class="ml-3 flex-1">
-          <h3 class="text-sm font-medium text-red-800">Por favor, corrige los siguientes errores:</h3>
-          <ul class="mt-2 text-sm text-red-700 list-disc list-inside space-y-1">
+          <h3 class="text-sm font-medium text-amber-800">Información requerida:</h3>
+          <ul class="mt-2 text-sm text-amber-700 list-disc list-inside space-y-1">
             <li v-for="(error, field) in errors" :key="field">{{ error }}</li>
           </ul>
         </div>
@@ -26,30 +26,43 @@
           </svg>
           Agricultor <span class="text-red-500">*</span>
         </label>
-        <select
-          id="farmer"
-          v-model="formData.farmer"
-          :disabled="loadingAgricultores || selectedLoteData !== null"
-          @change="handleFarmerChange"
-          required
-          class="mt-1 block w-full rounded-xl border-2 border-gray-200 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/30 transition-all duration-200"
-          :class="{ 
-            'border-red-500 focus:border-red-500 focus:ring-red-500/30': errors.farmer, 
-            'bg-gray-100 cursor-wait': loadingAgricultores,
-            'bg-gray-100 cursor-not-allowed': selectedLoteData !== null && !loadingAgricultores
-          }"
-        >
-          <option value="">{{ loadingAgricultores ? 'Cargando agricultores...' : 'Selecciona un agricultor' }}</option>
-          <option v-for="agricultor in agricultores" :key="agricultor.id" :value="agricultor.username">
-            {{ agricultor.first_name }} {{ agricultor.last_name }} ({{ agricultor.email }})
-          </option>
-        </select>
-        <p v-if="errors.farmer" class="mt-1 text-sm text-red-600 flex items-center gap-1">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          {{ errors.farmer }}
-        </p>
+        <div class="relative">
+          <select
+            id="farmer"
+            v-model="formData.farmer"
+            :disabled="loadingAgricultores"
+            @change="handleFarmerChange"
+            required
+            class="mt-1 block w-full rounded-xl border-2 border-gray-200 px-4 py-3 pr-10 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/30 transition-all duration-200"
+            :class="{ 
+              'border-amber-500 focus:border-amber-500 focus:ring-amber-500/30': errors.farmer, 
+              'bg-gray-100 cursor-wait': loadingAgricultores
+            }"
+          >
+            <option value="">{{ loadingAgricultores ? 'Cargando agricultores...' : 'Selecciona un agricultor' }}</option>
+            <option v-for="agricultor in agricultores" :key="agricultor.id" :value="agricultor.username">
+              {{ agricultor.first_name }} {{ agricultor.last_name }} ({{ agricultor.email }})
+            </option>
+          </select>
+          <!-- Botón para deseleccionar agricultor -->
+          <button
+            v-if="formData.farmer && !loadingAgricultores"
+            @click="clearFarmerSelection"
+            type="button"
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-600 transition-colors duration-200 p-1 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+            title="Deseleccionar agricultor"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+          <p v-if="errors.farmer" class="mt-1 text-sm text-amber-600 flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            {{ errors.farmer }}
+          </p>
         <p v-if="agricultores.length === 0 && !loadingAgricultores" class="mt-1 text-xs text-amber-600 flex items-center gap-1">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
@@ -72,36 +85,74 @@
           </svg>
           Finca <span class="text-red-500">*</span>
         </label>
-        <select
-          id="farm"
-          v-model="formData.farm"
-          :disabled="loadingFincas || selectedLoteData !== null || (userRole === 'admin' && !formData.farmer)"
-          @change="handleFincaChange"
-          required
-          class="mt-1 block w-full rounded-xl border-2 border-gray-200 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/30 transition-all duration-200"
-          :class="{ 
-            'border-red-500 focus:border-red-500 focus:ring-red-500/30': errors.farm, 
-            'bg-gray-100 cursor-wait': loadingFincas,
-            'bg-gray-100 cursor-not-allowed': (selectedLoteData !== null && !loadingFincas) || (userRole === 'admin' && !formData.farmer)
-          }"
-        >
-          <option value="">{{ loadingFincas ? 'Cargando fincas...' : (userRole === 'admin' && !formData.farmer ? 'Primero selecciona un agricultor' : 'Selecciona una finca') }}</option>
-          <option v-for="finca in fincas" :key="finca.id" :value="finca.nombre">
-            {{ finca.nombre }} - {{ finca.ubicacion || 'Sin ubicación' }}
-          </option>
-        </select>
-        <p v-if="errors.farm" class="mt-1 text-sm text-red-600 flex items-center gap-1">
+        <div class="relative">
+          <select
+            id="farm"
+            v-model="formData.farm"
+            :disabled="loadingFincas || (userRole === 'admin' && !formData.farmer)"
+            @change="handleFincaChange"
+            required
+            class="mt-1 block w-full rounded-xl border-2 border-gray-200 px-4 py-3 pr-10 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/30 transition-all duration-200"
+            :class="{ 
+              'border-amber-500 focus:border-amber-500 focus:ring-amber-500/30': errors.farm, 
+              'bg-gray-100 cursor-wait': loadingFincas,
+              'bg-gray-100 cursor-not-allowed': (userRole === 'admin' && !formData.farmer)
+            }"
+          >
+            <option value="">{{ loadingFincas ? 'Cargando fincas...' : (userRole === 'admin' && !formData.farmer ? 'Primero selecciona un agricultor' : 'Selecciona una finca') }}</option>
+            <option v-for="finca in fincas" :key="finca.id" :value="finca.nombre">
+              {{ finca.nombre }} - {{ finca.ubicacion || 'Sin ubicación' }}
+            </option>
+          </select>
+          <!-- Botón para deseleccionar finca -->
+          <button
+            v-if="formData.farm && !loadingFincas && !(userRole === 'admin' && !formData.farmer)"
+            @click="clearFincaSelection"
+            type="button"
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-600 transition-colors duration-200 p-1 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+            title="Deseleccionar finca"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <p v-if="errors.farm" class="mt-1 text-sm text-amber-600 flex items-center gap-1">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
           {{ errors.farm }}
         </p>
-        <p v-if="fincas.length === 0 && !loadingFincas && (userRole !== 'admin' || formData.farmer)" class="mt-1 text-xs text-amber-600 flex items-center gap-1">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-          </svg>
-          {{ userRole === 'agricultor' ? 'No tienes fincas registradas' : 'Este agricultor no tiene fincas registradas' }}
-        </p>
+        <!-- Mensaje y botón para crear finca cuando no hay fincas -->
+        <div v-if="fincas.length === 0 && !loadingFincas && (userRole !== 'admin' || formData.farmer)" class="mt-3">
+          <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-sm font-semibold text-amber-800 mb-1">
+                  {{ userRole === 'agricultor' ? 'No tienes fincas registradas' : 'Este agricultor no tiene fincas registradas' }}
+                </h3>
+                <p class="text-xs text-amber-700 mb-3">
+                  Necesitas registrar una finca para poder realizar análisis.
+                </p>
+                <button
+                  type="button"
+                  @click="openCreateFincaModal"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                  </svg>
+                  Crear Nueva Finca
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
         <p v-if="selectedLoteData" class="mt-1 text-xs text-gray-500 flex items-center gap-1">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
@@ -120,27 +171,40 @@
         </label>
         
         <!-- Si hay lotes, mostrar selector -->
-        <div v-if="lotes.length > 0 || loadingLotes">
+        <div v-if="lotes.length > 0 || loadingLotes" class="relative">
           <select
             id="lote"
             v-model="formData.lote"
-            :disabled="loadingLotes"
+            :disabled="loadingLotes || selectedLoteData !== null"
             @change="handleLoteChange"
             required
-            class="mt-1 block w-full rounded-xl border-2 border-gray-200 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/30 transition-all duration-200"
+            class="mt-1 block w-full rounded-xl border-2 border-gray-200 px-4 py-3 pr-10 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/30 transition-all duration-200"
             :class="{ 
-              'border-red-500 focus:border-red-500 focus:ring-red-500/30': errors.lote, 
-              'bg-gray-100 cursor-wait': loadingLotes 
+              'border-amber-500 focus:border-amber-500 focus:ring-amber-500/30': errors.lote, 
+              'bg-gray-100 cursor-wait': loadingLotes,
+              'bg-gray-100 cursor-not-allowed': selectedLoteData !== null && !loadingLotes
             }"
           >
-            <option :value="null">{{ loadingLotes ? 'Cargando lotes...' : 'Selecciona un lote' }}</option>
+            <option value="">{{ loadingLotes ? 'Cargando lotes...' : 'Selecciona un lote' }}</option>
             <option v-for="lote in lotes" :key="lote.id" :value="lote.id">
               {{ lote.identificador || lote.nombre }} - {{ lote.variedad || 'Sin variedad' }}
             </option>
           </select>
-          <p v-if="errors.lote" class="mt-1 text-sm text-red-600 flex items-center gap-1">
+          <!-- Botón para deseleccionar lote -->
+          <button
+            v-if="formData.lote && !loadingLotes && selectedLoteData === null"
+            @click="clearLoteSelection"
+            type="button"
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-600 transition-colors duration-200 p-1 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+            title="Deseleccionar lote"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+          <p v-if="errors.lote" class="mt-1 text-sm text-amber-600 flex items-center gap-1">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             {{ errors.lote }}
           </p>
@@ -193,6 +257,17 @@
         @lote-created="handleLoteCreated"
       />
     </Teleport>
+
+    <!-- Modal para crear finca -->
+    <Teleport to="body">
+      <FincaForm
+        v-if="showCreateFincaModal"
+        :finca="null"
+        :is-editing="false"
+        @close="closeCreateFincaModal"
+        @saved="handleFincaCreated"
+      />
+    </Teleport>
     
     <!-- Debug info (remover en producción) -->
     <!-- <div v-if="showCreateLoteModal" class="fixed top-0 left-0 bg-red-500 text-white p-2 z-[10000]">
@@ -215,6 +290,7 @@ import authApi from '@/services/authApi'
 
 // 4. Components
 import CreateLoteModal from './CreateLoteModal.vue'
+import FincaForm from '@/components/common/FincasViewComponents/FincaForm.vue'
 
 // 5. Composables
 import { useNotifications } from '@/composables/useNotifications'
@@ -275,6 +351,7 @@ const selectedFincaId = ref(null)
 const selectedLoteData = ref(null)
 const loadingLoteData = ref(false)
 const showCreateLoteModal = ref(false)
+const showCreateFincaModal = ref(false)
 const errors = ref({})
 
 // Computed
@@ -299,7 +376,7 @@ const loadAgricultores = async () => {
 
 const loadAllFincas = async () => {
   try {
-    const response = await getFincas()
+    const response = await getFincas({ activa: true })
     allFincas.value = response.results || []
   } catch (error) {
     allFincas.value = []
@@ -403,6 +480,41 @@ const closeCreateLoteModal = () => {
   showCreateLoteModal.value = false
 }
 
+const openCreateFincaModal = () => {
+  showCreateFincaModal.value = true
+}
+
+const closeCreateFincaModal = () => {
+  showCreateFincaModal.value = false
+}
+
+const handleFincaCreated = async () => {
+  // Cerrar modal
+  closeCreateFincaModal()
+  
+  // Recargar todas las fincas
+  await loadAllFincas()
+  
+  // Si es agricultor, actualizar su lista de fincas
+  if (props.userRole === 'agricultor' && props.userId) {
+    fincas.value = allFincas.value.filter(finca => finca.agricultor_id === props.userId && finca.activa === true) || []
+  } else if (props.userRole === 'admin' && formData.value.farmer) {
+    // Si es admin y hay agricultor seleccionado, actualizar lista de fincas de ese agricultor
+    const selectedAgricultor = agricultores.value.find(a => a.username === formData.value.farmer)
+    if (selectedAgricultor) {
+      fincas.value = allFincas.value.filter(finca => finca.agricultor_id === selectedAgricultor.id && finca.activa === true)
+    }
+  }
+  
+  // Si solo hay una finca, seleccionarla automáticamente
+  if (fincas.value.length === 1) {
+    formData.value.farm = fincas.value[0].nombre
+    await handleFincaChange()
+  }
+  
+  updateForm()
+}
+
 const handleLoteCreated = async (newLote) => {
   // Cerrar modal
   showCreateLoteModal.value = false
@@ -442,8 +554,8 @@ const handleFarmerChange = async () => {
   if (formData.value.farmer) {
     const selectedAgricultor = agricultores.value.find(a => a.username === formData.value.farmer)
     if (selectedAgricultor) {
-      // Filtrar fincas por agricultor
-      fincas.value = allFincas.value.filter(finca => finca.agricultor_id === selectedAgricultor.id)
+      // Filtrar solo fincas activas por agricultor
+      fincas.value = allFincas.value.filter(finca => finca.agricultor_id === selectedAgricultor.id && finca.activa === true)
     } else {
       fincas.value = []
     }
@@ -487,7 +599,54 @@ const loadLotesByFinca = async (fincaId) => {
   }
 }
 
+const clearFincaSelection = () => {
+  formData.value.farm = ''
+  formData.value.lote = ''
+  selectedFincaId.value = null
+  selectedLoteData.value = null
+  lotes.value = []
+  // Limpiar campos autocompletados
+  formData.value.name = ''
+  formData.value.genetics = ''
+  formData.value.collectionDate = ''
+  formData.value.originPlace = ''
+  updateForm()
+}
+
+const clearLoteSelection = () => {
+  formData.value.lote = ''
+  selectedLoteData.value = null
+  // Limpiar campos autocompletados
+  formData.value.name = ''
+  formData.value.genetics = ''
+  formData.value.collectionDate = ''
+  formData.value.originPlace = ''
+  updateForm()
+}
+
+const clearFarmerSelection = () => {
+  formData.value.farmer = ''
+  formData.value.farm = ''
+  formData.value.lote = ''
+  selectedFincaId.value = null
+  selectedLoteData.value = null
+  fincas.value = []
+  lotes.value = []
+  // Limpiar campos autocompletados
+  formData.value.name = ''
+  formData.value.genetics = ''
+  formData.value.collectionDate = ''
+  formData.value.originPlace = ''
+  updateForm()
+}
+
 const handleFincaChange = async () => {
+  // Si se deselecciona la finca (valor vacío), limpiar todo
+  if (!formData.value.farm || formData.value.farm.trim() === '') {
+    clearFincaSelection()
+    return
+  }
+  
   // Limpiar lote seleccionado cuando cambia la finca
   formData.value.lote = ''
   selectedLoteData.value = null
@@ -506,8 +665,8 @@ const handleFincaChange = async () => {
         const associatedAgricultor = agricultores.value.find(a => a.id === selectedFinca.agricultor_id)
         if (associatedAgricultor && formData.value.farmer !== associatedAgricultor.username) {
           formData.value.farmer = associatedAgricultor.username
-          // Actualizar lista de fincas para este agricultor
-          fincas.value = allFincas.value.filter(f => f.agricultor_id === selectedFinca.agricultor_id)
+          // Actualizar lista de fincas activas para este agricultor
+          fincas.value = allFincas.value.filter(f => f.agricultor_id === selectedFinca.agricultor_id && f.activa === true)
         }
       }
     }
@@ -634,8 +793,8 @@ const handleLoteChange = async () => {
         const associatedAgricultor = agricultores.value.find(a => a.id === finca.agricultor_id)
         if (associatedAgricultor && formData.value.farmer !== associatedAgricultor.username) {
           formData.value.farmer = associatedAgricultor.username
-          // Actualizar lista de fincas para este agricultor
-          fincas.value = allFincas.value.filter(f => f.agricultor_id === finca.agricultor_id)
+          // Actualizar lista de fincas activas para este agricultor
+          fincas.value = allFincas.value.filter(f => f.agricultor_id === finca.agricultor_id && f.activa === true)
         }
       }
     }
@@ -740,8 +899,8 @@ onMounted(async () => {
   await loadAgricultores()
   
   if (props.userRole === 'agricultor' && props.userId) {
-    // Para agricultores, mostrar solo sus fincas
-    fincas.value = allFincas.value.filter(finca => finca.agricultor_id === props.userId) || []
+    // Para agricultores, mostrar solo sus fincas activas
+    fincas.value = allFincas.value.filter(finca => finca.agricultor_id === props.userId && finca.activa === true) || []
     if (props.userName && !formData.value.farmer) {
       formData.value.farmer = props.userName
     }
@@ -749,7 +908,8 @@ onMounted(async () => {
     // Para admin, no mostrar fincas hasta que seleccione un agricultor
     fincas.value = []
   } else {
-    fincas.value = allFincas.value
+    // Solo mostrar fincas activas
+    fincas.value = allFincas.value.filter(finca => finca.activa === true)
   }
   
   emit('update:modelValue', { ...formData.value })
@@ -766,7 +926,7 @@ onMounted(async () => {
         const associatedAgricultor = agricultores.value.find(a => a.id === selectedFinca.agricultor_id)
         if (associatedAgricultor) {
           formData.value.farmer = associatedAgricultor.username
-          fincas.value = allFincas.value.filter(f => f.agricultor_id === selectedFinca.agricultor_id)
+          fincas.value = allFincas.value.filter(f => f.agricultor_id === selectedFinca.agricultor_id && f.activa === true)
         }
       }
     }

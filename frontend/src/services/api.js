@@ -25,10 +25,10 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : config.url
-    , fullUrl)
     // Validar que baseURL sea una URL absoluta
     if (config.baseURL && !config.baseURL.startsWith('http://') && !config.baseURL.startsWith('https://')) {
-      }
+      // Invalid baseURL format
+    }
     
     return config
   },
@@ -383,7 +383,6 @@ api.interceptors.request.use(
 
     // Log de request (siempre para debug)
     const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : config.url
-    } ${fullUrl}`)
 
     return config
   },
@@ -403,16 +402,8 @@ api.interceptors.response.use(
     // Validar que la respuesta sea JSON, no HTML
     const contentType = response.headers['content-type'] || ''
     if (contentType.includes('text/html')) {
-      )
       throw new Error('La respuesta del servidor es HTML en lugar de JSON. Verifica que baseURL esté configurada correctamente.')
     }
-
-    // Log de response
-    } ${response.config.baseURL}${response.config.url}`, {
-      status: response.status,
-      duration: `${duration}ms`,
-      contentType: contentType
-    })
 
     // Actualizar actividad del usuario
     try {
@@ -422,7 +413,7 @@ api.interceptors.response.use(
       }
     } catch (error) {
       // Log error for debugging transparency - activity update is non-critical
-      }
+    }
 
     return response
   },
@@ -505,10 +496,6 @@ export async function predictImage(formData) {
     globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
       detail: { type: 'prediction', message: 'Analizando imagen de cacao...' }
     }))
-
-    .toFixed(1)}KB`,
-      fileType: imageFile.type
-    })
 
     // Realizar la petición al endpoint de predicción
     const response = await api.post('/api/predict/', formData, {

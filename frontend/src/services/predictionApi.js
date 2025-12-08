@@ -50,10 +50,6 @@ export async function predictImage(formData) {
       detail: { type: 'prediction', message: 'Analizando imagen de cacao...' }
     }))
 
-    .toFixed(1)}KB`,
-      fileType: imageFile.type
-    })
-
     const response = await apiPost(API_ENDPOINTS.predict, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
@@ -110,10 +106,6 @@ export async function predictImageYolo(formData) {
     globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
       detail: { type: 'yolo-prediction', message: 'Analizando imagen con YOLOv8...' }
     }))
-
-    .toFixed(1)}KB`,
-      fileType: imageFile.type
-    })
 
     const response = await apiPost(API_ENDPOINTS.predictYolo, formData, {
       headers: {
@@ -180,11 +172,6 @@ export async function predictImageSmart(formData, options = {}) {
     globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
       detail: { type: 'smart-prediction', message: 'Analizando imagen con recorte inteligente...' }
     }))
-
-    .toFixed(1)}KB`,
-      fileType: imageFile.type,
-      options
-    })
 
     const response = await apiPost(API_ENDPOINTS.predictSmart, formData, {
       headers: {

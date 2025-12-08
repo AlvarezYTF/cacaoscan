@@ -433,8 +433,15 @@ class LoteDetailSerializer(LoteSerializer):
     
     def get_cacao_images(self, obj):
         """Get cacao images from lote."""
-        from .image_serializers import CacaoImageSerializer
-        return CacaoImageSerializer(obj.cacao_images.all()[:10], many=True).data
+        try:
+            from .image_serializers import CacaoImageSerializer
+            if hasattr(obj, 'cacao_images'):
+                images = obj.cacao_images.all()[:10]
+                return CacaoImageSerializer(images, many=True).data
+            return []
+        except Exception:
+            # Return empty list if there's any error accessing images
+            return []
 
 
 class LoteStatsSerializer(serializers.Serializer):

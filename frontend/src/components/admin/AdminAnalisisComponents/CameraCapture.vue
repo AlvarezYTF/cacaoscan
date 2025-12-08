@@ -149,7 +149,7 @@
 
 <script setup>
 // 1. Vue core
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 
 // Emits
 const emit = defineEmits(['capture'])
@@ -224,6 +224,20 @@ const capturePhoto = () => {
   
   context.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
   
+  // Emitir la foto inmediatamente después de capturarla
+  canvas.value.toBlob((blob) => {
+    if (blob) {
+      const file = new File([blob], `cocoa-${Date.now()}.jpg`, { type: 'image/jpeg' })
+      emit('capture', file)
+      
+      // Auto-resetear después de un breve delay para tomar otra foto
+      setTimeout(async () => {
+        photoTaken.value = false
+        await startCamera()
+      }, 1500) // 1.5 segundos para que el usuario vea la foto
+    }
+  }, 'image/jpeg', 0.9)
+  
   stopCamera()
   photoTaken.value = true
 }
@@ -233,15 +247,12 @@ const retakePhoto = async () => {
   await startCamera()
 }
 
-const savePhoto = () => {
+const savePhoto = async () => {
+  // La foto ya fue emitida en capturePhoto, solo resetear para tomar otra
   if (!canvas.value) return
   
-  canvas.value.toBlob((blob) => {
-    if (blob) {
-      const file = new File([blob], `cocoa-${Date.now()}.jpg`, { type: 'image/jpeg' })
-      emit('capture', file)
-    }
-  }, 'image/jpeg', 0.9)
+  photoTaken.value = false
+  await startCamera()
 }
 
 const retryCamera = async () => {

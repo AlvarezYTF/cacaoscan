@@ -570,8 +570,8 @@ const validateForm = () => {
     } else if (lng < -180 || lng > 180) {
       errors.value.coordenadas_lng = 'La longitud debe estar entre -180 y 180'
       isValid = false
+      }
     }
-  }
   
   // Validar descripción (opcional, pero si se proporciona tiene límite)
   if (formData.descripcion && formData.descripcion.length > 1000) {

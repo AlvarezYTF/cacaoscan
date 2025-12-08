@@ -268,9 +268,14 @@ class LoteDetailView(LotePermissionMixin, APIView):
         },
         tags=['Lotes']
     )
-    def get(self, request, lote_id):
+    def get(self, request, lote_id=None, pk=None):
         """Obtener detalles de lote."""
         try:
+            # Support both lote_id and pk parameters for URL compatibility
+            lote_id = lote_id or pk
+            if not lote_id:
+                return create_error_response('ID de lote requerido', status.HTTP_400_BAD_REQUEST)
+            
             queryset = self.get_queryset()
             lote = queryset.get(id=lote_id)
             

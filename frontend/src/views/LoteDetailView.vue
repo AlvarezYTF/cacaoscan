@@ -320,7 +320,7 @@ const loadLote = async () => {
           authStore.logout(false)
         }, 2000)
       } else {
-        error.value = err.response.data?.detail || `Error ${err.response.status}`
+        error.value = err.response.data?.error || err.response.data?.detail || `Error ${err.response.status}`
       }
     } else if (err.request) {
       error.value = 'No se pudo conectar al servidor. Verifica tu conexión.'

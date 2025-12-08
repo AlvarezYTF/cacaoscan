@@ -503,7 +503,8 @@ const handleUpdate = async () => {
       try {
         await personasApi.updatePersonaByUserId(props.farmer.id, personaPayload)
       } catch (e) {
-        :', e)
+        // Error updating persona data
+        throw e
       }
     }
 

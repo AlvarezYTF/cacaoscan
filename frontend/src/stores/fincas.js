@@ -17,7 +17,7 @@ export const useFincasStore = defineStore('fincas', () => {
     } catch (err) {
       const errorDetail = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'No se pudieron cargar las fincas'
       error.value = errorDetail
-      )
+      throw err
     } finally {
       loading.value = false
     }

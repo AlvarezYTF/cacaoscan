@@ -3,7 +3,7 @@
  * Centralizes fincas management logic
  */
 import { ref, computed } from 'vue'
-import { getFincas, getFincaById, createFinca, updateFinca, deleteFinca } from '@/services/fincasApi'
+import { getFincas, getFincaById, createFinca, updateFinca, deleteFinca, activateFinca } from '@/services/fincasApi'
 import { handleApiError } from '@/services/apiErrorHandler'
 
 /**
@@ -208,6 +208,38 @@ export function useFincas(options = {}) {
   }
 
   /**
+   * Activate finca
+   * @param {number} fincaId - Finca ID
+   * @returns {Promise<Object>} Activated finca
+   */
+  const activate = async (fincaId) => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const activatedFinca = await activateFinca(fincaId)
+
+      // Update in local state
+      const index = fincas.value.findIndex(f => f.id === fincaId)
+      if (index !== -1) {
+        fincas.value[index] = { ...fincas.value[index], activa: true }
+      }
+
+      if (currentFinca.value?.id === fincaId) {
+        currentFinca.value = { ...currentFinca.value, activa: true }
+      }
+
+      return activatedFinca
+    } catch (err) {
+      const errorInfo = handleApiError(err, { logError: true })
+      error.value = errorInfo.message
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
    * Set filters
    * @param {Object} newFilters - New filter values
    */
@@ -284,6 +316,8 @@ export function useFincas(options = {}) {
     updateFinca: update,
     remove,
     deleteFinca: remove,
+    activate,
+    activateFinca: activate,
     setFilters,
     clearFilters,
     setCurrentFinca,
