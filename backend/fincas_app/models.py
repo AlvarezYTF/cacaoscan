@@ -109,7 +109,7 @@ class Finca(TimeStampedModel):
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(hectareas__gt=0),
+                condition=models.Q(hectareas__gt=0),
                 name='fincas_app_finca_hectareas_positivas'
             ),
         ]
@@ -268,11 +268,11 @@ class Lote(TimeStampedModel):
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(area_hectareas__gt=0),
+                condition=models.Q(area_hectareas__gt=0),
                 name='fincas_app_lote_area_positiva'
             ),
             models.CheckConstraint(
-                check=models.Q(fecha_cosecha__isnull=True) | models.Q(fecha_cosecha__gte=models.F('fecha_plantacion')),
+                condition=models.Q(fecha_cosecha__isnull=True) | models.Q(fecha_cosecha__gte=models.F('fecha_plantacion')),
                 name='fincas_app_lote_fecha_cosecha_valida'
             ),
             models.UniqueConstraint(

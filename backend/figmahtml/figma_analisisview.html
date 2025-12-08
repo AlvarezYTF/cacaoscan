@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vista de Análisis - CacaoScan</title>
+    <link rel="stylesheet" href="../figmacss/figma_analisisview.css">
+</head>
+<body>
+    <div class="min-h-screen bg-gray-50">
+        <!-- Sidebar placeholder -->
+        <aside class="sidebar-placeholder"></aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <main class="py-6 px-4 sm:px-6 lg:px-8">
+                <div class="max-w-5xl mx-auto">
+                    <!-- Page Header -->
+                    <div class="mb-8">
+                        <div class="bg-gradient-to-r from-white to-green-50 rounded-2xl border-2 border-gray-200 hover:shadow-xl hover:border-green-300 transition-all duration-300">
+                            <div class="px-8 py-6">
+                                <div class="flex items-center gap-4">
+                                    <div class="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg">
+                                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h1 class="text-3xl font-bold text-gray-900 mb-1">Nuevo Análisis de Lote</h1>
+                                        <p class="text-gray-600 text-base">Sube imágenes de granos de cacao y completa la información del lote para iniciar un análisis de calidad detallado y preciso.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content Card -->
+                    <div class="bg-white shadow-lg border-2 border-gray-200 rounded-2xl overflow-hidden">
+                        <div class="p-8 space-y-8">
+                            <!-- Progress Indicator (hidden by default, shown when uploading) -->
+                            <div class="progress-indicator hidden">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div class="p-2 bg-green-600 rounded-lg">
+                                            <svg class="w-5 h-5 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                            </svg>
+                                        </div>
+                                        <span class="text-sm font-bold text-gray-800">Procesando imágenes...</span>
+                                    </div>
+                                    <span class="text-lg font-bold text-green-700">75%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner mt-3">
+                                    <div class="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-500 ease-out shadow-sm" style="width: 75%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Success Alert (shown when analysis is complete) -->
+                            <div class="success-alert hidden">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <div class="flex items-center justify-center w-16 h-16 bg-green-500 rounded-full">
+                                            <svg class="h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="ml-6 flex-1">
+                                        <h3 class="text-2xl font-bold text-green-900 mb-4">
+                                            Análisis completado exitosamente
+                                        </h3>
+                                        
+                                        <!-- Main Statistics -->
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                            <div class="bg-white rounded-lg p-4 border border-green-200">
+                                                <p class="text-sm text-gray-600 mb-1">Lote Analizado</p>
+                                                <p class="text-lg font-semibold text-green-900">LOTE-001</p>
+                                            </div>
+                                            
+                                            <div class="bg-white rounded-lg p-4 border border-green-200">
+                                                <p class="text-sm text-gray-600 mb-1">Imágenes Procesadas</p>
+                                                <p class="text-lg font-semibold text-green-900">5/5</p>
+                                            </div>
+                                            
+                                            <div class="bg-white rounded-lg p-4 border border-green-200">
+                                                <p class="text-sm text-gray-600 mb-1">Confianza Promedio</p>
+                                                <p class="text-lg font-semibold text-green-900">92.5%</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Additional Statistics -->
+                                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                            <div class="bg-white rounded-lg p-3 border border-green-200">
+                                                <p class="text-xs text-gray-600 mb-1">Alto Promedio</p>
+                                                <p class="text-base font-semibold text-green-900">18.45 mm</p>
+                                            </div>
+                                            
+                                            <div class="bg-white rounded-lg p-3 border border-green-200">
+                                                <p class="text-xs text-gray-600 mb-1">Ancho Promedio</p>
+                                                <p class="text-base font-semibold text-green-900">12.30 mm</p>
+                                            </div>
+                                            
+                                            <div class="bg-white rounded-lg p-3 border border-green-200">
+                                                <p class="text-xs text-gray-600 mb-1">Grosor Promedio</p>
+                                                <p class="text-base font-semibold text-green-900">8.20 mm</p>
+                                            </div>
+                                            
+                                            <div class="bg-white rounded-lg p-3 border border-green-200">
+                                                <p class="text-xs text-gray-600 mb-1">Peso Total</p>
+                                                <p class="text-base font-semibold text-green-900">125.50 g</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Processing Time -->
+                                        <div class="mb-4">
+                                            <p class="text-sm text-green-700">
+                                                <svg class="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                Tiempo de procesamiento: 15 segundos
+                                            </p>
+                                        </div>
+
+                                        <!-- Action Buttons -->
+                                        <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                                            <a href="#" class="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white text-base font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 shadow-md">
+                                                Ver resultados detallados
+                                                <svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </a>
+                                            
+                                            <button type="button" class="inline-flex items-center justify-center px-6 py-3 bg-white text-green-700 text-base font-semibold rounded-lg hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 border-2 border-green-300 shadow-md">
+                                                Crear nuevo análisis
+                                                <svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Batch Info Form -->
+                            <div class="batch-info-form">
+                                <div class="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-8 shadow-sm">
+                                    <div class="flex items-center gap-3 mb-6">
+                                        <div class="p-2 bg-green-100 rounded-xl">
+                                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                        </div>
+                                        <h2 class="text-2xl font-bold text-gray-900">Información del Lote</h2>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                                        <!-- Finca Field -->
+                                        <div>
+                                            <label for="farm" class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                                                </svg>
+                                                Finca <span class="text-red-500">*</span>
+                                            </label>
+                                            <select id="farm" class="mt-1 block w-full rounded-xl border-2 border-gray-200 px-4 py-3 pr-10 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/30 transition-all duration-200">
+                                                <option value="">Selecciona una finca</option>
+                                                <option value="finca1">Finca El Cacao</option>
+                                                <option value="finca2">Finca La Esperanza</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Lote Field -->
+                                        <div class="sm:col-span-2">
+                                            <label for="lote" class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                                </svg>
+                                                Lote <span class="text-red-500">*</span>
+                                            </label>
+                                            <select id="lote" class="mt-1 block w-full rounded-xl border-2 border-gray-200 px-4 py-3 pr-10 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/30 transition-all duration-200">
+                                                <option value="">Selecciona un lote</option>
+                                                <option value="lote1">LOTE-001 - Criollo</option>
+                                                <option value="lote2">LOTE-002 - Forastero</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Genetics Field -->
+                                        <div>
+                                            <label for="genetics" class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                </svg>
+                                                Genética <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" id="genetics" class="mt-1 block w-full rounded-xl border-2 border-gray-200 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/30 transition-all duration-200" placeholder="Ej: Criollo, Forastero, Trinitario">
+                                        </div>
+
+                                        <!-- Collection Date Field -->
+                                        <div>
+                                            <label for="collectionDate" class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                                Fecha de Recolección <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="date" id="collectionDate" class="mt-1 block w-full rounded-xl border-2 border-gray-200 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/30 transition-all duration-200">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Image Capture Section -->
+                            <div class="image-capture-section space-y-6">
+                                <div class="text-center">
+                                    <h2 class="text-2xl font-semibold text-gray-900 mb-3">Imágenes del Lote</h2>
+                                    <p class="text-gray-600 text-lg">Captura fotos de alta calidad de los granos de cacao para un análisis preciso</p>
+                                </div>
+
+                                <!-- Tabs -->
+                                <div class="bg-gray-50 border-2 border-gray-200 rounded-2xl p-2">
+                                    <nav class="flex space-x-2">
+                                        <button type="button" class="flex-1 py-3 px-4 text-base font-semibold rounded-xl transition-all duration-300 bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg">
+                                            Subir imágenes
+                                        </button>
+                                        <button type="button" class="flex-1 py-3 px-4 text-base font-semibold rounded-xl transition-all duration-300 text-gray-600 hover:text-green-600 hover:bg-white">
+                                            Tomar foto
+                                        </button>
+                                    </nav>
+                                </div>
+
+                                <!-- File Upload Tab Content -->
+                                <div class="bg-gray-50 border border-gray-200 rounded-2xl p-8">
+                                    <div class="space-y-4">
+                                        <!-- Drop Zone -->
+                                        <div class="border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 hover:border-green-400 hover:bg-green-50">
+                                            <div class="flex flex-col items-center justify-center space-y-3">
+                                                <div class="p-4 bg-green-100 rounded-2xl">
+                                                    <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                </div>
+                                                <p class="text-xl font-bold text-gray-800">Arrastra tus imágenes aquí o haz clic para seleccionarlas</p>
+                                                <p class="text-sm text-gray-500 font-medium">Formatos soportados: JPG, PNG (máx. 5MB por imagen)</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Image Previews -->
+                                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                            <div class="relative group overflow-hidden border-2 border-gray-200 hover:border-green-300 rounded-2xl transition-all duration-300 hover:shadow-lg">
+                                                <div class="w-full h-32 bg-gray-200 rounded-2xl"></div>
+                                                <button type="button" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-all duration-200 z-10 shadow-lg">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            <div class="relative group overflow-hidden border-2 border-gray-200 hover:border-green-300 rounded-2xl transition-all duration-300 hover:shadow-lg">
+                                                <div class="w-full h-32 bg-gray-200 rounded-2xl"></div>
+                                                <button type="button" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-all duration-200 z-10 shadow-lg">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button Section -->
+                            <div class="submit-section bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-8 shadow-sm">
+                                <div class="text-center mb-6">
+                                    <div class="flex items-center justify-center mb-3">
+                                        <div class="p-2 bg-green-600 rounded-full">
+                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <h3 class="text-2xl font-bold text-green-900 mb-2">¿Listo para analizar?</h3>
+                                    <p class="text-green-700 text-lg">Revisa que toda la información esté completa antes de continuar</p>
+                                </div>
+                                
+                                <button type="button" class="group w-full flex justify-center items-center gap-2 py-4 px-6 border border-transparent rounded-xl shadow-xl text-base font-bold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-4 focus:ring-green-500/50 transition-all duration-300 hover:shadow-2xl active:scale-[0.98]">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Iniciar Análisis de Calidad
+                                </button>
+                            </div>
+
+                            <!-- Error Alert -->
+                            <div class="error-alert hidden">
+                                <div class="bg-red-50 border-2 border-red-300 rounded-2xl p-8 shadow-sm">
+                                    <div class="flex items-start gap-4">
+                                        <div class="p-2 bg-red-100 rounded-xl">
+                                            <svg class="h-7 w-7 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1">
+                                            <h3 class="text-xl font-bold text-red-900 mb-2">
+                                                Error en el análisis
+                                            </h3>
+                                            <p class="text-base text-red-800">
+                                                Ha ocurrido un error al procesar el análisis. Por favor, intenta nuevamente.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
+

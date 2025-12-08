@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vista de Fincas - CacaoScan</title>
+    <link rel="stylesheet" href="../figmacss/figma_fincasview.css">
+</head>
+<body>
+    <div class="min-h-screen bg-gray-100">
+        <!-- Sidebar placeholder -->
+        <aside class="sidebar-placeholder"></aside>
+
+        <!-- Main Content -->
+        <div class="main-content w-full relative">
+            <main class="py-8 px-4 sm:px-6 lg:px-8 min-h-screen bg-white relative z-0">
+                <div class="max-w-7xl mx-auto space-y-8">
+                    <!-- Header -->
+                    <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+                        <div class="flex items-center justify-between flex-wrap gap-4">
+                            <div class="flex items-center">
+                                <div class="bg-green-100 p-3 rounded-lg mr-4">
+                                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h1 class="text-3xl font-bold text-gray-900">Gestión de Fincas</h1>
+                                    <p class="text-gray-600 mt-1">Administra las fincas de cacao registradas</p>
+                                </div>
+                            </div>
+                            <!-- Acciones -->
+                            <div class="flex items-center space-x-3">
+                                <button type="button" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    Nueva Finca
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                            <div class="flex items-center">
+                                <div class="bg-green-100 p-2 rounded-lg mr-3">
+                                    <svg class="text-xl text-green-600 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-bold text-gray-900">Filtros de Búsqueda</h2>
+                                    <p class="text-sm text-gray-600">Filtra las fincas por diferentes criterios</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label for="fincas-filter-search" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+                                    <input
+                                        id="fincas-filter-search"
+                                        type="text"
+                                        placeholder="Nombre, municipio, departamento..."
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label for="fincas-filter-departamento" class="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
+                                    <select
+                                        id="fincas-filter-departamento"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                                    >
+                                        <option value="">Todos los departamentos</option>
+                                        <option value="Antioquia">Antioquia</option>
+                                        <option value="Cundinamarca">Cundinamarca</option>
+                                        <option value="Valle del Cauca">Valle del Cauca</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="fincas-filter-estado" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                                    <select
+                                        id="fincas-filter-estado"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                                    >
+                                        <option value="">Todos</option>
+                                        <option value="true">Activas</option>
+                                        <option value="false">Inactivas</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-end">
+                                    <button type="button" class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                        </svg>
+                                        Limpiar Filtros
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de fincas -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Finca Card 1 -->
+                        <div class="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 cursor-pointer group">
+                            <div class="p-6">
+                                <!-- Header de la tarjeta -->
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-bold text-gray-900 mb-1">Finca El Cacao</h3>
+                                        <p class="text-sm text-gray-600 flex items-center gap-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            </svg>
+                                            Medellín, Antioquia
+                                        </p>
+                                    </div>
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-full flex items-center gap-1 bg-green-100 text-green-800">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Activa
+                                    </span>
+                                </div>
+
+                                <!-- Información de la finca -->
+                                <div class="space-y-3 mb-4">
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                        Vereda La Esperanza, Km 5
+                                    </div>
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                                        </svg>
+                                        15 hectáreas
+                                    </div>
+                                </div>
+
+                                <!-- Estadísticas -->
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div class="bg-blue-50 rounded-lg p-3 text-center">
+                                        <div class="text-2xl font-bold text-blue-600">5</div>
+                                        <div class="text-xs text-gray-600">Lotes</div>
+                                    </div>
+                                    <div class="bg-purple-50 rounded-lg p-3 text-center">
+                                        <div class="text-2xl font-bold text-purple-600">12</div>
+                                        <div class="text-xs text-gray-600">Análisis</div>
+                                    </div>
+                                </div>
+
+                                <!-- Acciones -->
+                                <div class="flex gap-2 flex-wrap">
+                                    <button type="button" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        Editar
+                                    </button>
+                                    <button type="button" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                                        </svg>
+                                        Ver Lotes
+                                    </button>
+                                    <button type="button" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                                        </svg>
+                                        Desactivar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Finca Card 2 -->
+                        <div class="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 cursor-pointer group">
+                            <div class="p-6">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-bold text-gray-900 mb-1">Finca La Esperanza</h3>
+                                        <p class="text-sm text-gray-600 flex items-center gap-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            </svg>
+                                            Bogotá, Cundinamarca
+                                        </p>
+                                    </div>
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-full flex items-center gap-1 bg-green-100 text-green-800">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Activa
+                                    </span>
+                                </div>
+
+                                <div class="space-y-3 mb-4">
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                        Vereda San José, Km 8
+                                    </div>
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                                        </svg>
+                                        8 hectáreas
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div class="bg-blue-50 rounded-lg p-3 text-center">
+                                        <div class="text-2xl font-bold text-blue-600">3</div>
+                                        <div class="text-xs text-gray-600">Lotes</div>
+                                    </div>
+                                    <div class="bg-purple-50 rounded-lg p-3 text-center">
+                                        <div class="text-2xl font-bold text-purple-600">8</div>
+                                        <div class="text-xs text-gray-600">Análisis</div>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-2 flex-wrap">
+                                    <button type="button" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        Editar
+                                    </button>
+                                    <button type="button" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                                        </svg>
+                                        Ver Lotes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Finca Card 3 (Inactiva) -->
+                        <div class="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 cursor-pointer group">
+                            <div class="p-6">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-bold text-gray-900 mb-1">Finca San Pedro</h3>
+                                        <p class="text-sm text-gray-600 flex items-center gap-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            </svg>
+                                            Cali, Valle del Cauca
+                                        </p>
+                                    </div>
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-full flex items-center gap-1 bg-red-100 text-red-800">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Inactiva
+                                    </span>
+                                </div>
+
+                                <div class="space-y-3 mb-4">
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                        Vereda El Paraíso, Km 12
+                                    </div>
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                                        </svg>
+                                        12 hectáreas
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div class="bg-blue-50 rounded-lg p-3 text-center">
+                                        <div class="text-2xl font-bold text-blue-600">2</div>
+                                        <div class="text-xs text-gray-600">Lotes</div>
+                                    </div>
+                                    <div class="bg-purple-50 rounded-lg p-3 text-center">
+                                        <div class="text-2xl font-bold text-purple-600">4</div>
+                                        <div class="text-xs text-gray-600">Análisis</div>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-2 flex-wrap">
+                                    <button type="button" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Activar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
+

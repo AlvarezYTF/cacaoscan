@@ -210,7 +210,7 @@ venv\Scripts\activate  # Windows
 
 ### Tests de Vistas (Upload)
 
-**Archivo:** `backend/images_app/tests/test_views.py`
+**Archivo:** `backend/images_app/tests/test_views.py`  
 
 #### Ejecutar todos los tests de subida de imágenes:
 
