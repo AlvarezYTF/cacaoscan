@@ -83,6 +83,7 @@ dist/
 build/
 
 # Entornos virtuales de Python
+venc/
 venv/
 env/
 ENV/
