@@ -129,30 +129,22 @@ class CalibrationView(APIView):
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Calibra el sistema usando una imagen con objeto de referencia conocido",
+        operation_description="Calibra el sistema usando pixel_calibration.json (método principal) o puntos manuales",
         operation_summary="Calibrar sistema",
         manual_parameters=[
             openapi.Parameter(
                 'image',
                 openapi.IN_FORM,
-                description="Imagen con objeto de referencia (moneda, regla, etc.)",
+                description="Imagen de grano de cacao para calibración",
                 type=openapi.TYPE_FILE,
-                required=True
+                required=False
             ),
             openapi.Parameter(
                 'method',
                 openapi.IN_FORM,
                 description="Método de calibración",
                 type=openapi.TYPE_STRING,
-                enum=['coin_detection', 'ruler_detection', 'manual_points', 'auto_reference'],
-                required=False
-            ),
-            openapi.Parameter(
-                'reference_object',
-                openapi.IN_FORM,
-                description="Objeto de referencia específico",
-                type=openapi.TYPE_STRING,
-                enum=['COIN_1000_COP', 'COIN_500_COP', 'COIN_200_COP', 'COIN_100_COP', 'RULER_1CM', 'RULER_2CM', 'RULER_5CM'],
+                enum=['dataset_calibration', 'manual_points'],
                 required=False
             )
         ],
@@ -166,7 +158,6 @@ class CalibrationView(APIView):
                         'pixels_per_mm': openapi.Schema(type=openapi.TYPE_NUMBER),
                         'confidence': openapi.Schema(type=openapi.TYPE_NUMBER),
                         'method': openapi.Schema(type=openapi.TYPE_STRING),
-                        'reference_object': openapi.Schema(type=openapi.TYPE_STRING),
                         'calibration_image_path': openapi.Schema(type=openapi.TYPE_STRING)
                     }
                 )
@@ -178,20 +169,14 @@ class CalibrationView(APIView):
     )
     def post(self, request):
         """
-        Calibra el sistema usando una imagen de referencia.
+        Calibra el sistema usando pixel_calibration.json (método principal).
         """
         try:
-            # Validate image file
-            image_file, error_response = _validate_image_file(request)
-            if error_response:
-                return error_response
-            
             # Obtener parámetros de calibración
-            method_str = request.data.get('method', 'coin_detection')
-            reference_object_str = request.data.get('reference_object')
+            method_str = request.data.get('method', 'dataset_calibration')
             
             # Convertir parámetros
-            from ml.measurement.calibration import CalibrationMethod, ReferenceObject
+            from ml.measurement.calibration import CalibrationMethod
             
             try:
                 method = CalibrationMethod(method_str)
@@ -201,24 +186,29 @@ class CalibrationView(APIView):
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            reference_object = None
-            if reference_object_str:
-                try:
-                    reference_object = ReferenceObject(reference_object_str)
-                except ValueError:
-                    return Response({
-                        'error': f'Objeto de referencia no válido: {reference_object_str}',
-                        'status': 'error'
-                    }, status=status.HTTP_400_BAD_REQUEST)
+            # Para dataset_calibration, no se requiere imagen
+            if method == CalibrationMethod.DATASET_CALIBRATION:
+                return Response({
+                    'success': True,
+                    'message': 'Calibración basada en dataset (pixel_calibration.json) - no requiere imagen',
+                    'method': method.value,
+                    'pixels_per_mm': 0.0,  # Se obtiene del dataset
+                    'confidence': 1.0
+                }, status=status.HTTP_200_OK)
             
-            # Cargar imagen
-            image = _load_image_from_file(image_file)
-            
-            # Realizar calibración
-            from ml.prediction.calibrated_predict import get_calibrated_predictor
-            
-            predictor = get_calibrated_predictor(use_calibration=True)
-            calibration_result = predictor.calibrate_image(image, method, reference_object)
+            # Para manual_points, se requiere imagen
+            if method == CalibrationMethod.MANUAL_POINTS:
+                image_file, error_response = _validate_image_file(request)
+                if error_response:
+                    return error_response
+                
+                image = _load_image_from_file(image_file)
+                
+                # Realizar calibración manual
+                from ml.prediction.calibrated_predict import get_calibrated_predictor
+                
+                predictor = get_calibrated_predictor(use_calibration=True)
+                calibration_result = predictor.calibrate_image(image, method)
             
             if calibration_result['success']:
                 logger.info(f"Calibración exitosa: {calibration_result['pixels_per_mm']:.3f} pixels/mm")

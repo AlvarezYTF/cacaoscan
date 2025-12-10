@@ -51,6 +51,7 @@ class TrainingJobSerializer(serializers.ModelSerializer):
     duration_formatted = serializers.ReadOnlyField()
     is_active = serializers.ReadOnlyField()
     created_by_username = serializers.CharField(source=CREATED_BY_USERNAME_SOURCE, read_only=True)
+    training_time = serializers.SerializerMethodField()
     
     class Meta:
         model = TrainingJob
@@ -59,7 +60,7 @@ class TrainingJobSerializer(serializers.ModelSerializer):
             'model_name', 'dataset_size', 'epochs', 'batch_size', 'learning_rate',
             'config_params', 'metrics', 'model_path', 'logs', 'created_at',
             'started_at', 'completed_at', 'error_message', 'progress_percentage',
-            'duration_formatted', 'is_active'
+            'duration_formatted', 'is_active', 'training_time'
         )
         read_only_fields = (
             'id', 'job_id', 'created_by', 'created_at', 'started_at', 'completed_at',
@@ -85,6 +86,13 @@ class TrainingJobSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("El tamaño del dataset debe ser mayor a 0.")
         return value
+    
+    def get_training_time(self, obj):
+        """Calculate training time in minutes."""
+        duration = obj.duration
+        if duration is None:
+            return 0
+        return int(duration / 60)  # Convert seconds to minutes
 
 
 class TrainingJobCreateSerializer(serializers.ModelSerializer):

@@ -70,10 +70,17 @@ class TrainingJobListView(PaginationMixin, AdminPermissionMixin, APIView):
                 return self.admin_permission_denied()
             
             if TrainingJob is None:
+                logger.warning("TrainingJob model not available, returning empty results")
+                # Return empty results instead of error to prevent frontend crashes
                 return Response({
-                    'error': ERROR_TRAINING_JOB_MODEL_UNAVAILABLE,
-                    'status': 'error'
-                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                    'results': [],
+                    'count': 0,
+                    'page': 1,
+                    'page_size': 20,
+                    'total_pages': 0,
+                    'next': None,
+                    'previous': None
+                }, status=status.HTTP_200_OK)
             
             # Obtener parámetros de consulta
             status_filter = request.GET.get('status')
@@ -111,11 +118,17 @@ class TrainingJobListView(PaginationMixin, AdminPermissionMixin, APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
             
         except Exception as e:
-            logger.error(f"Error obteniendo lista de trabajos de entrenamiento: {e}")
+            logger.error(f"Error obteniendo lista de trabajos de entrenamiento: {e}", exc_info=True)
+            # Return empty results instead of error to prevent frontend crashes
             return Response({
-                'error': ERROR_INTERNAL_SERVER,
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                'results': [],
+                'count': 0,
+                'page': 1,
+                'page_size': 20,
+                'total_pages': 0,
+                'next': None,
+                'previous': None
+            }, status=status.HTTP_200_OK)
 
 
 class TrainingJobCreateView(AdminPermissionMixin, APIView):
@@ -175,6 +188,19 @@ class TrainingJobCreateView(AdminPermissionMixin, APIView):
                     'details': serializer.errors
                 }, status=status.HTTP_400_BAD_REQUEST)
             
+            # Calcular dataset_size automáticamente si es 0
+            validated_data = serializer.validated_data.copy()
+            if validated_data.get('dataset_size', 0) == 0:
+                try:
+                    from ml.data.dataset_loader import CacaoDatasetLoader
+                    loader = CacaoDatasetLoader()
+                    valid_records = loader.get_valid_records()
+                    validated_data['dataset_size'] = len(valid_records) if valid_records else 0
+                    logger.info(f"Dataset size calculado automáticamente: {validated_data['dataset_size']}")
+                except Exception as e:
+                    logger.warning(f"Error calculando dataset size: {e}, usando valor por defecto")
+                    validated_data['dataset_size'] = 0
+            
             # Generar ID único para el trabajo
             job_id = f"job_{uuid.uuid4().hex[:12]}"
             
@@ -182,30 +208,76 @@ class TrainingJobCreateView(AdminPermissionMixin, APIView):
             training_job = TrainingJob.objects.create(
                 job_id=job_id,
                 created_by=request.user,
-                **serializer.validated_data
+                **validated_data
             )
             
-            # Iniciar entrenamiento asíncrono con Celery
+            # Preparar configuración de entrenamiento
+            config_params = validated_data.get('config_params', {})
+            config = {
+                'epochs': validated_data.get('epochs', 150),
+                'batch_size': validated_data.get('batch_size', 16),
+                'learning_rate': validated_data.get('learning_rate', 0.001),
+                'multi_head': config_params.get('multi_head', False),
+                'model_type': config_params.get('model_type', 'resnet18'),
+                'img_size': config_params.get('img_size', 224),
+                'early_stopping_patience': config_params.get('early_stopping_patience', 25),
+                'save_best_only': config_params.get('save_best_only', True),
+                'hybrid': config_params.get('hybrid', True),
+                'use_pixel_features': config_params.get('use_pixel_features', True),
+                'segmentation_backend': config_params.get('segmentation_backend', 'opencv'),
+            }
+            
+            # Intentar iniciar entrenamiento asíncrono con Celery
+            celery_available = False
             try:
                 from api.tasks import train_model_task
-                
-                config = {
-                    'epochs': serializer.validated_data.get('epochs', 30),
-                    'batch_size': serializer.validated_data.get('batch_size', 16),
-                    'learning_rate': serializer.validated_data.get('learning_rate', 0.001),
-                    'multi_head': serializer.validated_data.get('config_params', {}).get('multi_head', False),
-                    'model_type': serializer.validated_data.get('config_params', {}).get('model_type', 'resnet18'),
-                    'img_size': serializer.validated_data.get('config_params', {}).get('img_size', 224),
-                    'early_stopping_patience': serializer.validated_data.get('config_params', {}).get('early_stopping_patience', 10),
-                    'save_best_only': serializer.validated_data.get('config_params', {}).get('save_best_only', True)
-                }
-                
                 # Encolar tarea de Celery
                 train_model_task.delay(job_id, config)
+                celery_available = True
+                logger.info(f"Entrenamiento encolado en Celery para job {job_id}")
             except ImportError:
-                logger.warning("Celery no disponible, el entrenamiento no se iniciará automáticamente")
+                logger.warning("Celery no disponible, ejecutando entrenamiento síncrono")
             except Exception as e:
-                logger.error(f"Error iniciando tarea de entrenamiento: {e}")
+                logger.warning(f"Error iniciando tarea de Celery: {e}, ejecutando entrenamiento síncrono")
+            
+            # Si Celery no está disponible, ejecutar entrenamiento síncrono en segundo plano
+            if not celery_available:
+                import threading
+                from ml.pipeline.train_all import run_training_pipeline
+                
+                def run_sync_training():
+                    """Ejecuta entrenamiento de forma síncrona en segundo plano."""
+                    try:
+                        training_job = TrainingJob.objects.get(job_id=job_id)
+                        training_job.status = 'running'
+                        training_job.started_at = timezone.now()
+                        training_job.save()
+                        
+                        logger.info(f"Iniciando entrenamiento síncrono para job {job_id}")
+                        
+                        # Ejecutar pipeline de entrenamiento
+                        success = run_training_pipeline(**config)
+                        
+                        if success:
+                            training_job.mark_completed()
+                            training_job.logs += "\n[COMPLETED] Training completed successfully"
+                            training_job.save()
+                            logger.info(f"Entrenamiento completado exitosamente para job {job_id}")
+                        else:
+                            training_job.mark_failed("Training pipeline returned False")
+                            logger.error(f"Entrenamiento falló para job {job_id}")
+                    except Exception as e:
+                        logger.error(f"Error en entrenamiento síncrono para job {job_id}: {e}", exc_info=True)
+                        try:
+                            training_job = TrainingJob.objects.get(job_id=job_id)
+                            training_job.mark_failed(str(e))
+                        except Exception:
+                            pass
+                
+                # Ejecutar en thread separado para no bloquear la respuesta HTTP
+                training_thread = threading.Thread(target=run_sync_training, daemon=True)
+                training_thread.start()
+                logger.info(f"Entrenamiento síncrono iniciado en thread separado para job {job_id}")
             
             # Serializar respuesta
             response_serializer = TrainingJobSerializer(training_job)
@@ -220,10 +292,14 @@ class TrainingJobCreateView(AdminPermissionMixin, APIView):
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
-            logger.error(f"Error creando trabajo de entrenamiento: {e}")
+            logger.error(f"Error creando trabajo de entrenamiento: {e}", exc_info=True)
+            error_message = str(e)
+            if hasattr(e, 'message'):
+                error_message = e.message
             return Response({
                 'error': ERROR_INTERNAL_SERVER,
-                'status': 'error'
+                'status': 'error',
+                'details': error_message
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
