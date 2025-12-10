@@ -1,7 +1,7 @@
 /**
  * Servicio de API para catálogos (Tema-Parámetro) y ubicaciones
  */
-import { apiGet } from './apiClient'
+import { getApiBaseUrlWithPath } from '@/utils/apiConfig'
 
 const catalogosApi = {
   /**
@@ -12,15 +12,77 @@ const catalogosApi = {
   async getParametrosPorTema(codigoTema) {
     try {
       // Ruta principal: query por tema
-      return await apiGet('/parametros/', { tema: codigoTema })
+      const baseUrl = getApiBaseUrlWithPath()
+      const url = `${baseUrl}/parametros/?tema=${codigoTema}`
+      console.log('[catalogosApi] getParametrosPorTema - URL:', url)
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      console.log('[catalogosApi] getParametrosPorTema - Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[catalogosApi] getParametrosPorTema - Error response:', errorText)
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+      
+      const data = await response.json()
+      console.log('[catalogosApi] getParametrosPorTema - Data recibida:', data)
+      
+      // Si es paginado, retornar results, sino retornar directamente
+      const result = Array.isArray(data) ? data : (data.results || data)
+      console.log('[catalogosApi] getParametrosPorTema - Resultado final:', result)
+      return result
     } catch (error_) {
       try {
         // Fallback 1: endpoint REST por tema
-        return await apiGet(`/parametros/tema/${codigoTema}/`)
+        const baseUrl = getApiBaseUrlWithPath()
+        const response = await fetch(`${baseUrl}/parametros/tema/${codigoTema}/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+        const data = await response.json()
+        return data.parametros || data
       } catch (error_) {
         try {
-          // Fallback 2: parámetros anidados bajo tema
-          return await apiGet(`/temas/${codigoTema}/parametros/`)
+          // Fallback 2: parámetros anidados bajo tema (necesita buscar tema por código primero)
+          const baseUrl = getApiBaseUrlWithPath()
+          const temasResponse = await fetch(`${baseUrl}/temas/`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          })
+          if (!temasResponse.ok) {
+            throw new Error(`HTTP ${temasResponse.status}`)
+          }
+          const temas = await temasResponse.json()
+          const temasArray = Array.isArray(temas) ? temas : (temas.results || [])
+          const tema = temasArray.find(t => t.codigo === codigoTema)
+          if (!tema) {
+            throw new Error(`Tema ${codigoTema} no encontrado`)
+          }
+          const response = await fetch(`${baseUrl}/temas/${tema.id}/parametros/`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          })
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`)
+          }
+          const data = await response.json()
+          return Array.isArray(data) ? data : (data.results || data)
         } catch (error_) {
           throw error_
         }
@@ -34,7 +96,18 @@ const catalogosApi = {
    */
   async getTemas() {
     try {
-      return await apiGet('/temas/')
+      const baseUrl = getApiBaseUrlWithPath()
+      const response = await fetch(`${baseUrl}/temas/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      const data = await response.json()
+      return Array.isArray(data) ? data : (data.results || data)
     } catch (error) {
       throw error
     }
@@ -46,8 +119,33 @@ const catalogosApi = {
    */
   async getDepartamentos() {
     try {
-      return await apiGet('/departamentos/')
+      const baseUrl = getApiBaseUrlWithPath()
+      const url = `${baseUrl}/departamentos/`
+      console.log('[catalogosApi] getDepartamentos - URL:', url)
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      console.log('[catalogosApi] getDepartamentos - Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[catalogosApi] getDepartamentos - Error response:', errorText)
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+      
+      const data = await response.json()
+      console.log('[catalogosApi] getDepartamentos - Data recibida:', data)
+      
+      const result = Array.isArray(data) ? data : (data.results || data)
+      console.log('[catalogosApi] getDepartamentos - Resultado final:', result?.length || 0, 'departamentos')
+      return result
     } catch (error) {
+      console.error('[catalogosApi] getDepartamentos - Error:', error)
       throw error
     }
   },
@@ -59,7 +157,18 @@ const catalogosApi = {
    */
   async getMunicipiosPorDepartamento(codigoDepartamento) {
     try {
-      return await apiGet('/municipios/', { departamento: codigoDepartamento })
+      const baseUrl = getApiBaseUrlWithPath()
+      const response = await fetch(`${baseUrl}/municipios/?departamento=${codigoDepartamento}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      const data = await response.json()
+      return Array.isArray(data) ? data : (data.results || data)
     } catch (error) {
       throw error
     }
@@ -72,7 +181,18 @@ const catalogosApi = {
    */
   async getDepartamentoPorCodigo(codigo) {
     try {
-      const departamentos = await apiGet('/departamentos/')
+      const baseUrl = getApiBaseUrlWithPath()
+      const response = await fetch(`${baseUrl}/departamentos/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      const data = await response.json()
+      const departamentos = Array.isArray(data) ? data : (data.results || data)
       return departamentos.find(dept => dept.codigo === codigo)
     } catch (error) {
       throw error
@@ -86,7 +206,18 @@ const catalogosApi = {
    */
   async getMunicipiosByDepartamento(idDepartamento) {
     try {
-      return await apiGet('/municipios/', { departamento: idDepartamento })
+      const baseUrl = getApiBaseUrlWithPath()
+      const response = await fetch(`${baseUrl}/municipios/?departamento=${idDepartamento}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      const data = await response.json()
+      return Array.isArray(data) ? data : (data.results || data)
     } catch (error) {
       throw error
     }

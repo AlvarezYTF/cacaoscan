@@ -20,17 +20,25 @@ export function useCatalogos() {
     error.value = null
     
     try {
+      console.log('[useCatalogos] Iniciando carga de catálogos...')
       const [tiposDoc, gens, deptos] = await Promise.all([
         catalogosApi.getParametrosPorTema('TIPO_DOC'),
         catalogosApi.getParametrosPorTema('SEXO'),
         catalogosApi.getDepartamentos()
       ])
       
+      console.log('[useCatalogos] Catálogos cargados:', {
+        tiposDoc: tiposDoc?.length || 0,
+        generos: gens?.length || 0,
+        departamentos: deptos?.length || 0
+      })
+      
       tiposDocumento.value = tiposDoc || []
       generos.value = gens || []
       departamentos.value = deptos || []
     } catch (e) {
-      error.value = 'Error al cargar catálogos'
+      console.error('[useCatalogos] Error al cargar catálogos:', e)
+      error.value = `Error al cargar catálogos: ${e.message || 'Error desconocido'}`
       // Valores por defecto
       tiposDocumento.value = []
       generos.value = []

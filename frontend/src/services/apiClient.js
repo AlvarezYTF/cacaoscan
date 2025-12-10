@@ -217,6 +217,13 @@ export const fetchPost = async (endpoint, data = {}, options = {}) => {
     
     return await handleResponse(response)
   } catch (error) {
+    // Improve error messages for network errors
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Error de conexión. Verifica que el servidor esté corriendo y que tengas conexión a internet.')
+    }
+    if (error.message === 'Failed to fetch') {
+      throw new Error('No se pudo conectar con el servidor. Verifica que el backend esté corriendo.')
+    }
     throw error
   }
 }
