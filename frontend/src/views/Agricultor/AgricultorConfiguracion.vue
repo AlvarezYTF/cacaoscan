@@ -92,8 +92,8 @@
                     @save="saveProfile"
                   />
                   
-                  <!-- Cambio de contraseña -->
-                  <div class="mt-6 pt-6 border-t border-gray-200">
+                  <!-- Cambio de contraseña - Solo mostrar si el usuario YA tiene contraseña -->
+                  <div v-if="hasPassword" class="mt-6 pt-6 border-t border-gray-200">
                     <PasswordSection 
                       ref="passwordSectionRef"
                       :is-loading="isChangingPassword"
@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { personasApi, authApi } from '@/services'
@@ -155,6 +155,11 @@ const toggleAccordion = (section) => {
 
 // Computed properties
 const userRole = computedUserRole
+
+// Verificar si el usuario tiene contraseña usable
+const hasPassword = computed(() => {
+  return authStore.hasPassword !== false // Si es null, asumir true por compatibilidad
+})
 
 // Datos de persona
 const personaData = ref({})
