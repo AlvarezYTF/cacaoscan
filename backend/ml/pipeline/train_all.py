@@ -74,6 +74,11 @@ try:
 except ImportError:
     run_incremental_training = None
 
+# Import new refactored classes
+from .generators.crop_generator import CropGenerator
+from .managers.artifact_manager import ArtifactManager
+from .orchestrators.training_orchestrator import TrainingOrchestrator
+
 
 logger = get_ml_logger("cacaoscan.ml.pipeline")
 
@@ -451,8 +456,14 @@ class SingleDimensionDataset(Dataset):
         )
 
 
-class CacaoTrainingPipeline:
-    """Pipeline completo de entrenamiento."""
+class PipelineEntrenamientoCacao:
+    """
+    Pipeline completo de entrenamiento para modelos de regresión de granos de cacao.
+    
+    Siguiendo principios SOLID:
+    - Single Responsibility: orquestación del pipeline de entrenamiento
+    - Dependency Inversion: usa componentes refactorizados (GeneradorRecorte, GestorArtefactos)
+    """
 
     def __init__(self, config: Dict[str, Any]):
         self.config = config
@@ -505,7 +516,13 @@ class CacaoTrainingPipeline:
         self.val_single_dim_metadata: Optional[List[Dict[str, Any]]] = None
         self.test_single_dim_metadata: Optional[List[Dict[str, Any]]] = None
 
-        logger.info(f"Pipeline inicializado con configuración: {config}")
+        # Initialize refactored components
+        self.crop_generator = CropGenerator(
+            segmentation_backend=config.get("segmentation_backend", "auto")
+        )
+        self.artifact_manager = ArtifactManager()
+
+        logger.info(f"PipelineEntrenamientoCacao inicializado con configuración: {config}")
 
     def _load_pixel_calibration(self) -> Optional[Dict[str, Any]]:
         """Load pixel calibration from JSON file."""
@@ -527,97 +544,19 @@ class CacaoTrainingPipeline:
 
     def _filter_records_by_crops(self, valid_records: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         """Filter records by crop availability."""
-        crop_records: List[Dict[str, Any]] = []
-        missing_crop_records: List[Dict[str, Any]] = []
-
-        for record in valid_records:
-            crop_path_value = record["crop_image_path"]
-            if crop_path_value:
-                crop_path = (
-                    crop_path_value
-                    if isinstance(crop_path_value, Path)
-                    else Path(crop_path_value)
-                )
-            else:
-                crop_path = None
-            record["crop_image_path"] = crop_path
-            if crop_path and crop_path.exists():
-                crop_records.append(record)
-            else:
-                missing_crop_records.append(record)
-
-        logger.info(f"Registros con crops disponibles: {len(crop_records)}")
-        logger.info(f"Registros sin crops: {len(missing_crop_records)}")
-        return crop_records, missing_crop_records
+        return self.crop_generator.filter_records_by_crops(valid_records)
 
     def _validate_single_crop(self, record: Dict[str, Any]) -> bool:
         """Validate a single crop image."""
-        import cv2
-        try:
-            crop_path = record["crop_image_path"]
-            crop_img = cv2.imread(str(crop_path))
-            if crop_img is None:
-                return False
-
-            crop_img_rgb = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB)
-            h, w = crop_img_rgb.shape[:2]
-            if h < 100 or w < 100:
-                logger.warning(
-                    f"Crop demasiado pequeño ({w}x{h}) para {crop_path.name}"
-                )
-                return False
-
-            if crop_img_rgb.shape[2] == 4:
-                alpha = crop_img_rgb[:, :, 3]
-                if np.sum(alpha > 128) < (h * w * 0.1):
-                    logger.warning(
-                        f"Crop con muy poco contenido visible para {crop_path.name}"
-                    )
-                    return False
-
-            return True
-        except Exception as e:
-            logger.warning(
-                f"Error validando crop {record.get('id', 'unknown')}: {e}"
-            )
-            return False
+        return self.crop_generator.validate_single_crop(record)
 
     def _validate_and_regenerate_crops(
         self, crop_records: List[Dict[str, Any]], validate_crops: bool, regenerate_bad: bool
     ) -> List[Dict[str, Any]]:
         """Validate crop quality and regenerate bad ones if needed."""
-        if not validate_crops or not crop_records:
-            return crop_records
-
-        logger.info("Validando calidad de crops existentes...")
-        bad_crop_records: List[Dict[str, Any]] = []
-        good_crop_records: List[Dict[str, Any]] = []
-
-        for record in crop_records:
-            if self._validate_single_crop(record):
-                good_crop_records.append(record)
-            else:
-                bad_crop_records.append(record)
-
-        logger.info(
-            "Crops válidos: %d, crops inválidos: %d",
-            len(good_crop_records),
-            len(bad_crop_records),
+        return self.crop_generator.validate_and_regenerate_crops(
+            crop_records, validate_crops, regenerate_bad
         )
-
-        if regenerate_bad and bad_crop_records:
-            logger.info(
-                "Regenerando %d crops de mala calidad...", len(bad_crop_records)
-            )
-            for record in bad_crop_records:
-                crop_path = record["crop_image_path"]
-                if crop_path.exists():
-                    crop_path.unlink()
-
-            new_crop_records = self._generate_crops_for_missing(bad_crop_records)
-            good_crop_records.extend(new_crop_records)
-
-        return good_crop_records
 
     def _process_calibration_record(
         self, calib_record: Dict[str, Any], image_id: int
@@ -1264,9 +1203,9 @@ class CacaoTrainingPipeline:
     def _try_hybrid_v2_training(self, config: Dict[str, Any]) -> Optional[Dict[str, Union[Dict, List]]]:
         """Try hybrid v2 training system."""
         try:
-            from .hybrid_v2_training import train_hybrid_v2
-            logger.info("Using optimized hybrid v2 training system")
-            results = train_hybrid_v2(config)
+            from .hybrid_v2_training import entrenar_modelo_hibrido_v2
+            logger.info("Usando sistema de entrenamiento híbrido v2 optimizado")
+            results = entrenar_modelo_hibrido_v2(config)
             return {
                 'hybrid': results,
                 'history': results.get('history', {}),
@@ -1282,9 +1221,9 @@ class CacaoTrainingPipeline:
     def _try_hybrid_v1_training(self, config: Dict[str, Any]) -> Optional[Dict[str, Union[Dict, List]]]:
         """Try hybrid v1 training system."""
         try:
-            from .hybrid_training import train_hybrid_model
-            logger.info("Using hybrid v1 training system with normalized pixel features")
-            results = train_hybrid_model(config)
+            from .hybrid_training import entrenar_modelo_hibrido
+            logger.info("Usando sistema de entrenamiento híbrido v1 con características de píxeles normalizadas")
+            results = entrenar_modelo_hibrido(config)
             return {
                 'hybrid': results,
                 'history': results.get('history', {}),
@@ -1571,74 +1510,25 @@ class CacaoTrainingPipeline:
             logger.warning("No hay escaladores para guardar")
             return
         
-        save_scalers(self.scalers)
-        logger.info("Escaladores guardados")
+        self.artifact_manager.save_scalers(self.scalers)
     
-    def _check_model_file(self, artifacts_dir: Path, missing_files: List[str]) -> None:
-        """Check if model file exists and is not empty."""
-        if self.is_multi_head or self.is_hybrid:
-            model_name = MODEL_HYBRID if self.is_hybrid else MODEL_MULTIHEAD
-            model_path = artifacts_dir / model_name
-            if not model_path.exists():
-                missing_files.append(f"Modelo {model_name}: {model_path}")
-            elif model_path.stat().st_size == 0:
-                missing_files.append(f"Modelo {model_name} está vacío: {model_path}")
-
-    def _check_scaler_files(self, artifacts_dir: Path, missing_files: List[str]) -> None:
-        """Check if scaler files exist and are not empty."""
-        for target in TARGETS:
-            scaler_path = artifacts_dir / f"{target}_scaler.pkl"
-            if not scaler_path.exists():
-                missing_files.append(f"Escalador {target}: {scaler_path}")
-            elif scaler_path.stat().st_size == 0:
-                missing_files.append(f"Escalador {target} está vacío: {scaler_path}")
-
-    def _log_hybrid_artifacts_summary(self, artifacts_dir: Path) -> None:
-        """Log summary for hybrid/multi-head model artifacts."""
-        model_name = MODEL_HYBRID if self.is_hybrid else MODEL_MULTIHEAD
-        model_path = artifacts_dir / model_name
-        model_size = model_path.stat().st_size
-        
-        scaler_size = sum(
-            (artifacts_dir / f"{target}_scaler.pkl").stat().st_size
-            for target in TARGETS
-        )
-        
-        total_size = model_size + scaler_size
-        total_files = 1 + len(TARGETS)
-        logger.info(f"[OK] Total de artefactos guardados: {total_files} archivos, {total_size / 1024 / 1024:.2f} MB")
-        logger.info(f"  - Modelo: {model_name} ({model_size / 1024 / 1024:.2f} MB)")
-        logger.info(f"  - Escaladores: {len(TARGETS)} archivos ({scaler_size / 1024 / 1024:.2f} MB)")
-
-    def _log_individual_artifacts_summary(self, artifacts_dir: Path) -> None:
-        """Log summary for individual model artifacts."""
-        total_size = sum(
-            (artifacts_dir / f"{target}.pt").stat().st_size + 
-            (artifacts_dir / f"{target}_scaler.pkl").stat().st_size
-            for target in TARGETS
-        )
-        logger.info(f"[OK] Total de artefactos guardados: {len(TARGETS) * 2} archivos, {total_size / 1024 / 1024:.2f} MB")
-
     def _verify_artifacts_saved(self) -> None:
         """Verifica que todos los artefactos se guardaron correctamente."""
         logger.info("Verificando que todos los artefactos se guardaron correctamente...")
-        artifacts_dir = get_regressors_artifacts_dir()
-        missing_files = []
-
-        self._check_model_file(artifacts_dir, missing_files)
-        self._check_scaler_files(artifacts_dir, missing_files)
         
-        if missing_files:
-            error_msg = f"[ERROR] Archivos faltantes o vacos: {missing_files}"
-            logger.error(error_msg)
-            raise IOError(error_msg)
+        success = self.artifact_manager.verify_artifacts_saved(
+            is_hybrid=self.is_hybrid,
+            is_multi_head=self.is_multi_head
+        )
         
-        logger.info("[OK] Todos los artefactos se guardaron correctamente")
+        if not success:
+            raise IOError("Artifact verification failed")
         
+        # Log summary
         if self.is_multi_head or self.is_hybrid:
-            self._log_hybrid_artifacts_summary(artifacts_dir)
+            self.artifact_manager.log_hybrid_artifacts_summary()
         else:
-            self._log_individual_artifacts_summary(artifacts_dir)
+            self.artifact_manager.log_individual_artifacts_summary()
     
     def generate_reports(self, evaluation_results: Dict, save_dir: Optional[Path] = None) -> None:
         """
@@ -2045,7 +1935,7 @@ class CacaoTrainingPipeline:
     def _generate_crops_for_missing(self, missing_records: List[Dict]) -> List[Dict]:
         """
         Genera crops solo para los registros que no tienen crops.
-        Usa segmentación (U-Net -> rembg -> OpenCV) para eliminar el fondo.
+        Usa CropGenerator para delegar la generación.
         
         Args:
             missing_records: Lista de registros que no tienen crops
@@ -2053,85 +1943,12 @@ class CacaoTrainingPipeline:
         Returns:
             Lista de registros con crops generados exitosamente
         """
-        logger.info(f"[INICIO] Generando crops para {len(missing_records)} imágenes faltantes...")
-        
-        from pathlib import Path
-        from PIL import Image
-        import os
-        
-        # Obtener método de segmentación de la configuración
-        seg_backend = self.config.get("segmentation_backend", "auto")
-        if seg_backend == "auto":
-            seg_method = "ai"  # Usa cascada (U-Net -> rembg -> OpenCV)
-        else:
-            seg_method = seg_backend
-        
-        logger.info(f"Usando método de segmentación: {seg_method} (cascada: U-Net -> rembg -> OpenCV)")
-        
-        # Importar función de segmentación
-        from ml.segmentation.processor import segment_and_crop_cacao_bean
-        from ml.utils.paths import get_crop_image_path, ensure_dir_exists
-        
-        crop_records = []
-        successful = 0
-        failed = 0
-        
-        for i, record in enumerate(missing_records):
-            try:
-                image_path = Path(record['image_path'])
-                crop_path = Path(record['crop_image_path'])
-                
-                # Verificar si la imagen original existe
-                if not image_path.exists():
-                    logger.warning(f"Imagen original no existe: {image_path}")
-                    failed += 1
-                    continue
-                
-                # Verificar si el crop ya existe (doble verificación)
-                if crop_path.exists():
-                    logger.debug(f"Crop ya existe (saltando): {crop_path}")
-                    crop_records.append(record)
-                    successful += 1
-                    continue
-                
-                # Generar crop usando segmentación (elimina fondo)
-                try:
-                    # Usa segment_and_crop_cacao_bean que intenta U-Net primero
-                    png_path_str = segment_and_crop_cacao_bean(str(image_path), method=seg_method)
-                    
-                    if not png_path_str:
-                        raise ValueError("Segmentación no devolvió ruta de imagen")
-                    
-                    # Cargar imagen segmentada
-                    segmented_image = Image.open(png_path_str)
-                    
-                    # Guardar en la ubicación correcta (crops/{id}.png)
-                    ensure_dir_exists(crop_path.parent)
-                    segmented_image.save(crop_path, "PNG")
-                    
-                    logger.debug(f"Crop generado con segmentación: {crop_path}")
-                    crop_records.append(record)
-                    successful += 1
-                    
-                except Exception as seg_error:
-                    logger.warning(f"Error en segmentación para ID {record.get('id', 'unknown')}: {seg_error}")
-                    failed += 1
-                    continue
-                
-                # Log de progreso cada 10 imágenes
-                if (i + 1) % 10 == 0:
-                    logger.info(f"Generados {i + 1}/{len(missing_records)} crops faltantes...")
-                    
-            except Exception as e:
-                logger.error(f"Error generando crop para ID {record['id']}: {e}")
-                failed += 1
-        
-        logger.info(f"[OK] Generación de crops faltantes completada: {successful} exitosos, {failed} fallidos")
-        return crop_records
+        return self.crop_generator.generate_crops_for_missing(missing_records)
     
     def _generate_crops_automatically(self, valid_records: List[Dict]) -> List[Dict]:
         """
         Genera crops automáticamente para los registros válidos (método legacy).
+        Usa CropGenerator para delegar la generación.
         
         Args:
             valid_records: Lista de registros válidos
@@ -2139,57 +1956,8 @@ class CacaoTrainingPipeline:
         Returns:
             Lista de registros con crops generados
         """
-        logger.info("[INICIO] Generando crops automticamente (mtodo legacy)...")
-        
-        from pathlib import Path
-        from PIL import Image
-        import os
-        
-        # Crear directorio de crops si no existe
-        crops_dir = Path("media/cacao_images/crops")
-        crops_dir.mkdir(parents=True, exist_ok=True)
-        
-        crop_records = []
-        successful = 0
-        failed = 0
-        
-        for i, record in enumerate(valid_records):
-            try:
-                image_path = Path(record['image_path'])
-                crop_path = Path(record['crop_image_path'])
-                
-                # Verificar si la imagen original existe
-                if not image_path.exists():
-                    logger.warning(f"Imagen original no existe: {image_path}")
-                    failed += 1
-                    continue
-                
-                # Verificar si el crop ya existe
-                if crop_path.exists() and not self.config.get('overwrite', False):
-                    logger.debug(f"Crop ya existe: {crop_path}")
-                    crop_records.append(record)
-                    successful += 1
-                    continue
-                
-                # Generar crop simple (redimensionar imagen original)
-                img = Image.open(image_path)
-                img_resized = img.resize((512, 512), Image.Resampling.LANCZOS)
-                img_resized.save(crop_path, "PNG")
-                
-                logger.debug(f"Crop generado: {crop_path}")
-                crop_records.append(record)
-                successful += 1
-                
-                # Log de progreso cada 50 imágenes
-                if (i + 1) % 50 == 0:
-                    logger.info(f"Generados {i + 1}/{len(valid_records)} crops...")
-                    
-            except Exception as e:
-                logger.error(f"Error generando crop para ID {record['id']}: {e}")
-                failed += 1
-        
-        logger.info(f"[OK] Generacin de crops completada: {successful} exitosos, {failed} fallidos")
-        return crop_records
+        overwrite = self.config.get('overwrite', False)
+        return self.crop_generator.generate_crops_automatically(valid_records, overwrite)
 
 
 def _create_argument_parser() -> argparse.ArgumentParser:
@@ -2270,7 +2038,7 @@ def main():
     args = parser.parse_args()
     config = _build_config_from_args(args)
     
-    pipeline = CacaoTrainingPipeline(config)
+    pipeline = PipelineEntrenamientoCacao(config)
     results = pipeline.run_pipeline()
     
     print("Pipeline completado exitosamente!")
@@ -2278,7 +2046,7 @@ def main():
     _print_evaluation_results(results, config)
 
 
-def run_training_pipeline(
+def ejecutar_pipeline_entrenamiento(
     epochs: int = 50,
     batch_size: int = 32,
     learning_rate: float = 1e-5,  # REDUCIDO de 1e-4 a 1e-5 para estabilidad con Uncertainty Loss
@@ -2343,7 +2111,7 @@ def run_training_pipeline(
             'improvement_threshold': 1e-4,  # Umbral mnimo de mejora para early stopping
         }
         
-        pipeline = CacaoTrainingPipeline(config)
+        pipeline = PipelineEntrenamientoCacao(config)
         results = pipeline.run_pipeline()
         
         logger.info("[OK] Pipeline de entrenamiento completado exitosamente!")
@@ -2443,6 +2211,11 @@ def get_incremental_training_status() -> Dict:
             "error": str(e),
             "status": "not_available"
         }
+
+
+# Compatibilidad hacia atrás
+CacaoTrainingPipeline = PipelineEntrenamientoCacao
+run_training_pipeline = ejecutar_pipeline_entrenamiento
 
 
 if __name__ == "__main__":

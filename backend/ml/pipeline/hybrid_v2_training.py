@@ -1,5 +1,5 @@
 """
-Hybrid v2 training pipeline with improved features.
+Pipeline de entrenamiento híbrido v2 con características mejoradas.
 """
 import logging
 from pathlib import Path
@@ -21,17 +21,17 @@ from ..utils.scalers import CacaoRobustScaler
 logger = get_ml_logger("cacaoscan.ml.pipeline.hybrid_v2_training")
 
 
-def train_hybrid_v2(config: Dict) -> Dict:
+def entrenar_modelo_hibrido_v2(config: Dict) -> Dict:
     """
-    Train hybrid v2 model with improved features.
+    Entrena modelo híbrido v2 con características mejoradas.
     
     Args:
-        config: Training configuration
+        config: Configuración de entrenamiento
         
     Returns:
-        Training results dictionary
+        Diccionario con resultados de entrenamiento
     """
-    logger.info("Starting hybrid v2 training pipeline")
+    logger.info("Iniciando pipeline de entrenamiento híbrido v2")
     
     # Create dataset
     dataset = CacaoDataset(
@@ -261,7 +261,7 @@ def train_hybrid_v2(config: Dict) -> Dict:
     all_targets_denorm = target_scaler.inverse_transform(all_targets_normalized)
     
     # Calculate test metrics on denormalized values
-    from ..utils.metrics import calculate_metrics_per_target
+    from ..regression.metrics import calculate_metrics_per_target
     
     test_metrics = calculate_metrics_per_target(all_targets_denorm, all_predictions_denorm)
     
@@ -274,6 +274,12 @@ def train_hybrid_v2(config: Dict) -> Dict:
         'test_loss': test_loss / len(test_loader)
     }
     
-    logger.info("Hybrid v2 training completed")
+    logger.info("Entrenamiento híbrido v2 completado")
     return results
+
+
+# Compatibilidad hacia atrás
+def train_hybrid_v2(config: Dict) -> Dict:
+    """Alias de compatibilidad hacia atrás para entrenar_modelo_hibrido_v2."""
+    return entrenar_modelo_hibrido_v2(config)
 

@@ -1,11 +1,11 @@
 """
-Hybrid training pipeline for cacao regression.
+Pipeline de entrenamiento híbrido para regresión de granos de cacao.
 
-Integrates:
-- PixelFeaturesLoader for normalized pixel features
-- HybridCacaoDataset for hybrid data loading
-- HybridCacaoRegressionModel for hybrid model
-- HybridTrainer for improved training loop
+Integra:
+- PixelFeaturesLoader para características de píxeles normalizadas
+- HybridCacaoDataset para carga de datos híbrida
+- HybridCacaoRegressionModel para modelo híbrido
+- HybridTrainer para loop de entrenamiento mejorado
 """
 import logging
 from pathlib import Path
@@ -30,21 +30,21 @@ logger = get_ml_logger("cacaoscan.ml.pipeline.hybrid_training")
 EXPECTED_PIXEL_FEATURES = 6
 
 
-def train_hybrid_model(
+def entrenar_modelo_hibrido(
     config: Dict,
     calibration_file: Optional[Path] = None
 ) -> Dict:
     """
-    Train hybrid cacao regression model.
+    Entrena modelo de regresión híbrido para granos de cacao.
     
     Args:
-        config: Training configuration
-        calibration_file: Path to pixel_calibration.json (optional)
+        config: Configuración de entrenamiento
+        calibration_file: Ruta a pixel_calibration.json (opcional)
         
     Returns:
-        Training results dictionary
+        Diccionario con resultados de entrenamiento
     """
-    logger.info("Starting hybrid training pipeline")
+    logger.info("Iniciando pipeline de entrenamiento híbrido")
     
     pixel_loader = _load_pixel_features(calibration_file)
     
@@ -220,8 +220,17 @@ def train_hybrid_model(
         'model_path': str(model_save_path)
     }
     
-    logger.info("Hybrid training completed")
+    logger.info("Entrenamiento híbrido completado")
     return results
+
+
+# Compatibilidad hacia atrás
+def train_hybrid_model(
+    config: Dict,
+    calibration_file: Optional[Path] = None
+) -> Dict:
+    """Alias de compatibilidad hacia atrás para entrenar_modelo_hibrido."""
+    return entrenar_modelo_hibrido(config, calibration_file)
 
 
 def _load_pixel_features(calibration_file: Optional[Path]) -> PixelFeaturesLoader:
