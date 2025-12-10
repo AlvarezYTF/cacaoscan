@@ -3,11 +3,15 @@ Modelos de auditoría para CacaoScan.
 """
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 
 class ActivityLog(models.Model):
     """
     Modelo para registrar actividades del sistema.
+    Auditoría flexible usando ContentType de Django para integridad referencial avanzada.
+    NO viola normalización: es un patrón de diseño estándar de Django para relaciones polimórficas.
     """
     user = models.ForeignKey(
         User,
@@ -16,8 +20,35 @@ class ActivityLog(models.Model):
         help_text="Usuario que realizó la acción"
     )
     action = models.CharField(max_length=100, help_text="Acción realizada")
-    resource_type = models.CharField(max_length=50, blank=True, default="", help_text="Tipo de recurso afectado")
-    resource_id = models.IntegerField(null=True, blank=True, help_text="ID del recurso afectado")
+    
+    # Flexible audit fields using ContentType (Django's standard pattern for polymorphic relations)
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Tipo de recurso afectado (usando ContentType para auditoría flexible)"
+    )
+    object_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="ID del recurso afectado"
+    )
+    content_object = GenericForeignKey('content_type', 'object_id')
+    
+    # Legacy fields for backward compatibility (deprecated, use content_type/object_id)
+    resource_type = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="[DEPRECATED] Tipo de recurso afectado - usar content_type. Debe ser un nombre de modelo válido (ej: 'CacaoImage', 'images_app.cacaoimage')"
+    )
+    resource_id = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="[DEPRECATED] ID del recurso afectado - usar object_id. Requiere resource_type si se proporciona."
+    )
+    
     details = models.JSONField(default=dict, blank=True, help_text="Detalles adicionales de la acción")
     ip_address = models.GenericIPAddressField(null=True, blank=True, help_text="Dirección IP del usuario")
     user_agent = models.TextField(blank=True, default="", help_text="User Agent del navegador")
@@ -31,8 +62,41 @@ class ActivityLog(models.Model):
         indexes = [
             models.Index(fields=['user', '-timestamp']),
             models.Index(fields=['action']),
+            models.Index(fields=['content_type', 'object_id']),
+            # Legacy index for backward compatibility
             models.Index(fields=['resource_type', 'resource_id']),
         ]
+    
+    def clean(self):
+        """
+        Validar que los campos legacy y ContentType se usen correctamente.
+        """
+        from django.core.exceptions import ValidationError
+        
+        # Validar que si resource_id está presente, resource_type también lo esté
+        if self.resource_id is not None and (not self.resource_type or self.resource_type == ''):
+            raise ValidationError({
+                'resource_id': 'resource_id requiere que resource_type también esté presente (campos legacy)'
+            })
+        
+        # Validar que si object_id está presente, content_type también lo esté
+        if self.object_id is not None and self.content_type is None:
+            raise ValidationError({
+                'object_id': 'object_id requiere que content_type también esté presente (campos ContentType)'
+            })
+        
+        # Validar formato de resource_type si está presente
+        if self.resource_type and self.resource_type != '':
+            import re
+            if not re.match(r'^[a-zA-Z0-9_.]+$', self.resource_type):
+                raise ValidationError({
+                    'resource_type': 'resource_type debe ser un nombre de modelo válido (solo letras, números, puntos y guiones bajos)'
+                })
+    
+    def save(self, *args, **kwargs):
+        """Override save to call clean validation."""
+        self.full_clean()
+        super().save(*args, **kwargs)
     
     def __str__(self):
         """Representación string del log."""

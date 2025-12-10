@@ -2,7 +2,7 @@
 Serializers para la app personas.
 
 INTEGRACI"N CON M"DULOS:
-- Usa Parametro (catálogos) para tipo_documento y genero
+- Usa TemaParametro (tabla pivot de catálogos) para tipo_documento y genero
 - Usa Departamento y Municipio (ubicaciones) para ubicación
 """
 from rest_framework import serializers
@@ -11,7 +11,7 @@ from django.db import transaction
 from django.utils import timezone
 from datetime import date
 import re
-from catalogos.models import Parametro, Departamento, Municipio
+from catalogos.models import Parametro, Departamento, Municipio, TemaParametro
 from .models import Persona
 
 
@@ -145,7 +145,11 @@ class PersonaSerializer(serializers.ModelSerializer):
     
     NOTA DE OPTIMIZACIÓN:
     Para evitar consultas N+1, las vistas deben usar select_related al obtener Persona:
-    Persona.objects.select_related('tipo_documento__tema', 'genero__tema', 'departamento', 'municipio', 'user')
+    Persona.objects.select_related('tipo_documento__tema', 'genero__tema', 'municipio__departamento', 'municipio', 'user')
+    
+    NOTA DE NORMALIZACIÓN 3NF:
+    El campo departamento es una propiedad que obtiene el valor desde municipio.departamento.
+    No existe un campo departamento_id en la base de datos.
     """
     # Campos anidados de catálogos
     tipo_documento_info = serializers.SerializerMethodField()
@@ -163,38 +167,41 @@ class PersonaSerializer(serializers.ModelSerializer):
             'numero_documento', 'primer_nombre', 'segundo_nombre',
             'primer_apellido', 'segundo_apellido', 'telefono', 'direccion',
             'genero', 'genero_info', 'fecha_nacimiento',
-            'departamento', 'departamento_info', 'municipio', 'municipio_info',
+            'departamento_info', 'municipio', 'municipio_info',
             'fecha_creacion'
         ]
         read_only_fields = ['user', 'fecha_creacion', 'email', 'telefono']
     
     def get_tipo_documento_info(self, obj):
-        """Devuelve información del tipo de documento."""
-        if obj.tipo_documento:
+        """Devuelve información del tipo de documento desde TemaParametro."""
+        if obj.tipo_documento and obj.tipo_documento.parametro:
             return {
-                'id': obj.tipo_documento.id,
-                'codigo': obj.tipo_documento.codigo,
-                'nombre': obj.tipo_documento.nombre
+                'id': obj.tipo_documento.parametro.id,
+                'codigo': obj.tipo_documento.parametro.codigo,
+                'nombre': obj.tipo_documento.parametro.nombre,
+                'tema_parametro_id': obj.tipo_documento.id
             }
         return None
     
     def get_genero_info(self, obj):
-        """Devuelve información del género."""
-        if obj.genero:
+        """Devuelve información del género desde TemaParametro."""
+        if obj.genero and obj.genero.parametro:
             return {
-                'id': obj.genero.id,
-                'codigo': obj.genero.codigo,
-                'nombre': obj.genero.nombre
+                'id': obj.genero.parametro.id,
+                'codigo': obj.genero.parametro.codigo,
+                'nombre': obj.genero.parametro.nombre,
+                'tema_parametro_id': obj.genero.id
             }
         return None
     
     def get_departamento_info(self, obj):
-        """Devuelve información del departamento."""
-        if obj.departamento:
+        """Devuelve información del departamento desde municipio (3NF normalization)."""
+        departamento = obj.departamento  # Usa la propiedad que obtiene desde municipio.departamento
+        if departamento:
             return {
-                'id': obj.departamento.id,
-                'codigo': obj.departamento.codigo,
-                'nombre': obj.departamento.nombre
+                'id': departamento.id,
+                'codigo': departamento.codigo,
+                'nombre': departamento.nombre
             }
         return None
     
@@ -235,8 +242,7 @@ class PersonaRegistroSerializer(serializers.Serializer):
     genero = serializers.CharField(required=True, help_text="Código del parámetro SEXO (ej: M, F, O)")
     fecha_nacimiento = serializers.DateField(required=False, allow_null=True)
     
-    # Ubicación (IDs de departamento y municipio)
-    departamento = serializers.IntegerField(required=False, allow_null=True)
+    # Ubicación (ID de municipio - departamento se obtiene de municipio.departamento - 3NF)
     municipio = serializers.IntegerField(required=False, allow_null=True)
     
     def validate_email(self, value):
@@ -273,37 +279,36 @@ class PersonaRegistroSerializer(serializers.Serializer):
     
     def validate(self, data):
         """Validar referencias a catálogos y ubicaciones."""
-        # Validar tipo_documento (debe ser un Parametro con tema TIPO_DOC)
+        # Validar tipo_documento (debe ser un TemaParametro con tema TIPO_DOC)
         tipo_doc_codigo = data.get('tipo_documento')
-        tipo_doc = Parametro.objects.filter(
-            codigo=tipo_doc_codigo,
+        tipo_doc_temaparametro = TemaParametro.objects.filter(
             tema__codigo='TIPO_DOC',
-            activo=True
-        ).first()
+            parametro__codigo=tipo_doc_codigo,
+            parametro__activo=True
+        ).select_related('parametro', 'tema').first()
         
-        if not tipo_doc:
+        if not tipo_doc_temaparametro:
             raise serializers.ValidationError({
                 'tipo_documento': f"Tipo de documento '{tipo_doc_codigo}' no existe o no está activo."
             })
-        data['tipo_documento_obj'] = tipo_doc
+        data['tipo_documento_obj'] = tipo_doc_temaparametro
         
-        # Validar genero (debe ser un Parametro con tema SEXO)
+        # Validar genero (debe ser un TemaParametro con tema SEXO)
         genero_codigo = data.get('genero')
-        genero = Parametro.objects.filter(
-            codigo=genero_codigo,
+        genero_temaparametro = TemaParametro.objects.filter(
             tema__codigo='SEXO',
-            activo=True
-        ).first()
+            parametro__codigo=genero_codigo,
+            parametro__activo=True
+        ).select_related('parametro', 'tema').first()
         
-        if not genero:
+        if not genero_temaparametro:
             raise serializers.ValidationError({
                 'genero': f"Género '{genero_codigo}' no existe o no está activo."
             })
-        data['genero_obj'] = genero
+        data['genero_obj'] = genero_temaparametro
         
-        # Validar municipio (debe existir y pertenecer al departamento) - OPCIONAL
+        # Validar municipio (debe existir) - OPCIONAL (3NF: departamento se obtiene de municipio)
         municipio_id = data.get('municipio')
-        departamento_id = data.get('departamento')
         
         if municipio_id:
             municipio = Municipio.objects.filter(id=municipio_id).first()
@@ -311,25 +316,9 @@ class PersonaRegistroSerializer(serializers.Serializer):
                 raise serializers.ValidationError({
                     'municipio': f"Municipio con ID '{municipio_id}' no existe."
                 })
-            
-            # Si se especifica departamento, validar que coincida
-            if departamento_id and municipio.departamento.id != departamento_id:
-                raise serializers.ValidationError({
-                    'municipio': "El municipio no pertenece al departamento especificado."
-                })
             data['municipio_obj'] = municipio
         else:
             data['municipio_obj'] = None
-        
-        if departamento_id:
-            departamento = Departamento.objects.filter(id=departamento_id).first()
-            if not departamento:
-                raise serializers.ValidationError({
-                    'departamento': f"Departamento con ID '{departamento_id}' no existe."
-                })
-            data['departamento_obj'] = departamento
-        else:
-            data['departamento_obj'] = None
         
         return data
     
@@ -343,7 +332,6 @@ class PersonaRegistroSerializer(serializers.Serializer):
         # Extraer objetos de catálogos ya validados
         tipo_documento = validated_data.pop('tipo_documento_obj')
         genero = validated_data.pop('genero_obj')
-        departamento = validated_data.pop('departamento_obj', None)
         municipio = validated_data.pop('municipio_obj', None)
         
         # Verificar si se debe omitir la verificación de email (para admins)
@@ -425,7 +413,7 @@ Si no creaste esta cuenta, puedes ignorar este correo.
                 logger = logging.getLogger(__name__)
                 logger.error(f"Error enviando email de verificación: {e}")
         
-        # Crear la persona asociada al usuario con catálogos y ubicaciones normalizadas
+        # Crear la persona asociada al usuario con catálogos y ubicaciones normalizadas (3NF)
         persona = Persona.objects.create(
             user=user,
             tipo_documento=tipo_documento,
@@ -438,7 +426,6 @@ Si no creaste esta cuenta, puedes ignorar este correo.
             direccion=validated_data.get('direccion', '') or '',
             genero=genero,
             fecha_nacimiento=validated_data.get('fecha_nacimiento', None),
-            departamento=departamento,
             municipio=municipio
         )
         
@@ -461,8 +448,8 @@ Si no creaste esta cuenta, puedes ignorar este correo.
             'segundo_apellido': instance.segundo_apellido,
             'numero_documento': instance.numero_documento,
             'telefono': instance.telefono,
-            'tipo_documento': instance.tipo_documento.codigo if instance.tipo_documento else None,
-            'genero': instance.genero.codigo if instance.genero else None,
+            'tipo_documento': instance.tipo_documento.parametro.codigo if instance.tipo_documento and instance.tipo_documento.parametro else None,
+            'genero': instance.genero.parametro.codigo if instance.genero and instance.genero.parametro else None,
             'departamento': instance.departamento.nombre if instance.departamento else None,
             'municipio': instance.municipio.nombre if instance.municipio else None,
         }
@@ -485,8 +472,7 @@ class PersonaActualizacionSerializer(serializers.Serializer):
     genero = serializers.CharField(required=False, help_text="Código del parámetro SEXO")
     fecha_nacimiento = serializers.DateField(required=False, allow_null=True)
     
-    # Ubicación
-    departamento = serializers.IntegerField(required=False, allow_null=True)
+    # Ubicación (3NF: departamento se obtiene de municipio)
     municipio = serializers.IntegerField(required=False, allow_null=True)
     
     def validate_numero_documento(self, value):
@@ -519,17 +505,17 @@ class PersonaActualizacionSerializer(serializers.Serializer):
             return
         
         tipo_doc_codigo = data['tipo_documento']
-        tipo_doc = Parametro.objects.filter(
-            codigo=tipo_doc_codigo,
+        tipo_doc_temaparametro = TemaParametro.objects.filter(
             tema__codigo='TIPO_DOC',
-            activo=True
-        ).first()
+            parametro__codigo=tipo_doc_codigo,
+            parametro__activo=True
+        ).select_related('parametro', 'tema').first()
         
-        if not tipo_doc:
+        if not tipo_doc_temaparametro:
             raise serializers.ValidationError({
                 'tipo_documento': f"Tipo de documento '{tipo_doc_codigo}' no existe o no está activo."
             })
-        data['tipo_documento_obj'] = tipo_doc
+        data['tipo_documento_obj'] = tipo_doc_temaparametro
     
     def _validate_genero(self, data):
         """Validate genero parameter."""
@@ -537,11 +523,11 @@ class PersonaActualizacionSerializer(serializers.Serializer):
             return
         
         genero_codigo = data['genero']
-        genero = Parametro.objects.filter(
-            codigo=genero_codigo,
+        genero_temaparametro = TemaParametro.objects.filter(
             tema__codigo='SEXO',
-            activo=True
-        ).first()
+            parametro__codigo=genero_codigo,
+            parametro__activo=True
+        ).select_related('parametro', 'tema').first()
         
         if not genero:
             raise serializers.ValidationError({
@@ -550,7 +536,7 @@ class PersonaActualizacionSerializer(serializers.Serializer):
         data['genero_obj'] = genero
     
     def _validate_ubicaciones(self, data):
-        """Validate municipio and departamento."""
+        """Validate municipio (3NF: departamento se obtiene de municipio)."""
         if 'municipio' in data and data['municipio']:
             municipio = Municipio.objects.filter(id=data['municipio']).first()
             if not municipio:
@@ -560,16 +546,6 @@ class PersonaActualizacionSerializer(serializers.Serializer):
             data['municipio_obj'] = municipio
         else:
             data['municipio_obj'] = None
-        
-        if 'departamento' in data and data['departamento']:
-            departamento = Departamento.objects.filter(id=data['departamento']).first()
-            if not departamento:
-                raise serializers.ValidationError({
-                    'departamento': f"Departamento con ID '{data['departamento']}' no existe."
-                })
-            data['departamento_obj'] = departamento
-        else:
-            data['departamento_obj'] = None
     
     def validate(self, data):
         """Validar catálogos y ubicaciones."""
@@ -586,9 +562,6 @@ class PersonaActualizacionSerializer(serializers.Serializer):
         
         if 'genero_obj' in validated_data:
             instance.genero = validated_data['genero_obj']
-        
-        if 'departamento_obj' in validated_data:
-            instance.departamento = validated_data['departamento_obj']
         
         if 'municipio_obj' in validated_data:
             instance.municipio = validated_data['municipio_obj']

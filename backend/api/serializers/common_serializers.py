@@ -80,10 +80,17 @@ class NotificationCreateSerializer(serializers.ModelSerializer):
         fields = ('user', 'tipo', 'titulo', 'mensaje', 'datos_extra')
     
     def validate_tipo(self, value):
-        """Validate notification type."""
-        valid_types = [choice[0] for choice in Notification.TIPO_CHOICES]
-        if value not in valid_types:
-            raise serializers.ValidationError(f"Tipo inválido. Opciones válidas: {', '.join(valid_types)}")
+        """Validate notification type using TipoNotificacion catalog."""
+        from catalogos.models import TipoNotificacion
+        # Accept either TipoNotificacion instance or codigo string
+        if isinstance(value, str):
+            try:
+                tipo_notif = TipoNotificacion.objects.get(codigo=value.upper(), activo=True)
+                return tipo_notif
+            except TipoNotificacion.DoesNotExist:
+                valid_codes = list(TipoNotificacion.objects.filter(activo=True).values_list('codigo', flat=True))
+                raise serializers.ValidationError(f"Tipo inválido. Códigos válidos: {', '.join(valid_codes)}")
+        # If it's already a TipoNotificacion instance, return as is
         return value
 
 

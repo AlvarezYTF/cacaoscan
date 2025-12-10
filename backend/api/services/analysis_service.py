@@ -252,7 +252,7 @@ class AnalysisService(BaseService):
                     'id': prediction.image.id,
                     'file_name': prediction.image.file_name,
                     'file_size': prediction.image.file_size,
-                    'file_type': prediction.image.file_type,
+                    'file_type': prediction.image.file_type.mime_type if prediction.image.file_type else None,
                     'image_url': prediction.image.image.url if prediction.image.image else None,
                     'processed': prediction.image.processed
                 },

@@ -139,10 +139,11 @@ class Migration(migrations.Migration):
                 'ordering': ['-fecha_solicitud'],
             },
         ),
-        migrations.RemoveConstraint(
-            model_name='lote',
-            name='lote_fecha_cosecha_valida',
-        ),
+        # RemoveConstraint for lote removed - Lote model was moved to fincas_app
+        # migrations.RemoveConstraint(
+        #     model_name='lote',
+        #     name='lote_fecha_cosecha_valida',
+        # ),
         migrations.RenameIndex(
             model_name='cacaoimage',
             new_name='api_cacaoim_user_id_ebd169_idx',
@@ -173,41 +174,42 @@ class Migration(migrations.Migration):
             new_name='api_cacaopr_model_v_b99086_idx',
             old_name='api_cacaopr_model_version_idx',
         ),
-        migrations.RenameIndex(
-            model_name='finca',
-            new_name='api_finca_agricul_f9cee8_idx',
-            old_name='api_finca_agricultor_created_idx',
-        ),
-        migrations.RenameIndex(
-            model_name='finca',
-            new_name='api_finca_municip_582e68_idx',
-            old_name='api_finca_municipio_departamento_idx',
-        ),
-        migrations.RenameIndex(
-            model_name='finca',
-            new_name='api_finca_activa_44817f_idx',
-            old_name='api_finca_activa_idx',
-        ),
-        migrations.RenameIndex(
-            model_name='lote',
-            new_name='api_lote_finca_i_9482d1_idx',
-            old_name='api_lote_finca_created_idx',
-        ),
-        migrations.RenameIndex(
-            model_name='lote',
-            new_name='api_lote_varieda_bd3734_idx',
-            old_name='api_lote_variedad_idx',
-        ),
-        migrations.RenameIndex(
-            model_name='lote',
-            new_name='api_lote_estado_4f08df_idx',
-            old_name='api_lote_estado_idx',
-        ),
-        migrations.RenameIndex(
-            model_name='lote',
-            new_name='api_lote_activo_151304_idx',
-            old_name='api_lote_activo_idx',
-        ),
+        # RenameIndex operations for finca and lote removed - models were moved to fincas_app
+        # migrations.RenameIndex(
+        #     model_name='finca',
+        #     new_name='api_finca_agricul_f9cee8_idx',
+        #     old_name='api_finca_agricultor_created_idx',
+        # ),
+        # migrations.RenameIndex(
+        #     model_name='finca',
+        #     new_name='api_finca_municip_582e68_idx',
+        #     old_name='api_finca_municipio_departamento_idx',
+        # ),
+        # migrations.RenameIndex(
+        #     model_name='finca',
+        #     new_name='api_finca_activa_44817f_idx',
+        #     old_name='api_finca_activa_idx',
+        # ),
+        # migrations.RenameIndex(
+        #     model_name='lote',
+        #     new_name='api_lote_finca_i_9482d1_idx',
+        #     old_name='api_lote_finca_created_idx',
+        # ),
+        # migrations.RenameIndex(
+        #     model_name='lote',
+        #     new_name='api_lote_varieda_bd3734_idx',
+        #     old_name='api_lote_variedad_idx',
+        # ),
+        # migrations.RenameIndex(
+        #     model_name='lote',
+        #     new_name='api_lote_estado_4f08df_idx',
+        #     old_name='api_lote_estado_idx',
+        # ),
+        # migrations.RenameIndex(
+        #     model_name='lote',
+        #     new_name='api_lote_activo_151304_idx',
+        #     old_name='api_lote_activo_idx',
+        # ),
         migrations.RenameIndex(
             model_name='trainingjob',
             new_name='api_trainin_status_8cb80f_idx',
@@ -223,10 +225,11 @@ class Migration(migrations.Migration):
             new_name='api_trainin_created_65d9c4_idx',
             old_name='api_trainin_created_8b2b0b_idx',
         ),
-        migrations.AddConstraint(
-            model_name='lote',
-            constraint=models.CheckConstraint(check=models.Q(('fecha_cosecha__isnull', True), ('fecha_cosecha__gte', models.F('fecha_plantacion')), _connector='OR'), name='lote_fecha_cosecha_valida'),
-        ),
+        # AddConstraint for lote removed - Lote model was moved to fincas_app
+        # migrations.AddConstraint(
+        #     model_name='lote',
+        #     constraint=models.CheckConstraint(check=models.Q(('fecha_cosecha__isnull', True), ('fecha_cosecha__gte', models.F('fecha_plantacion')), _connector='OR'), name='lote_fecha_cosecha_valida'),
+        # ),
         migrations.AddField(
             model_name='reportegenerado',
             name='usuario',

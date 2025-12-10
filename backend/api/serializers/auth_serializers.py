@@ -280,7 +280,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = (
-            'phone_number', 'region', 'municipality', 'farm_name',
+            'municipio',
             'years_experience', 'farm_size_hectares', 'preferred_language',
             'email_notifications', 'created_at', 'updated_at',
             'full_name', 'role', 'is_verified'

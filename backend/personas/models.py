@@ -20,7 +20,7 @@ class Persona(models.Model):
     """
     Modelo para información personal complementaria del usuario.
     
-    INTEGRACI"N CON CATLOGOS:
+    INTEGRACIÓN CON CATÁLOGOS:
     - tipo_documento: Se relaciona con Parametro donde tema__codigo='TIPO_DOC'
     - genero: Se relaciona con Parametro donde tema__codigo='SEXO'
     
@@ -37,7 +37,7 @@ class Persona(models.Model):
         help_text="Usuario asociado a la persona"
     )
     
-    # CATLOGO: Tipo de documento (Parametro del tema TIPO_DOC)
+    # CATÁLOGO: Tipo de documento (Parametro del tema TIPO_DOC)
     tipo_documento = models.ForeignKey(
         Parametro, 
         on_delete=models.PROTECT,
@@ -81,7 +81,7 @@ class Persona(models.Model):
         help_text="Dirección de residencia"
     )
     
-    # CATLOGO: Género (Parametro del tema SEXO)
+    # CATÁLOGO: Género (Parametro del tema SEXO)
     genero = models.ForeignKey(
         Parametro, 
         on_delete=models.PROTECT,
@@ -97,22 +97,14 @@ class Persona(models.Model):
         help_text="Fecha de nacimiento"
     )
     
-    # UBICACI"N: Departamento y Municipio normalizados
-    departamento = models.ForeignKey(
-        Departamento, 
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="personas",
-        help_text="Departamento de residencia"
-    )
+    # UBICACI"N: Municipio normalizado (departamento se obtiene de municipio.departamento - 3NF)
     municipio = models.ForeignKey(
         Municipio, 
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="personas",
-        help_text="Municipio de residencia"
+        help_text="Municipio de residencia (el departamento se obtiene de municipio.departamento)"
     )
     
     fecha_creacion = models.DateTimeField(auto_now_add=True, help_text="Fecha de creación del registro")
@@ -122,8 +114,9 @@ class Persona(models.Model):
         verbose_name_plural = 'Personas'
         ordering = ['primer_apellido', 'primer_nombre']
         indexes = [
-            models.Index(fields=['numero_documento']),
-            models.Index(fields=['telefono']),
+            # numero_documento and telefono have unique=True, which creates UNIQUE indexes automatically
+            # Normal indexes on unique columns are redundant - UNIQUE index already covers equality searches
+            # Only keep user index as it's not unique
             models.Index(fields=['user']),
         ]
     
@@ -178,10 +171,9 @@ class Persona(models.Model):
             errors['primer_apellido'] = 'El primer apellido solo puede contener letras.'
     
     def _validate_municipality_department(self, errors):
-        """Validate municipality belongs to department."""
-        if self.municipio and self.departamento:
-            if self.municipio.departamento != self.departamento:
-                errors['municipio'] = 'El municipio no pertenece al departamento seleccionado.'
+        """Validate municipality - removed departamento validation (3NF normalization)."""
+        # Departamento is now obtained from municipio.departamento, no need to validate separately
+        pass
     
     def clean(self):
         """Validaciones personalizadas a nivel de modelo."""
@@ -223,42 +215,16 @@ class Persona(models.Model):
         hoy = timezone.now().date()
         return hoy.year - self.fecha_nacimiento.year - \
                ((hoy.month, hoy.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day))
+    
+    @property
+    def departamento(self):
+        """Obtener departamento desde municipio (3NF normalization)."""
+        if self.municipio:
+            return self.municipio.departamento
+        return None
 
 
-class PendingRegistration(models.Model):
-    """
-    Modelo para almacenar registros pendientes de verificación de correo.
-    Los datos del usuario no se crean hasta que el correo esté verificado.
-    """
-    email = models.EmailField(unique=True, help_text="Email del usuario pendiente de registro")
-    data = models.JSONField(help_text="Datos del formulario de registro en formato JSON")
-    verification_token = models.UUIDField(default=uuid.uuid4, unique=True, help_text="Token único de verificación")
-    created_at = models.DateTimeField(auto_now_add=True, help_text="Fecha y hora de creación del registro pendiente")
-    is_verified = models.BooleanField(default=False, help_text="Indica si el correo ya fue verificado")
-    verified_at = models.DateTimeField(null=True, blank=True, help_text="Fecha y hora de verificación")
-    
-    class Meta:
-        verbose_name = 'Registro Pendiente'
-        verbose_name_plural = 'Registros Pendientes'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['email']),
-            models.Index(fields=['verification_token']),
-            models.Index(fields=['is_verified', 'created_at']),
-        ]
-    
-    def __str__(self):
-        return f"Registro pendiente: {self.email}"
-    
-    def is_expired(self):
-        """Verifica si el token de verificación ha expirado (más de 24 horas)."""
-        expiration_time = self.created_at + timedelta(hours=24)
-        return timezone.now() > expiration_time
-    
-    def verify(self):
-        """Marca el registro como verificado."""
-        self.is_verified = True
-        self.verified_at = timezone.now()
-        self.save()
+# PendingRegistration eliminado - usar auth_app.models.EmailVerification con verification_type='registration' en su lugar
+# Los datos se almacenan en temp_data del modelo EmailVerification
 
 

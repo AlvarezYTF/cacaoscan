@@ -114,6 +114,9 @@ class Command(BaseCommand):
         try:
             content_type = self._get_content_type(img_path)
             
+            from images_app.utils import get_tipo_archivo_from_mime_type
+            tipo_archivo = get_tipo_archivo_from_mime_type(content_type)
+            
             with open(img_path, 'rb') as f:
                 django_file = File(f, name=img_path.name)
                 cacao_image = CacaoImage(
@@ -121,7 +124,7 @@ class Command(BaseCommand):
                     image=django_file,
                     file_name=img_path.name,
                     file_size=img_path.stat().st_size,
-                    file_type=content_type,
+                    file_type=tipo_archivo,
                     processed=False
                 )
                 

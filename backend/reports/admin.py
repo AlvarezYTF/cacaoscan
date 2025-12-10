@@ -40,4 +40,4 @@ class ReporteGeneradoAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         """Optimizar queryset con select_related."""
-        return super().get_queryset(request).select_related('usuario')
+        return super().get_queryset(request).select_related('usuario', 'tipo_reporte', 'formato', 'estado')

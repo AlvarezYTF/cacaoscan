@@ -281,7 +281,8 @@ class BaseService:
         else:
             return value
     
-    def create_audit_log(self, user: User, action: str, resource_type: str, resource_id: Any = None, details: Dict[str, Any] = None):
+    def create_audit_log(self, user: User, action: str, resource_type: str = None, resource_id: Any = None, 
+                         content_object: Any = None, details: Dict[str, Any] = None):
         """
         Crea un log de auditoría.
         Se ejecuta después de que la transacción se complete para evitar problemas con bloques atómicos.
@@ -289,16 +290,19 @@ class BaseService:
         Args:
             user: Usuario que realiza la acción
             action: Acción realizada
-            resource_type: Tipo de recurso
-            resource_id: ID del recurso (opcional)
+            resource_type: [DEPRECATED] Tipo de recurso como string - usar content_object en su lugar
+            resource_id: [DEPRECATED] ID del recurso - usar content_object en su lugar
+            content_object: Objeto relacionado (recomendado - normalizado con ContentType)
             details: Detalles adicionales (opcional)
         """
         def _create_log():
             try:
                 try:
                     from audit.models import ActivityLog as activity_log_model
+                    from django.contrib.contenttypes.models import ContentType
                 except ImportError:
                     activity_log_model = None
+                    ContentType = None
                 
                 if activity_log_model is None:
                     self.log_debug("Servicio de auditoría no disponible; se omite creación de log")
@@ -309,11 +313,28 @@ class BaseService:
                 if details:
                     serialized_details = self._serialize_for_json(details)
                 
+                # Use ContentType if content_object is provided (normalized approach)
+                content_type = None
+                object_id = None
+                
+                if content_object is not None:
+                    content_type = ContentType.objects.get_for_model(content_object)
+                    object_id = content_object.pk
+                    # Also populate legacy fields for backward compatibility
+                    resource_type_str = f"{content_type.app_label}.{content_type.model}"
+                    resource_id_int = int(object_id) if object_id else None
+                else:
+                    # Fallback to legacy fields if content_object not provided
+                    resource_type_str = resource_type or ""
+                    resource_id_int = int(resource_id) if resource_id else None
+                
                 activity_log_model.objects.create(
                     user=user,
                     action=action,
-                    resource_type=resource_type,
-                    resource_id=str(resource_id) if resource_id else None,
+                    content_type=content_type,
+                    object_id=object_id,
+                    resource_type=resource_type_str,  # Legacy field for backward compatibility
+                    resource_id=resource_id_int,  # Legacy field for backward compatibility
                     details=serialized_details,
                     timestamp=timezone.now()
                 )

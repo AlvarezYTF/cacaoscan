@@ -72,6 +72,59 @@ def load_image_for_prediction(image_file, cacao_image) -> Image.Image:
     return Image.open(cacao_image.image.path)
 
 
+def get_tipo_dispositivo_from_code(codigo: str):
+    """Get TipoDispositivo from code string."""
+    from api.utils.model_imports import get_model_safely
+    TipoDispositivo = get_model_safely('catalogos.models.TipoDispositivo')
+    if not TipoDispositivo:
+        return None
+    
+    codigo_upper = codigo.strip().upper()
+    device_map = {
+        'CPU': 'CPU',
+        'CUDA': 'CUDA',
+        'MPS': 'MPS',
+    }
+    codigo_mapped = device_map.get(codigo_upper, codigo_upper)
+    
+    try:
+        return TipoDispositivo.objects.get(codigo=codigo_mapped, activo=True)
+    except TipoDispositivo.DoesNotExist:
+        # Default to CPU
+        try:
+            return TipoDispositivo.objects.get(codigo='CPU', activo=True)
+        except TipoDispositivo.DoesNotExist:
+            return None
+
+
+def get_version_modelo_from_code(codigo: str):
+    """Get VersionModelo from code string."""
+    from api.utils.model_imports import get_model_safely
+    VersionModelo = get_model_safely('catalogos.models.VersionModelo')
+    if not VersionModelo:
+        return None
+    
+    codigo_clean = codigo.strip()
+    
+    try:
+        return VersionModelo.objects.get(codigo=codigo_clean, activo=True)
+    except VersionModelo.DoesNotExist:
+        # Try to create if it doesn't exist (for dynamic versions)
+        try:
+            return VersionModelo.objects.create(
+                codigo=codigo_clean,
+                nombre=codigo_clean,
+                descripcion=f'Versión {codigo_clean} del modelo',
+                activo=True
+            )
+        except Exception:
+            # Default to v1.0
+            try:
+                return VersionModelo.objects.get(codigo='v1.0', activo=True)
+            except VersionModelo.DoesNotExist:
+                return None
+
+
 def create_prediction_from_result(
     cacao_image,
     result: Dict[str, Any],
@@ -89,7 +142,11 @@ def create_prediction_from_result(
         Created CacaoPrediction instance
     """
     device = result.get('debug', {}).get('device', 'cpu')
-    device_used = device.split(':')[0] if ':' in str(device) else 'cpu'
+    device_code = device.split(':')[0] if ':' in str(device) else 'cpu'
+    device_used = get_tipo_dispositivo_from_code(device_code)
+    
+    model_version_code = result.get('debug', {}).get('models_version', 'v1.0')
+    model_version = get_version_modelo_from_code(model_version_code)
     
     cacao_prediction = CacaoPrediction(
         image=cacao_image,
@@ -103,7 +160,7 @@ def create_prediction_from_result(
         confidence_peso=result['confidences']['peso'],
         processing_time_ms=prediction_time_ms,
         crop_url=result.get('crop_url', ''),
-        model_version=result.get('debug', {}).get('models_version', 'v1.0'),
+        model_version=model_version,
         device_used=device_used
     )
     cacao_prediction.save()

@@ -63,8 +63,8 @@ class AdminImageDetailView(AdminPermissionMixin, APIView):
             },
             'processing_info': {
                 'processing_time_ms': image.prediction.processing_time_ms if hasattr(image, 'prediction') and image.prediction else None,
-                'model_version': image.prediction.model_version if hasattr(image, 'prediction') and image.prediction else None,
-                'device_used': image.prediction.device_used if hasattr(image, 'prediction') and image.prediction else None,
+                'model_version': image.prediction.model_version.codigo if hasattr(image, 'prediction') and image.prediction and image.prediction.model_version else None,
+                'device_used': image.prediction.device_used.codigo if hasattr(image, 'prediction') and image.prediction and image.prediction.device_used else None,
                 'crop_url': image.prediction.crop_url if hasattr(image, 'prediction') and image.prediction else None
             },
             'access_info': {
@@ -334,8 +334,8 @@ class AdminImageDeleteView(AdminPermissionMixin, APIView):
                     'grosor_mm': float(image.prediction.grosor_mm),
                     'peso_g': float(image.prediction.peso_g),
                     'average_confidence': float(image.prediction.average_confidence),
-                    'model_version': image.prediction.model_version,
-                    'device_used': image.prediction.device_used,
+                    'model_version': image.prediction.model_version.codigo if image.prediction.model_version else None,
+                    'device_used': image.prediction.device_used.codigo if image.prediction.device_used else None,
                     'processing_time_ms': image.prediction.processing_time_ms,
                     'created_at': image.prediction.created_at.isoformat()
                 }

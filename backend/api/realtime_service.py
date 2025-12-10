@@ -117,9 +117,11 @@ class RealtimeNotificationService:
             unread_count = Notification.get_unread_count(user)
             
             notifications_by_type = {}
-            for tipo, _ in Notification.TIPO_CHOICES:
-                count = Notification.objects.filter(user=user, tipo=tipo).count()
-                notifications_by_type[tipo] = count
+            # Use TipoNotificacion catalog instead of TIPO_CHOICES
+            from catalogos.models import TipoNotificacion
+            for tipo_notif in TipoNotificacion.objects.filter(activo=True):
+                count = Notification.objects.filter(user=user, tipo=tipo_notif).count()
+                notifications_by_type[tipo_notif.codigo] = count
             
             stats = {
                 'total_notifications': total_notifications,
@@ -285,9 +287,12 @@ class RealtimeNotificationService:
             )
             
             # Enviar en tiempo real
+            # Use codigo from TipoNotificacion catalog
+            tipo_codigo = notification.tipo.codigo if hasattr(notification.tipo, 'codigo') else str(notification.tipo)
             notification_data = {
                 'id': notification.id,
-                'tipo': notification.tipo,
+                'tipo': tipo_codigo,  # Use codigo from catalog
+                'tipo_nombre': notification.tipo.nombre if hasattr(notification.tipo, 'nombre') else None,
                 'titulo': notification.titulo,
                 'mensaje': notification.mensaje,
                 'fecha_creacion': notification.fecha_creacion.isoformat(),

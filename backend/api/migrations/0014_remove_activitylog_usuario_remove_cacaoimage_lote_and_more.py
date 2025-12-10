@@ -56,29 +56,9 @@ class Migration(migrations.Migration):
                 migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
             ],
         ),
-        # Finca and Lote were moved to fincas_app - only update state, don't touch database
-        migrations.SeparateDatabaseAndState(
-            state_operations=[
-                migrations.RemoveField(
-                    model_name='finca',
-                    name='agricultor',
-                ),
-                migrations.DeleteModel(
-                    name='Finca',
-                ),
-                migrations.RemoveField(
-                    model_name='lote',
-                    name='finca',
-                ),
-                migrations.DeleteModel(
-                    name='Lote',
-                ),
-            ],
-            database_operations=[
-                # Tables are managed by fincas_app, don't modify them here
-                migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
-            ],
-        ),
+        # Finca and Lote were moved to fincas_app - models no longer exist in api state
+        # No operations needed - models were already removed in previous migrations
+        migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
         # LoginHistory was moved to audit app - only update state, don't touch database
         migrations.SeparateDatabaseAndState(
             state_operations=[

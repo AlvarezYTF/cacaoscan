@@ -18,7 +18,7 @@ class UserProfileInline(admin.StackedInline):
     can_delete = False
     verbose_name_plural = 'Perfil Extendido'
     fields = (
-        'phone_number', 'region', 'municipality', 'farm_name',
+        'municipio',
         'years_experience', 'farm_size_hectares', 'preferred_language',
         'email_notifications'
     )
@@ -57,23 +57,20 @@ class EmailVerificationTokenAdmin(admin.ModelAdmin):
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     """Admin para perfiles de usuario."""
-    list_display = ('user', 'full_name', 'role', 'region', 'farm_name', 'is_verified', 'created_at')
-    list_filter = ('region', 'preferred_language', 'email_notifications', 'created_at')
-    search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'farm_name', 'region')
+    list_display = ('user', 'full_name', 'role', 'get_municipio', 'get_departamento', 'is_verified', 'created_at')
+    list_filter = ('municipio__departamento', 'preferred_language', 'email_notifications', 'created_at')
+    search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'municipio__nombre', 'municipio__departamento__nombre')
     readonly_fields = ('created_at', 'updated_at', 'full_name', 'role', 'is_verified')
     
     fieldsets = (
         ('Usuario', {
             'fields': ('user', 'full_name', 'role', 'is_verified')
         }),
-        ('Información de Contacto', {
-            'fields': ('phone_number',)
-        }),
         ('Información Geográfica', {
-            'fields': ('region', 'municipality')
+            'fields': ('municipio',)
         }),
-        ('Información de la Finca', {
-            'fields': ('farm_name', 'years_experience', 'farm_size_hectares')
+        ('Información Profesional', {
+            'fields': ('years_experience', 'farm_size_hectares')
         }),
         ('Preferencias', {
             'fields': ('preferred_language', 'email_notifications')
@@ -83,25 +80,35 @@ class UserProfileAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    def get_municipio(self, obj):
+        """Mostrar municipio."""
+        return obj.municipio.nombre if obj.municipio else '-'
+    get_municipio.short_description = 'Municipio'
+    
+    def get_departamento(self, obj):
+        """Mostrar departamento."""
+        return obj.municipio.departamento.nombre if obj.municipio and obj.municipio.departamento else '-'
+    get_departamento.short_description = 'Departamento'
 
 
 @admin.register(CacaoImage)
 class CacaoImageAdmin(admin.ModelAdmin):
     """Admin para imágenes de cacao."""
-    list_display = ('id', 'user', 'file_name', 'region', 'finca', 'processed', 'has_prediction', 'uploaded_at')
-    list_filter = ('processed', 'region', 'finca', 'uploaded_at', 'created_at')
-    search_fields = ('user__username', 'user__email', 'file_name', 'finca', 'region', 'lote_id', 'variedad')
-    readonly_fields = ('id', 'uploaded_at', 'file_name', 'file_size', 'file_type', 'created_at', 'updated_at', 'file_size_mb', 'has_prediction')
+    list_display = ('id', 'user', 'file_name', 'get_region', 'get_finca', 'lote', 'get_variedad', 'processed', 'has_prediction', 'uploaded_at')
+    list_filter = ('processed', 'lote__finca__municipio__departamento', 'lote__finca', 'lote__variedad', 'uploaded_at', 'created_at')
+    search_fields = ('user__username', 'user__email', 'file_name', 'lote__finca__nombre', 'lote__nombre', 'lote__variedad__nombre')
+    readonly_fields = ('id', 'uploaded_at', 'file_name', 'file_size', 'get_file_type', 'created_at', 'updated_at', 'file_size_mb', 'has_prediction', 'get_finca', 'get_region', 'get_variedad')
     
     fieldsets = (
         ('Información Básica', {
             'fields': ('id', 'user', 'image', 'uploaded_at', 'processed')
         }),
         ('Metadatos del Grano/Finca', {
-            'fields': ('finca', 'region', 'lote_id', 'variedad', 'fecha_cosecha', 'notas')
+            'fields': ('lote', 'get_finca', 'get_region', 'get_variedad', 'notas')
         }),
         ('Información Técnica', {
-            'fields': ('file_name', 'file_size', 'file_size_mb', 'file_type', 'has_prediction')
+            'fields': ('file_name', 'file_size', 'file_size_mb', 'get_file_type', 'has_prediction')
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
@@ -109,9 +116,45 @@ class CacaoImageAdmin(admin.ModelAdmin):
         }),
     )
     
+    def get_finca(self, obj):
+        """Mostrar finca a través de lote (normalización 2NF)."""
+        if obj.lote and obj.lote.finca:
+            return obj.lote.finca.nombre
+        return '-'
+    get_finca.short_description = 'Finca'
+    
+    def get_region(self, obj):
+        """Mostrar región (departamento) desde el lote."""
+        if obj.lote and obj.lote.finca and obj.lote.finca.municipio and obj.lote.finca.municipio.departamento:
+            return obj.lote.finca.municipio.departamento.nombre
+        return '-'
+    get_region.short_description = 'Región'
+    
+    def get_variedad(self, obj):
+        """Mostrar variedad desde el lote."""
+        if obj.lote and obj.lote.variedad:
+            return obj.lote.variedad.nombre
+        return '-'
+    get_variedad.short_description = 'Variedad'
+    
+    def get_file_type(self, obj):
+        """Mostrar tipo de archivo (MIME type)."""
+        if obj.file_type:
+            return obj.file_type.mime_type
+        return '-'
+    get_file_type.short_description = 'Tipo de Archivo'
+    
     def get_queryset(self, request):
         """Optimizar queryset con select_related."""
-        return super().get_queryset(request).select_related('user')
+        return super().get_queryset(request).select_related(
+            'user', 
+            'lote', 
+            'lote__finca', 
+            'lote__finca__municipio', 
+            'lote__finca__municipio__departamento',
+            'lote__variedad',
+            'lote__estado'
+        )
 
 
 @admin.register(CacaoPrediction)
@@ -119,7 +162,7 @@ class CacaoPredictionAdmin(admin.ModelAdmin):
     """Admin para predicciones de cacao."""
     list_display = ('id', 'image_user', 'alto_mm', 'ancho_mm', 'grosor_mm', 'peso_g', 'average_confidence', 'model_version', 'created_at')
     list_filter = ('model_version', 'device_used', 'created_at')
-    search_fields = ('image__user__username', 'image__user__email', 'image__finca', 'image__region')
+    search_fields = ('image__user__username', 'image__user__email', 'image__lote__finca__nombre', 'image__lote__finca__municipio__departamento__nombre')
     readonly_fields = ('id', 'image', 'processing_time_ms', 'model_version', 'device_used', 'average_confidence', 'volume_cm3', 'density_g_cm3', 'created_at')
     
     fieldsets = (

@@ -54,16 +54,18 @@ def _create_cacao_image(user, lote, image_data: Dict[str, Any], temp_path: str) 
         file_content = ContentFile(f.read())
         file_content.name = image_data.get('file_name', 'image.jpg')
         
+        from images_app.utils import get_tipo_archivo_from_mime_type
+        mime_type = image_data.get('file_type', 'image/jpeg')
+        tipo_archivo = get_tipo_archivo_from_mime_type(mime_type)
+        
         cacao_image = CacaoImage(
             user=user,
             image=file_content,
             file_name=image_data.get('file_name', 'unknown'),
             file_size=image_data.get('file_size', 0),
-            file_type=image_data.get('file_type', 'image/jpeg'),
+            file_type=tipo_archivo,
             processed=False,
-            lote=lote,
-            variedad=lote.variedad if lote else None,
-            fecha_cosecha=lote.fecha_cosecha if lote else None
+            lote=lote
         )
         cacao_image.save()
         return cacao_image, None

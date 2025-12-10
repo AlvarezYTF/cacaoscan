@@ -13,23 +13,9 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('authtoken', '0001_initial'),
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='ExpiringToken',
-            fields=[
-            ],
-            options={
-                'verbose_name': 'Token con Expiración',
-                'verbose_name_plural': 'Tokens con Expiración',
-                'proxy': True,
-                'indexes': [],
-                'constraints': [],
-            },
-            bases=('authtoken.token',),
-        ),
         migrations.CreateModel(
             name='EmailVerificationToken',
             fields=[

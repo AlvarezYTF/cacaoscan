@@ -54,12 +54,16 @@ class CacaoImageUploadView(APIView):
             if type_error:
                 return None, {'file': image_file.name, 'error': type_error}
             
+            from images_app.utils import get_tipo_archivo_from_mime_type
+            mime_type = image_file.content_type if hasattr(image_file, 'content_type') else 'image/jpeg'
+            tipo_archivo = get_tipo_archivo_from_mime_type(mime_type)
+            
             cacao_image = CacaoImage(
                 user=request.user,
                 image=image_file,
                 file_name=image_file.name,
                 file_size=image_file.size,
-                file_type=image_file.content_type,
+                file_type=tipo_archivo,
                 processed=False
             )
             

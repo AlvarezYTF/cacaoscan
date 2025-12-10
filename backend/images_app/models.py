@@ -20,32 +20,36 @@ class CacaoImage(TimeStampedModel):
     processed = models.BooleanField(default=False)
     
     # Metadatos del grano/finca
-    finca = models.ForeignKey(
-        'fincas_app.Finca', 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True,
-        related_name='cacao_images',
-        help_text="Finca a la que pertenece esta imagen"
-    )
-    finca_nombre = models.CharField(max_length=200, blank=True, default="", help_text="Nombre de la finca (campo de respaldo)")
-    region = models.CharField(max_length=100, blank=True, default="")
+    # NOTA: finca se elimina por 2NF - se obtiene a través de lote.finca
     lote = models.ForeignKey(
         'fincas_app.Lote', 
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
         related_name='cacao_images',
-        help_text="Lote al que pertenece esta imagen"
+        help_text="Lote al que pertenece esta imagen (la finca se obtiene de lote.finca)"
     )
-    variedad = models.CharField(max_length=100, blank=True, default="")
-    fecha_cosecha = models.DateField(blank=True, null=True)
     notas = models.TextField(blank=True, default="")
     
     # Información técnica del archivo
     file_name = models.CharField(max_length=255, blank=True, default="")
     file_size = models.PositiveIntegerField(blank=True, null=True)
-    file_type = models.CharField(max_length=50, blank=True, default="")
+    file_type = models.ForeignKey(
+        'catalogos.Parametro',
+        on_delete=models.PROTECT,
+        related_name='cacao_images',
+        null=True,
+        blank=True,
+        limit_choices_to={'tema__codigo': 'TEMA_TIPO_ARCHIVO'},
+        help_text="Tipo de archivo (normalizado)"
+    )
+    
+    # Metadata adicional (JSONB) para contexto y datos flexibles
+    metadata = models.JSONField(
+        blank=True, 
+        default=dict, 
+        help_text="Metadata adicional en formato JSON. Evitar duplicar datos que deberían ser ForeignKeys o campos normalizados. Usar solo para datos verdaderamente flexibles y no estructurados."
+    )
     
     class Meta:
         verbose_name = 'Imagen de Cacao'
@@ -54,7 +58,7 @@ class CacaoImage(TimeStampedModel):
         indexes = [
             models.Index(fields=['user', '-created_at']),
             models.Index(fields=['processed']),
-            models.Index(fields=['region', 'finca']),
+            models.Index(fields=['lote']),
         ]
     
     def __str__(self):
@@ -80,6 +84,35 @@ class CacaoImage(TimeStampedModel):
         if self.image:
             return self.image.name
         return ""
+    
+    @property
+    def finca(self):
+        """Obtener finca a través de lote (normalización 2NF - eliminada redundancia)."""
+        if self.lote and self.lote.finca:
+            return self.lote.finca
+        return None
+    
+    def clean(self):
+        """
+        Validar que metadata no contenga datos que deberían ser ForeignKeys o campos normalizados.
+        """
+        from django.core.exceptions import ValidationError
+        
+        if self.metadata:
+            # Validar que no contenga objetos completos de entidades normalizadas
+            forbidden_keys = ['finca', 'municipio', 'departamento', 'variedad', 'lote', 'usuario', 'file_type']
+            for key in forbidden_keys:
+                if key in self.metadata and isinstance(self.metadata[key], dict):
+                    # Si contiene un objeto completo, debe ser solo un ID
+                    if 'id' not in self.metadata[key] and len(self.metadata[key]) > 1:
+                        raise ValidationError({
+                            'metadata': f'metadata no debe contener objetos completos de {key}. Usar solo el ID (ej: {{"{key}_id": 123}}) o eliminar si ya existe como ForeignKey'
+                        })
+    
+    def save(self, *args, **kwargs):
+        """Override save to call clean validation."""
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class CacaoPrediction(models.Model):
@@ -122,13 +155,21 @@ class CacaoPrediction(models.Model):
     processing_time_ms = models.PositiveIntegerField(null=True, blank=True, help_text="Tiempo de procesamiento en milisegundos")
     crop_url = models.URLField(max_length=500, blank=True, null=True, help_text="URL del crop procesado")
     
-    # Información técnica del modelo
-    model_version = models.CharField(max_length=50, default='v1.0')
-    device_used = models.CharField(max_length=20, default='cpu', choices=[
-        ('cpu', 'CPU'),
-        ('cuda', 'GPU CUDA'),
-        ('mps', 'Apple Silicon'),
-    ])
+    # Información técnica del modelo (normalizado 3NF)
+    model_version = models.ForeignKey(
+        'catalogos.Parametro',
+        on_delete=models.PROTECT,
+        related_name='predictions_model_version',
+        limit_choices_to={'tema__codigo': 'TEMA_VERSION_MODELO'},
+        help_text="Versión del modelo usado (normalizado)"
+    )
+    device_used = models.ForeignKey(
+        'catalogos.Parametro',
+        on_delete=models.PROTECT,
+        related_name='predictions_device_used',
+        limit_choices_to={'tema__codigo': 'TEMA_TIPO_DISPOSITIVO'},
+        help_text="Dispositivo usado para procesamiento (normalizado)"
+    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -151,7 +192,7 @@ class CacaoPrediction(models.Model):
         indexes = [
             models.Index(fields=['image']),
             models.Index(fields=['-created_at']),
-            models.Index(fields=['model_version']),
+            # Note: Django automatically creates indexes for ForeignKeys (model_version, device_used)
         ]
     
     def __str__(self):

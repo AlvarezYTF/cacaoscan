@@ -4,21 +4,14 @@ Modelos para el sistema de notificaciones.
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from catalogos.models import Parametro
 
 
 class Notification(models.Model):
-    """Modelo para notificaciones del sistema."""
-    
-    TIPO_CHOICES = [
-        ('info', 'Información'),
-        ('warning', 'Advertencia'),
-        ('error', 'Error'),
-        ('success', 'Éxito'),
-        ('defect_alert', 'Alerta de Defecto'),
-        ('report_ready', 'Reporte Listo'),
-        ('training_complete', 'Entrenamiento Completo'),
-        ('welcome', 'Bienvenida'),
-    ]
+    """
+    Modelo para notificaciones del sistema.
+    Normalización 3FN: Usa catálogo TipoNotificacion en lugar de choices.
+    """
     
     user = models.ForeignKey(
         User,
@@ -26,11 +19,12 @@ class Notification(models.Model):
         related_name='notifications',
         help_text='Usuario destinatario de la notificación'
     )
-    tipo = models.CharField(
-        max_length=20,
-        choices=TIPO_CHOICES,
-        default='info',
-        help_text='Tipo de notificación'
+    tipo = models.ForeignKey(
+        Parametro,
+        on_delete=models.PROTECT,
+        related_name='notifications',
+        limit_choices_to={'tema__codigo': 'TEMA_TIPO_NOTIFICACION'},
+        help_text='Tipo de notificación (normalizado con catálogo)'
     )
     titulo = models.CharField(
         max_length=200,
@@ -79,7 +73,7 @@ class Notification(models.Model):
         
         Args:
             user: User instance
-            tipo: Notification type
+            tipo: TipoNotificacion instance or codigo string
             titulo: Notification title
             mensaje: Notification message
             datos_extra: Optional extra data dict
@@ -89,6 +83,10 @@ class Notification(models.Model):
         """
         if datos_extra is None:
             datos_extra = {}
+        
+        # Convert codigo string to Parametro if needed
+        if isinstance(tipo, str):
+            tipo = Parametro.objects.get(tema__codigo='TEMA_TIPO_NOTIFICACION', codigo=tipo.upper())
         
         return cls.objects.create(
             user=user,

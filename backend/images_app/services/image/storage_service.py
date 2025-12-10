@@ -46,12 +46,16 @@ class ImageStorageService(BaseService):
             ServiceResult with saved CacaoImage instance
         """
         try:
+            from images_app.utils import get_tipo_archivo_from_mime_type
+            mime_type = image_file.content_type if hasattr(image_file, 'content_type') else 'image/jpeg'
+            tipo_archivo = get_tipo_archivo_from_mime_type(mime_type)
+            
             cacao_image = CacaoImage(
                 user=user,
                 image=image_file,
                 file_name=image_file.name,
                 file_size=image_file.size,
-                file_type=image_file.content_type,
+                file_type=tipo_archivo,
                 processed=False
             )
             
@@ -92,14 +96,18 @@ class ImageStorageService(BaseService):
         try:
             from pathlib import Path
             from ml.segmentation.processor import segment_and_crop_cacao_bean
+            from images_app.utils import get_tipo_archivo_from_mime_type
             
             # Create image
+            mime_type = image_file.content_type if hasattr(image_file, 'content_type') else 'image/jpeg'
+            tipo_archivo = get_tipo_archivo_from_mime_type(mime_type)
+            
             cacao_image = CacaoImage(
                 user=user,
                 image=image_file,
                 file_name=image_file.name,
                 file_size=image_file.size,
-                file_type=image_file.content_type,
+                file_type=tipo_archivo,
                 processed=False
             )
             

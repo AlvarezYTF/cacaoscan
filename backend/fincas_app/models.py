@@ -4,6 +4,7 @@ Modelos para gestión de fincas y lotes en CacaoScan.
 from django.db import models
 from django.contrib.auth.models import User
 from core.models import TimeStampedModel
+from catalogos.models import Municipio, Parametro
 
 # Date format constants
 DATE_FORMAT_DMY = '%d/%m/%Y'
@@ -15,8 +16,12 @@ class Finca(TimeStampedModel):
     """
     nombre = models.CharField(max_length=200, help_text="Nombre de la finca")
     ubicacion = models.CharField(max_length=300, help_text="Dirección o ubicación de la finca")
-    municipio = models.CharField(max_length=100, help_text="Municipio donde se encuentra la finca")
-    departamento = models.CharField(max_length=100, help_text="Departamento donde se encuentra la finca")
+    municipio = models.ForeignKey(
+        Municipio,
+        on_delete=models.PROTECT,
+        related_name='fincas',
+        help_text="Municipio donde se encuentra la finca"
+    )
     hectareas = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
@@ -71,16 +76,31 @@ class Finca(TimeStampedModel):
     
     # Campos adicionales requeridos por tests
     altitud = models.IntegerField(default=100, help_text="Altitud en metros sobre el nivel del mar")
-    tipo_suelo = models.CharField(max_length=50, default='arcilloso', help_text="Tipo de suelo de la finca")
-    clima = models.CharField(max_length=50, default='tropical', help_text="Tipo de clima de la finca")
-    estado = models.CharField(
-        max_length=20,
-        choices=[
-            ('activa', 'Activa'),
-            ('inactiva', 'Inactiva'),
-            ('suspendida', 'Suspendida'),
-        ],
-        default='activa',
+    tipo_suelo = models.ForeignKey(
+        Parametro,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='fincas_tipo_suelo',
+        limit_choices_to={'tema__codigo': 'TEMA_TIPO_SUELO'},
+        help_text="Tipo de suelo de la finca"
+    )
+    clima = models.ForeignKey(
+        Parametro,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='fincas_clima',
+        limit_choices_to={'tema__codigo': 'TEMA_CLIMA'},
+        help_text="Tipo de clima de la finca"
+    )
+    estado = models.ForeignKey(
+        Parametro,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='fincas_estado',
+        limit_choices_to={'tema__codigo': 'TEMA_ESTADO_FINCA'},
         help_text="Estado de la finca"
     )
     precipitacion_anual = models.DecimalField(
@@ -102,10 +122,12 @@ class Finca(TimeStampedModel):
         verbose_name_plural = 'Fincas'
         ordering = ['-created_at']
         indexes = [
+            # Composite index for agricultor + created_at (useful for queries filtering by agricultor and date)
             models.Index(fields=['agricultor', '-created_at']),
-            models.Index(fields=['agricultor_id']),
-            models.Index(fields=['municipio', 'departamento']),
+            # Index for activa (not a FK, needs explicit index)
             models.Index(fields=['activa']),
+            # Note: Django automatically creates indexes for ForeignKeys (estado, tipo_suelo, clima, municipio, agricultor)
+            # So we don't need explicit indexes for those fields
         ]
         constraints = [
             models.CheckConstraint(
@@ -115,7 +137,9 @@ class Finca(TimeStampedModel):
         ]
     
     def __str__(self):
-        return f"{self.nombre} - {self.municipio}, {self.departamento}"
+        if self.municipio:
+            return f"{self.nombre} - {self.municipio.nombre}, {self.municipio.departamento.nombre}"
+        return f"{self.nombre}"
     
     @property
     def total_lotes(self):
@@ -153,7 +177,9 @@ class Finca(TimeStampedModel):
     @property
     def ubicacion_completa(self):
         """Obtener ubicación completa formateada."""
-        return f"{self.ubicacion}, {self.municipio}, {self.departamento}"
+        if self.municipio:
+            return f"{self.ubicacion}, {self.municipio.nombre}, {self.municipio.departamento.nombre}"
+        return self.ubicacion
     
     def get_estadisticas(self):
         """Obtener estadísticas completas de la finca."""
@@ -188,8 +214,11 @@ class Lote(TimeStampedModel):
         max_length=200,
         help_text="Nombre del lote"
     )
-    variedad = models.CharField(
-        max_length=100, 
+    variedad = models.ForeignKey(
+        Parametro,
+        on_delete=models.PROTECT,
+        related_name='lotes_variedad',
+        limit_choices_to={'tema__codigo': 'TEMA_VARIEDAD_CACAO'},
         help_text="Variedad de cacao del lote"
     )
     fecha_plantacion = models.DateField(
@@ -205,15 +234,13 @@ class Lote(TimeStampedModel):
         decimal_places=2,
         help_text="Área del lote en hectáreas"
     )
-    estado = models.CharField(
-        max_length=20,
-        choices=[
-            ('activo', 'Activo'),
-            ('inactivo', 'Inactivo'),
-            ('cosechado', 'Cosechado'),
-            ('renovado', 'Renovado'),
-        ],
-        default='activo',
+    estado = models.ForeignKey(
+        Parametro,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='lotes_estado',
+        limit_choices_to={'tema__codigo': 'TEMA_ESTADO_LOTE'},
         help_text="Estado actual del lote"
     )
     
@@ -286,7 +313,8 @@ class Lote(TimeStampedModel):
         """Representación string del lote."""
         if self.nombre:
             return f"{self.nombre} - {self.finca.nombre}"
-        return f"{self.identificador} - {self.variedad} ({self.finca.nombre})"
+        variedad_nombre = self.variedad.nombre if self.variedad else "N/A"
+        return f"{self.identificador} - {variedad_nombre} ({self.finca.nombre})"
     
     @property
     def total_analisis(self):
@@ -329,7 +357,11 @@ class Lote(TimeStampedModel):
     @property
     def ubicacion_completa(self):
         """Obtener ubicación completa formateada."""
-        return f"{self.finca.ubicacion}, {self.finca.municipio}, {self.finca.departamento}"
+        if self.finca and self.finca.municipio:
+            return f"{self.finca.ubicacion}, {self.finca.municipio.nombre}, {self.finca.municipio.departamento.nombre}"
+        elif self.finca:
+            return self.finca.ubicacion
+        return ""
     
     def get_estadisticas(self):
         """Obtener estadísticas completas del lote."""
@@ -339,7 +371,7 @@ class Lote(TimeStampedModel):
             'calidad_promedio': self.calidad_promedio,
             'area_hectareas': float(self.area_hectareas),
             'edad_meses': self.edad_meses,
-            'estado': self.estado,
+            'estado': self.estado.nombre if self.estado else None,
             'activo': self.activo,
             'fecha_plantacion': self.fecha_plantacion.strftime(DATE_FORMAT_DMY),
             'fecha_cosecha': self.fecha_cosecha.strftime(DATE_FORMAT_DMY) if self.fecha_cosecha else None,

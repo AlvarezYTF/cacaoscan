@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Tema, Parametro, Departamento, Municipio
+from .models import Tema, Parametro, Departamento, Municipio, TemaParametro
 
 
 @admin.register(Tema)
@@ -19,7 +19,7 @@ class TemaAdmin(admin.ModelAdmin):
     )
     
     def parametros_count(self, obj):
-        """Muestra el número de parámetros del tema"""
+        """Muestra el número de parámetros activos del tema"""
         return obj.parametros.filter(activo=True).count()
     parametros_count.short_description = 'Parámetros Activos'
 
@@ -27,16 +27,32 @@ class TemaAdmin(admin.ModelAdmin):
 @admin.register(Parametro)
 class ParametroAdmin(admin.ModelAdmin):
     list_display = ['codigo', 'nombre', 'tema', 'activo']
-    list_filter = ['tema', 'activo']
-    search_fields = ['codigo', 'nombre', 'descripcion', 'tema__nombre']
+    list_filter = ['activo', 'tema']
+    search_fields = ['codigo', 'nombre', 'descripcion', 'tema__codigo', 'tema__nombre']
     list_editable = ['activo']
     
     fieldsets = (
         ('Información Básica', {
             'fields': ('tema', 'codigo', 'nombre', 'descripcion')
         }),
+        ('Metadata', {
+            'fields': ('metadata',)
+        }),
         ('Estado', {
             'fields': ('activo',)
+        }),
+    )
+
+
+@admin.register(TemaParametro)
+class TemaParametroAdmin(admin.ModelAdmin):
+    list_display = ['tema', 'parametro', 'id']
+    list_filter = ['tema', 'parametro']
+    search_fields = ['tema__codigo', 'tema__nombre', 'parametro__codigo', 'parametro__nombre']
+    
+    fieldsets = (
+        ('Relación', {
+            'fields': ('tema', 'parametro')
         }),
     )
 

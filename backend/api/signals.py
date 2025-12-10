@@ -11,8 +11,10 @@ from django.conf import settings
 # Importar desde apps modulares
 try:
     from notifications.models import Notification
+    from catalogos.models import TipoNotificacion
 except ImportError:
     Notification = None
+    TipoNotificacion = None
 
 try:
     from images_app.models import CacaoPrediction
@@ -101,17 +103,17 @@ if CacaoPrediction:
         
         if created:
             try:
-                # Determinar el tipo de notificación basado en la calidad
+                # Determinar el tipo de notificación basado en la calidad (usar códigos del catálogo)
                 if instance.average_confidence >= 0.8:
-                    tipo = 'success'
+                    tipo = 'SUCCESS'  # Código del catálogo TipoNotificacion
                     titulo = 'Análisis Completado - Alta Calidad'
                     mensaje = f'Tu análisis de granos de cacao ha sido completado con alta calidad (confianza: {instance.average_confidence:.1%}). Los resultados están disponibles.'
                 elif instance.average_confidence >= 0.6:
-                    tipo = 'info'
+                    tipo = 'INFO'  # Código del catálogo TipoNotificacion
                     titulo = 'Análisis Completado - Calidad Estándar'
                     mensaje = f'Tu análisis de granos de cacao ha sido completado con calidad estándar (confianza: {instance.average_confidence:.1%}). Revisa los resultados.'
                 else:
-                    tipo = 'warning'
+                    tipo = 'WARNING'  # Código del catálogo TipoNotificacion
                     titulo = 'Análisis Completado - Calidad Baja'
                     mensaje = f'Tu análisis de granos de cacao ha sido completado con baja confianza ({instance.average_confidence:.1%}). Considera repetir el análisis.'
                 
@@ -220,7 +222,7 @@ def _notify_admins_training_complete(instance):
         if admin != instance.created_by:
             Notification.create_notification(
                 user=admin,
-                tipo='info',
+                tipo='INFO',  # Código del catálogo TipoNotificacion
                 titulo='Nuevo Modelo Entrenado',
                 mensaje=f'El usuario {instance.created_by.username} ha completado el entrenamiento del modelo "{instance.model_name}".',
                 datos_extra={
@@ -287,7 +289,7 @@ if TrainingJob:
                 
                 realtime_service.create_and_send_notification(
                     user_id=instance.created_by.id,
-                    tipo='error',
+                    tipo='ERROR',  # Código del catálogo TipoNotificacion
                     titulo='Error en Entrenamiento de Modelo',
                     mensaje=f'El entrenamiento del modelo "{instance.model_name}" ha fallado. Error: {instance.error_message or "Error desconocido"}.',
                     datos_extra=datos_extra
@@ -322,7 +324,7 @@ def notify_user_registered(sender, instance, created, **kwargs):
             
             realtime_service.create_and_send_notification(
                 user_id=instance.id,
-                tipo='welcome',
+                tipo='WELCOME',  # Código del catálogo TipoNotificacion
                 titulo='¡Bienvenido a CacaoScan!',
                 mensaje='Gracias por registrarte en CacaoScan. Tu cuenta ha sido creada exitosamente. Puedes comenzar a analizar granos de cacao subiendo imágenes.',
                 datos_extra=datos_extra
@@ -346,7 +348,7 @@ def notify_finca_created(sender, instance, created, **kwargs):
         try:
             Notification.create_notification(
                 user=instance.agricultor,
-                tipo='success',
+                tipo='SUCCESS',  # Código del catálogo TipoNotificacion
                 titulo='Finca Registrada Exitosamente',
                 mensaje=f'Tu finca "{instance.nombre}" ha sido registrada exitosamente en {instance.municipio}, {instance.departamento}.',
                 datos_extra={
@@ -375,7 +377,7 @@ def notify_lote_created(sender, instance, created, **kwargs):
         try:
             Notification.create_notification(
                 user=instance.finca.agricultor,
-                tipo='info',
+                tipo='INFO',  # Código del catálogo TipoNotificacion
                 titulo='Nuevo Lote Registrado',
                 mensaje=f'Se ha registrado el lote "{instance.identificador}" de variedad {instance.variedad} en tu finca "{instance.finca.nombre}".',
                 datos_extra={
@@ -405,7 +407,7 @@ def notify_lote_cosechado(sender, instance, created, **kwargs):
         try:
             Notification.create_notification(
                 user=instance.finca.agricultor,
-                tipo='success',
+                tipo='SUCCESS',  # Código del catálogo TipoNotificacion
                 titulo='Lote Cosechado',
                 mensaje=f'El lote "{instance.identificador}" de variedad {instance.variedad} ha sido marcado como cosechado.',
                 datos_extra={

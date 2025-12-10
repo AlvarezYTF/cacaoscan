@@ -21,12 +21,14 @@ class FincaSerializer(serializers.ModelSerializer):
     
     NOTA DE OPTIMIZACIÓN:
     Para evitar consultas N+1, las vistas deben usar select_related al obtener Finca:
-    Finca.objects.select_related('agricultor').prefetch_related('lotes')
+    Finca.objects.select_related('agricultor', 'municipio', 'municipio__departamento').prefetch_related('lotes')
     """
     agricultor_name = serializers.CharField(source='agricultor.get_full_name', read_only=True)
     agricultor_email = serializers.CharField(source='agricultor.email', read_only=True)
     ubicacion_completa = serializers.ReadOnlyField()
     estadisticas = serializers.SerializerMethodField()
+    # Departamento is now read-only, obtained from municipio.departamento
+    departamento = serializers.SerializerMethodField()
     # Alias fields for compatibility with tests
     area_total = serializers.DecimalField(source='hectareas', max_digits=10, decimal_places=2, read_only=True)
     propietario = serializers.PrimaryKeyRelatedField(source='agricultor', read_only=True)
@@ -43,8 +45,14 @@ class FincaSerializer(serializers.ModelSerializer):
         )
         read_only_fields = (
             'id', 'fecha_registro', 'created_at', 'updated_at', 
-            'ubicacion_completa', 'estadisticas', 'agricultor', 'area_total', 'propietario'
+            'ubicacion_completa', 'estadisticas', 'agricultor', 'area_total', 'propietario', 'departamento'
         )
+    
+    def get_departamento(self, obj):
+        """Get departamento from municipio.departamento (normalized relationship)."""
+        if obj.municipio and hasattr(obj.municipio, 'departamento'):
+            return obj.municipio.departamento.id
+        return None
     
     def get_estadisticas(self, obj):
         """Get finca statistics."""
@@ -120,14 +128,12 @@ class FincaSerializer(serializers.ModelSerializer):
     
     def _validate_required_fields(self, attrs, errors, is_partial=False):
         """Validate required fields."""
+        # Departamento is now obtained from municipio, so we only validate municipio
         if is_partial:
             if 'municipio' in attrs:
                 self._validate_field(attrs, 'municipio', "El municipio es requerido.", errors)
-            if 'departamento' in attrs:
-                self._validate_field(attrs, 'departamento', "El departamento es requerido.", errors)
         else:
             self._validate_field(attrs, 'municipio', "El municipio es requerido.", errors)
-            self._validate_field(attrs, 'departamento', "El departamento es requerido.", errors)
 
     def _handle_coordinate_validation_error(self, e, errors):
         """Handle coordinate validation errors."""
@@ -165,6 +171,7 @@ class FincaSerializer(serializers.ModelSerializer):
 class FincaListSerializer(serializers.ModelSerializer):
     """Optimized serializer for finca listings (without heavy statistics)."""
     ubicacion_completa = serializers.SerializerMethodField()
+    departamento = serializers.SerializerMethodField()
     
     class Meta:
         model = Finca
@@ -174,9 +181,19 @@ class FincaListSerializer(serializers.ModelSerializer):
             'coordenadas_lat', 'coordenadas_lng'
         )
     
+    def get_departamento(self, obj):
+        """Get departamento from municipio.departamento (normalized relationship)."""
+        if obj.municipio and hasattr(obj.municipio, 'departamento'):
+            return obj.municipio.departamento.id
+        return None
+    
     def get_ubicacion_completa(self, obj):
         """Get complete location."""
-        return f"{obj.municipio}, {obj.departamento}"
+        if obj.municipio and hasattr(obj.municipio, 'departamento'):
+            return f"{obj.municipio.nombre}, {obj.municipio.departamento.nombre}"
+        elif obj.municipio:
+            return obj.municipio.nombre
+        return obj.ubicacion
 
 
 class FincaDetailSerializer(FincaSerializer):
@@ -421,7 +438,14 @@ class LoteListSerializer(serializers.ModelSerializer):
     
     def get_ubicacion_completa(self, obj):
         """Get complete location."""
-        return obj.ubicacion_completa if hasattr(obj, 'ubicacion_completa') else f"{obj.finca.ubicacion}, {obj.finca.municipio}, {obj.finca.departamento}"
+        if hasattr(obj, 'ubicacion_completa') and obj.ubicacion_completa:
+            return obj.ubicacion_completa
+        # Use normalized relationship: municipio.departamento
+        if obj.finca and obj.finca.municipio and hasattr(obj.finca.municipio, 'departamento'):
+            return f"{obj.finca.ubicacion}, {obj.finca.municipio.nombre}, {obj.finca.municipio.departamento.nombre}"
+        elif obj.finca:
+            return obj.finca.ubicacion
+        return ""
 
 
 class LoteDetailSerializer(LoteSerializer):

@@ -13,7 +13,7 @@ from drf_yasg import openapi
 import logging
 
 from .pdf_generator import CacaoReportPDFGenerator
-from api.models import CacaoImage
+from images_app.models import CacaoImage
 from api.serializers import ErrorResponseSerializer
 
 logger = logging.getLogger("cacaoscan.reports")

@@ -26,9 +26,13 @@ from api.views.mixins.admin_mixin import AdminPermissionMixin
 models = get_models_safely({
     'Lote': 'fincas_app.models.Lote',
     'Finca': 'fincas_app.models.Finca',
+    'VariedadCacao': 'catalogos.models.VariedadCacao',
+    'EstadoLote': 'catalogos.models.EstadoLote',
 })
 Lote = models['Lote']
 Finca = models['Finca']
+VariedadCacao = models['VariedadCacao']
+EstadoLote = models['EstadoLote']
 
 logger = logging.getLogger("cacaoscan.api")
 
@@ -329,17 +333,73 @@ class BatchAnalysisView(AdminPermissionMixin, APIView):
             logger.debug(f"Verificación SQL: Finca ID={finca_id_bd} existe en api_finca: {finca_nombre_bd}")
             return finca_id_bd, finca_nombre_bd
     
+    def _get_or_create_variedad(self, genetics: str):
+        """Get or create VariedadCacao from genetics string."""
+        if not genetics:
+            genetics = DEFAULT_NOT_SPECIFIED
+        
+        # Try to find by nombre first
+        variedad = VariedadCacao.objects.filter(nombre__iexact=genetics, activo=True).first()
+        if variedad:
+            return variedad
+        
+        # Try to find by codigo
+        variedad = VariedadCacao.objects.filter(codigo__iexact=genetics.upper(), activo=True).first()
+        if variedad:
+            return variedad
+        
+        # Create new if not found
+        codigo = genetics.upper().replace(' ', '_')[:20]
+        variedad, created = VariedadCacao.objects.get_or_create(
+            codigo=codigo,
+            defaults={
+                'nombre': genetics,
+                'descripcion': f'Variedad creada automáticamente: {genetics}',
+                'activo': True
+            }
+        )
+        return variedad
+    
+    def _get_or_create_estado_lote(self, estado_codigo: str = 'ACTIVO'):
+        """Get or create EstadoLote from codigo."""
+        estado = EstadoLote.objects.filter(codigo__iexact=estado_codigo, activo=True).first()
+        if estado:
+            return estado
+        
+        # Create default estado if not found
+        estado_nombres = {
+            'ACTIVO': 'Activo',
+            'INACTIVO': 'Inactivo',
+            'COSECHADO': 'Cosechado',
+            'RENOVADO': 'Renovado'
+        }
+        nombre = estado_nombres.get(estado_codigo.upper(), estado_codigo)
+        
+        estado, created = EstadoLote.objects.get_or_create(
+            codigo=estado_codigo.upper(),
+            defaults={
+                'nombre': nombre,
+                'descripcion': f'Estado de lote: {nombre}',
+                'activo': True
+            }
+        )
+        return estado
+    
     def _create_lote_with_orm(self, finca_id_bd: int, name: str, genetics: str, fecha_plantacion: date, fecha_recoleccion: date, notes: str) -> Tuple[Optional[object], Optional[Exception]]:
         """Intenta crear el lote usando ORM."""
         try:
+            variedad = self._get_or_create_variedad(genetics)
+            estado = self._get_or_create_estado_lote('ACTIVO')
+            
             lote = Lote.objects.create(
                 finca_id=finca_id_bd,
                 identificador=name,
-                variedad=genetics,
+                nombre=name,
+                variedad=variedad,
                 fecha_plantacion=fecha_plantacion,
                 fecha_cosecha=fecha_recoleccion,
                 area_hectareas=0.1,
-                estado='activo',
+                estado=estado,
                 descripcion=notes if notes else '',
                 activo=True
             )
@@ -354,16 +414,20 @@ class BatchAnalysisView(AdminPermissionMixin, APIView):
     
     def _create_lote_with_sql(self, finca_id_bd: int, name: str, genetics: str, fecha_plantacion: date, fecha_recoleccion: date, notes: str) -> Tuple[Optional[object], Optional[None]]:
         """Crea el lote usando SQL directo."""
+        # Get or create variedad and estado first
+        variedad = self._get_or_create_variedad(genetics)
+        estado = self._get_or_create_estado_lote('ACTIVO')
+        
         with db_conn.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO fincas_app_lote 
-                (finca_id, identificador, variedad, fecha_plantacion, fecha_cosecha, 
-                 area_hectareas, estado, descripcion, activo, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                (finca_id, identificador, nombre, variedad_id, fecha_plantacion, fecha_cosecha, 
+                 area_hectareas, estado_id, descripcion, activo, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
                 RETURNING id;
             """, [
-                finca_id_bd, name, genetics, fecha_plantacion, fecha_recoleccion,
-                0.1, 'activo', notes if notes else '', True
+                finca_id_bd, name, name, variedad.id, fecha_plantacion, fecha_recoleccion,
+                0.1, estado.id, notes if notes else '', True
             ])
             lote_id = cursor.fetchone()[0]
             lote = Lote.objects.get(id=lote_id)

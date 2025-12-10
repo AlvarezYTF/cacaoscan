@@ -50,17 +50,14 @@ class TestProfileService:
     def test_get_user_profile_success(self, mock_models, service, fixed_user):
         """Test getting user profile successfully."""
         mock_profile = Mock()
-        mock_profile.phone_number = '1234567890'
-        mock_profile.region = 'Test Region'
-        mock_profile.municipality = 'Test Municipality'
-        mock_profile.farm_name = 'Test Farm'
+        mock_profile.municipio = None
         mock_profile.years_experience = 5
         mock_profile.farm_size_hectares = 10.0
         mock_profile.preferred_language = 'es'
         mock_profile.email_notifications = True
         mock_profile.role = 'farmer'
         
-        fixed_user.profile = mock_profile
+        fixed_user.auth_profile = mock_profile
         
         mock_models.return_value = {'UserProfile': Mock()}
         
@@ -80,10 +77,7 @@ class TestProfileService:
         mock_profile_model = Mock()
         mock_profile_model.DoesNotExist = MockDoesNotExist
         mock_profile = Mock(
-            phone_number=None,
-            region=None,
-            municipality=None,
-            farm_name=None,
+            municipio=None,
             years_experience=0,
             farm_size_hectares=None,
             preferred_language='es',
@@ -93,30 +87,30 @@ class TestProfileService:
         mock_profile_model.objects.create.return_value = mock_profile
         mock_models.return_value = {'UserProfile': mock_profile_model}
         
-        # Simulate DoesNotExist exception when accessing fixed_user.profile
+        # Simulate DoesNotExist exception when accessing fixed_user.auth_profile
         def get_profile():
             raise MockDoesNotExist()
         
-        # Mock fixed_user.profile to raise DoesNotExist
+        # Mock fixed_user.auth_profile to raise DoesNotExist
         # The service will catch this and create a new profile using user_profile_model.objects.create
         # We need to mock the property descriptor on the User class
-        original_profile_descriptor = getattr(type(fixed_user), 'profile', None)
+        original_auth_profile_descriptor = getattr(type(fixed_user), 'auth_profile', None)
         
         # Create a property that raises DoesNotExist
-        def profile_getter(self):
+        def auth_profile_getter(self):
             raise MockDoesNotExist()
         
-        # Replace the profile descriptor temporarily
-        type(fixed_user).profile = property(profile_getter)
+        # Replace the auth_profile descriptor temporarily
+        type(fixed_user).auth_profile = property(auth_profile_getter)
         
         try:
             result = service.get_user_profile(fixed_user)
         finally:
             # Restore original descriptor
-            if original_profile_descriptor:
-                type(fixed_user).profile = original_profile_descriptor
-            elif hasattr(type(fixed_user), 'profile'):
-                delattr(type(fixed_user), 'profile')
+            if original_auth_profile_descriptor:
+                type(fixed_user).auth_profile = original_auth_profile_descriptor
+            elif hasattr(type(fixed_user), 'auth_profile'):
+                delattr(type(fixed_user), 'auth_profile')
         
         assert result.success
         assert result.data['username'] == fixed_user.username
@@ -131,8 +125,7 @@ class TestProfileService:
         
         profile_data = {
             'first_name': 'Updated',
-            'last_name': 'Name',
-            'phone_number': '1234567890'
+            'last_name': 'Name'
         }
         
         with patch.object(service, 'get_user_profile', return_value=ServiceResult.success(data={})):

@@ -13,22 +13,23 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveConstraint(
-            model_name='finca',
-            name='finca_hectareas_positivas',
-        ),
-        migrations.RemoveConstraint(
-            model_name='lote',
-            name='lote_area_positiva',
-        ),
-        migrations.RemoveConstraint(
-            model_name='lote',
-            name='lote_identificador_unico_por_finca',
-        ),
-        migrations.RemoveConstraint(
-            model_name='lote',
-            name='lote_fecha_cosecha_valida',
-        ),
+        # RemoveConstraint operations for finca and lote removed - models were moved to fincas_app
+        # migrations.RemoveConstraint(
+        #     model_name='finca',
+        #     name='finca_hectareas_positivas',
+        # ),
+        # migrations.RemoveConstraint(
+        #     model_name='lote',
+        #     name='lote_area_positiva',
+        # ),
+        # migrations.RemoveConstraint(
+        #     model_name='lote',
+        #     name='lote_identificador_unico_por_finca',
+        # ),
+        # migrations.RemoveConstraint(
+        #     model_name='lote',
+        #     name='lote_fecha_cosecha_valida',
+        # ),
         migrations.AlterField(
             model_name='cacaoimage',
             name='user',
@@ -39,32 +40,34 @@ class Migration(migrations.Migration):
             name='user',
             field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='api_email_token', to=settings.AUTH_USER_MODEL),
         ),
-        migrations.AlterField(
-            model_name='finca',
-            name='agricultor',
-            field=models.ForeignKey(help_text='Agricultor propietario de la finca', on_delete=django.db.models.deletion.CASCADE, related_name='api_fincas', to=settings.AUTH_USER_MODEL),
-        ),
+        # AlterField for finca removed - Finca model was moved to fincas_app
+        # migrations.AlterField(
+        #     model_name='finca',
+        #     name='agricultor',
+        #     field=models.ForeignKey(help_text='Agricultor propietario de la finca', on_delete=django.db.models.deletion.CASCADE, related_name='api_fincas', to=settings.AUTH_USER_MODEL),
+        # ),
         migrations.AlterField(
             model_name='userprofile',
             name='user',
             field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='api_profile', to=settings.AUTH_USER_MODEL),
         ),
-        migrations.AddConstraint(
-            model_name='finca',
-            constraint=models.CheckConstraint(check=models.Q(('hectareas__gt', 0)), name='api_finca_hectareas_positivas'),
-        ),
-        migrations.AddConstraint(
-            model_name='lote',
-            constraint=models.CheckConstraint(check=models.Q(('area_hectareas__gt', 0)), name='api_lote_area_positiva'),
-        ),
-        migrations.AddConstraint(
-            model_name='lote',
-            constraint=models.CheckConstraint(check=models.Q(('fecha_cosecha__isnull', True), ('fecha_cosecha__gte', models.F('fecha_plantacion')), _connector='OR'), name='api_lote_fecha_cosecha_valida'),
-        ),
-        migrations.AddConstraint(
-            model_name='lote',
-            constraint=models.UniqueConstraint(fields=('finca', 'identificador'), name='api_lote_identificador_unico_por_finca'),
-        ),
+        # AddConstraint operations for finca and lote removed - models were moved to fincas_app
+        # migrations.AddConstraint(
+        #     model_name='finca',
+        #     constraint=models.CheckConstraint(check=models.Q(('hectareas__gt', 0)), name='api_finca_hectareas_positivas'),
+        # ),
+        # migrations.AddConstraint(
+        #     model_name='lote',
+        #     constraint=models.CheckConstraint(check=models.Q(('area_hectareas__gt', 0)), name='api_lote_area_positiva'),
+        # ),
+        # migrations.AddConstraint(
+        #     model_name='lote',
+        #     constraint=models.CheckConstraint(check=models.Q(('fecha_cosecha__isnull', True), ('fecha_cosecha__gte', models.F('fecha_plantacion')), _connector='OR'), name='api_lote_fecha_cosecha_valida'),
+        # ),
+        # migrations.AddConstraint(
+        #     model_name='lote',
+        #     constraint=models.UniqueConstraint(fields=('finca', 'identificador'), name='api_lote_identificador_unico_por_finca'),
+        # ),
     ]
 
 

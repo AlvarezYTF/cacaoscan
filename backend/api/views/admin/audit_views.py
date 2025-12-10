@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q, Count, Avg
+from django.db import models
 from django.utils import timezone
 from datetime import timedelta
 from drf_yasg.utils import swagger_auto_schema
@@ -77,7 +78,22 @@ class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
         
         modelo = request.GET.get('modelo', '').strip()
         if modelo:
-            queryset = queryset.filter(resource_type__icontains=modelo)
+            # Try to filter by content_type first (normalized), fallback to resource_type (legacy)
+            from django.contrib.contenttypes.models import ContentType
+            try:
+                # Try to find ContentType by app_label or model name
+                content_types = ContentType.objects.filter(
+                    models.Q(app_label__icontains=modelo) | 
+                    models.Q(model__icontains=modelo)
+                )
+                if content_types.exists():
+                    queryset = queryset.filter(content_type__in=content_types)
+                else:
+                    # Fallback to legacy resource_type field
+                    queryset = queryset.filter(resource_type__icontains=modelo)
+            except Exception:
+                # Fallback to legacy resource_type field
+                queryset = queryset.filter(resource_type__icontains=modelo)
         
         ip_address = request.GET.get('ip_address', '').strip()
         if ip_address:
@@ -113,19 +129,30 @@ class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
     
     def _serialize_logs(self, logs):
         """Serialize logs for response."""
-        return [{
-            'id': log.id,
-            'usuario': log.user.username if log.user else 'Usuario Anónimo',
-            'accion': log.action,
-            'accion_display': log.action,
-            'modelo': log.resource_type,
-            'objeto_id': log.resource_id,
-            'descripcion': log.details.get('description', '') if isinstance(log.details, dict) else str(log.details),
-            'ip_address': log.ip_address,
-            'timestamp': log.timestamp.isoformat(),
-            'datos_antes': log.details.get('before', {}) if isinstance(log.details, dict) else {},
-            'datos_despues': log.details.get('after', {}) if isinstance(log.details, dict) else {},
-        } for log in logs]
+        result = []
+        for log in logs:
+            # Use ContentType fields if available, fallback to legacy fields
+            if log.content_type:
+                modelo = f"{log.content_type.app_label}.{log.content_type.model}"
+                objeto_id = log.object_id
+            else:
+                modelo = log.resource_type or ""
+                objeto_id = log.resource_id
+            
+            result.append({
+                'id': log.id,
+                'usuario': log.user.username if log.user else 'Usuario Anónimo',
+                'accion': log.action,
+                'accion_display': log.action,
+                'modelo': modelo,
+                'objeto_id': objeto_id,
+                'descripcion': log.details.get('description', '') if isinstance(log.details, dict) else str(log.details),
+                'ip_address': log.ip_address,
+                'timestamp': log.timestamp.isoformat(),
+                'datos_antes': log.details.get('before', {}) if isinstance(log.details, dict) else {},
+                'datos_despues': log.details.get('after', {}) if isinstance(log.details, dict) else {},
+            })
+        return result
     
     def get(self, request):
         """Listar logs de actividad con filtros."""
@@ -318,11 +345,21 @@ class AuditStatsView(AdminPermissionMixin, APIView):
                 .values_list('action', 'count')
             )
             
-            activities_by_model = dict(
-                ActivityLog.objects.values('resource_type')
-                .annotate(count=Count('id'))
-                .values_list('resource_type', 'count')
-            )
+            # Use normalized content_type if available, fallback to resource_type
+            from django.contrib.contenttypes.models import ContentType
+            activities_by_model = {}
+            
+            # Get from ContentType fields
+            for log in ActivityLog.objects.filter(content_type__isnull=False).select_related('content_type'):
+                model_name = f"{log.content_type.app_label}.{log.content_type.model}"
+                activities_by_model[model_name] = activities_by_model.get(model_name, 0) + 1
+            
+            # Add from legacy fields
+            for resource_type, count in ActivityLog.objects.filter(
+                content_type__isnull=True
+            ).values('resource_type').annotate(count=Count('id')).values_list('resource_type', 'count'):
+                if resource_type:
+                    activities_by_model[resource_type] = activities_by_model.get(resource_type, 0) + count
             
             # Top usuarios más activos
             top_active_users = list(

@@ -18,6 +18,7 @@ from api.utils.model_imports import get_model_safely
 
 # Import model safely
 CacaoImage = get_model_safely('images_app.models.CacaoImage')
+TipoArchivo = get_model_safely('catalogos.models.TipoArchivo')
 
 from django.contrib.auth.models import User
 
@@ -74,14 +75,55 @@ class ImageManagementService(BaseService):
         
         return None
     
+    def _get_tipo_archivo_from_mime_type(self, mime_type: str):
+        """Get TipoArchivo from MIME type."""
+        if not TipoArchivo:
+            return None
+        
+        if not mime_type:
+            mime_type = 'image/jpeg'
+        
+        mime_type = mime_type.strip().lower()
+        
+        # Map of MIME types to TipoArchivo codigo
+        mime_type_map = {
+            'image/jpeg': 'IMAGE_JPEG',
+            'image/jpg': 'IMAGE_JPG',
+            'image/png': 'IMAGE_PNG',
+            'image/webp': 'IMAGE_WEBP',
+        }
+        
+        # Try to find by codigo
+        codigo = mime_type_map.get(mime_type)
+        if codigo:
+            try:
+                return TipoArchivo.objects.get(codigo=codigo, activo=True)
+            except TipoArchivo.DoesNotExist:
+                pass
+        
+        # Try to find by mime_type field
+        try:
+            return TipoArchivo.objects.filter(mime_type__iexact=mime_type, activo=True).first()
+        except Exception:
+            pass
+        
+        # Default to JPEG
+        try:
+            return TipoArchivo.objects.get(codigo='IMAGE_JPEG', activo=True)
+        except TipoArchivo.DoesNotExist:
+            return None
+    
     def _create_cacao_image_instance(self, image_file, filename, image_width, image_height, user):
         """Create CacaoImage instance."""
+        mime_type = image_file.content_type if hasattr(image_file, 'content_type') else 'image/jpeg'
+        tipo_archivo = self._get_tipo_archivo_from_mime_type(mime_type)
+        
         cacao_image = CacaoImage(
             user=user,
             image=image_file,
             file_name=filename,
             file_size=image_file.size if hasattr(image_file, 'size') else 0,
-            file_type=image_file.content_type if hasattr(image_file, 'content_type') else 'image/jpeg',
+            file_type=tipo_archivo,
             processed=False
         )
         
@@ -151,7 +193,7 @@ class ImageManagementService(BaseService):
                     'id': cacao_image.id,
                     'file_name': cacao_image.file_name,
                     'file_size': cacao_image.file_size,
-                    'file_type': cacao_image.file_type,
+                    'file_type': cacao_image.file_type.mime_type if cacao_image.file_type else None,
                     'processed': cacao_image.processed,
                     'created_at': cacao_image.created_at.isoformat(),
                     'image_url': cacao_image.image.url if cacao_image.image else None,
@@ -176,7 +218,15 @@ class ImageManagementService(BaseService):
         if 'processed' in filters:
             queryset = queryset.filter(processed=filters['processed'])
         if 'file_type' in filters:
-            queryset = queryset.filter(file_type=filters['file_type'])
+            # Support both MIME type string and TipoArchivo object/ID
+            file_type_filter = filters['file_type']
+            if isinstance(file_type_filter, str):
+                # Try to find TipoArchivo by MIME type
+                tipo_archivo = self._get_tipo_archivo_from_mime_type(file_type_filter)
+                if tipo_archivo:
+                    queryset = queryset.filter(file_type=tipo_archivo)
+            else:
+                queryset = queryset.filter(file_type=file_type_filter)
         if 'date_from' in filters:
             queryset = queryset.filter(created_at__gte=filters['date_from'])
         if 'date_to' in filters:
@@ -192,11 +242,12 @@ class ImageManagementService(BaseService):
     
     def _format_image_data(self, image):
         """Format image data for response."""
+        file_type_str = image.file_type.mime_type if image.file_type else None
         return {
             'id': image.id,
             'file_name': image.file_name,
             'file_size': image.file_size,
-            'file_type': image.file_type,
+            'file_type': file_type_str,
             'processed': image.processed,
             'created_at': image.created_at.isoformat(),
             'updated_at': image.updated_at.isoformat(),

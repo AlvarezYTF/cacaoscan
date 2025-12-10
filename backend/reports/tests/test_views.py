@@ -26,7 +26,7 @@ from reports.views import (
     CONTENT_TYPE_PDF,
     ERROR_REPORT_GENERATION
 )
-from api.models import CacaoImage
+from images_app.models import CacaoImage
 
 
 @pytest.mark.django_db
@@ -273,7 +273,7 @@ class TestGenerateQualityReportView:
     
     @pytest.mark.skip(reason="Test omitted as requested")
     @patch('reports.pdf_generator.CacaoReportPDFGenerator')
-    @patch('api.models.CacaoImage')
+    @patch('images_app.models.CacaoImage')
     def test_generate_quality_report_error(self, mock_cacao_image, mock_generator_class, api_client, user):
         """Test generating quality report with error."""
         api_client.force_authenticate(user=user)
@@ -505,7 +505,7 @@ class TestReportStatsView:
     
     @pytest.mark.skip(reason="Test omitted as requested")
     @patch('reports.views.logger')
-    @patch('api.models.CacaoImage')
+    @patch('images_app.models.CacaoImage')
     def test_get_report_stats_error(self, mock_cacao_image, mock_logger, api_client, user):
         """Test getting report stats with error."""
         # Import after patching to ensure mock is used

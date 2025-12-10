@@ -125,8 +125,8 @@ class ImagesExportView(APIView, ImagePermissionMixin):
             float(prediction.volume_cm3),
             float(prediction.density_g_cm3),
             prediction.processing_time_ms,
-            prediction.model_version,
-            prediction.device_used,
+            prediction.model_version.codigo if prediction.model_version else None,
+            prediction.device_used.codigo if prediction.device_used else None,
             prediction.created_at.isoformat()
         ]
     

@@ -196,8 +196,6 @@ class ReporteAgricultoresView(APIView):
             persona = getattr(agricultor, 'persona', None)
             if persona and hasattr(persona, 'telefono') and persona.telefono:
                 telefono = str(persona.telefono)
-            elif hasattr(agricultor, 'auth_profile') and agricultor.auth_profile:
-                telefono = str(agricultor.auth_profile.phone_number) if agricultor.auth_profile.phone_number else ""
         except Exception:
             pass
         

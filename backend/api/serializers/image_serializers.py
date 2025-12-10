@@ -54,12 +54,14 @@ class CacaoImageSerializer(serializers.ModelSerializer):
     filename = serializers.CharField(source='file_name', read_only=True)
     # Handle image.url for SimpleUploadedFile compatibility
     image_url = serializers.SerializerMethodField()
+    # Return MIME type as string for compatibility
+    file_type = serializers.SerializerMethodField()
     
     class Meta:
         model = CacaoImage
         fields = (
             'id', 'user', 'user_name', 'image', 'image_url', 'uploaded_at', 'processed',
-            'finca', 'region', 'lote_id', 'variedad', 'fecha_cosecha', 'notas',
+            'finca', 'lote', 'notas',
             'file_name', 'filename', 'file_size', 'file_size_mb', 'file_type',
             'created_at', 'updated_at', 'has_prediction'
         )
@@ -67,6 +69,12 @@ class CacaoImageSerializer(serializers.ModelSerializer):
             'id', 'user', 'uploaded_at', 'processed', 'file_name', 'filename', 'file_size',
             'file_type', 'created_at', 'updated_at', 'file_size_mb', 'has_prediction', 'image_url'
         )
+    
+    def get_file_type(self, obj):
+        """Return MIME type as string."""
+        if obj.file_type:
+            return obj.file_type.mime_type
+        return None
     
     def get_image_url(self, obj):
         """Get image URL, handling SimpleUploadedFile."""
@@ -85,19 +93,7 @@ class CacaoImageSerializer(serializers.ModelSerializer):
                 return obj.image.url
         return None
     
-    def validate_fecha_cosecha(self, value):
-        """Validate harvest date."""
-        if value is None:
-            return None
-        if value.year < 1900:
-            raise serializers.ValidationError("La fecha de cosecha debe ser posterior a 1900.")
-        # Validate date is not in the future
-        from django.utils import timezone
-        today = timezone.now().date()
-        if value > today:
-            raise serializers.ValidationError("La fecha de cosecha no puede ser futura.")
-        # Return validated date (already a date object, no transformation needed)
-        return value
+    # Removed validate_fecha_cosecha - fecha_cosecha is now obtained from lote.fecha_cosecha
 
 
 class CacaoPredictionSerializer(serializers.ModelSerializer):

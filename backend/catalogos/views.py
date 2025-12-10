@@ -64,7 +64,7 @@ class ParametroViewSet(viewsets.ModelViewSet):
     retrieve: Obtiene un parámetro específico
     by_tema: Obtiene parámetros filtrados por tema (custom action)
     """
-    queryset = Parametro.objects.all().select_related('tema')
+    queryset = Parametro.objects.all().prefetch_related('temas')
     serializer_class = ParametroSerializer
     permission_classes = [AllowAny]
 
@@ -84,15 +84,15 @@ class ParametroViewSet(viewsets.ModelViewSet):
         if tema_param:
             # Si es numérico -> asumir ID; si no, filtrar por código
             if tema_param.isdigit():
-                queryset = queryset.filter(tema_id=int(tema_param))
+                queryset = queryset.filter(temas__id=int(tema_param))
             else:
-                queryset = queryset.filter(tema__codigo=tema_param)
+                queryset = queryset.filter(temas__codigo=tema_param)
 
         solo_activos = self.request.query_params.get('activos', 'false').lower() == 'true'
         if solo_activos:
             queryset = queryset.filter(activo=True)
 
-        return queryset
+        return queryset.distinct()
 
     @action(detail=False, methods=['get'], url_path='tema/(?P<codigo_tema>[^/.]+)')
     def by_tema(self, request, codigo_tema=None):
@@ -102,7 +102,7 @@ class ParametroViewSet(viewsets.ModelViewSet):
         """
         try:
             tema = get_object_or_404(Tema, codigo=codigo_tema)
-            parametros = Parametro.objects.filter(tema=tema)
+            parametros = Parametro.objects.filter(temas=tema)
             
             # Filtrar por activos si se solicita
             solo_activos = request.query_params.get('activos', 'false').lower() == 'true'
