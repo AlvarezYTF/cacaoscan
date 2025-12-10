@@ -1,5 +1,10 @@
 """
 Inferencia con YOLOv8-seg para segmentación de granos de cacao.
+
+REFACTORIZADO: Aplicando principios SOLID
+- Funciones auxiliares extraídas para mejorar SRP
+- Mejores docstrings y type hints
+- Separación de responsabilidades mejorada
 """
 import numpy as np
 import cv2
@@ -18,6 +23,72 @@ from ..utils.logs import get_ml_logger
 
 
 logger = get_ml_logger("cacaoscan.ml.segmentation")
+
+
+def _calcular_centro_mascara(mask: np.ndarray) -> Tuple[int, int]:
+    """
+    Calcula el centro de masa de una máscara.
+    
+    Args:
+        mask: Máscara binaria
+        
+    Returns:
+        Tupla (cx, cy) con coordenadas del centro
+    """
+    moments = cv2.moments(mask.astype(np.uint8))
+    if moments['m00'] != 0:
+        cx = int(moments['m10'] / moments['m00'])
+        cy = int(moments['m01'] / moments['m00'])
+        return (cx, cy)
+    else:
+        # Fallback: centro geométrico
+        h, w = mask.shape
+        return (w // 2, h // 2)
+
+
+def _extraer_datos_prediccion(box: Any, mask: Any, class_names: Dict[int, str]) -> Dict[str, Any]:
+    """
+    Extrae datos de una predicción YOLO.
+    
+    Args:
+        box: Caja de detección YOLO
+        mask: Máscara de segmentación
+        class_names: Diccionario de nombres de clases
+        
+    Returns:
+        Diccionario con datos de la predicción
+    """
+    conf = float(box.conf[0])
+    cls = int(box.cls[0])
+    mask_data = mask.data[0].cpu().numpy()
+    
+    return {
+        'confidence': conf,
+        'class_id': cls,
+        'class_name': class_names[cls],
+        'bbox': box.xyxy[0].cpu().numpy().tolist(),
+        'mask': mask_data,
+        'area': int(np.sum(mask_data > 0.5)),
+        'center': _calcular_centro_mascara(mask_data)
+    }
+
+
+def _ordenar_modelos_por_timestamp(best_models: List[Tuple[str, Path]]) -> Optional[Path]:
+    """
+    Ordena modelos por timestamp y retorna el más reciente.
+    
+    Args:
+        best_models: Lista de tuplas (timestamp, path)
+        
+    Returns:
+        Path al modelo más reciente o None
+    """
+    if not best_models:
+        return None
+    
+    # Ordenar por timestamp (más reciente primero)
+    best_models.sort(reverse=True)
+    return best_models[0][1]
 
 
 class YOLOSegmentationInference:
@@ -99,12 +170,7 @@ class YOLOSegmentationInference:
                     except Exception:
                         best_models.append((train_dir.name, best_model))
         
-        if best_models:
-            # Ordenar por timestamp (más reciente primero)
-            best_models.sort(reverse=True)
-            return best_models[0][1]
-        
-        return None
+        return _ordenar_modelos_por_timestamp(best_models)
     
     def predict(self, image_path: Path, conf_threshold: Optional[float] = None) -> List[Dict[str, Any]]:
         """
@@ -154,19 +220,28 @@ class YOLOSegmentationInference:
             return []
     
     def _calculate_mask_center(self, mask: np.ndarray) -> Tuple[int, int]:
-        """Calcula el centro de masa de una máscara."""
-        moments = cv2.moments(mask.astype(np.uint8))
-        if moments['m00'] != 0:
-            cx = int(moments['m10'] / moments['m00'])
-            cy = int(moments['m01'] / moments['m00'])
-            return (cx, cy)
-        else:
-            # Fallback: centro geométrico
-            h, w = mask.shape
-            return (w // 2, h // 2)
+        """
+        Calcula el centro de masa de una máscara.
+        
+        Args:
+            mask: Máscara binaria
+            
+        Returns:
+            Tupla (cx, cy) con coordenadas del centro
+        """
+        return _calcular_centro_mascara(mask)
     
     def _process_yolo_results(self, results: Any, min_confidence: float = 0.0) -> List[Dict[str, Any]]:
-        """Processes YOLO results and extracts predictions."""
+        """
+        Procesa resultados YOLO y extrae predicciones.
+        
+        Args:
+            results: Resultados de YOLO
+            min_confidence: Confianza mínima para filtrar predicciones
+            
+        Returns:
+            Lista de predicciones procesadas
+        """
         predictions = []
         
         for result in results:
@@ -183,20 +258,8 @@ class YOLOSegmentationInference:
                 if conf < min_confidence:
                     continue
                 
-                cls = int(box.cls[0])
                 mask = masks[i]
-                mask_data = mask.data[0].cpu().numpy()
-                
-                prediction = {
-                    'confidence': conf,
-                    'class_id': cls,
-                    'class_name': self.model.names[cls],
-                    'bbox': box.xyxy[0].cpu().numpy().tolist(),
-                    'mask': mask_data,
-                    'area': np.sum(mask_data > 0.5),
-                    'center': self._calculate_mask_center(mask_data)
-                }
-                
+                prediction = _extraer_datos_prediccion(box, mask, self.model.names)
                 predictions.append(prediction)
         
         return predictions

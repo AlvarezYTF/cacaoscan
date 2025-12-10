@@ -1,8 +1,17 @@
+"""
+Módulo de procesamiento de segmentación para granos de cacao.
+
+REFACTORIZADO: Aplicando principios SOLID
+- Funciones auxiliares extraídas para mejorar SRP
+- Mejores docstrings y type hints
+- Separación de responsabilidades mejorada
+"""
 import os
 import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
+from typing import Tuple, Optional, Dict, Any
 from PIL import Image
 import io
 try:
@@ -14,6 +23,8 @@ import cv2
 import numpy as np
 
 from ml.data.transforms import remove_background_ai
+from ..utils.logs import get_ml_logger
+
 try:
     # Opcional: modelo U2Net a través de rembg para recorte de alta calidad
     from rembg import remove as rembg_remove
@@ -21,42 +32,118 @@ try:
 except Exception:
     _HAS_REMBG = False
 
-# Configuración de logs
-logger = logging.getLogger(__name__)
-# Evitar duplicar handlers si ya está configurado
-if not logger.hasHandlers():
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
+logger = get_ml_logger("cacaoscan.ml.segmentation.processor")
 
-# --- INICIO DE CORRECCIÓN ---
-# Definir la excepción personalizada que faltaba
+
 class SegmentationError(Exception):
+    """Excepción personalizada para errores de segmentación."""
     pass
-# --- FIN DE CORRECCIÓN ---
+
+
+def _estimar_color_fondo(rgb: np.ndarray, bg_mask: np.ndarray) -> np.ndarray:
+    """Estima el color de fondo usando la mediana de píxeles de fondo."""
+    bg_pixels = rgb[bg_mask]
+    return np.median(bg_pixels.reshape(-1, 3), axis=0).astype(np.uint8)
+
+
+def _calcular_delta_color(rgb_lab: np.ndarray, bg_lab: np.ndarray) -> np.ndarray:
+    """Calcula la diferencia de color en espacio LAB."""
+    dl = (rgb_lab[:, :, 0] - bg_lab[0]).astype(np.float32)
+    da = (rgb_lab[:, :, 1] - bg_lab[1]).astype(np.float32)
+    db = (rgb_lab[:, :, 2] - bg_lab[2]).astype(np.float32)
+    return cv2.magnitude(dl, cv2.magnitude(da, db))
+
+
+def _calcular_gradiente_imagen(rgb: np.ndarray) -> np.ndarray:
+    """Calcula el gradiente de la imagen para detectar bordes."""
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    gx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+    gy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+    return cv2.magnitude(gx, gy)
+
+
+def _aplicar_limpieza_morfologica(alpha: np.ndarray) -> np.ndarray:
+    """Aplica limpieza morfológica y suavizado al canal alpha."""
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    new_alpha = cv2.morphologyEx(alpha, cv2.MORPH_OPEN, kernel, iterations=1)
+    return cv2.GaussianBlur(new_alpha, (5, 5), 0)
+
+
+def _normalizar_mascara_binaria(mask: np.ndarray) -> np.ndarray:
+    """Normaliza una máscara a formato binario uint8."""
+    if mask.max() <= 1.0 and mask.dtype != np.uint8:
+        return (mask * 255).astype(np.uint8)
+    return np.uint8(mask)
+
+
+def _calcular_area_minima(h: int, w: int, min_area_ratio: float) -> int:
+    """Calcula el área mínima basada en la proporción de la imagen."""
+    return max(16, int(min_area_ratio * h * w))
+
+
+def _obtener_componente_mayor(cnts: list, min_area: int) -> Optional[np.ndarray]:
+    """Obtiene el contorno del componente mayor que cumple el área mínima."""
+    cnts_filtrados = [c for c in cnts if cv2.contourArea(c) >= float(min_area)]
+    if not cnts_filtrados:
+        return None
+    return max(cnts_filtrados, key=cv2.contourArea)
+
+
+def _aplicar_refinamiento_guided(rgb: np.ndarray, alpha: np.ndarray) -> np.ndarray:
+    """Aplica refinamiento guiado usando guidedFilter o bilateralFilter."""
+    if _HAS_XIMGPROC:
+        try:
+            guide = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+            guide = cv2.blur(guide, (3, 3))
+            a32 = (alpha.astype(np.float32) / 255.0)
+            refined = ximgproc.guidedFilter(guide=guide, src=a32, radius=8, eps=1e-3)
+            return (np.clip(refined, 0.0, 1.0) * 255.0).astype(np.uint8)
+        except Exception:
+            pass
+    return cv2.bilateralFilter(alpha, d=0, sigmaColor=35, sigmaSpace=9)
+
+
+def _calcular_padding_recorte(x1: int, x2: int, y1: int, y2: int) -> Tuple[int, int, int, int]:
+    """Calcula el padding para el recorte tight."""
+    pad_x = max(10, int(0.08 * (x2 - x1 + 1)))
+    pad_y = max(10, int(0.08 * (y2 - y1 + 1)))
+    return pad_x, pad_y
+
+
+def _aplicar_padding_coordenadas(x1: int, y1: int, x2: int, y2: int, w: int, h: int, pad_x: int, pad_y: int) -> Tuple[int, int, int, int]:
+    """Aplica padding a las coordenadas del recorte respetando los límites de la imagen."""
+    x1 = max(0, x1 - pad_x)
+    y1 = max(0, y1 - pad_y)
+    x2 = min(w - 1, x2 + pad_x)
+    y2 = min(h - 1, y2 + pad_y)
+    return x1, y1, x2, y2
 
 def _deshadow_alpha(rgb: np.ndarray, alpha: np.ndarray, max_dist: int = 35) -> np.ndarray:
-    """Elimina sombras adyacentes al objeto sin perder borde real."""
-    _, _ = alpha.shape
+    """
+    Elimina sombras adyacentes al objeto sin perder borde real.
+    
+    Args:
+        rgb: Imagen RGB
+        alpha: Canal alpha
+        max_dist: Distancia máxima al borde para considerar sombra
+        
+    Returns:
+        Canal alpha sin sombras
+    """
     bg_mask = alpha == 0
     if not np.any(bg_mask):
         return alpha
 
-    # Estimar color de fondo (mediana para robustez)
-    bg_pixels = rgb[bg_mask]
-    bg_color = np.median(bg_pixels.reshape(-1, 3), axis=0).astype(np.uint8)
+    # Estimar color de fondo
+    bg_color = _estimar_color_fondo(rgb, bg_mask)
 
-    # Convertir a Lab
+    # Convertir a Lab y calcular delta de color
     rgb_lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.int16)
     bg_lab = cv2.cvtColor(np.uint8([[bg_color]]), cv2.COLOR_RGB2LAB)[0, 0].astype(np.int16)
-    dl = (rgb_lab[:, :, 0] - bg_lab[0]).astype(np.float32)
-    da = (rgb_lab[:, :, 1] - bg_lab[1]).astype(np.float32)
-    db = (rgb_lab[:, :, 2] - bg_lab[2]).astype(np.float32)
-    delta = cv2.magnitude(dl, cv2.magnitude(da, db))
+    delta = _calcular_delta_color(rgb_lab, bg_lab)
 
     # Gradiente para evitar comer borde de alto contraste
-    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
-    gx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
-    gy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
-    grad = cv2.magnitude(gx, gy)
+    grad = _calcular_gradiente_imagen(rgb)
 
     # Distancia al fondo para limitar a una franja alrededor del objeto
     dist_to_bg = cv2.distanceTransform((alpha > 0).astype(np.uint8), cv2.DIST_L2, 5)
@@ -72,34 +159,36 @@ def _deshadow_alpha(rgb: np.ndarray, alpha: np.ndarray, max_dist: int = 35) -> n
     new_alpha[shadow_like] = 0
 
     # Limpieza morfológica ligera + feather
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    new_alpha = cv2.morphologyEx(new_alpha, cv2.MORPH_OPEN, kernel, iterations=1)
-    new_alpha = cv2.GaussianBlur(new_alpha, (5, 5), 0)
-    return new_alpha
+    return _aplicar_limpieza_morfologica(new_alpha)
 
 
 def _clean_components(mask: np.ndarray, min_area_ratio: float = 0.002) -> np.ndarray:
-    """Conserva el componente mayor, elimina ruido y rellena huecos."""
-    h, w = mask.shape
-    min_area = max(16, int(min_area_ratio * h * w))
+    """
+    Conserva el componente mayor, elimina ruido y rellena huecos.
     
-    # Asegurar que la máscara sea binaria (0 o 255) y de tipo uint8
-    if mask.max() <= 1.0 and mask.dtype != np.uint8:
-        mask_bin = (mask * 255).astype(np.uint8)
-    else:
-        mask_bin = np.uint8(mask)
+    Args:
+        mask: Máscara binaria
+        min_area_ratio: Proporción mínima del área de la imagen para considerar componente
+        
+    Returns:
+        Máscara limpia con solo el componente mayor
+    """
+    h, w = mask.shape
+    min_area = _calcular_area_minima(h, w, min_area_ratio)
+    
+    # Normalizar máscara a binaria uint8
+    mask_bin = _normalizar_mascara_binaria(mask)
 
     cnts, _ = cv2.findContours(mask_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     out = np.zeros_like(mask_bin)
     if not cnts:
         return mask
 
-    # Filtrar por área mínima usando contourArea correctamente
-    cnts = [c for c in cnts if cv2.contourArea(c) >= float(min_area)]
-    if not cnts:
+    # Obtener componente mayor
+    largest = _obtener_componente_mayor(cnts, min_area)
+    if largest is None:
         return mask_bin
 
-    largest = max(cnts, key=cv2.contourArea)
     cv2.drawContours(out, [largest], -1, 255, thickness=cv2.FILLED)
     
     # Rellenar huecos internos
@@ -109,21 +198,32 @@ def _clean_components(mask: np.ndarray, min_area_ratio: float = 0.002) -> np.nda
 
 
 def _guided_refine(rgb: np.ndarray, alpha: np.ndarray) -> np.ndarray:
-    """Refina alpha guiado por bordes de la imagen para un recorte más nítido."""
-    if _HAS_XIMGPROC:
-        try:
-            guide = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
-            guide = cv2.blur(guide, (3, 3))
-            a32 = (alpha.astype(np.float32) / 255.0)
-            refined = ximgproc.guidedFilter(guide=guide, src=a32, radius=8, eps=1e-3)
-            return (np.clip(refined, 0.0, 1.0) * 255.0).astype(np.uint8)
-        except Exception:
-             pass
-    return cv2.bilateralFilter(alpha, d=0, sigmaColor=35, sigmaSpace=9)
+    """
+    Refina alpha guiado por bordes de la imagen para un recorte más nítido.
+    
+    Args:
+        rgb: Imagen RGB
+        alpha: Canal alpha a refinar
+        
+    Returns:
+        Canal alpha refinado
+    """
+    return _aplicar_refinamiento_guided(rgb, alpha)
 
 
 def _remove_background_opencv(image_path: str) -> Image.Image:
-    """Elimina fondo con OpenCV con mejores resultados y devuelve un PNG RGBA listo para recortar."""
+    """
+    Elimina fondo con OpenCV con mejores resultados y devuelve un PNG RGBA listo para recortar.
+    
+    Args:
+        image_path: Ruta a la imagen original
+        
+    Returns:
+        Imagen PIL RGBA con fondo transparente
+        
+    Raises:
+        FileNotFoundError: Si no se puede leer la imagen
+    """
     bgr = cv2.imread(image_path)
     if bgr is None:
         raise FileNotFoundError(f"No se pudo leer la imagen: {image_path}")
@@ -188,12 +288,8 @@ def _remove_background_opencv(image_path: str) -> Image.Image:
 
     x1, x2 = xs.min(), xs.max()
     y1, y2 = ys.min(), ys.max()
-    pad_x = max(10, int(0.08 * (x2 - x1 + 1)))
-    pad_y = max(10, int(0.08 * (y2 - y1 + 1)))
-    x1 = max(0, x1 - pad_x)
-    y1 = max(0, y1 - pad_y)
-    x2 = min(w - 1, x2 + pad_x)
-    y2 = min(h - 1, y2 + pad_y)
+    pad_x, pad_y = _calcular_padding_recorte(x1, x2, y1, y2)
+    x1, y1, x2, y2 = _aplicar_padding_coordenadas(x1, y1, x2, y2, w, h, pad_x, pad_y)
 
     crop_rgb = rgb[y1:y2 + 1, x1:x2 + 1]
     crop_a = alpha[y1:y2 + 1, x1:x2 + 1]
@@ -204,7 +300,18 @@ def _remove_background_opencv(image_path: str) -> Image.Image:
 
 
 def _remove_background_rembg(image_path: str) -> Image.Image:
-    """Usa rembg (U2Net) para un recorte de alta calidad (si está disponible)."""
+    """
+    Usa rembg (U2Net) para un recorte de alta calidad (si está disponible).
+    
+    Args:
+        image_path: Ruta a la imagen original
+        
+    Returns:
+        Imagen PIL RGBA con fondo transparente
+        
+    Raises:
+        RuntimeError: Si rembg no está disponible
+    """
     if not _HAS_REMBG:
         raise RuntimeError("rembg no disponible")
     with open(image_path, 'rb') as f:
@@ -214,6 +321,12 @@ def _remove_background_rembg(image_path: str) -> Image.Image:
 
 
 def _processed_dir_for_today() -> Path:
+    """
+    Obtiene el directorio de procesados para el día actual.
+    
+    Returns:
+        Path al directorio YYYY/MM/DD
+    """
     today = datetime.now()
     output_dir = Path("media") / "cacao_images" / "processed" / f"{today.year}" / f"{today.month:02d}" / f"{today.day:02d}"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -221,7 +334,16 @@ def _processed_dir_for_today() -> Path:
 
 
 def save_processed_png(pil_png: Image.Image, out_name: str) -> Path:
-    """Guarda un PNG RGBA en media/cacao_images/processed/YYYY/MM/DD y retorna su Path."""
+    """
+    Guarda un PNG RGBA en media/cacao_images/processed/YYYY/MM/DD y retorna su Path.
+    
+    Args:
+        pil_png: Imagen PIL RGBA
+        out_name: Nombre del archivo de salida
+        
+    Returns:
+        Path al archivo guardado
+    """
     output_dir = _processed_dir_for_today()
     out_path = output_dir / out_name
     pil_png.convert("RGBA").save(out_path)
@@ -229,7 +351,19 @@ def save_processed_png(pil_png: Image.Image, out_name: str) -> Path:
 
 
 def _process_with_opencv(image_path: str, filename: str) -> Image.Image:
-    """Process image using OpenCV directly."""
+    """
+    Procesa imagen usando OpenCV directamente.
+    
+    Args:
+        image_path: Ruta a la imagen
+        filename: Nombre del archivo para logging
+        
+    Returns:
+        Imagen PIL RGBA procesada
+        
+    Raises:
+        FileNotFoundError: Si no se puede procesar la imagen
+    """
     logger.debug("Segmentación solicitada con backend OpenCV (modo directo)")
     try:
         return _remove_background_opencv(image_path)
@@ -239,7 +373,19 @@ def _process_with_opencv(image_path: str, filename: str) -> Image.Image:
 
 
 def _process_with_priority_chain(image_path: str, filename: str) -> Image.Image:
-    """Process image using priority chain: AI -> rembg -> OpenCV."""
+    """
+    Procesa imagen usando cadena de prioridad: AI -> rembg -> OpenCV.
+    
+    Args:
+        image_path: Ruta a la imagen
+        filename: Nombre del archivo para logging
+        
+    Returns:
+        Imagen PIL RGBA procesada
+        
+    Raises:
+        FileNotFoundError: Si todos los métodos fallan
+    """
     try:
         logger.debug("Prioridad 1: Intentando U-Net (remove_background_ai)...")
         return remove_background_ai(image_path)
@@ -249,7 +395,16 @@ def _process_with_priority_chain(image_path: str, filename: str) -> Image.Image:
 
 
 def _try_rembg_then_opencv(image_path: str, filename: str) -> Image.Image:
-    """Try rembg, fallback to OpenCV if it fails."""
+    """
+    Intenta rembg, fallback a OpenCV si falla.
+    
+    Args:
+        image_path: Ruta a la imagen
+        filename: Nombre del archivo para logging
+        
+    Returns:
+        Imagen PIL RGBA procesada
+    """
     try:
         if _HAS_REMBG:
             logger.debug("Prioridad 2: Intentando rembg...")
@@ -261,7 +416,19 @@ def _try_rembg_then_opencv(image_path: str, filename: str) -> Image.Image:
 
 
 def _try_opencv_fallback(image_path: str, filename: str) -> Image.Image:
-    """Try OpenCV as final fallback."""
+    """
+    Intenta OpenCV como último recurso.
+    
+    Args:
+        image_path: Ruta a la imagen
+        filename: Nombre del archivo para logging
+        
+    Returns:
+        Imagen PIL RGBA procesada
+        
+    Raises:
+        FileNotFoundError: Si OpenCV también falla
+    """
     try:
         logger.debug("Prioridad 3: Intentando OpenCV...")
         return _remove_background_opencv(image_path)
@@ -302,10 +469,15 @@ def segment_and_crop_cacao_bean(image_path: str, method: str = "ai") -> str:
     return str(out_path)
 
 
-def convert_bmp_to_jpg(bmp_path: Path):
+def convert_bmp_to_jpg(bmp_path: Path) -> Tuple[Optional[Image.Image], Dict[str, Any]]:
     """
     Convierte una imagen BMP a JPG (en memoria).
-    (Función movida desde commands/convert_cacao_images.py para ser reutilizable)
+    
+    Args:
+        bmp_path: Ruta al archivo BMP
+        
+    Returns:
+        Tupla de (imagen JPG o None, diccionario con resultado)
     """
     try:
         img = Image.open(bmp_path)

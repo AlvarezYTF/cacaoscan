@@ -1,6 +1,11 @@
 """
 Módulo de segmentación para CacaoScan.
 
+REFACTORIZADO: Aplicando principios SOLID
+- Funciones auxiliares extraídas para mejorar SRP
+- Mejores docstrings y type hints
+- Separación de responsabilidades mejorada
+
 Incluye:
 - Inferencia con YOLOv8-seg
 - Procesamiento de recortes
@@ -14,6 +19,7 @@ from .train_yolo import (
     create_yolo_trainer, 
     train_cacao_yolo_model
 )
+from .processor import segment_and_crop_cacao_bean, convert_bmp_to_jpg
 
 __all__ = [
     'YOLOSegmentationInference',
@@ -22,7 +28,9 @@ __all__ = [
     'create_cacao_cropper',
     'YOLOTrainingManager',
     'create_yolo_trainer',
-    'train_cacao_yolo_model'
+    'train_cacao_yolo_model',
+    'segment_and_crop_cacao_bean',
+    'convert_bmp_to_jpg'
 ]
 
 

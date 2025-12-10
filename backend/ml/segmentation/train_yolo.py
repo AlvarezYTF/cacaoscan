@@ -1,5 +1,10 @@
 """
 Entrenamiento de YOLOv8-seg personalizado para segmentación de granos de cacao.
+
+REFACTORIZADO: Aplicando principios SOLID
+- Funciones auxiliares extraídas para mejorar SRP
+- Mejores docstrings y type hints
+- Separación de responsabilidades mejorada
 """
 import os
 import yaml
@@ -31,6 +36,123 @@ from ..data.dataset_loader import CacaoDatasetLoader
 
 
 logger = get_ml_logger("cacaoscan.ml.segmentation")
+
+
+def _normalizar_mascara_yolo(mask: np.ndarray, target_height: int, target_width: int) -> np.ndarray:
+    """
+    Normaliza y redimensiona máscara a dimensiones objetivo.
+    
+    Args:
+        mask: Máscara original
+        target_height: Altura objetivo
+        target_width: Ancho objetivo
+        
+    Returns:
+        Máscara normalizada y redimensionada
+    """
+    mask_height, mask_width = mask.shape[:2]
+    
+    if mask_height != target_height or mask_width != target_width:
+        mask = cv2.resize(mask, (target_width, target_height), interpolation=cv2.INTER_LINEAR)
+    
+    if mask.dtype != np.uint8:
+        if mask.max() <= 1.0:
+            mask = (mask * 255).astype(np.uint8)
+        else:
+            mask = mask.astype(np.uint8)
+    
+    return mask
+
+
+def _calcular_bbox_yolo_desde_mascara(mask: np.ndarray, width: int, height: int) -> Optional[List[float]]:
+    """
+    Calcula bounding box en formato YOLO desde máscara.
+    
+    Args:
+        mask: Máscara binaria
+        width: Ancho de la imagen
+        height: Altura de la imagen
+        
+    Returns:
+        Bounding box en formato YOLO [x_center, y_center, width, height] normalizado o None
+    """
+    coords = np.nonzero(mask > 128)
+    if len(coords[0]) == 0:
+        return None
+    
+    y_min, y_max = int(coords[0].min()), int(coords[0].max())
+    x_min, x_max = int(coords[1].min()), int(coords[1].max())
+    
+    x_center = ((x_min + x_max) / 2) / width
+    y_center = ((y_min + y_max) / 2) / height
+    bbox_w = (x_max - x_min) / width
+    bbox_h = (y_max - y_min) / height
+    
+    return [x_center, y_center, bbox_w, bbox_h]
+
+
+def _convertir_mascara_a_poligono_yolo(mask: np.ndarray, width: int, height: int) -> Optional[List[float]]:
+    """
+    Convierte máscara binaria a polígono en formato YOLO para segmentación.
+    
+    Args:
+        mask: Máscara binaria (uint8, valores 0-255)
+        width: Ancho de la imagen
+        height: Altura de la imagen
+        
+    Returns:
+        Lista de puntos normalizados [x1, y1, x2, y2, ...] o None si no hay contorno
+    """
+    # Asegurar que la máscara es binaria
+    if mask.dtype != np.uint8:
+        mask_binary = (mask > 128).astype(np.uint8) * 255
+    else:
+        mask_binary = (mask > 128).astype(np.uint8) * 255
+    
+    # Encontrar contornos
+    contours, _ = cv2.findContours(mask_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    if len(contours) == 0:
+        return None
+    
+    # Usar el contorno más grande
+    largest_contour = max(contours, key=cv2.contourArea)
+    
+    # Simplificar el contorno si tiene muchos puntos (reducir complejidad)
+    epsilon = 0.001 * cv2.arcLength(largest_contour, True)
+    approx = cv2.approxPolyDP(largest_contour, epsilon, True)
+    
+    # Aplanar y normalizar puntos
+    polygon_points: List[float] = []
+    for point in approx:
+        x = float(point[0][0]) / width
+        y = float(point[0][1]) / height
+        # Asegurar que los valores están en el rango [0, 1]
+        x = max(0.0, min(1.0, x))
+        y = max(0.0, min(1.0, y))
+        polygon_points.extend([x, y])
+    
+    return polygon_points if len(polygon_points) >= 6 else None
+
+
+def _crear_diccionario_anotacion(bbox: List[float], mask: np.ndarray, confidence: float) -> Dict[str, Any]:
+    """
+    Crea diccionario de anotación en formato estándar.
+    
+    Args:
+        bbox: Bounding box en formato YOLO
+        mask: Máscara binaria
+        confidence: Confianza de la detección
+        
+    Returns:
+        Diccionario con anotación
+    """
+    return {
+        'class_id': 0,  # cacao_grain
+        'bbox': bbox,
+        'mask': mask,
+        'confidence': confidence
+    }
 
 # Dataset file constants
 DATASET_YAML_FILENAME = "dataset.yaml"
@@ -156,44 +278,46 @@ class YOLOTrainingManager:
         return annotations
     
     def _normalize_mask(self, mask: np.ndarray, target_height: int, target_width: int) -> np.ndarray:
-        """Normalizes and resizes mask to target dimensions."""
-        mask_height, mask_width = mask.shape[:2]
+        """
+        Normaliza y redimensiona máscara a dimensiones objetivo.
         
-        if mask_height != target_height or mask_width != target_width:
-            mask = cv2.resize(mask, (target_width, target_height), interpolation=cv2.INTER_LINEAR)
-        
-        if mask.dtype != np.uint8:
-            if mask.max() <= 1.0:
-                mask = (mask * 255).astype(np.uint8)
-            else:
-                mask = mask.astype(np.uint8)
-        
-        return mask
+        Args:
+            mask: Máscara original
+            target_height: Altura objetivo
+            target_width: Ancho objetivo
+            
+        Returns:
+            Máscara normalizada y redimensionada
+        """
+        return _normalizar_mascara_yolo(mask, target_height, target_width)
     
     def _calculate_yolo_bbox_from_mask(self, mask: np.ndarray, width: int, height: int) -> Optional[List[float]]:
-        """Calculates YOLO format bbox from mask."""
-        coords = np.nonzero(mask > 128)
-        if len(coords[0]) == 0:
-            return None
+        """
+        Calcula bounding box en formato YOLO desde máscara.
         
-        y_min, y_max = int(coords[0].min()), int(coords[0].max())
-        x_min, x_max = int(coords[1].min()), int(coords[1].max())
-        
-        x_center = ((x_min + x_max) / 2) / width
-        y_center = ((y_min + y_max) / 2) / height
-        bbox_w = (x_max - x_min) / width
-        bbox_h = (y_max - y_min) / height
-        
-        return [x_center, y_center, bbox_w, bbox_h]
+        Args:
+            mask: Máscara binaria
+            width: Ancho de la imagen
+            height: Altura de la imagen
+            
+        Returns:
+            Bounding box en formato YOLO normalizado o None
+        """
+        return _calcular_bbox_yolo_desde_mascara(mask, width, height)
     
-    def _create_annotation_dict(self, bbox: List[float], mask: np.ndarray, confidence: float) -> Dict:
-        """Creates annotation dictionary in standard format."""
-        return {
-            'class_id': 0,  # cacao_grain
-            'bbox': bbox,
-            'mask': mask,
-            'confidence': confidence
-        }
+    def _create_annotation_dict(self, bbox: List[float], mask: np.ndarray, confidence: float) -> Dict[str, Any]:
+        """
+        Crea diccionario de anotación en formato estándar.
+        
+        Args:
+            bbox: Bounding box en formato YOLO
+            mask: Máscara binaria
+            confidence: Confianza de la detección
+            
+        Returns:
+            Diccionario con anotación
+        """
+        return _crear_diccionario_anotacion(bbox, mask, confidence)
     
     def _generate_annotation_from_yolo(self, image_path: Path) -> Optional[List[Dict]]:
         """Generates annotation using YOLO base model."""
@@ -388,12 +512,14 @@ class YOLOTrainingManager:
                     if image is None:
                         continue
                     
+                    height, width = image.shape[:2]
+                    
                     target_image_path = images_dir / f"{image_id}.jpg"
                     cv2.imwrite(str(target_image_path), image)
                     
                     # Crear archivo de etiquetas
                     label_path = labels_dir / f"{image_id}.txt"
-                    self._create_yolo_label_file(label_path, all_annotations[image_id])
+                    self._create_yolo_label_file(label_path, all_annotations[image_id], width, height)
                     
                 except Exception as e:
                     logger.error(f"Error procesando imagen {image_id}: {e}")
@@ -404,21 +530,47 @@ class YOLOTrainingManager:
         logger.info("Dataset YOLO creado exitosamente")
         return splits
     
-    def _create_yolo_label_file(self, label_path: Path, annotations: List[Dict]) -> None:
+    def _create_yolo_label_file(self, label_path: Path, annotations: List[Dict], width: int, height: int) -> None:
         """
-        Crea archivo de etiquetas en formato YOLO.
+        Crea archivo de etiquetas en formato YOLO para segmentación.
         
         Args:
             label_path: Ruta al archivo de etiquetas
-            annotations: Lista de anotaciones
+            annotations: Lista de anotaciones (debe incluir 'mask')
+            width: Ancho de la imagen
+            height: Altura de la imagen
         """
         with open(label_path, 'w') as f:
             for annotation in annotations:
                 class_id = annotation['class_id']
-                bbox = annotation['bbox']
+                mask = annotation.get('mask')
                 
-                # Formato YOLO: class_id x_center y_center width height
-                line = f"{class_id} {bbox[0]:.6f} {bbox[1]:.6f} {bbox[2]:.6f} {bbox[3]:.6f}\n"
+                if mask is None:
+                    # Fallback a bbox si no hay máscara
+                    bbox = annotation['bbox']
+                    line = f"{class_id} {bbox[0]:.6f} {bbox[1]:.6f} {bbox[2]:.6f} {bbox[3]:.6f}\n"
+                    f.write(line)
+                    continue
+                
+                # Asegurar que la máscara tiene las dimensiones correctas
+                mask_height, mask_width = mask.shape[:2]
+                if mask_height != height or mask_width != width:
+                    mask = cv2.resize(mask, (width, height), interpolation=cv2.INTER_LINEAR)
+                
+                # Convertir máscara a polígono
+                polygon = _convertir_mascara_a_poligono_yolo(mask, width, height)
+                
+                if polygon is None or len(polygon) < 6:  # Mínimo 3 puntos (6 valores)
+                    # Fallback a bbox si no se puede generar polígono
+                    bbox = annotation['bbox']
+                    line = f"{class_id} {bbox[0]:.6f} {bbox[1]:.6f} {bbox[2]:.6f} {bbox[3]:.6f}\n"
+                    f.write(line)
+                    logger.warning(f"No se pudo generar polígono para anotación, usando bbox como fallback")
+                    continue
+                
+                # Formato YOLO segmentación: class_id x1 y1 x2 y2 ... xn yn
+                polygon_str = ' '.join(f"{coord:.6f}" for coord in polygon)
+                line = f"{class_id} {polygon_str}\n"
                 f.write(line)
     
     def _create_dataset_yaml(self) -> None:
