@@ -6,10 +6,14 @@ Implementa cálculo robusto de R² y otras métricas con:
 - Manejo de NaN/Inf
 - Desnormalización correcta
 - Logs detallados por componente
+
+Consolidado desde ml/utils/metrics.py y ml/regression/metrics.py
+para eliminar duplicación y seguir principios SOLID (SRP).
 """
 import numpy as np
 from typing import Dict, Tuple, Optional, List
 import logging
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
 from ..utils.logs import get_ml_logger
 
@@ -347,4 +351,83 @@ def validate_predictions_targets_alignment(
         )
     
     return True
+
+
+# ============================================================================
+# Funciones básicas de compatibilidad (desde ml/utils/metrics.py)
+# ============================================================================
+
+def calculate_metrics(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    target_name: str = ""
+) -> Dict[str, float]:
+    """
+    Calculate regression metrics (basic version using sklearn).
+    
+    This is a simpler version for compatibility. For robust metrics,
+    use robust_r2_score() and calculate_metrics_per_target().
+    
+    Args:
+        y_true: True values
+        y_pred: Predicted values
+        target_name: Name of target (for logging)
+        
+    Returns:
+        Dictionary with metrics (r2, mae, rmse)
+    """
+    # Flatten arrays
+    y_true = np.array(y_true).flatten()
+    y_pred = np.array(y_pred).flatten()
+    
+    # Remove any NaN or Inf values
+    valid_mask = np.isfinite(y_true) & np.isfinite(y_pred)
+    if not np.all(valid_mask):
+        logger.warning(f"Found {np.sum(~valid_mask)} invalid values for {target_name}")
+        y_true = y_true[valid_mask]
+        y_pred = y_pred[valid_mask]
+    
+    if len(y_true) == 0:
+        logger.error(f"No valid values for {target_name}")
+        return {
+            "r2": 0.0,
+            "mae": 0.0,
+            "rmse": 0.0
+        }
+    
+    # Calculate metrics using sklearn
+    r2 = float(r2_score(y_true, y_pred))
+    mae = float(mean_absolute_error(y_true, y_pred))
+    rmse = float(np.sqrt(mean_squared_error(y_true, y_pred)))
+    
+    return {
+        "r2": r2,
+        "mae": mae,
+        "rmse": rmse
+    }
+
+
+def print_metrics_summary(
+    metrics: Dict[str, Dict[str, float]],
+    epoch: Optional[int] = None
+) -> None:
+    """
+    Print metrics summary to logger.
+    
+    Args:
+        metrics: Dictionary with metrics per target
+        epoch: Current epoch (optional)
+    """
+    if epoch is not None:
+        logger.info(f"=== Metrics Epoch {epoch} ===")
+    else:
+        logger.info("=== Metrics Summary ===")
+    
+    for target, target_metrics in metrics.items():
+        logger.info(
+            f"{target.upper()}: "
+            f"R²={target_metrics.get('r2', 0.0):.4f}, "
+            f"MAE={target_metrics.get('mae', 0.0):.4f}, "
+            f"RMSE={target_metrics.get('rmse', 0.0):.4f}"
+        )
 

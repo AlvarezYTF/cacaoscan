@@ -781,33 +781,36 @@ def create_model(
     """
     Función de conveniencia para crear modelos.
     
+    Esta función ahora delega la creación al Factory Pattern para mejorar
+    la organización del código y seguir principios SOLID.
+    
     Args:
         model_type: Tipo de modelo ("resnet18", "convnext_tiny", o "hybrid")
         num_outputs: Número de salidas (ignorado si multi_head=True o hybrid=True)
         pretrained: Si usar pesos pre-entrenados
         dropout_rate: Tasa de dropout
         multi_head: Si crear modelo multi-head
-        hybrid: Si crear modelo hbrido (fusiona ResNet18 + ConvNeXt + Pxeles)
-        use_pixel_features: Si usar features de pxeles (solo si hybrid=True)
+        hybrid: Si crear modelo híbrido (fusiona ResNet18 + ConvNeXt + Píxeles)
+        use_pixel_features: Si usar features de píxeles (solo si hybrid=True)
+        pixel_feature_dim: Dimensión de features de píxeles
+        use_optimized: Si intentar usar modelos optimizados primero
         
     Returns:
         Modelo creado
     """
-    if hybrid:
-        return _create_hybrid_model(pretrained, dropout_rate, pixel_feature_dim, use_pixel_features)
+    # Use factory pattern for model creation
+    from .factories.model_factory import create_model as factory_create_model
     
-    if multi_head:
-        return _create_multi_head_model(model_type, pretrained, dropout_rate)
-    
-    logger.info(f"Creando modelo Individual (Backbone: {model_type}, Outputs: {num_outputs})")
-    
-    if use_optimized:
-        optimized_model = _create_optimized_model(model_type, num_outputs, pretrained, dropout_rate)
-        if optimized_model is not None:
-            return optimized_model
-    
-    return _create_standard_model(
-        model_type, num_outputs, pretrained, dropout_rate, pixel_feature_dim, use_pixel_features
+    return factory_create_model(
+        model_type=model_type,
+        num_outputs=num_outputs,
+        pretrained=pretrained,
+        dropout_rate=dropout_rate,
+        multi_head=multi_head,
+        hybrid=hybrid,
+        use_pixel_features=use_pixel_features,
+        pixel_feature_dim=pixel_feature_dim,
+        use_optimized=use_optimized
     )
 
 

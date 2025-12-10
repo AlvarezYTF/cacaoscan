@@ -22,6 +22,7 @@ from ..utils.logs import get_ml_logger
 from ..utils.paths import get_regressors_artifacts_dir, ensure_dir_exists
 from .models import create_model, TARGETS, TARGET_NAMES, get_model_info
 from .scalers import CacaoScalers, save_scalers
+from .base_trainer import BaseTrainer
 
 # Importar Django para usar ModelMetrics
 import os
@@ -57,8 +58,13 @@ except Exception as e:
 logger = get_ml_logger("cacaoscan.ml.regression")
 
 
-class RegressionTrainer:
-    """Entrenador para modelos de regresión de cacao."""
+class RegressionTrainer(BaseTrainer):
+    """
+    Entrenador para modelos de regresión individuales de cacao.
+    
+    Hereda de BaseTrainer y añade funcionalidad específica para entrenar
+    modelos que predicen un solo target (alto, ancho, grosor, peso).
+    """
     
     def __init__(
         self,
@@ -72,90 +78,33 @@ class RegressionTrainer:
     ):
         """
         Inicializa el entrenador.
+        
+        Args:
+            target: Target específico a entrenar ('alto', 'ancho', 'grosor', 'peso')
         """
-        self.model = model.to(device)
-        self.train_loader = train_loader
-        self.val_loader = val_loader
-        self.scalers = scalers
-        self.target = target
-        self.device = device
-        self.config = config
-        
-        # Configurar optimizador mejorado
-        learning_rate = config.get('learning_rate', 1e-4)
-        # Validar learning rate
-        if learning_rate > 5e-4:
-            logger.warning(f"Learning rate {learning_rate} puede ser muy alto. Reduciendo a 5e-4")
-            learning_rate = 5e-4
-        
-        self.optimizer = optim.AdamW(
-            self.model.parameters(),
-            lr=learning_rate,
-            weight_decay=config.get('weight_decay', 1e-4),
-            betas=(0.9, 0.999),
-            eps=1e-8
+        # Initialize base trainer (sets up optimizer, scheduler, criterion)
+        super().__init__(
+            model=model,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            scalers=scalers,
+            device=device,
+            config=config
         )
         
-        # Configurar scheduler mejorado
-        scheduler_type = config.get('scheduler_type', 'reduce_on_plateau')
-        epochs = config.get('epochs', 50)
-        
-        if scheduler_type == 'reduce_on_plateau':
-            # ReduceLROnPlateau es más robusto para regresión
-            self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer,
-                mode='min',
-                factor=0.5,
-                patience=5,
-                verbose=True,
-                min_lr=config.get('min_lr', 1e-7)
-            )
-        elif scheduler_type == 'onecycle':
-            self.scheduler = optim.lr_scheduler.OneCycleLR(
-                self.optimizer,
-                max_lr=learning_rate * 10,
-                epochs=epochs,
-                steps_per_epoch=len(train_loader),
-                pct_start=0.3
-            )
-        elif scheduler_type == 'cosine_warmup':
-            self.scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
-                self.optimizer,
-                T_0=max(1, epochs // 4),
-                T_mult=2,
-                eta_min=config.get('min_lr', 1e-7)
-            )
-        else: # 'cosine'
-            self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
-                self.optimizer,
-                T_max=epochs,
-                eta_min=config.get('min_lr', 1e-6)
-            )
-        
-        # Criterio de pérdida mejorado: SmoothL1Loss por defecto (más robusta)
-        loss_type = config.get('loss_type', 'smooth_l1')
-        if loss_type == 'huber':
-            self.criterion = nn.HuberLoss(delta=1.0)
-        elif loss_type == 'mse':
-            self.criterion = nn.MSELoss()
-        else: # 'smooth_l1' (default)
-            self.criterion = nn.SmoothL1Loss()
-        
-        logger.info(f"Optimizador: AdamW (lr={learning_rate:.2e}), Loss: {loss_type}, Scheduler: {scheduler_type}")
-        
-        # Gradient clipping
+        # Specific to single-target trainer
+        self.target = target
         self.max_grad_norm = config.get('max_grad_norm', 1.0)
-        
-        # Early stopping
         self.early_stopping_patience = config.get('early_stopping_patience', 10)
-        self.best_val_loss = float('inf')
-        self.patience_counter = 0
-        self.best_model_state = None
         
-        # Historial
+        # Initialize history with single-target structure
         self.history = {
-            'train_loss': [], 'val_loss': [], 'val_mae': [],
-            'val_rmse': [], 'val_r2': [], 'learning_rate': []
+            'train_loss': [],
+            'val_loss': [],
+            'val_mae': [],
+            'val_rmse': [],
+            'val_r2': [],
+            'learning_rate': []
         }
         
         logger.info(f"Entrenador (individual) inicializado para target: {target}")
@@ -300,16 +249,8 @@ class RegressionTrainer:
             train_loss = self.train_epoch()
             val_loss, val_mae, val_rmse, val_r2 = self.validate_epoch()
             
-            # Actualizar scheduler (diferente para ReduceLROnPlateau y OneCycleLR)
-            if isinstance(self.scheduler, optim.lr_scheduler.ReduceLROnPlateau):
-                self.scheduler.step(val_loss)
-                current_lr = self.optimizer.param_groups[0]['lr']
-            elif isinstance(self.scheduler, optim.lr_scheduler.OneCycleLR):
-                # OneCycleLR se actualiza en cada step del optimizador
-                current_lr = self.optimizer.param_groups[0]['lr']
-            else:
-                self.scheduler.step()
-                current_lr = self.scheduler.get_last_lr()[0] if hasattr(self.scheduler, 'get_last_lr') else self.optimizer.param_groups[0]['lr']
+            # Update scheduler using base class method
+            current_lr = self._update_scheduler(val_loss)
             
             self.history['train_loss'].append(train_loss)
             self.history['val_loss'].append(val_loss)
@@ -327,16 +268,11 @@ class RegressionTrainer:
                 f"Time: {epoch_time:.2f}s"
             )
             
-            # Early stopping
+            # Early stopping using base class method
             improvement_threshold = self.config.get('improvement_threshold', 1e-4)
-            if val_loss < self.best_val_loss - improvement_threshold:
-                self.best_val_loss = val_loss
-                self.patience_counter = 0
-                self.best_model_state = self.model.state_dict().copy()
-            else:
-                self.patience_counter += 1
+            should_stop, is_best = self._check_early_stopping(val_loss, improvement_threshold)
             
-            if self.patience_counter >= self.early_stopping_patience:
+            if should_stop:
                 logger.info(f"Early stopping en época {epoch+1}")
                 break
         
@@ -422,31 +358,15 @@ class RegressionTrainer:
 
     def save_model(self, file_path: Path) -> None:
         """Guarda el modelo entrenado."""
-        try:
-            ensure_dir_exists(file_path.parent)
-            
-            model_info = {
-                'target': self.target,
-                'model_type': self.config.get('model_type', type(self.model).__name__),
-                'config': self.config,
-                'best_val_loss': self.best_val_loss,
-                'training_history': self.history,
-                'timestamp': datetime.now().isoformat()
-            }
-            
-            torch.save({
-                'model_state_dict': self.model.state_dict(),
-                'model_info': model_info,
-            }, file_path)
-            
-            if file_path.exists() and file_path.stat().st_size > 0:
-                logger.info(f"[OK] Modelo guardado exitosamente en {file_path}")
-            else:
-                raise IOError(f"No se pudo guardar el modelo en {file_path}")
-                
-        except Exception as e:
-            logger.error(f"[ERROR] Error guardando modelo para {self.target}: {e}")
-            raise
+        from datetime import datetime
+        
+        model_info = {
+            'target': self.target,
+            'model_type': self.config.get('model_type', type(self.model).__name__),
+        }
+        
+        # Use base class save method
+        self._save_model(file_path, model_info)
 
 
 def train_single_model(

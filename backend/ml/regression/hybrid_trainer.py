@@ -15,9 +15,9 @@ from scipy.stats import pearsonr
 
 from ..utils.logs import get_ml_logger
 from ..utils.paths import get_regressors_artifacts_dir
-from ..utils.metrics import calculate_metrics_per_target, print_metrics_summary
 from ..utils.losses import UncertaintyWeightedLoss
 from ..utils.early_stopping import IntelligentEarlyStopping
+from .metrics import calculate_metrics_per_target, print_metrics_summary
 
 logger = get_ml_logger("cacaoscan.ml.regression.hybrid_trainer")
 

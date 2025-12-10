@@ -23,6 +23,23 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _generar_lambda_mixup(alpha: float) -> float:
+    """Genera lambda para MixUp usando distribución Beta."""
+    return float(_Beta(alpha, alpha).sample().item())  # NOSONAR
+
+
+def _aplicar_mezcla_mixup(
+    images: torch.Tensor,
+    targets: torch.Tensor,
+    lam: float,
+    index: torch.Tensor
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Aplica la mezcla de MixUp a imágenes y targets."""
+    mixed_images = lam * images + (1 - lam) * images[index]
+    mixed_targets = lam * targets + (1 - lam) * targets[index]
+    return mixed_images, mixed_targets
+
+
 class MixUp:
     """Implementación de MixUp para regresión."""
     
@@ -53,18 +70,41 @@ class MixUp:
             return images, targets
 
         batch_size = images.size(0)
-
-        # Generar lambda de distribución Beta usando torch.distributions
-        lam = float(_Beta(self.alpha, self.alpha).sample().item())  # NOSONAR
-
-        # Crear índice aleatorio para mezclar (torch RNG)
+        lam = _generar_lambda_mixup(self.alpha)
         index = torch.randperm(batch_size).to(images.device)  # NOSONAR
         
-        # Mezclar imágenes y targets
-        mixed_images = lam * images + (1 - lam) * images[index]
-        mixed_targets = lam * targets + (1 - lam) * targets[index]
-        
-        return mixed_images, mixed_targets
+        return _aplicar_mezcla_mixup(images, targets, lam, index)
+
+
+def _calcular_region_corte(lam: float, h: int, w: int) -> Tuple[int, int, int, int]:
+    """Calcula la región de corte para CutMix."""
+    cut_rat = math.sqrt(max(0.0, 1.0 - lam))
+    cut_w = int(w * cut_rat)
+    cut_h = int(h * cut_rat)
+    
+    cx = int(torch.randint(0, w, (1,)).item())  # NOSONAR
+    cy = int(torch.randint(0, h, (1,)).item())  # NOSONAR
+    
+    bbx1 = int(np.clip(cx - cut_w // 2, 0, w))
+    bby1 = int(np.clip(cy - cut_h // 2, 0, h))
+    bbx2 = int(np.clip(cx + cut_w // 2, 0, w))
+    bby2 = int(np.clip(cy + cut_h // 2, 0, h))
+    
+    return bbx1, bby1, bbx2, bby2
+
+
+def _aplicar_corte_imagen(
+    images: torch.Tensor,
+    index: torch.Tensor,
+    bbx1: int,
+    bby1: int,
+    bbx2: int,
+    bby2: int
+) -> torch.Tensor:
+    """Aplica el corte de CutMix a las imágenes."""
+    mixed_images = images.clone()
+    mixed_images[:, :, bby1:bby2, bbx1:bbx2] = images[index, :, bby1:bby2, bbx1:bbx2]
+    return mixed_images
 
 
 class CutMix:
@@ -98,39 +138,44 @@ class CutMix:
 
         batch_size = images.size(0)
         _, _, h, w = images.size()
-
-        # Generar lambda de distribución Beta usando torch.distributions
-        lam = float(_Beta(self.alpha, self.alpha).sample().item())  # NOSONAR
-
-        # Crear índice aleatorio (torch RNG)
+        lam = _generar_lambda_mixup(self.alpha)
         index = torch.randperm(batch_size).to(images.device)  # NOSONAR
-
-        # Calcular región de corte
-        cut_rat = math.sqrt(max(0.0, 1.0 - lam))
-        cut_w = int(w * cut_rat)
-        cut_h = int(h * cut_rat)
-
-        # Posición aleatoria para el corte (use torch randint)
-        cx = int(torch.randint(0, w, (1,)).item())  # NOSONAR
-        cy = int(torch.randint(0, h, (1,)).item())  # NOSONAR
-
-        # Limitar coordenadas
-        bbx1 = int(np.clip(cx - cut_w // 2, 0, w))
-        bby1 = int(np.clip(cy - cut_h // 2, 0, h))
-        bbx2 = int(np.clip(cx + cut_w // 2, 0, w))
-        bby2 = int(np.clip(cy + cut_h // 2, 0, h))
         
-        # Crear copia de imágenes
-        mixed_images = images.clone()
-        mixed_images[:, :, bby1:bby2, bbx1:bbx2] = images[index, :, bby1:bby2, bbx1:bbx2]
+        bbx1, bby1, bbx2, bby2 = _calcular_region_corte(lam, h, w)
+        mixed_images = _aplicar_corte_imagen(images, index, bbx1, bby1, bbx2, bby2)
         
-        # Calcular lambda ajustado para el área real cortada
-        lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (w * h))
-        
-        # Mezclar targets
-        mixed_targets = lam * targets + (1 - lam) * targets[index]
+        lam_ajustado = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (w * h))
+        mixed_targets = lam_ajustado * targets + (1 - lam_ajustado) * targets[index]
         
         return mixed_images, mixed_targets
+
+
+def _calcular_dimensiones_borrado(
+    area: int,
+    sl: float,
+    sh: float,
+    r1: float
+) -> Tuple[int, int]:
+    """Calcula las dimensiones de la región a borrar."""
+    target_area = float(torch.empty(1).uniform_(sl, sh).item()) * area  # NOSONAR
+    aspect_ratio = float(torch.empty(1).uniform_(r1, 1 / r1).item())  # NOSONAR
+    erase_h = int(np.round(np.sqrt(target_area * aspect_ratio)))
+    erase_w = int(np.round(np.sqrt(target_area / aspect_ratio)))
+    return erase_h, erase_w
+
+
+def _generar_valor_borrado(
+    num_channels: int,
+    dtype: torch.dtype,
+    device: torch.device
+) -> torch.Tensor:
+    """Genera el valor para borrar la región."""
+    if torch.rand(1).item() < 0.5:  # NOSONAR
+        return torch.randn(num_channels, 1, 1, device=device) * 0.5 + 0.5  # NOSONAR
+    else:
+        choice_idx = int(torch.randint(0, 3, (1,)).item())  # NOSONAR
+        erase_value_scalar = [0.0, 0.5, 1.0][choice_idx]
+        return torch.full((num_channels, 1, 1), erase_value_scalar, dtype=dtype, device=device)
 
 
 class RandomErasing:
@@ -169,37 +214,13 @@ class RandomErasing:
             return image
         
         _, h, w = image.size()
-        
-        # Calcular área y ratio de aspecto - Using PyTorch RNG for consistency
         area = h * w
-        # Generate uniform random values using PyTorch
-        target_area = float(torch.empty(1).uniform_(self.sl, self.sh).item()) * area  # NOSONAR
-        aspect_ratio = float(torch.empty(1).uniform_(self.r1, 1 / self.r1).item())  # NOSONAR
-        
-        # Calcular dimensiones de la región a borrar
-        erase_h = int(np.round(np.sqrt(target_area * aspect_ratio)))
-        erase_w = int(np.round(np.sqrt(target_area / aspect_ratio)))
+        erase_h, erase_w = _calcular_dimensiones_borrado(area, self.sl, self.sh, self.r1)
         
         if erase_h < h and erase_w < w:
-            # Posición aleatoria - Using PyTorch RNG for consistency and reproducibility
-            # PyTorch RNGs are appropriate for ML data augmentation (not cryptographic use)
             x1 = int(torch.randint(0, max(1, h - erase_h), (1,)).item())  # NOSONAR
             y1 = int(torch.randint(0, max(1, w - erase_w), (1,)).item())  # NOSONAR
-            
-            # Valor aleatorio para borrar (puede ser 0, media, o random)
-            # Using PyTorch RNG for consistency - safe for data augmentation, not cryptographic use
-            if torch.rand(1).item() < 0.5:  # NOSONAR
-                # Borrar con valor aleatorio
-                erase_value = torch.randn(image.size(0), 1, 1, device=image.device) * 0.5 + 0.5  # NOSONAR
-            else:
-                # Borrar con valor específico - Using PyTorch RNG for consistency
-                # Select from [0.0, 0.5, 1.0] using PyTorch RNG
-                choice_idx = int(torch.randint(0, 3, (1,)).item())  # NOSONAR
-                erase_value_scalar = [0.0, 0.5, 1.0][choice_idx]
-                # Crear tensor con la forma correcta (C, 1, 1) donde C es el número de canales
-                num_channels = image.size(0)
-                erase_value = torch.full((num_channels, 1, 1), erase_value_scalar, dtype=image.dtype, device=image.device)
-            
+            erase_value = _generar_valor_borrado(image.size(0), image.dtype, image.device)
             image[:, x1:x1+erase_h, y1:y1+erase_w] = erase_value
         
         return image

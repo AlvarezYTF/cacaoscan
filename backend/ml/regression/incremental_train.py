@@ -37,6 +37,134 @@ from ..data.transforms import resize_with_padding, normalize_image
 logger = get_ml_logger("cacaoscan.ml.incremental")
 
 
+def _calcular_estadisticas_target(values: List[float]) -> Dict[str, float]:
+    """Calcula estadísticas para un target."""
+    return {
+        "count": len(values),
+        "mean": float(np.mean(values)),
+        "std": float(np.std(values)),
+        "min": float(np.min(values)),
+        "max": float(np.max(values))
+    }
+
+
+def _analizar_distribucion_targets(records: List[Dict]) -> Dict[str, Dict]:
+    """Analiza la distribución de targets en los nuevos datos."""
+    distribution = {}
+    for target in TARGETS:
+        values = [record.get(target) for record in records if record.get(target) is not None]
+        if values:
+            distribution[target] = _calcular_estadisticas_target(values)
+    return distribution
+
+
+class IncrementalDataManager:
+    """
+    Gestor de datos para entrenamiento incremental.
+    
+    Maneja la adición de nuevos datos, versionado de datasets,
+    y estrategias de muestreo para evitar catastrophic forgetting.
+    """
+    
+    def __init__(self, base_data_dir: Optional[Path] = None):
+        """
+        Inicializa el gestor de datos incrementales.
+        
+        Args:
+            base_data_dir: Directorio base para datos incrementales
+        """
+        self.base_data_dir = base_data_dir or Path("backend/ml/data/incremental")
+        ensure_dir_exists(self.base_data_dir)
+        
+        self.datasets_dir = self.base_data_dir / "datasets"
+        self.metadata_dir = self.base_data_dir / "metadata"
+        ensure_dir_exists(self.datasets_dir)
+        ensure_dir_exists(self.metadata_dir)
+        
+        self.current_version = self._get_latest_version()
+        self.dataset_metadata = self._load_dataset_metadata()
+        
+        logger.info(f"Gestor de datos incrementales inicializado. Versión actual: {self.current_version}")
+    
+    def _get_latest_version(self) -> int:
+        """Obtiene la última versión de dataset."""
+        if not self.datasets_dir.exists():
+            return 0
+        
+        versions = []
+        for item in self.datasets_dir.iterdir():
+            if item.is_dir() and item.name.startswith("v"):
+                try:
+                    version = int(item.name[1:])
+                    versions.append(version)
+                except ValueError:
+                    continue
+        
+        return max(versions) if versions else 0
+    
+    def _load_dataset_metadata(self) -> Dict:
+        """Carga metadatos de datasets."""
+        metadata_file = self.metadata_dir / "dataset_metadata.json"
+        if metadata_file.exists():
+            return load_json(metadata_file)
+        return {
+            "versions": {},
+            "current_version": self.current_version,
+            "total_samples": 0,
+            "last_updated": None
+        }
+    
+    def _save_dataset_metadata(self):
+        """Guarda metadatos de datasets."""
+        metadata_file = self.metadata_dir / "dataset_metadata.json"
+        self.dataset_metadata["last_updated"] = datetime.now().isoformat()
+        save_json(self.dataset_metadata, metadata_file)
+    
+    def add_new_data(self, new_records: List[Dict], version_name: Optional[str] = None) -> int:
+        """
+        Añade nuevos datos al sistema incremental.
+        
+        Args:
+            new_records: Lista de nuevos registros con formato estándar
+            version_name: Nombre opcional para la versión
+            
+        Returns:
+            Número de versión creada
+        """
+        if not new_records:
+            raise ValueError("No se proporcionaron nuevos registros")
+        
+        # Crear nueva versión
+        self.current_version += 1
+        version_dir = self.datasets_dir / f"v{self.current_version}"
+        ensure_dir_exists(version_dir)
+        
+        # Guardar nuevos datos
+        new_data_file = version_dir / "new_data.json"
+        save_json(new_records, new_data_file)
+        
+        # Crear metadatos de la versión
+        version_metadata = {
+            "version": self.current_version,
+            "name": version_name or f"incremental_v{self.current_version}",
+            "samples_count": len(new_records),
+            "created_at": datetime.now().isoformat(),
+            "data_file": str(new_data_file),
+            "targets_distribution": self._analyze_targets_distribution(new_records)
+        }
+        
+        # Actualizar metadatos globales
+        self.dataset_metadata["versions"][str(self.current_version)] = version_metadata
+        self.dataset_metadata["current_version"] = self.current_version
+        self.dataset_metadata["total_samples"] += len(new_records)
+        
+        # Guardar metadatos
+        self._save_dataset_metadata()
+        
+        logger.info(f"Nueva versión {self.current_version} creada con {len(new_records)} muestras")
+        return self.current_version
+
+
 class IncrementalDataManager:
     """
     Gestor de datos para entrenamiento incremental.
@@ -145,20 +273,7 @@ class IncrementalDataManager:
     
     def _analyze_targets_distribution(self, records: List[Dict]) -> Dict[str, Dict]:
         """Analiza la distribución de targets en los nuevos datos."""
-        distribution = {}
-        
-        for target in TARGETS:
-            values = [record.get(target) for record in records if record.get(target) is not None]
-            if values:
-                distribution[target] = {
-                    "count": len(values),
-                    "mean": float(np.mean(values)),
-                    "std": float(np.std(values)),
-                    "min": float(np.min(values)),
-                    "max": float(np.max(values))
-                }
-        
-        return distribution
+        return _analizar_distribucion_targets(records)
     
     def get_combined_dataset(self, 
                            include_versions: Optional[List[int]] = None,

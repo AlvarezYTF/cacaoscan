@@ -17,6 +17,30 @@ from .models import TARGETS
 logger = get_ml_logger("cacaoscan.ml.regression")
 
 
+def _obtener_estadisticas_scaler(scaler: StandardScaler | MinMaxScaler | RobustScaler, target: str) -> Dict[str, float]:
+    """Obtiene estadísticas de un escalador según su tipo."""
+    stats = {}
+    if hasattr(scaler, 'mean_') and hasattr(scaler, 'scale_'):
+        stats['mean'] = scaler.mean_[0]
+        stats['std'] = scaler.scale_[0]
+    if hasattr(scaler, 'data_min_') and hasattr(scaler, 'data_max_'):
+        stats['min'] = scaler.data_min_[0]
+        stats['max'] = scaler.data_max_[0]
+    return stats
+
+
+def _aplicar_transformacion_inversa_log(
+    target: str,
+    original: np.ndarray,
+    log_targets: set
+) -> np.ndarray:
+    """Aplica transformación inversa expm1 si el target lo requiere."""
+    if target in log_targets:
+        original = np.expm1(original)
+        original = np.maximum(original, 0.0)
+    return original
+
+
 class CacaoScalers:
     """
     Manejador de escaladores para targets de regresión con log-transform selectivo.
@@ -126,11 +150,9 @@ class CacaoScalers:
             scaler.fit(target_array)
             self.scalers[target] = scaler
             
-            # Log different attributes based on scaler type
-            if hasattr(scaler, 'mean_') and hasattr(scaler, 'scale_'):
-                logger.debug(f"Escalador ajustado para {target}: mean={scaler.mean_[0]:.3f}, std={scaler.scale_[0]:.3f}")
-            elif hasattr(scaler, 'min_') and hasattr(scaler, 'scale_'):
-                logger.debug(f"Escalador ajustado para {target}: min={scaler.min_[0]:.3f}, max={scaler.min_[0] + scaler.scale_[0]:.3f}")
+            stats = _obtener_estadisticas_scaler(scaler, target)
+            if stats:
+                logger.debug(f"Escalador ajustado para {target}: {stats}")
             else:
                 logger.debug(f"Escalador ajustado para {target} (tipo: {type(scaler).__name__})")
         
@@ -187,11 +209,8 @@ class CacaoScalers:
             target_values = data[target].reshape(-1, 1)
             original = self.scalers[target].inverse_transform(target_values)
             
-            # Aplicar expm1 SOLO a grosor y peso DESPUÉS de inverse_transform
-            if target in self.LOG_TARGETS:
-                original = np.expm1(original)
-                original = np.maximum(original, 0.0)  # Ensure non-negative
-            
+            # Aplicar transformación inversa log si es necesario
+            original = _aplicar_transformacion_inversa_log(target, original, self.LOG_TARGETS)
             original_data[target] = original.flatten()
             
         return original_data
