@@ -197,26 +197,73 @@ def drop_api_userprofile_table(apps, schema_editor):
             print("Table api_userprofile does not exist, skipping deletion")
             return
         
-        # Drop all constraints first (PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK)
-        # This must be done before dropping indexes, as PRIMARY KEY constraints create indexes
+        # Drop all constraints first in the correct order:
+        # 1. FOREIGN KEY constraints first (they reference other tables/primary keys)
+        # 2. PRIMARY KEY constraint
+        # 3. UNIQUE constraints
+        # 4. CHECK constraints last (but skip NOT NULL checks on identity columns)
         cursor.execute("""
             SELECT constraint_name, constraint_type
             FROM information_schema.table_constraints
-            WHERE table_name = 'api_userprofile'
-            AND constraint_type IN ('PRIMARY KEY', 'FOREIGN KEY', 'UNIQUE', 'CHECK');
+            WHERE table_schema = 'public'
+            AND table_name = 'api_userprofile'
+            AND constraint_type IN ('PRIMARY KEY', 'FOREIGN KEY', 'UNIQUE', 'CHECK')
+            ORDER BY 
+                CASE constraint_type
+                    WHEN 'FOREIGN KEY' THEN 1
+                    WHEN 'PRIMARY KEY' THEN 2
+                    WHEN 'UNIQUE' THEN 3
+                    WHEN 'CHECK' THEN 4
+                END;
         """)
         constraints = cursor.fetchall()
+        
+        # Filter out CHECK constraints that are NOT NULL on identity columns (can't be dropped)
+        # These are typically named like 'table_column_not_null'
+        check_constraints_to_skip = set()
+        for constraint in constraints:
+            constraint_name = constraint[0]
+            constraint_type = constraint[1]
+            if constraint_type == 'CHECK' and '_not_null' in constraint_name.lower():
+                # Check if this is a NOT NULL constraint on an identity column
+                # We'll try to drop it, but if it fails, we'll skip it
+                check_constraints_to_skip.add(constraint_name)
         
         for constraint in constraints:
             constraint_name = constraint[0]
             constraint_type = constraint[1]
-            # Use format with %I to properly escape constraint names (handles names starting with numbers, special chars, etc.)
-            # %I in format() automatically quotes identifiers
-            cursor.execute(f"""
-                ALTER TABLE api_userprofile 
-                DROP CONSTRAINT IF EXISTS {schema_editor.connection.ops.quote_name(constraint_name)} CASCADE;
-            """)
-            print(f"Dropped {constraint_type.lower()}: {constraint_name}")
+            
+            # Skip CHECK constraints that are likely NOT NULL on identity columns
+            # These will be dropped when we drop the table
+            if constraint_name in check_constraints_to_skip:
+                print(f"Skipping {constraint_type.lower()}: {constraint_name} (NOT NULL on identity column)")
+                continue
+            
+            # Use SAVEPOINT to handle errors without aborting the entire transaction
+            # Sanitize savepoint name (only alphanumeric and underscore, max 63 chars)
+            safe_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in constraint_name)
+            savepoint_id = f"sp_{safe_name[:50]}_{abs(hash(constraint_name)) % 10000}"
+            try:
+                cursor.execute(f"SAVEPOINT {savepoint_id};")
+                # Use quote_name to properly escape constraint names
+                quoted_name = schema_editor.connection.ops.quote_name(constraint_name)
+                cursor.execute(f"""
+                    ALTER TABLE api_userprofile 
+                    DROP CONSTRAINT IF EXISTS {quoted_name} CASCADE;
+                """)
+                cursor.execute(f"RELEASE SAVEPOINT {savepoint_id};")
+                print(f"Dropped {constraint_type.lower()}: {constraint_name}")
+            except Exception as e:
+                # Rollback to savepoint to continue with other constraints
+                try:
+                    cursor.execute(f"ROLLBACK TO SAVEPOINT {savepoint_id};")
+                except Exception as rollback_error:
+                    # If rollback fails, the transaction is in a bad state
+                    # We'll let Django handle it, but log the error
+                    print(f"Error: Transaction state corrupted after failed constraint drop: {rollback_error}")
+                    raise
+                print(f"Warning: Could not drop constraint {constraint_name} ({constraint_type}): {e}")
+                # Continue with other constraints
         
         # Drop remaining indexes (those not associated with constraints)
         # Note: PRIMARY KEY and UNIQUE constraints automatically create indexes,
@@ -224,7 +271,8 @@ def drop_api_userprofile_table(apps, schema_editor):
         cursor.execute("""
             SELECT i.indexname
             FROM pg_indexes i
-            WHERE i.tablename = 'api_userprofile'
+            WHERE i.schemaname = 'public'
+            AND i.tablename = 'api_userprofile'
             AND NOT EXISTS (
                 SELECT 1
                 FROM pg_constraint c
@@ -235,15 +283,38 @@ def drop_api_userprofile_table(apps, schema_editor):
         
         for index in indexes:
             index_name = index[0]
-            # Use quote_name to properly escape index names (handles names starting with numbers, special chars, etc.)
-            cursor.execute(f"""
-                DROP INDEX IF EXISTS {schema_editor.connection.ops.quote_name(index_name)} CASCADE;
-            """)
-            print(f"Dropped index: {index_name}")
+            # Use SAVEPOINT to handle errors without aborting the entire transaction
+            # Sanitize savepoint name (only alphanumeric and underscore, max 63 chars)
+            safe_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in index_name)
+            savepoint_id = f"sp_idx_{safe_name[:50]}_{abs(hash(index_name)) % 10000}"
+            try:
+                cursor.execute(f"SAVEPOINT {savepoint_id};")
+                # Use quote_name to properly escape index names
+                quoted_name = schema_editor.connection.ops.quote_name(index_name)
+                cursor.execute(f"""
+                    DROP INDEX IF EXISTS {quoted_name} CASCADE;
+                """)
+                cursor.execute(f"RELEASE SAVEPOINT {savepoint_id};")
+                print(f"Dropped index: {index_name}")
+            except Exception as e:
+                # Rollback to savepoint to continue with other indexes
+                try:
+                    cursor.execute(f"ROLLBACK TO SAVEPOINT {savepoint_id};")
+                except Exception as rollback_error:
+                    # If rollback fails, the transaction is in a bad state
+                    # We'll let Django handle it, but log the error
+                    print(f"Error: Transaction state corrupted after failed index drop: {rollback_error}")
+                    raise
+                print(f"Warning: Could not drop index {index_name}: {e}")
+                # Continue with other indexes
         
         # Finally, drop the table
-        cursor.execute("DROP TABLE IF EXISTS api_userprofile CASCADE;")
-        print("Dropped table: api_userprofile")
+        try:
+            cursor.execute("DROP TABLE IF EXISTS api_userprofile CASCADE;")
+            print("Dropped table: api_userprofile")
+        except Exception as e:
+            print(f"Warning: Could not drop table api_userprofile: {e}")
+            raise
 
 
 def reverse_drop_api_userprofile_table(apps, schema_editor):
