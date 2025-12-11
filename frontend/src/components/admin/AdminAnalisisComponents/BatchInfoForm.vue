@@ -354,6 +354,7 @@ const loadingLoteData = ref(false)
 const showCreateLoteModal = ref(false)
 const showCreateFincaModal = ref(false)
 const errors = ref({})
+const isInternalUpdate = ref(false)
 
 // Computed
 const maxDate = new Date().toISOString().split('T')[0]
@@ -428,6 +429,9 @@ const validateForm = () => {
 }
 
 const updateForm = () => {
+  // Prevent recursive updates
+  if (isInternalUpdate.value) return
+  
   // Asegurar que el nombre esté presente si hay un lote seleccionado
   if (formData.value.lote && (!formData.value.name || formData.value.name.trim().length === 0)) {
     // Si hay lote pero no nombre, intentar obtenerlo del lote seleccionado
@@ -449,8 +453,23 @@ const updateForm = () => {
     lote: formData.value.lote || ''
   }
   
+  // Check if data actually changed
+  const currentData = props.modelValue || {}
+  const dataChanged = JSON.stringify(mappedData) !== JSON.stringify(currentData)
+  if (!dataChanged) {
+    return
+  }
+  
+  // Set flag to prevent watcher from triggering
+  isInternalUpdate.value = true
+  
   // Emitir el evento con los datos actualizados
   emit('update:modelValue', mappedData)
+  
+  // Reset flag after a delay to ensure watcher doesn't trigger
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 200)
   
   // Validar después de emitir para mostrar errores si los hay
   const validationErrors = validateForm()
@@ -531,7 +550,7 @@ const handleFincaCreated = async () => {
   // Si solo hay una finca, seleccionarla automáticamente
   if (fincas.value.length === 1) {
     formData.value.farm = fincas.value[0].nombre
-    await handleFincaChange()
+    await handleFincaChange(true) // Skip update to prevent recursion
   }
   
   updateForm()
@@ -563,21 +582,34 @@ const handleLoteCreated = async (newLote) => {
   }
 }
 
-const handleFarmerChange = async () => {
+const handleFarmerChange = async (skipUpdate = false) => {
   if (props.userRole === 'agricultor') return
   
-  // Limpiar finca y lote cuando cambia el agricultor
-  formData.value.farm = ''
-  formData.value.lote = ''
-  selectedFincaId.value = null
-  selectedLoteData.value = null
-  lotes.value = []
+  // Only clear finca and lote if this is a user-initiated change (not from external data load)
+  // Check if we're loading from external source by checking if farm is already set in modelValue
+  const isExternalLoad = skipUpdate && props.modelValue?.farm
+  
+  if (!isExternalLoad) {
+    // Limpiar finca y lote cuando cambia el agricultor (solo si es cambio del usuario)
+    formData.value.farm = ''
+    formData.value.lote = ''
+    selectedFincaId.value = null
+    selectedLoteData.value = null
+    lotes.value = []
+  }
   
   if (formData.value.farmer) {
-    const selectedAgricultor = agricultores.value.find(a => a.username === formData.value.farmer)
+    // Normalize farmer username for comparison (trim and lowercase)
+    const farmerUsernameNormalized = String(formData.value.farmer).trim().toLowerCase()
+    const selectedAgricultor = agricultores.value.find(a => 
+      String(a.username).trim().toLowerCase() === farmerUsernameNormalized
+    )
+    
     if (selectedAgricultor) {
-      const agricultorId = Number(selectedAgricultor.id)
-      
+      // Use the exact username from the found agricultor to ensure match
+      if (formData.value.farmer !== selectedAgricultor.username) {
+        formData.value.farmer = selectedAgricultor.username
+      }
       // Filtrar solo fincas activas por agricultor
       // Asegurar que ambos IDs sean números para la comparación
       fincas.value = allFincas.value.filter(finca => {
@@ -591,7 +623,9 @@ const handleFarmerChange = async () => {
     fincas.value = []
   }
   
-  updateForm()
+  if (!skipUpdate) {
+    updateForm()
+  }
 }
 
 const loadLotesByFinca = async (fincaId) => {
@@ -628,6 +662,7 @@ const loadLotesByFinca = async (fincaId) => {
 }
 
 const clearFincaSelection = () => {
+  // Si no hay lote en modelValue, limpiar normalmente
   formData.value.farm = ''
   formData.value.lote = ''
   selectedFincaId.value = null
@@ -668,21 +703,83 @@ const clearFarmerSelection = () => {
   updateForm()
 }
 
-const handleFincaChange = async () => {
-  // Si se deselecciona la finca (valor vacío), limpiar todo
+const handleFincaChange = async (skipUpdate = false) => {
+  // Si se deselecciona la finca (valor vacío), verificar si hay lote en modelValue
   if (!formData.value.farm || formData.value.farm.trim() === '') {
+    // Si hay un lote en modelValue (viene de la URL), restaurar la finca y el lote
+    if (props.modelValue?.lote && props.modelValue?.farm) {
+      console.log('[BatchInfoForm] Finca deselected but lote from URL exists, restoring...')
+      // Restaurar la finca y el lote desde modelValue
+      isInternalUpdate.value = true
+      formData.value.farm = props.modelValue.farm
+      formData.value.lote = props.modelValue.lote
+      await nextTick()
+      isInternalUpdate.value = false
+      
+      // Procesar la finca directamente sin recursión
+      const farmNameNormalized = String(formData.value.farm).trim().toLowerCase()
+      let selectedFinca = fincas.value.find(f => 
+        String(f.nombre).trim().toLowerCase() === farmNameNormalized
+      ) || allFincas.value.find(f => 
+        String(f.nombre).trim().toLowerCase() === farmNameNormalized
+      )
+      
+      if (selectedFinca) {
+        formData.value.farm = selectedFinca.nombre
+        selectedFincaId.value = selectedFinca.id
+        await loadLotesByFinca(selectedFinca.id)
+        // Esperar a que los lotes se carguen
+        await new Promise(resolve => setTimeout(resolve, 300))
+        // Procesar el lote
+        await handleLoteChange(true)
+      }
+      return
+    }
+    
+    // Si no hay lote en modelValue, limpiar normalmente
     clearFincaSelection()
     return
   }
   
-  // Limpiar lote seleccionado cuando cambia la finca
-  formData.value.lote = ''
-  selectedLoteData.value = null
+  // Limpiar lote seleccionado cuando cambia la finca (solo si no viene desde fuera)
+  if (!props.modelValue?.lote) {
+    formData.value.lote = ''
+    selectedLoteData.value = null
+  }
   
   if (formData.value.farm) {
-    // Buscar la finca seleccionada
-    const selectedFinca = fincas.value.find(f => f.nombre === formData.value.farm) || 
-                          allFincas.value.find(f => f.nombre === formData.value.farm)
+    // Normalize farm name for comparison (trim and lowercase)
+    const farmNameNormalized = String(formData.value.farm).trim().toLowerCase()
+    
+    // Buscar la finca seleccionada primero en fincas, luego en allFincas (case-insensitive)
+    let selectedFinca = fincas.value.find(f => 
+      String(f.nombre).trim().toLowerCase() === farmNameNormalized
+    )
+    
+    // Si no se encuentra en fincas, buscar en allFincas
+    if (!selectedFinca) {
+      selectedFinca = allFincas.value.find(f => 
+        String(f.nombre).trim().toLowerCase() === farmNameNormalized
+      )
+      
+      // Si se encuentra en allFincas pero no en fincas, agregarla a fincas si corresponde
+      if (selectedFinca && props.userRole === 'admin' && formData.value.farmer) {
+        const selectedAgricultor = agricultores.value.find(a => 
+          String(a.username).trim().toLowerCase() === String(formData.value.farmer).trim().toLowerCase()
+        )
+        if (selectedAgricultor && selectedFinca.agricultor_id === selectedAgricultor.id) {
+          // Asegurar que la finca esté en la lista de fincas
+          if (!fincas.value.find(f => f.id === selectedFinca.id)) {
+            fincas.value = allFincas.value.filter(f => f.agricultor_id === selectedAgricultor.id && f.activa === true)
+          }
+        }
+      }
+    }
+    
+    // If finca found, use its exact nombre to ensure v-model match
+    if (selectedFinca && formData.value.farm !== selectedFinca.nombre) {
+      formData.value.farm = selectedFinca.nombre
+    }
     
     if (selectedFinca && selectedFinca.id) {
       selectedFincaId.value = selectedFinca.id
@@ -704,12 +801,45 @@ const handleFincaChange = async () => {
     lotes.value = []
   }
   
-  updateForm()
+  if (!skipUpdate) {
+    updateForm()
+  }
 }
 
 const handleLoteChange = async () => {
   if (!formData.value.lote || formData.value.lote === null || formData.value.lote === '') {
-    // Si se deselecciona el lote, limpiar datos autocompletados
+    // Si hay un lote en modelValue (viene de la URL), restaurar el lote
+    if (props.modelValue?.lote && props.modelValue?.farm) {
+      console.log('[BatchInfoForm] Lote deselected but lote from URL exists, restoring...')
+      // Restaurar la finca y el lote desde modelValue
+      isInternalUpdate.value = true
+      formData.value.farm = props.modelValue.farm
+      formData.value.lote = props.modelValue.lote
+      await nextTick()
+      isInternalUpdate.value = false
+      
+      // Asegurar que la finca esté establecida y los lotes cargados
+      if (formData.value.farm) {
+        const farmNameNormalized = String(formData.value.farm).trim().toLowerCase()
+        let selectedFinca = fincas.value.find(f => 
+          String(f.nombre).trim().toLowerCase() === farmNameNormalized
+        ) || allFincas.value.find(f => 
+          String(f.nombre).trim().toLowerCase() === farmNameNormalized
+        )
+        
+        if (selectedFinca) {
+          selectedFincaId.value = selectedFinca.id
+          await loadLotesByFinca(selectedFinca.id)
+          // Esperar a que los lotes se carguen
+          await new Promise(resolve => setTimeout(resolve, 300))
+          // Continuar procesando el lote (recursión controlada)
+          await handleLoteChange()
+        }
+      }
+      return
+    }
+    
+    // Si no hay lote en modelValue, limpiar datos autocompletados normalmente
     selectedLoteData.value = null
     formData.value.name = ''
     formData.value.genetics = ''
@@ -879,31 +1009,201 @@ const handleLoteChange = async () => {
 }
 
 // Watchers
-watch(() => props.modelValue, (newValue) => {
-  // Solo actualizar campos específicos que no estén siendo editados activamente
-  // No sobrescribir el nombre si ya está establecido y hay un lote seleccionado
-  if (formData.value.lote && formData.value.name && formData.value.name.trim().length > 0) {
-    // Si hay lote y nombre, solo actualizar otros campos, no el nombre
+watch(() => props.modelValue, async (newValue) => {
+  if (!newValue || isInternalUpdate.value) return
+  
+  // Si hay un lote seleccionado en el select Y el nombre ya está establecido Y el nuevo valor no tiene lote
+  // entonces preservar el nombre y lote, pero actualizar otros campos
+  const hasLoteSelected = formData.value.lote && formData.value.lote.toString().trim() !== ''
+  const hasNameSet = formData.value.name && formData.value.name.trim().length > 0
+  const newValueHasNoLote = !newValue.lote || newValue.lote.toString().trim() === ''
+  
+  // Check if farmer or farm changed
+  const farmerChanged = newValue.farmer && newValue.farmer !== formData.value.farmer
+  const farmChanged = newValue.farm && newValue.farm !== formData.value.farm
+  
+  // If farmer changed and is admin, handle farmer change first (before updating formData)
+  if (farmerChanged && props.userRole === 'admin') {
+    // Wait for agricultores to be loaded
+    if (agricultores.value.length === 0 && !loadingAgricultores.value) {
+      await loadAgricultores()
+    }
+    
+    // Find agricultor by username (case-insensitive and trim)
+    const farmerUsername = String(newValue.farmer).trim()
+    const selectedAgricultor = agricultores.value.find(a => 
+      String(a.username).trim().toLowerCase() === farmerUsername.toLowerCase()
+    )
+    
+    if (selectedAgricultor) {
+      // Use the exact username from the found agricultor to ensure match
+      formData.value.farmer = selectedAgricultor.username
+    } else {
+      // If not found, set the value anyway (might be loaded later)
+      formData.value.farmer = farmerUsername
+    }
+    
+    await handleFarmerChange(true) // Skip update to prevent recursion
+    
+    // Wait a bit for fincas to be loaded and filtered
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 300))
+  }
+  
+  if (hasLoteSelected && hasNameSet && newValueHasNoLote) {
+    // Preservar nombre y lote seleccionado, pero actualizar otros campos
     formData.value = {
       ...formData.value,
       ...newValue,
-      name: formData.value.name // Preservar el nombre autocompletado
+      name: formData.value.name,
+      lote: formData.value.lote
     }
   } else {
-    // Si no hay lote o nombre, actualizar normalmente
-    formData.value = { ...formData.value, ...newValue }
+    // Actualizar todos los campos normalmente
+    // Si el nuevo valor tiene datos, reemplazar completamente
+    if (newValue.name || newValue.farm || newValue.genetics || newValue.collectionDate || newValue.farmer || newValue.originPlace || newValue.notes) {
+      // Update formData with new values
+      Object.keys(newValue).forEach(key => {
+        if (newValue[key] !== undefined && newValue[key] !== null && newValue[key] !== '') {
+          formData.value[key] = newValue[key]
+        }
+      })
+    }
   }
-}, { deep: true })
+  
+  // If farm changed, handle finca change (after formData is updated)
+  if (farmChanged) {
+    console.log('[BatchInfoForm] Farm changed in watcher:', newValue.farm, 'Current formData.farm:', formData.value.farm)
+    
+    // Wait for fincas to be loaded
+    if (allFincas.value.length === 0 && !loadingFincas.value) {
+      await loadAllFincas()
+    }
+    
+    // If admin and farmer is set, make sure fincas are filtered for that farmer
+    if (props.userRole === 'admin' && formData.value.farmer) {
+      const selectedAgricultor = agricultores.value.find(a => 
+        String(a.username).trim().toLowerCase() === String(formData.value.farmer).trim().toLowerCase()
+      )
+      if (selectedAgricultor) {
+        fincas.value = allFincas.value.filter(f => f.agricultor_id === selectedAgricultor.id && f.activa === true)
+        // Wait for the list to update
+        await nextTick()
+        await new Promise(resolve => setTimeout(resolve, 200))
+      }
+    }
+    
+    // Find finca by name (case-insensitive and trim) to ensure exact match
+    const farmName = String(newValue.farm).trim()
+    console.log('[BatchInfoForm] Looking for finca with name:', farmName)
+    console.log('[BatchInfoForm] Available fincas:', fincas.value.map(f => f.nombre))
+    console.log('[BatchInfoForm] All fincas:', allFincas.value.map(f => f.nombre))
+    
+    let foundFinca = fincas.value.find(f => 
+      String(f.nombre).trim().toLowerCase() === farmName.toLowerCase()
+    )
+    
+    // If not found in filtered fincas, search in allFincas
+    if (!foundFinca) {
+      foundFinca = allFincas.value.find(f => 
+        String(f.nombre).trim().toLowerCase() === farmName.toLowerCase()
+      )
+      
+      // If found in allFincas but not in filtered fincas, update the filtered list
+      if (foundFinca && props.userRole === 'admin' && formData.value.farmer) {
+        const selectedAgricultor = agricultores.value.find(a => 
+          String(a.username).trim().toLowerCase() === String(formData.value.farmer).trim().toLowerCase()
+        )
+        if (selectedAgricultor && foundFinca.agricultor_id === selectedAgricultor.id) {
+          fincas.value = allFincas.value.filter(f => f.agricultor_id === selectedAgricultor.id && f.activa === true)
+          await nextTick()
+        }
+      }
+    }
+    
+    if (foundFinca) {
+      console.log('[BatchInfoForm] Found finca:', foundFinca.nombre, 'ID:', foundFinca.id)
+      // Use the exact nombre from the found finca to ensure match
+      // Set isInternalUpdate to prevent watcher from triggering
+      isInternalUpdate.value = true
+      formData.value.farm = foundFinca.nombre
+      await nextTick()
+      isInternalUpdate.value = false
+      await handleFincaChange(true) // Skip update to prevent recursion
+    } else {
+      console.warn('[BatchInfoForm] Finca not found:', farmName)
+      // If not found, set the value anyway (might be loaded later)
+      if (newValue.farm) {
+        isInternalUpdate.value = true
+        formData.value.farm = farmName
+        await nextTick()
+        isInternalUpdate.value = false
+      }
+    }
+  }
+  
+  // If lote changed, handle lote change (after farm is set)
+  if (loteChanged) {
+    console.log('[BatchInfoForm] Lote changed in watcher:', newValue.lote, 'Current farm:', formData.value.farm)
+    // Wait for farm to be set if it's not set yet
+    if (!formData.value.farm) {
+      console.warn('[BatchInfoForm] Cannot set lote: farm is not set, waiting...')
+      // Wait a bit and try again
+      await new Promise(resolve => setTimeout(resolve, 500))
+      if (!formData.value.farm) {
+        console.error('[BatchInfoForm] Farm still not set after waiting')
+        return
+      }
+    }
+    
+    // Set lote value
+    isInternalUpdate.value = true
+    formData.value.lote = newValue.lote
+    await nextTick()
+    isInternalUpdate.value = false
+    
+    // Wait a bit to ensure farm is fully processed and lotes are loaded
+    await new Promise(resolve => setTimeout(resolve, 300))
+    await handleLoteChange(true) // Skip update to prevent recursion
+  }
+  
+  // Only update form if we actually changed something (not just from external update)
+  // Check if any field actually changed
+  const hasChanges = farmerChanged || farmChanged || 
+    (newValue.name && newValue.name !== formData.value.name) ||
+    (newValue.genetics && newValue.genetics !== formData.value.genetics) ||
+    (newValue.collectionDate && newValue.collectionDate !== formData.value.collectionDate) ||
+    (newValue.originPlace && newValue.originPlace !== formData.value.originPlace) ||
+    (newValue.notes && newValue.notes !== formData.value.notes)
+  
+  // Don't call updateForm if this is just an external update with no internal changes
+  // The external update already has the correct values, we just need to sync formData
+}, { deep: true, immediate: false })
 
-watch(() => formData.value.farmer, (newFarmer, oldFarmer) => {
-  if (newFarmer !== oldFarmer && props.userRole === 'admin') {
-    handleFarmerChange()
+watch(() => formData.value.farmer, async (newFarmer, oldFarmer) => {
+  if (newFarmer !== oldFarmer && newFarmer && props.userRole === 'admin' && !isInternalUpdate.value) {
+    // Wait for agricultores to be loaded
+    if (agricultores.value.length === 0 && !loadingAgricultores.value) {
+      await loadAgricultores()
+    }
+    await handleFarmerChange()
   }
 })
 
-watch(() => formData.value.farm, (newFarm, oldFarm) => {
-  if (newFarm !== oldFarm) {
-    handleFincaChange()
+watch(() => formData.value.farm, async (newFarm, oldFarm) => {
+  if (newFarm !== oldFarm && newFarm && !isInternalUpdate.value) {
+    // Wait for fincas to be loaded
+    if (allFincas.value.length === 0 && !loadingFincas.value) {
+      await loadAllFincas()
+    }
+    // If admin and farmer is set, make sure fincas are filtered for that farmer
+    if (props.userRole === 'admin' && formData.value.farmer) {
+      const selectedAgricultor = agricultores.value.find(a => a.username === formData.value.farmer)
+      if (selectedAgricultor) {
+        fincas.value = allFincas.value.filter(f => f.agricultor_id === selectedAgricultor.id && f.activa === true)
+      }
+    }
+    await handleFincaChange()
   }
 })
 
@@ -943,31 +1243,130 @@ onMounted(async () => {
   } else if (props.userRole === 'admin') {
     // Para admin, no mostrar fincas hasta que seleccione un agricultor
     fincas.value = []
+    
+    // Si ya hay un farmer en el modelValue, cargar sus fincas
+    if (props.modelValue?.farmer) {
+      const selectedAgricultor = agricultores.value.find(a => a.username === props.modelValue.farmer)
+      if (selectedAgricultor) {
+        fincas.value = allFincas.value.filter(f => f.agricultor_id === selectedAgricultor.id && f.activa === true)
+      }
+    }
   } else {
     // Solo mostrar fincas activas
     fincas.value = allFincas.value.filter(finca => finca.activa === true)
   }
   
-  emit('update:modelValue', { ...formData.value })
-  
-  // Si ya hay una finca seleccionada en el modelo, cargar sus lotes
-  if (formData.value.farm) {
-    const selectedFinca = allFincas.value.find(f => f.nombre === formData.value.farm)
-    if (selectedFinca && selectedFinca.id) {
-      selectedFincaId.value = selectedFinca.id
-      await loadLotesByFinca(selectedFinca.id)
+  // Si hay datos en modelValue, aplicarlos después de cargar las listas
+  if (props.modelValue && Object.keys(props.modelValue).length > 0) {
+    // Set flag to prevent updateForm from emitting during initialization
+    isInternalUpdate.value = true
+    
+    // Si hay farm pero no farmer (y es admin), buscar el agricultor de la finca
+    if (props.modelValue.farm && !props.modelValue.farmer && props.userRole === 'admin') {
+      const farmName = String(props.modelValue.farm).trim()
+      const foundFinca = allFincas.value.find(f => 
+        String(f.nombre).trim().toLowerCase() === farmName.toLowerCase()
+      )
       
-      // Si es admin y hay finca, asegurar que el agricultor esté seleccionado
-      if (props.userRole === 'admin' && selectedFinca.agricultor_id) {
-        const fincaAgricultorId = Number(selectedFinca.agricultor_id)
-        const associatedAgricultor = agricultores.value.find(a => Number(a.id) === fincaAgricultorId)
+      if (foundFinca && foundFinca.agricultor_id) {
+        const associatedAgricultor = agricultores.value.find(a => a.id === foundFinca.agricultor_id)
         if (associatedAgricultor) {
           formData.value.farmer = associatedAgricultor.username
-          fincas.value = allFincas.value.filter(f => Number(f.agricultor_id) === fincaAgricultorId && f.activa === true)
+          fincas.value = allFincas.value.filter(f => f.agricultor_id === associatedAgricultor.id && f.activa === true)
+          await nextTick()
+          await new Promise(resolve => setTimeout(resolve, 200))
         }
       }
     }
+    
+    // Si hay farmer y es admin, procesarlo primero
+    if (props.modelValue.farmer && props.userRole === 'admin') {
+      // Find agricultor by username (case-insensitive and trim)
+      const farmerUsername = String(props.modelValue.farmer).trim()
+      const selectedAgricultor = agricultores.value.find(a => 
+        String(a.username).trim().toLowerCase() === farmerUsername.toLowerCase()
+      )
+      
+      if (selectedAgricultor) {
+        formData.value.farmer = selectedAgricultor.username
+        await handleFarmerChange(true) // Skip update to prevent recursion
+        // Wait for fincas to be loaded
+        await nextTick()
+        await new Promise(resolve => setTimeout(resolve, 300))
+      } else {
+        // If agricultor not found, set the value anyway (might be loaded later)
+        formData.value.farmer = farmerUsername
+      }
+    }
+    
+    // Aplicar todos los demás campos
+    Object.keys(props.modelValue).forEach(key => {
+      if (props.modelValue[key] !== undefined && props.modelValue[key] !== null && props.modelValue[key] !== '') {
+        if (key !== 'farmer' || props.userRole !== 'admin') {
+          formData.value[key] = props.modelValue[key]
+        }
+      }
+    })
+    
+    // Si hay farm, procesarlo después de aplicar los campos
+    if (props.modelValue.farm) {
+      // Ensure fincas list is ready
+      if (props.userRole === 'admin' && formData.value.farmer) {
+        const selectedAgricultor = agricultores.value.find(a => 
+          String(a.username).trim().toLowerCase() === String(formData.value.farmer).trim().toLowerCase()
+        )
+        if (selectedAgricultor) {
+          fincas.value = allFincas.value.filter(f => f.agricultor_id === selectedAgricultor.id && f.activa === true)
+          await nextTick()
+        }
+      }
+      
+      // Find finca by name (case-insensitive and trim)
+      const farmName = String(props.modelValue.farm).trim()
+      const foundFinca = fincas.value.find(f => 
+        String(f.nombre).trim().toLowerCase() === farmName.toLowerCase()
+      ) || allFincas.value.find(f => 
+        String(f.nombre).trim().toLowerCase() === farmName.toLowerCase()
+      )
+      
+      if (foundFinca) {
+        // Use the exact nombre from the found finca to ensure match
+        formData.value.farm = foundFinca.nombre
+        
+        // If admin and farmer is not set, set it from finca
+        if (props.userRole === 'admin' && !formData.value.farmer && foundFinca.agricultor_id) {
+          const associatedAgricultor = agricultores.value.find(a => a.id === foundFinca.agricultor_id)
+          if (associatedAgricultor) {
+            formData.value.farmer = associatedAgricultor.username
+            fincas.value = allFincas.value.filter(f => f.agricultor_id === associatedAgricultor.id && f.activa === true)
+          }
+        }
+      }
+      
+      await handleFincaChange(true) // Skip update to prevent recursion
+      // Wait for finca to be fully processed and lotes to be loaded
+      await nextTick()
+      await new Promise(resolve => setTimeout(resolve, 400))
+    }
+    
+    // Si hay lote, procesarlo DESPUÉS de que la finca esté establecida
+    if (props.modelValue.lote && formData.value.farm) {
+      console.log('[BatchInfoForm] Processing initial lote in onMounted:', props.modelValue.lote)
+      // Wait a bit to ensure finca is processed first and lotes are loaded
+      await nextTick()
+      await new Promise(resolve => setTimeout(resolve, 500))
+      await handleLoteChange(true) // Skip update to prevent recursion
+    } else if (props.modelValue.lote && !formData.value.farm) {
+      console.warn('[BatchInfoForm] Lote provided but farm not set yet in onMounted')
+    }
+    
+    // Reset flag after initialization
+    setTimeout(() => {
+      isInternalUpdate.value = false
+    }, 500)
   }
+  
+  // Don't emit during initialization - only emit if user makes changes
 })
 </script>
 

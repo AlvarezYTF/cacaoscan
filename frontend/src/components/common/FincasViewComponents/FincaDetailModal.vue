@@ -4,7 +4,7 @@
     :title="fincaDetalle ? fincaDetalle.nombre : 'Detalles de la Finca'"
     subtitle="Información completa de la finca"
     max-width="5xl"
-    overlay-class="bg-transparent"
+    overlay-class="bg-black/30 backdrop-blur-sm"
     @close="closeModal"
   >
     <!-- Loading state -->
@@ -237,7 +237,7 @@
         <div class="flex items-center gap-3">
           <button
             @click="handleEdit"
-            v-if="fincaDetalle && (fincaDetalle.activa || userRole === 'admin')"
+            v-if="!hideActions && fincaDetalle && (fincaDetalle.activa || userRole === 'admin')"
             type="button"
             class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
@@ -248,7 +248,7 @@
           </button>
           <button
             @click="handleViewLotes"
-            v-if="fincaDetalle && (fincaDetalle.activa || userRole === 'admin')"
+            v-if="!hideActions && fincaDetalle && (fincaDetalle.activa || userRole === 'admin')"
             type="button"
             class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
@@ -297,6 +297,10 @@ const props = defineProps({
   userRole: {
     type: String,
     default: 'agricultor'
+  },
+  hideActions: {
+    type: Boolean,
+    default: false
   }
 })
 

@@ -355,7 +355,7 @@ const editLote = () => {
 }
 
 const analyzeLote = () => {
-  router.push(`/analisis/new?lote=${lote.value.id}`)
+  router.push(`/analisis?lote=${lote.value.id}`)
 }
 
 const viewAnalisis = () => {

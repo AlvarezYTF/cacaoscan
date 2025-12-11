@@ -225,7 +225,7 @@ const editLote = (lote) => {
 
 const analyzeLote = (lote) => {
   const loteId = typeof lote === 'object' ? lote.id : lote
-  router.push(`/analisis/new?lote=${loteId}`)
+  router.push(`/analisis?lote=${loteId}`)
 }
 
 const applyFilters = () => {

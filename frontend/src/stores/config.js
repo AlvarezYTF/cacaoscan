@@ -168,10 +168,30 @@ export const useConfigStore = defineStore('config', {
       this.loading = true
       try {
         const authStore = await this._loadAuthStore()
+        if (!authStore) {
+          // Si no hay authStore, no intentar cargar configuraciones
+          return { success: false, loaded: false, error: 'Auth store not available' }
+        }
+
         const isAuthenticated = authStore?.isAuthenticated || false
+        
+        // Verificar que haya un token válido antes de intentar cargar configuraciones
+        const accessToken = authStore?.accessToken || localStorage.getItem('access_token')
+        const refreshToken = authStore?.refreshToken || localStorage.getItem('refresh_token')
+        
+        // Si no hay token ni refresh token, no intentar cargar configuraciones que requieren autenticación
+        if (!accessToken && !refreshToken) {
+          return { success: false, loaded: false, error: 'No authentication tokens available' }
+        }
+
         const canAccessConfig = isAuthenticated && this._canAccessConfig(authStore)
 
         const promises = this._buildConfigPromises(canAccessConfig, isAuthenticated)
+        
+        // Si no hay promesas que ejecutar, retornar sin cargar
+        if (promises.length === 0) {
+          return { success: true, loaded: false }
+        }
         
         // Usar Promise.allSettled para que los errores individuales no detengan todo
         const results = await Promise.allSettled(promises)

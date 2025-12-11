@@ -1,52 +1,35 @@
 @startuml
 ' Diagrama de Dominio - CacaoScan
 ' Compatible con draw.io
-' Basado en el esquema SQL real de la base de datos
+' Basado en los modelos Django reales y migraciones actuales
+' Organizado por módulos/aplicaciones
 
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
 
 ' ============================================
-' ENTIDADES PRINCIPALES DEL DOMINIO
+' MÓDULO: DJANGO USER (django.contrib.auth)
 ' ============================================
-
+package "django.contrib.auth" {
 class User {
     + id: Integer
-    + password: String
-    + last_login: DateTime
-    + is_superuser: Boolean
     + username: String
+    + email: String
+    + password: String
     + first_name: String
     + last_name: String
-    + email: String
     + is_staff: Boolean
     + is_active: Boolean
+    + is_superuser: Boolean
     + date_joined: DateTime
+    + last_login: DateTime
+}
 }
 
-class Persona {
-    + id: Long
-    + numero_documento: String
-    + primer_nombre: String
-    + segundo_nombre: String
-    + primer_apellido: String
-    + segundo_apellido: String
-    + telefono: String
-    + direccion: String
-    + fecha_nacimiento: Date
-    + fecha_creacion: DateTime
-}
-
-class UserProfile {
-    + id: Long
-    + years_experience: Integer
-    + farm_size_hectares: Decimal
-    + preferred_language: String
-    + email_notifications: Boolean
-    + created_at: DateTime
-    + updated_at: DateTime
-}
-
+' ============================================
+' MÓDULO: AUTHENTICATION (auth_app)
+' ============================================
+package "auth_app" {
 class EmailVerification {
     + id: Long
     + email: String
@@ -60,6 +43,79 @@ class EmailVerification {
     + is_verified: Boolean
 }
 
+class UserProfile {
+    + id: Long
+    + years_experience: Integer
+    + farm_size_hectares: Decimal
+    + preferred_language: String
+    + email_notifications: Boolean
+    + created_at: DateTime
+    + updated_at: DateTime
+}
+}
+
+' ============================================
+' MÓDULO: PERSONAS (personas)
+' ============================================
+package "personas" {
+class Persona {
+    + id: Long
+    + numero_documento: String
+    + primer_nombre: String
+    + segundo_nombre: String
+    + primer_apellido: String
+    + segundo_apellido: String
+    + telefono: String
+    + direccion: String
+    + fecha_nacimiento: Date
+    + fecha_creacion: DateTime
+}
+}
+
+' ============================================
+' MÓDULO: CATÁLOGOS (catalogos)
+' ============================================
+package "catalogos" {
+class Departamento {
+    + id: Long
+    + codigo: String
+    + nombre: String
+}
+
+class Municipio {
+    + id: Long
+    + codigo: String
+    + nombre: String
+}
+
+class Tema {
+    + id: Long
+    + codigo: String
+    + nombre: String
+    + descripcion: String
+    + activo: Boolean
+}
+
+class Parametro {
+    + id: Long
+    + codigo: String
+    + nombre: String
+    + descripcion: String
+    + activo: Boolean
+    + metadata: JSON
+}
+
+class TemaParametro {
+    + id: Long
+    + tema_id: Long
+    + parametro_id: Long
+}
+}
+
+' ============================================
+' MÓDULO: FINCAS (fincas_app)
+' ============================================
+package "fincas_app" {
 class Finca {
     + id: Long
     + created_at: DateTime
@@ -83,19 +139,23 @@ class Lote {
     + updated_at: DateTime
     + identificador: String
     + nombre: String
+    + peso_kg: Decimal
+    + fecha_recepcion: Date
     + fecha_plantacion: Date
     + fecha_cosecha: Date
-    + area_hectareas: Decimal
+    + fecha_procesamiento: Date
     + descripcion: String
-    + coordenadas_lat: Decimal
-    + coordenadas_lng: Decimal
     + fecha_registro: DateTime
     + activo: Boolean
-    + edad_plantas: Integer
     + fecha_creacion: DateTime
     + fecha_actualizacion: DateTime
 }
+}
 
+' ============================================
+' MÓDULO: IMÁGENES (images_app)
+' ============================================
+package "images_app" {
 class CacaoImage {
     + id: Long
     + created_at: DateTime
@@ -128,7 +188,12 @@ class CacaoPrediction {
     + crop_url: String
     + created_at: DateTime
 }
+}
 
+' ============================================
+' MÓDULO: TRAINING (training)
+' ============================================
+package "training" {
 class TrainingJob {
     + id: Long
     + job_id: String
@@ -181,7 +246,12 @@ class ModelMetrics {
     + created_at: DateTime
     + updated_at: DateTime
 }
+}
 
+' ============================================
+' MÓDULO: NOTIFICACIONES (notifications)
+' ============================================
+package "notifications" {
 class Notification {
     + id: Long
     + titulo: String
@@ -193,23 +263,23 @@ class Notification {
     + created_at: DateTime
     + updated_at: DateTime
 }
+}
 
+' ============================================
+' MÓDULO: AUDITORÍA (audit)
+' ============================================
+package "audit" {
 class ActivityLog {
     + id: Long
     + action: String
-    + modelo: String
-    + objeto_id: String
-    + descripcion: String
-    + ip_address: String
-    + user_agent: String
-    + datos_antes: JSON
-    + datos_despues: JSON
-    + timestamp: DateTime
+    + content_type_id: Integer
+    + object_id: Integer
     + resource_type: String
     + resource_id: Integer
     + details: JSON
-    + content_type_id: Integer
-    + object_id: Integer
+    + ip_address: String
+    + user_agent: String
+    + timestamp: DateTime
 }
 
 class LoginHistory {
@@ -222,7 +292,12 @@ class LoginHistory {
     + login_successful: Boolean
     + failure_reason: String
 }
+}
 
+' ============================================
+' MÓDULO: REPORTES (reports)
+' ============================================
+package "reports" {
 class ReporteGenerado {
     + id: Long
     + titulo: String
@@ -238,6 +313,16 @@ class ReporteGenerado {
     + fecha_expiracion: DateTime
     + tiempo_generacion: Duration
     + mensaje_error: String
+    + created_at: DateTime
+    + updated_at: DateTime
+}
+}
+
+' ============================================
+' MÓDULO: CORE (core)
+' ============================================
+package "core" {
+abstract class TimeStampedModel {
     + created_at: DateTime
     + updated_at: DateTime
 }
@@ -257,154 +342,19 @@ class SystemSettings {
     + created_at: DateTime
     + updated_at: DateTime
 }
-
-' ============================================
-' CATÁLOGOS - ENTIDADES DE REFERENCIA
-' ============================================
-
-class Departamento {
-    + id: Long
-    + codigo: String
-    + nombre: String
-}
-
-class Municipio {
-    + id: Long
-    + codigo: String
-    + nombre: String
-}
-
-class Tema {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class Parametro {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class TemaParametro {
-    + id: Long
-    + tema_id: Long
-    + parametro_id: Long
-}
-
-class VariedadCacao {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class TipoSuelo {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class Clima {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class EstadoFinca {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class EstadoLote {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class TipoReporte {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class FormatoReporte {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class EstadoReporte {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class TipoNotificacion {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class TipoArchivo {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + mime_type: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class TipoDispositivo {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + activo: Boolean
-}
-
-class VersionModelo {
-    + id: Long
-    + codigo: String
-    + nombre: String
-    + descripcion: String
-    + fecha_lanzamiento: Date
-    + activo: Boolean
 }
 
 ' ============================================
 ' RELACIONES ENTRE ENTIDADES
 ' ============================================
 
-' Relaciones de Usuario
+' Relaciones de Usuario (django.contrib.auth.User)
 User "1" ||--|| Persona : "tiene"
-User "1" ||--|| UserProfile : "tiene"
-User "1" ||--o{ EmailVerification : "tiene"
+User "1" ||--o| UserProfile : "tiene"
+User "1" ||--o{ EmailVerification : "tiene (user)"
 User "1" ||--o{ Finca : "es propietario (agricultor)"
 User "1" ||--o{ CacaoImage : "sube"
-User "1" ||--o{ CacaoPrediction : "genera"
+User "1" ||--o{ CacaoPrediction : "genera (opcional)"
 User "1" ||--o{ TrainingJob : "crea (created_by)"
 User "1" ||--o{ ModelMetrics : "crea (created_by)"
 User "1" ||--o{ Notification : "recibe"
@@ -413,47 +363,50 @@ User "1" ||--o{ LoginHistory : "tiene"
 User "1" ||--o{ ReporteGenerado : "solicita (usuario)"
 
 ' Relaciones de Persona
-Persona "N" }o--|| Parametro : "tipo_documento"
-Persona "N" }o--|| Parametro : "genero"
+Persona "N" }o--|| Parametro : "tipo_documento (TIPO_DOC)"
+Persona "N" }o--|| Parametro : "genero (SEXO)"
 Persona "N" }o--o| Municipio : "reside_en"
 
 ' Relaciones de UserProfile
 UserProfile "N" }o--o| Municipio : "ubicado_en"
 
+' Relaciones de EmailVerification
+EmailVerification "N" }o--o| User : "verifica (opcional)"
+
 ' Relaciones de Finca
 Finca "N" }o--|| Municipio : "ubicada_en"
-Finca "N" }o--o| TipoSuelo : "tiene"
-Finca "N" }o--o| Clima : "tiene"
-Finca "N" }o--o| EstadoFinca : "tiene"
+Finca "N" }o--o| Parametro : "tipo_suelo (TEMA_TIPO_SUELO)"
+Finca "N" }o--o| Parametro : "clima (TEMA_CLIMA)"
+Finca "N" }o--o| Parametro : "estado (TEMA_ESTADO_FINCA)"
 Finca "1" ||--o{ Lote : "contiene"
 
 ' Relaciones de Lote
-Lote "N" }o--|| VariedadCacao : "tiene"
-Lote "N" }o--o| EstadoLote : "tiene"
+Lote "N" }o--|| Parametro : "variedad (TEMA_VARIEDAD_CACAO)"
+Lote "N" }o--o| Parametro : "estado (TEMA_ESTADO_LOTE)"
 Lote "1" ||--o{ CacaoImage : "contiene"
 
 ' Relaciones de CacaoImage
-CacaoImage "N" }o--o| TipoArchivo : "tiene"
+CacaoImage "N" }o--o| Parametro : "file_type (TEMA_TIPO_ARCHIVO)"
 
 ' Relaciones de CacaoPrediction
 CacaoPrediction "1" ||--|| CacaoImage : "analiza"
-CacaoPrediction "N" }o--|| VersionModelo : "usa (model_version)"
-CacaoPrediction "N" }o--|| TipoDispositivo : "usa (device_used)"
+CacaoPrediction "N" }o--|| Parametro : "model_version (TEMA_VERSION_MODELO)"
+CacaoPrediction "N" }o--|| Parametro : "device_used (TEMA_TIPO_DISPOSITIVO)"
 
 ' Relaciones de Notification
-Notification "N" }o--|| TipoNotificacion : "tiene (tipo)"
+Notification "N" }o--|| Parametro : "tipo (TEMA_TIPO_NOTIFICACION)"
 
 ' Relaciones de ReporteGenerado
-ReporteGenerado "N" }o--|| TipoReporte : "tiene (tipo_reporte)"
-ReporteGenerado "N" }o--|| FormatoReporte : "tiene (formato)"
-ReporteGenerado "N" }o--|| EstadoReporte : "tiene (estado)"
+ReporteGenerado "N" }o--|| Parametro : "tipo_reporte (TEMA_TIPO_REPORTE)"
+ReporteGenerado "N" }o--|| Parametro : "formato (TEMA_FORMATO_REPORTE)"
+ReporteGenerado "N" }o--|| Parametro : "estado (TEMA_ESTADO_REPORTE)"
 
 ' Relaciones de ModelMetrics
 ModelMetrics "N" }o--o| TrainingJob : "relacionado_con"
 
 ' Relaciones de Catálogos
 Departamento "1" ||--o{ Municipio : "contiene"
-Tema "N" }o--o{ Parametro : "relacionado_con"
+Tema "1" ||--o{ Parametro : "tiene"
 TemaParametro }o--|| Tema : "tema"
 TemaParametro }o--|| Parametro : "parametro"
 

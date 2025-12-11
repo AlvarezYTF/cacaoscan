@@ -570,15 +570,20 @@ class UserDetailView(AdminPermissionMixin, APIView):
             # Obtener usuario con optimizaciones para evitar N+1 queries
             try:
                 user = User.objects.select_related(
-                    'api_profile', 
-                    'api_email_token'
+                    'auth_profile',
+                    'persona',
+                    'persona__tipo_documento',
+                    'persona__tipo_documento__tema',
+                    'persona__genero',
+                    'persona__genero__tema',
+                    'persona__municipio',
+                    'persona__municipio__departamento'
                 ).prefetch_related(
                     'groups',
-                    'api_cacao_images',
                     'images_app_cacao_images',
                     'images_app_cacao_images__prediction',
-                    'images_app_cacao_images__finca',
-                    'images_app_cacao_images__lote'
+                    'images_app_cacao_images__prediction__finca',
+                    'images_app_cacao_images__prediction__lote'
                 ).get(id=user_id)
             except User.DoesNotExist:
                 return Response({
@@ -592,9 +597,13 @@ class UserDetailView(AdminPermissionMixin, APIView):
             
             # Agregar estadísticas adicionales
             try:
-                cacao_images_manager = getattr(user, 'cacao_images', None) or getattr(user, 'api_cacao_images', None) or getattr(user, 'images_app_cacao_images', None)
-                total_images = cacao_images_manager.count() if cacao_images_manager is not None else 0
-                processed_images = cacao_images_manager.filter(processed=True).count() if cacao_images_manager is not None else 0
+                cacao_images_manager = getattr(user, 'images_app_cacao_images', None)
+                if cacao_images_manager is not None:
+                    total_images = cacao_images_manager.count()
+                    processed_images = cacao_images_manager.filter(prediction__isnull=False).count()
+                else:
+                    total_images = 0
+                    processed_images = 0
             except Exception:
                 total_images = 0
                 processed_images = 0
@@ -604,17 +613,27 @@ class UserDetailView(AdminPermissionMixin, APIView):
                 'processed_images': processed_images,
                 'last_login': user.last_login.isoformat() if user.last_login else None,
                 'days_since_registration': (timezone.now().date() - user.date_joined.date()).days,
-                'has_profile': hasattr(user, 'profile') or hasattr(user, 'api_profile'),
+                'has_profile': hasattr(user, 'auth_profile'),
                 'groups': [group.name for group in user.groups.all()]
             }
 
             # Incluir datos de persona (si existe) usando serializers de la app personas
+            # La persona ya está cargada con select_related, solo necesitamos serializarla
             try:
-                from personas.models import Persona
                 from personas.serializers import PersonaSerializer
-                persona = Persona.objects.select_related('user', 'tipo_documento', 'genero', 'departamento', 'municipio').filter(user=user).first()
-                user_data['persona'] = PersonaSerializer(persona).data if persona else None
-            except Exception:
+                if hasattr(user, 'persona') and user.persona:
+                    # Asegurar que el municipio y departamento estén cargados
+                    persona = user.persona
+                    if persona.municipio and not hasattr(persona.municipio, '_departamento_cache'):
+                        # Forzar la carga del departamento si no está en cache
+                        _ = persona.municipio.departamento
+                    user_data['persona'] = PersonaSerializer(persona).data
+                    logger.debug(f"Persona serializada para usuario {user_id}: {user_data['persona']}")
+                else:
+                    user_data['persona'] = None
+                    logger.debug(f"Usuario {user_id} no tiene persona asociada")
+            except Exception as e:
+                logger.error(f"Error serializando persona para usuario {user_id}: {e}", exc_info=True)
                 user_data['persona'] = None
             
             return Response(user_data, status=status.HTTP_200_OK)

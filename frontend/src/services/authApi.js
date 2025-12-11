@@ -418,12 +418,18 @@ const authApi = {
   /**
    * Obtener un usuario específico por ID (admin/analyst)
    * @param {number} userId - User ID
-   * @returns {Promise<Object>} User object
+   * @returns {Promise<Object>} User object with persona and stats
    */
   async getUser(userId) {
     try {
       const response = await apiGet(`/auth/users/${userId}/`)
-      return normalizeUser(response.user || response)
+      // Preserve all fields including persona and stats
+      const normalizedUser = normalizeUser(response.user || response)
+      return {
+        ...normalizedUser,
+        persona: response.persona || null,
+        stats: response.stats || null
+      }
     } catch (error) {
       throw normalizeAuthError(error)
     }

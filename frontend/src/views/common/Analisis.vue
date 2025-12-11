@@ -234,6 +234,7 @@
                   <h2 class="text-2xl font-bold text-gray-900">Información del Lote</h2>
                 </div>
                 <BatchInfoForm 
+                  :key="`batch-form-${route.query.lote || 'new'}-${batchData.name || ''}`"
                   v-model="batchData" 
                   :errors="formErrors" 
                   :user-role="userRole"
@@ -422,7 +423,12 @@ import CameraCapture from '@/components/admin/AdminAnalisisComponents/CameraCapt
 import { useAuthStore } from '@/stores/auth'
 import { useAnalysisStore } from '@/stores/analysis'
 
-// 5. Composables
+// 5. Services
+import { getLoteById } from '@/services/lotesApi'
+import catalogosApi from '@/services/catalogosApi'
+import authApi from '@/services/authApi'
+
+// 6. Composables
 import { useSidebarNavigation } from '@/composables/useSidebarNavigation'
 import { useNotifications } from '@/composables/useNotifications'
 
@@ -463,6 +469,8 @@ const formErrors = ref({})
 const analysisResult = ref(null)
 const activeSection = ref('analysis')
 const imageUrls = ref({})
+const loadingLote = ref(false)
+const isUpdatingBatchData = ref(false)
 
 // Tabs configuration
 const tabs = [
@@ -685,7 +693,26 @@ const handleImageLoad = (event) => {
 
 // Functions
 const updateBatchData = (data) => {
-  batchData.value = { ...data }
+  // Prevent recursive updates
+  if (isUpdatingBatchData.value) {
+    return
+  }
+  
+  // Check if data actually changed to avoid unnecessary updates
+  const dataChanged = JSON.stringify(batchData.value) !== JSON.stringify(data)
+  if (!dataChanged) {
+    return
+  }
+  
+  isUpdatingBatchData.value = true
+  try {
+    batchData.value = { ...data }
+  } finally {
+    // Use setTimeout to reset the flag after Vue processes the update
+    setTimeout(() => {
+      isUpdatingBatchData.value = false
+    }, 100)
+  }
 }
 
 const handleImageUpdate = (newImages) => {
@@ -978,11 +1005,186 @@ const resetAndCreateNew = () => {
   resetForm()
 }
 
+// Load lote data if lote parameter is present in query string
+const loadLoteData = async (loteId) => {
+  if (!loteId || isUpdatingBatchData.value) return
+  
+  try {
+    loadingLote.value = true
+    
+    // Wait longer to ensure BatchInfoForm is fully mounted and has loaded its data
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    const lote = await getLoteById(loteId)
+    
+    // Map lote data to batchData
+    if (lote) {
+      // Create a complete new object with all data
+      const newBatchData = {
+        name: lote.identificador || lote.nombre || '',
+        collectionDate: lote.fecha_cosecha || lote.fecha_recepcion || '',
+        origin: '',
+        notes: lote.descripcion || '',
+        farm: '',
+        originPlace: '',
+        genetics: '',
+        farmer: '',
+        lote: String(loteId) // Set the lote ID so it gets selected in the dropdown
+      }
+      
+      // Farm: use finca_nombre (from API response)
+      if (lote.finca_nombre) {
+        newBatchData.farm = lote.finca_nombre
+      } else if (lote.finca) {
+        // Fallback to finca object if finca_nombre is not available
+        if (typeof lote.finca === 'object' && lote.finca.nombre) {
+          newBatchData.farm = lote.finca.nombre
+        } else if (typeof lote.finca === 'string') {
+          newBatchData.farm = lote.finca
+        }
+      }
+      
+      // Origin place: use finca_ubicacion or ubicacion_completa
+      if (lote.finca_ubicacion) {
+        newBatchData.originPlace = lote.finca_ubicacion
+      } else if (lote.ubicacion_completa) {
+        newBatchData.originPlace = lote.ubicacion_completa
+      } else if (lote.finca && typeof lote.finca === 'object') {
+        // Fallback to finca object location
+        const locationParts = []
+        if (lote.finca.municipio) locationParts.push(lote.finca.municipio)
+        if (lote.finca.departamento) locationParts.push(lote.finca.departamento)
+        if (locationParts.length > 0) {
+          newBatchData.originPlace = locationParts.join(', ')
+        }
+      }
+      
+      // Genetics: need to load variedad name from API
+      // For now, we'll need to load it from catalogosApi
+      if (lote.variedad) {
+        if (typeof lote.variedad === 'object' && lote.variedad.nombre) {
+          newBatchData.genetics = lote.variedad.nombre
+        } else if (typeof lote.variedad === 'string') {
+          newBatchData.genetics = lote.variedad
+        } else if (typeof lote.variedad === 'number') {
+          // Try to load variedad name from API
+          try {
+            const variedadesData = await catalogosApi.getParametrosPorTema('TEMA_VARIEDAD_CACAO')
+            const variedadesList = Array.isArray(variedadesData?.results) 
+              ? variedadesData.results 
+              : Array.isArray(variedadesData) 
+                ? variedadesData 
+                : []
+            const variedad = variedadesList.find(v => v.id === lote.variedad)
+            if (variedad && variedad.nombre) {
+              newBatchData.genetics = variedad.nombre
+            } else {
+              newBatchData.genetics = String(lote.variedad)
+            }
+          } catch (error) {
+            console.error('Error loading variedad:', error)
+            newBatchData.genetics = String(lote.variedad)
+          }
+        }
+      }
+      
+      // Farmer: use agricultor.username if available (from get_lote_details endpoint)
+      // Otherwise, try to find by agricultor_nombre
+      if (userRole.value === 'admin') {
+        if (lote.agricultor && typeof lote.agricultor === 'object' && lote.agricultor.username) {
+          // Use username from agricultor object (from get_lote_details endpoint)
+          newBatchData.farmer = lote.agricultor.username
+        } else if (lote.agricultor_nombre && lote.finca) {
+          // If we have agricultor_nombre but not agricultor object, we need to find the username
+          // This will be handled by BatchInfoForm when it loads agricultores
+          // For now, we'll try to find it by matching the name
+          // But since we don't have the agricultores list here, we'll leave it empty
+          // and BatchInfoForm will resolve it based on finca.agricultor_id
+          newBatchData.farmer = '' // Will be resolved by BatchInfoForm based on finca
+        }
+      }
+      
+      // Update batchData in steps: first farmer (if admin), then farm, then others
+      // This ensures BatchInfoForm can process them in the correct order
+      isUpdatingBatchData.value = true
+      
+      // Step 1: Set farmer first if admin
+      if (newBatchData.farmer && userRole.value === 'admin') {
+        batchData.value = {
+          ...batchData.value,
+          farmer: newBatchData.farmer
+        }
+        await nextTick()
+        await new Promise(resolve => setTimeout(resolve, 300))
+      }
+      
+      // Step 2: Set farm (wait longer to ensure farmer's fincas are loaded)
+      if (newBatchData.farm) {
+        console.log('[Analisis.vue] Setting farm:', newBatchData.farm)
+        batchData.value = {
+          ...batchData.value,
+          farm: newBatchData.farm
+        }
+        await nextTick()
+        // Wait longer to ensure BatchInfoForm has processed farmer change and loaded fincas
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+      
+      // Step 3: Set all other fields including lote
+      batchData.value = {
+        ...batchData.value,
+        name: newBatchData.name,
+        collectionDate: newBatchData.collectionDate,
+        origin: newBatchData.origin,
+        notes: newBatchData.notes,
+        originPlace: newBatchData.originPlace,
+        genetics: newBatchData.genetics,
+        lote: newBatchData.lote // Include lote ID
+      }
+      
+      await nextTick()
+      await new Promise(resolve => setTimeout(resolve, 200))
+      isUpdatingBatchData.value = false
+    }
+  } catch (error) {
+    console.error('Error loading lote data:', error)
+    isUpdatingBatchData.value = false
+  } finally {
+    loadingLote.value = false
+  }
+}
+
+// Track last loaded lote to avoid reloading
+const lastLoadedLoteId = ref(null)
+
+// Watch for lote parameter in route query
+watch(() => route.query.lote, async (newLoteId) => {
+  const loteId = newLoteId ? Number(newLoteId) : null
+  if (loteId && loteId !== lastLoadedLoteId.value && !isUpdatingBatchData.value) {
+    lastLoadedLoteId.value = loteId
+    // Wait for component to be fully mounted
+    await nextTick()
+    await loadLoteData(loteId)
+  }
+}, { immediate: false })
+
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   analysisStore.clearBatch()
   // Inicializar URLs de imágenes al montar
   updateImageUrls()
+  
+  // Wait for BatchInfoForm to be mounted before loading lote data
+  await nextTick()
+  
+  // Load lote data if lote parameter is present
+  if (route.query.lote && !isUpdatingBatchData.value) {
+    const loteId = Number(route.query.lote)
+    lastLoadedLoteId.value = loteId
+    // Wait another tick to ensure BatchInfoForm is ready
+    await nextTick()
+    await loadLoteData(loteId)
+  }
 })
 </script>
 

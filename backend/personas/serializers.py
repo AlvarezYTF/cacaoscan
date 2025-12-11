@@ -199,18 +199,30 @@ class PersonaSerializer(serializers.ModelSerializer):
     
     def get_departamento_info(self, obj):
         """Devuelve información del departamento desde municipio (3NF normalization)."""
-        departamento = obj.departamento  # Usa la propiedad que obtiene desde municipio.departamento
-        if departamento:
+        try:
+            # Asegurar que el municipio esté cargado
+            if not obj.municipio:
+                return None
+            
+            # Obtener el departamento desde el municipio
+            departamento = obj.municipio.departamento
+            if not departamento:
+                return None
+            
             return {
                 'id': departamento.id,
                 'codigo': departamento.codigo,
                 'nombre': departamento.nombre
             }
-        return None
+        except Exception:
+            return None
     
     def get_municipio_info(self, obj):
         """Devuelve información del municipio."""
-        if obj.municipio:
+        try:
+            if not obj.municipio:
+                return None
+            
             return {
                 'id': obj.municipio.id,
                 'codigo': obj.municipio.codigo,

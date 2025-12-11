@@ -370,7 +370,7 @@ const formData = reactive({
   fecha_procesamiento: '',
   fecha_plantacion: '',
   fecha_cosecha: '',
-  estado: null,
+  estado: '',
   descripcion: '',
   activo: true
 })
@@ -537,8 +537,11 @@ const validateForm = () => {
     }
   }
 
-  // Validar estado (debe ser un ID numérico, pero es opcional)
-  if (formData.estado) {
+  // Validar estado (debe ser un ID numérico, requerido)
+  if (!formData.estado) {
+    errors.value.estado = 'Debes seleccionar un estado'
+    isValid = false
+  } else {
     const estadoId = Number(formData.estado)
     if (isNaN(estadoId) || estadoId <= 0) {
       errors.value.estado = 'Debes seleccionar un estado válido'
@@ -576,7 +579,7 @@ const handleSubmit = async () => {
       fecha_procesamiento: formData.fecha_procesamiento || null,
       fecha_plantacion: formData.fecha_plantacion || null,
       fecha_cosecha: formData.fecha_cosecha || null,
-      estado: formData.estado ? Number(formData.estado) : null, // Asegurar que es un número o null
+      estado: formData.estado ? Number(formData.estado) : null,
       descripcion: formData.descripcion.trim() || null,
       activo: formData.activo
     }

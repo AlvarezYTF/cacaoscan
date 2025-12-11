@@ -173,7 +173,30 @@ const showSessionExpiredModal = () => {
   }
 }
 
-const handleNoRefreshToken = () => {
+const handleNoRefreshToken = async () => {
+  // Limpiar tokens inválidos del localStorage
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  localStorage.removeItem('token')
+  
+  // Limpiar headers de axios
+  if (api.defaults.headers.common) {
+    delete api.defaults.headers.common.Authorization
+  }
+  if (api.defaults.headers) {
+    delete api.defaults.headers.Authorization
+  }
+  
+  // Limpiar estado del auth store si está disponible
+  try {
+    const authStore = await getAuthStore()
+    if (authStore) {
+      authStore.clearAll()
+    }
+  } catch (error) {
+    // Ignore errors when clearing auth store
+  }
+  
   showSessionExpiredModal()
 }
 
@@ -224,7 +247,30 @@ const handleRefreshSuccess = async (newAccessToken, newRefreshToken, originalReq
   return api(originalRequest)
 }
 
-const handleRefreshError = (refreshError) => {
+const handleRefreshError = async (refreshError) => {
+  // Limpiar tokens inválidos del localStorage
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  localStorage.removeItem('token')
+  
+  // Limpiar headers de axios
+  if (api.defaults.headers.common) {
+    delete api.defaults.headers.common.Authorization
+  }
+  if (api.defaults.headers) {
+    delete api.defaults.headers.Authorization
+  }
+  
+  // Limpiar estado del auth store si está disponible
+  try {
+    const authStore = await getAuthStore()
+    if (authStore) {
+      authStore.clearAll()
+    }
+  } catch (error) {
+    // Ignore errors when clearing auth store
+  }
+  
   processQueue(refreshError, null)
   showSessionExpiredModal()
   throw refreshError
@@ -242,7 +288,7 @@ const handle401Error = async (error, originalRequest) => {
   
   const refreshToken = localStorage.getItem('refresh_token')
   if (!refreshToken) {
-    handleNoRefreshToken()
+    await handleNoRefreshToken()
     throw error
   }
   
@@ -264,7 +310,7 @@ const handle401Error = async (error, originalRequest) => {
     const { access: newAccessToken, refresh: newRefreshToken } = await refreshTokenFlow(refreshToken)
     return await handleRefreshSuccess(newAccessToken, newRefreshToken, originalRequest)
   } catch (refreshError) {
-    return handleRefreshError(refreshError)
+    return await handleRefreshError(refreshError)
   } finally {
     isRefreshing = false
   }
@@ -406,20 +452,47 @@ api.interceptors.request.use(
         }
       }
       
+      // Validar formato básico del token (JWT tiene 3 partes separadas por puntos)
+      const isValidTokenFormat = (tokenValue) => {
+        if (!tokenValue || typeof tokenValue !== 'string') {
+          return false
+        }
+        const trimmed = tokenValue.trim()
+        if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') {
+          return false
+        }
+        // JWT básico tiene 3 partes separadas por puntos
+        const parts = trimmed.split('.')
+        return parts.length === 3 && parts.every(part => part.length > 0)
+      }
       
-      // Si hay token, asegurarse de que esté en el header de la petición
+      // Si hay token, validar formato y asegurarse de que esté en el header de la petición
       if (token && token.trim() !== '') {
         const cleanToken = token.trim()
-        config.headers.Authorization = `Bearer ${cleanToken}`
-        // También actualizar los headers por defecto para futuras peticiones
-        if (!api.defaults.headers.common) {
-          api.defaults.headers.common = {}
+        
+        // Si el token no tiene formato válido, limpiarlo y no usarlo
+        if (!isValidTokenFormat(cleanToken)) {
+          // Limpiar token inválido del localStorage
+          try {
+            localStorage.removeItem('access_token')
+            localStorage.removeItem('token')
+          } catch (e) {
+            // Ignore localStorage errors
+          }
+          // Eliminar header de autorización
+          delete config.headers.Authorization
+        } else {
+          config.headers.Authorization = `Bearer ${cleanToken}`
+          // También actualizar los headers por defecto para futuras peticiones
+          if (!api.defaults.headers.common) {
+            api.defaults.headers.common = {}
+          }
+          api.defaults.headers.common.Authorization = `Bearer ${cleanToken}`
+          if (!api.defaults.headers) {
+            api.defaults.headers = {}
+          }
+          api.defaults.headers.Authorization = `Bearer ${cleanToken}`
         }
-        api.defaults.headers.common.Authorization = `Bearer ${cleanToken}`
-        if (!api.defaults.headers) {
-          api.defaults.headers = {}
-        }
-        api.defaults.headers.Authorization = `Bearer ${cleanToken}`
       } else {
         // Si no hay token y no es un endpoint de autenticación, eliminar cualquier header previo
         delete config.headers.Authorization
