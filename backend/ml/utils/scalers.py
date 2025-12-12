@@ -14,6 +14,44 @@ from .logs import get_ml_logger
 logger = get_ml_logger("cacaoscan.ml.utils.scalers")
 
 
+def _aplicar_transformacion_log(target_array: np.ndarray, target: str, log_targets: set) -> np.ndarray:
+    """Aplica transformación log1p si el target lo requiere."""
+    if target in log_targets:
+        transformed = np.log1p(target_array)
+        logger.debug(f"Applied log1p transform to {target}")
+        return transformed
+    logger.debug(f"No log transform for {target}")
+    return target_array
+
+
+def _aplicar_transformacion_inversa_log(target: str, target_array: np.ndarray, log_targets: set) -> np.ndarray:
+    """Aplica transformación inversa expm1 si el target lo requiere."""
+    if target in log_targets:
+        transformed = np.expm1(target_array)
+        # Ensure non-negative
+        transformed = np.maximum(transformed, 0.0)
+        return transformed
+    return target_array
+
+
+def _reshape_para_scaler(target_array: np.ndarray) -> np.ndarray:
+    """Reshape un array a 2D para el scaler."""
+    if target_array.ndim == 1:
+        return target_array.reshape(-1, 1)
+    return target_array
+
+
+def _aplanar_desde_scaler(transformed_array: np.ndarray) -> np.ndarray:
+    """Aplana un array desde el formato del scaler."""
+    return transformed_array.flatten()
+
+
+def _validar_target_en_datos(target: str, targets: Dict[str, np.ndarray]) -> None:
+    """Valida que un target esté presente en los datos."""
+    if target not in targets:
+        raise ValueError(f"Target '{target}' not found in data")
+
+
 class CacaoRobustScaler:
     """
     StandardScaler wrapper for cacao targets with selective log-transform.
@@ -48,21 +86,15 @@ class CacaoRobustScaler:
         logger.info(f"LOG_TARGETS (will apply log1p): {self.LOG_TARGETS}")
         
         for target in self.TARGETS:
-            if target not in targets:
-                raise ValueError(f"Target '{target}' not found in data")
+            _validar_target_en_datos(target, targets)
             
             target_array = np.array(targets[target], dtype=np.float32)
             
             # Apply log(x + 1) transform ONLY to grosor and peso
-            if target in self.LOG_TARGETS:
-                target_array = np.log1p(target_array)
-                logger.debug(f"Applied log1p transform to {target}")
-            else:
-                logger.debug(f"No log transform for {target}")
+            target_array = _aplicar_transformacion_log(target_array, target, self.LOG_TARGETS)
             
             # Reshape for scaler
-            if target_array.ndim == 1:
-                target_array = target_array.reshape(-1, 1)
+            target_array = _reshape_para_scaler(target_array)
             
             # Fit StandardScaler
             scaler = StandardScaler()
@@ -93,24 +125,21 @@ class CacaoRobustScaler:
         transformed = {}
         
         for target in self.TARGETS:
-            if target not in targets:
-                raise ValueError(f"Target '{target}' not found in data")
+            _validar_target_en_datos(target, targets)
             
             target_array = np.array(targets[target], dtype=np.float32)
             
             # Apply log1p transform ONLY to grosor and peso
-            if target in self.LOG_TARGETS:
-                target_array = np.log1p(target_array)
+            target_array = _aplicar_transformacion_log(target_array, target, self.LOG_TARGETS)
             
             # Reshape for scaler
-            if target_array.ndim == 1:
-                target_array = target_array.reshape(-1, 1)
+            target_array = _reshape_para_scaler(target_array)
             
             # Transform
             transformed_array = self.scalers[target].transform(target_array)
             
             # Flatten back
-            transformed[target] = transformed_array.flatten()
+            transformed[target] = _aplanar_desde_scaler(transformed_array)
         
         return transformed
     
@@ -130,26 +159,21 @@ class CacaoRobustScaler:
         denormalized = {}
         
         for target in self.TARGETS:
-            if target not in targets:
-                raise ValueError(f"Target '{target}' not found in data")
+            _validar_target_en_datos(target, targets)
             
             target_array = np.array(targets[target], dtype=np.float32)
             
             # Reshape for scaler
-            if target_array.ndim == 1:
-                target_array = target_array.reshape(-1, 1)
+            target_array = _reshape_para_scaler(target_array)
             
             # Inverse transform
             denormalized_array = self.scalers[target].inverse_transform(target_array)
             
             # Apply expm1 to grosor and peso after inverse transform
-            if target in self.LOG_TARGETS:
-                denormalized_array = np.expm1(denormalized_array)
-                # Ensure non-negative
-                denormalized_array = np.maximum(denormalized_array, 0.0)
+            denormalized_array = _aplicar_transformacion_inversa_log(target, denormalized_array, self.LOG_TARGETS)
             
             # Flatten back
-            denormalized[target] = denormalized_array.flatten()
+            denormalized[target] = _aplanar_desde_scaler(denormalized_array)
         
         return denormalized
     

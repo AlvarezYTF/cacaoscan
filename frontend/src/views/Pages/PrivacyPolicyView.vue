@@ -13,21 +13,6 @@
       </div>
     </template>
 
-    <!-- Banner informativo legal -->
-    <div class="bg-green-50 border border-green-200 text-green-800 p-4 md:p-6 rounded-xl mb-8">
-      <div class="flex items-start gap-3">
-        <svg class="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-        </svg>
-        <div>
-          <p class="font-semibold text-green-900 mb-2">Protección de Datos Personales</p>
-          <p class="text-green-800 text-sm leading-relaxed">
-            Esta política describe cómo CacaoScan protege la información personal de los agricultores, administradores y usuarios registrados, cumpliendo con la Ley 1581 de 2012 y el Decreto 1377 de 2013 de Colombia.
-          </p>
-        </div>
-      </div>
-    </div>
-
     <!-- Índice de navegación interna -->
     <template #index>
       <div class="bg-green-50 border border-green-200 rounded-xl p-6 mb-8">
@@ -71,6 +56,21 @@
 
     <!-- Contenido principal -->
     <template #content>
+      <!-- Banner informativo legal -->
+      <div class="bg-green-50 border border-green-200 text-green-800 p-4 md:p-6 rounded-xl mb-8">
+        <div class="flex items-start gap-3">
+          <svg class="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <div>
+            <p class="font-semibold text-green-900 mb-2">Protección de Datos Personales</p>
+            <p class="text-green-800 text-sm leading-relaxed">
+              Esta política describe cómo CacaoScan protege la información personal de los agricultores, administradores y usuarios registrados, cumpliendo con la Ley 1581 de 2012 y el Decreto 1377 de 2013 de Colombia.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Introducción -->
       <div id="introduccion" class="mb-8">
         <p class="text-lg text-gray-700 leading-relaxed">
@@ -343,8 +343,15 @@
 <script setup>
 import LegalLayout from '@/components/legal/LegalLayout.vue'
 
-// Vista de política de privacidad con contenido estático y navegación interna
-// No requiere llamadas al backend - todo el contenido está en el frontend
+/**
+ * Vista de Política de Privacidad
+ * 
+ * Esta vista muestra la política de privacidad de la plataforma CacaoScan.
+ * El contenido es completamente estático y se renderiza en el frontend, por lo que
+ * no requiere llamadas al backend. Incluye navegación interna mediante anclas HTML.
+ * 
+ * @component PrivacyPolicyView
+ */
 </script>
 
 <style scoped>

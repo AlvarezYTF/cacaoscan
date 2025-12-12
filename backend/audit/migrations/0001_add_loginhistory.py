@@ -1,4 +1,5 @@
 # Generated manually - Move LoginHistory from api to audit app
+# -*- coding: utf-8 -*-
 # The table already exists as 'api_loginhistory', so we use db_table to maintain compatibility
 
 from django.conf import settings
@@ -26,9 +27,9 @@ class Migration(migrations.Migration):
                 ('login_time', models.DateTimeField(auto_now_add=True, help_text='Fecha y hora del inicio de sesión')),
                 ('logout_time', models.DateTimeField(blank=True, help_text='Fecha y hora del cierre de sesión', null=True)),
                 ('session_duration', models.DurationField(blank=True, help_text='Duración de la sesión', null=True)),
-                ('success', models.BooleanField(default=True, help_text='Indica si el inicio de sesión fue exitoso')),
+                ('login_successful', models.BooleanField(default=True, help_text='Indica si el inicio de sesión fue exitoso')),
                 ('failure_reason', models.CharField(blank=True, help_text='Razón del fallo si no fue exitoso', max_length=200, null=True)),
-                ('usuario', models.ForeignKey(help_text='Usuario que inició sesión', on_delete=django.db.models.deletion.CASCADE, related_name='login_history', to=settings.AUTH_USER_MODEL)),
+                ('user', models.ForeignKey(help_text='Usuario que inició sesión', on_delete=django.db.models.deletion.CASCADE, related_name='login_history', to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'db_table': 'api_loginhistory',  # Maintain existing table name
@@ -39,7 +40,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name='loginhistory',
-            index=models.Index(fields=['usuario', '-login_time'], name='api_loginhi_usuario_19e442_idx'),
+            index=models.Index(fields=['user', '-login_time'], name='api_loginhi_user_id_19e442_idx'),
         ),
         migrations.AddIndex(
             model_name='loginhistory',
@@ -51,7 +52,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name='loginhistory',
-            index=models.Index(fields=['success'], name='api_loginhi_success_78b423_idx'),
+            index=models.Index(fields=['login_successful'], name='api_loginhi_login_s_78b423_idx'),
         ),
             ],
             database_operations=[

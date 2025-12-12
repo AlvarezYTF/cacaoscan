@@ -13,12 +13,38 @@ backend/ml/models/
 *.pkl
 *.h5
 *.onnx
+# Modelos YOLO en root
+backend/yolo*.pt
+backend/*.pt
+
+# Artefactos de ML (modelos entrenados, resultados, datasets)
+backend/ml/artifacts/
+# Excepciones: mantener estructura de directorios si es necesario
+!backend/ml/artifacts/.gitkeep
 
 # Archivos de entrenamiento
 backend/ml/runs/
 backend/ml/logs/
 backend/ml/outputs/
 backend/training/management/commands/flujoentrenamiento.txt
+
+# Directorios de runs de YOLO (generados automáticamente)
+runs/
+runs/segment/
+runs/segment/val/
+
+# Resultados de entrenamiento YOLO
+backend/ml/artifacts/training_results/
+backend/ml/artifacts/reports/
+backend/ml/artifacts/yolov8-seg/models/
+backend/ml/artifacts/yolov8-seg/dataset/
+# Directorios específicos del dataset YOLO (train, val, test)
+backend/ml/artifacts/yolov8-seg/dataset/train/
+backend/ml/artifacts/yolov8-seg/dataset/val/
+backend/ml/artifacts/yolov8-seg/dataset/test/
+backend/ml/artifacts/regressors/*.pt
+backend/ml/artifacts/regressors/*.pkl
+backend/ml/artifacts/regressors/checkpoints/
 
 # Archivos temporales
 *.tmp
@@ -37,13 +63,14 @@ Thumbs.db
 *.db
 *.sqlite3
 
-# Archivos de cache
+# Archivos de cache de Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
 *.so
+*.cache
 
 # Archivos de IDE
 .vscode/
@@ -75,14 +102,26 @@ backend/staticfiles/
 backend/media/
 backend/static/
 
-# Archivos de Python
-*.pyc
-__pycache__/
+# Archivos temporales y runtime en media (más específicos para claridad)
+backend/media/temp/
+backend/media/cacao_images/crops_runtime/
+backend/media/cacao_images/processed/
+backend/media/cacao_images/crops/
+backend/media/cacao_images/masks/
+backend/media/cacao_images/converted_jpg/
+backend/media/dataset/
+backend/media/logs/
+backend/media/reportes/
+backend/media/datasets/
+
+# Archivos de Python (compilados y distribuciones)
 *.egg-info/
 dist/
 build/
+*.egg
 
 # Entornos virtuales de Python
+venc/
 venv/
 env/
 ENV/

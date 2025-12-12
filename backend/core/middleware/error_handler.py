@@ -22,6 +22,9 @@ class StandardErrorMiddleware:
         """
         Procesa excepciones no manejadas y las convierte al formato estándar.
         """
+        # Suppress unused parameter warning - exception es parte de la firma requerida por Django
+        _ = exception
+        
         # Solo procesar errores en rutas de API
         if request.path.startswith('/api/'):
             return JsonResponse({

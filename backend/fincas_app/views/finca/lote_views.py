@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import serializers
 from django.core.paginator import Paginator
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
@@ -27,10 +28,51 @@ from api.serializers import (
     LoteListSerializer,
     LoteDetailSerializer,
     LoteStatsSerializer,
-    ErrorResponseSerializer
+    ErrorResponseSerializer,
+    CacaoImageSerializer
 )
 
 logger = logging.getLogger("cacaoscan.api")
+
+# Error message constants
+ERROR_INTERNAL_SERVER = 'Error interno del servidor'
+ERROR_INVALID_INPUT = 'Datos de entrada inválidos'
+ERROR_LOTE_NOT_FOUND = 'Lote no encontrado'
+
+
+def create_error_response(error_message: str, status_code: int) -> Response:
+    """
+    Crea una respuesta de error estandarizada.
+    
+    Args:
+        error_message: Mensaje de error
+        status_code: Código de estado HTTP
+        
+    Returns:
+        Response con formato de error estándar
+    """
+    return Response({
+        'error': error_message,
+        'status': 'error'
+    }, status=status_code)
+
+
+def handle_exception(e: Exception, user: str, operation: str, lote_id: int = None) -> Response:
+    """
+    Maneja excepciones y retorna respuesta de error.
+    
+    Args:
+        e: Excepción capturada
+        user: Usuario que realizó la operación
+        operation: Descripción de la operación
+        lote_id: ID del lote (opcional)
+        
+    Returns:
+        Response con error interno del servidor
+    """
+    lote_info = f"lote {lote_id}" if lote_id else "lote"
+    logger.error(f"Error {operation} {lote_info} para usuario {user}: {e}")
+    return create_error_response(ERROR_INTERNAL_SERVER, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class LotePermissionMixin(AdminPermissionMixin):
@@ -46,12 +88,26 @@ class LotePermissionMixin(AdminPermissionMixin):
         
         if self.is_admin_user(user):
             # Admin puede ver todos los lotes
-            return Lote.objects.all().select_related('finca', 'finca__agricultor')
+            return Lote.objects.all().select_related(
+                'finca', 
+                'finca__agricultor',
+                'variedad',
+                'estado',
+                'finca__municipio',
+                'finca__municipio__departamento'
+            ).prefetch_related('cacao_images')
         else:
             # Agricultor solo ve lotes de sus fincas
             return Lote.objects.filter(
                 finca__agricultor=user
-            ).select_related('finca', 'finca__agricultor')
+            ).select_related(
+                'finca', 
+                'finca__agricultor',
+                'variedad',
+                'estado',
+                'finca__municipio',
+                'finca__municipio__departamento'
+            ).prefetch_related('cacao_images')
     
     def perform_create(self, serializer):
         """Validar que la finca pertenezca al usuario."""
@@ -105,7 +161,12 @@ class LoteListCreateView(PaginationMixin, LotePermissionMixin, APIView):
             
             variedad = request.GET.get('variedad', '').strip()
             if variedad:
-                queryset = queryset.filter(variedad__icontains=variedad)
+                # Variedad is now a ForeignKey to Parametro, filter by ID or nombre
+                try:
+                    variedad_id = int(variedad)
+                    queryset = queryset.filter(variedad_id=variedad_id)
+                except (ValueError, TypeError):
+                    queryset = queryset.filter(variedad__nombre__icontains=variedad)
             
             estado = request.GET.get('estado', '').strip()
             if estado:
@@ -120,7 +181,8 @@ class LoteListCreateView(PaginationMixin, LotePermissionMixin, APIView):
             if search:
                 queryset = queryset.filter(
                     Q(identificador__icontains=search) |
-                    Q(variedad__icontains=search) |
+                    Q(nombre__icontains=search) |
+                    Q(variedad__nombre__icontains=search) |
                     Q(finca__nombre__icontains=search)
                 )
             
@@ -132,11 +194,7 @@ class LoteListCreateView(PaginationMixin, LotePermissionMixin, APIView):
             )
             
         except Exception as e:
-            logger.error(f"Error listando lotes para usuario {request.user.username}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return handle_exception(e, request.user.username, "listando lotes")
     
     @swagger_auto_schema(
         operation_description="Crea un nuevo lote para el usuario autenticado",
@@ -145,17 +203,19 @@ class LoteListCreateView(PaginationMixin, LotePermissionMixin, APIView):
             type=openapi.TYPE_OBJECT,
             properties={
                 'finca': openapi.Schema(type=openapi.TYPE_INTEGER, description="ID de la finca"),
-                'identificador': openapi.Schema(type=openapi.TYPE_STRING, description="Identificador del lote"),
-                'variedad': openapi.Schema(type=openapi.TYPE_STRING, description="Variedad de cacao"),
-                'fecha_plantacion': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de plantación"),
-                'fecha_cosecha': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de cosecha"),
-                'area_hectareas': openapi.Schema(type=openapi.TYPE_NUMBER, description="Área en hectáreas"),
-                'estado': openapi.Schema(type=openapi.TYPE_STRING, description="Estado del lote"),
-                'descripcion': openapi.Schema(type=openapi.TYPE_STRING, description="Descripción adicional"),
-                'coordenadas_lat': openapi.Schema(type=openapi.TYPE_NUMBER, description="Latitud GPS"),
-                'coordenadas_lng': openapi.Schema(type=openapi.TYPE_NUMBER, description="Longitud GPS"),
+                'identificador': openapi.Schema(type=openapi.TYPE_STRING, description="Identificador del lote (opcional)"),
+                'nombre': openapi.Schema(type=openapi.TYPE_STRING, description="Nombre o descripción del bulto (opcional)"),
+                'variedad': openapi.Schema(type=openapi.TYPE_INTEGER, description="ID del parámetro de variedad de cacao"),
+                'peso_kg': openapi.Schema(type=openapi.TYPE_NUMBER, description="Peso del bulto en kilogramos"),
+                'fecha_recepcion': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de recepción del bulto"),
+                'fecha_procesamiento': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de procesamiento (opcional)"),
+                'fecha_plantacion': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de plantación (opcional)"),
+                'fecha_cosecha': openapi.Schema(type=openapi.TYPE_STRING, format='date', description="Fecha de cosecha (opcional)"),
+                'estado': openapi.Schema(type=openapi.TYPE_INTEGER, description="ID del parámetro de estado del lote (opcional)"),
+                'descripcion': openapi.Schema(type=openapi.TYPE_STRING, description="Descripción adicional (opcional)"),
+                'activa': openapi.Schema(type=openapi.TYPE_BOOLEAN, description="Estado activo (opcional, default: true)"),
             },
-            required=['finca', 'identificador', 'variedad', 'fecha_plantacion', 'area_hectareas']
+            required=['finca', 'variedad', 'peso_kg', 'fecha_recepcion']
         ),
         responses={
             201: openapi.Response(description="Lote creado exitosamente"),
@@ -167,8 +227,15 @@ class LoteListCreateView(PaginationMixin, LotePermissionMixin, APIView):
     def post(self, request):
         """Crear nuevo lote."""
         try:
+            import traceback
+            
+            # Preparar datos: mapear 'activa' a 'activo' si es necesario
+            data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+            if 'activa' in data and 'activo' not in data:
+                data['activo'] = data.pop('activa')
+            
             # Validar que la finca existe y pertenece al usuario
-            finca_id = request.data.get('finca')
+            finca_id = data.get('finca')
             if not finca_id:
                 return Response({
                     'error': 'La finca es requerida',
@@ -189,32 +256,45 @@ class LoteListCreateView(PaginationMixin, LotePermissionMixin, APIView):
                     'status': 'error'
                 }, status=status.HTTP_404_NOT_FOUND)
             
+            logger.info(f"Creando lote con datos: {data}")
+            
             serializer = LoteSerializer(
-                data=request.data, 
+                data=data, 
                 context={'request': request, 'finca': finca}
             )
             
             if serializer.is_valid():
-                lote = serializer.save()
-                
-                logger.info(f"Lote '{lote.identificador}' creado por usuario {request.user.username}")
-                
-                # Devolver datos completos
-                response_serializer = LoteSerializer(lote, context={'request': request})
-                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+                try:
+                    lote = serializer.save()
+                    
+                    logger.info(f"Lote '{lote.identificador or lote.nombre}' creado por usuario {request.user.username}")
+                    
+                    # Devolver datos completos con formato estándar
+                    response_serializer = LoteSerializer(lote, context={'request': request})
+                    return Response({
+                        'success': True,
+                        'lote': response_serializer.data
+                    }, status=status.HTTP_201_CREATED)
+                except Exception as save_error:
+                    logger.error(f"Error guardando lote: {save_error}")
+                    logger.error(f"Traceback: {traceback.format_exc()}")
+                    return Response({
+                        'error': 'Error al guardar el lote',
+                        'details': str(save_error),
+                        'status': 'error'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             else:
+                logger.error(f"Errores de validación: {serializer.errors}")
                 return Response({
-                    'error': 'Datos de entrada inválidos',
+                    'error': ERROR_INVALID_INPUT,
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Exception as e:
-            logger.error(f"Error creando lote para usuario {request.user.username}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(f"Error creando lote: {e}")
+            logger.error(f"Traceback completo: {traceback.format_exc()}")
+            return handle_exception(e, request.user.username, "creando")
 
 
 class LoteDetailView(LotePermissionMixin, APIView):
@@ -233,9 +313,14 @@ class LoteDetailView(LotePermissionMixin, APIView):
         },
         tags=['Lotes']
     )
-    def get(self, request, lote_id):
+    def get(self, request, lote_id=None, pk=None):
         """Obtener detalles de lote."""
         try:
+            # Support both lote_id and pk parameters for URL compatibility
+            lote_id = lote_id or pk
+            if not lote_id:
+                return create_error_response('ID de lote requerido', status.HTTP_400_BAD_REQUEST)
+            
             queryset = self.get_queryset()
             lote = queryset.get(id=lote_id)
             
@@ -243,16 +328,9 @@ class LoteDetailView(LotePermissionMixin, APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
             
         except Lote.DoesNotExist:
-            return Response({
-                'error': 'Lote no encontrado',
-                'status': 'error'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return create_error_response(ERROR_LOTE_NOT_FOUND, status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error obteniendo detalles de lote {lote_id}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return handle_exception(e, request.user.username, "obteniendo detalles de", lote_id)
 
 
 class LoteUpdateView(LotePermissionMixin, APIView):
@@ -287,8 +365,18 @@ class LoteUpdateView(LotePermissionMixin, APIView):
         },
         tags=['Lotes']
     )
-    def put(self, request, lote_id):
-        """Actualizar lote completo."""
+    def _update_lote(self, request, lote_id, partial: bool = False):
+        """
+        Método helper para actualizar un lote (completo o parcial).
+        
+        Args:
+            request: Request HTTP
+            lote_id: ID del lote a actualizar
+            partial: Si es True, actualización parcial (PATCH), si es False, completa (PUT)
+            
+        Returns:
+            Response con el lote actualizado o error
+        """
         try:
             queryset = self.get_queryset()
             lote = queryset.get(id=lote_id)
@@ -296,73 +384,37 @@ class LoteUpdateView(LotePermissionMixin, APIView):
             serializer = LoteSerializer(
                 lote, 
                 data=request.data, 
+                partial=partial, 
                 context={'request': request, 'finca': lote.finca}
             )
             
             if serializer.is_valid():
                 lote = serializer.save()
                 
-                logger.info(f"Lote '{lote.identificador}' actualizado por usuario {request.user.username}")
+                update_type = "parcialmente" if partial else ""
+                logger.info(f"Lote '{lote.identificador}' actualizado {update_type} por usuario {request.user.username}")
                 
                 response_serializer = LoteSerializer(lote, context={'request': request})
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response({
-                    'error': 'Datos de entrada inválidos',
+                    'error': ERROR_INVALID_INPUT,
                     'details': serializer.errors,
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Lote.DoesNotExist:
-            return Response({
-                'error': 'Lote no encontrado',
-                'status': 'error'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return create_error_response(ERROR_LOTE_NOT_FOUND, status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error actualizando lote {lote_id}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return handle_exception(e, request.user.username, "actualizando", lote_id)
+    
+    def put(self, request, lote_id):
+        """Actualizar lote completo."""
+        return self._update_lote(request, lote_id, partial=False)
     
     def patch(self, request, lote_id):
         """Actualizar lote parcialmente."""
-        try:
-            queryset = self.get_queryset()
-            lote = queryset.get(id=lote_id)
-            
-            serializer = LoteSerializer(
-                lote, 
-                data=request.data, 
-                partial=True, 
-                context={'request': request, 'finca': lote.finca}
-            )
-            
-            if serializer.is_valid():
-                lote = serializer.save()
-                
-                logger.info(f"Lote '{lote.identificador}' actualizado parcialmente por usuario {request.user.username}")
-                
-                response_serializer = LoteSerializer(lote, context={'request': request})
-                return Response(response_serializer.data, status=status.HTTP_200_OK)
-            else:
-                return Response({
-                    'error': 'Datos de entrada inválidos',
-                    'details': serializer.errors,
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-                
-        except Lote.DoesNotExist:
-            return Response({
-                'error': 'Lote no encontrado',
-                'status': 'error'
-            }, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            logger.error(f"Error actualizando lote {lote_id}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return self._update_lote(request, lote_id, partial=True)
 
 
 class LoteDeleteView(LotePermissionMixin, APIView):
@@ -403,16 +455,9 @@ class LoteDeleteView(LotePermissionMixin, APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
             
         except Lote.DoesNotExist:
-            return Response({
-                'error': 'Lote no encontrado',
-                'status': 'error'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return create_error_response(ERROR_LOTE_NOT_FOUND, status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error eliminando lote {lote_id}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return handle_exception(e, request.user.username, "eliminando", lote_id)
 
 
 class LoteStatsView(LotePermissionMixin, APIView):
@@ -450,16 +495,9 @@ class LoteStatsView(LotePermissionMixin, APIView):
             return Response(stats, status=status.HTTP_200_OK)
             
         except Lote.DoesNotExist:
-            return Response({
-                'error': 'Lote no encontrado',
-                'status': 'error'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return create_error_response(ERROR_LOTE_NOT_FOUND, status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error obteniendo estadísticas de lote {lote_id}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return handle_exception(e, request.user.username, "obteniendo estadísticas de", lote_id)
 
 
 class LotesPorFincaView(LotePermissionMixin, APIView):
@@ -481,13 +519,32 @@ class LotesPorFincaView(LotePermissionMixin, APIView):
     def get(self, request, finca_id):
         """Obtener lotes de una finca."""
         try:
+            is_admin = self.is_admin_user(request.user)
+            logger.info(f"Usuario {request.user.username} (admin: {is_admin}) solicitando lotes de finca {finca_id}")
+            
             # Verificar que la finca existe y pertenece al usuario
-            if self.is_admin_user(request.user):
-                finca = Finca.objects.get(id=finca_id)
+            if is_admin:
+                # Admin puede ver lotes de cualquier finca
+                try:
+                    finca = Finca.objects.get(id=finca_id)
+                    logger.info(f"Admin accediendo a finca {finca_id}: {finca.nombre}")
+                except Finca.DoesNotExist:
+                    logger.warning(f"Admin intentó acceder a finca inexistente: {finca_id}")
+                    return create_error_response('Finca no encontrada', status.HTTP_404_NOT_FOUND)
             else:
-                finca = Finca.objects.get(id=finca_id, agricultor=request.user)
+                # Agricultor solo puede ver lotes de sus fincas
+                try:
+                    finca = Finca.objects.get(id=finca_id, agricultor=request.user)
+                    logger.info(f"Agricultor {request.user.username} accediendo a su finca {finca_id}: {finca.nombre}")
+                except Finca.DoesNotExist:
+                    logger.warning(f"Agricultor {request.user.username} intentó acceder a finca {finca_id} que no le pertenece")
+                    return create_error_response(
+                        'Finca no encontrada o no tienes permisos para acceder a esta finca', 
+                        status.HTTP_404_NOT_FOUND
+                    )
             
             lotes = Lote.objects.filter(finca=finca).select_related('finca', 'finca__agricultor')
+            logger.info(f"Encontrados {lotes.count()} lotes para finca {finca_id}")
             
             serializer = LoteListSerializer(lotes, many=True)
             
@@ -502,15 +559,144 @@ class LotesPorFincaView(LotePermissionMixin, APIView):
             }, status=status.HTTP_200_OK)
             
         except Finca.DoesNotExist:
-            return Response({
-                'error': 'Finca no encontrada',
-                'status': 'error'
-            }, status=status.HTTP_404_NOT_FOUND)
+            logger.error(f"Finca {finca_id} no encontrada para usuario {request.user.username}")
+            return create_error_response('Finca no encontrada', status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error obteniendo lotes de finca {finca_id}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(f"Error obteniendo lotes de finca {finca_id} para usuario {request.user.username}: {e}", exc_info=True)
+            return handle_exception(e, request.user.username, "obteniendo lotes de finca", finca_id)
+
+
+class AnalisisSerializer(serializers.Serializer):
+    """Serializer for análisis (images) in lote detail view."""
+    id = serializers.IntegerField()
+    fecha_analisis = serializers.DateTimeField(source='created_at')
+    tipo_analisis = serializers.SerializerMethodField()
+    calidad = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+    prediction = serializers.SerializerMethodField()
+    
+    def get_tipo_analisis(self, obj):
+        return 'Análisis de Imagen'
+    
+    def get_calidad(self, obj):
+        if hasattr(obj, 'prediction') and obj.prediction:
+            if obj.prediction.quality_score is not None:
+                return float(obj.prediction.quality_score)
+            # Calcular calidad basada en confianza promedio si no hay quality_score
+            if hasattr(obj.prediction, 'average_confidence'):
+                avg_conf = float(obj.prediction.average_confidence)
+                return round(avg_conf * 100, 2)
+        return 0
+    
+    def get_image_url(self, obj):
+        """Get image URL."""
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return None
+    
+    def get_prediction(self, obj):
+        """Get prediction data if exists."""
+        if hasattr(obj, 'prediction') and obj.prediction:
+            pred = obj.prediction
+            return {
+                'id': pred.id,
+                'alto_mm': float(pred.alto_mm) if pred.alto_mm else None,
+                'ancho_mm': float(pred.ancho_mm) if pred.ancho_mm else None,
+                'grosor_mm': float(pred.grosor_mm) if pred.grosor_mm else None,
+                'peso_g': float(pred.peso_g) if pred.peso_g else None,
+                'confidence_alto': float(pred.confidence_alto) if pred.confidence_alto else None,
+                'confidence_ancho': float(pred.confidence_ancho) if pred.confidence_ancho else None,
+                'confidence_grosor': float(pred.confidence_grosor) if pred.confidence_grosor else None,
+                'confidence_peso': float(pred.confidence_peso) if pred.confidence_peso else None,
+                'average_confidence': float(pred.average_confidence) if hasattr(pred, 'average_confidence') and pred.average_confidence else None,
+                'processing_time_ms': pred.processing_time_ms,
+                'crop_url': pred.crop_url if pred.crop_url else None,
+                'model_version': str(pred.model_version) if pred.model_version else None,
+                'device_used': str(pred.device_used) if pred.device_used else None,
+                'created_at': pred.created_at.isoformat() if pred.created_at else None
+            }
+        return None
+        return None
+
+
+class LoteAnalisisView(PaginationMixin, LotePermissionMixin, APIView):
+    """
+    Vista para obtener los análisis (imágenes) de un lote específico.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_description="Obtiene los análisis (imágenes) de un lote específico con paginación",
+        operation_summary="Análisis de lote",
+        manual_parameters=[
+            openapi.Parameter('page', openapi.IN_QUERY, description="Número de página", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('page_size', openapi.IN_QUERY, description="Tamaño de página (máximo 100)", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('processed', openapi.IN_QUERY, description="Filtrar por estado de procesamiento", type=openapi.TYPE_BOOLEAN),
+            openapi.Parameter('date_from', openapi.IN_QUERY, description="Fecha desde (YYYY-MM-DD)", type=openapi.TYPE_STRING),
+            openapi.Parameter('date_to', openapi.IN_QUERY, description="Fecha hasta (YYYY-MM-DD)", type=openapi.TYPE_STRING),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Análisis obtenidos exitosamente",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT)),
+                        'count': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'next': openapi.Schema(type=openapi.TYPE_STRING),
+                        'previous': openapi.Schema(type=openapi.TYPE_STRING),
+                        'page': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'page_size': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'total_pages': openapi.Schema(type=openapi.TYPE_INTEGER)
+                    }
+                )
+            ),
+            404: ErrorResponseSerializer,
+            401: ErrorResponseSerializer,
+        },
+        tags=['Lotes']
+    )
+    def get(self, request, lote_id):
+        """
+        Obtener análisis (imágenes) de un lote específico.
+        """
+        try:
+            # Verificar que el lote existe y el usuario tiene permisos
+            queryset = self.get_queryset()
+            lote = queryset.get(id=lote_id)
+            
+            # Obtener imágenes del lote con predicciones (OneToOne relationship)
+            images_queryset = lote.cacao_images.all().select_related(
+                'user', 'lote', 'file_type', 'prediction'
+            ).order_by('-created_at')
+            
+            # Aplicar filtros opcionales
+            processed = request.GET.get('processed')
+            if processed is not None:
+                processed_bool = processed.lower() in ['true', '1', 'yes']
+                images_queryset = images_queryset.filter(processed=processed_bool)
+            
+            date_from = request.GET.get('date_from')
+            if date_from:
+                images_queryset = images_queryset.filter(created_at__date__gte=date_from)
+            
+            date_to = request.GET.get('date_to')
+            if date_to:
+                images_queryset = images_queryset.filter(created_at__date__lte=date_to)
+            
+            # Paginar usando el mixin con serializer personalizado
+            return self.paginate_queryset(
+                request,
+                images_queryset,
+                AnalisisSerializer
+            )
+            
+        except Lote.DoesNotExist:
+            return create_error_response(ERROR_LOTE_NOT_FOUND, status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return handle_exception(e, request.user.username, "obteniendo análisis de", lote_id)
 
 

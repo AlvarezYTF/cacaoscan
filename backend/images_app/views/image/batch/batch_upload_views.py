@@ -5,6 +5,7 @@ Handles lote/finca creation and image upload for batch processing.
 import logging
 import time
 from pathlib import Path
+from typing import Optional, Tuple
 from datetime import datetime, date
 from django.db import transaction, connection as db_conn
 from django.conf import settings
@@ -19,17 +20,24 @@ from drf_yasg import openapi
 from api.utils.model_imports import get_models_safely
 from api.tasks.image_tasks import process_batch_analysis_task
 from api.serializers import ErrorResponseSerializer
-from api.views.mixins import AdminPermissionMixin
+from api.views.mixins.admin_mixin import AdminPermissionMixin
 
 # Import models safely
 models = get_models_safely({
     'Lote': 'fincas_app.models.Lote',
     'Finca': 'fincas_app.models.Finca',
+    'VariedadCacao': 'catalogos.models.VariedadCacao',
+    'EstadoLote': 'catalogos.models.EstadoLote',
 })
 Lote = models['Lote']
 Finca = models['Finca']
+VariedadCacao = models['VariedadCacao']
+EstadoLote = models['EstadoLote']
 
 logger = logging.getLogger("cacaoscan.api")
+
+# Default value constants
+DEFAULT_NOT_SPECIFIED = 'No especificado'
 
 
 class BatchAnalysisView(AdminPermissionMixin, APIView):
@@ -76,6 +84,66 @@ class BatchAnalysisView(AdminPermissionMixin, APIView):
         },
         tags=['Análisis']
     )
+    
+    def _validate_batch_input(self, data) -> Response | None:
+        """Validate batch upload input data. Returns error Response or None if valid."""
+        name = data.get('name', '').strip()
+        farm_name = data.get('farm', '').strip()
+        genetics = data.get('genetics', '').strip()
+        collection_date = data.get('collectionDate', '').strip()
+        
+        if not name:
+            return Response({
+                'error': 'El nombre del lote es requerido',
+                'status': 'error'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not farm_name:
+            return Response({
+                'error': 'La finca es requerida',
+                'status': 'error'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not genetics:
+            return Response({
+                'error': 'La genética es requerida',
+                'status': 'error'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not collection_date:
+            return Response({
+                'error': 'La fecha de recolección es requerida',
+                'status': 'error'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        return None
+    
+    def _save_images_temporarily(self, images, lote_id: int) -> list:
+        """Save images to temporary directory and return image data list."""
+        media_root = Path(settings.MEDIA_ROOT)
+        temp_dir = media_root / 'temp' / f'batch_{lote_id}_{int(time.time())}'
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        images_data = []
+        for idx, image_file in enumerate(images):
+            try:
+                temp_path = temp_dir / f"{idx}_{image_file.name}"
+                with open(temp_path, 'wb+') as destination:
+                    for chunk in image_file.chunks():
+                        destination.write(chunk)
+                
+                images_data.append({
+                    'file_name': image_file.name,
+                    'file_size': image_file.size,
+                    'file_type': image_file.content_type,
+                    'temp_path': str(temp_path)
+                })
+            except Exception as e:
+                logger.error(f"Error saving temporary image {idx}: {e}")
+                continue
+        
+        return images_data
+    
     def post(self, request):
         """
         Processes a lote with multiple images using ML asynchronously.
@@ -83,10 +151,12 @@ class BatchAnalysisView(AdminPermissionMixin, APIView):
         Returns immediately a task_id that can be used to check the status
         of processing via the endpoint GET /api/v1/tasks/{task_id}/status/
         """
-        start_time = time.time()
-        
         try:
             # 1. Validate input data
+            validation_error = self._validate_batch_input(request.data)
+            if validation_error:
+                return validation_error
+            
             name = request.data.get('name', '').strip()
             farm_name = request.data.get('farm', '').strip()
             genetics = request.data.get('genetics', '').strip()
@@ -94,31 +164,6 @@ class BatchAnalysisView(AdminPermissionMixin, APIView):
             origin_place = request.data.get('originPlace', '').strip()
             origin = request.data.get('origin', '').strip()
             notes = request.data.get('notes', '').strip()
-            
-            # Validations
-            if not name:
-                return Response({
-                    'error': 'El nombre del lote es requerido',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            if not farm_name:
-                return Response({
-                    'error': 'La finca es requerida',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            if not genetics:
-                return Response({
-                    'error': 'La genética es requerida',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            if not collection_date:
-                return Response({
-                    'error': 'La fecha de recolección es requerida',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
             
             # 2. Get or create finca
             finca = self._get_or_create_finca(request, farm_name, origin_place, origin)
@@ -151,28 +196,7 @@ class BatchAnalysisView(AdminPermissionMixin, APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # 5. Save images temporarily and prepare data for task
-            media_root = Path(settings.MEDIA_ROOT)
-            temp_dir = media_root / 'temp' / f'batch_{lote.id}_{int(time.time())}'
-            temp_dir.mkdir(parents=True, exist_ok=True)
-            
-            images_data = []
-            for idx, image_file in enumerate(images):
-                try:
-                    # Save image to temporary location
-                    temp_path = temp_dir / f"{idx}_{image_file.name}"
-                    with open(temp_path, 'wb+') as destination:
-                        for chunk in image_file.chunks():
-                            destination.write(chunk)
-                    
-                    images_data.append({
-                        'file_name': image_file.name,
-                        'file_size': image_file.size,
-                        'file_type': image_file.content_type,
-                        'temp_path': str(temp_path)
-                    })
-                except Exception as e:
-                    logger.error(f"Error saving temporary image {idx}: {e}")
-                    continue
+            images_data = self._save_images_temporarily(images, lote.id)
             
             if not images_data:
                 return Response({
@@ -180,27 +204,83 @@ class BatchAnalysisView(AdminPermissionMixin, APIView):
                     'status': 'error'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-            # 6. Enqueue Celery task
-            task = process_batch_analysis_task.delay(
-                user_id=request.user.id,
-                lote_id=lote.id,
-                images_data=images_data
-            )
+            # 6. Enqueue Celery task o ejecutar síncronamente
+            import os
+            USE_CELERY_REDIS = os.environ.get('USE_CELERY_REDIS', 'True').lower() == 'true'
             
+            if USE_CELERY_REDIS:
+                # Ejecutar con Celery (asíncrono)
+                try:
+                    task = process_batch_analysis_task.delay(
+                        user_id=request.user.id,
+                        lote_id=lote.id,
+                        images_data=images_data
+                    )
+                    
+                    logger.info(
+                        f"Batch analysis task enqueued - Task ID: {task.id}, "
+                        f"Lote ID: {lote.id}, Images: {len(images_data)}"
+                    )
+                    
+                    # 7. Return task_id immediately
+                    return Response({
+                        'task_id': task.id,
+                        'lote_id': lote.id,
+                        'lote_name': lote.identificador,
+                        'total_images': len(images_data),
+                        'status': 'processing',
+                        'message': 'Análisis batch iniciado. Use el task_id para consultar el estado.'
+                    }, status=status.HTTP_202_ACCEPTED)
+                except Exception as celery_error:
+                    logger.warning(f"Error al encolar tarea en Celery: {celery_error}. Ejecutando síncronamente...")
+                    # Fallback a ejecución síncrona
+            
+            # Ejecutar síncronamente (sin Celery)
             logger.info(
-                f"Batch analysis task enqueued - Task ID: {task.id}, "
+                f"Ejecutando análisis batch síncronamente - "
                 f"Lote ID: {lote.id}, Images: {len(images_data)}"
             )
             
-            # 7. Return task_id immediately
-            return Response({
-                'task_id': task.id,
-                'lote_id': lote.id,
-                'lote_name': lote.identificador,
-                'total_images': len(images_data),
-                'status': 'processing',
-                'message': 'Análisis batch iniciado. Use el task_id para consultar el estado.'
-            }, status=status.HTTP_202_ACCEPTED)
+            try:
+                # Importar la función de implementación directamente
+                from api.tasks.image_tasks import _process_batch_analysis_impl
+                result = _process_batch_analysis_impl(
+                    user_id=request.user.id,
+                    lote_id=lote.id,
+                    images_data=images_data,
+                    task_instance=None  # Sin instancia de tarea para ejecución síncrona
+                )
+                
+                # Aplanar la respuesta para que las predicciones estén en el nivel superior
+                # Esto facilita el procesamiento en el frontend
+                response_data = {
+                    'lote_id': lote.id,
+                    'lote_name': lote.identificador,
+                    'total_images': len(images_data),
+                    'status': 'completed',
+                    'message': 'Análisis batch completado.'
+                }
+                
+                # Si result tiene datos, aplanarlos al nivel superior
+                if result and isinstance(result, dict):
+                    response_data.update({
+                        'processed_images': result.get('processed_images', 0),
+                        'failed_images': result.get('failed_images', 0),
+                        'average_confidence': result.get('average_confidence', 0),
+                        'average_dimensions': result.get('average_dimensions', {}),
+                        'total_weight': result.get('total_weight', 0),
+                        'predictions': result.get('predictions', []),
+                        'processing_time_seconds': result.get('processing_time_seconds', 0)
+                    })
+                
+                return Response(response_data, status=status.HTTP_200_OK)
+            except Exception as sync_error:
+                logger.error(f"Error ejecutando análisis síncrono: {sync_error}", exc_info=True)
+                return Response({
+                    'error': 'Error procesando imágenes',
+                    'details': str(sync_error),
+                    'status': 'error'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
         except Exception as e:
             logger.error(f"Error en análisis batch: {e}", exc_info=True)
@@ -236,9 +316,9 @@ class BatchAnalysisView(AdminPermissionMixin, APIView):
                 finca = Finca.objects.create(
                     nombre=farm_name,
                     agricultor=request.user,  # Always assign current user
-                    ubicacion=origin_place if origin_place else 'No especificado',
-                    municipio=origin_place if origin_place else 'No especificado',
-                    departamento=origin if origin else 'No especificado',
+                    ubicacion=origin_place if origin_place else DEFAULT_NOT_SPECIFIED,
+                    municipio=origin_place if origin_place else DEFAULT_NOT_SPECIFIED,
+                    departamento=origin if origin else DEFAULT_NOT_SPECIFIED,
                     hectareas=1.0,  # Default value
                     activa=True
                 )
@@ -260,141 +340,228 @@ class BatchAnalysisView(AdminPermissionMixin, APIView):
             logger.error(f"Error obteniendo/creando finca: {e}", exc_info=True)
             return None
     
+    def _parse_collection_date(self, collection_date: str) -> date:
+        """Parsea la fecha de recolección."""
+        try:
+            return datetime.strptime(collection_date, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            return date.today()
+    
+    def _validate_finca(self, finca) -> Tuple[Optional[object], Optional[None]]:
+        """Valida que la finca existe y es válida."""
+        if not finca or not finca.id:
+            logger.error(f"Error: Finca no válida al crear lote. Finca={finca}")
+            return None, None
+        
+        try:
+            finca_verificada = Finca.objects.get(id=finca.id)
+            logger.debug(f"Finca verificada: ID={finca_verificada.id}, nombre={finca_verificada.nombre}, tabla={Finca._meta.db_table}")
+            return finca_verificada, None
+        except Finca.DoesNotExist:
+            logger.error(f"Error: Finca con ID={finca.id} no existe en la base de datos. Tabla esperada: {Finca._meta.db_table}")
+            return None, None
+    
+    def _verify_table_consistency(self, finca_verificada) -> bool:
+        """Verifica la consistencia de las tablas."""
+        lote_finca_model = Lote._meta.get_field('finca').remote_field.model
+        lote_finca_table = lote_finca_model._meta.db_table
+        finca_table = Finca._meta.db_table
+        
+        if lote_finca_table != finca_table:
+            logger.error(
+                f"Error: Desajuste de tablas - Lote referencia '{lote_finca_table}' "
+                f"pero Finca está en '{finca_table}'"
+            )
+            return False
+        return True
+    
+    def _verify_finca_in_db(self, finca_verificada) -> Tuple[Optional[int], Optional[str]]:
+        """Verifica que la finca existe en la BD usando SQL directo."""
+        with db_conn.cursor() as cursor:
+            cursor.execute("SELECT id, nombre FROM api_finca WHERE id = %s", [finca_verificada.id])
+            finca_row = cursor.fetchone()
+            
+            if not finca_row:
+                logger.error(f"Error crítico: Finca ID={finca_verificada.id} no existe en tabla api_finca")
+                return None, None
+            
+            finca_id_bd, finca_nombre_bd = finca_row
+            logger.debug(f"Verificación SQL: Finca ID={finca_id_bd} existe en api_finca: {finca_nombre_bd}")
+            return finca_id_bd, finca_nombre_bd
+    
+    def _get_or_create_variedad(self, genetics: str):
+        """Get or create VariedadCacao from genetics string."""
+        if not genetics:
+            genetics = DEFAULT_NOT_SPECIFIED
+        
+        # Try to find by nombre first
+        variedad = VariedadCacao.objects.filter(nombre__iexact=genetics, activo=True).first()
+        if variedad:
+            return variedad
+        
+        # Try to find by codigo
+        variedad = VariedadCacao.objects.filter(codigo__iexact=genetics.upper(), activo=True).first()
+        if variedad:
+            return variedad
+        
+        # Create new if not found
+        codigo = genetics.upper().replace(' ', '_')[:20]
+        variedad, created = VariedadCacao.objects.get_or_create(
+            codigo=codigo,
+            defaults={
+                'nombre': genetics,
+                'descripcion': f'Variedad creada automáticamente: {genetics}',
+                'activo': True
+            }
+        )
+        return variedad
+    
+    def _get_or_create_estado_lote(self, estado_codigo: str = 'ACTIVO'):
+        """Get or create EstadoLote from codigo."""
+        estado = EstadoLote.objects.filter(codigo__iexact=estado_codigo, activo=True).first()
+        if estado:
+            return estado
+        
+        # Create default estado if not found
+        estado_nombres = {
+            'ACTIVO': 'Activo',
+            'INACTIVO': 'Inactivo',
+            'COSECHADO': 'Cosechado',
+            'RENOVADO': 'Renovado'
+        }
+        nombre = estado_nombres.get(estado_codigo.upper(), estado_codigo)
+        
+        estado, created = EstadoLote.objects.get_or_create(
+            codigo=estado_codigo.upper(),
+            defaults={
+                'nombre': nombre,
+                'descripcion': f'Estado de lote: {nombre}',
+                'activo': True
+            }
+        )
+        return estado
+    
+    def _create_lote_with_orm(self, finca_id_bd: int, name: str, genetics: str, fecha_plantacion: date, fecha_recoleccion: date, notes: str) -> Tuple[Optional[object], Optional[Exception]]:
+        """Intenta crear el lote usando ORM."""
+        try:
+            variedad = self._get_or_create_variedad(genetics)
+            estado = self._get_or_create_estado_lote('ACTIVO')
+            
+            lote = Lote.objects.create(
+                finca_id=finca_id_bd,
+                identificador=name,
+                nombre=name,
+                variedad=variedad,
+                fecha_plantacion=fecha_plantacion,
+                fecha_cosecha=fecha_recoleccion,
+                area_hectareas=0.1,
+                estado=estado,
+                descripcion=notes if notes else '',
+                activo=True
+            )
+            return lote, None
+        except Exception as orm_error:
+            return None, orm_error
+    
+    def _is_foreign_key_error(self, error: Exception) -> bool:
+        """Verifica si el error es de foreign key."""
+        error_msg = str(error).lower()
+        return 'foreign key' in error_msg or 'viola la llave foránea' in error_msg
+    
+    def _create_lote_with_sql(self, finca_id_bd: int, name: str, genetics: str, fecha_plantacion: date, fecha_recoleccion: date, notes: str) -> Tuple[Optional[object], Optional[None]]:
+        """Crea el lote usando SQL directo."""
+        # Get or create variedad and estado first
+        variedad = self._get_or_create_variedad(genetics)
+        estado = self._get_or_create_estado_lote('ACTIVO')
+        
+        with db_conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO fincas_app_lote 
+                (finca_id, identificador, nombre, variedad_id, fecha_plantacion, fecha_cosecha, 
+                 area_hectareas, estado_id, descripcion, activo, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                RETURNING id;
+            """, [
+                finca_id_bd, name, name, variedad.id, fecha_plantacion, fecha_recoleccion,
+                0.1, estado.id, notes if notes else '', True
+            ])
+            lote_id = cursor.fetchone()[0]
+            lote = Lote.objects.get(id=lote_id)
+            return lote, None
+    
+    def _verify_db_schema(self):
+        """Verifica el esquema de la BD para foreign keys."""
+        try:
+            with db_conn.cursor() as cur:
+                cur.execute("""
+                    SELECT constraint_name, ccu.table_name
+                    FROM information_schema.table_constraints AS tc
+                    JOIN information_schema.key_column_usage AS kcu
+                        ON tc.constraint_name = kcu.constraint_name
+                    JOIN information_schema.constraint_column_usage AS ccu
+                        ON ccu.constraint_name = tc.constraint_name
+                    WHERE tc.constraint_type = 'FOREIGN KEY'
+                        AND tc.table_name = 'fincas_app_lote'
+                        AND kcu.column_name = 'finca_id';
+                """)
+                fk_info = cur.fetchall()
+                for fk_constraint, fk_table in fk_info:
+                    logger.error(f"FK en BD: {fk_constraint} -> {fk_table}")
+        except Exception as schema_error:
+            logger.error(f"Error verificando esquema: {schema_error}")
+    
     def _get_or_create_lote(self, request, finca, name, genetics, collection_date, notes):
         """Get or create lote."""
         try:
-            # Search existing lote
-            lote = Lote.objects.filter(
-                finca=finca,
-                identificador=name
-            ).first()
-            
+            lote = Lote.objects.filter(finca=finca, identificador=name).first()
             if lote:
                 logger.debug(f"Lote existente encontrado: ID={lote.id}, identificador={lote.identificador}")
                 return lote
             
-            # Create new lote
-            # Convert date string to date
-            fecha_recoleccion = None
-            try:
-                fecha_recoleccion = datetime.strptime(collection_date, '%Y-%m-%d').date()
-            except:
-                fecha_recoleccion = date.today()
-            
-            # Use collection date as planting date (since that's what we have)
+            fecha_recoleccion = self._parse_collection_date(collection_date)
             fecha_plantacion = fecha_recoleccion
             
-            # Verify finca exists before creating lote
-            if not finca or not finca.id:
-                logger.error(f"Error: Finca no válida al crear lote. Finca={finca}")
+            finca_verificada, _ = self._validate_finca(finca)
+            if not finca_verificada:
                 return None
             
-            # Verify finca exists in database and reload it to ensure consistency
-            try:
-                finca_verificada = Finca.objects.get(id=finca.id)
-                logger.debug(f"Finca verificada: ID={finca_verificada.id}, nombre={finca_verificada.nombre}, tabla={Finca._meta.db_table}")
-            except Finca.DoesNotExist:
-                logger.error(f"Error: Finca con ID={finca.id} no existe en la base de datos. Tabla esperada: {Finca._meta.db_table}")
+            if not self._verify_table_consistency(finca_verificada):
                 return None
             
-            # Verify reference table of Lote model
-            lote_finca_model = Lote._meta.get_field('finca').remote_field.model
-            lote_finca_table = lote_finca_model._meta.db_table
-            finca_table = Finca._meta.db_table
-            
-            if lote_finca_table != finca_table:
-                logger.error(
-                    f"Error: Desajuste de tablas - Lote referencia '{lote_finca_table}' "
-                    f"pero Finca está en '{finca_table}'"
-                )
+            finca_id_bd, finca_nombre_bd = self._verify_finca_in_db(finca_verificada)
+            if not finca_id_bd:
                 return None
             
             logger.debug(f"Creando lote con finca_id={finca_verificada.id}, nombre={name}")
-            logger.debug(f"Lote tabla: {Lote._meta.db_table}, Finca referencia: {lote_finca_table}")
-            
-            # Verify once more that finca exists directly in DB using raw SQL
-            with db_conn.cursor() as cursor:
-                cursor.execute("SELECT id, nombre FROM api_finca WHERE id = %s", [finca_verificada.id])
-                finca_row = cursor.fetchone()
-                
-                if not finca_row:
-                    logger.error(f"Error crítico: Finca ID={finca_verificada.id} no existe en tabla api_finca")
-                    return None
-                
-                finca_id_bd, finca_nombre_bd = finca_row
-                logger.debug(f"Verificación SQL: Finca ID={finca_id_bd} existe en api_finca: {finca_nombre_bd}")
             
             try:
                 with transaction.atomic():
-                    # Try with Django ORM first
-                    try:
-                        lote = Lote.objects.create(
-                            finca_id=finca_id_bd,  # Use ID directly from DB
-                            identificador=name,
-                            variedad=genetics,
-                            fecha_plantacion=fecha_plantacion,
-                            fecha_cosecha=fecha_recoleccion,
-                            area_hectareas=0.1,
-                            estado='activo',
-                            descripcion=notes if notes else '',
-                            activo=True
-                        )
+                    lote, orm_error = self._create_lote_with_orm(
+                        finca_id_bd, name, genetics, fecha_plantacion, fecha_recoleccion, notes
+                    )
+                    
+                    if lote:
                         logger.info(f"Lote '{name}' (ID={lote.id}) creado para finca {finca_nombre_bd} (ID={finca_id_bd})")
                         return lote
-                    except Exception as orm_error:
-                        # If fails with ORM, verify if it's a foreign key problem
-                        error_msg = str(orm_error)
-                        if 'foreign key' in error_msg.lower() or 'viola la llave foránea' in error_msg.lower():
-                            logger.warning(f"Error con ORM: {error_msg}. Intentando con SQL directo...")
-                            
-                            # Insert directly with SQL
-                            with db_conn.cursor() as cursor:
-                                cursor.execute("""
-                                    INSERT INTO fincas_app_lote 
-                                    (finca_id, identificador, variedad, fecha_plantacion, fecha_cosecha, 
-                                     area_hectareas, estado, descripcion, activo, created_at, updated_at)
-                                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                                    RETURNING id;
-                                """, [
-                                    finca_id_bd, name, genetics, fecha_plantacion, fecha_recoleccion,
-                                    0.1, 'activo', notes if notes else '', True
-                                ])
-                                lote_id = cursor.fetchone()[0]
-                                
-                                # Reload object from DB
-                                lote = Lote.objects.get(id=lote_id)
-                                logger.info(f"Lote '{name}' (ID={lote.id}) creado con SQL directo para finca {finca_nombre_bd} (ID={finca_id_bd})")
-                                return lote
-                        else:
-                            raise
+                    
+                    if self._is_foreign_key_error(orm_error):
+                        logger.warning(f"Error con ORM: {orm_error}. Intentando con SQL directo...")
+                        lote, _ = self._create_lote_with_sql(
+                            finca_id_bd, name, genetics, fecha_plantacion, fecha_recoleccion, notes
+                        )
+                        if lote:
+                            logger.info(f"Lote '{name}' (ID={lote.id}) creado con SQL directo para finca {finca_nombre_bd} (ID={finca_id_bd})")
+                            return lote
+                    else:
+                        raise orm_error
             except Exception as db_error:
-                # Capture specifically foreign key errors
-                error_msg = str(db_error)
-                if 'foreign key' in error_msg.lower() or 'viola la llave foránea' in error_msg.lower():
+                if self._is_foreign_key_error(db_error):
                     logger.error(
-                        f"Error de foreign key al crear lote: {error_msg}. "
+                        f"Error de foreign key al crear lote: {db_error}. "
                         f"Finca ID={finca_id_bd} existe en tabla api_finca. "
                         f"Verificando esquema de BD..."
                     )
-                    # Verify DB schema directly
-                    try:
-                        with db_conn.cursor() as cur:
-                            cur.execute("""
-                                SELECT constraint_name, ccu.table_name
-                                FROM information_schema.table_constraints AS tc
-                                JOIN information_schema.key_column_usage AS kcu
-                                    ON tc.constraint_name = kcu.constraint_name
-                                JOIN information_schema.constraint_column_usage AS ccu
-                                    ON ccu.constraint_name = tc.constraint_name
-                                WHERE tc.constraint_type = 'FOREIGN KEY'
-                                    AND tc.table_name = 'fincas_app_lote'
-                                    AND kcu.column_name = 'finca_id';
-                            """)
-                            fk_info = cur.fetchall()
-                            for fk_constraint, fk_table in fk_info:
-                                logger.error(f"FK en BD: {fk_constraint} -> {fk_table}")
-                    except Exception as schema_error:
-                        logger.error(f"Error verificando esquema: {schema_error}")
+                    self._verify_db_schema()
                 raise
             
         except Exception as e:

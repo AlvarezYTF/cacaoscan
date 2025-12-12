@@ -4,43 +4,46 @@
       :value="modelValue"
       @change="$emit('update:modelValue', $event.target.value)"
       class="w-full sm:w-auto pl-9 pr-4 py-2 border border-gray-300 rounded-md text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 appearance-none transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+      :aria-label="ariaLabel"
     >
       <option v-for="option in options" :key="option.value" :value="option.value">
         {{ option.label }}
       </option>
     </select>
     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-      <svg class="h-4 w-4 md:h-5 md:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="h-4 w-4 md:h-5 md:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
       </svg>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'PeriodSelector',
-  props: {
-    modelValue: {
-      type: String,
-      default: 'last-month'
-    },
-    options: {
-      type: Array,
-      default: () => [
-        { value: 'last-month', label: 'Último mes' },
-        { value: 'last-3-months', label: 'Últimos 3 meses' },
-        { value: 'last-year', label: 'Último año' },
-        { value: 'custom', label: 'Personalizado' }
-      ]
-    }
+<script setup>
+const props = defineProps({
+  modelValue: {
+    type: String,
+    default: 'last-month'
   },
-  emits: ['update:modelValue']
-};
+  options: {
+    type: Array,
+    default: () => [
+      { value: 'last-month', label: 'Último mes' },
+      { value: 'last-3-months', label: 'Últimos 3 meses' },
+      { value: 'last-year', label: 'Último año' },
+      { value: 'custom', label: 'Personalizado' }
+    ]
+  },
+  ariaLabel: {
+    type: String,
+    default: 'Seleccionar período'
+  }
+})
+
+defineEmits(['update:modelValue'])
 </script>
 
 <style scoped>
-/* Mejoras de responsividad para el selector de período */
+/* Responsive improvements for period selector */
 @media (max-width: 640px) {
   .w-full {
     width: 100%;
@@ -71,22 +74,22 @@ export default {
   }
 }
 
-/* Transiciones suaves */
+/* Smooth transitions */
 * {
   transition-property: all;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 200ms;
 }
 
-/* Mejoras para dispositivos táctiles */
+/* Touch device improvements */
 @media (hover: none) and (pointer: coarse) {
   select {
     min-height: 44px;
-    font-size: 16px; /* Previene zoom en iOS */
+    font-size: 16px; /* Prevents zoom on iOS */
   }
 }
 
-/* Efectos de hover y focus mejorados */
+/* Enhanced hover and focus effects */
 select:hover {
   border-color: #10b981;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -97,7 +100,7 @@ select:focus {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-/* Animación de entrada */
+/* Entrance animation */
 @keyframes slideInFromLeft {
   from {
     opacity: 0;
@@ -113,14 +116,14 @@ select:focus {
   animation: slideInFromLeft 0.3s ease-out;
 }
 
-/* Responsive para pantallas muy grandes */
+/* Responsive for very large screens */
 @media (min-width: 1280px) {
   .sm\:w-auto {
     width: auto;
   }
 }
 
-/* Mejoras para orientación landscape en móviles */
+/* Landscape orientation improvements on mobile */
 @media (max-width: 768px) and (orientation: landscape) {
   .py-2 {
     padding-top: 0.5rem;
@@ -128,7 +131,7 @@ select:focus {
   }
 }
 
-/* Mejoras para accesibilidad */
+/* Accessibility improvements */
 select:focus-visible {
   outline: 2px solid #10b981;
   outline-offset: 2px;

@@ -16,6 +16,14 @@ build/
 # Testing
 coverage/
 .nyc_output/
+cypress/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+test/
+tests/
+__tests__/
 
 # IDEs
 .vscode/
@@ -31,30 +39,64 @@ Thumbs.db
 # Git
 .git/
 .gitignore
+.gitattributes
 
-# Environment
+# Environment and secrets
 .env
 .env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-!.env.example
+*.env
+*.secret
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+.secrets/
 
-# Cypress
-cypress/videos/
-cypress/screenshots/
-.cypress/
+# Configuration files that might contain sensitive data
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
+Dockerfile.dev
+docker-compose.override.yml
+
+# Cypress (exclude all test files and fixtures)
+cypress/
+*.cy.js
+*.cy.ts
 
 # Documentation
 *.md
 docs/
+README*
 
 # Logs
 *.log
+logs/
 
 # Misc
 .cache/
 .temp/
 .tmp/
+*.tmp
+
+# Kubernetes configs (may contain sensitive data)
+k8s/
+
+# CI/CD configs (may contain secrets)
+.github/
+.gitlab-ci.yml
+.circleci/
+.travis.yml
+Jenkinsfile
+
+# Local development files
+.vscode/
+.idea/
+*.local
+local/
 

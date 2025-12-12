@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/services/api'
+import { downloadFileFromResponse } from '@/utils/fileExportUtils'
 
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
@@ -36,9 +37,8 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     getRecentNotifications: (state) => (limit = 5) => {
-      return state.notifications
-        .sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion))
-        .slice(0, limit)
+      const sorted = [...state.notifications].sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion))
+      return sorted.slice(0, limit)
     },
 
     getNotificationsByDate: (state) => (date) => {
@@ -71,7 +71,6 @@ export const useNotificationsStore = defineStore('notifications', {
         return response
       } catch (error) {
         this.error = error.response?.data?.detail || 'Error al cargar notificaciones'
-        console.error('Error fetching notifications:', error)
         throw error
       } finally {
         this.loading = false
@@ -83,7 +82,7 @@ export const useNotificationsStore = defineStore('notifications', {
         const response = await api.get(`/notifications/${id}/`)
         return response
       } catch (error) {
-        console.error('Error fetching notification details:', error)
+        console.error(error)
         throw error
       }
     },
@@ -102,7 +101,7 @@ export const useNotificationsStore = defineStore('notifications', {
         
         return true
       } catch (error) {
-        console.error('Error marking notification as read:', error)
+        console.error(error)
         throw error
       }
     },
@@ -112,15 +111,15 @@ export const useNotificationsStore = defineStore('notifications', {
         await api.post('/notifications/mark-all-read/')
         
         // Actualizar estado local
-        this.notifications.forEach(notification => {
+        for (const notification of this.notifications) {
           notification.leida = true
           notification.fecha_lectura = new Date().toISOString()
-        })
+        }
         this.unreadCount = 0
         
         return true
       } catch (error) {
-        console.error('Error marking all notifications as read:', error)
+        console.error(error)
         throw error
       }
     },
@@ -131,7 +130,7 @@ export const useNotificationsStore = defineStore('notifications', {
         this.unreadCount = response.data.unread_count
         return response.data.unread_count
       } catch (error) {
-        console.error('Error getting unread count:', error)
+        console.error(error)
         throw error
       }
     },
@@ -142,7 +141,7 @@ export const useNotificationsStore = defineStore('notifications', {
         this.stats = response.data
         return response.data
       } catch (error) {
-        console.error('Error getting notification stats:', error)
+        console.error(error)
         throw error
       }
     },
@@ -157,9 +156,14 @@ export const useNotificationsStore = defineStore('notifications', {
         
         return response.data
       } catch (error) {
-        console.error('Error creating notification:', error)
+        console.error(error)
         throw error
       }
+    },
+
+    // Alias for createNotification for compatibility
+    addNotification(notificationData) {
+      return this.createNotification(notificationData)
     },
 
     // Métodos para integración con WebSockets
@@ -167,7 +171,7 @@ export const useNotificationsStore = defineStore('notifications', {
       // Verificar si la notificación ya existe
       const existingIndex = this.notifications.findIndex(n => n.id === notification.id)
       
-      if (existingIndex !== -1) {
+      if (existingIndex >= 0) {
         // Actualizar notificación existente
         this.notifications[existingIndex] = notification
       } else {
@@ -242,7 +246,7 @@ export const useNotificationsStore = defineStore('notifications', {
         this.notifications = response.data.results || response.data
         return response
       } catch (error) {
-        console.error('Error searching notifications:', error)
+        console.error(error)
         throw error
       }
     },
@@ -256,7 +260,7 @@ export const useNotificationsStore = defineStore('notifications', {
         this.notifications = response.data.results || response.data
         return response
       } catch (error) {
-        console.error('Error filtering notifications by type:', error)
+        console.error(error)
         throw error
       }
     },
@@ -270,7 +274,7 @@ export const useNotificationsStore = defineStore('notifications', {
         this.notifications = response.data.results || response.data
         return response
       } catch (error) {
-        console.error('Error filtering notifications by read status:', error)
+        console.error(error)
         throw error
       }
     },
@@ -281,7 +285,7 @@ export const useNotificationsStore = defineStore('notifications', {
         const response = await this.fetchNotifications({ page })
         return response
       } catch (error) {
-        console.error('Error going to page:', error)
+        console.error(error)
         throw error
       }
     },
@@ -295,7 +299,7 @@ export const useNotificationsStore = defineStore('notifications', {
         })
         return response
       } catch (error) {
-        console.error('Error changing page size:', error)
+        console.error(error)
         throw error
       }
     },
@@ -308,36 +312,11 @@ export const useNotificationsStore = defineStore('notifications', {
           responseType: 'blob'
         })
 
-        // Crear URL para descarga
-        const blob = new Blob([response.data])
-        const url = window.URL.createObjectURL(blob)
-        
-        // Crear enlace temporal para descarga
-        const link = document.createElement('a')
-        link.href = url
-        
-        // Obtener nombre del archivo del header
-        const contentDisposition = response.headers['content-disposition']
-        let filename = 'notificaciones_exportadas.json'
-        
-        if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename="(.+)"/)
-          if (filenameMatch) {
-            filename = filenameMatch[1]
-          }
-        }
-        
-        link.download = filename
-        document.body.appendChild(link)
-        link.click()
-        
-        // Limpiar
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
+        downloadFileFromResponse(response, 'notificaciones_exportadas.json')
 
         return true
       } catch (error) {
-        console.error('Error exporting notifications:', error)
+        console.error('Error al exportar notificaciones:', error)
         throw error
       }
     }

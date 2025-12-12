@@ -7,6 +7,44 @@ from pathlib import Path
 from typing import Optional
 
 
+def _crear_formatter(format_string: str) -> logging.Formatter:
+    """Crea un formatter para los handlers."""
+    return logging.Formatter(format_string)
+
+
+def _crear_console_handler(level: int, formatter: logging.Formatter) -> logging.StreamHandler:
+    """Crea un handler para consola."""
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(level)
+    console_handler.setFormatter(formatter)
+    return console_handler
+
+
+def _crear_file_handler(log_file: Path, level: int, formatter: logging.Formatter) -> logging.FileHandler:
+    """Crea un handler para archivo."""
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    file_handler = logging.FileHandler(log_file, encoding='utf-8')
+    file_handler.setLevel(level)
+    file_handler.setFormatter(formatter)
+    return file_handler
+
+
+def _limpiar_handlers_existentes(logger: logging.Logger) -> None:
+    """Limpia handlers existentes del logger."""
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+
+
+def _calcular_tasa_exito(successful_items: int, processed_items: int) -> float:
+    """Calcula la tasa de éxito del procesamiento."""
+    return (successful_items / processed_items * 100) if processed_items > 0 else 0
+
+
+def _calcular_tiempo_promedio(processing_time: float, processed_items: int) -> float:
+    """Calcula el tiempo promedio por item."""
+    return processing_time / processed_items if processed_items > 0 else 0
+
+
 def setup_logger(
     name: str,
     log_file: Optional[Path] = None,
@@ -33,24 +71,18 @@ def setup_logger(
     logger.setLevel(level)
     
     # Limpiar handlers existentes
-    for handler in logger.handlers[:]:
-        logger.removeHandler(handler)
+    _limpiar_handlers_existentes(logger)
     
     # Formatter
-    formatter = logging.Formatter(format_string)
+    formatter = _crear_formatter(format_string)
     
     # Handler para consola
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(level)
-    console_handler.setFormatter(formatter)
+    console_handler = _crear_console_handler(level, formatter)
     logger.addHandler(console_handler)
     
     # Handler para archivo si se especifica
     if log_file:
-        log_file.parent.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(log_file, encoding='utf-8')
-        file_handler.setLevel(level)
-        file_handler.setFormatter(formatter)
+        file_handler = _crear_file_handler(log_file, level, formatter)
         logger.addHandler(file_handler)
     
     return logger
@@ -70,10 +102,10 @@ def log_processing_stats(
     processing_time: float
 ) -> None:
     """Log de estadísticas de procesamiento."""
-    success_rate = (successful_items / processed_items * 100) if processed_items > 0 else 0
-    avg_time = processing_time / processed_items if processed_items > 0 else 0
+    success_rate = _calcular_tasa_exito(successful_items, processed_items)
+    avg_time = _calcular_tiempo_promedio(processing_time, processed_items)
     
-    logger.info(f"Procesamiento completado:")
+    logger.info("Procesamiento completado:")
     logger.info(f"  Total items: {total_items}")
     logger.info(f"  Procesados: {processed_items}")
     logger.info(f"  Exitosos: {successful_items}")

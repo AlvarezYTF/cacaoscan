@@ -1,16 +1,47 @@
+# -*- coding: utf-8 -*-
 """
 Django settings for cacaoscan project.
 """
 
 import os
+import sys
 import warnings
+from typing import Optional
 from pathlib import Path
+
+# Force UTF-8 encoding for all operations
+os.environ["PYTHONUTF8"] = "1"
+os.environ["PYTHONIOENCODING"] = "UTF-8"
+os.environ["PGCLIENTENCODING"] = "UTF8"
+
+# Django 5.2 eliminó SecurityWarning, así que creamos uno propio
+class SecurityWarning(UserWarning):
+    """Custom Security Warning compatible with Django 5.x"""
+    pass
+
+
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 from datetime import timedelta
+
+# SecurityWarning fue agregado en Python 3.13
+# Para compatibilidad con Python 3.12, crear una clase dummy si no existe
+try:
+    from warnings import SecurityWarning
+except ImportError:
+    # Python < 3.13: crear SecurityWarning como subclase de Warning
+    class SecurityWarning(Warning):
+        """Advertencia de seguridad (compatible con Python 3.12)."""
+        pass
 
 # Cargar variables de entorno desde .env
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = os.path.join(BASE_DIR, ".env")
+# Si .env no existe, intentar con 'env' (sin punto) como fallback
+if not os.path.exists(dotenv_path):
+    env_path_alt = os.path.join(BASE_DIR, "env")
+    if os.path.exists(env_path_alt):
+        dotenv_path = env_path_alt
 
 # Crear .env si no existe con valores por defecto (solo en desarrollo)
 if not os.path.exists(dotenv_path):
@@ -25,9 +56,10 @@ if not os.path.exists(dotenv_path):
         default_env_content = f"""# ===========================
 # Configuración de Base de Datos PostgreSQL
 # ===========================
+# IMPORTANTE: Cambia estas credenciales por valores seguros
 DB_NAME=cacaoscan_db
-DB_USER=cristian
-DB_PASSWORD=123456
+DB_USER=cacaoscan_user
+DB_PASSWORD=CHANGE_THIS_PASSWORD_IN_PRODUCTION
 DB_HOST=localhost
 DB_PORT=5432
 
@@ -52,7 +84,7 @@ EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=tu-email@gmail.com
-EMAIL_HOST_PASSWORD=tu-app-password
+EMAIL_HOST_PASSWORD=CHANGE_THIS_EMAIL_PASSWORD
 
 # ===========================
 # Configuración de CORS (Desarrollo)
@@ -70,23 +102,71 @@ AUTO_TRAIN_ENABLED=0
             "Crea el archivo .env con las variables necesarias antes de iniciar la aplicación."
         )
 
-# Load .env file with explicit UTF-8 encoding to avoid decode errors
-# Try multiple encodings if UTF-8 fails
-try:
-    load_dotenv(dotenv_path, encoding='utf-8')
-except Exception:
+# Load .env file - robust UTF-8 handling, remove BOM and invalid bytes
+if os.path.exists(dotenv_path):
     try:
-        # Try without BOM
-        with open(dotenv_path, 'r', encoding='utf-8-sig') as f:
-            content = f.read()
-        # Write back with UTF-8 encoding
-        with open(dotenv_path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        load_dotenv(dotenv_path, encoding='utf-8')
+        # Read as bytes
+        with open(dotenv_path, 'rb') as f:
+            raw_content = f.read()
+        
+        # Remove UTF-8 BOM (0xEF, 0xBB, 0xBF) if present
+        if raw_content.startswith(b'\xef\xbb\xbf'):
+            raw_content = raw_content[3:]
+        
+        # Remove problematic bytes that cause UnicodeDecodeError
+        # 0xab = « (comillas angulares), 0xbb = », 0xf3, BOM, etc.
+        problematic_bytes = [
+            b'\xab',  # «
+            b'\xbb',  # »
+            b'\xf3',  # ó (en algunos encodings)
+            b'\xef',  # BOM part 1
+            b'\xbf',  # BOM part 3
+            b'\x00',  # Null byte
+        ]
+        for pb in problematic_bytes:
+            raw_content = raw_content.replace(pb, b'')
+        
+        # Decode with UTF-8, fallback to latin-1
+        try:
+            content = raw_content.decode('utf-8', errors='replace')
+        except Exception:
+            # If UTF-8 fails, try latin-1 with replacement
+            try:
+                content = raw_content.decode('latin-1', errors='replace')
+            except Exception:
+                # Last resort: decode as ASCII
+                content = raw_content.decode('ascii', errors='ignore')
+        
+        # Load environment variables from content
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            if '=' in line:
+                key, value = line.split('=', 1)
+                key = key.strip()
+                # Clean value: remove quotes, invalid chars, BOM, and problematic bytes
+                value = value.strip().strip('"\'').rstrip('\r\n')
+                # Remove any remaining problematic characters
+                problematic_chars = ['\ufeff', '\xf3', '\x00', '\xab', '\xbb', '\xad']
+                for char in problematic_chars:
+                    value = value.replace(char, '')
+                # Remove non-printable ASCII control characters (except space, tab, newline, carriage return)
+                value = ''.join(char for char in value if ord(char) >= 32 or char in '\t\n\r')
+                # Final UTF-8 validation
+                try:
+                    value.encode('utf-8', errors='strict')
+                except UnicodeEncodeError:
+                    # Force clean encoding
+                    value = value.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+                if key and key not in os.environ:
+                    os.environ[key] = value
     except Exception as e:
-        print("⚠️ Warning: Error loading .env file:", e)
-        print("Continuing with environment variables...")
-        print("💡 Tip: Recreate .env file with UTF-8 encoding if issues persist")
+        # Fallback: use load_dotenv
+        try:
+            load_dotenv(dotenv_path, override=False)
+        except Exception:
+            pass
 
 
 # Suprimir warnings molestos
@@ -103,9 +183,6 @@ if 'PYTHONPATH' not in os.environ:
 
 # Migrado de pkg_resources (deprecated) a importlib.metadata (Python 3.12+)
 # pkg_resources ya no se usa, eliminado para evitar warnings de deprecación
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY')
@@ -154,7 +231,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
@@ -219,49 +295,237 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cacaoscan.wsgi.application'
 
-# Database
-# Helper function to safely decode environment variables as UTF-8 strings
-def safe_env_get(key: str, default: str = '') -> str:
-    """Safely get and decode environment variable as UTF-8 string."""
-    value = os.environ.get(key, default)
+# Database configuration - simple and clean
+def _decode_bytes_to_string(value: bytes) -> str:
+    """Decode bytes to string with multiple fallback strategies."""
+    try:
+        return value.decode('utf-8', errors='replace')
+    except Exception:
+        try:
+            return value.decode('latin-1', errors='replace')
+        except Exception:
+            return value.decode('utf-8', errors='ignore')
+
+def _normalize_to_string(value) -> str:
+    """Normalize value to string, handling bytes and other types."""
     if value is None:
-        return default
+        return ""
+    
+    # Si es bytes, decodificar primero
     if isinstance(value, bytes):
-        # Try UTF-8 first, fallback to latin-1 if that fails
+        return _decode_bytes_to_string(value)
+    
+    # Si no es string, convertir
+    if not isinstance(value, str):
         try:
-            value = value.decode('utf-8', errors='strict')
-        except (UnicodeDecodeError, AttributeError):
-            try:
-                value = value.decode('latin-1', errors='replace')
-            except Exception:
-                value = value.decode('utf-8', errors='replace')
-    elif not isinstance(value, str):
-        value = str(value)
-    # Ensure the value is a valid UTF-8 string
-    if isinstance(value, str):
-        # Re-encode and decode to ensure valid UTF-8
+            value = str(value)
+        except Exception:
+            return ""
+    
+    # Si el string contiene bytes problemáticos, limpiarlos
+    try:
+        # Intentar codificar/decodificar para detectar problemas
+        value.encode('utf-8', errors='strict')
+    except UnicodeEncodeError:
+        # Si hay problemas, limpiar
         try:
-            value = value.encode('utf-8', errors='strict').decode('utf-8')
-        except (UnicodeEncodeError, UnicodeDecodeError):
-            # If strict encoding fails, use replace to handle problematic characters
+            # Convertir a bytes y decodificar con replace
             value = value.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+        except Exception:
+            # Último recurso: ASCII
+            value = value.encode('ascii', errors='ignore').decode('ascii')
+    
     return value
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': safe_env_get('DB_NAME', 'cacaoscan_db'),
-        'USER': safe_env_get('DB_USER', 'cacaoscan'),
-        'PASSWORD': safe_env_get('DB_PASSWORD', ''),
-        'HOST': safe_env_get('DB_HOST', 'localhost'),
-        'PORT': safe_env_get('DB_PORT', '5432'),
-        'CONN_MAX_AGE': 600,  # Reuse database connections for 10 minutes
-        'OPTIONS': {
-            'client_encoding': 'UTF8',
-            'connect_timeout': 10,
-        },
+def _remove_bom_and_problematic_bytes(value: str) -> str:
+    """Remove BOM and problematic bytes from string."""
+    if value.startswith('\ufeff'):
+        value = value[1:]
+    
+    try:
+        # Primero intentar decodificar si viene como bytes
+        if isinstance(value, bytes):
+            # Intentar decodificar con diferentes encodings
+            for encoding in ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']:
+                try:
+                    value = value.decode(encoding, errors='replace')
+                    break
+                except (UnicodeDecodeError, AttributeError):
+                    continue
+            else:
+                # Si todos fallan, usar replace para ignorar bytes inválidos
+                value = value.decode('utf-8', errors='replace')
+        
+        # Convertir a bytes y limpiar bytes problemáticos
+        value_bytes = value.encode('utf-8', errors='replace')
+        # Remover bytes problemáticos comunes: 0xab («), 0xbb (»), 0xf3, BOM, etc.
+        problematic_bytes = [b'\xab', b'\xbb', b'\xf3', b'\xef', b'\xbb', b'\xbf', b'\x00']
+        for pb in problematic_bytes:
+            value_bytes = value_bytes.replace(pb, b'')
+        
+        return value_bytes.decode('utf-8', errors='replace')
+    except Exception:
+        try:
+            # Fallback: convertir a ASCII eliminando caracteres no ASCII
+            return value.encode('ascii', errors='ignore').decode('ascii')
+        except Exception:
+            return ""
+
+def _remove_invalid_chars(value: str) -> str:
+    """Remove invalid characters from string."""
+    # Caracteres inválidos comunes (incluyendo 0xab y 0xbb)
+    invalid_chars = ['\x00', '\xef', '\xbb', '\xbf', '\xab', '\xad']
+    for char in invalid_chars:
+        value = value.replace(char, '')
+    return value
+
+def _filter_valid_utf8_chars(value: str) -> str:
+    """Filter out invalid UTF-8 characters, keeping only valid ones."""
+    cleaned = []
+    for char in value:
+        ord_val = ord(char)
+        if (32 <= ord_val <= 126) or char in '\t\n\r':
+            cleaned.append(char)
+        elif ord_val > 127:
+            try:
+                char.encode('utf-8', errors='strict')
+                cleaned.append(char)
+            except UnicodeEncodeError:
+                pass
+    return ''.join(cleaned)
+
+def _finalize_utf8_encoding(value: str) -> str:
+    """Final validation and encoding fix for UTF-8."""
+    try:
+        value.encode('utf-8', errors='strict')
+        return value
+    except UnicodeEncodeError:
+        return value.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+
+def clean_value(value: str) -> str:
+    """
+    Clean database connection parameter value.
+    Removes invalid bytes, BOM, and ensures UTF-8 safe encoding.
+    """
+    value = _normalize_to_string(value)
+    value = _remove_bom_and_problematic_bytes(value)
+    value = _remove_invalid_chars(value)
+    value = _filter_valid_utf8_chars(value)
+    return _finalize_utf8_encoding(value)
+
+# Determinar si estamos en modo test (usado para configuración de logging)
+IS_TESTING = (
+    'test' in sys.argv or 
+    'pytest' in sys.modules or 
+    os.environ.get('DJANGO_TEST_MODE') == '1' or
+    'pytest' in str(sys.modules.get('__main__', {})) or
+    'PYTEST_CURRENT_TEST' in os.environ
+)
+
+# TESTING flag for apps to check if running in test mode
+TESTING = IS_TESTING
+
+# Database configuration - Force PostgreSQL for ALL environments including tests
+# This ensures tests run in the same environment as production
+# Clean all database values to ensure UTF-8 encoding
+def _get_db_value(env_key: str, alt_key: str = None, default: str = "") -> str:
+    """Get database value from environment with proper encoding handling."""
+    value = None
+    if alt_key:
+        value = os.getenv(env_key) or os.getenv(alt_key)
+    else:
+        value = os.getenv(env_key)
+    
+    if not value:
+        return clean_value(default) if default else ""
+    
+    # Asegurar que el valor sea string y esté limpio
+    return clean_value(value)
+
+_db_name = _get_db_value("POSTGRES_DB", "DB_NAME", "cacaoscan_db")
+_db_user = _get_db_value("POSTGRES_USER", "DB_USER", "postgres")
+_db_password = _get_db_value("POSTGRES_PASSWORD", "DB_PASSWORD", "postgres")
+_db_host = _get_db_value("POSTGRES_HOST", "DB_HOST", "127.0.0.1")
+_db_port = _get_db_value("POSTGRES_PORT", "DB_PORT", "5432")
+_db_test_name = _get_db_value("POSTGRES_DB_TEST", None, "cacaoscan_db_test")
+
+# Asegurar que todos los valores sean strings válidos UTF-8 antes de crear la configuración
+# Convertir explícitamente a string y validar encoding
+try:
+    _db_name_str = str(_db_name) if _db_name else "cacaoscan_db"
+    _db_user_str = str(_db_user) if _db_user else "postgres"
+    _db_password_str = str(_db_password) if _db_password else "postgres"
+    _db_host_str = str(_db_host) if _db_host else "127.0.0.1"
+    _db_port_str = str(_db_port) if _db_port else "5432"
+    _db_test_name_str = str(_db_test_name) if _db_test_name else "cacaoscan_db_test"
+    
+    # Validar y limpiar que todos los valores sean UTF-8 válidos
+    # Remover caracteres problemáticos antes de validar
+    def _clean_db_value(val: str) -> str:
+        """Clean database value removing problematic characters."""
+        if not val:
+            return val
+        # Remover caracteres problemáticos conocidos
+        problematic = ['\xab', '\xbb', '\xf3', '\x00', '\xad', '\ufeff']
+        for char in problematic:
+            val = val.replace(char, '')
+        # Validar y limpiar encoding
+        try:
+            val.encode('utf-8', errors='strict')
+            return val
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            # Forzar limpieza
+            return val.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+    
+    _db_name_str = _clean_db_value(_db_name_str)
+    _db_user_str = _clean_db_value(_db_user_str)
+    _db_password_str = _clean_db_value(_db_password_str)
+    _db_host_str = _clean_db_value(_db_host_str)
+    _db_port_str = _clean_db_value(_db_port_str)
+    _db_test_name_str = _clean_db_value(_db_test_name_str)
+    
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": _db_name_str,
+            "USER": _db_user_str,
+            "PASSWORD": _db_password_str,
+            "HOST": _db_host_str,
+            "PORT": _db_port_str,
+            "CONN_MAX_AGE": 600,
+            "OPTIONS": {
+                "client_encoding": "UTF8",
+                "connect_timeout": 10,
+            },
+            "TEST": {
+                "NAME": _db_test_name_str,
+            },
+        }
     }
-}
+except Exception as e:
+    # Fallback a valores por defecto si hay error
+    import warnings
+    warnings.warn(f"Error procesando configuración de base de datos: {e}. Usando valores por defecto.")
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "cacaoscan_db",
+            "USER": "postgres",
+            "PASSWORD": "postgres",
+            "HOST": "127.0.0.1",
+            "PORT": "5432",
+            "CONN_MAX_AGE": 600,
+            "OPTIONS": {
+                "client_encoding": "UTF8",
+                "connect_timeout": 10,
+            },
+            "TEST": {
+                "NAME": "cacaoscan_db_test",
+            },
+        }
+    }
+
+# No psycopg2 patches needed - database parameters are already cleaned
 
 # Cache configuration
 # Try to import from cache_config, fallback to default if not available
@@ -281,14 +545,15 @@ try:
         raise ImportError("cache_config.py not found")
     
     # Override cache configuration for DEBUG mode after import to avoid circular dependency
+    LOCMEM_CACHE_BACKEND = 'django.core.cache.backends.locmem.LocMemCache'
     if DEBUG:
         CACHES['default'] = {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'BACKEND': LOCMEM_CACHE_BACKEND,
             'LOCATION': 'unique-snowflake',
             'TIMEOUT': 300,
         }
         CACHES['sessions'] = {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'BACKEND': LOCMEM_CACHE_BACKEND,
             'LOCATION': 'unique-sessions',
             'TIMEOUT': 86400,
         }
@@ -299,16 +564,17 @@ except (ImportError, AttributeError, FileNotFoundError) as e:
     REDIS_DB = int(os.environ.get('REDIS_DB', 0))
     REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', None)
     
+    LOCMEM_CACHE_BACKEND = 'django.core.cache.backends.locmem.LocMemCache'
     if DEBUG:
         # Use in-memory cache for development
         CACHES = {
             'default': {
-                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'BACKEND': LOCMEM_CACHE_BACKEND,
                 'LOCATION': 'unique-snowflake',
                 'TIMEOUT': 300,
             },
             'api_cache': {
-                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'BACKEND': LOCMEM_CACHE_BACKEND,
                 'LOCATION': 'api-cache',
                 'TIMEOUT': 600,
             }
@@ -366,7 +632,9 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATIC_ROOT = Path(os.environ.get('DJANGO_STATIC_ROOT', BASE_DIR / 'staticfiles'))
+# Handle empty string from env file - treat as None to use default
+_static_root_env = os.environ.get('DJANGO_STATIC_ROOT', '').strip()
+STATIC_ROOT = Path(_static_root_env) if _static_root_env else (BASE_DIR / 'staticfiles')
 # Usar storage sin manifest en producción si hay problemas, o con manifest si está disponible
 # CompressedManifestStaticFilesStorage requiere que collectstatic se ejecute correctamente
 if os.environ.get('USE_STATICFILES_MANIFEST', 'True').lower() == 'true':
@@ -376,7 +644,9 @@ else:
 
 # Media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = Path(os.environ.get('DJANGO_MEDIA_ROOT', BASE_DIR / 'media'))
+# Handle empty string from env file - treat as None to use default
+_media_root_env = os.environ.get('DJANGO_MEDIA_ROOT', '').strip()
+MEDIA_ROOT = Path(_media_root_env) if _media_root_env else (BASE_DIR / 'media')
 
 # AWS S3 Configuration
 USE_S3 = os.environ.get('USE_S3', 'False').lower() == 'true'
@@ -402,7 +672,8 @@ if USE_S3:
 else:
     # Configuración local para desarrollo / entornos sin S3
     MEDIA_URL = '/media/'
-    MEDIA_ROOT = Path(os.environ.get('DJANGO_MEDIA_ROOT', BASE_DIR / 'media'))
+    # MEDIA_ROOT ya está definido arriba, no necesita redefinirse aquí
+    # Solo asegurarse de que no se sobrescriba si ya está configurado
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -423,10 +694,60 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'EXCEPTION_HANDLER': 'api.exceptions.custom_exception_handler',
 }
 
 # CORS settings
 # Never use CORS_ALLOW_ALL_ORIGINS in production - always use explicit CORS_ALLOWED_ORIGINS
+# SECURITY: HTTP is insecure for sensitive data transmission (S5332)
+# Only allow HTTP in development for localhost/127.0.0.1
+# In production, enforce HTTPS for all origins
+
+# Helper function to check if origin is localhost (safe for HTTP only in development)
+def _is_localhost_origin(hostname: Optional[str]) -> bool:
+    """Check if hostname is localhost or 127.0.0.1 (safe for HTTP only in development)."""
+    if not hostname:
+        return False
+    host_lower = hostname.lower()
+    return host_lower in {'localhost', '127.0.0.1'}
+
+# Helper function to validate and filter CORS origins
+def _validate_cors_origin(origin: str, is_debug: bool):
+    """
+    Validate CORS origin and enforce HTTPS security.
+    
+    Args:
+        origin: CORS origin to validate
+        is_debug: Whether running in DEBUG mode
+        
+    Returns:
+        Tuple of (is_valid, reason) where is_valid indicates if origin should be allowed
+    """
+    origin = origin.strip()
+    if not origin:
+        return False, "Empty origin"
+    
+    parsed = urlparse(origin)
+    scheme = parsed.scheme.lower()
+    hostname = parsed.hostname
+    
+    if scheme not in {'http', 'https'}:
+        return False, "Origin must include scheme (http or https)"
+    
+    if not hostname:
+        return False, "Origin must include a valid hostname"
+    
+    # SECURITY: S5332 - Using HTTP is insecure for sensitive data transmission
+    if scheme == 'http':
+        if not is_debug:
+            return False, "HTTP is not allowed in production. Use HTTPS instead (S5332)."
+        if not _is_localhost_origin(hostname):
+            return False, "HTTP is only allowed for localhost/127.0.0.1 in development. Use HTTPS for other origins (S5332)."
+        return True, "Valid HTTP origin for localhost in development"
+    
+    # HTTPS is always allowed
+    return True, "Valid HTTPS origin"
+
 cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
 if cors_origins:
     # Validate that each origin has scheme (http:// or https://)
@@ -435,11 +756,16 @@ if cors_origins:
         origin = origin.strip()
         if not origin:
             continue
-        # Only accept origins with full scheme (http:// or https://)
-        if origin.startswith('http://') or origin.startswith('https://'):
-            # Validate that it has a valid domain (contains a dot or is localhost)
-            if '.' in origin.replace('://', '').split('/')[0] or 'localhost' in origin:
-                valid_origins.append(origin)
+        
+        is_valid, reason = _validate_cors_origin(origin, DEBUG)
+        if is_valid:
+            valid_origins.append(origin)
+        else:
+            # Log warning for rejected origins
+            warnings.warn(
+                f"CORS origin '{origin}' rejected: {reason}",
+                SecurityWarning
+            )
     
     if valid_origins:
         CORS_ALLOWED_ORIGINS = valid_origins
@@ -527,7 +853,48 @@ REDOC_SETTINGS = {
     'LAZY_RENDERING': False,
 }
 
+LOG_DIR = BASE_DIR / "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
 # Logging configuration
+# Crear directorio de logs si no existe (necesario para tests y desarrollo)
+LOGS_DIR = BASE_DIR / 'logs'
+try:
+    LOGS_DIR.mkdir(exist_ok=True)
+except OSError as e:
+    # Si no se puede crear el directorio (permisos, etc.), usar solo console handler
+    # OSError incluye PermissionError (subclase de OSError en Python 3)
+    import warnings
+    warnings.warn(f"No se pudo crear el directorio de logs: {e}. Usando solo console handler.")
+    LOGS_DIR = None
+
+# IS_TESTING ya está definido arriba para la configuración de DATABASES
+
+# Configurar handlers según disponibilidad
+handlers_config = {
+    'console': {
+        'level': 'DEBUG',
+        'class': 'logging.StreamHandler',
+        'formatter': 'simple',
+    },
+}
+
+# Solo agregar file handler si el directorio de logs está disponible y NO estamos en modo test
+# En modo test, usar solo console para evitar ResourceWarnings y problemas con archivos
+if LOGS_DIR and LOGS_DIR.exists() and not IS_TESTING:
+    handlers_config['file'] = {
+        'level': 'INFO',
+        'class': 'logging.FileHandler',
+        'filename': str(LOGS_DIR / 'django.log'),
+        'formatter': 'verbose',
+    }
+    root_handlers = ['console', 'file']
+    django_handlers = ['console', 'file']
+else:
+    # En modo test o si no hay directorio de logs, usar solo console
+    root_handlers = ['console']
+    django_handlers = ['console']
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -541,60 +908,48 @@ LOGGING = {
             'style': '{',
         },
     },
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': str(BASE_DIR / 'logs' / 'django.log'),
-            'formatter': 'verbose',
-        },
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-    },
+    'handlers': handlers_config,
     'root': {
-        'handlers': ['console', 'file'],
+        'handlers': root_handlers,
         'level': 'INFO',
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'],
+            'handlers': django_handlers,
             'level': 'INFO',
             'propagate': False,
         },
         'cacaoscan.api': {
-            'handlers': ['console', 'file'],
+            'handlers': django_handlers,
             'level': 'DEBUG',
             'propagate': False,
         },
         'cacaoscan.ml': {
-            'handlers': ['console', 'file'],
+            'handlers': django_handlers,
             'level': 'DEBUG',
             'propagate': False,
         },
         # Suprimir warnings de pkg_resources
         'pkg_resources': {
-            'handlers': ['file'],
+            'handlers': root_handlers,
             'level': 'ERROR',
             'propagate': False,
         },
         # Suprimir warnings de drf_yasg
         'drf_yasg': {
-            'handlers': ['file'],
+            'handlers': root_handlers,
             'level': 'ERROR',
             'propagate': False,
         },
         # Suprimir warnings de torchvision
         'torchvision': {
-            'handlers': ['file'],
+            'handlers': root_handlers,
             'level': 'ERROR',
             'propagate': False,
         },
         # Suprimir warnings de torch
         'torch': {
-            'handlers': ['file'],
+            'handlers': root_handlers,
             'level': 'ERROR',
             'propagate': False,
         },
@@ -627,7 +982,45 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 )
 SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
 EMAIL_SUBJECT_PREFIX = os.environ.get('EMAIL_SUBJECT_PREFIX', '[CacaoScan] ')
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+
+DEFAULT_DEV_FRONTEND_URL = 'https://localhost:5173'
+
+
+def _validated_frontend_url(url_value: str, is_debug: bool) -> str:
+    """Validate FRONTEND_URL enforcing HTTPS outside local development."""
+    sanitized_value = url_value.strip()
+    if not sanitized_value:
+        raise ValueError("FRONTEND_URL cannot be empty.")
+
+    is_valid, reason = _validate_cors_origin(sanitized_value, is_debug)
+    if not is_valid:
+        warnings.warn(
+            f"FRONTEND_URL '{sanitized_value}' rejected: {reason}",
+            SecurityWarning
+        )
+        raise ValueError(
+            f"FRONTEND_URL must be a valid origin. Reason: {reason}. "
+            f"Current value: {sanitized_value}."
+        )
+
+    return sanitized_value
+
+
+# FRONTEND_URL: Use HTTPS in production, HTTP only allowed for localhost in development
+# SECURITY: HTTP is insecure for sensitive data transmission (S5332)
+frontend_url_env = os.environ.get('FRONTEND_URL', '').strip()
+if frontend_url_env:
+    FRONTEND_URL = _validated_frontend_url(frontend_url_env, DEBUG)
+else:
+    if DEBUG:
+        FRONTEND_URL = _validated_frontend_url(DEFAULT_DEV_FRONTEND_URL, True)
+    else:
+        FRONTEND_URL = ''
+        warnings.warn(
+            "FRONTEND_URL is not set in production. "
+            "Set FRONTEND_URL to an HTTPS URL (S5332).",
+            SecurityWarning
+        )
 ADMINS = [
     ('Admin CacaoScan', os.environ.get('ADMIN_EMAIL', 'admin@cacaoscan.com')),
 ]
@@ -640,7 +1033,7 @@ EMAIL_TEMPLATES_DIR = BASE_DIR / 'api' / 'templates' / 'emails'
 EMAIL_NOTIFICATIONS_ENABLED = os.environ.get('EMAIL_NOTIFICATIONS_ENABLED', 'True').lower() == 'true'
 EMAIL_NOTIFICATION_TYPES = [
     'welcome',           # Email de bienvenida
-    'password_reset',    # Restablecimiento de contraseña
+    'reset_request',    # Restablecimiento de credenciales
     'analysis_complete', # Análisis completado
     'report_ready',      # Reporte listo
     'training_complete', # Entrenamiento completado
@@ -723,9 +1116,19 @@ REALTIME_NOTIFICATIONS_ENABLED = os.environ.get('REALTIME_NOTIFICATIONS_ENABLED'
 NOTIFICATION_BROADCAST_ENABLED = os.environ.get('NOTIFICATION_BROADCAST_ENABLED', 'True').lower() == 'true'
 NOTIFICATION_PERSISTENCE_ENABLED = os.environ.get('NOTIFICATION_PERSISTENCE_ENABLED', 'True').lower() == 'true'
 
-# Configuracin de Celery
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:6379/0')
+# Configuración de Celery
+# Si Redis no está disponible, usar broker en memoria (solo para desarrollo)
+USE_CELERY_REDIS = os.environ.get('USE_CELERY_REDIS', 'True').lower() == 'true'
+
+if USE_CELERY_REDIS:
+    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0')
+    CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:6379/0')
+else:
+    # Broker en memoria para desarrollo sin Redis (NO usar en producción)
+    # Nota: Estos valores se usan solo si Celery se inicializa, pero si USE_CELERY_REDIS=False,
+    # Celery no se inicializará en absoluto (ver cacaoscan/__init__.py)
+    CELERY_BROKER_URL = 'memory://'
+    CELERY_RESULT_BACKEND = 'cache+memory://'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'

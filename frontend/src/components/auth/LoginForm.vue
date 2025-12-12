@@ -84,9 +84,9 @@
         <div class="relative">
           <input
             id="password"
-            v-model="form.password"
             :type="showPassword ? 'text' : 'password'"
-            autocomplete="current-password"
+            v-model="form.password"
+            :autocomplete="showPassword ? 'username' : 'current-password'"
             required
             :disabled="isLoading"
             class="w-full pl-4 pr-12 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 disabled:bg-gray-100 transition-all duration-200"
@@ -169,7 +169,7 @@
         :disabled="isLoading"
         class="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-4 focus:ring-green-500/50 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-xl active:scale-[0.97] group"
       >
-        <LoadingSpinner 
+        <BaseSpinner 
           v-if="isLoading"
           size="md"
           color="white"
@@ -180,6 +180,23 @@
         <span>{{ isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}</span>
       </button>
     </form>
+
+    <!-- Separador para Google Login -->
+    <div class="mt-6">
+      <div class="relative">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-200"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-4 bg-white text-gray-500">o</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botón de Google Login -->
+    <div class="mt-6">
+      <div id="google-login-button" class="w-full"></div>
+    </div>
 
     <!-- Separador con mejor presentación -->
     <div class="mt-8">
@@ -214,119 +231,195 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
+import { useAuthForm } from '@/composables/useAuthForm'
+import BaseSpinner from '@/components/common/BaseSpinner.vue'
+import { setupGoogleLogin } from '@/utils/googleAuth'
+import authApi from '@/services/authApi'
 import { useAuthStore } from '@/stores/auth'
-import LoadingSpinner from '@/components/admin/AdminGeneralComponents/LoadingSpinner.vue'
 
-// Store y route
-const authStore = useAuthStore()
+// Route and Router
 const route = useRoute()
+const router = useRouter()
 
-// Estado del formulario
-const form = ref({
-  email: '',
-  password: '',
-  remember: false
+// Use auth composable
+const { login: loginUser, loading, error, clearError } = useAuth()
+
+// Auth store
+const authStore = useAuthStore()
+
+// Form state using useAuthForm for validation
+const authForm = useAuthForm({
+  initialValues: {
+    email: '',
+    password: '',
+    remember: false
+  },
+  onSubmit: async (formData) => {
+    try {
+      globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
+        detail: { type: 'login', message: 'Verificando credenciales...' }
+      }))
+
+      const result = await loginUser({
+        email: formData.email.trim(),
+        password: formData.password
+      })
+
+      if (result.success) {
+        authForm.setStatusMessage('¡Bienvenido de vuelta a CacaoScan! 🌱', 'success')
+      }
+      
+      return result
+    } catch (err) {
+      const errorMessage = err.message || 
+                          err.response?.data?.error ||
+                          err.response?.data?.message || 
+                          err.response?.data?.detail ||
+                          'Error inesperado al iniciar sesión'
+      authForm.setStatusMessage(errorMessage, 'error')
+      throw err
+    } finally {
+      globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
+    }
+  }
 })
 
+// Extract form properties
+const form = authForm.form
+const errors = authForm.errors
+const statusMessage = authForm.statusMessage
+const statusMessageClass = authForm.statusMessageClass
+const setStatusMessage = authForm.setStatusMessage
+
+// Local state
 const showPassword = ref(false)
-const errors = ref({})
+const googleLoginLoading = ref(false)
 
-// Estado de carga
-const isLoading = computed(() => authStore.isLoading)
-
-// Mensaje de estado (desde query params o errores)
-const statusMessage = ref('')
-const statusMessageClass = ref('')
-
-// Validación del formulario
-const validateForm = () => {
-  errors.value = {}
-  
-  if (!form.value.email.trim()) {
-    errors.value.email = 'El email es requerido'
-  } else if (!isValidEmail(form.value.email) && !isValidUsername(form.value.email)) {
-    errors.value.email = 'Ingresa un email válido o nombre de usuario'
-  }
-  
-  if (!form.value.password) {
-    errors.value.password = 'La contraseña es requerida'
-  } else if (form.value.password.length < 6) {
-    errors.value.password = 'La contraseña debe tener al menos 6 caracteres'
-  }
-  
-  return Object.keys(errors.value).length === 0
-}
-
-// Validadores
-const isValidEmail = (email) => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return re.test(email)
-}
-
-const isValidUsername = (username) => {
-  // Username alfanumérico, guiones y guiones bajos, 3-30 caracteres
-  const re = /^[a-zA-Z0-9_-]{3,30}$/
-  return re.test(username)
-}
-
-// Manejar envío del formulario
-const handleSubmit = async () => {
-  if (!validateForm()) {
-    return
-  }
-
-  // Emitir evento de loading
-  window.dispatchEvent(new CustomEvent('api-loading-start', {
-    detail: { type: 'login', message: 'Verificando credenciales...' }
-  }))
-
+// Handle Google Login
+const handleGoogleCredential = async (credential) => {
   try {
-    const result = await authStore.login({
-      email: form.value.email.trim(),
-      password: form.value.password
-    })
+    googleLoginLoading.value = true
+    
+    globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
+      detail: { type: 'google-login', message: 'Verificando con Google...' }
+    }))
 
+    const result = await authApi.googleLogin(credential)
+    
     if (result.success) {
-      // Éxito manejado por el store (redirección automática)
-      setStatusMessage('¡Bienvenido de vuelta a CacaoScan! 🌱', 'success')
-    } else {
-      setStatusMessage(result.error || 'Error al iniciar sesión', 'error')
+      // Guardar tokens
+      authStore.setTokens({
+        access: result.access,
+        refresh: result.refresh
+      })
+      
+      // Guardar usuario (el backend retorna user completo con todos los campos)
+      const userData = result.user || {
+        email: result.email,
+        name: result.name,
+        picture: result.picture
+      }
+      
+      // Asegurar que todos los campos críticos estén presentes
+      // Incluir has_password si viene en la respuesta
+      if (result.has_password !== undefined) {
+        userData.has_password = result.has_password
+      }
+      
+      // PRIORIDAD: login_provider y password_allowed desde result (ya normalizados)
+      // Estos valores tienen prioridad porque vienen directamente de la respuesta del backend
+      if (result.login_provider !== undefined) {
+        userData.login_provider = result.login_provider
+      }
+      if (result.password_allowed !== undefined) {
+        userData.password_allowed = result.password_allowed
+      }
+      
+      // Si no vienen en result, intentar desde userData
+      if (!userData.login_provider && result.user?.login_provider) {
+        userData.login_provider = result.user.login_provider
+      }
+      if (userData.password_allowed === undefined && result.user?.password_allowed !== undefined) {
+        userData.password_allowed = result.user.password_allowed
+      }
+      
+      // Si aún no están definidos, calcular desde login_provider
+      if (!userData.login_provider) {
+        userData.login_provider = 'local' // Default
+      }
+      if (userData.password_allowed === undefined) {
+        userData.password_allowed = userData.login_provider !== 'google'
+      }
+      
+      console.log('🔐 Google Login - User data being saved:', {
+        login_provider: userData.login_provider,
+        password_allowed: userData.password_allowed,
+        has_password: userData.has_password
+      })
+      
+      authStore.setUser(userData)
+      
+      authForm.setStatusMessage('¡Bienvenido a CacaoScan! 🌱', 'success')
+      
+      // Redirigir al dashboard
+      router.push('/dashboard')
     }
-  } catch (error) {
-    console.error('Error en login:', error)
-    setStatusMessage('Error inesperado al iniciar sesión', 'error')
+  } catch (err) {
+    const errorMessage = err.message || 
+                        err.response?.data?.error ||
+                        err.response?.data?.message || 
+                        err.response?.data?.detail ||
+                        'Error al iniciar sesión con Google'
+    authForm.setStatusMessage(errorMessage, 'error')
   } finally {
-    // Emitir evento de fin de loading
-    window.dispatchEvent(new CustomEvent('api-loading-end'))
+    googleLoginLoading.value = false
+    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 
-// Configurar mensaje de estado
-const setStatusMessage = (message, type) => {
-  statusMessage.value = message
-  statusMessageClass.value = type === 'success' 
-    ? 'bg-green-100 border border-green-400 text-green-700'
-    : 'bg-red-100 border border-red-400 text-red-700'
-  
-  // Limpiar mensaje después de 5 segundos
-  setTimeout(() => {
-    statusMessage.value = ''
-  }, 5000)
+// Handle form submission
+const handleSubmit = async () => {
+  try {
+    await authForm.handleAuthSubmit()
+  } catch (err) {
+    // Error is already handled by useAuthForm
+  }
 }
 
-// Inicializar componente
-onMounted(() => {
-  // Mostrar mensajes desde query params
+// Computed
+const isLoading = computed(() => loading.value || authForm.isSubmitting.value)
+
+// Initialize component
+onMounted(async () => {
+  // Show messages from query params
   if (route.query.message) {
     const type = route.query.expired ? 'error' : 'info'
     setStatusMessage(route.query.message, type)
   }
   
-  // Limpiar error del store si existe
-  if (authStore.error) {
-    setStatusMessage(authStore.error, 'error')
+  // Clear error if exists
+  if (error.value) {
+    setStatusMessage(error.value, 'error')
+    clearError()
+  }
+  
+  // Inicializar Google Login
+  try {
+    await setupGoogleLogin('google-login-button', handleGoogleCredential)
+  } catch (error) {
+    console.error('Error inicializando Google Login:', error)
+    // No mostrar error al usuario si falla la inicialización, solo en consola
+  }
+})
+
+onUnmounted(() => {
+  // Limpiar el contenedor del botón de Google al desmontar
+  const container = document.getElementById('google-login-button')
+  if (container) {
+    container.innerHTML = ''
   }
 })
 </script>
@@ -361,3 +454,4 @@ onMounted(() => {
   animation: fade-in 0.6s ease-out;
 }
 </style>
+

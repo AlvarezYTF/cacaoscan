@@ -1,6 +1,6 @@
 <template>
   <section class="upload-section">
-    <div class="upload-card" @click="triggerFileInput">
+    <div class="upload-card cursor-pointer" @click="triggerFileInput">
       <div class="upload-icon">
         <i class="fas fa-camera"></i>
       </div>
@@ -28,7 +28,9 @@ export default {
     },
     handleFileUpload(event) {
       const files = event.target.files;
-      this.$emit('file-upload', files);
+      if (files && files.length > 0) {
+        this.$emit('file-upload', files);
+      }
       // Reset the input to allow selecting the same file again
       event.target.value = '';
     }

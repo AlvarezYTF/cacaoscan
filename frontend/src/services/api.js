@@ -11,8 +11,6 @@ import { getApiBaseUrl } from '@/utils/apiConfig'
 const apiBaseUrl = getApiBaseUrl()
 
 // Log de configuración inicial
-console.log('🚀 [API Service] Initializing with baseURL:', apiBaseUrl)
-
 // Configuración base de Axios
 const api = axios.create({
   baseURL: apiBaseUrl,
@@ -23,23 +21,23 @@ const api = axios.create({
   }
 })
 
+// Inicializar headers comunes para Authorization
+if (!api.defaults.headers.common) {
+  api.defaults.headers.common = {}
+}
+
 // Interceptor para loggear todas las peticiones (SIEMPRE en producción para debug)
 api.interceptors.request.use(
   (config) => {
     const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : config.url
-    console.log('📤 [API Request]', config.method?.toUpperCase(), fullUrl)
-    console.log('📤 [API Request] baseURL:', config.baseURL, 'url:', config.url)
-    
     // Validar que baseURL sea una URL absoluta
     if (config.baseURL && !config.baseURL.startsWith('http://') && !config.baseURL.startsWith('https://')) {
-      console.error('❌ [API Error] baseURL no es una URL absoluta:', config.baseURL)
-      console.error('❌ [API Error] Esto causará que las peticiones vayan al frontend en lugar del backend')
+      // Invalid baseURL format
     }
     
     return config
   },
   (error) => {
-    console.error('❌ [API Request Error]', error)
     return Promise.reject(error)
   }
 )
@@ -111,21 +109,290 @@ let failedRequestsQueue = []
 
 // Función para procesar la cola de peticiones fallidas
 const processQueue = (error, token = null) => {
-  failedRequestsQueue.forEach(prom => {
+  for (const prom of failedRequestsQueue) {
     if (error) {
       prom.reject(error)
     } else {
       prom.resolve(token)
     }
-  })
+  }
   failedRequestsQueue = []
 }
 
+// Helper functions for error handling
+const isConfigEndpoint = (url) => url?.includes('/config/')
+const isStatsEndpoint = (url) => url?.includes('/stats/')
+const isNonCriticalEndpoint = (url) => isConfigEndpoint(url) || isStatsEndpoint(url)
+
+const handleSilent500Error = (originalRequest, error) => {
+  // Don't silently handle errors for stats endpoint - we need to see the actual error
+  if (error.response?.status === 500 && isNonCriticalEndpoint(originalRequest.url) && !isStatsEndpoint(originalRequest.url)) {
+    return {
+      data: {},
+      status: 200,
+      config: originalRequest
+    }
+  }
+  return null
+}
+
+const handleAuthEndpointError = (originalRequest) => {
+  const authEndpoints = [
+    '/auth/login/', 
+    '/auth/register/', 
+    '/auth/refresh/', 
+    '/auth/verify-email/', 
+    '/auth/resend-verification/', 
+    '/auth/forgot-password/', 
+    '/auth/reset-password/', 
+    '/auth/send-otp/', 
+    '/auth/verify-otp/'
+  ]
+  const isAuthEndpoint = authEndpoints.some(endpoint => originalRequest.url?.includes(endpoint))
+  
+  if (isAuthEndpoint && originalRequest.url?.includes('/auth/refresh/')) {
+    showSessionExpiredModal()
+    throw new Error('Refresh token expired')
+  }
+  
+  return isAuthEndpoint
+}
+
+const showSessionExpiredModal = () => {
+  if (typeof globalThis !== 'undefined' && globalThis.showSessionExpiredModal) {
+    globalThis.showSessionExpiredModal()
+  } else {
+    localStorage.clear()
+    router.replace({ 
+      name: 'Login',
+      query: {
+        message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+        expired: 'true'
+      }
+    })
+  }
+}
+
+const handleNoRefreshToken = async () => {
+  // Limpiar tokens inválidos del localStorage
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  localStorage.removeItem('token')
+  
+  // Limpiar headers de axios
+  if (api.defaults.headers.common) {
+    delete api.defaults.headers.common.Authorization
+  }
+  if (api.defaults.headers) {
+    delete api.defaults.headers.Authorization
+  }
+  
+  // Limpiar estado del auth store si está disponible
+  try {
+    const authStore = await getAuthStore()
+    if (authStore) {
+      authStore.clearAll()
+    }
+  } catch (error) {
+    // Ignore errors when clearing auth store
+  }
+  
+  showSessionExpiredModal()
+}
+
+const createBaseAxiosInstance = () => {
+  return axios.create({
+    baseURL: api.defaults.baseURL,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+}
+
+const refreshTokenFlow = async (refreshToken) => {
+  const baseAxios = createBaseAxiosInstance()
+  const response = await baseAxios.post('/auth/refresh/', {
+    refresh: refreshToken,
+  })
+  return response.data
+}
+
+const saveTokens = async (accessToken, refreshToken) => {
+  localStorage.setItem('access_token', accessToken)
+  if (refreshToken) {
+    localStorage.setItem('refresh_token', refreshToken)
+  }
+  
+  // Asegurar que los headers por defecto estén configurados
+  if (!api.defaults.headers.common) {
+    api.defaults.headers.common = {}
+  }
+  api.defaults.headers.common.Authorization = 'Bearer ' + accessToken
+  api.defaults.headers.Authorization = 'Bearer ' + accessToken
+  
+  try {
+    const authStore = await getAuthStore()
+    if (authStore) {
+      authStore.setTokens({ access: accessToken, refresh: refreshToken })
+    }
+  } catch (error) {
+    }
+}
+
+const handleRefreshSuccess = async (newAccessToken, newRefreshToken, originalRequest) => {
+  await saveTokens(newAccessToken, newRefreshToken)
+  processQueue(null, newAccessToken)
+  
+  originalRequest.headers.Authorization = 'Bearer ' + newAccessToken
+  return api(originalRequest)
+}
+
+const handleRefreshError = async (refreshError) => {
+  // Limpiar tokens inválidos del localStorage
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  localStorage.removeItem('token')
+  
+  // Limpiar headers de axios
+  if (api.defaults.headers.common) {
+    delete api.defaults.headers.common.Authorization
+  }
+  if (api.defaults.headers) {
+    delete api.defaults.headers.Authorization
+  }
+  
+  // Limpiar estado del auth store si está disponible
+  try {
+    const authStore = await getAuthStore()
+    if (authStore) {
+      authStore.clearAll()
+    }
+  } catch (error) {
+    // Ignore errors when clearing auth store
+  }
+  
+  processQueue(refreshError, null)
+  showSessionExpiredModal()
+  throw refreshError
+}
+
+const handle401Error = async (error, originalRequest) => {
+  if (error.response?.status !== 401 || originalRequest._retry) {
+    return null
+  }
+  
+  const isAuthEndpoint = handleAuthEndpointError(originalRequest)
+  if (isAuthEndpoint) {
+    throw error
+  }
+  
+  const refreshToken = localStorage.getItem('refresh_token')
+  if (!refreshToken) {
+    await handleNoRefreshToken()
+    throw error
+  }
+  
+  if (isRefreshing) {
+    return new Promise((resolve, reject) => {
+      failedRequestsQueue.push({ resolve, reject })
+    }).then(token => {
+      originalRequest.headers.Authorization = 'Bearer ' + token
+      return api(originalRequest)
+    }).catch(err => {
+      throw err
+    })
+  }
+  
+  originalRequest._retry = true
+  isRefreshing = true
+  
+  try {
+    const { access: newAccessToken, refresh: newRefreshToken } = await refreshTokenFlow(refreshToken)
+    return await handleRefreshSuccess(newAccessToken, newRefreshToken, originalRequest)
+  } catch (refreshError) {
+    return await handleRefreshError(refreshError)
+  } finally {
+    isRefreshing = false
+  }
+}
+
+const handle403Error = (error) => {
+  if (error.response?.status !== 403) {
+    return
+  }
+  
+  const errorMessage = error.response.data?.detail || 'No tienes permisos para realizar esta acción'
+  const isConfig = isConfigEndpoint(error.config?.url)
+  
+  if (!isConfig) {
+    }
+  
+  if (errorMessage.includes('verificada')) {
+    router.push({
+      name: 'EmailVerification',
+      query: { message: errorMessage }
+    })
+  }
+}
+
+const handle429Error = (error) => {
+  if (error.response?.status !== 429) {
+    return
+  }
+  
+  const errorMessage = error.response.data?.detail || 'Demasiadas solicitudes. Intenta más tarde.'
+  if (typeof globalThis !== 'undefined' && globalThis.showNotification) {
+    globalThis.showNotification({
+      type: 'warning',
+      title: 'Límite de solicitudes',
+      message: errorMessage,
+      duration: 5000
+    })
+  }
+}
+
+const handle500Error = (error, originalRequest) => {
+  if (error.response?.status < 500) {
+    return
+  }
+  
+  const isConfig = isConfigEndpoint(originalRequest?.url)
+  const isStats = isStatsEndpoint(originalRequest?.url)
+  
+  if (!isConfig && !isStats && typeof globalThis !== 'undefined' && globalThis.showNotification) {
+    globalThis.showNotification({
+      type: 'error',
+      title: 'Error del servidor',
+      message: 'Ocurrió un error interno. Por favor intenta más tarde.',
+      duration: 8000
+    })
+  }
+}
+
+const handleNetworkError = (error) => {
+  if (error.response) {
+    return
+  }
+  
+  if (typeof globalThis !== 'undefined' && globalThis.showNotification) {
+    globalThis.showNotification({
+      type: 'error',
+      title: 'Error de conexión',
+      message: 'No se pudo conectar al servidor. Verifica tu conexión a internet.',
+      duration: 8000
+    })
+  }
+}
+
 // Función para obtener el store de auth dinámicamente
-const getAuthStore = () => {
+const getAuthStore = async () => {
   // Importación dinámica para evitar dependencias circulares
-  const { useAuthStore } = require('@/stores/auth')
-  return useAuthStore()
+  try {
+    const { useAuthStore } = await import('@/stores/auth')
+    return useAuthStore()
+  } catch (error) {
+    return null
+  }
 }
 
 // Interceptor de Request (segundo - autenticación y logging)
@@ -136,15 +403,12 @@ api.interceptors.request.use(
     
     // Forzar actualización de baseURL si no es una URL absoluta
     if (!currentApiUrl.startsWith('http://') && !currentApiUrl.startsWith('https://')) {
-      console.error('❌ [API] baseURL no es absoluta, forzando actualización')
       const fallbackUrl = 'https://cacaoscan-backend.onrender.com/api/v1'
-      console.warn('⚠️ [API] Usando fallback absoluto:', fallbackUrl)
       api.defaults.baseURL = fallbackUrl
       config.baseURL = fallbackUrl
     } else {
       // Actualizar si cambió
       if (api.defaults.baseURL !== currentApiUrl) {
-        console.log('🔄 [API] Updating baseURL from', api.defaults.baseURL, 'to', currentApiUrl)
         api.defaults.baseURL = currentApiUrl
       }
       // Asegurar que config.baseURL sea absoluta
@@ -153,16 +417,89 @@ api.interceptors.request.use(
     
     // Validación final: asegurar que config.baseURL sea absoluta
     if (config.baseURL && !config.baseURL.startsWith('http://') && !config.baseURL.startsWith('https://')) {
-      console.error('❌ [API] CRITICAL: baseURL sigue siendo relativa:', config.baseURL)
-      console.error('❌ [API] Forzando URL absoluta del backend')
       config.baseURL = 'https://cacaoscan-backend.onrender.com/api/v1'
     }
     
-    // Obtener token de localStorage
-    const token = localStorage.getItem('access_token')
+    // Endpoints de autenticación que NO deben incluir token de autorización
+    const authEndpoints = ['/auth/login/', '/auth/register/', '/auth/refresh/', '/auth/verify-email/', '/auth/resend-verification/', '/auth/forgot-password/', '/auth/reset-password/', '/auth/send-otp/', '/auth/verify-otp/']
+    const isAuthEndpoint = authEndpoints.some(endpoint => config.url?.includes(endpoint))
     
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    // Solo agregar token si NO es un endpoint de autenticación
+    if (!isAuthEndpoint) {
+      // Intentar obtener token de múltiples fuentes
+      let token = null
+      
+      // Prioridad 1: localStorage
+      try {
+        token = localStorage.getItem('access_token') || localStorage.getItem('token')
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      // Prioridad 2: Header por defecto de axios common
+      if (!token && api.defaults.headers.common && api.defaults.headers.common.Authorization) {
+        const authHeader = api.defaults.headers.common.Authorization
+        if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+          token = authHeader.substring(7)
+        }
+      }
+      
+      // Prioridad 3: Header por defecto de axios directamente
+      if (!token && api.defaults.headers && api.defaults.headers.Authorization) {
+        const authHeader = api.defaults.headers.Authorization
+        if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+          token = authHeader.substring(7)
+        }
+      }
+      
+      // Validar formato básico del token (JWT tiene 3 partes separadas por puntos)
+      const isValidTokenFormat = (tokenValue) => {
+        if (!tokenValue || typeof tokenValue !== 'string') {
+          return false
+        }
+        const trimmed = tokenValue.trim()
+        if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') {
+          return false
+        }
+        // JWT básico tiene 3 partes separadas por puntos
+        const parts = trimmed.split('.')
+        return parts.length === 3 && parts.every(part => part.length > 0)
+      }
+      
+      // Si hay token, validar formato y asegurarse de que esté en el header de la petición
+      if (token && token.trim() !== '') {
+        const cleanToken = token.trim()
+        
+        // Si el token no tiene formato válido, limpiarlo y no usarlo
+        if (!isValidTokenFormat(cleanToken)) {
+          // Limpiar token inválido del localStorage
+          try {
+            localStorage.removeItem('access_token')
+            localStorage.removeItem('token')
+          } catch (e) {
+            // Ignore localStorage errors
+          }
+          // Eliminar header de autorización
+          delete config.headers.Authorization
+        } else {
+          config.headers.Authorization = `Bearer ${cleanToken}`
+          // También actualizar los headers por defecto para futuras peticiones
+          if (!api.defaults.headers.common) {
+            api.defaults.headers.common = {}
+          }
+          api.defaults.headers.common.Authorization = `Bearer ${cleanToken}`
+          if (!api.defaults.headers) {
+            api.defaults.headers = {}
+          }
+          api.defaults.headers.Authorization = `Bearer ${cleanToken}`
+        }
+      } else {
+        // Si no hay token y no es un endpoint de autenticación, eliminar cualquier header previo
+        delete config.headers.Authorization
+      }
+    } else {
+      // Para endpoints de autenticación, asegurar que NO haya token
+      delete config.headers.Authorization
     }
 
     // Agregar timestamp para debugging
@@ -170,20 +507,18 @@ api.interceptors.request.use(
 
     // Log de request (siempre para debug)
     const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : config.url
-    console.log(`🚀 [API Request] ${config.method?.toUpperCase()} ${fullUrl}`)
 
     return config
   },
   (error) => {
     activeRequests = Math.max(0, activeRequests - 1)
-    console.error('❌ Request Error:', error)
     return Promise.reject(error)
   }
 )
 
 // Interceptor de Response
 api.interceptors.response.use(
-  (response) => {
+  async (response) => {
     // Calcular tiempo de respuesta
     const endTime = new Date()
     const duration = endTime - response.config.metadata.startTime
@@ -191,28 +526,17 @@ api.interceptors.response.use(
     // Validar que la respuesta sea JSON, no HTML
     const contentType = response.headers['content-type'] || ''
     if (contentType.includes('text/html')) {
-      console.error('❌ [API Error] Respuesta es HTML en lugar de JSON!')
-      console.error('❌ [API Error] URL:', response.config.baseURL + response.config.url)
-      console.error('❌ [API Error] Esto significa que la petición fue interceptada por Nginx del frontend')
-      console.error('❌ [API Error] baseURL debería ser:', getApiBaseUrl())
       throw new Error('La respuesta del servidor es HTML en lugar de JSON. Verifica que baseURL esté configurada correctamente.')
     }
 
-    // Log de response
-    console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.baseURL}${response.config.url}`, {
-      status: response.status,
-      duration: `${duration}ms`,
-      contentType: contentType
-    })
-
     // Actualizar actividad del usuario
     try {
-      const authStore = getAuthStore()
-      if (authStore.isAuthenticated) {
+      const authStore = await getAuthStore()
+      if (authStore && authStore.isAuthenticated) {
         authStore.updateLastActivity()
       }
     } catch (error) {
-      // Ignorar errores del store en caso de que no esté disponible
+      // Log error for debugging transparency - activity update is non-critical
     }
 
     return response
@@ -220,259 +544,29 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // Calcular tiempo de error
+    // Handle silent 500 errors for non-critical endpoints
     if (originalRequest.metadata) {
-      const endTime = new Date()
-      const duration = endTime - originalRequest.metadata.startTime
-      
-      // Endpoints que pueden fallar normalmente (configuración, stats)
-      const isConfigEndpoint = originalRequest.url?.includes('/config/')
-      const isStatsEndpoint = originalRequest.url?.includes('/stats/')
-      
-      // Determinar si es un error esperado (500 o 403 en endpoints no críticos)
-      const isExpectedFailure = (isConfigEndpoint || isStatsEndpoint) && 
-                                 (error.response?.status === 403 || error.response?.status === 500)
-      
-      // Solo loggear errores críticos o no esperados - silenciado
-      
-      // Manejar errores 500 para endpoints no críticos silenciosamente
-      if (error.response?.status === 500) {
-        // No loggear ni mostrar notificación para endpoints de stats o config
-        if (isStatsEndpoint || isConfigEndpoint) {
-          return Promise.resolve({
-            data: {},
-            status: 200,
-            config: originalRequest
-          })
-        }
+      const silentError = handleSilent500Error(originalRequest, error)
+      if (silentError) {
+        return silentError
       }
     }
 
-    // Manejar errores 401 (No autorizado) - JWT Refresh Token Flow
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      // Verificar si es un endpoint de auth que no requiere manejo especial
-      const authEndpoints = ['/auth/login/', '/auth/register/', '/auth/refresh/']
-      const isAuthEndpoint = authEndpoints.some(endpoint => 
-        originalRequest.url.includes(endpoint)
-      )
-
-      if (isAuthEndpoint) {
-        // Si falla en el refresh token, mostrar modal
-        if (originalRequest.url.includes('/auth/refresh/')) {
-          console.error('🚫 Refresh token inválido o expirado, cerrando sesión.')
-          if (typeof window !== 'undefined' && window.showSessionExpiredModal) {
-            window.showSessionExpiredModal()
-          } else {
-            localStorage.clear()
-            router.replace({ 
-              name: 'Login',
-              query: {
-                message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
-                expired: 'true'
-              }
-            })
-          }
-        }
-        return Promise.reject(error)
-      }
-
-      const refreshToken = localStorage.getItem('refresh_token')
-
-      // Si no hay refresh token → mostrar modal
-      if (!refreshToken) {
-        console.warn('⚠️ No hay refresh token disponible, mostrando modal...')
-        if (typeof window !== 'undefined' && window.showSessionExpiredModal) {
-          window.showSessionExpiredModal()
-        } else {
-          localStorage.clear()
-          router.replace({ 
-            name: 'Login',
-            query: {
-              message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
-              expired: 'true'
-            }
-          })
-        }
-        return Promise.reject(error)
-      }
-
-      // Si ya se está refrescando, agregar a la cola
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedRequestsQueue.push({ resolve, reject })
-        }).then(token => {
-          originalRequest.headers.Authorization = 'Bearer ' + token
-          return api(originalRequest)
-        }).catch(err => {
-          return Promise.reject(err)
-        })
-      }
-
-      // Marcar que estamos refrescando
-      originalRequest._retry = true
-      isRefreshing = true
-
-      // Crear instancia base de axios sin interceptores para evitar loops
-      const baseAxios = axios.create({
-        baseURL: api.defaults.baseURL,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-
-      try {
-        // Intentar refrescar el token
-        const response = await baseAxios.post('/auth/refresh/', {
-          refresh: refreshToken,
-        })
-
-        const newAccessToken = response.data.access
-        const newRefreshToken = response.data.refresh
-
-        // Guardar los nuevos tokens
-        localStorage.setItem('access_token', newAccessToken)
-        if (newRefreshToken) {
-          localStorage.setItem('refresh_token', newRefreshToken)
-        }
-
-        // Actualizar header por defecto
-        api.defaults.headers.Authorization = 'Bearer ' + newAccessToken
-
-        // Actualizar el token en el store
-        const authStore = getAuthStore()
-        authStore.setTokens({ access: newAccessToken, refresh: newRefreshToken })
-
-        console.log('🔄 Token JWT refrescado automáticamente')
-
-        // Procesar la cola de peticiones fallidas
-        processQueue(null, newAccessToken)
-
-        // Reintentar la petición original con el nuevo token
-        originalRequest.headers.Authorization = 'Bearer ' + newAccessToken
-        return api(originalRequest)
-      } catch (refreshError) {
-        console.error('❌ Error refrescando token:', refreshError)
-        
-        // Procesar la cola con error
-        processQueue(refreshError, null)
-
-        // Si el refresh falla, mostrar modal de sesión expirada
-        if (typeof window !== 'undefined' && window.showSessionExpiredModal) {
-          window.showSessionExpiredModal()
-        } else {
-          // Fallback de redirección directa si no hay modal disponible
-          localStorage.clear()
-          router.replace({ 
-            name: 'Login',
-            query: {
-              message: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
-              expired: 'true'
-            }
-          })
-        }
-        
-        return Promise.reject(refreshError)
-      } finally {
-        isRefreshing = false
-      }
+    // Handle 401 errors (refresh token flow)
+    const refreshResult = await handle401Error(error, originalRequest)
+    if (refreshResult !== null) {
+      return refreshResult
     }
 
-    // Manejar errores 403 (Prohibido)
-    if (error.response?.status === 403) {
-      const errorMessage = error.response.data?.detail || 'No tienes permisos para realizar esta acción'
-      const isConfigEndpoint = originalRequest?.url?.includes('/config/')
-      
-      // Solo mostrar notificación para endpoints críticos
-      if (!isConfigEndpoint) {
-        console.warn('🚫 Acceso denegado:', errorMessage)
-      }
-      
-      // Si es falta de verificación, redirigir a página de verificación
-      if (errorMessage.includes('verificada')) {
-        router.push({
-          name: 'EmailVerification',
-          query: { message: errorMessage }
-        })
-      }
-    }
+    // Handle other error types
+    handle403Error(error)
+    handle429Error(error)
+    handle500Error(error, originalRequest)
+    handleNetworkError(error)
 
-    // Manejar errores 429 (Rate Limited)
-    if (error.response?.status === 429) {
-      const retryAfter = error.response.headers['retry-after']
-      const errorMessage = error.response.data?.detail || 'Demasiadas solicitudes. Intenta más tarde.'
-      
-      // Mostrar notificación específica para rate limiting
-      if (typeof window !== 'undefined' && window.showNotification) {
-        window.showNotification({
-          type: 'warning',
-          title: 'Límite de solicitudes',
-          message: errorMessage,
-          duration: 5000
-        })
-      }
-    }
-
-    // Manejar errores 500 (Error del servidor)
-    if (error.response?.status >= 500) {
-      const isConfigEndpoint = originalRequest?.url?.includes('/config/')
-      const isStatsEndpoint = originalRequest?.url?.includes('/stats/')
-      
-      // No mostrar notificación para endpoints de configuración o estadísticas
-      if (!isConfigEndpoint && !isStatsEndpoint) {
-        if (typeof window !== 'undefined' && window.showNotification) {
-          window.showNotification({
-            type: 'error',
-            title: 'Error del servidor',
-            message: 'Ocurrió un error interno. Por favor intenta más tarde.',
-            duration: 8000
-          })
-        }
-      }
-    }
-
-    // Manejar errores de red
-    if (!error.response) {
-      if (typeof window !== 'undefined' && window.showNotification) {
-        window.showNotification({
-          type: 'error',
-          title: 'Error de conexión',
-          message: 'No se pudo conectar al servidor. Verifica tu conexión a internet.',
-          duration: 8000
-        })
-      }
-    }
-
-    return Promise.reject(error)
+    throw error
   }
 )
-
-// Función helper para crear requests con manejo de archivos
-export const createFormDataRequest = (data, progressCallback) => {
-  const formData = new FormData()
-  
-  Object.keys(data).forEach(key => {
-    if (data[key] !== null && data[key] !== undefined) {
-      formData.append(key, data[key])
-    }
-  })
-
-  const config = {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  }
-
-  if (progressCallback) {
-    config.onUploadProgress = (progressEvent) => {
-      const progress = Math.round(
-        (progressEvent.loaded * 100) / progressEvent.total
-      )
-      progressCallback(progress)
-    }
-  }
-
-  return { formData, config }
-}
 
 // Función helper para manejar timeouts específicos
 export const createTimeoutRequest = (timeoutMs) => {
@@ -523,15 +617,9 @@ export async function predictImage(formData) {
     }
 
     // Emitir evento de loading
-    window.dispatchEvent(new CustomEvent('api-loading-start', {
+    globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
       detail: { type: 'prediction', message: 'Analizando imagen de cacao...' }
     }))
-
-    console.log('📤 Enviando imagen para predicción:', {
-      fileName: imageFile.name,
-      fileSize: `${(imageFile.size / 1024).toFixed(1)}KB`,
-      fileType: imageFile.type
-    })
 
     // Realizar la petición al endpoint de predicción
     const response = await api.post('/api/predict/', formData, {
@@ -547,111 +635,65 @@ export async function predictImage(formData) {
     // Extraer mensaje de error más descriptivo
     let errorMessage = 'Error inesperado al procesar la imagen'
     
-    if (error.response?.data?.error) {
-      errorMessage = error.response.data.error
-    } else if (error.response?.data?.detail) {
-      errorMessage = error.response.data.detail
-    } else if (error.message) {
-      errorMessage = error.message
+    // Ensure error exists before accessing its properties
+    if (error) {
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail
+      } else if (error.message) {
+        errorMessage = error.message
+      }
     }
 
     // Crear error personalizado con información útil
     const customError = new Error(errorMessage)
-    customError.originalError = error
-    customError.status = error.response?.status
-    customError.statusText = error.response?.statusText
+    if (error) {
+      customError.originalError = error
+      customError.status = error.response?.status
+      customError.statusText = error.response?.statusText
+    }
 
     throw customError
 
   } finally {
     // Emitir evento de fin de loading
-    window.dispatchEvent(new CustomEvent('api-loading-end'))
+    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 
-/**
- * Función auxiliar para crear FormData para predicción
- * @param {File} file - Archivo de imagen
- * @param {Object} metadata - Metadatos adicionales (opcional)
- * @returns {FormData} - FormData preparado para envío
- */
-export function createPredictionFormData(file, metadata = {}) {
-  const formData = new FormData()
-  
-  // Agregar archivo de imagen
-  formData.append('image', file)
-  
-  // Agregar metadatos si se proporcionan
-  if (metadata.lote_id) {
-    formData.append('lote_id', metadata.lote_id)
+// Re-export validateImageFile from utils for backward compatibility
+export { validateImageFileObject as validateImageFile } from '@/utils/imageValidationUtils'
+
+// Inicializar token desde localStorage al cargar el módulo
+const initializeAuthToken = () => {
+  try {
+    const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+    if (token && token.trim() !== '') {
+      if (!api.defaults.headers.common) {
+        api.defaults.headers.common = {}
+      }
+      api.defaults.headers.common.Authorization = `Bearer ${token.trim()}`
+      if (!api.defaults.headers) {
+        api.defaults.headers = {}
+      }
+      api.defaults.headers.Authorization = `Bearer ${token.trim()}`
+    }
+  } catch (error) {
+    // Ignore errors during initialization
   }
-  
-  if (metadata.finca) {
-    formData.append('finca', metadata.finca)
-  }
-  
-  if (metadata.region) {
-    formData.append('region', metadata.region)
-  }
-  
-  if (metadata.variedad) {
-    formData.append('variedad', metadata.variedad)
-  }
-  
-  if (metadata.fecha_cosecha) {
-    formData.append('fecha_cosecha', metadata.fecha_cosecha)
-  }
-  
-  if (metadata.notas) {
-    formData.append('notas', metadata.notas)
-  }
-  
-  // Agregar información técnica del archivo
-  formData.append('file_name', file.name)
-  formData.append('file_size', file.size.toString())
-  formData.append('file_type', file.type)
-  
-  // Timestamp para auditoría
-  formData.append('upload_timestamp', new Date().toISOString())
-  
-  return formData
 }
 
-/**
- * Función auxiliar para validar archivos de imagen
- * @param {File} file - Archivo a validar
- * @returns {Object} - Objeto con isValid y errors
- */
-export function validateImageFile(file) {
-  const errors = []
-
-  if (!file) {
-    errors.push('Archivo requerido')
-    return { isValid: false, errors }
-  }
-
-  // Validar tipo
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
-  if (!allowedTypes.includes(file.type)) {
-    errors.push('Formato no válido. Use JPEG, PNG, WebP o BMP')
-  }
-
-  // Validar tamaño (20MB máximo)
-  const maxSize = 20 * 1024 * 1024
-  if (file.size > maxSize) {
-    errors.push('Archivo demasiado grande. Máximo 20MB')
-  }
-
-  // Validar tamaño mínimo (1KB)
-  const minSize = 1024
-  if (file.size < minSize) {
-    errors.push('Archivo demasiado pequeño')
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors
-  }
+// Ejecutar inicialización al cargar el módulo
+if (typeof window !== 'undefined') {
+  initializeAuthToken()
+  
+  // También escuchar cambios en localStorage por si el token se actualiza
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'access_token' || e.key === 'token') {
+      initializeAuthToken()
+    }
+  })
 }
 
 // Exportar configuraciones útiles

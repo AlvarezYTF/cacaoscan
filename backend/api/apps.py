@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+from django.conf import settings
 
 
 class ApiConfig(AppConfig):
@@ -7,8 +8,11 @@ class ApiConfig(AppConfig):
     
     def ready(self):
         """Importar signals cuando la app esté lista."""
-        # Temporarily disabled to avoid import errors
-        # import api.signals
-        pass
+        # No ejecutar signals en modo test
+        if getattr(settings, "TESTING", False):
+            return
+        
+        # Importar signals solo si no estamos en modo test
+        import api.signals
 
 

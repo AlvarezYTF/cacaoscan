@@ -19,6 +19,9 @@ Finca = models['Finca']
 
 logger = logging.getLogger("cacaoscan.services.fincas.crud")
 
+# Error message constants
+ERROR_FINCA_NOT_FOUND = "Finca no encontrada"
+
 
 class FincaCRUDService(BaseService):
     """
@@ -51,17 +54,43 @@ class FincaCRUDService(BaseService):
                     details=validation_result.get('details', {})
                 )
             
+            # Handle area_total and propietario for backward compatibility
+            hectareas = finca_data.get('hectareas') or finca_data.get('area_total')
+            agricultor = finca_data.get('propietario') or user
+            
+            # Validate hectareas/area_total
+            if hectareas is None:
+                return ServiceResult.validation_error(
+                    "Las hectáreas (area_total) son requeridas",
+                    details={"field": "hectareas"}
+                )
+            
+            from decimal import Decimal
+            try:
+                hectareas = Decimal(str(hectareas))
+                if hectareas < 0:
+                    return ServiceResult.validation_error(
+                        "Las hectáreas deben ser mayores o iguales a 0",
+                        details={"field": "hectareas"}
+                    )
+            except (ValueError, TypeError):
+                return ServiceResult.validation_error(
+                    "Las hectáreas deben ser un número válido",
+                    details={"field": "hectareas"}
+                )
+            
             # Create finca
             finca = Finca(
                 nombre=finca_data['nombre'],
-                ubicacion=finca_data['ubicacion'],
-                municipio=finca_data['municipio'],
-                departamento=finca_data['departamento'],
-                hectareas=finca_data['hectareas'],
-                agricultor=user,
+                ubicacion=finca_data.get('ubicacion', ''),
+                municipio=finca_data.get('municipio', ''),
+                departamento=finca_data.get('departamento', ''),
+                hectareas=hectareas,
+                agricultor=agricultor,
                 activa=finca_data.get('activa', True),
                 descripcion=finca_data.get('descripcion', ''),
-                coordenadas=finca_data.get('coordenadas', {}),
+                coordenadas_lat=finca_data.get('coordenadas_lat'),
+                coordenadas_lng=finca_data.get('coordenadas_lng'),
                 clima=finca_data.get('clima', ''),
                 tipo_suelo=finca_data.get('tipo_suelo', ''),
                 altitud=finca_data.get('altitud', 0),
@@ -71,7 +100,7 @@ class FincaCRUDService(BaseService):
             
             finca.save()
             
-            # Create audit log
+            # Create audit log (will execute after transaction commits)
             self.create_audit_log(
                 user=user,
                 action="finca_created",
@@ -79,7 +108,7 @@ class FincaCRUDService(BaseService):
                 resource_id=finca.id,
                 details={
                     'nombre': finca.nombre,
-                    'hectareas': finca.hectareas,
+                    'hectareas': finca.hectareas,  # Will be serialized to float in create_audit_log
                     'municipio': finca.municipio,
                     'departamento': finca.departamento
                 }
@@ -88,7 +117,7 @@ class FincaCRUDService(BaseService):
             self.log_info(f"Finca {finca.id} creada por usuario {user.username}")
             
             return ServiceResult.success(
-                data=self._serialize_finca(finca),
+                data={'data': self._serialize_finca(finca)},
                 message="Finca creada exitosamente"
             )
             
@@ -181,7 +210,7 @@ class FincaCRUDService(BaseService):
                         id=finca_id, agricultor=user
                     )
             except Finca.DoesNotExist:
-                return ServiceResult.not_found_error("Finca no encontrada")
+                return ServiceResult.not_found_error(ERROR_FINCA_NOT_FOUND)
             
             # Get lote statistics using LoteService
             lotes_stats_result = self.lote_service.get_finca_lotes_stats(finca_id, user)
@@ -235,7 +264,7 @@ class FincaCRUDService(BaseService):
                 else:
                     finca = Finca.objects.select_related('agricultor').get(id=finca_id, agricultor=user)
             except Finca.DoesNotExist:
-                return ServiceResult.not_found_error("Finca no encontrada")
+                return ServiceResult.not_found_error(ERROR_FINCA_NOT_FOUND)
             
             # Validate using validation service
             validation_result = self.validation_service.validate_finca_data(finca_data, is_create=False)
@@ -244,6 +273,12 @@ class FincaCRUDService(BaseService):
                     validation_result['error'],
                     details=validation_result.get('details', {})
                 )
+            
+            # Handle area_total and propietario for backward compatibility
+            if 'area_total' in finca_data:
+                finca_data['hectareas'] = finca_data.pop('area_total')
+            if 'propietario' in finca_data:
+                finca_data['agricultor'] = finca_data.pop('propietario')
             
             # Save original data for log
             original_data = {
@@ -262,14 +297,14 @@ class FincaCRUDService(BaseService):
             
             finca.save()
             
-            # Create audit log
+            # Create audit log (will execute after transaction commits)
             self.create_audit_log(
                 user=user,
                 action="finca_updated",
                 resource_type="finca",
                 resource_id=finca_id,
                 details={
-                    'original_data': original_data,
+                    'original_data': original_data,  # Will be serialized in create_audit_log
                     'updated_fields': list(finca_data.keys())
                 }
             )
@@ -277,7 +312,7 @@ class FincaCRUDService(BaseService):
             self.log_info(f"Finca {finca_id} actualizada por usuario {user.username}")
             
             return ServiceResult.success(
-                data=self._serialize_finca(finca),
+                data={'data': self._serialize_finca(finca)},
                 message="Finca actualizada exitosamente"
             )
             
@@ -307,7 +342,7 @@ class FincaCRUDService(BaseService):
                 else:
                     finca = Finca.objects.select_related('agricultor').get(id=finca_id, agricultor=user)
             except Finca.DoesNotExist:
-                return ServiceResult.not_found_error("Finca no encontrada")
+                return ServiceResult.not_found_error(ERROR_FINCA_NOT_FOUND)
             
             # Verify if it has associated lotes using LoteService
             lotes_count = self.lote_service.count_finca_lotes(finca_id)
@@ -317,7 +352,7 @@ class FincaCRUDService(BaseService):
                     details={"lotes_count": lotes_count}
                 )
             
-            # Create audit log before deleting
+            # Create audit log before deleting (will execute after transaction commits)
             self.create_audit_log(
                 user=user,
                 action="finca_deleted",
@@ -327,7 +362,7 @@ class FincaCRUDService(BaseService):
                     'nombre': finca.nombre,
                     'municipio': finca.municipio,
                     'departamento': finca.departamento,
-                    'hectareas': finca.hectareas
+                    'hectareas': finca.hectareas  # Will be serialized to float in create_audit_log
                 }
             )
             
@@ -362,17 +397,20 @@ class FincaCRUDService(BaseService):
             'id': finca.id,
             'nombre': finca.nombre,
             'ubicacion': finca.ubicacion,
+            'area_total': finca.hectareas,  # Alias for backward compatibility
+            'propietario': finca.agricultor.id if finca.agricultor else None,  # Alias for backward compatibility
             'municipio': finca.municipio,
             'departamento': finca.departamento,
             'hectareas': finca.hectareas,
             'activa': finca.activa,
             'descripcion': finca.descripcion,
-            'coordenadas': finca.coordenadas,
+            'coordenadas_lat': float(finca.coordenadas_lat) if finca.coordenadas_lat else None,
+            'coordenadas_lng': float(finca.coordenadas_lng) if finca.coordenadas_lng else None,
             'clima': finca.clima,
             'tipo_suelo': finca.tipo_suelo,
             'altitud': finca.altitud,
-            'precipitacion_anual': finca.precipitacion_anual,
-            'temperatura_promedio': finca.temperatura_promedio,
+            'precipitacion_anual': float(finca.precipitacion_anual) if finca.precipitacion_anual else 0,
+            'temperatura_promedio': float(finca.temperatura_promedio) if finca.temperatura_promedio else 0,
             'created_at': finca.created_at.isoformat(),
             'updated_at': finca.updated_at.isoformat(),
             'lotes_count': self.lote_service.count_finca_lotes(finca.id)

@@ -19,5 +19,9 @@ metadata:
   name: frontend-config
   namespace: app-namespace
 data:
-  VITE_API_BASE_URL: "http://backend-service:8000/api/v1"
+  # Use HTTPS for internal backend service communication within the K8s cluster.
+  # S5332: Clear-text protocols are insecure for transmitting sensitive data.
+  # Note: If TLS termination happens at the ingress/load balancer, ensure
+  # the backend-service is reachable via HTTPS or use a secure service mesh.
+  VITE_API_BASE_URL: "https://backend-service:8000/api/v1"
 

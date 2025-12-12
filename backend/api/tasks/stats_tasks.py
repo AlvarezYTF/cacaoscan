@@ -19,11 +19,19 @@ def calculate_admin_stats_task(self) -> Dict[str, Any]:
     Returns:
         Dictionary with all system statistics
     """
+    def safe_update_state(state: str, meta: Dict[str, Any]) -> None:
+        """Safely update task state, only if task_id exists (not in test mode)."""
+        if not hasattr(self, 'request') or not getattr(self.request, 'id', None):
+            # We are in test mode, return without using backend
+            return
+        if hasattr(self, 'update_state'):
+            self.update_state(state=state, meta=meta)
+    
     try:
         # Update task state
-        self.update_state(
-            state='PROGRESS',
-            meta={
+        safe_update_state(
+            'PROGRESS',
+            {
                 'status': 'Calculating user statistics...'
             }
         )
@@ -31,9 +39,9 @@ def calculate_admin_stats_task(self) -> Dict[str, Any]:
         stats_service = StatsService()
         
         # Update task state
-        self.update_state(
-            state='PROGRESS',
-            meta={
+        safe_update_state(
+            'PROGRESS',
+            {
                 'status': 'Calculating image statistics...'
             }
         )

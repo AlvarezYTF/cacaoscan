@@ -127,15 +127,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useEmailValidation } from '@/composables/useEmailValidation'
 import PasswordResetForm from '@/components/auth/PasswordResetForm.vue'
 import PasswordResetConfirmation from '@/components/auth/PasswordResetConfirmation.vue'
 
 // Store y route
 const authStore = useAuthStore()
 const route = useRoute()
+const { isValidEmail } = useEmailValidation()
 
 // Referencia al formulario
 const resetFormRef = ref(null)
@@ -173,10 +175,7 @@ const validateForm = () => {
   return Object.keys(errors.value).length === 0
 }
 
-const isValidEmail = (email) => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return re.test(email)
-}
+// Email validation is now handled by useEmailValidation composable
 
 // Funciones
 const startCountdown = () => {
@@ -213,7 +212,6 @@ const handleSubmit = async (email) => {
       errorMessage.value = result.error || 'Error al enviar instrucciones'
     }
   } catch (error) {
-    console.error('Error en password reset:', error)
     errorMessage.value = 'Error inesperado. Intenta nuevamente.'
   } finally {
     isLoading.value = false

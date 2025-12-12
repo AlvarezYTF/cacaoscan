@@ -58,13 +58,149 @@ services:
       - key: CORS_ALLOWED_ORIGINS
         value: https://cacaoscan-frontend.onrender.com
 
+      # Redis configuration
+      # IMPORTANT: Render no tiene servicio Redis nativo.
+      # Opciones:
+      # 1. Usar servicio Redis externo (Upstash, Redis Cloud, etc.) - RECOMENDADO
+      # 2. Configurar Redis manualmente en Render Dashboard > Environment Variables
+      # 
+      # Para usar Redis externo, configura estas variables en Render Dashboard:
+      # - REDIS_HOST: host del servicio Redis externo
+      # - REDIS_PORT: puerto (generalmente 6379 o 6380 para SSL)
+      # - REDIS_PASSWORD: contraseña del servicio Redis
+      # - REDIS_DB: base de datos Redis (0 por defecto)
+      # - CELERY_BROKER_URL: redis://:password@host:port/0
+      # - CELERY_RESULT_BACKEND: redis://:password@host:port/0
+      #
+      # Si no configuras Redis, la app usará cache en memoria (solo desarrollo)
+      - key: USE_REDIS
+        value: "false"  # Cambiar a "true" cuando configures Redis externo
+      - key: USE_CELERY_REDIS
+        value: "false"  # Cambiar a "true" cuando configures Redis externo
+      # Variables de ejemplo (configurar en Dashboard si usas Redis externo):
+      # - key: REDIS_HOST
+      #   value: "your-redis-host.upstash.io"
+      # - key: REDIS_PORT
+      #   value: "6379"
+      # - key: REDIS_PASSWORD
+      #   value: "your-redis-password"
+      # - key: REDIS_DB
+      #   value: "0"
+      # - key: CELERY_BROKER_URL
+      #   value: "redis://:password@host:port/0"
+      # - key: CELERY_RESULT_BACKEND
+      #   value: "redis://:password@host:port/0"
+
       # Startup flags
       - key: SERVICE_ROLE
         value: "web"
-      - key: CREATE_DEFAULT_SUPERUSER
-        value: "true"
       - key: SEED_INITIAL_DATA
         value: "true"
+      
+      # Superuser creation (secure, via environment variables)
+      # Set DJANGO_CREATE_SUPERUSER=true to enable automatic superuser creation
+      - key: DJANGO_CREATE_SUPERUSER
+        value: "true"
+      # IMPORTANT: Set these in Render Dashboard > Environment Variables (not in this file for security)
+      # - DJANGO_SUPERUSER_USERNAME: Your desired username
+      # - DJANGO_SUPERUSER_EMAIL: Your desired email
+      # - DJANGO_SUPERUSER_PASSWORD: Your secure password (min 8 characters)
+
+  # --- Celery Worker (Background Tasks) ---
+  - type: worker
+    name: cacaoscan-celery-worker
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    envVars:
+      # Backend base (same as web service)
+      # IMPORTANT: Configure SECRET_KEY manually in Render Dashboard for all services
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: cacaoscan-backend.onrender.com
+      
+      # Database (same as web service)
+      - key: DB_NAME
+        fromDatabase:
+          name: cacaoscan-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: cacaoscan-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: cacaoscan-db
+          property: password
+      - key: DB_HOST
+        fromDatabase:
+          name: cacaoscan-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: cacaoscan-db
+          property: port
+      
+      # Redis configuration (same as web service)
+      # IMPORTANT: Configure Redis in Render Dashboard > Environment Variables
+      - key: USE_REDIS
+        value: "false"  # Cambiar a "true" cuando configures Redis externo
+      - key: USE_CELERY_REDIS
+        value: "false"  # Cambiar a "true" cuando configures Redis externo
+      
+      # Service role for entrypoint
+      - key: SERVICE_ROLE
+        value: "celery-worker"
+
+  # --- Celery Beat (Task Scheduler) ---
+  - type: worker
+    name: cacaoscan-celery-beat
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    envVars:
+      # Backend base (same as web service)
+      # IMPORTANT: Configure SECRET_KEY manually in Render Dashboard for all services
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: cacaoscan-backend.onrender.com
+      
+      # Database (same as web service)
+      - key: DB_NAME
+        fromDatabase:
+          name: cacaoscan-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: cacaoscan-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: cacaoscan-db
+          property: password
+      - key: DB_HOST
+        fromDatabase:
+          name: cacaoscan-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: cacaoscan-db
+          property: port
+      
+      # Redis configuration (same as web service)
+      # IMPORTANT: Configure Redis in Render Dashboard > Environment Variables
+      - key: USE_REDIS
+        value: "false"  # Cambiar a "true" cuando configures Redis externo
+      - key: USE_CELERY_REDIS
+        value: "false"  # Cambiar a "true" cuando configures Redis externo
+      
+      # Service role for entrypoint
+      - key: SERVICE_ROLE
+        value: "celery-beat"
 
   # --- Frontend Vue ---
   - type: web
@@ -88,3 +224,4 @@ services:
           name: cacaoscan-backend
           property: host
           format: https://${host}/api/v1
+

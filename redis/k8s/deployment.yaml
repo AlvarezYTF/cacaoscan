@@ -17,6 +17,7 @@ spec:
         app: redis
         component: cache
     spec:
+      automountServiceAccountToken: false
       containers:
       - name: redis
         image: redis:7-alpine
@@ -35,9 +36,11 @@ spec:
           requests:
             memory: "128Mi"
             cpu: "100m"
+            ephemeral-storage: "2Gi"
           limits:
             memory: "512Mi"
             cpu: "500m"
+            ephemeral-storage: "4Gi"
         livenessProbe:
           exec:
             command:
@@ -58,5 +61,6 @@ spec:
           failureThreshold: 3
       volumes:
       - name: redis-data
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: 2Gi
 

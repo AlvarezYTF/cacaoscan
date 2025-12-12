@@ -40,66 +40,58 @@
 
 <script setup>
 // 1. Vue core
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 
 // 2. Vue router
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
-// 3. Stores
-import { useAuthStore } from '@/stores/auth'
-
-// 4. Composables
+// 3. Composables
 import { useImageStats } from '@/composables/useImageStats'
+import { useSidebarNavigation } from '@/composables/useSidebarNavigation'
 
-// 5. Components
+// 4. Components
 import ImageHistoryCard from '@/components/dashboard/ImageHistoryCard.vue'
 import Sidebar from '@/components/layout/Common/Sidebar.vue'
 
-// Router & Route
-const router = useRouter()
+// Route
 const route = useRoute()
-
-// Stores
-const authStore = useAuthStore()
 
 // Composables
 const { fetchImages } = useImageStats()
+const {
+  isSidebarCollapsed,
+  userName,
+  userRole,
+  handleMenuClick,
+  toggleSidebarCollapse,
+  handleLogout
+} = useSidebarNavigation()
 
 // State
-const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
 const activeSection = ref('history')
 const recentAnalyses = ref([])
 const imagesLoading = ref(false)
-
-// Computed
-const userName = computed(() => {
-  return authStore.userFullName || 'Usuario'
-})
-
-const userRole = computed(() => {
-  const role = authStore.userRole || 'Usuario'
-  if (role === 'admin') return 'admin'
-  if (role === 'farmer') return 'agricultor'
-  return 'agricultor'
-})
 
 // Functions
 const loadRecentAnalyses = async () => {
   imagesLoading.value = true
   try {
-    const data = await fetchImages(1, { page_size: '10' })
-    recentAnalyses.value = data.results.map(image => ({
+    const result = await fetchImages(1, { page_size: '10' })
+    // fetchImages devuelve directamente los datos o un objeto con data
+    const data = result.data || result
+    
+    recentAnalyses.value = (data.results || []).map(image => ({
       id: `CAC-${image.id}`,
       status: image.processed ? 'completed' : 'pending',
       statusLabel: image.processed ? 'Completado' : 'Pendiente',
-      quality: image.prediction?.quality || 0,
+      quality: image.prediction?.average_confidence ? (image.prediction.average_confidence * 100) : (image.prediction?.quality || 0),
       date: image.created_at,
       predictions: image.prediction ? [image.prediction] : [],
       ...image
     }))
   } catch (error) {
     console.error('Error loading recent analyses:', error)
-  } finally {
+    } finally {
     imagesLoading.value = false
   }
 }
@@ -109,43 +101,7 @@ const refreshData = () => {
 }
 
 const handleImageSelected = (image) => {
-  console.log('Imagen seleccionada:', image)
-}
-
-const handleMenuClick = (item) => {
-  if (item.route && item.route !== null) {
-    const currentPath = route.path
-    if (currentPath !== item.route) {
-      router.push(item.route)
-    }
-  } else {
-    const role = authStore.userRole
-    if (role === 'farmer' || role === 'Agricultor') {
-      router.push({ 
-        name: 'AgricultorDashboard',
-        query: { section: item.id }
-      })
-    } else {
-      router.push({ 
-        name: 'AdminDashboard',
-        query: { section: item.id }
-      })
-    }
   }
-}
-
-const toggleSidebarCollapse = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
-  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
-}
-
-const handleLogout = async () => {
-  try {
-    await authStore.logout()
-  } catch (error) {
-    console.error('Error during logout:', error)
-  }
-}
 
 // Lifecycle
 onMounted(() => {

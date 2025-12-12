@@ -1,37 +1,39 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-50">
-    <!-- Header -->
-    <HeaderView />
+  <BaseHomeLayout>
+    <template #header>
+      <HeaderView />
+    </template>
 
-    
-    <!-- Hero -->
-    <HeroView />
-    
-    <!-- Landing Section -->
-    <LandingView />
+    <template #hero>
+      <HeroView />
+    </template>
 
-    <!-- Features -->
-    <FeaturesView />
+    <template #landing>
+      <LandingView />
+    </template>
 
-    <!-- About -->
-    <AboutView />
+    <template #features>
+      <FeaturesView />
+    </template>
 
-    <!-- Footer -->
-    <FooterView />
+    <template #about>
+      <AboutView />
+    </template>
 
-  </div>
+    <template #footer>
+      <FooterView />
+    </template>
+  </BaseHomeLayout>
 </template>
 
 <script setup>
-// Pinia store can be imported here when needed
-// import { useMainStore } from '@/stores/main'
-// const store = useMainStore()
-import HeaderView     from '@/components/Pages/HomeView/HeaderView.vue';
-import LandingView    from '@/components/Pages/HomeView/LandingView.vue';
-import HeroView       from '@/components/Pages/HomeView/HeroView.vue';
-import FooterView     from '@/components/Pages/HomeView/FooterView.vue';
-import FeaturesView   from '@/components/Pages/HomeView/FeaturesView.vue';
-import AboutView      from '@/components/Pages/HomeView/AboutView.vue';
+import BaseHomeLayout from '@/components/common/BaseHomeLayout.vue'
+import HeaderView from '@/components/Pages/HomeView/HeaderView.vue'
+import LandingView from '@/components/Pages/HomeView/LandingView.vue'
+import HeroView from '@/components/Pages/HomeView/HeroView.vue'
+import FooterView from '@/components/Pages/HomeView/FooterView.vue'
+import FeaturesView from '@/components/Pages/HomeView/FeaturesView.vue'
+import AboutView from '@/components/Pages/HomeView/AboutView.vue'
 </script>
 
 <style scoped>

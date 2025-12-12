@@ -41,10 +41,11 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="create-finca-nombre" class="block text-sm font-semibold text-gray-700 mb-2">
                   Nombre de la Finca *
                 </label>
                 <input
+                  id="create-finca-nombre"
                   v-model="form.nombre"
                   type="text"
                   required
@@ -54,10 +55,11 @@
               </div>
 
               <div v-if="auth.user?.role === 'admin'" class="col-span-1 md:col-span-2">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label for="create-finca-agricultor" class="block text-sm font-semibold text-gray-700 mb-2">
                   Agricultor asignado *
                 </label>
                 <select
+                  id="create-finca-agricultor"
                   v-model="form.agricultor"
                   required
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
@@ -103,12 +105,13 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useFincasStore } from '@/stores/fincas'
 import { createFinca, getAgricultores } from '@/services/fincasApi'
-import Swal from 'sweetalert2'
+import { useNotifications } from '@/composables/useNotifications'
 
 const emit = defineEmits(['close', 'saved'])
 
 const auth = useAuthStore()
 const fincasStore = useFincasStore()
+const { showSuccess, showError } = useNotifications()
 
 const form = ref({ nombre: '', agricultor: '' })
 const agricultores = ref([])
@@ -116,32 +119,33 @@ const loading = ref(false)
 
 // Usamos SweetAlert2 para notificaciones
 onMounted(async () => {
-  console.debug('[Fincas] CreateFincaForm mounted')
   if (auth.user?.role === 'admin') {
     try {
       const res = await getAgricultores()
       // El endpoint devuelve axios response; tomamos los resultados (paginados o no)
       const data = res.data
-      agricultores.value = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : data?.results || [])
-      console.debug('[Fincas] Agricultores cargados:', agricultores.value.length)
-    } catch (e) {
-      console.error('[Fincas] Error cargando agricultores:', e)
-      Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la lista de agricultores', timer: 3000 })
+      if (Array.isArray(data?.results)) {
+        agricultores.value = data.results
+      } else if (Array.isArray(data)) {
+        agricultores.value = data
+      } else {
+        agricultores.value = data?.results || []
+      }
+      } catch (e) {
+      showError('No se pudo cargar la lista de agricultores')
     }
   }
 })
 
 const submitForm = async () => {
   loading.value = true
-  console.debug('[Fincas] SubmitForm - Datos:', form.value)
   try {
     await createFinca(form.value)
-    Swal.fire({ icon: 'success', title: 'Finca creada', text: 'Finca creada correctamente', timer: 3000, showConfirmButton: false })
+    showSuccess('Finca creada correctamente')
     form.value = { nombre: '', agricultor: '' }
     emit('saved')
   } catch (error) {
-    console.error('[Fincas] Error creando finca:', error)
-    Swal.fire({ icon: 'error', title: 'Error', text: 'Error al crear la finca', timer: 3000 })
+    showError('Error al crear la finca')
   } finally {
     loading.value = false
   }

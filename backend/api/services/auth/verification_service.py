@@ -34,9 +34,12 @@ class VerificationService(BaseService):
             models = get_models_safely({
                 'EmailVerificationToken': 'auth_app.models.EmailVerificationToken'
             })
-            EmailVerificationToken = models['EmailVerificationToken']
-            
-            token_obj = EmailVerificationToken.objects.filter(token=token).first()
+            email_verification_token_model = models['EmailVerificationToken']
+            if email_verification_token_model is None:
+                return ServiceResult.error(
+                    ValidationServiceError("Modelo EmailVerificationToken no disponible")
+                )
+            token_obj = email_verification_token_model.objects.filter(token=token).first()
             
             if not token_obj:
                 return ServiceResult.validation_error(
@@ -105,7 +108,7 @@ class VerificationService(BaseService):
             except User.DoesNotExist:
                 # For security, don't reveal if email exists
                 return ServiceResult.success(
-                    message=f"Si el email existe, se enviará un nuevo token de verificación"
+                    message="Si el email existe, se enviará un nuevo token de verificación"
                 )
             
             # Create new verification token
@@ -113,8 +116,8 @@ class VerificationService(BaseService):
             models = get_models_safely({
                 'EmailVerificationToken': 'auth_app.models.EmailVerificationToken'
             })
-            EmailVerificationToken = models['EmailVerificationToken']
-            token_obj = EmailVerificationToken.create_for_user(user)
+            email_verification_token_model = models['EmailVerificationToken']
+            token_obj = email_verification_token_model.create_for_user(user)
             
             # Create audit log
             self.create_audit_log(

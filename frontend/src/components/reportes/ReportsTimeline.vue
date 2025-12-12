@@ -352,23 +352,23 @@ export default {
 }
 
 .marker-icon.status-pending {
-  background: #fef3c7;
-  color: #f59e0b;
+  background: #fde68a;
+  color: #7c2d12;
 }
 
 .marker-icon.status-processing {
   background: #dbeafe;
-  color: #3b82f6;
+  color: #1e40af;
 }
 
 .marker-icon.status-completed {
   background: #d1fae5;
-  color: #10b981;
+  color: #047857;
 }
 
 .marker-icon.status-error {
-  background: #fee2e2;
-  color: #ef4444;
+  background: #fecdd3;
+  color: #991b1b;
 }
 
 .timeline-content {
@@ -443,7 +443,7 @@ export default {
 }
 
 .status-pending {
-  color: #f59e0b;
+  color: #7c2d12;
 }
 
 .status-processing {
@@ -455,7 +455,7 @@ export default {
 }
 
 .status-error {
-  color: #ef4444;
+  color: #991b1b;
 }
 
 .card-body {
@@ -577,14 +577,14 @@ export default {
 }
 
 .btn-primary {
-  background-color: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
+  background-color: #1f4e79;
+  color: #ffffff;
+  border-color: #1f4e79;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
-  border-color: #2563eb;
+  background-color: #1a3d5b;
+  border-color: #1a3d5b;
 }
 
 /* Responsive */

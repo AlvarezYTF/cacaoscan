@@ -12,7 +12,7 @@ from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from api.views.mixins import AdminPermissionMixin
+from api.views.mixins.admin_mixin import AdminPermissionMixin
 from api.serializers import (
     ErrorResponseSerializer,
     CacaoImageDetailSerializer
@@ -29,12 +29,55 @@ CacaoPrediction = models['CacaoPrediction']
 
 logger = logging.getLogger("cacaoscan.api.images")
 
+# Error message constants
+ERROR_IMAGE_NOT_FOUND = 'Imagen no encontrada'
+ERROR_INTERNAL_SERVER = 'Error interno del servidor'
+
 
 class AdminImageDetailView(AdminPermissionMixin, APIView):
     """
     Endpoint para obtener detalles completos de cualquier imagen del sistema (Admin only).
     """
     permission_classes = [IsAuthenticated]
+    
+    def _build_admin_info(self, image, admin_user):
+        """Build admin information dictionary for image."""
+        return {
+            'owner_info': {
+                'id': image.user.id,
+                'username': image.user.username,
+                'email': image.user.email,
+                'first_name': image.user.first_name,
+                'last_name': image.user.last_name,
+                'is_active': image.user.is_active,
+                'is_staff': image.user.is_staff,
+                'is_superuser': image.user.is_superuser,
+                'date_joined': image.user.date_joined.isoformat(),
+                'last_login': image.user.last_login.isoformat() if image.user.last_login else None,
+                'groups': [group.name for group in image.user.groups.all()]
+            },
+            'file_info': {
+                'file_path': image.image.path if image.image else None,
+                'file_exists': image.image and os.path.exists(image.image.path) if image.image else False,
+                'storage_backend': str(type(image.image.storage).__name__) if image.image else None
+            },
+            'processing_info': {
+                'processing_time_ms': image.prediction.processing_time_ms if hasattr(image, 'prediction') and image.prediction else None,
+                'model_version': image.prediction.model_version.codigo if hasattr(image, 'prediction') and image.prediction and image.prediction.model_version else None,
+                'device_used': image.prediction.device_used.codigo if hasattr(image, 'prediction') and image.prediction and image.prediction.device_used else None,
+                'crop_url': image.prediction.crop_url if hasattr(image, 'prediction') and image.prediction else None
+            },
+            'access_info': {
+                'accessed_by_admin': admin_user.username,
+                'access_timestamp': timezone.now().isoformat(),
+                'admin_permissions': {
+                    'can_edit': True,
+                    'can_delete': True,
+                    'can_download': True,
+                    'can_view_owner_data': True
+                }
+            }
+        }
     
     @swagger_auto_schema(
         operation_description="Obtiene los detalles completos de cualquier imagen del sistema (solo admins)",
@@ -68,7 +111,7 @@ class AdminImageDetailView(AdminPermissionMixin, APIView):
                 ).get(id=image_id)
             except CacaoImage.DoesNotExist:
                 return Response({
-                    'error': 'Imagen no encontrada',
+                    'error': ERROR_IMAGE_NOT_FOUND,
                     'status': 'error'
                 }, status=status.HTTP_404_NOT_FOUND)
             
@@ -77,49 +120,14 @@ class AdminImageDetailView(AdminPermissionMixin, APIView):
             image_data = serializer.data
             
             # Agregar información administrativa adicional
-            image_data['admin_info'] = {
-                'owner_info': {
-                    'id': image.user.id,
-                    'username': image.user.username,
-                    'email': image.user.email,
-                    'first_name': image.user.first_name,
-                    'last_name': image.user.last_name,
-                    'is_active': image.user.is_active,
-                    'is_staff': image.user.is_staff,
-                    'is_superuser': image.user.is_superuser,
-                    'date_joined': image.user.date_joined.isoformat(),
-                    'last_login': image.user.last_login.isoformat() if image.user.last_login else None,
-                    'groups': [group.name for group in image.user.groups.all()]
-                },
-                'file_info': {
-                    'file_path': image.image.path if image.image else None,
-                    'file_exists': image.image and os.path.exists(image.image.path) if image.image else False,
-                    'storage_backend': str(type(image.image.storage).__name__) if image.image else None
-                },
-                'processing_info': {
-                    'processing_time_ms': image.prediction.processing_time_ms if hasattr(image, 'prediction') and image.prediction else None,
-                    'model_version': image.prediction.model_version if hasattr(image, 'prediction') and image.prediction else None,
-                    'device_used': image.prediction.device_used if hasattr(image, 'prediction') and image.prediction else None,
-                    'crop_url': image.prediction.crop_url if hasattr(image, 'prediction') and image.prediction else None
-                },
-                'access_info': {
-                    'accessed_by_admin': request.user.username,
-                    'access_timestamp': timezone.now().isoformat(),
-                    'admin_permissions': {
-                        'can_edit': True,
-                        'can_delete': True,
-                        'can_download': True,
-                        'can_view_owner_data': True
-                    }
-                }
-            }
+            image_data['admin_info'] = self._build_admin_info(image, request.user)
             
             return Response(image_data, status=status.HTTP_200_OK)
             
         except Exception as e:
             logger.error(f"Error obteniendo detalles administrativos de imagen {image_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                    'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -182,7 +190,7 @@ class AdminImageUpdateView(AdminPermissionMixin, APIView):
                 ).get(id=image_id)
             except CacaoImage.DoesNotExist:
                 return Response({
-                    'error': 'Imagen no encontrada',
+                    'error': ERROR_IMAGE_NOT_FOUND,
                     'status': 'error'
                 }, status=status.HTTP_404_NOT_FOUND)
             
@@ -236,7 +244,7 @@ class AdminImageUpdateView(AdminPermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error actualizando imagen {image_id} por admin: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                    'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -290,7 +298,7 @@ class AdminImageDeleteView(AdminPermissionMixin, APIView):
                 ).prefetch_related('prediction').get(id=image_id)
             except CacaoImage.DoesNotExist:
                 return Response({
-                    'error': 'Imagen no encontrada',
+                    'error': ERROR_IMAGE_NOT_FOUND,
                     'status': 'error'
                 }, status=status.HTTP_404_NOT_FOUND)
             
@@ -326,8 +334,8 @@ class AdminImageDeleteView(AdminPermissionMixin, APIView):
                     'grosor_mm': float(image.prediction.grosor_mm),
                     'peso_g': float(image.prediction.peso_g),
                     'average_confidence': float(image.prediction.average_confidence),
-                    'model_version': image.prediction.model_version,
-                    'device_used': image.prediction.device_used,
+                    'model_version': image.prediction.model_version.codigo if image.prediction.model_version else None,
+                    'device_used': image.prediction.device_used.codigo if image.prediction.device_used else None,
                     'processing_time_ms': image.prediction.processing_time_ms,
                     'created_at': image.prediction.created_at.isoformat()
                 }
@@ -348,7 +356,7 @@ class AdminImageDeleteView(AdminPermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error eliminando imagen {image_id} por admin: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                    'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

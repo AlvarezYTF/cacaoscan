@@ -2,7 +2,7 @@
 # Dockerfile Multistage para Backend Django de CacaoScan
 # ========================================
 
-FROM python:3.13-slim AS builder
+FROM python:3.12-slim AS builder
 
 ARG APP_VERSION=v1.3.0
 
@@ -38,7 +38,7 @@ RUN python -m venv /opt/venv \
 # ========================================
 # Etapa 2: Runtime base
 # ========================================
-FROM python:3.13-slim AS runtime-base
+FROM python:3.12-slim AS runtime-base
 
 ARG APP_VERSION=v1.3.0
 
@@ -74,7 +74,30 @@ WORKDIR /app
 
 COPY --from=builder /opt/venv /opt/venv
 
-COPY . .
+# Copy application code explicitly to prevent copying sensitive data
+# SECURITY: Copy only necessary application directories and files
+# .dockerignore provides additional protection, but explicit copying is safer
+# This prevents accidentally copying credentials, local configs, or other sensitive data
+COPY ["manage.py", "/app/manage.py"]
+COPY ["runtime.txt", "/app/runtime.txt"]
+COPY ["pytest.ini", "/app/pytest.ini"]
+# Copy Django project configuration
+COPY cacaoscan/ ./cacaoscan/
+# Copy all Django applications
+COPY api/ ./api/
+COPY audit/ ./audit/
+COPY auth_app/ ./auth_app/
+COPY catalogos/ ./catalogos/
+COPY core/ ./core/
+COPY fincas_app/ ./fincas_app/
+COPY images_app/ ./images_app/
+COPY legal/ ./legal/
+COPY ml/ ./ml/
+COPY notifications/ ./notifications/
+COPY personas/ ./personas/
+COPY reports/ ./reports/
+COPY training/ ./training/
+COPY users/ ./users/
 
 # Crear directorios necesarios para la aplicación
 RUN mkdir -p staticfiles logs \
@@ -86,12 +109,17 @@ RUN mkdir -p staticfiles logs \
     media/cacao_images/crops_runtime \
     media/cacao_images/processed \
     media/cacao_images/masks \
-    media/cacao_images/converted_jpg
+    media/cacao_images/converted_jpg \
+    && chown -R appuser:appgroup /app /opt/venv
 
 # Script de inicio - convertir finales de línea Windows (CRLF) a Unix (LF)
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && \
-    chmod +x /docker-entrypoint.sh
+    chmod +x /docker-entrypoint.sh && \
+    chown appuser:appgroup /docker-entrypoint.sh
+
+# Change to non-privileged user before running the application
+USER appuser
 
 # Render inyecta PORT automáticamente (puede ser 10000 u otro)
 # Exponemos múltiples puertos comunes que Render puede usar

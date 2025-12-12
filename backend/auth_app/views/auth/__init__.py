@@ -7,6 +7,9 @@ from .login_views import (
     UserProfileView,
     RefreshTokenView,
 )
+from .google_login_views import (
+    GoogleLoginView,
+)
 from .registration_views import (
     RegisterView,
     PreRegisterView,
@@ -16,6 +19,7 @@ from .password_views import (
     ChangePasswordView,
     ForgotPasswordView,
     ResetPasswordView,
+    SetPasswordView,
 )
 from .email_verification_views import (
     EmailVerificationView,
@@ -40,6 +44,7 @@ __all__ = [
     'LogoutView',
     'UserProfileView',
     'RefreshTokenView',
+    'GoogleLoginView',
     # Registration views
     'RegisterView',
     'PreRegisterView',
@@ -48,6 +53,7 @@ __all__ = [
     'ChangePasswordView',
     'ForgotPasswordView',
     'ResetPasswordView',
+    'SetPasswordView',
     # Email verification views
     'EmailVerificationView',
     'ResendVerificationView',

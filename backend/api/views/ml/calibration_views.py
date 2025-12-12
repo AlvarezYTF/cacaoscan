@@ -13,6 +13,65 @@ from ...serializers import ErrorResponseSerializer
 
 logger = logging.getLogger("cacaoscan.api")
 
+# Constants for file validation
+ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp']
+MAX_IMAGE_SIZE = 20 * 1024 * 1024  # 20MB
+
+
+def _validate_image_file(request, max_size=MAX_IMAGE_SIZE, allowed_types=None):
+    """
+    Validate image file from request.
+    
+    Args:
+        request: Django request object
+        max_size: Maximum file size in bytes (default: 20MB)
+        allowed_types: List of allowed MIME types (default: ALLOWED_IMAGE_TYPES)
+    
+    Returns:
+        tuple: (image_file, error_response) where error_response is None if valid
+    """
+    if allowed_types is None:
+        allowed_types = ALLOWED_IMAGE_TYPES
+    
+    if 'image' not in request.FILES:
+        return None, Response({
+            'error': 'No se proporcionó archivo de imagen',
+            'status': 'error'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    image_file = request.FILES['image']
+    
+    if image_file.content_type not in allowed_types:
+        return None, Response({
+            'error': 'Tipo de archivo no válido. Use JPEG, PNG o BMP',
+            'status': 'error'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    if image_file.size > max_size:
+        return None, Response({
+            'error': f'Archivo demasiado grande. Máximo {max_size // (1024 * 1024)}MB permitido',
+            'status': 'error'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    return image_file, None
+
+
+def _load_image_from_file(image_file):
+    """
+    Load PIL Image from uploaded file.
+    
+    Args:
+        image_file: Django uploaded file
+    
+    Returns:
+        PIL.Image: Loaded image
+    """
+    from PIL import Image
+    import io
+    
+    image_data = image_file.read()
+    return Image.open(io.BytesIO(image_data))
+
 
 class CalibrationStatusView(APIView):
     """
@@ -70,30 +129,22 @@ class CalibrationView(APIView):
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Calibra el sistema usando una imagen con objeto de referencia conocido",
+        operation_description="Calibra el sistema usando pixel_calibration.json (método principal) o puntos manuales",
         operation_summary="Calibrar sistema",
         manual_parameters=[
             openapi.Parameter(
                 'image',
                 openapi.IN_FORM,
-                description="Imagen con objeto de referencia (moneda, regla, etc.)",
+                description="Imagen de grano de cacao para calibración",
                 type=openapi.TYPE_FILE,
-                required=True
+                required=False
             ),
             openapi.Parameter(
                 'method',
                 openapi.IN_FORM,
                 description="Método de calibración",
                 type=openapi.TYPE_STRING,
-                enum=['coin_detection', 'ruler_detection', 'manual_points', 'auto_reference'],
-                required=False
-            ),
-            openapi.Parameter(
-                'reference_object',
-                openapi.IN_FORM,
-                description="Objeto de referencia específico",
-                type=openapi.TYPE_STRING,
-                enum=['COIN_1000_COP', 'COIN_500_COP', 'COIN_200_COP', 'COIN_100_COP', 'RULER_1CM', 'RULER_2CM', 'RULER_5CM'],
+                enum=['dataset_calibration', 'manual_points'],
                 required=False
             )
         ],
@@ -107,7 +158,6 @@ class CalibrationView(APIView):
                         'pixels_per_mm': openapi.Schema(type=openapi.TYPE_NUMBER),
                         'confidence': openapi.Schema(type=openapi.TYPE_NUMBER),
                         'method': openapi.Schema(type=openapi.TYPE_STRING),
-                        'reference_object': openapi.Schema(type=openapi.TYPE_STRING),
                         'calibration_image_path': openapi.Schema(type=openapi.TYPE_STRING)
                     }
                 )
@@ -119,40 +169,14 @@ class CalibrationView(APIView):
     )
     def post(self, request):
         """
-        Calibra el sistema usando una imagen de referencia.
+        Calibra el sistema usando pixel_calibration.json (método principal).
         """
         try:
-            # Validar archivo de imagen
-            if 'image' not in request.FILES:
-                return Response({
-                    'error': 'No se proporcionó archivo de imagen',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            image_file = request.FILES['image']
-            
-            # Validar tipo de archivo
-            allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp']
-            if image_file.content_type not in allowed_types:
-                return Response({
-                    'error': 'Tipo de archivo no válido. Use JPEG, PNG o BMP',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Validar tamaño del archivo (20MB máximo)
-            max_size = 20 * 1024 * 1024
-            if image_file.size > max_size:
-                return Response({
-                    'error': 'Archivo demasiado grande. Máximo 20MB permitido',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
             # Obtener parámetros de calibración
-            method_str = request.data.get('method', 'coin_detection')
-            reference_object_str = request.data.get('reference_object')
+            method_str = request.data.get('method', 'dataset_calibration')
             
             # Convertir parámetros
-            from ml.measurement.calibration import CalibrationMethod, ReferenceObject
+            from ml.measurement.calibration import CalibrationMethod
             
             try:
                 method = CalibrationMethod(method_str)
@@ -162,28 +186,29 @@ class CalibrationView(APIView):
                     'status': 'error'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            reference_object = None
-            if reference_object_str:
-                try:
-                    reference_object = ReferenceObject(reference_object_str)
-                except ValueError:
-                    return Response({
-                        'error': f'Objeto de referencia no válido: {reference_object_str}',
-                        'status': 'error'
-                    }, status=status.HTTP_400_BAD_REQUEST)
+            # Para dataset_calibration, no se requiere imagen
+            if method == CalibrationMethod.DATASET_CALIBRATION:
+                return Response({
+                    'success': True,
+                    'message': 'Calibración basada en dataset (pixel_calibration.json) - no requiere imagen',
+                    'method': method.value,
+                    'pixels_per_mm': 0.0,  # Se obtiene del dataset
+                    'confidence': 1.0
+                }, status=status.HTTP_200_OK)
             
-            # Cargar imagen
-            from PIL import Image
-            import io
-            
-            image_data = image_file.read()
-            image = Image.open(io.BytesIO(image_data))
-            
-            # Realizar calibración
-            from ml.prediction.calibrated_predict import get_calibrated_predictor
-            
-            predictor = get_calibrated_predictor(use_calibration=True)
-            calibration_result = predictor.calibrate_image(image, method, reference_object)
+            # Para manual_points, se requiere imagen
+            if method == CalibrationMethod.MANUAL_POINTS:
+                image_file, error_response = _validate_image_file(request)
+                if error_response:
+                    return error_response
+                
+                image = _load_image_from_file(image_file)
+                
+                # Realizar calibración manual
+                from ml.prediction.calibrated_predict import get_calibrated_predictor
+                
+                predictor = get_calibrated_predictor(use_calibration=True)
+                calibration_result = predictor.calibrate_image(image, method)
             
             if calibration_result['success']:
                 logger.info(f"Calibración exitosa: {calibration_result['pixels_per_mm']:.3f} pixels/mm")
@@ -256,37 +281,16 @@ class CalibratedScanMeasureView(APIView):
         Procesa una imagen de grano de cacao y devuelve predicciones calibradas.
         """
         try:
-            # Validar archivo de imagen
-            if 'image' not in request.FILES:
-                return Response({
-                    'error': 'No se proporcionó archivo de imagen',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            image_file = request.FILES['image']
-            
-            # Validar tipo de archivo
-            allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp']
-            if image_file.content_type not in allowed_types:
-                return Response({
-                    'error': 'Tipo de archivo no válido. Use JPEG, PNG o BMP',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Validar tamaño del archivo (20MB máximo)
-            max_size = 20 * 1024 * 1024
-            if image_file.size > max_size:
-                return Response({
-                    'error': 'Archivo demasiado grande. Máximo 20MB permitido',
-                    'status': 'error'
-                }, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+            # Validate image file
+            image_file, error_response = _validate_image_file(request)
+            if error_response:
+                # Use 413 for file too large in this endpoint
+                if 'demasiado grande' in error_response.data.get('error', ''):
+                    error_response.status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+                return error_response
             
             # Cargar imagen
-            from PIL import Image
-            import io
-            
-            image_data = image_file.read()
-            image = Image.open(io.BytesIO(image_data))
+            image = _load_image_from_file(image_file)
             
             # Obtener predictor calibrado
             from ml.prediction.calibrated_predict import get_calibrated_predictor

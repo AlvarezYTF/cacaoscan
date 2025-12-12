@@ -49,7 +49,7 @@ class RealtimeAuditMiddleware:
             model_name = self.get_model_name(request.path)
             
             # Crear descripción de la acción
-            description = self.create_action_description(request, response)
+            description = self.create_action_description(request)
             
             # Crear log de actividad
             activity_data = {
@@ -114,9 +114,9 @@ class RealtimeAuditMiddleware:
                 }
                 return model_map.get(model_part, 'Unknown')
         
-        return 'System'
+        return 'Unknown'
     
-    def create_action_description(self, request, response):
+    def create_action_description(self, request):
         """Crear descripción de la acción."""
         method = request.method
         path = request.path

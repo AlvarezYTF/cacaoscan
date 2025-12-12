@@ -232,7 +232,7 @@ class SendBulkNotificationView(APIView):
             properties={
                 'notification_type': openapi.Schema(
                     type=openapi.TYPE_STRING,
-                    enum=['welcome', 'password_reset', 'analysis_complete', 'report_ready', 'training_complete', 'defect_alert', 'system_alert', 'weekly_summary']
+                    enum=['welcome', 'reset_request', 'analysis_complete', 'report_ready', 'training_complete', 'defect_alert', 'system_alert', 'weekly_summary']
                 ),
                 'user_emails': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
@@ -254,7 +254,10 @@ class SendBulkNotificationView(APIView):
                         'successful': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'failed': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'batches_processed': openapi.Schema(type=openapi.TYPE_INTEGER),
-                        'errors': openapi.Schema(type=openapi.TYPE_ARRAY)
+                        'errors': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_STRING)
+                        )
                     }
                 )
             ),
@@ -267,7 +270,7 @@ class SendBulkNotificationView(APIView):
         """Envía notificaciones masivas por email."""
         notification_type = request.data.get('notification_type')
         user_emails = request.data.get('user_emails', [])
-        subject_override = request.data.get('subject_override')
+        _ = request.data.get('subject_override')  # Reserved for future use
         context = request.data.get('context', {})
         batch_size = request.data.get('batch_size', 50)
         
@@ -334,7 +337,7 @@ class EmailTemplatePreviewView(APIView):
                 openapi.IN_QUERY,
                 description="Tipo de template a previsualizar",
                 type=openapi.TYPE_STRING,
-                enum=['welcome', 'password_reset', 'analysis_complete', 'report_ready', 'training_complete', 'defect_alert', 'system_alert', 'weekly_summary'],
+                enum=['welcome', 'reset_request', 'analysis_complete', 'report_ready', 'training_complete', 'defect_alert', 'system_alert', 'weekly_summary'],
                 required=True
             )
         ],
@@ -501,7 +504,10 @@ class EmailLogsView(APIView):
                         'total_emails': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'successful': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'failed': openapi.Schema(type=openapi.TYPE_INTEGER),
-                        'logs': openapi.Schema(type=openapi.TYPE_ARRAY)
+                        'logs': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_STRING)
+                        )
                     }
                 )
             ),
@@ -512,7 +518,9 @@ class EmailLogsView(APIView):
     def get(self, request):
         """Obtiene logs de emails enviados."""
         try:
-            # TODO: Implementar sistema de logging de emails
+            # Pendiente: Implementar sistema de logging de emails persistente
+            # Esto requerirá crear un modelo EmailLog para almacenar:
+            # - timestamp, recipient, subject, status (sent/failed), error_message
             # Por ahora retornamos datos de ejemplo
             
             logs_data = {

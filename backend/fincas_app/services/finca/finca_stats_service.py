@@ -55,11 +55,15 @@ class FincaStatsService(BaseService):
                     queryset = queryset.filter(activa=filters['activa'])
             
             # Calculate statistics
+            from decimal import Decimal
+            total_hectareas = queryset.aggregate(total=Sum('hectareas'))['total'] or Decimal('0')
+            
             stats = {
                 'total_fincas': queryset.count(),
                 'fincas_activas': queryset.filter(activa=True).count(),
                 'fincas_inactivas': queryset.filter(activa=False).count(),
-                'total_hectareas': queryset.aggregate(total=Sum('hectareas'))['total'] or 0,
+                'total_hectareas': total_hectareas,
+                'total_area': total_hectareas,  # Alias for backward compatibility
                 'promedio_hectareas': queryset.aggregate(avg=Avg('hectareas'))['avg'] or 0,
                 'departamentos': dict(queryset.values('departamento').annotate(count=Count('id')).values_list('departamento', 'count')),
                 'municipios': dict(queryset.values('municipio').annotate(count=Count('id')).values_list('municipio', 'count')),

@@ -55,10 +55,15 @@ class LoginView(APIView):
         Autentica un usuario y devuelve tokens JWT.
         """
         try:
+            # Log de datos recibidos (sin password por seguridad)
+            login_identifier = request.data.get('email') or request.data.get('username', 'N/A')
+            logger.info(f"Intento de login para: {login_identifier}")
+            
             serializer = LoginSerializer(data=request.data)
             
             if serializer.is_valid():
                 user = serializer.validated_data['user']
+                logger.info(f"Login exitoso para usuario: {user.username} (ID: {user.id}, Activo: {user.is_active})")
                 
                 # Generar tokens JWT
                 refresh = RefreshToken.for_user(user)
@@ -67,16 +72,28 @@ class LoginView(APIView):
                 # Login en la sesión
                 login(request, user)
                 
+                # Incluir has_password, login_provider y password_allowed en la respuesta
+                has_password = user.has_usable_password()
+                user_data = UserSerializer(user).data
+                login_provider = user_data.get('login_provider', 'local')
+                password_allowed = login_provider != 'google'
+                
                 return create_success_response(
                     message='Login exitoso',
                     data={
                         'access': str(access_token),
                         'refresh': str(refresh),
-                        'user': UserSerializer(user).data,
+                        'user': user_data,
+                        'has_password': has_password,
+                        'login_provider': login_provider,
+                        'password_allowed': password_allowed,
                         'access_expires_at': access_token['exp'],
                         'refresh_expires_at': refresh['exp']
                     }
                 )
+            
+            # Log de errores de validación para diagnóstico
+            logger.warning(f"Login fallido para: {login_identifier}. Errores: {serializer.errors}")
             
             return create_error_response(
                 message='Credenciales inválidas',
@@ -165,7 +182,14 @@ class UserProfileView(APIView):
     def get(self, request):
         """
         Obtiene el perfil del usuario actual.
+        Asegura que UserProfile exista para evitar errores.
         """
+        # Asegurar que UserProfile exista (usar get_or_create para evitar errores)
+        from auth_app.models import UserProfile
+        UserProfile.objects.get_or_create(
+            user=request.user,
+            defaults={'login_provider': 'local'}
+        )
         return Response(UserSerializer(request.user).data)
 
 

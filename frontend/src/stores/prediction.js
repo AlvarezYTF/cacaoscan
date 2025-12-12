@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { predictImage, predictImageYolo, predictImageSmart, getImageHistory, getPredictionStats } from '@/services/predictionApi.js';
+import { handleApiError } from '@/services/apiErrorHandler';
 
 export const usePredictionStore = defineStore('prediction', {
   state: () => ({
@@ -9,10 +10,10 @@ export const usePredictionStore = defineStore('prediction', {
     // Estado de la imagen actual
     currentImage: null,
     
-    // Estado de carga
+    // Estado de carga (usando patrón base)
     isLoading: false,
     
-    // Errores
+    // Errores (usando patrón base)
     error: null,
     uploadError: null,
     
@@ -28,7 +29,7 @@ export const usePredictionStore = defineStore('prediction', {
       avgDimensions: {}
     },
     
-    // Configuración de paginación para historial
+    // Configuración de paginación para historial (usando patrón base)
     pagination: {
       currentPage: 1,
       totalPages: 1,
@@ -36,7 +37,7 @@ export const usePredictionStore = defineStore('prediction', {
       itemsPerPage: 10
     },
     
-    // Filtros para el historial
+    // Filtros para el historial (usando patrón base)
     filters: {
       processed: null,
       quality: '',
@@ -92,10 +93,10 @@ export const usePredictionStore = defineStore('prediction', {
       
       const { width, height, thickness } = state.currentPrediction;
       return {
-        width: parseFloat(width).toFixed(2),
-        height: parseFloat(height).toFixed(2),
-        thickness: parseFloat(thickness).toFixed(2),
-        formatted: `${parseFloat(width).toFixed(2)} × ${parseFloat(height).toFixed(2)} × ${parseFloat(thickness).toFixed(2)} mm`
+        width: Number.parseFloat(width).toFixed(2),
+        height: Number.parseFloat(height).toFixed(2),
+        thickness: Number.parseFloat(thickness).toFixed(2),
+        formatted: `${Number.parseFloat(width).toFixed(2)} × ${Number.parseFloat(height).toFixed(2)} × ${Number.parseFloat(thickness).toFixed(2)} mm`
       };
     },
     
@@ -105,8 +106,8 @@ export const usePredictionStore = defineStore('prediction', {
       
       const weight = state.currentPrediction.predicted_weight;
       return {
-        value: parseFloat(weight).toFixed(3),
-        formatted: `${parseFloat(weight).toFixed(3)} g`
+        value: Number.parseFloat(weight).toFixed(3),
+        formatted: `${Number.parseFloat(weight).toFixed(3)} g`
       };
     },
     
@@ -137,7 +138,7 @@ export const usePredictionStore = defineStore('prediction', {
       
       return {
         total: predictions.length,
-        avgWeight: parseFloat(avgWeight).toFixed(3),
+        avgWeight: Number.parseFloat(avgWeight).toFixed(3),
         avgConfidence: Math.round(avgConfidence * 100),
         highConfidenceCount
       };
@@ -145,14 +146,14 @@ export const usePredictionStore = defineStore('prediction', {
   },
 
   actions: {
-    // Realizar una nueva predicción
-    async makePrediction(formData) {
+    // Base function for prediction logic (extracted common code)
+    async _executePrediction(formData, predictionFn, options = {}) {
       this.isLoading = true;
       this.error = null;
       this.uploadError = null;
       
       try {
-        // Obtener información de la imagen del FormData
+        // Extract image information from FormData
         const imageFile = formData.get('image');
         if (imageFile) {
           this.lastUpload = {
@@ -163,135 +164,53 @@ export const usePredictionStore = defineStore('prediction', {
           this.currentImage = imageFile;
         }
         
-        // Realizar la predicción
-        const result = await predictImage(formData);
+        // Execute prediction function
+        const result = await predictionFn(formData, options);
         
-        // Actualizar el estado con el resultado
-        this.currentPrediction = result;
+        // Handle different response formats
+        const predictionData = result.success ? result.data : result;
         
-        // Agregar al historial (al principio)
-        this.predictions.unshift(result);
+        // Update state with result
+        this.currentPrediction = predictionData;
         
-        // Mantener solo los últimos 50 en memoria
+        // Add to history (at the beginning)
+        this.predictions.unshift(predictionData);
+        
+        // Keep only last 50 in memory
         if (this.predictions.length > 50) {
           this.predictions = this.predictions.slice(0, 50);
         }
         
-        // Actualizar estadísticas
+        // Update statistics
         this.stats.totalPredictions = this.predictions.length;
         this.updateTodayStats();
         
-        return result;
+        // Return appropriate format
+        return result.success ? result.data : result;
         
       } catch (error) {
-        this.error = error.message || 'Error al realizar la predicción';
-        this.uploadError = error.message;
+        const errorInfo = handleApiError(error, { logError: true });
+        this.error = errorInfo.message;
+        this.uploadError = errorInfo.message;
         throw error;
       } finally {
         this.isLoading = false;
       }
+    },
+    
+    // Realizar una nueva predicción
+    async makePrediction(formData) {
+      return this._executePrediction(formData, predictImage);
     },
     
     // Realizar predicción con YOLOv8
     async makePredictionYolo(formData) {
-      this.isLoading = true;
-      this.error = null;
-      this.uploadError = null;
-      
-      try {
-        // Obtener información de la imagen del FormData
-        const imageFile = formData.get('image');
-        if (imageFile) {
-          this.lastUpload = {
-            fileName: imageFile.name,
-            fileSize: imageFile.size,
-            uploadTime: new Date().toISOString()
-          };
-          this.currentImage = imageFile;
-        }
-        
-        // Realizar la predicción YOLOv8
-        const result = await predictImageYolo(formData);
-        
-        if (result.success) {
-          // Actualizar el estado con el resultado
-          this.currentPrediction = result.data;
-          
-          // Agregar al historial (al principio)
-          this.predictions.unshift(result.data);
-          
-          // Mantener solo los últimos 50 en memoria
-          if (this.predictions.length > 50) {
-            this.predictions = this.predictions.slice(0, 50);
-          }
-          
-          // Actualizar estadísticas
-          this.stats.totalPredictions = this.predictions.length;
-          this.updateTodayStats();
-          
-          return result.data;
-        } else {
-          throw new Error(result.error);
-        }
-        
-      } catch (error) {
-        this.error = error.message || 'Error al realizar la predicción YOLOv8';
-        this.uploadError = error.message;
-        throw error;
-      } finally {
-        this.isLoading = false;
-      }
+      return this._executePrediction(formData, predictImageYolo);
     },
     
     // Realizar predicción con recorte inteligente
     async makePredictionSmart(formData, options = {}) {
-      this.isLoading = true;
-      this.error = null;
-      this.uploadError = null;
-      
-      try {
-        // Obtener información de la imagen del FormData
-        const imageFile = formData.get('image');
-        if (imageFile) {
-          this.lastUpload = {
-            fileName: imageFile.name,
-            fileSize: imageFile.size,
-            uploadTime: new Date().toISOString()
-          };
-          this.currentImage = imageFile;
-        }
-        
-        // Realizar la predicción con recorte inteligente
-        const result = await predictImageSmart(formData, options);
-        
-        if (result.success) {
-          // Actualizar el estado con el resultado
-          this.currentPrediction = result.data;
-          
-          // Agregar al historial (al principio)
-          this.predictions.unshift(result.data);
-          
-          // Mantener solo los últimos 50 en memoria
-          if (this.predictions.length > 50) {
-            this.predictions = this.predictions.slice(0, 50);
-          }
-          
-          // Actualizar estadísticas
-          this.stats.totalPredictions = this.predictions.length;
-          this.updateTodayStats();
-          
-          return result.data;
-        } else {
-          throw new Error(result.error);
-        }
-        
-      } catch (error) {
-        this.error = error.message || 'Error al realizar la predicción con recorte inteligente';
-        this.uploadError = error.message;
-        throw error;
-      } finally {
-        this.isLoading = false;
-      }
+      return this._executePrediction(formData, predictImageSmart, options);
     },
     
     // Actualizar los resultados de predicción
@@ -327,6 +246,9 @@ export const usePredictionStore = defineStore('prediction', {
     
     // Cargar historial de predicciones
     async loadHistory(page = 1, filters = {}) {
+      this.isLoading = true;
+      this.error = null;
+      
       try {
         const params = {
           page,
@@ -335,11 +257,11 @@ export const usePredictionStore = defineStore('prediction', {
         };
         
         // Filtrar parámetros vacíos
-        Object.keys(params).forEach(key => {
+        for (const key of Object.keys(params)) {
           if (params[key] === '' || params[key] === null || params[key] === undefined) {
             delete params[key];
           }
-        });
+        }
         
         const response = await getImageHistory(params);
         
@@ -351,7 +273,7 @@ export const usePredictionStore = defineStore('prediction', {
             this.predictions = [...this.predictions, ...response.results];
           }
           
-          // Actualizar paginación
+          // Actualizar paginación usando patrón base
           this.pagination = {
             currentPage: page,
             totalPages: Math.ceil(response.count / this.pagination.itemsPerPage),
@@ -363,21 +285,30 @@ export const usePredictionStore = defineStore('prediction', {
         return response;
         
       } catch (error) {
-        console.warn('Error cargando historial:', error.message);
+        const errorInfo = handleApiError(error, { logError: true });
+        this.error = errorInfo.message;
         // No lanzar error para que no afecte la UX
         return { results: [], count: 0 };
+      } finally {
+        this.isLoading = false;
       }
     },
     
     // Cargar estadísticas
     async loadStats() {
+      this.isLoading = true;
+      this.error = null;
+      
       try {
         const stats = await getPredictionStats();
         this.stats = { ...this.stats, ...stats };
         return stats;
       } catch (error) {
-        console.warn('Error cargando estadísticas:', error.message);
+        const errorInfo = handleApiError(error, { logError: true });
+        this.error = errorInfo.message;
         return this.stats;
+      } finally {
+        this.isLoading = false;
       }
     },
     
@@ -398,16 +329,44 @@ export const usePredictionStore = defineStore('prediction', {
       };
     },
     
-    // Reiniciar todo el estado
+    // Reinicia el estado de predicción al estado inicial
     resetState() {
+      // Reset current prediction state
       this.currentPrediction = null;
       this.currentImage = null;
       this.isLoading = false;
+      
+      // Clear all errors
       this.error = null;
       this.uploadError = null;
+      
+      // Clear prediction history
       this.predictions = [];
+      
+      // Reset statistics
+      this.stats = {
+        totalPredictions: 0,
+        predictionsToday: 0,
+        avgProcessingTime: 0,
+        qualityDistribution: {},
+        avgDimensions: {}
+      };
+      
+      // Reset filters and pagination
       this.clearFilters();
-      this.pagination.currentPage = 1;
+      this.pagination = {
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+        itemsPerPage: 10
+      };
+      
+      // Reset last upload state
+      this.lastUpload = {
+        fileName: '',
+        fileSize: 0,
+        uploadTime: null
+      };
     },
     
     // Eliminar una predicción del historial
@@ -446,11 +405,11 @@ export const usePredictionStore = defineStore('prediction', {
         id: prediction.id,
         fecha: prediction.created_at,
         dimensiones: {
-          ancho: `${parseFloat(prediction.width).toFixed(2)} mm`,
-          alto: `${parseFloat(prediction.height).toFixed(2)} mm`,
-          grosor: `${parseFloat(prediction.thickness).toFixed(2)} mm`
+          ancho: `${Number.parseFloat(prediction.width).toFixed(2)} mm`,
+          alto: `${Number.parseFloat(prediction.height).toFixed(2)} mm`,
+          grosor: `${Number.parseFloat(prediction.thickness).toFixed(2)} mm`
         },
-        peso_predicho: `${parseFloat(prediction.predicted_weight).toFixed(3)} g`,
+        peso_predicho: `${Number.parseFloat(prediction.predicted_weight).toFixed(3)} g`,
         confianza: {
           nivel: prediction.confidence_level,
           score: prediction.confidence_score ? `${Math.round(prediction.confidence_score * 100)}%` : 'N/A'
@@ -477,7 +436,7 @@ export const usePredictionStore = defineStore('prediction', {
       // Calcular tiempo promedio de procesamiento
       const validTimes = this.predictions
         .map(p => p.processing_time)
-        .filter(time => time && !isNaN(time));
+        .filter(time => time && !Number.isNaN(time));
       
       if (validTimes.length > 0) {
         this.stats.avgProcessingTime = validTimes.reduce((sum, time) => sum + time, 0) / validTimes.length;

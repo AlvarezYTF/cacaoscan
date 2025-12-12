@@ -80,10 +80,24 @@ class NotificationCreateSerializer(serializers.ModelSerializer):
         fields = ('user', 'tipo', 'titulo', 'mensaje', 'datos_extra')
     
     def validate_tipo(self, value):
-        """Validate notification type."""
-        valid_types = [choice[0] for choice in Notification.TIPO_CHOICES]
-        if value not in valid_types:
-            raise serializers.ValidationError(f"Tipo inválido. Opciones válidas: {', '.join(valid_types)}")
+        """Validate notification type using Parametro catalog with TEMA_TIPO_NOTIFICACION theme."""
+        from catalogos.models import Parametro
+        # Accept either Parametro instance or codigo string
+        if isinstance(value, str):
+            try:
+                tipo_param = Parametro.objects.get(
+                    tema__codigo='TEMA_TIPO_NOTIFICACION',
+                    codigo=value.upper(),
+                    activo=True
+                )
+                return tipo_param
+            except Parametro.DoesNotExist:
+                valid_codes = list(Parametro.objects.filter(
+                    tema__codigo='TEMA_TIPO_NOTIFICACION',
+                    activo=True
+                ).values_list('codigo', flat=True))
+                raise serializers.ValidationError(f"Tipo inválido. Códigos válidos: {', '.join(valid_codes)}")
+        # If it's already a Parametro instance, return as is
         return value
 
 

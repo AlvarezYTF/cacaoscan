@@ -211,7 +211,7 @@
 </template>
 
 <script>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import Chart from 'chart.js/auto';
 
 export default {
@@ -220,9 +220,9 @@ export default {
   setup() {
     const pieChart = ref(null);
     const barChart = ref(null);
-    
     let pieChartInstance = null;
     let barChartInstance = null;
+    
 
     // Datos para el gráfico de pastel
     const pieData = [
@@ -242,6 +242,9 @@ export default {
     const createPieChart = () => {
       if (pieChart.value) {
         const ctx = pieChart.value.getContext('2d');
+        if (pieChartInstance) {
+          pieChartInstance.destroy();
+        }
         pieChartInstance = new Chart(ctx, {
           type: 'pie',
           data: {
@@ -280,6 +283,9 @@ export default {
     const createBarChart = () => {
       if (barChart.value) {
         const ctx = barChart.value.getContext('2d');
+        if (barChartInstance) {
+          barChartInstance.destroy();
+        }
         barChartInstance = new Chart(ctx, {
           type: 'bar',
           data: {
@@ -329,9 +335,22 @@ export default {
       createBarChart();
     });
 
+    onUnmounted(() => {
+      if (pieChartInstance) {
+        pieChartInstance.destroy();
+        pieChartInstance = null;
+      }
+      if (barChartInstance) {
+        barChartInstance.destroy();
+        barChartInstance = null;
+      }
+    });
+
     return {
       pieChart,
-      barChart
+      barChart,
+      createPieChart,
+      createBarChart
     };
   }
 };

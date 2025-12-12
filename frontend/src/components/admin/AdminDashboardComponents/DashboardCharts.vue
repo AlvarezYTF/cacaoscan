@@ -1,6 +1,6 @@
 <template>
   <!-- Charts con diseño profesional mejorado -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" data-cy="dashboard-charts">
     <!-- Activity Chart -->
     <div class="lg:col-span-2 bg-white rounded-2xl border-2 border-gray-200 p-8 hover:shadow-xl hover:border-green-300 transition-all duration-300">
       <div class="flex items-center justify-between mb-6">
@@ -28,7 +28,7 @@
             :disabled="loading"
             title="Actualizar datos"
           >
-            <LoadingSpinner 
+            <BaseSpinner 
               v-if="loading" 
               size="sm" 
               color="gray" 
@@ -45,8 +45,38 @@
           </button>
         </div>
       </div>
-      <div class="h-80">
-        <canvas ref="activityChart" @click="handleActivityClick" class="rounded-xl max-h-[320px] cursor-pointer"></canvas>
+      <div class="h-80 relative">
+        <!-- Mensaje cuando no hay actividades -->
+        <div 
+          v-if="!hasActivityData" 
+          class="w-full h-full flex flex-col items-center justify-center bg-gray-50 rounded-xl"
+        >
+          <div class="text-center p-8">
+            <div class="mb-4">
+              <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+            </div>
+            <h4 class="text-lg font-semibold text-gray-700 mb-2">No hay actividades registradas</h4>
+            <p class="text-sm text-gray-500 max-w-md mx-auto">
+              Aún no se han registrado actividades de usuarios en el sistema. 
+              Las actividades se mostrarán aquí cuando los usuarios comiencen a utilizar la plataforma.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Gráfico cuando hay datos -->
+        <BaseChart
+          v-else
+          ref="activityChartRef"
+          :chart-data="activityChartData"
+          :options="mergedActivityOptions"
+          :type="activityChartType"
+          :height="320"
+          :show-legend="true"
+          :show-controls="false"
+          @chart-click="handleActivityClick"
+        />
       </div>
     </div>
 
@@ -68,7 +98,7 @@
           :disabled="loading"
           title="Actualizar datos"
         >
-          <LoadingSpinner 
+          <BaseSpinner 
             v-if="loading" 
             size="sm" 
             color="gray" 
@@ -85,21 +115,25 @@
         </button>
       </div>
       <div class="h-80">
-        <canvas ref="qualityChart" @click="handleQualityClick" class="rounded-xl max-h-[320px] cursor-pointer"></canvas>
+        <BaseChart
+          ref="qualityChartRef"
+          :chart-data="qualityChartData"
+          :options="mergedQualityOptions"
+          type="doughnut"
+          :height="320"
+          :show-legend="true"
+          :show-controls="false"
+          @chart-click="handleQualityClick"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-// 1. Vue core
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-
-// 2. Components
-import LoadingSpinner from '@/components/admin/AdminGeneralComponents/LoadingSpinner.vue'
-
-// 3. Libraries
-import Chart from 'chart.js/auto'
+import { ref, computed, watch } from 'vue'
+import BaseSpinner from '@/components/common/BaseSpinner.vue'
+import BaseChart from '@/components/charts/BaseChart.vue'
 
 // Props
 const props = defineProps({
@@ -141,88 +175,70 @@ const props = defineProps({
 const emit = defineEmits(['activity-chart-type-change', 'activity-refresh', 'quality-refresh', 'activity-click', 'quality-click'])
 
 // Chart refs
-const activityChart = ref(null)
-const qualityChart = ref(null)
+const activityChartRef = ref(null)
+const qualityChartRef = ref(null)
 const activityChartType = ref(props.initialActivityChartType)
 
-// Chart instances
-let activityChartInstance = null
-let qualityChartInstance = null
-
-// Functions
-const createActivityChart = () => {
-  if (!activityChart.value) {
-    console.warn('⚠️ Canvas de actividad no está disponible aún')
-    return
-  }
-
-  if (activityChartInstance) {
-    activityChartInstance.destroy()
-    activityChartInstance = null
-  }
-
+// Check if there's actual activity data (not just zeros)
+const hasActivityData = computed(() => {
   try {
-    const ctx = activityChart.value.getContext('2d')
-    activityChartInstance = new Chart(ctx, {
-      type: activityChartType.value,
-      data: props.activityChartData,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        ...props.activityChartOptions
+    // Si no hay chartData, no hay datos
+    if (!props.activityChartData) {
+      return false
+    }
+    
+    // Si no hay datasets o está vacío, no hay datos
+    if (!props.activityChartData.datasets || !Array.isArray(props.activityChartData.datasets) || props.activityChartData.datasets.length === 0) {
+      return false
+    }
+    
+    // Verificar si hay al menos un dataset con datos no-cero
+    let hasNonZeroData = false
+    
+    for (const dataset of props.activityChartData.datasets) {
+      if (!dataset || !dataset.data || !Array.isArray(dataset.data) || dataset.data.length === 0) {
+        continue
       }
-    })
-    console.log('✅ Gráfico de actividad creado correctamente')
-  } catch (error) {
-    console.error('❌ Error al crear gráfico de actividad:', error)
-  }
-}
-
-const createQualityChart = () => {
-  if (!qualityChart.value) {
-    console.warn('⚠️ Canvas de calidad no está disponible aún')
-    return
-  }
-
-  if (qualityChartInstance) {
-    qualityChartInstance.destroy()
-    qualityChartInstance = null
-  }
-
-  try {
-    const ctx = qualityChart.value.getContext('2d')
-    qualityChartInstance = new Chart(ctx, {
-      type: 'doughnut',
-      data: props.qualityChartData,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        ...props.qualityChartOptions
+      
+      // Verificar si hay al menos un valor mayor a 0
+      for (const value of dataset.data) {
+        const numValue = Number(value)
+        if (!isNaN(numValue) && numValue > 0) {
+          hasNonZeroData = true
+          break
+        }
       }
-    })
-    console.log('✅ Gráfico de calidad creado correctamente')
+      
+      if (hasNonZeroData) break
+    }
+    
+    return hasNonZeroData
   } catch (error) {
-    console.error('❌ Error al crear gráfico de calidad:', error)
+    return false
   }
-}
+})
 
-const updateActivityChart = () => {
-  if (activityChartInstance) {
-    activityChartInstance.data = props.activityChartData
-    activityChartInstance.update()
+// Merged options
+const mergedActivityOptions = computed(() => {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    ...props.activityChartOptions
   }
-}
+})
 
-const updateQualityChart = () => {
-  if (qualityChartInstance) {
-    qualityChartInstance.data = props.qualityChartData
-    qualityChartInstance.update()
+const mergedQualityOptions = computed(() => {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    ...props.qualityChartOptions
   }
-}
+})
 
+// Event handlers
 const handleActivityChartTypeChange = () => {
   emit('activity-chart-type-change', activityChartType.value)
-  createActivityChart()
+  // Chart type change requires recreating the chart, which BaseChart handles via watch
 }
 
 const handleActivityRefresh = () => {
@@ -233,69 +249,37 @@ const handleQualityRefresh = () => {
   emit('quality-refresh')
 }
 
-const handleActivityClick = (event) => {
-  emit('activity-click', event)
+const handleActivityClick = (data) => {
+  emit('activity-click', data)
 }
 
-const handleQualityClick = (event) => {
-  emit('quality-click', event)
+const handleQualityClick = (data) => {
+  emit('quality-click', data)
 }
 
 // Watch for data changes
 watch(() => props.activityChartData, () => {
-  updateActivityChart()
+  if (activityChartRef.value) {
+    activityChartRef.value.updateChart(props.activityChartData)
+  }
 }, { deep: true })
 
 watch(() => props.qualityChartData, () => {
-  updateQualityChart()
+  if (qualityChartRef.value) {
+    qualityChartRef.value.updateChart(props.qualityChartData)
+  }
 }, { deep: true })
 
 watch(() => props.initialActivityChartType, (newValue) => {
   activityChartType.value = newValue
 })
-
-// Lifecycle
-onMounted(async () => {
-  await nextTick()
-  
-  console.log('📊 Iniciando creación de gráficos...')
-  console.log('Canvas actividad:', activityChart.value)
-  console.log('Canvas calidad:', qualityChart.value)
-  
-  if (activityChart.value && qualityChart.value) {
-    createActivityChart()
-    createQualityChart()
-  } else {
-    console.error('❌ Elementos canvas no disponibles en onMounted')
-    setTimeout(() => {
-      console.log('🔄 Reintentando creación de gráficos...')
-      createActivityChart()
-      createQualityChart()
-    }, 200)
-  }
-})
-
-onUnmounted(() => {
-  if (activityChartInstance) {
-    activityChartInstance.destroy()
-  }
-  if (qualityChartInstance) {
-    qualityChartInstance.destroy()
-  }
-})
 </script>
 
 <style scoped>
-/* Solo estilos que no están en Tailwind */
-canvas:hover {
-  filter: brightness(1.05);
-  transition: filter 0.2s ease-in-out;
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  canvas {
-    max-height: 250px;
+  .h-80 {
+    height: 250px;
   }
 }
 </style>

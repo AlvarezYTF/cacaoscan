@@ -1,7 +1,7 @@
 <template>
   <div class="grid grid-cols-1 gap-6">
     <!-- Recent Users Table -->
-    <div class="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-green-300 transition-all duration-300">
+    <div class="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-green-300 transition-all duration-300" data-cy="recent-users-table">
       <div class="px-6 py-4 border-b-2 border-gray-200 bg-gray-50 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <div class="p-1.5 bg-green-100 rounded-lg">
@@ -14,6 +14,7 @@
         <router-link 
           :to="usersTableLink" 
           class="text-sm text-green-600 hover:text-green-700 font-semibold transition-colors duration-200 flex items-center gap-1 hover:gap-2"
+          data-cy="view-all-users"
         >
           {{ usersTableLinkText }}
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,6 +34,11 @@
             </tr>
           </thead>
           <tbody>
+            <tr v-if="recentUsers.length === 0">
+              <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">
+                No hay usuarios recientes para mostrar
+              </td>
+            </tr>
             <tr 
               v-for="user in recentUsers" 
               :key="user.id" 
@@ -47,9 +53,9 @@
                   </div>
                   <div>
                     <div class="text-sm font-medium text-gray-900">
-                      {{ user.first_name }} {{ user.last_name }}
+                      {{ user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Usuario' }}
                     </div>
-                    <div class="text-sm text-gray-500">@{{ user.username }}</div>
+                    <div class="text-sm text-gray-500">@{{ user.username || user.email?.split('@')[0] || 'N/A' }}</div>
                   </div>
                 </div>
               </td>
@@ -77,7 +83,7 @@
     </div>
     
     <!-- Recent Activity Table -->
-    <div class="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-green-300 transition-all duration-300">
+    <div class="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-green-300 transition-all duration-300" data-cy="recent-activities-table">
       <div class="px-6 py-4 border-b-2 border-gray-200 bg-gray-50 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <div class="p-1.5 bg-green-100 rounded-lg">
@@ -90,6 +96,7 @@
         <router-link 
           :to="activityTableLink" 
           class="text-sm text-green-600 hover:text-green-700 font-semibold transition-colors duration-200 flex items-center gap-1 hover:gap-2"
+          data-cy="view-all-activities"
         >
           {{ activityTableLinkText }}
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

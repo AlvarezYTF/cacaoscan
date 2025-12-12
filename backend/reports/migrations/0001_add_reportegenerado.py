@@ -1,9 +1,89 @@
 # Generated manually - Move ReporteGenerado from api to reports app
+# -*- coding: utf-8 -*-
 # The table already exists as 'api_reportegenerado', so we use db_table to maintain compatibility
 
 from django.conf import settings
-from django.db import migrations, models
+from django.db import migrations, models, connection
 import django.db.models.deletion
+
+
+def _create_table_if_not_exists(apps, schema_editor):
+    """Create table if it doesn't exist (compatible with SQLite and PostgreSQL)."""
+    db_engine = connection.settings_dict.get('ENGINE', '')
+    
+    with connection.cursor() as cursor:
+        if 'postgresql' in db_engine:
+            # Check if table exists
+            cursor.execute("""
+                SELECT 1 FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'api_reportegenerado'
+            """)
+            table_exists = cursor.fetchone()
+            
+            if not table_exists:
+                cursor.execute("""
+                    CREATE TABLE api_reportegenerado (
+                        id BIGSERIAL PRIMARY KEY,
+                        tipo_reporte VARCHAR(20) NOT NULL,
+                        formato VARCHAR(10) NOT NULL,
+                        titulo VARCHAR(200) NOT NULL,
+                        descripcion TEXT,
+                        estado VARCHAR(20) NOT NULL DEFAULT 'generando',
+                        archivo VARCHAR(100),
+                        nombre_archivo VARCHAR(255),
+                        tamaño_archivo INTEGER,
+                        parametros JSONB DEFAULT '{}',
+                        filtros_aplicados JSONB DEFAULT '{}',
+                        fecha_solicitud TIMESTAMP NOT NULL,
+                        fecha_generacion TIMESTAMP,
+                        fecha_expiracion TIMESTAMP,
+                        tiempo_generacion INTERVAL,
+                        mensaje_error TEXT,
+                        created_at TIMESTAMP NOT NULL,
+                        updated_at TIMESTAMP NOT NULL,
+                        usuario_id INTEGER NOT NULL REFERENCES auth_user(id) ON DELETE CASCADE
+                    )
+                """)
+        # For SQLite, Django will handle the table creation through state operations
+
+
+def _create_indexes_if_needed(apps, schema_editor):
+    """Create indexes if table exists (compatible with SQLite and PostgreSQL)."""
+    db_engine = connection.settings_dict.get('ENGINE', '')
+    
+    with connection.cursor() as cursor:
+        if 'postgresql' in db_engine:
+            # Check if table exists
+            cursor.execute("""
+                SELECT 1 FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'api_reportegenerado'
+            """)
+            table_exists = cursor.fetchone()
+            
+            if table_exists:
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS api_reporte_usuario_631114_idx 
+                    ON api_reportegenerado (usuario_id, fecha_solicitud DESC)
+                """)
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS api_reporte_tipo_re_ac3fa0_idx 
+                    ON api_reportegenerado (tipo_reporte, fecha_solicitud DESC)
+                """)
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS api_reporte_estado_c21744_idx 
+                    ON api_reportegenerado (estado)
+                """)
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS api_reporte_formato_55d2b8_idx 
+                    ON api_reportegenerado (formato)
+                """)
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS api_reporte_fecha_s_91879e_idx 
+                    ON api_reportegenerado (fecha_solicitud)
+                """)
+        # For SQLite, Django will handle the indexes through state operations
 
 
 class Migration(migrations.Migration):
@@ -15,71 +95,14 @@ class Migration(migrations.Migration):
 
     operations = [
         # Create table if it doesn't exist (may have been created by api/migrations/0007_add_model_metrics.py)
-        migrations.RunSQL(
-            sql="""
-                DO $$
-                BEGIN
-                    -- Create table if it doesn't exist
-                    IF NOT EXISTS (
-                        SELECT 1 FROM information_schema.tables 
-                        WHERE table_schema = 'public' 
-                        AND table_name = 'api_reportegenerado'
-                    ) THEN
-                        CREATE TABLE api_reportegenerado (
-                            id BIGSERIAL PRIMARY KEY,
-                            tipo_reporte VARCHAR(20) NOT NULL,
-                            formato VARCHAR(10) NOT NULL,
-                            titulo VARCHAR(200) NOT NULL,
-                            descripcion TEXT,
-                            estado VARCHAR(20) NOT NULL DEFAULT 'generando',
-                            archivo VARCHAR(100),
-                            nombre_archivo VARCHAR(255),
-                            tamaño_archivo INTEGER,
-                            parametros JSONB DEFAULT '{}',
-                            filtros_aplicados JSONB DEFAULT '{}',
-                            fecha_solicitud TIMESTAMP NOT NULL,
-                            fecha_generacion TIMESTAMP,
-                            fecha_expiracion TIMESTAMP,
-                            tiempo_generacion INTERVAL,
-                            mensaje_error TEXT,
-                            created_at TIMESTAMP NOT NULL,
-                            updated_at TIMESTAMP NOT NULL,
-                            usuario_id INTEGER NOT NULL REFERENCES auth_user(id) ON DELETE CASCADE
-                        );
-                    END IF;
-                END $$;
-            """,
-            reverse_sql=migrations.RunSQL.noop,
+        migrations.RunPython(
+            _create_table_if_not_exists,
+            migrations.RunPython.noop
         ),
         # Create indexes if they don't exist (only if table exists)
-        migrations.RunSQL(
-            sql="""
-                DO $$
-                BEGIN
-                    -- Only create indexes if table exists
-                    IF EXISTS (
-                        SELECT 1 FROM information_schema.tables 
-                        WHERE table_schema = 'public' 
-                        AND table_name = 'api_reportegenerado'
-                    ) THEN
-                        CREATE INDEX IF NOT EXISTS api_reporte_usuario_631114_idx 
-                        ON api_reportegenerado (usuario_id, fecha_solicitud DESC);
-                        
-                        CREATE INDEX IF NOT EXISTS api_reporte_tipo_re_ac3fa0_idx 
-                        ON api_reportegenerado (tipo_reporte, fecha_solicitud DESC);
-                        
-                        CREATE INDEX IF NOT EXISTS api_reporte_estado_c21744_idx 
-                        ON api_reportegenerado (estado);
-                        
-                        CREATE INDEX IF NOT EXISTS api_reporte_formato_55d2b8_idx 
-                        ON api_reportegenerado (formato);
-                        
-                        CREATE INDEX IF NOT EXISTS api_reporte_fecha_s_91879e_idx 
-                        ON api_reportegenerado (fecha_solicitud);
-                    END IF;
-                END $$;
-            """,
-            reverse_sql=migrations.RunSQL.noop,
+        migrations.RunPython(
+            _create_indexes_if_needed,
+            migrations.RunPython.noop
         ),
         # Register model in Django's state only - table already exists or was created above
         migrations.SeparateDatabaseAndState(

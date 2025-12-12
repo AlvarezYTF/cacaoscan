@@ -63,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 // Estado
 const isLoading = ref(false)
@@ -99,9 +99,18 @@ const hideLoading = () => {
 const startProgress = () => {
   clearTimers()
   
+  // Use deterministic progress increment for visual effect
+  // NOSONAR: This is for UI progress bar animation, not cryptographic use
+  // Increment counter for deterministic variation
+  let stepCounter = 0
+  
   progressTimer = setInterval(() => {
     if (progress.value < 90) {
-      progress.value += Math.random() * 10
+      // Deterministic increment with variation: cycles through values 2-9
+      // This provides smooth, predictable progress without using PRNG
+      const increment = 2 + (stepCounter % 8) // Values from 2 to 9
+      progress.value += increment
+      stepCounter++
     }
   }, 150)
 }
@@ -120,7 +129,7 @@ const clearTimers = () => {
 
 // Event listeners para eventos de navegación
 const handleRouteLoadingStart = (event) => {
-  const { to, from } = event.detail
+  const { to } = event.detail
   
   // Determinar texto según la ruta de destino
   let text = 'Cargando...'
@@ -176,27 +185,40 @@ const handleAPILoadingEnd = () => {
 // Lifecycle
 onMounted(() => {
   // Eventos de navegación
-  window.addEventListener('route-loading-start', handleRouteLoadingStart)
-  window.addEventListener('route-loading-end', handleRouteLoadingEnd)
+  globalThis.addEventListener('route-loading-start', handleRouteLoadingStart)
+  globalThis.addEventListener('route-loading-end', handleRouteLoadingEnd)
   
   // Eventos de API
-  window.addEventListener('api-loading-start', handleAPILoadingStart)
-  window.addEventListener('api-loading-end', handleAPILoadingEnd)
+  globalThis.addEventListener('api-loading-start', handleAPILoadingStart)
+  globalThis.addEventListener('api-loading-end', handleAPILoadingEnd)
 })
 
 onUnmounted(() => {
   // Limpiar event listeners
-  window.removeEventListener('route-loading-start', handleRouteLoadingStart)
-  window.removeEventListener('route-loading-end', handleRouteLoadingEnd)
-  window.removeEventListener('api-loading-start', handleAPILoadingStart)
-  window.removeEventListener('api-loading-end', handleAPILoadingEnd)
+  globalThis.removeEventListener('route-loading-start', handleRouteLoadingStart)
+  globalThis.removeEventListener('route-loading-end', handleRouteLoadingEnd)
+  globalThis.removeEventListener('api-loading-start', handleAPILoadingStart)
+  globalThis.removeEventListener('api-loading-end', handleAPILoadingEnd)
   
   clearTimers()
 })
 
 // Exponer métodos globalmente
-window.showGlobalLoading = showLoading
-window.hideGlobalLoading = hideLoading
+globalThis.showGlobalLoading = showLoading
+globalThis.hideGlobalLoading = hideLoading
+
+// Computed properties for testing (aliases)
+const title = computed(() => loadingText.value)
+const message = computed(() => loadingMessage.value)
+
+// Expose component properties for testing
+defineExpose({
+  isLoading,
+  title,
+  message,
+  loadingText,
+  loadingMessage
+})
 </script>
 
 <style scoped>

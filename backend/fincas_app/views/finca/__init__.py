@@ -17,6 +17,7 @@ from .lote_views import (
     LoteDeleteView,
     LoteStatsView,
     LotesPorFincaView,
+    LoteAnalisisView,
     LotePermissionMixin
 )
 
@@ -34,5 +35,6 @@ __all__ = [
     'LoteDeleteView',
     'LoteStatsView',
     'LotesPorFincaView',
+    'LoteAnalisisView',
     'LotePermissionMixin',
 ]

@@ -14,6 +14,7 @@ from .auth import (
     VerifyEmailPreRegistrationView,
     ForgotPasswordView,
     ResetPasswordView,
+    SetPasswordView,
     SendOtpView,
     VerifyOtpView,
     UserListView,
@@ -22,6 +23,7 @@ from .auth import (
     UserStatsView,
     AdminStatsView,
     UserDetailView,
+    GoogleLoginView,
 )
 
 __all__ = [
@@ -37,6 +39,7 @@ __all__ = [
     'VerifyEmailPreRegistrationView',
     'ForgotPasswordView',
     'ResetPasswordView',
+    'SetPasswordView',
     'SendOtpView',
     'VerifyOtpView',
     'UserListView',
@@ -45,4 +48,5 @@ __all__ = [
     'UserStatsView',
     'AdminStatsView',
     'UserDetailView',
+    'GoogleLoginView',
 ]

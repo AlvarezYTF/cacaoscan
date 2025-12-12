@@ -43,17 +43,17 @@ class PasswordService(BaseService):
                 user = User.objects.get(email=email)
                 
                 # Create reset token
-                from ...utils.model_imports import get_models_safely
+                from api.utils.model_imports import get_models_safely
                 models = get_models_safely({
                     'EmailVerificationToken': 'auth_app.models.EmailVerificationToken'
                 })
-                EmailVerificationToken = models['EmailVerificationToken']
-                reset_token = EmailVerificationToken.create_for_user(user)
+                email_verification_token_model = models['EmailVerificationToken']
+                reset_token = email_verification_token_model.create_for_user(user)
                 
                 # Send password reset email
                 try:
                     from django.conf import settings
-                    from ...email import send_email_notification
+                    from api.services.email import send_email_notification
                     
                     email_context = {
                         'user_name': user.get_full_name() or user.username,
@@ -66,7 +66,7 @@ class PasswordService(BaseService):
                     
                     email_result = send_email_notification(
                         user_email=user.email,
-                        notification_type='password_reset',
+                        notification_type='reset_request',
                         context=email_context
                     )
                     
@@ -156,8 +156,8 @@ class PasswordService(BaseService):
             models = get_models_safely({
                 'EmailVerificationToken': 'auth_app.models.EmailVerificationToken'
             })
-            EmailVerificationToken = models['EmailVerificationToken']
-            token_obj = EmailVerificationToken.objects.filter(token=token).first()
+            email_verification_token_model = models['EmailVerificationToken']
+            token_obj = email_verification_token_model.objects.filter(token=token).first()
             
             if not token_obj:
                 return ServiceResult.validation_error(
@@ -212,11 +212,11 @@ class PasswordService(BaseService):
                 user_agent = request.META.get('HTTP_USER_AGENT', '')
             
             LoginHistory.objects.create(
-                usuario=user,
+                user=user,
                 ip_address=ip_address,
                 user_agent=user_agent,
                 login_time=timezone.now(),
-                success=True
+                login_successful=True
             )
         except Exception as e:
             self.log_warning(f"Error registrando solicitud de restablecimiento: {str(e)}")

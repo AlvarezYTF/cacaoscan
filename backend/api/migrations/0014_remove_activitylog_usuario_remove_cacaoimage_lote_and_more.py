@@ -2,6 +2,9 @@
 
 from django.db import migrations
 
+# SQL constant for no-op migrations
+NOOP_SQL = "SELECT 1;"
+
 
 class Migration(migrations.Migration):
 
@@ -23,7 +26,7 @@ class Migration(migrations.Migration):
             ],
             database_operations=[
                 # Table is managed by audit app, don't modify it here
-                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+                migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
             ],
         ),
         # CacaoImage and CacaoPrediction were moved to images_app - only update state, don't touch database
@@ -50,32 +53,12 @@ class Migration(migrations.Migration):
             ],
             database_operations=[
                 # Tables are managed by images_app, don't modify them here
-                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+                migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
             ],
         ),
-        # Finca and Lote were moved to fincas_app - only update state, don't touch database
-        migrations.SeparateDatabaseAndState(
-            state_operations=[
-                migrations.RemoveField(
-                    model_name='finca',
-                    name='agricultor',
-                ),
-                migrations.DeleteModel(
-                    name='Finca',
-                ),
-                migrations.RemoveField(
-                    model_name='lote',
-                    name='finca',
-                ),
-                migrations.DeleteModel(
-                    name='Lote',
-                ),
-            ],
-            database_operations=[
-                # Tables are managed by fincas_app, don't modify them here
-                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
-            ],
-        ),
+        # Finca and Lote were moved to fincas_app - models no longer exist in api state
+        # No operations needed - models were already removed in previous migrations
+        migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
         # LoginHistory was moved to audit app - only update state, don't touch database
         migrations.SeparateDatabaseAndState(
             state_operations=[
@@ -89,7 +72,7 @@ class Migration(migrations.Migration):
             ],
             database_operations=[
                 # Table is managed by audit app, don't modify it here
-                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+                migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
             ],
         ),
         # ModelMetrics was moved to training app - only update state, don't touch database
@@ -113,7 +96,7 @@ class Migration(migrations.Migration):
             ],
             database_operations=[
                 # Table is managed by training app, don't modify it here
-                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+                migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
             ],
         ),
         # Notification was moved to notifications app - only update state, don't touch database
@@ -129,7 +112,7 @@ class Migration(migrations.Migration):
             ],
             database_operations=[
                 # Table is managed by notifications app, don't modify it here
-                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+                migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
             ],
         ),
         # ReporteGenerado was moved to reports app - only update state, don't touch database
@@ -145,7 +128,7 @@ class Migration(migrations.Migration):
             ],
             database_operations=[
                 # Table is managed by reports app, don't modify it here
-                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+                migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
             ],
         ),
         # SystemSettings was moved to core app - only update state, don't touch database
@@ -157,7 +140,7 @@ class Migration(migrations.Migration):
             ],
             database_operations=[
                 # Table is managed by core app, don't modify it here
-                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+                migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
             ],
         ),
         # TrainingJob was moved to training app - only update state, don't touch database
@@ -173,7 +156,7 @@ class Migration(migrations.Migration):
             ],
             database_operations=[
                 # Table is managed by training app, don't modify it here
-                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+                migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
             ],
         ),
         # EmailVerificationToken and UserProfile were moved to auth_app - only update state, don't touch database
@@ -196,7 +179,7 @@ class Migration(migrations.Migration):
             ],
             database_operations=[
                 # Tables are managed by auth_app, don't modify them here
-                migrations.RunSQL("SELECT 1;", reverse_sql="SELECT 1;"),
+                migrations.RunSQL(NOOP_SQL, reverse_sql=NOOP_SQL),
             ],
         ),
     ]

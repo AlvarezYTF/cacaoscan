@@ -13,7 +13,7 @@ from ..utils.model_imports import get_model_safely
 logger = logging.getLogger("cacaoscan.api.tasks.ml")
 
 # Import CacaoDatasetLoader safely
-CacaoDatasetLoader = get_model_safely('CacaoDatasetLoader', 'ml.dataset.loader.CacaoDatasetLoader')
+CacaoDatasetLoader = get_model_safely('ml.data.dataset_loader.CacaoDatasetLoader')
 
 
 @shared_task(bind=True, name='api.tasks.ml.validate_dataset')
@@ -24,11 +24,19 @@ def validate_dataset_task(self) -> Dict[str, Any]:
     Returns:
         Dictionary with validation results and statistics
     """
+    def safe_update_state(state: str, meta: Dict[str, Any]) -> None:
+        """Safely update task state, only if task_id exists (not in test mode)."""
+        if not hasattr(self, 'request') or not getattr(self.request, 'id', None):
+            # We are in test mode, return without using backend
+            return
+        if hasattr(self, 'update_state'):
+            self.update_state(state=state, meta=meta)
+    
     try:
         # Update task state
-        self.update_state(
-            state='PROGRESS',
-            meta={
+        safe_update_state(
+            'PROGRESS',
+            {
                 'status': 'Loading dataset loader...'
             }
         )
@@ -41,9 +49,9 @@ def validate_dataset_task(self) -> Dict[str, Any]:
             }
         
         # Update task state
-        self.update_state(
-            state='PROGRESS',
-            meta={
+        safe_update_state(
+            'PROGRESS',
+            {
                 'status': 'Validating dataset...'
             }
         )

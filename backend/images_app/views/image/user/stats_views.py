@@ -96,17 +96,29 @@ class ImagesStatsView(APIView, ImagePermissionMixin):
             avg_confidence = float(prediction_stats.get('avg_confidence', 0) or 0)
             avg_processing_time = float(prediction_stats.get('avg_time', 0) or 0)
             
-            # Estadísticas por región
-            region_stats = user_images.values('region').annotate(
-                count=Count('id'),
-                processed_count=Count('id', filter=Q(processed=True))
-            ).order_by('-count')
+            # Estadísticas por región (a través de lote -> finca -> municipio -> departamento)
+            # Solo si las relaciones existen
+            try:
+                region_stats = user_images.filter(
+                    lote__finca__municipio__departamento__isnull=False
+                ).values('lote__finca__municipio__departamento__nombre').annotate(
+                    count=Count('id'),
+                    processed_count=Count('id', filter=Q(processed=True))
+                ).order_by('-count')
+            except Exception:
+                region_stats = []
             
-            # Estadísticas por finca
-            finca_stats = user_images.values('finca').annotate(
-                count=Count('id'),
-                processed_count=Count('id', filter=Q(processed=True))
-            ).order_by('-count')[:10]  # Top 10 fincas
+            # Estadísticas por finca (a través de lote)
+            # Solo si las relaciones existen
+            try:
+                finca_stats = user_images.filter(
+                    lote__finca__isnull=False
+                ).values('lote__finca__id', 'lote__finca__nombre').annotate(
+                    count=Count('id'),
+                    processed_count=Count('id', filter=Q(processed=True))
+                ).order_by('-count')[:10]  # Top 10 fincas
+            except Exception:
+                finca_stats = []
             
             # Estadísticas de dimensiones promedio
             avg_dimensions = predictions.aggregate(
@@ -116,11 +128,15 @@ class ImagesStatsView(APIView, ImagePermissionMixin):
                 avg_peso=Avg('peso_g')
             )
             
+            # Calcular processing_rate
+            processing_rate = (processed_images / total_images * 100) if total_images > 0 else 0
+            
             # Preparar respuesta
             stats = {
                 'total_images': total_images,
                 'processed_images': processed_images,
                 'unprocessed_images': unprocessed_images,
+                'processing_rate': round(float(processing_rate), 2),
                 'processed_today': processed_today,
                 'processed_this_week': processed_this_week,
                 'processed_this_month': processed_this_month,
@@ -139,12 +155,13 @@ class ImagesStatsView(APIView, ImagePermissionMixin):
             return Response(stats, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.warning(f"[WARNING] Error obteniendo estadísticas de imágenes: {e}")
-            # Retornar datos vacíos en lugar de 500
+            logger.error(f"[ERROR] Error obteniendo estadísticas de imágenes: {e}", exc_info=True)
+            # Retornar datos vacíos en lugar de 500 para evitar romper el frontend
             return Response({
                 'total_images': 0,
                 'processed_images': 0,
                 'unprocessed_images': 0,
+                'processing_rate': 0,
                 'processed_today': 0,
                 'processed_this_week': 0,
                 'processed_this_month': 0,

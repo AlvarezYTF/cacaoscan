@@ -19,6 +19,14 @@ try:
 except ImportError:
     ActivityLog = None
 
+# Import Redis exceptions for better error handling
+try:
+    import redis
+    from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutError as RedisTimeoutError
+except ImportError:
+    RedisConnectionError = ConnectionError
+    RedisTimeoutError = TimeoutError
+
 logger = logging.getLogger("cacaoscan.websockets")
 
 
@@ -54,8 +62,16 @@ class RealtimeNotificationService:
             
             logger.info(f"Notificación enviada a usuario {user_id}: {notification_data.get('titulo', 'Sin título')}")
             
+        except (ConnectionError, OSError, AttributeError, RedisConnectionError, RedisTimeoutError) as e:
+            # Redis/channel layer not available, log as debug instead of error
+            logger.debug(f"Channel layer no disponible para enviar notificación a usuario {user_id}: {e}")
         except Exception as e:
-            logger.error(f"Error enviando notificación a usuario {user_id}: {e}")
+            # Check if it's a Redis connection error by message content
+            error_str = str(e)
+            if 'redis' in error_str.lower() or '6379' in error_str or 'connection' in error_str.lower():
+                logger.debug(f"Channel layer no disponible para enviar notificación a usuario {user_id}: {e}")
+            else:
+                logger.error(f"Error enviando notificación a usuario {user_id}: {e}")
     
     def send_notification_to_all_users(self, notification_data):
         """
@@ -117,9 +133,18 @@ class RealtimeNotificationService:
             unread_count = Notification.get_unread_count(user)
             
             notifications_by_type = {}
-            for tipo, _ in Notification.TIPO_CHOICES:
-                count = Notification.objects.filter(user=user, tipo=tipo).count()
-                notifications_by_type[tipo] = count
+            # Use Parametro catalog with TEMA_TIPO_NOTIFICACION theme
+            from catalogos.models import Parametro
+            try:
+                tipo_notificaciones = Parametro.objects.filter(
+                    tema__codigo='TEMA_TIPO_NOTIFICACION',
+                    activo=True
+                )
+                for tipo_param in tipo_notificaciones:
+                    count = Notification.objects.filter(user=user, tipo=tipo_param).count()
+                    notifications_by_type[tipo_param.codigo] = count
+            except Exception as e:
+                logger.debug(f"No se pudieron obtener tipos de notificación: {e}")
             
             stats = {
                 'total_notifications': total_notifications,
@@ -130,13 +155,24 @@ class RealtimeNotificationService:
             
             group_name = f'notifications_{user_id}'
             
-            async_to_sync(self.channel_layer.group_send)(
-                group_name,
-                {
-                    'type': 'notification_stats_update',
-                    'data': stats
-                }
-            )
+            try:
+                async_to_sync(self.channel_layer.group_send)(
+                    group_name,
+                    {
+                        'type': 'notification_stats_update',
+                        'data': stats
+                    }
+                )
+            except (ConnectionError, OSError, AttributeError, RedisConnectionError, RedisTimeoutError) as e:
+                # Redis/channel layer not available, log as debug instead of error
+                logger.debug(f"Channel layer no disponible para actualizar estadísticas: {e}")
+            except Exception as e:
+                # Check if it's a Redis connection error by message content
+                error_str = str(e)
+                if 'redis' in error_str.lower() or '6379' in error_str or 'connection' in error_str.lower():
+                    logger.debug(f"Channel layer no disponible para actualizar estadísticas: {e}")
+                else:
+                    logger.error(f"Error actualizando estadísticas de notificaciones: {e}")
             
         except User.DoesNotExist:
             logger.error(f"Usuario {user_id} no encontrado para actualizar estadísticas")
@@ -266,6 +302,12 @@ class RealtimeNotificationService:
         if Notification is None:
             logger.debug("Servicio de notificaciones no disponible; no se crea notificación")
             return None
+        
+        # Verify that create_notification method exists
+        if not hasattr(Notification, 'create_notification'):
+            logger.error("Notification model does not have create_notification method")
+            return None
+        
         try:
             user = User.objects.get(id=user_id)
             
@@ -279,9 +321,12 @@ class RealtimeNotificationService:
             )
             
             # Enviar en tiempo real
+            # Use codigo from TipoNotificacion catalog
+            tipo_codigo = notification.tipo.codigo if hasattr(notification.tipo, 'codigo') else str(notification.tipo)
             notification_data = {
                 'id': notification.id,
-                'tipo': notification.tipo,
+                'tipo': tipo_codigo,  # Use codigo from catalog
+                'tipo_nombre': notification.tipo.nombre if hasattr(notification.tipo, 'nombre') else None,
                 'titulo': notification.titulo,
                 'mensaje': notification.mensaje,
                 'fecha_creacion': notification.fecha_creacion.isoformat(),

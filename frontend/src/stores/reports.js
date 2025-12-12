@@ -1,5 +1,12 @@
+/**
+ * Pinia store for reports management
+ * Simplified to use reportsService for API calls
+ * Focuses on state management and caching
+ */
 import { defineStore } from 'pinia'
-import api from '@/services/api'
+import reportsService from '@/services/reportsService'
+import { downloadBlob } from '@/utils/fileExportUtils'
+import { handleApiError } from '@/services/apiErrorHandler'
 
 export const useReportsStore = defineStore('reports', {
   state: () => ({
@@ -38,9 +45,12 @@ export const useReportsStore = defineStore('reports', {
     },
 
     getRecentReports: (state) => (limit = 5) => {
-      return state.reports
-        .sort((a, b) => new Date(b.fecha_solicitud) - new Date(a.fecha_solicitud))
-        .slice(0, limit)
+      const sorted = [...state.reports].sort((a, b) => {
+        const dateA = new Date(a.fecha_solicitud || a.created_at || 0)
+        const dateB = new Date(b.fecha_solicitud || b.created_at || 0)
+        return dateB - dateA
+      })
+      return sorted.slice(0, limit)
     },
 
     getCompletedReports: (state) => {
@@ -52,349 +62,276 @@ export const useReportsStore = defineStore('reports', {
     },
 
     getProcessingReports: (state) => {
-      return state.reports.filter(report => report.estado === 'procesando')
+      return state.reports.filter(report => report.estado === 'procesando' || report.estado === 'generando')
     },
 
     getErrorReports: (state) => {
-      return state.reports.filter(report => report.estado === 'error')
+      return state.reports.filter(report => report.estado === 'error' || report.estado === 'fallido')
     }
   },
 
   actions: {
+    /**
+     * Fetch reports list with filters and pagination
+     * @param {Object} params - Filter and pagination parameters
+     */
     async fetchReports(params = {}) {
       try {
         this.loading = true
         this.error = null
 
-        const response = await api.get('/reports/', { params })
+        // Extract pagination and filters from params
+        const { page: pageParam, page_size: pageSizeParam, itemsPerPage: itemsPerPageParam, ...filters } = params
         
-        this.reports = response.data.results || response.data
+        const page = pageParam || this.pagination.currentPage
+        const pageSize = pageSizeParam || itemsPerPageParam || this.pagination.itemsPerPage
+        
+        const response = await reportsService.getReports(filters, page, pageSize)
+        
+        this.reports = response.results || []
         this.pagination = {
-          currentPage: response.data.current_page || 1,
-          totalPages: response.data.total_pages || 1,
-          totalItems: response.data.total_count || response.data.count || 0,
-          itemsPerPage: response.data.page_size || 20
+          currentPage: response.page || page,
+          totalPages: response.total_pages || 1,
+          totalItems: response.count || 0,
+          itemsPerPage: response.page_size || pageSize
         }
 
         return response
       } catch (error) {
-        this.error = error.response?.data?.detail || 'Error al cargar reportes'
-        console.error('Error fetching reports:', error)
+        const errorInfo = handleApiError(error, { logError: true })
+        this.error = errorInfo.message
         throw error
       } finally {
         this.loading = false
       }
     },
 
+    /**
+     * Fetch reports statistics
+     */
     async fetchStats() {
       try {
-        const response = await api.get('/reports/stats/')
-        this.stats = response.data
+        const response = await reportsService.getReportsStats()
+        this.stats = {
+          totalReports: response.total_reports || 0,
+          reportsChange: response.reports_change || 0,
+          completedReports: response.completed_reports || 0,
+          completedChange: response.completed_change || 0,
+          inProgressReports: response.in_progress_reports || 0,
+          inProgressChange: response.in_progress_change || 0,
+          errorReports: response.error_reports || 0,
+          errorChange: response.error_change || 0
+        }
         return response
       } catch (error) {
-        console.error('Error fetching stats:', error)
+        handleApiError(error, { logError: true })
         throw error
       }
     },
 
+    /**
+     * Create a new report
+     * @param {Object} reportData - Report data from form
+     */
     async createReport(reportData) {
       try {
         this.loading = true
         this.error = null
 
-        const response = await api.post('/reports/create/', reportData)
+        const report = await reportsService.createReport(reportData)
         
-        // Agregar el nuevo reporte a la lista
-        this.reports.unshift(response.data)
+        // Add new report to list
+        this.reports.unshift(report)
         
-        // Actualizar estadísticas
+        // Update statistics
         this.stats.totalReports += 1
         this.stats.reportsChange += 1
 
-        return response
+        return report
       } catch (error) {
-        this.error = error.response?.data?.detail || 'Error al crear reporte'
-        console.error('Error creating report:', error)
+        const errorInfo = handleApiError(error, { logError: true })
+        this.error = errorInfo.message
         throw error
       } finally {
         this.loading = false
       }
     },
 
+    /**
+     * Update report (if supported by API)
+     * @param {number} id - Report ID
+     * @param {Object} reportData - Report data to update
+     */
     async updateReport(id, reportData) {
       try {
         this.loading = true
         this.error = null
 
-        const response = await api.put(`/reports/${id}/update/`, reportData)
-        
-        // Actualizar el reporte en la lista
+        // If update is not supported, just update in local state
         const index = this.reports.findIndex(report => report.id === id)
         if (index !== -1) {
-          this.reports[index] = response.data
+          this.reports[index] = { ...this.reports[index], ...reportData }
         }
 
-        return response
+        return this.reports[index]
       } catch (error) {
-        this.error = error.response?.data?.detail || 'Error al actualizar reporte'
-        console.error('Error updating report:', error)
+        const errorInfo = handleApiError(error, { logError: true })
+        this.error = errorInfo.message
         throw error
       } finally {
         this.loading = false
       }
     },
 
+    /**
+     * Delete a report
+     * @param {number} id - Report ID
+     */
     async deleteReport(id) {
       try {
         this.loading = true
         this.error = null
 
-        await api.delete(`/reports/${id}/delete/`)
+        await reportsService.deleteReport(id)
         
-        // Remover el reporte de la lista
+        // Remove report from list
         this.reports = this.reports.filter(report => report.id !== id)
         
-        // Actualizar estadísticas
+        // Update statistics
         this.stats.totalReports -= 1
         this.stats.reportsChange -= 1
 
         return true
       } catch (error) {
-        this.error = error.response?.data?.detail || 'Error al eliminar reporte'
-        console.error('Error deleting report:', error)
+        const errorInfo = handleApiError(error, { logError: true })
+        this.error = errorInfo.message
         throw error
       } finally {
         this.loading = false
       }
     },
 
+    /**
+     * Bulk delete reports
+     * @param {Array<number>} ids - Array of report IDs
+     */
     async bulkDeleteReports(ids) {
       try {
         this.loading = true
         this.error = null
 
-        await api.post('/reports/bulk-delete/', { report_ids: ids })
+        // Delete reports one by one (or implement bulk endpoint if available)
+        await Promise.all(ids.map(id => reportsService.deleteReport(id)))
         
-        // Remover los reportes de la lista
+        // Remove reports from list
         this.reports = this.reports.filter(report => !ids.includes(report.id))
         
-        // Actualizar estadísticas
+        // Update statistics
         this.stats.totalReports -= ids.length
         this.stats.reportsChange -= ids.length
 
         return true
       } catch (error) {
-        this.error = error.response?.data?.detail || 'Error al eliminar reportes'
-        console.error('Error bulk deleting reports:', error)
+        const errorInfo = handleApiError(error, { logError: true })
+        this.error = errorInfo.message
         throw error
       } finally {
         this.loading = false
       }
     },
 
+    /**
+     * Download a report file
+     * @param {number} id - Report ID
+     */
     async downloadReport(id) {
       try {
-        const response = await api.get(`/reports/${id}/download/`, {
-          responseType: 'blob'
-        })
-
-        // Crear URL para descarga
-        const blob = new Blob([response.data])
-        const url = window.URL.createObjectURL(blob)
+        const response = await reportsService.downloadReport(id)
         
-        // Crear enlace temporal para descarga
-        const link = document.createElement('a')
-        link.href = url
-        
-        // Obtener nombre del archivo del header
-        const contentDisposition = response.headers['content-disposition']
+        // Get filename from Content-Disposition header or use default
+        const contentDisposition = response.headers?.get('Content-Disposition')
         let filename = `reporte_${id}.pdf`
         
         if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename="(.+)"/)
+          // Try to extract filename from Content-Disposition header
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/) || contentDisposition.match(/filename=([^;]+)/)
           if (filenameMatch) {
-            filename = filenameMatch[1]
+            filename = filenameMatch[1].trim()
+            // Remove quotes if present
+            filename = filename.replace(/^["']|["']$/g, '')
           }
         }
         
-        link.download = filename
-        document.body.appendChild(link)
-        link.click()
+        const blob = await response.blob()
         
-        // Limpiar
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
+        // Convert Headers object to plain object for downloadBlob
+        const headersObj = {}
+        if (response.headers) {
+          response.headers.forEach((value, key) => {
+            headersObj[key.toLowerCase()] = value
+          })
+        }
+        
+        downloadBlob(blob, filename, headersObj)
 
         return true
       } catch (error) {
-        console.error('Error downloading report:', error)
+        handleApiError(error, { logError: true })
         throw error
       }
     },
 
-    async exportReports(params) {
+    /**
+     * Get report details
+     * @param {number} id - Report ID
+     */
+    async getReportDetails(id) {
       try {
-        const response = await api.post('/reports/export/', params, {
-          responseType: 'blob'
-        })
-
-        // Crear URL para descarga
-        const blob = new Blob([response.data])
-        const url = window.URL.createObjectURL(blob)
+        const report = await reportsService.getReportDetails(id)
         
-        // Crear enlace temporal para descarga
-        const link = document.createElement('a')
-        link.href = url
-        
-        // Obtener nombre del archivo del header
-        const contentDisposition = response.headers['content-disposition']
-        let filename = 'reportes_exportados.zip'
-        
-        if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename="(.+)"/)
-          if (filenameMatch) {
-            filename = filenameMatch[1]
-          }
+        // Update report in list if exists
+        const index = this.reports.findIndex(r => r.id === id)
+        if (index >= 0) {
+          this.reports[index] = report
+        } else {
+          this.reports.push(report)
         }
         
-        link.download = filename
-        document.body.appendChild(link)
-        link.click()
-        
-        // Limpiar
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
-
-        return true
+        return report
       } catch (error) {
-        console.error('Error exporting reports:', error)
+        handleApiError(error, { logError: true })
         throw error
       }
     },
 
-    async getReportPreview(id) {
-      try {
-        const response = await api.get(`/reports/${id}/preview/`)
-        return response
-      } catch (error) {
-        console.error('Error getting report preview:', error)
-        throw error
-      }
+    /**
+     * Get report types
+     */
+    getReportTypes() {
+      return reportsService.getReportTypes()
     },
 
-    async fetchUsers() {
-      try {
-        const response = await api.get('/users/')
-        return response
-      } catch (error) {
-        console.error('Error fetching users:', error)
-        throw error
-      }
+    /**
+     * Get report formats
+     */
+    getReportFormats() {
+      return reportsService.getReportFormats()
     },
 
-    async fetchFincas() {
-      try {
-        const response = await api.get('/api/v1/fincas/')
-        return response
-      } catch (error) {
-        console.error('Error fetching fincas:', error)
-        throw error
-      }
-    },
-
-    async fetchLotesByFinca(fincaId) {
-      try {
-        const response = await api.get(`/api/v1/fincas/${fincaId}/lotes/`)
-        return response
-      } catch (error) {
-        console.error('Error fetching lotes:', error)
-        throw error
-      }
-    },
-
-    async fetchReportTypes() {
-      try {
-        const response = await api.get('/reports/types/')
-        return response
-      } catch (error) {
-        console.error('Error fetching report types:', error)
-        throw error
-      }
-    },
-
-    async fetchReportFormats() {
-      try {
-        const response = await api.get('/reports/formats/')
-        return response
-      } catch (error) {
-        console.error('Error fetching report formats:', error)
-        throw error
-      }
-    },
-
-    async scheduleReport(id, scheduleData) {
-      try {
-        const response = await api.post(`/reports/${id}/schedule/`, scheduleData)
-        
-        // Actualizar el reporte en la lista
-        const index = this.reports.findIndex(report => report.id === id)
-        if (index !== -1) {
-          this.reports[index] = { ...this.reports[index], ...response.data }
-        }
-
-        return response
-      } catch (error) {
-        console.error('Error scheduling report:', error)
-        throw error
-      }
-    },
-
-    async unscheduleReport(id) {
-      try {
-        const response = await api.delete(`/reports/${id}/schedule/`)
-        
-        // Actualizar el reporte en la lista
-        const index = this.reports.findIndex(report => report.id === id)
-        if (index !== -1) {
-          this.reports[index] = { ...this.reports[index], ...response.data }
-        }
-
-        return response
-      } catch (error) {
-        console.error('Error unscheduling report:', error)
-        throw error
-      }
-    },
-
-    async regenerateReport(id) {
-      try {
-        this.loading = true
-        this.error = null
-
-        const response = await api.post(`/reports/${id}/regenerate/`)
-        
-        // Actualizar el reporte en la lista
-        const index = this.reports.findIndex(report => report.id === id)
-        if (index !== -1) {
-          this.reports[index] = response.data
-        }
-
-        return response
-      } catch (error) {
-        this.error = error.response?.data?.detail || 'Error al regenerar reporte'
-        console.error('Error regenerating report:', error)
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
+    /**
+     * Add report to list (utility method)
+     * @param {Object} report - Report object
+     */
     addReport(report) {
       this.reports.unshift(report)
       this.stats.totalReports += 1
       this.stats.reportsChange += 1
     },
 
+    /**
+     * Update report in list (utility method)
+     * @param {Object} report - Report object
+     */
     updateReportInList(report) {
       const index = this.reports.findIndex(r => r.id === report.id)
       if (index !== -1) {
@@ -402,16 +339,26 @@ export const useReportsStore = defineStore('reports', {
       }
     },
 
+    /**
+     * Remove report from list (utility method)
+     * @param {number} id - Report ID
+     */
     removeReport(id) {
       this.reports = this.reports.filter(report => report.id !== id)
-      this.stats.totalReports -= 1
-      this.stats.reportsChange -= 1
+      this.stats.totalReports = Math.max(0, this.stats.totalReports - 1)
+      this.stats.reportsChange = Math.max(0, this.stats.reportsChange - 1)
     },
 
+    /**
+     * Clear error
+     */
     clearError() {
       this.error = null
     },
 
+    /**
+     * Reset store state
+     */
     reset() {
       this.reports = []
       this.stats = {

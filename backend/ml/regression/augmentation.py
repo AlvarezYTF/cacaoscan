@@ -1,17 +1,43 @@
 """
 Data augmentation avanzado para regresión de cacao.
 Incluye técnicas sofisticadas como MixUp, CutMix, Random Erasing, etc.
+
+Note on PRNG usage:
+This module uses standard pseudorandom number generators (random, np.random, torch.rand*)
+for data augmentation purposes. These are appropriate and safe for ML training as:
+1. No cryptographic security is required for data augmentation
+2. Standard PRNGs are more efficient for high-frequency operations during training
+3. Reproducibility can be controlled via random seeds if needed
+4. The randomness is used only for creating training variations, not for security purposes
 """
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 import numpy as np
 from typing import Tuple, Optional
-import random
+import math
+from torch.distributions import Beta as _Beta
 from PIL import Image
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _generar_lambda_mixup(alpha: float) -> float:
+    """Genera lambda para MixUp usando distribución Beta."""
+    return float(_Beta(alpha, alpha).sample().item())  # NOSONAR
+
+
+def _aplicar_mezcla_mixup(
+    images: torch.Tensor,
+    targets: torch.Tensor,
+    lam: float,
+    index: torch.Tensor
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Aplica la mezcla de MixUp a imágenes y targets."""
+    mixed_images = lam * images + (1 - lam) * images[index]
+    mixed_targets = lam * targets + (1 - lam) * targets[index]
+    return mixed_images, mixed_targets
 
 
 class MixUp:
@@ -35,22 +61,50 @@ class MixUp:
         Returns:
             Tuple de (imágenes mezcladas, targets mezclados)
         """
-        if random.random() > 0.5:
+        # Security note: Using PyTorch PRNGs is safe here because:
+        # 1. This is for data augmentation in ML training, not cryptographic purposes
+        # 2. The randomness is used to create training variations, not for security
+        # 3. PyTorch RNGs support reproducibility via torch.manual_seed()
+        # 4. No sensitive data or security tokens are generated here
+        if torch.rand(1).item() > 0.5:  # NOSONAR
             return images, targets
-        
+
         batch_size = images.size(0)
+        lam = _generar_lambda_mixup(self.alpha)
+        index = torch.randperm(batch_size).to(images.device)  # NOSONAR
         
-        # Generar lambda de distribución Beta
-        lam = np.random.beta(self.alpha, self.alpha)
-        
-        # Crear índice aleatorio para mezclar
-        index = torch.randperm(batch_size).to(images.device)
-        
-        # Mezclar imágenes y targets
-        mixed_images = lam * images + (1 - lam) * images[index]
-        mixed_targets = lam * targets + (1 - lam) * targets[index]
-        
-        return mixed_images, mixed_targets
+        return _aplicar_mezcla_mixup(images, targets, lam, index)
+
+
+def _calcular_region_corte(lam: float, h: int, w: int) -> Tuple[int, int, int, int]:
+    """Calcula la región de corte para CutMix."""
+    cut_rat = math.sqrt(max(0.0, 1.0 - lam))
+    cut_w = int(w * cut_rat)
+    cut_h = int(h * cut_rat)
+    
+    cx = int(torch.randint(0, w, (1,)).item())  # NOSONAR
+    cy = int(torch.randint(0, h, (1,)).item())  # NOSONAR
+    
+    bbx1 = int(np.clip(cx - cut_w // 2, 0, w))
+    bby1 = int(np.clip(cy - cut_h // 2, 0, h))
+    bbx2 = int(np.clip(cx + cut_w // 2, 0, w))
+    bby2 = int(np.clip(cy + cut_h // 2, 0, h))
+    
+    return bbx1, bby1, bbx2, bby2
+
+
+def _aplicar_corte_imagen(
+    images: torch.Tensor,
+    index: torch.Tensor,
+    bbx1: int,
+    bby1: int,
+    bbx2: int,
+    bby2: int
+) -> torch.Tensor:
+    """Aplica el corte de CutMix a las imágenes."""
+    mixed_images = images.clone()
+    mixed_images[:, :, bby1:bby2, bbx1:bbx2] = images[index, :, bby1:bby2, bbx1:bbx2]
+    return mixed_images
 
 
 class CutMix:
@@ -74,44 +128,54 @@ class CutMix:
         Returns:
             Tuple de (imágenes mezcladas, targets mezclados)
         """
-        if random.random() > 0.5:
+        # Security note: Using PyTorch PRNGs is safe here because:
+        # 1. This is for data augmentation in ML training, not cryptographic purposes
+        # 2. The randomness is used to create training variations, not for security
+        # 3. PyTorch RNGs support reproducibility via torch.manual_seed()
+        # 4. No sensitive data or security tokens are generated here
+        if torch.rand(1).item() > 0.5:  # NOSONAR
             return images, targets
-        
+
         batch_size = images.size(0)
         _, _, h, w = images.size()
+        lam = _generar_lambda_mixup(self.alpha)
+        index = torch.randperm(batch_size).to(images.device)  # NOSONAR
         
-        # Generar lambda de distribución Beta
-        lam = np.random.beta(self.alpha, self.alpha)
+        bbx1, bby1, bbx2, bby2 = _calcular_region_corte(lam, h, w)
+        mixed_images = _aplicar_corte_imagen(images, index, bbx1, bby1, bbx2, bby2)
         
-        # Crear índice aleatorio
-        index = torch.randperm(batch_size).to(images.device)
-        
-        # Calcular región de corte
-        cut_rat = np.sqrt(1.0 - lam)
-        cut_w = np.int(w * cut_rat)
-        cut_h = np.int(h * cut_rat)
-        
-        # Posición aleatoria para el corte
-        cx = np.random.randint(w)
-        cy = np.random.randint(h)
-        
-        # Limitar coordenadas
-        bbx1 = np.clip(cx - cut_w // 2, 0, w)
-        bby1 = np.clip(cy - cut_h // 2, 0, h)
-        bbx2 = np.clip(cx + cut_w // 2, 0, w)
-        bby2 = np.clip(cy + cut_h // 2, 0, h)
-        
-        # Crear copia de imágenes
-        mixed_images = images.clone()
-        mixed_images[:, :, bby1:bby2, bbx1:bbx2] = images[index, :, bby1:bby2, bbx1:bbx2]
-        
-        # Calcular lambda ajustado para el área real cortada
-        lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (w * h))
-        
-        # Mezclar targets
-        mixed_targets = lam * targets + (1 - lam) * targets[index]
+        lam_ajustado = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (w * h))
+        mixed_targets = lam_ajustado * targets + (1 - lam_ajustado) * targets[index]
         
         return mixed_images, mixed_targets
+
+
+def _calcular_dimensiones_borrado(
+    area: int,
+    sl: float,
+    sh: float,
+    r1: float
+) -> Tuple[int, int]:
+    """Calcula las dimensiones de la región a borrar."""
+    target_area = float(torch.empty(1).uniform_(sl, sh).item()) * area  # NOSONAR
+    aspect_ratio = float(torch.empty(1).uniform_(r1, 1 / r1).item())  # NOSONAR
+    erase_h = int(np.round(np.sqrt(target_area * aspect_ratio)))
+    erase_w = int(np.round(np.sqrt(target_area / aspect_ratio)))
+    return erase_h, erase_w
+
+
+def _generar_valor_borrado(
+    num_channels: int,
+    dtype: torch.dtype,
+    device: torch.device
+) -> torch.Tensor:
+    """Genera el valor para borrar la región."""
+    if torch.rand(1).item() < 0.5:  # NOSONAR
+        return torch.randn(num_channels, 1, 1, device=device) * 0.5 + 0.5  # NOSONAR
+    else:
+        choice_idx = int(torch.randint(0, 3, (1,)).item())  # NOSONAR
+        erase_value_scalar = [0.0, 0.5, 1.0][choice_idx]
+        return torch.full((num_channels, 1, 1), erase_value_scalar, dtype=dtype, device=device)
 
 
 class RandomErasing:
@@ -140,36 +204,23 @@ class RandomErasing:
         Returns:
             Imagen con región borrada aleatoriamente
         """
-        if random.random() > self.probability:
+        # Security note: Using PyTorch RNGs is safe here because:
+        # 1. This is for data augmentation in ML training, not cryptographic purposes
+        # 2. The randomness is used to create training variations, not for security
+        # 3. PyTorch RNGs are more efficient and appropriate for ML workloads
+        # 4. PyTorch RNGs support reproducibility via torch.manual_seed()
+        # 5. No sensitive data or security tokens are generated here
+        if torch.rand(1).item() > self.probability:  # NOSONAR
             return image
         
         _, h, w = image.size()
-        
-        # Calcular área y ratio de aspecto
         area = h * w
-        target_area = random.uniform(self.sl, self.sh) * area
-        aspect_ratio = random.uniform(self.r1, 1 / self.r1)
-        
-        # Calcular dimensiones de la región a borrar
-        erase_h = int(np.round(np.sqrt(target_area * aspect_ratio)))
-        erase_w = int(np.round(np.sqrt(target_area / aspect_ratio)))
+        erase_h, erase_w = _calcular_dimensiones_borrado(area, self.sl, self.sh, self.r1)
         
         if erase_h < h and erase_w < w:
-            # Posición aleatoria
-            x1 = random.randint(0, h - erase_h)
-            y1 = random.randint(0, w - erase_w)
-            
-            # Valor aleatorio para borrar (puede ser 0, media, o random)
-            if random.random() < 0.5:
-                # Borrar con valor aleatorio
-                erase_value = torch.randn(image.size(0), 1, 1) * 0.5 + 0.5
-            else:
-                # Borrar con valor específico
-                erase_value_scalar = random.choice([0.0, 0.5, 1.0])
-                # Crear tensor con la forma correcta (C, 1, 1) donde C es el número de canales
-                num_channels = image.size(0)
-                erase_value = torch.full((num_channels, 1, 1), erase_value_scalar, dtype=image.dtype, device=image.device)
-            
+            x1 = int(torch.randint(0, max(1, h - erase_h), (1,)).item())  # NOSONAR
+            y1 = int(torch.randint(0, max(1, w - erase_w), (1,)).item())  # NOSONAR
+            erase_value = _generar_valor_borrado(image.size(0), image.dtype, image.device)
             image[:, x1:x1+erase_h, y1:y1+erase_w] = erase_value
         
         return image

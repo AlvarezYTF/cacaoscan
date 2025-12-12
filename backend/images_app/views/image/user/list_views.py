@@ -10,7 +10,7 @@ from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from api.views.mixins import PaginationMixin
+from api.views.mixins.pagination_mixin import PaginationMixin
 from api.serializers import (
     ErrorResponseSerializer,
     CacaoImageSerializer
@@ -81,11 +81,10 @@ class ImagesListView(PaginationMixin, APIView, ImagePermissionMixin):
         queryset = self.get_user_images_queryset(request.user)
         
         # Aplicar filtros
-        if region:
-            queryset = queryset.filter(region__icontains=region)
+        # Note: region filter removed - field doesn't exist in CacaoImage model
         
         if finca:
-            queryset = queryset.filter(finca__icontains=finca)
+            queryset = queryset.filter(lote__finca__nombre__icontains=finca)
         
         if processed is not None:
             processed_bool = processed.lower() in ['true', '1', 'yes']
@@ -94,10 +93,9 @@ class ImagesListView(PaginationMixin, APIView, ImagePermissionMixin):
         if search:
             queryset = queryset.filter(
                 Q(notas__icontains=search) |
-                Q(finca__icontains=search) |
-                Q(region__icontains=search) |
-                Q(lote_id__icontains=search) |
-                Q(variedad__icontains=search)
+                Q(lote__finca__nombre__icontains=search) |
+                Q(lote__identificador__icontains=search) |
+                Q(lote__variedad__icontains=search)
             )
         
         if date_from:

@@ -1,5 +1,22 @@
+# -*- coding: utf-8 -*-
+"""
+Management command to seed Colombia departments and municipalities.
+"""
 from django.core.management.base import BaseCommand
 from catalogos.models import Departamento, Municipio
+
+# Constants for frequently duplicated municipality names
+MUNICIPALITY_LA_UNION = "La Unión"
+MUNICIPALITY_NARINO = "Nariño"
+MUNICIPALITY_SAN_FRANCISCO = "San Francisco"
+MUNICIPALITY_SAN_ANDRES = "San Andrés"
+MUNICIPALITY_SAN_PEDRO = "San Pedro"
+MUNICIPALITY_SANTA_BARBARA = "Santa Bárbara"
+MUNICIPALITY_BOGOTA_DC = "Bogotá D.C."
+MUNICIPALITY_BOLIVAR = "Bolívar"
+MUNICIPALITY_CORDOBA = "Córdoba"
+MUNICIPALITY_EL_PENON = "El Peñón"
+MUNICIPALITY_LA_VICTORIA = "La Victoria"
 
 
 def _normalize_text(value: str) -> str:
@@ -38,15 +55,15 @@ class Command(BaseCommand):
                 "051", "Fredonia", "052", "Frontino", "053", "Giraldo", "054", "Girardota",
                 "055", "Gómez Plata", "056", "Guadalupe", "057", "Heliconia", "059", "Hispania",
                 "060", "Ituango", "062", "Jericó", "063", "La Estrella", "064", "La Pintada",
-                "065", "La Unión", "066", "Liborina", "067", "Maceo", "069", "Montebello",
+                "065", MUNICIPALITY_LA_UNION, "066", "Liborina", "067", "Maceo", "069", "Montebello",
                 "070", "Mutatá", "071", "Nariño", "072", "Nechí", "073", "Necoclí",
                 "074", "Olaya", "075", "Peque", "076", "Pueblorrico", "077", "Puerto Berrío",
                 "078", "Puerto Nare", "079", "Puerto Triunfo", "080", "Remedios", "081", "Retiro",
                 "082", "Rionegro", "084", "Sabanalarga", "085", "Sabaneta", "086", "Salgar",
-                "087", "San Andrés", "088", "San Carlos", "089", "San Francisco", "090", "San Jerónimo",
+                "087", MUNICIPALITY_SAN_ANDRES, "088", "San Carlos", "089", MUNICIPALITY_SAN_FRANCISCO, "090", "San Jerónimo",
                 "091", "San José de la Montaña", "092", "San Juan de Urabá", "093", "San Luís",
-                "094", "San Pedro", "095", "San Pedro de Urabá", "096", "San Rafael", "097", "San Roque",
-                "098", "San Vicente", "099", "Santa Bárbara", "100", "Santa Fé de Antioquia",
+                "094", MUNICIPALITY_SAN_PEDRO, "095", "San Pedro de Urabá", "096", "San Rafael", "097", "San Roque",
+                "098", "San Vicente", "099", MUNICIPALITY_SANTA_BARBARA, "100", "Santa Fé de Antioquia",
                 "101", "Santa Rosa de Osos", "102", "Santo Domingo", "103", "Santuario",
                 "104", "Segovia", "105", "Sonsón", "106", "Sopetrán", "107", "Támesis",
                 "108", "Tarazá", "109", "Tarso", "110", "Titiribí", "111", "Toledo",
@@ -65,15 +82,15 @@ class Command(BaseCommand):
                 "019", "Santo Tomás", "020", "Soledad", "021", "Suan",
                 "022", "Tubará", "023", "Usiacurí"
             ]),
-            "11": ("Bogotá D.C.", [
-                "001", "Bogotá D.C."
+            "11": (MUNICIPALITY_BOGOTA_DC, [
+                "001", MUNICIPALITY_BOGOTA_DC
             ]),
-            "13": ("Bolívar", [
+            "13": (MUNICIPALITY_BOLIVAR, [
                 "001", "Cartagena", "002", "Achí", "003", "Altos del Rosario",
                 "004", "Arenal", "005", "Arjona", "006", "Arroyohondo",
                 "007", "Barranco de Loba", "008", "Calamar", "009", "Cantagallo",
-                "010", "Cicuco", "011", "Córdoba", "012", "Clemencia",
-                "013", "El Carmen de Bolívar", "014", "El Guamo", "015", "El Peñón",
+                "010", "Cicuco", "011", MUNICIPALITY_CORDOBA, "012", "Clemencia",
+                "013", "El Carmen de Bolívar", "014", "El Guamo", "015", MUNICIPALITY_EL_PENON,
                 "016", "Hatonuevo", "017", "Magangué", "018", "Mahates",
                 "019", "Margarita", "020", "María la Baja", "021", "Mompós",
                 "022", "Montecristo", "023", "Morales", "024", "Norosí",
@@ -102,7 +119,7 @@ class Command(BaseCommand):
                 "037", "Garagoa", "038", "Guacamayas", "039", "Guateque",
                 "040", "Guayatá", "041", "Güicán", "042", "Iza",
                 "043", "Jenesano", "044", "Jericó", "045", "Labranzagrande",
-                "046", "La Capilla", "047", "La Victoria", "048", "La Uvita",
+                "046", "La Capilla", "047", MUNICIPALITY_LA_VICTORIA, "048", "La Uvita",
                 "049", "Villa de Leyva", "050", "Macanal", "051", "Maripí",
                 "052", "Miraflores", "053", "Mongua", "054", "Monguí",
                 "055", "Moniquirá", "056", "Motavita", "057", "Muzo",
@@ -150,7 +167,7 @@ class Command(BaseCommand):
             ]),
             "19": ("Cauca", [
                 "001", "Popayán", "002", "Almaguer", "003", "Argelia",
-                "004", "Balboa", "005", "Bolívar", "006", "Buenos Aires",
+                "004", "Balboa", "005", MUNICIPALITY_BOLIVAR, "006", "Buenos Aires",
                 "007", "Cajibío", "008", "Caldono", "009", "Caloto",
                 "010", "Corinto", "011", "El Tambo", "012", "Florencia",
                 "013", "Guachené", "014", "Guapi", "015", "Inzá",
@@ -174,7 +191,7 @@ class Command(BaseCommand):
                 "019", "Pueblo Bello", "020", "Río de Oro", "021", "San Alberto",
                 "022", "San Diego", "023", "San Martín", "024", "Tamalameque"
             ]),
-            "23": ("Córdoba", [
+            "23": (MUNICIPALITY_CORDOBA, [
                 "001", "Montería", "002", "Ayapel", "003", "Buenavista",
                 "004", "Canalete", "005", "Cereté", "006", "Chinú",
                 "007", "Ciénaga de Oro", "008", "Cotorra", "009", "La Apartada",
@@ -190,12 +207,12 @@ class Command(BaseCommand):
                 "001", "Agua de Dios", "002", "Albán", "003", "Anapoima",
                 "004", "Anolaima", "005", "Apulo", "006", "Arbeláez",
                 "007", "Beltrán", "008", "Bituima", "009", "Bochalema",
-                "010", "Bogotá D.C.", "011", "Cabrera", "012", "Cachipay",
+                "010", MUNICIPALITY_BOGOTA_DC, "011", "Cabrera", "012", "Cachipay",
                 "013", "Cajicá", "014", "Caparrapí", "015", "Cáqueza",
                 "016", "Carmen de Carupa", "017", "Chaguaní", "018", "Chía",
                 "019", "Chipaque", "020", "Choachí", "021", "Chocontá",
                 "022", "Cogua", "023", "Cota", "024", "Cucunubá",
-                "025", "El Colegio", "026", "El Peñón", "027", "El Rosal",
+                "025", "El Colegio", "026", MUNICIPALITY_EL_PENON, "027", "El Rosal",
                 "028", "Facatativá", "029", "Fómeque", "030", "Fosca",
                 "031", "Funza", "032", "Fúquene", "033", "Fusagasugá",
                 "034", "Gachalá", "035", "Gachancipá", "036", "Gachetá",
@@ -213,7 +230,7 @@ class Command(BaseCommand):
                 "070", "Pesca", "071", "Pulí", "072", "Quebradanegra",
                 "073", "Quetame", "074", "Quipile", "075", "Ricaurte",
                 "076", "San Antonio del Tequendama", "077", "San Bernardo",
-                "078", "San Cayetano", "079", "San Francisco", "080", "San Juan de Río Seco",
+                "078", "San Cayetano", "079", MUNICIPALITY_SAN_FRANCISCO, "080", "San Juan de Río Seco",
                 "081", "Sasaima", "082", "Sesquilé", "083", "Silvania",
                 "084", "Simijaca", "085", "Susa", "086", "Sutatausa",
                 "087", "Tabio", "088", "Tausa", "089", "Tena",
@@ -284,26 +301,26 @@ class Command(BaseCommand):
                 "025", "San Carlos de Guaroa", "026", "San Juan de Arama", "027", "San Juanito",
                 "028", "San Martín", "029", "Vista Hermosa"
             ]),
-            "52": ("Nariño", [
+            "52": (MUNICIPALITY_NARINO, [
                 "001", "Pasto", "002", "Albán", "003", "Aldana",
                 "004", "Ancuyá", "005", "Arboleda", "006", "Barbacoas",
                 "007", "Belén", "008", "Buesaco", "009", "Colón",
-                "010", "Consacá", "011", "Contadero", "012", "Córdoba",
+                "010", "Consacá", "011", "Contadero", "012", MUNICIPALITY_CORDOBA,
                 "013", "Cuaspud", "014", "Cumbal", "015", "Cumbitara",
                 "016", "El Charco", "017", "El Peñol", "018", "El Rosario",
                 "019", "El Tablón de Gómez", "020", "El Tambo", "021", "Francisco Pizarro",
                 "022", "Funes", "023", "Guachucal", "024", "Guaitarilla",
                 "025", "Gualmatán", "026", "Iles", "027", "Imués",
                 "028", "Ipiales", "029", "La Cruz", "030", "La Florida",
-                "031", "La Llanada", "032", "La Tola", "033", "La Unión",
+                "031", "La Llanada", "032", "La Tola", "033", MUNICIPALITY_LA_UNION,
                 "034", "Leiva", "035", "Linares", "036", "Los Andes",
                 "037", "Magüí", "038", "Mallama", "039", "Mosquera",
-                "040", "Nariño", "041", "Olaya Herrera", "042", "Ospina",
+                "040", MUNICIPALITY_NARINO, "041", "Olaya Herrera", "042", "Ospina",
                 "043", "Policarpa", "044", "Potosí", "045", "Providencia",
                 "046", "Puerres", "047", "Pupiales", "048", "Ricaurte",
                 "049", "Roberto Payán", "050", "Samaniego", "051", "San Bernardo",
                 "052", "San Lorenzo", "053", "San Pablo", "054", "San Pedro de Cartago",
-                "055", "Sandona", "056", "Santa Bárbara", "057", "Santacruz",
+                "055", "Sandona", "056", MUNICIPALITY_SANTA_BARBARA, "057", "Santacruz",
                 "058", "Sapuyes", "059", "Tangua", "060", "Tumaco",
                 "061", "Túquerres", "062", "Yacuanquer"
             ]),
@@ -325,7 +342,7 @@ class Command(BaseCommand):
             ]),
             "63": ("Quindío", [
                 "001", "Armenia", "002", "Buenavista", "003", "Calarcá",
-                "004", "Circasia", "005", "Córdoba", "006", "Filandia",
+                "004", "Circasia", "005", MUNICIPALITY_CORDOBA, "006", "Filandia",
                 "007", "Génova", "008", "La Tebaida", "009", "Montenegro",
                 "010", "Pijao", "011", "Quimbaya", "012", "Salento"
             ]),
@@ -338,14 +355,14 @@ class Command(BaseCommand):
             ]),
             "68": ("Santander", [
                 "001", "Bucaramanga", "002", "Aguada", "003", "Albania",
-                "004", "Aratoca", "005", "Barbosa", "006", "Bolívar",
+                "004", "Aratoca", "005", "Barbosa", "006", MUNICIPALITY_BOLIVAR,
                 "007", "Burgos", "008", "Cabrera", "009", "California",
                 "010", "Capitanejo", "011", "Carcasí", "012", "Cepitá",
                 "013", "Cerrito", "014", "Charalá", "015", "Charta",
                 "016", "Chima", "017", "Chipatá", "018", "Cimitarra",
                 "019", "Concepción", "020", "Confines", "021", "Contratación",
                 "022", "Coromoro", "023", "Curití", "024", "El Carmen de Chucurí",
-                "025", "El Guacamayo", "026", "El Peñón", "027", "El Playón",
+                "025", "El Guacamayo", "026", MUNICIPALITY_EL_PENON, "027", "El Playón",
                 "028", "Encino", "029", "Enciso", "030", "Florián",
                 "031", "Floridablanca", "032", "Galán", "033", "Gámbita",
                 "034", "Girón", "035", "Guaca", "036", "Guadalupe",
@@ -360,7 +377,7 @@ class Command(BaseCommand):
                 "061", "Puerto Parra", "062", "Puerto Wilches", "063", "Rionegro",
                 "064", "Sabana de Torres", "065", "San Andrés", "066", "San Benito",
                 "067", "San Gil", "068", "San Joaquín", "069", "San José de Miranda",
-                "070", "San Miguel", "071", "San Vicente de Chucurí", "072", "Santa Bárbara",
+                "070", "San Miguel", "071", "San Vicente de Chucurí", "072", MUNICIPALITY_SANTA_BARBARA,
                 "073", "Santa Helena del Opón", "074", "Simacota", "075", "Socorro",
                 "076", "Suaita", "077", "Sucre", "078", "Suratá",
                 "079", "Tona", "080", "Valle de San José", "081", "Vélez",
@@ -370,11 +387,11 @@ class Command(BaseCommand):
                 "001", "Sincelejo", "002", "Buenavista", "003", "Caimito",
                 "004", "Chalán", "005", "Coloso", "006", "Corozal",
                 "007", "Coveñas", "008", "El Roble", "009", "Galeras",
-                "010", "Guaranda", "011", "La Unión", "012", "Los Palmitos",
+                "010", "Guaranda", "011", MUNICIPALITY_LA_UNION, "012", "Los Palmitos",
                 "013", "Majagual", "014", "Morroa", "015", "Ovejas",
                 "016", "Palmito", "017", "San Antonio de Palmito", "018", "San Benito Abad",
                 "019", "San Juan de Betulia", "020", "San Luis de Sincé", "021", "San Marcos",
-                "022", "San Onofre", "023", "San Pedro", "024", "Sampués",
+                "022", "San Onofre", "023", MUNICIPALITY_SAN_PEDRO, "024", "Sampués",
                 "025", "Santa Cruz de Lorica", "026", "Santiago de Tolú", "027", "Sincé"
             ]),
             "73": ("Tolima", [
@@ -397,16 +414,16 @@ class Command(BaseCommand):
             ]),
             "76": ("Valle del Cauca", [
                 "001", "Cali", "002", "Alcalá", "003", "Andalucía",
-                "004", "Ansermanuevo", "005", "Argelia", "006", "Bolívar",
+                "004", "Ansermanuevo", "005", "Argelia", "006", MUNICIPALITY_BOLIVAR,
                 "007", "Buenaventura", "008", "Buga", "009", "Bugalagrande",
                 "010", "Caicedonia", "011", "Calima", "012", "Candelaria",
                 "013", "Cartago", "014", "Dagua", "015", "El Águila",
                 "016", "El Cairo", "017", "El Cerrito", "018", "El Dovio",
                 "019", "Florida", "020", "Ginebra", "021", "Guacarí",
                 "022", "Guadalajara de Buga", "023", "Jamundí", "024", "La Cumbre",
-                "025", "La Unión", "026", "La Victoria", "027", "Obando",
+                "025", MUNICIPALITY_LA_UNION, "026", MUNICIPALITY_LA_VICTORIA, "027", "Obando",
                 "028", "Palmira", "029", "Pradera", "030", "Restrepo",
-                "031", "Riofrío", "032", "Roldanillo", "033", "San Pedro",
+                "031", "Riofrío", "032", "Roldanillo", "033", MUNICIPALITY_SAN_PEDRO,
                 "034", "Sevilla", "035", "Toro", "036", "Trujillo",
                 "037", "Tuluá", "038", "Ulloa", "039", "Versalles",
                 "040", "Vijes", "041", "Yotoco", "042", "Yumbo",
@@ -429,16 +446,16 @@ class Command(BaseCommand):
             "86": ("Putumayo", [
                 "001", "Mocoa", "002", "Colón", "003", "Leguízamo",
                 "004", "Orito", "005", "Puerto Asís", "006", "Puerto Caicedo",
-                "007", "Puerto Guzmán", "008", "San Francisco", "009", "San Miguel",
+                "007", "Puerto Guzmán", "008", MUNICIPALITY_SAN_FRANCISCO, "009", "San Miguel",
                 "010", "Santiago", "011", "Sibundoy", "012", "Valle del Guamuez",
                 "013", "Villagarzón"
             ]),
             "88": ("Archipiélago de San Andrés", [
-                "001", "San Andrés", "002", "Providencia"
+                "001", MUNICIPALITY_SAN_ANDRES, "002", "Providencia"
             ]),
             "91": ("Amazonas", [
                 "001", "Leticia", "002", "El Encanto", "003", "La Chorrera",
-                "004", "La Pedrera", "005", "La Victoria", "006", "Miriti - Paraná",
+                "004", "La Pedrera", "005", MUNICIPALITY_LA_VICTORIA, "006", "Miriti - Paraná",
                 "007", "Puerto Arica", "008", "Puerto Nariño", "009", "Puerto Santander",
                 "010", "Tarapacá"
             ]),
@@ -465,45 +482,61 @@ class Command(BaseCommand):
         total_mun = 0
         
         for codigo, (nombre_dept, municipios) in data.items():
-            # Crear o obtener el departamento
-            nombre_dept = _normalize_text(nombre_dept)
-            departamento, created = Departamento.objects.get_or_create(
-                codigo=codigo,
-                defaults={'nombre': nombre_dept}
-            )
-
-            if not created and departamento.nombre != nombre_dept:
-                Departamento.objects.filter(pk=departamento.pk).update(nombre=nombre_dept)
-                departamento.refresh_from_db()
-                self.stdout.write(self.style.WARNING(f'• Departamento actualizado: {departamento.nombre}'))
+            departamento, created = self._create_or_update_departamento(codigo, nombre_dept)
             
             if created:
                 self.stdout.write(self.style.SUCCESS(f'" Departamento: {nombre_dept}'))
                 total_dept += 1
             
-            # Crear municipios del departamento (código y nombre están intercalados)
-            i = 0
-            while i < len(municipios):
-                codigo_mun = municipios[i]
-                nombre_mun = municipios[i + 1] if i + 1 < len(municipios) else ""
-                
-                if nombre_mun:  # Solo si hay nombre disponible
-                    nombre_mun = _normalize_text(nombre_mun)
-                    municipio, mun_created = Municipio.objects.get_or_create(
-                        departamento=departamento,
-                        codigo=codigo_mun,
-                        defaults={'nombre': nombre_mun}
-                    )
-
-                    if not mun_created and municipio.nombre != nombre_mun:
-                        Municipio.objects.filter(pk=municipio.pk).update(nombre=nombre_mun)
-                        self.stdout.write(self.style.WARNING(f'  • Municipio actualizado: {nombre_mun}'))
-                    
-                    if mun_created:
-                        total_mun += 1
-                
-                i += 2  # Avanzar dos posiciones (código y nombre)
+            total_mun += self._process_municipios(departamento, municipios)
 
         self.stdout.write(self.style.SUCCESS(f'\n" Seed completado: {total_dept} departamentos, {total_mun} municipios creados.'))
 
+    def _create_or_update_departamento(self, codigo: str, nombre_dept: str) -> tuple:
+        """Crea o actualiza un departamento."""
+        nombre_dept = _normalize_text(nombre_dept)
+        departamento, created = Departamento.objects.get_or_create(
+            codigo=codigo,
+            defaults={'nombre': nombre_dept}
+        )
 
+        if not created and departamento.nombre != nombre_dept:
+            Departamento.objects.filter(pk=departamento.pk).update(nombre=nombre_dept)
+            departamento.refresh_from_db()
+            self.stdout.write(self.style.WARNING(f'• Departamento actualizado: {departamento.nombre}'))
+        
+        return departamento, created
+    
+    def _create_or_update_municipio(self, departamento, codigo_mun: str, nombre_mun: str) -> bool:
+        """Crea o actualiza un municipio."""
+        if not nombre_mun:
+            return False
+        
+        nombre_mun = _normalize_text(nombre_mun)
+        municipio, mun_created = Municipio.objects.get_or_create(
+            departamento=departamento,
+            codigo=codigo_mun,
+            defaults={'nombre': nombre_mun}
+        )
+
+        if not mun_created and municipio.nombre != nombre_mun:
+            Municipio.objects.filter(pk=municipio.pk).update(nombre=nombre_mun)
+            self.stdout.write(self.style.WARNING(f'  • Municipio actualizado: {nombre_mun}'))
+        
+        return mun_created
+    
+    def _process_municipios(self, departamento, municipios: list) -> int:
+        """Procesa los municipios de un departamento."""
+        total_mun = 0
+        i = 0
+        
+        while i < len(municipios):
+            codigo_mun = municipios[i]
+            nombre_mun = municipios[i + 1] if i + 1 < len(municipios) else ""
+            
+            if self._create_or_update_municipio(departamento, codigo_mun, nombre_mun):
+                total_mun += 1
+            
+            i += 2
+        
+        return total_mun

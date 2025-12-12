@@ -9,6 +9,35 @@ from .logs import get_ml_logger
 logger = get_ml_logger("cacaoscan.ml.utils.early_stopping")
 
 
+def _calcular_min_delta(best_val_loss: float, min_delta_percent: float) -> float:
+    """Calcula el delta mínimo requerido para considerar una mejora."""
+    return abs(best_val_loss * min_delta_percent)
+
+
+def _es_mejora(val_loss: float, best_val_loss: float, min_delta: float) -> bool:
+    """Verifica si val_loss es una mejora sobre best_val_loss."""
+    if best_val_loss < 0:
+        return val_loss > best_val_loss + min_delta
+    return val_loss < best_val_loss - min_delta
+
+
+def _es_empeoramiento(val_loss: float, last_val_loss: float) -> bool:
+    """Verifica si la pérdida está empeorando."""
+    if last_val_loss < 0:
+        return val_loss < last_val_loss
+    return val_loss > last_val_loss
+
+
+def _calcular_mejora(val_loss: float, old_best: float) -> Tuple[str, float]:
+    """Calcula la dirección y magnitud de la mejora."""
+    improvement = abs(val_loss - old_best)
+    if old_best < 0:
+        direction = "improved" if val_loss > old_best else "changed"
+    else:
+        direction = "improved" if val_loss < old_best else "changed"
+    return direction, improvement
+
+
 class IntelligentEarlyStopping:
     """
     Early stopping with advanced rules:
@@ -49,7 +78,7 @@ class IntelligentEarlyStopping:
         self.counter = 0
         
         # Track consecutive epochs with low R²
-        self.low_r2_count: Dict[str, int] = {target: 0 for target in self.TARGETS}
+        self.low_r2_count: Dict[str, int] = dict.fromkeys(self.TARGETS, 0)
         
         # Track consecutive epochs with increasing val_loss
         self.val_loss_increase_count = 0
@@ -61,6 +90,86 @@ class IntelligentEarlyStopping:
             f"r2_threshold={r2_threshold}, r2_consecutive={r2_consecutive}, "
             f"val_loss_increase_epochs={val_loss_increase_epochs}"
         )
+    
+    def _check_improvement(self, val_loss: float) -> bool:
+        """Check if current loss is better than best loss."""
+        if self.best_val_loss == float('inf'):
+            return True
+        
+        min_delta = _calcular_min_delta(self.best_val_loss, self.min_delta_percent)
+        return _es_mejora(val_loss, self.best_val_loss, min_delta)
+    
+    def _check_low_r2(self, r2_scores: Dict[str, float]) -> bool:
+        """Check for low R² scores and update counters."""
+        should_reduce_lr = False
+        
+        for target in self.TARGETS:
+            r2 = r2_scores.get(target, -float('inf'))
+            if r2 < self.r2_threshold:
+                self.low_r2_count[target] += 1
+                if self.low_r2_count[target] >= self.r2_consecutive:
+                    should_reduce_lr = True
+                    logger.warning(
+                        f"Target {target} has R² < {self.r2_threshold} for "
+                        f"{self.low_r2_count[target]} consecutive epochs. "
+                        f"Triggering LR reduction."
+                    )
+            else:
+                self.low_r2_count[target] = 0
+        
+        return should_reduce_lr
+    
+    def _check_val_loss_increase(self, val_loss: float) -> bool:
+        """Check if validation loss is increasing."""
+        if self.last_val_loss == float('inf'):
+            return False
+        
+        is_worsening = _es_empeoramiento(val_loss, self.last_val_loss)
+        
+        if is_worsening:
+            self.val_loss_increase_count += 1
+            if self.val_loss_increase_count >= self.val_loss_increase_epochs:
+                logger.warning(
+                    f"Val loss worsened for {self.val_loss_increase_count} consecutive epochs. "
+                    f"Triggering rollback to best checkpoint."
+                )
+                return True
+        else:
+            self.val_loss_increase_count = 0
+        
+        return False
+    
+    def _update_best_model(self, epoch: int, val_loss: float, is_best: bool) -> None:
+        """Update best model state."""
+        if is_best:
+            old_best = self.best_val_loss
+            self.best_val_loss = val_loss
+            self.best_epoch = epoch
+            self.counter = 0
+            
+            if old_best == float('inf'):
+                logger.info(
+                    f"Epoch {epoch}: Initial best model (val_loss={val_loss:.4f})"
+                )
+            else:
+                direction, improvement = _calcular_mejora(val_loss, old_best)
+                logger.info(
+                    f"Epoch {epoch}: New best model (val_loss={val_loss:.4f}, "
+                    f"previous={old_best:.4f}, {direction} by {improvement:.4f})"
+                )
+        else:
+            self.counter += 1
+            logger.debug(
+                f"Epoch {epoch}: No improvement (counter={self.counter}/{self.patience})"
+            )
+    
+    def _reduce_learning_rate(self, optimizer: object) -> None:
+        """Reduce learning rate by half."""
+        current_lr = optimizer.param_groups[0]['lr']
+        new_lr = current_lr * 0.5
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = new_lr
+        logger.info(f"LR reduced from {current_lr:.2e} to {new_lr:.2e}")
     
     def __call__(
         self,
@@ -81,95 +190,16 @@ class IntelligentEarlyStopping:
         Returns:
             Tuple of (should_stop, is_best, should_reduce_lr, should_rollback)
         """
-        should_reduce_lr = False
-        should_rollback = False
-        
-        # Check minimum improvement (1%)
-        # Handle initial case when best_val_loss is inf
-        if self.best_val_loss == float('inf'):
-            # First epoch: any finite loss is considered best
-            is_best = True
-            min_delta = 0.0
-        else:
-            # Calculate min_delta based on absolute value to handle negative losses
-            min_delta = abs(self.best_val_loss * self.min_delta_percent)
-            
-            # For negative losses: less negative (closer to zero) is better
-            # For positive losses: smaller is better
-            if self.best_val_loss < 0:
-                # Negative loss: we want val_loss > best_val_loss (less negative)
-                is_best = val_loss > self.best_val_loss + min_delta
-            else:
-                # Positive loss: we want val_loss < best_val_loss (smaller)
-                is_best = val_loss < self.best_val_loss - min_delta
-        
-        # Check for low R² (consecutive epochs)
-        for target in self.TARGETS:
-            r2 = r2_scores.get(target, -float('inf'))
-            if r2 < self.r2_threshold:
-                self.low_r2_count[target] += 1
-                if self.low_r2_count[target] >= self.r2_consecutive:
-                    should_reduce_lr = True
-                    logger.warning(
-                        f"Target {target} has R² < {self.r2_threshold} for "
-                        f"{self.low_r2_count[target]} consecutive epochs. "
-                        f"Triggering LR reduction."
-                    )
-            else:
-                self.low_r2_count[target] = 0
-        
-        # Check for increasing val_loss (worsening)
-        # Skip check on first epoch (last_val_loss is inf)
-        if self.last_val_loss != float('inf'):
-            # For negative losses: more negative (worse) means val_loss < last_val_loss
-            # For positive losses: larger (worse) means val_loss > last_val_loss
-            if (self.last_val_loss < 0 and val_loss < self.last_val_loss) or \
-               (self.last_val_loss >= 0 and val_loss > self.last_val_loss):
-                self.val_loss_increase_count += 1
-                if self.val_loss_increase_count >= self.val_loss_increase_epochs:
-                    should_rollback = True
-                    logger.warning(
-                        f"Val loss worsened for {self.val_loss_increase_count} consecutive epochs. "
-                        f"Triggering rollback to best checkpoint."
-                    )
-            else:
-                self.val_loss_increase_count = 0
+        is_best = self._check_improvement(val_loss)
+        should_reduce_lr = self._check_low_r2(r2_scores)
+        should_rollback = self._check_val_loss_increase(val_loss)
         
         self.last_val_loss = val_loss
+        self._update_best_model(epoch, val_loss, is_best)
         
-        # Update best model
-        if is_best:
-            old_best = self.best_val_loss
-            self.best_val_loss = val_loss
-            self.best_epoch = epoch
-            self.counter = 0
-            
-            if old_best == float('inf'):
-                logger.info(
-                    f"Epoch {epoch}: Initial best model (val_loss={val_loss:.4f})"
-                )
-            else:
-                improvement = abs(val_loss - old_best)
-                direction = "improved" if (old_best < 0 and val_loss > old_best) or (old_best >= 0 and val_loss < old_best) else "changed"
-                logger.info(
-                    f"Epoch {epoch}: New best model (val_loss={val_loss:.4f}, "
-                    f"previous={old_best:.4f}, {direction} by {improvement:.4f})"
-                )
-        else:
-            self.counter += 1
-            logger.debug(
-                f"Epoch {epoch}: No improvement (counter={self.counter}/{self.patience})"
-            )
-        
-        # Reduce LR if needed
         if should_reduce_lr and optimizer is not None:
-            current_lr = optimizer.param_groups[0]['lr']
-            new_lr = current_lr * 0.5
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = new_lr
-            logger.info(f"LR reduced from {current_lr:.2e} to {new_lr:.2e}")
+            self._reduce_learning_rate(optimizer)
         
-        # Check if should stop
         should_stop = self.counter >= self.patience
         
         if should_stop:
@@ -186,7 +216,7 @@ class IntelligentEarlyStopping:
         self.best_val_loss = float('inf')
         self.best_epoch = 0
         self.counter = 0
-        self.low_r2_count = {target: 0 for target in self.TARGETS}
+        self.low_r2_count = dict.fromkeys(self.TARGETS, 0)
         self.val_loss_increase_count = 0
         self.last_val_loss = float('inf')
         logger.info("Early stopping state reset")

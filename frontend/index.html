@@ -12,13 +12,17 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Google Identity Services (GSI) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
     <meta name="description" content="Panel de control para agricultores de cacao - Sistema de análisis y clasificación de granos">
   </head>
   <body>
     <div id="app"></div>
     <!-- Runtime configuration script (inyectado por start-nginx.sh si está disponible) -->
     <!-- IMPORTANTE: Sin defer para que se cargue ANTES de main.js -->
-    <script src="/config.js"></script>
+    <!-- En desarrollo, este archivo existe vacío en public/config.js -->
+    <script src="/config.js" onerror="console.log('ℹ️ [Config] config.js no encontrado, usando configuración por defecto')"></script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

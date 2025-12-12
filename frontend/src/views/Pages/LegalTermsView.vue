@@ -277,7 +277,7 @@
     <template #actions>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <router-link
-          to="/registro"
+          :to="{ path: '/registro', query: { acceptTerms: 'true' } }"
           class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] focus:ring-4 focus:ring-green-300"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -302,8 +302,15 @@
 <script setup>
 import LegalLayout from '@/components/legal/LegalLayout.vue'
 
-// Vista de términos y condiciones con contenido estático y navegación interna
-// No requiere llamadas al backend - todo el contenido está en el frontend
+/**
+ * Vista de Términos y Condiciones
+ * 
+ * Esta vista muestra los términos y condiciones de uso de la plataforma CacaoScan.
+ * El contenido es completamente estático y se renderiza en el frontend, por lo que
+ * no requiere llamadas al backend. Incluye navegación interna mediante anclas HTML.
+ * 
+ * @component LegalTermsView
+ */
 </script>
 
 <style scoped>

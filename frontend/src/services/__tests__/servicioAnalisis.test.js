@@ -1,0 +1,168 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import servicioAnalisis from '../servicioAnalisis'
+
+vi.mock('../api', () => ({
+  default: {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn()
+  }
+}))
+
+// Import after mock to get the mocked version
+import api from '../api'
+
+vi.mock('@/utils/apiResponse', () => ({
+  normalizeResponse: (data) => data.results || data || []
+}))
+
+describe('servicioAnalisis', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('getAnalisis', () => {
+    it('should fetch analisis successfully', async () => {
+      const mockResponse = {
+        data: {
+          results: [
+            { id: 1, tipo_analisis: 'Calidad', calidad: 85 },
+            { id: 2, tipo_analisis: 'Defectos', calidad: 90 }
+          ],
+          count: 2
+        }
+      }
+      vi.mocked(api.get).mockResolvedValue(mockResponse)
+
+      const result = await servicioAnalisis.getAnalisis({ page: 1 })
+
+      expect(api.get).toHaveBeenCalledWith('/analisis/', { params: { page: 1 } })
+      expect(result).toBeDefined()
+    })
+
+    it('should handle error when fetching analisis', async () => {
+      const error = new Error('Network error')
+      vi.mocked(api.get).mockRejectedValue(error)
+
+      await expect(servicioAnalisis.getAnalisis()).rejects.toThrow('Network error')
+    })
+  })
+
+  describe('createAnalisis', () => {
+    it('should create analisis successfully', async () => {
+      const analisisData = {
+        tipo_analisis: 'Calidad',
+        calidad: 85,
+        imagen: 'image.jpg'
+      }
+      const mockResponse = {
+        data: { id: 1, ...analisisData }
+      }
+      vi.mocked(api.post).mockResolvedValue(mockResponse)
+
+      const result = await servicioAnalisis.createAnalisis(analisisData)
+
+      expect(api.post).toHaveBeenCalledWith('/analisis/', analisisData)
+      expect(result).toEqual(mockResponse.data)
+    })
+
+    it('should handle error when creating analisis', async () => {
+      const error = new Error('Validation error')
+      vi.mocked(api.post).mockRejectedValue(error)
+
+      await expect(servicioAnalisis.createAnalisis({})).rejects.toThrow('Validation error')
+    })
+  })
+
+  describe('getAnalisisById', () => {
+    it('should fetch analisis by id successfully', async () => {
+      const mockResponse = {
+        data: { id: 1, tipo_analisis: 'Calidad', calidad: 85 }
+      }
+      vi.mocked(api.get).mockResolvedValue(mockResponse)
+
+      const result = await servicioAnalisis.getAnalisisById(1)
+
+      expect(api.get).toHaveBeenCalledWith('/analisis/1/')
+      expect(result).toEqual(mockResponse.data)
+    })
+
+    it('should handle error when fetching analisis by id', async () => {
+      const error = new Error('Not found')
+      vi.mocked(api.get).mockRejectedValue(error)
+
+      await expect(servicioAnalisis.getAnalisisById(999)).rejects.toThrow('Not found')
+    })
+  })
+
+  describe('updateAnalisis', () => {
+    it('should update analisis successfully', async () => {
+      const analisisData = { calidad: 90 }
+      const mockResponse = {
+        data: { id: 1, ...analisisData }
+      }
+      vi.mocked(api.put).mockResolvedValue(mockResponse)
+
+      const result = await servicioAnalisis.updateAnalisis(1, analisisData)
+
+      expect(api.put).toHaveBeenCalledWith('/analisis/1/', analisisData)
+      expect(result).toEqual(mockResponse.data)
+    })
+
+    it('should handle error when updating analisis', async () => {
+      const error = new Error('Update error')
+      vi.mocked(api.put).mockRejectedValue(error)
+
+      await expect(servicioAnalisis.updateAnalisis(1, {})).rejects.toThrow('Update error')
+    })
+  })
+
+  describe('deleteAnalisis', () => {
+    it('should delete analisis successfully', async () => {
+      const mockResponse = {
+        data: { success: true }
+      }
+      vi.mocked(api.delete).mockResolvedValue(mockResponse)
+
+      const result = await servicioAnalisis.deleteAnalisis(1)
+
+      expect(api.delete).toHaveBeenCalledWith('/analisis/1/')
+      expect(result).toEqual(mockResponse.data)
+    })
+
+    it('should handle error when deleting analisis', async () => {
+      const error = new Error('Delete error')
+      vi.mocked(api.delete).mockRejectedValue(error)
+
+      await expect(servicioAnalisis.deleteAnalisis(1)).rejects.toThrow('Delete error')
+    })
+  })
+
+  describe('getAnalisisStats', () => {
+    it('should get analisis stats successfully', async () => {
+      const mockResponse = {
+        data: {
+          total_analisis: 100,
+          calidad_promedio: 85,
+          analisis_por_tipo: {}
+        }
+      }
+      vi.mocked(api.get).mockResolvedValue(mockResponse)
+
+      const result = await servicioAnalisis.getAnalisisStats()
+
+      expect(api.get).toHaveBeenCalledWith('/analisis/stats/')
+      expect(result).toEqual(mockResponse.data)
+    })
+
+    it('should handle error when getting stats', async () => {
+      const error = new Error('Stats error')
+      vi.mocked(api.get).mockRejectedValue(error)
+
+      await expect(servicioAnalisis.getAnalisisStats()).rejects.toThrow('Stats error')
+    })
+  })
+})
+

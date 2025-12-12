@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/services/api'
+import { downloadFileFromResponse } from '@/utils/fileExportUtils'
 
 export const useAuditStore = defineStore('audit', {
   state: () => ({
@@ -43,15 +44,13 @@ export const useAuditStore = defineStore('audit', {
     },
 
     getRecentActivityLogs: (state) => (limit = 10) => {
-      return state.activityLogs
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, limit)
+      const sorted = [...state.activityLogs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      return sorted.slice(0, limit)
     },
 
     getRecentLogins: (state) => (limit = 10) => {
-      return state.loginHistory
-        .sort((a, b) => new Date(b.login_time) - new Date(a.login_time))
-        .slice(0, limit)
+      const sorted = [...state.loginHistory].sort((a, b) => new Date(b.login_time) - new Date(a.login_time))
+      return sorted.slice(0, limit)
     },
 
     getFailedLogins: (state) => {
@@ -102,7 +101,6 @@ export const useAuditStore = defineStore('audit', {
         return response
       } catch (error) {
         this.error = error.response?.data?.detail || 'Error al cargar logs de actividad'
-        console.error('Error fetching activity logs:', error)
         throw error
       } finally {
         this.loading = false
@@ -127,7 +125,6 @@ export const useAuditStore = defineStore('audit', {
         return response
       } catch (error) {
         this.error = error.response?.data?.detail || 'Error al cargar historial de logins'
-        console.error('Error fetching login history:', error)
         throw error
       } finally {
         this.loading = false
@@ -140,7 +137,6 @@ export const useAuditStore = defineStore('audit', {
         this.stats = response.data
         return response
       } catch (error) {
-        console.error('Error fetching audit stats:', error)
         throw error
       }
     },
@@ -154,37 +150,11 @@ export const useAuditStore = defineStore('audit', {
           responseType: 'blob'
         })
 
-        // Crear URL para descarga
-        const blob = new Blob([response.data])
-        const url = window.URL.createObjectURL(blob)
-        
-        // Crear enlace temporal para descarga
-        const link = document.createElement('a')
-        link.href = url
-        
-        // Obtener nombre del archivo del header
-        const contentDisposition = response.headers['content-disposition']
-        let filename = 'auditoria_exportada.xlsx'
-        
-        if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename="(.+)"/)
-          if (filenameMatch) {
-            filename = filenameMatch[1]
-          }
-        }
-        
-        link.download = filename
-        document.body.appendChild(link)
-        link.click()
-        
-        // Limpiar
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
+        downloadFileFromResponse(response, 'auditoria_exportada.xlsx')
 
         return true
       } catch (error) {
         this.error = error.response?.data?.detail || 'Error al exportar datos de auditoría'
-        console.error('Error exporting audit data:', error)
         throw error
       } finally {
         this.loading = false
@@ -196,7 +166,6 @@ export const useAuditStore = defineStore('audit', {
         const response = await api.get(`/audit/activity-logs/${id}/`)
         return response
       } catch (error) {
-        console.error('Error getting activity log details:', error)
         throw error
       }
     },
@@ -206,7 +175,6 @@ export const useAuditStore = defineStore('audit', {
         const response = await api.get(`/audit/login-history/${id}/`)
         return response
       } catch (error) {
-        console.error('Error getting login history details:', error)
         throw error
       }
     },
@@ -216,7 +184,6 @@ export const useAuditStore = defineStore('audit', {
         const response = await api.get('/audit/summary/', { params })
         return response
       } catch (error) {
-        console.error('Error getting audit summary:', error)
         throw error
       }
     },
@@ -226,7 +193,6 @@ export const useAuditStore = defineStore('audit', {
         const response = await api.get('/audit/security-alerts/')
         return response
       } catch (error) {
-        console.error('Error getting security alerts:', error)
         throw error
       }
     },
@@ -236,7 +202,6 @@ export const useAuditStore = defineStore('audit', {
         const response = await api.get('/audit/suspicious-activity/')
         return response
       } catch (error) {
-        console.error('Error getting suspicious activity:', error)
         throw error
       }
     },
@@ -246,7 +211,6 @@ export const useAuditStore = defineStore('audit', {
         const response = await api.post('/audit/generate-report/', params)
         return response
       } catch (error) {
-        console.error('Error generating audit report:', error)
         throw error
       }
     },
@@ -258,7 +222,6 @@ export const useAuditStore = defineStore('audit', {
         })
         return response
       } catch (error) {
-        console.error('Error clearing old logs:', error)
         throw error
       }
     },
@@ -268,7 +231,6 @@ export const useAuditStore = defineStore('audit', {
         const response = await api.get('/audit/dashboard/')
         return response
       } catch (error) {
-        console.error('Error getting audit dashboard:', error)
         throw error
       }
     },

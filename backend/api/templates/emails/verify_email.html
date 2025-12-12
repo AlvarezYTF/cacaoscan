@@ -6,90 +6,78 @@
     <title>Verifica tu correo - CacaoScan</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
-    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f5f5f5;">
-        <tr>
-            <td align="center" style="padding: 40px 20px;">
-                <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <!-- Header con logo -->
-                    <tr>
-                        <td style="padding: 40px 40px 20px 40px; text-align: center; background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); border-radius: 8px 8px 0 0;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                CacaoScan
-                            </h1>
-                            <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 14px; opacity: 0.9;">
-                                Proyecto SENNOVA · SENA Guaviare
-                            </p>
-                        </td>
-                    </tr>
-                    
-                    <!-- Contenido principal -->
-                    <tr>
-                        <td style="padding: 40px;">
-                            <h2 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 24px; font-weight: 600;">
-                                ¡Verifica tu cuenta!
-                            </h2>
-                            
-                            <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
-                                Hola <strong>{{ user_name }}</strong>,
-                            </p>
-                            
-                            <p style="margin: 0 0 30px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
-                                Gracias por registrarte en <strong>CacaoScan</strong>. Para completar tu registro y activar tu cuenta, por favor verifica tu dirección de correo electrónico haciendo clic en el siguiente botón:
-                            </p>
-                            
-                            <!-- Botón de verificación -->
-                            <table role="presentation" style="width: 100%; border-collapse: collapse; margin: 30px 0;">
-                                <tr>
-                                    <td align="center" style="padding: 0;">
-                                        <a href="{{ verification_url }}" style="display: inline-block; padding: 16px 40px; background-color: #16a34a; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(22, 163, 74, 0.3); transition: all 0.3s ease;">
-                                            Verificar mi correo
-                                        </a>
-                                    </td>
-                                </tr>
-                            </table>
-                            
-                            <p style="margin: 30px 0 20px 0; color: #718096; font-size: 14px; line-height: 1.6;">
-                                O copia y pega este enlace en tu navegador:
-                            </p>
-                            
-                            <p style="margin: 0 0 30px 0; padding: 15px; background-color: #f7fafc; border-left: 4px solid #16a34a; color: #2d3748; font-size: 14px; word-break: break-all; font-family: 'Courier New', monospace;">
-                                {{ verification_url }}
-                            </p>
-                            
-                            <!-- Información de expiración -->
-                            <div style="margin: 30px 0; padding: 15px; background-color: #fff4e6; border-left: 4px solid #ffa726; border-radius: 4px;">
-                                <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
-                                    <strong>[WARN] Importante:</strong> Este enlace expirará en 24 horas por seguridad.
-                                </p>
-                            </div>
-                            
-                            <p style="margin: 30px 0 0 0; color: #a0aec0; font-size: 14px; line-height: 1.6;">
-                                Si no creaste esta cuenta, puedes ignorar este correo de forma segura.
-                            </p>
-                        </td>
-                    </tr>
-                    
-                    <!-- Footer -->
-                    <tr>
-                        <td style="padding: 30px 40px; background-color: #f7fafc; border-radius: 0 0 8px 8px; border-top: 1px solid #e2e8f0;">
-                            <p style="margin: 0 0 10px 0; color: #718096; font-size: 14px; text-align: center; line-height: 1.6;">
-                                <strong>Equipo CacaoScan</strong>
-                            </p>
-                            <p style="margin: 0; color: #a0aec0; font-size: 12px; text-align: center; line-height: 1.6;">
-                                Proyecto SENNOVA · SENA Guaviare<br>
-                                <a href="{{ frontend_url }}" style="color: #16a34a; text-decoration: none;">{{ frontend_url }}</a>
-                            </p>
-                        </td>
-                    </tr>
-                </table>
+    <div style="padding: 40px 20px; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
+                <!-- Header con logo -->
+                <div style="padding: 40px 40px 20px 40px; text-align: center; background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); border-radius: 8px 8px 0 0;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        CacaoScan
+                    </h1>
+                    <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 14px; opacity: 0.9;">
+                        Proyecto SENNOVA · SENA Guaviare
+                    </p>
+                </div>
                 
-                <!-- Footer adicional -->
-                <p style="margin: 20px 0 0 0; color: #a0aec0; font-size: 12px; text-align: center;">
-                    Este es un correo automático, por favor no respondas a este mensaje.
-                </p>
-            </td>
-        </tr>
-    </table>
+                <!-- Contenido principal -->
+                <div style="padding: 40px;">
+                    <h2 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 24px; font-weight: 600;">
+                        ¡Verifica tu cuenta!
+                    </h2>
+                    
+                    <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                        Hola <strong>{{ user_name }}</strong>,
+                    </p>
+                    
+                    <p style="margin: 0 0 30px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                        Gracias por registrarte en <strong>CacaoScan</strong>. Para completar tu registro y activar tu cuenta, por favor verifica tu dirección de correo electrónico haciendo clic en el siguiente botón:
+                    </p>
+                    
+                    <!-- Botón de verificación -->
+                    <div style="margin: 30px 0; text-align: center;">
+                        <a href="{{ verification_url }}" style="display: inline-block; padding: 16px 40px; background-color: #064e3b; color: #f0fdf4; border: 1px solid #022c22; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(6, 78, 59, 0.35); transition: all 0.3s ease;">
+                            Verificar mi correo
+                        </a>
+                    </div>
+                    
+                    <p style="margin: 30px 0 20px 0; color: #718096; font-size: 14px; line-height: 1.6;">
+                        O copia y pega este enlace en tu navegador:
+                    </p>
+                    
+                    <p style="margin: 0 0 30px 0; padding: 15px; background-color: #f7fafc; border-left: 4px solid #16a34a; color: #2d3748; font-size: 14px; word-break: break-all; font-family: 'Courier New', monospace;">
+                        {{ verification_url }}
+                    </p>
+                    
+                    <!-- Información de expiración -->
+                    <div style="margin: 30px 0; padding: 15px; background-color: #fff4e6; border-left: 4px solid #ffa726; border-radius: 4px;">
+                        <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                            <strong>[WARN] Importante:</strong> Este enlace expirará en 24 horas por seguridad.
+                        </p>
+                    </div>
+                    
+                    <p style="margin: 30px 0 0 0; color: #a0aec0; font-size: 14px; line-height: 1.6;">
+                        Si no creaste esta cuenta, puedes ignorar este correo de forma segura.
+                    </p>
+                </div>
+                
+                <!-- Footer -->
+                <div style="padding: 30px 40px; background-color: #f7fafc; border-radius: 0 0 8px 8px; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0 0 10px 0; color: #718096; font-size: 14px; text-align: center; line-height: 1.6;">
+                        <strong>Equipo CacaoScan</strong>
+                    </p>
+                    <p style="margin: 0; color: #a0aec0; font-size: 12px; text-align: center; line-height: 1.6;">
+                        Proyecto SENNOVA · SENA Guaviare<br>
+                        <a href="{{ frontend_url }}" style="color: #16a34a; text-decoration: none;">{{ frontend_url }}</a>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Footer adicional -->
+            <p style="margin: 20px 0 0 0; color: #a0aec0; font-size: 12px; text-align: center;">
+                Este es un correo automático, por favor no respondas a este mensaje.
+            </p>
+        </div>
+    </div>
 </body>
 </html>
 

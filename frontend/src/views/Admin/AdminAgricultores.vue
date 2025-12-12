@@ -13,7 +13,7 @@
     />
     
     <!-- Contenido principal -->
-    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'">
+    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'" data-cy="admin-agricultores">
       <!-- Page Header -->
       <div class="mb-8">
         <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
@@ -25,8 +25,8 @@
                 </svg>
               </div>
               <div>
-                <h1 class="text-3xl font-bold text-gray-900">Gestión de Agricultores</h1>
-                <p class="text-gray-600 mt-1">Administra todos los agricultores y fincas del sistema</p>
+                <h1 class="text-3xl font-bold text-gray-900">Gestión de Cacaocultores</h1>
+                <p class="text-gray-600 mt-1">Administra todos los cacaocultores y fincas del sistema</p>
               </div>
             </div>
             <!-- Acciones principales -->
@@ -39,7 +39,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                Reporte Agricultores
+                Reporte Cacaocultores
               </button>
               <button 
                 @click="handleNewFarmer"
@@ -49,7 +49,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
-                Nuevo Agricultor
+                Nuevo Cacaocultor
               </button>
             </div>
           </div>
@@ -71,7 +71,7 @@
           :placeholder="searchPlaceholder"
         />
 
-        <!-- Tabla de agricultores -->
+        <!-- Tabla de cacaocultores -->
         <FarmersTable 
           :filtered-farmers="displayedFarmers"
           :search-query="searchQuery"
@@ -91,13 +91,13 @@
       </main>
     </div>
 
-    <!-- Modal para crear agricultor -->
+    <!-- Modal para crear cacaocultor -->
     <CreateFarmerModal 
       ref="createFarmerModalRef"
       @farmer-created="handleFarmerCreated"
     />
 
-    <!-- Modal para ver detalles del agricultor -->
+    <!-- Modal para ver detalles del cacaocultor -->
     <FarmerDetailModal 
       ref="farmerDetailModalRef"
       :farmer="selectedFarmer"
@@ -116,10 +116,11 @@
 
 <script setup>
 // 1. Vue core
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { usePagination } from '@/composables/usePagination'
 
 // 2. Vue router
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 // 3. Components
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue'
@@ -140,7 +141,6 @@ import reportsApi from '@/services/reportsApi'
 
 // 6. Utils
 import Swal from 'sweetalert2'
-import { useRoute } from 'vue-router'
 
 // Router y store
 const router = useRouter()
@@ -149,10 +149,12 @@ const authStore = useAuthStore()
 
 // Estado reactivo
 const searchQuery = ref('')
-const currentPage = ref(1)
 const loading = ref(false)
 const allFincas = ref([])
 const isSidebarCollapsed = ref(false)
+
+// Paginación usando composable
+const pagination = usePagination(1, 10)
 
 // Props para AdminSidebar
 const brandName = computed(() => 'CacaoScan')
@@ -199,120 +201,142 @@ const editFarmerModalRef = ref(null)
 const selectedFarmer = ref(null)
 const selectedFarmerForEdit = ref(null)
 
+// Helper functions
+const getUserInitials = (user) => {
+  const names = user.first_name?.split(' ') || user.username?.split(' ') || []
+  return names.length >= 2 
+    ? `${names[0].charAt(0)}${names[1].charAt(0)}`.toUpperCase()
+    : user.username?.substring(0, 2).toUpperCase() || 'AA'
+}
+
+const createFarmerFromUser = (user) => {
+  // Obtener región desde persona.departamento_info.nombre o persona.municipio.departamento.nombre
+  let region = 'No especificada'
+  if (user.persona?.departamento_info?.nombre) {
+    region = user.persona.departamento_info.nombre
+  } else if (user.persona?.municipio_info?.departamento?.nombre) {
+    region = user.persona.municipio_info.departamento.nombre
+  } else if (user.persona?.municipio?.departamento?.nombre) {
+    region = user.persona.municipio.departamento.nombre
+  } else if (typeof user.region === 'string' && user.region) {
+    // Fallback: si viene como string (nombre), usarlo
+    region = user.region
+  } else if (typeof user.region === 'number') {
+    // Si viene como ID, no podemos resolverlo aquí, dejarlo como "No especificada"
+    region = 'No especificada'
+  }
+  
+  return {
+    id: user.id,
+    initials: getUserInitials(user),
+    name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+    email: user.email,
+    farm: 'Sin finca',
+    hectares: '0 hectáreas',
+    region: region,
+    status: user.is_active ? 'Activo' : 'Inactivo',
+    is_active: user.is_active || false,
+    isUpdating: false,
+    fincas: []
+  }
+}
+
+const isFarmer = (user) => {
+  return user.role === 'farmer' || (!user.is_superuser && !user.is_staff && !user.is_admin)
+}
+
+const addUsersToMap = (users, agricultoresMap) => {
+  if (!users) return
+  
+  for (const user of users) {
+    if (isFarmer(user)) {
+      agricultoresMap.set(user.id, createFarmerFromUser(user))
+    }
+  }
+}
+
+const getAgricultorIdsFromFincas = (fincas) => {
+  if (!fincas) return []
+  
+  return Array.from(new Set(
+    fincas
+      .map(f => f.agricultor_id || (f.agricultor?.id) || (typeof f.agricultor === 'number' ? f.agricultor : null))
+      .filter(Boolean)
+  ))
+}
+
+const loadUsersFallback = async (fincas, agricultoresMap) => {
+  const ids = getAgricultorIdsFromFincas(fincas)
+  if (!ids.length) return
+  
+  try {
+    const usersById = await Promise.all(ids.map(id => authApi.getUser(id).catch(() => null)))
+    for (const user of usersById) {
+      if (user) {
+        agricultoresMap.set(user.id, createFarmerFromUser(user))
+      }
+    }
+  } catch (e) {
+    }
+}
+
+const getAgricultorIdFromFinca = (finca) => {
+  return finca.agricultor_id || finca.agricultor?.id || (typeof finca.agricultor === 'number' ? finca.agricultor : null)
+}
+
+const updateFarmerWithFinca = (existingFarmer, finca) => {
+  if (existingFarmer.fincas.length === 0) {
+    existingFarmer.farm = finca.nombre
+    existingFarmer.hectares = `${finca.hectareas} hectáreas`
+    // Usar departamento_nombre si está disponible, si no, mantener la región existente
+    if (finca.departamento_nombre) {
+      existingFarmer.region = finca.departamento_nombre
+    } else if (typeof finca.departamento === 'string' && finca.departamento) {
+      // Si departamento viene como string (nombre), usarlo
+      existingFarmer.region = finca.departamento
+    }
+    // Si finca.departamento es un número (ID), no lo usamos, mantenemos la región existente
+    existingFarmer.status = finca.activa ? 'Activo' : 'Inactivo'
+  }
+  existingFarmer.fincas.push(finca)
+}
+
+const updateFarmersWithFincas = (fincas, agricultoresMap) => {
+  if (!fincas) return
+  
+  for (const finca of fincas) {
+    const agricultorId = getAgricultorIdFromFinca(finca)
+    if (!agricultorId) continue
+    
+    const existingFarmer = agricultoresMap.get(agricultorId)
+    if (existingFarmer) {
+      updateFarmerWithFinca(existingFarmer, finca)
+    }
+  }
+}
+
 // Función para cargar agricultores desde el backend
 const loadFarmers = async () => {
   loading.value = true
   try {
-    // Obtener usuarios y fincas simultáneamente
     const [usersResponse, fincasResponse] = await Promise.all([
       authApi.getUsers({ role: 'farmer' }),
       getFincas({ page_size: 100 })
     ])
     
-    // Crear un mapa de agricultores
     const agricultoresMap = new Map()
     
-    // Primero, agregar todos los agricultores (con o sin fincas)
-    if (usersResponse.results) {
-      for (const user of usersResponse.results) {
-        // Filtrar solo agricultores (no admin, no staff)
-        if (user.role === 'farmer' || (!user.is_superuser && !user.is_staff && !user.is_admin)) {
-          // Obtener iniciales
-          const names = user.first_name?.split(' ') || user.username?.split(' ') || []
-          const initials = names.length >= 2 
-            ? `${names[0].charAt(0)}${names[1].charAt(0)}`.toUpperCase()
-            : user.username?.substring(0, 2).toUpperCase() || 'AA'
-          
-          agricultoresMap.set(user.id, {
-            id: user.id,
-            initials,
-            name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
-            email: user.email,
-            farm: 'Sin finca',
-            hectares: '0 hectáreas',
-            region: user.region || 'No especificada',
-            status: user.is_active ? 'Activo' : 'Inactivo',
-            is_active: user.is_active || false,
-            isUpdating: false,
-            fincas: []
-          })
-        }
-      }
-    }
+    addUsersToMap(usersResponse.results, agricultoresMap)
     
-    // Fallback: si no llegaron usuarios por error 500, obtenerlos por ID desde fincas
-    if ((!usersResponse || !usersResponse.results || usersResponse.results.length === 0) && fincasResponse.results) {
-      const ids = Array.from(new Set(
-        fincasResponse.results
-          .map(f => (f.agricultor_id || (f.agricultor && f.agricultor.id) || (typeof f.agricultor === 'number' ? f.agricultor : null)))
-          .filter(Boolean)
-      ))
-      if (ids.length) {
-        try {
-          const usersById = await Promise.all(ids.map(id => authApi.getUser(id).catch(() => null)))
-          for (const user of usersById) {
-            if (!user) continue
-            const names = user.first_name?.split(' ') || user.username?.split(' ') || []
-            const initials = names.length >= 2 
-              ? `${names[0].charAt(0)}${names[1].charAt(0)}`.toUpperCase()
-              : user.username?.substring(0, 2).toUpperCase() || 'AA'
-            agricultoresMap.set(user.id, {
-              id: user.id,
-              initials,
-              name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
-              email: user.email,
-              farm: 'Sin finca',
-              hectares: '0 hectáreas',
-              region: user.region || 'No especificada',
-              status: user.is_active ? 'Activo' : 'Inactivo',
-              is_active: user.is_active || false,
-              isUpdating: false,
-              fincas: []
-            })
-          }
-        } catch (e) {
-          console.warn('Fallback getUser por ID falló parcialmente', e)
-        }
-      }
+    if ((!usersResponse?.results?.length) && fincasResponse.results) {
+      await loadUsersFallback(fincasResponse.results, agricultoresMap)
     }
 
-    // Luego, actualizar con información de fincas
-    if (fincasResponse.results) {
-      for (const finca of fincasResponse.results) {
-        // Intentar obtener el ID del agricultor de diferentes maneras
-        let agricultorId = null
-        
-        if (finca.agricultor_id) {
-          agricultorId = finca.agricultor_id
-        } else if (finca.agricultor && finca.agricultor.id) {
-          agricultorId = finca.agricultor.id
-        } else if (typeof finca.agricultor === 'number') {
-          agricultorId = finca.agricultor
-        }
-        
-        if (!agricultorId) {
-          continue
-        }
-        
-        const existingFarmer = agricultoresMap.get(agricultorId)
-        if (existingFarmer) {
-          // Actualizar información con la primera finca
-          if (existingFarmer.fincas.length === 0) {
-            existingFarmer.farm = finca.nombre
-            existingFarmer.hectares = `${finca.hectareas} hectáreas`
-            existingFarmer.region = finca.departamento || existingFarmer.region
-            existingFarmer.status = finca.activa ? 'Activo' : 'Inactivo'
-          }
-          
-          existingFarmer.fincas.push(finca)
-        }
-      }
-    }
+    updateFarmersWithFincas(fincasResponse.results, agricultoresMap)
     
     farmers.value = Array.from(agricultoresMap.values())
     allFincas.value = fincasResponse.results || []
   } catch (error) {
-    console.error('Error cargando agricultores:', error)
     Swal.fire({
       icon: 'error',
       title: 'Error',
@@ -351,16 +375,28 @@ const filteredFarmers = computed(() => {
   return filtered
 })
 
+// Actualizar totalItems en paginación cuando cambian los filteredFarmers
 const totalItems = computed(() => filteredFarmers.value.length)
-const itemsPerPage = ref(10)
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value))
+
+watch(totalItems, (newTotal) => {
+  pagination.updatePagination({
+    page: pagination.currentPage.value,
+    page_size: pagination.itemsPerPage.value,
+    count: newTotal
+  })
+}, { immediate: true })
 
 // Paginación en cliente: elementos mostrados en la página actual
 const displayedFarmers = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
+  const start = (pagination.currentPage.value - 1) * pagination.itemsPerPage.value
+  const end = start + pagination.itemsPerPage.value
   return filteredFarmers.value.slice(start, end)
 })
+
+// Computed para compatibilidad con el template
+const currentPage = computed(() => pagination.currentPage.value)
+const totalPages = computed(() => pagination.totalPages.value)
+const itemsPerPage = computed(() => pagination.itemsPerPage.value)
 
 // Métodos para AdminSidebar
 const handleMenuClick = (menuItem) => {
@@ -374,8 +410,7 @@ const handleLogout = async () => {
     await authStore.logout()
     router.push('/login')
   } catch (error) {
-    console.error('Error al cerrar sesión:', error)
-  }
+    }
 }
 
 const toggleSidebarCollapse = () => {
@@ -406,7 +441,6 @@ const descargarReporteAgricultores = async () => {
       showConfirmButton: false
     })
   } catch (error) {
-    console.error('Error descargando reporte:', error)
     Swal.fire({
       icon: 'error',
       title: 'Error',
@@ -508,7 +542,6 @@ const handleDeleteFarmer = async (farmer) => {
       await loadFarmers()
     }
   } catch (error) {
-    console.error('Error eliminando agricultor:', error)
     const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error al eliminar el agricultor'
     Swal.fire({
       icon: 'error',
@@ -538,7 +571,6 @@ const handleToggleStatus = async (farmer) => {
       showConfirmButton: false
     })
   } catch (error) {
-    console.error('Error cambiando estado:', error)
     const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error al cambiar el estado del agricultor'
     Swal.fire({
       icon: 'error',
@@ -552,19 +584,19 @@ const handleToggleStatus = async (farmer) => {
 }
 
 const handlePageChange = (page) => {
-  currentPage.value = page
+  pagination.goToPage(page)
 }
 
 // Lifecycle
 onMounted(async () => {
   checkScreenSize()
-  window.addEventListener('resize', checkScreenSize)
+  globalThis.addEventListener('resize', checkScreenSize)
   await loadFarmers()
 })
 
 const checkScreenSize = () => {
   try {
-    if (window.innerWidth <= 768) {
+    if (globalThis.innerWidth <= 768) {
       isSidebarCollapsed.value = true
       localStorage.setItem('sidebarCollapsed', 'true')
     } else {
@@ -572,8 +604,7 @@ const checkScreenSize = () => {
       localStorage.setItem('sidebarCollapsed', 'false')
     }
   } catch (err) {
-    console.warn('Error en checkScreenSize:', err)
-  }
+    }
 }
 </script>
 

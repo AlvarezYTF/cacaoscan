@@ -15,6 +15,7 @@ from .finca import (
     LoteDeleteView,
     LoteStatsView,
     LotesPorFincaView,
+    LoteAnalisisView,
     LotePermissionMixin,
 )
 
@@ -32,5 +33,6 @@ __all__ = [
     'LoteDeleteView',
     'LoteStatsView',
     'LotesPorFincaView',
+    'LoteAnalisisView',
     'LotePermissionMixin',
 ]

@@ -37,6 +37,134 @@ from ..data.transforms import resize_with_padding, normalize_image
 logger = get_ml_logger("cacaoscan.ml.incremental")
 
 
+def _calcular_estadisticas_target(values: List[float]) -> Dict[str, float]:
+    """Calcula estadísticas para un target."""
+    return {
+        "count": len(values),
+        "mean": float(np.mean(values)),
+        "std": float(np.std(values)),
+        "min": float(np.min(values)),
+        "max": float(np.max(values))
+    }
+
+
+def _analizar_distribucion_targets(records: List[Dict]) -> Dict[str, Dict]:
+    """Analiza la distribución de targets en los nuevos datos."""
+    distribution = {}
+    for target in TARGETS:
+        values = [record.get(target) for record in records if record.get(target) is not None]
+        if values:
+            distribution[target] = _calcular_estadisticas_target(values)
+    return distribution
+
+
+class IncrementalDataManager:
+    """
+    Gestor de datos para entrenamiento incremental.
+    
+    Maneja la adición de nuevos datos, versionado de datasets,
+    y estrategias de muestreo para evitar catastrophic forgetting.
+    """
+    
+    def __init__(self, base_data_dir: Optional[Path] = None):
+        """
+        Inicializa el gestor de datos incrementales.
+        
+        Args:
+            base_data_dir: Directorio base para datos incrementales
+        """
+        self.base_data_dir = base_data_dir or Path("backend/ml/data/incremental")
+        ensure_dir_exists(self.base_data_dir)
+        
+        self.datasets_dir = self.base_data_dir / "datasets"
+        self.metadata_dir = self.base_data_dir / "metadata"
+        ensure_dir_exists(self.datasets_dir)
+        ensure_dir_exists(self.metadata_dir)
+        
+        self.current_version = self._get_latest_version()
+        self.dataset_metadata = self._load_dataset_metadata()
+        
+        logger.info(f"Gestor de datos incrementales inicializado. Versión actual: {self.current_version}")
+    
+    def _get_latest_version(self) -> int:
+        """Obtiene la última versión de dataset."""
+        if not self.datasets_dir.exists():
+            return 0
+        
+        versions = []
+        for item in self.datasets_dir.iterdir():
+            if item.is_dir() and item.name.startswith("v"):
+                try:
+                    version = int(item.name[1:])
+                    versions.append(version)
+                except ValueError:
+                    continue
+        
+        return max(versions) if versions else 0
+    
+    def _load_dataset_metadata(self) -> Dict:
+        """Carga metadatos de datasets."""
+        metadata_file = self.metadata_dir / "dataset_metadata.json"
+        if metadata_file.exists():
+            return load_json(metadata_file)
+        return {
+            "versions": {},
+            "current_version": self.current_version,
+            "total_samples": 0,
+            "last_updated": None
+        }
+    
+    def _save_dataset_metadata(self):
+        """Guarda metadatos de datasets."""
+        metadata_file = self.metadata_dir / "dataset_metadata.json"
+        self.dataset_metadata["last_updated"] = datetime.now().isoformat()
+        save_json(self.dataset_metadata, metadata_file)
+    
+    def add_new_data(self, new_records: List[Dict], version_name: Optional[str] = None) -> int:
+        """
+        Añade nuevos datos al sistema incremental.
+        
+        Args:
+            new_records: Lista de nuevos registros con formato estándar
+            version_name: Nombre opcional para la versión
+            
+        Returns:
+            Número de versión creada
+        """
+        if not new_records:
+            raise ValueError("No se proporcionaron nuevos registros")
+        
+        # Crear nueva versión
+        self.current_version += 1
+        version_dir = self.datasets_dir / f"v{self.current_version}"
+        ensure_dir_exists(version_dir)
+        
+        # Guardar nuevos datos
+        new_data_file = version_dir / "new_data.json"
+        save_json(new_records, new_data_file)
+        
+        # Crear metadatos de la versión
+        version_metadata = {
+            "version": self.current_version,
+            "name": version_name or f"incremental_v{self.current_version}",
+            "samples_count": len(new_records),
+            "created_at": datetime.now().isoformat(),
+            "data_file": str(new_data_file),
+            "targets_distribution": self._analyze_targets_distribution(new_records)
+        }
+        
+        # Actualizar metadatos globales
+        self.dataset_metadata["versions"][str(self.current_version)] = version_metadata
+        self.dataset_metadata["current_version"] = self.current_version
+        self.dataset_metadata["total_samples"] += len(new_records)
+        
+        # Guardar metadatos
+        self._save_dataset_metadata()
+        
+        logger.info(f"Nueva versión {self.current_version} creada con {len(new_records)} muestras")
+        return self.current_version
+
+
 class IncrementalDataManager:
     """
     Gestor de datos para entrenamiento incremental.
@@ -145,20 +273,7 @@ class IncrementalDataManager:
     
     def _analyze_targets_distribution(self, records: List[Dict]) -> Dict[str, Dict]:
         """Analiza la distribución de targets en los nuevos datos."""
-        distribution = {}
-        
-        for target in TARGETS:
-            values = [record.get(target) for record in records if record.get(target) is not None]
-            if values:
-                distribution[target] = {
-                    "count": len(values),
-                    "mean": float(np.mean(values)),
-                    "std": float(np.std(values)),
-                    "min": float(np.min(values)),
-                    "max": float(np.max(values))
-                }
-        
-        return distribution
+        return _analizar_distribucion_targets(records)
     
     def get_combined_dataset(self, 
                            include_versions: Optional[List[int]] = None,
@@ -234,11 +349,17 @@ class IncrementalDataManager:
         
         # Si no tenemos suficientes muestras, añadir aleatoriamente
         if len(sampled_records) < max_samples:
-            remaining_indices = set(range(len(records))) - set(i for record in sampled_records for i in range(len(records)) if records[i] == record)
+            sampled_indices = set()
+            for i, record in enumerate(records):
+                if record in sampled_records:
+                    sampled_indices.add(i)
+            remaining_indices = set(range(len(records))) - sampled_indices
             additional_needed = max_samples - len(sampled_records)
-            additional_indices = np.random.choice(list(remaining_indices), 
-                                                min(additional_needed, len(remaining_indices)), 
-                                                replace=False)
+            # Use fixed seed for reproducibility in stratified sampling
+            rng = np.random.default_rng(seed=42)
+            additional_indices = rng.choice(list(remaining_indices), 
+                                          min(additional_needed, len(remaining_indices)), 
+                                          replace=False)
             sampled_records.extend([records[i] for i in additional_indices])
         
         return sampled_records[:max_samples]
@@ -401,7 +522,9 @@ class IncrementalLearningStrategy:
             return []
         
         num_samples = min(num_samples, len(self.replay_buffer))
-        return np.random.choice(self.replay_buffer, num_samples, replace=False).tolist()
+        # Use fixed seed for reproducibility in replay buffer sampling
+        rng = np.random.default_rng(seed=42)
+        return rng.choice(self.replay_buffer, num_samples, replace=False).tolist()
 
 
 class IncrementalModelManager:
@@ -521,6 +644,13 @@ class IncrementalModelManager:
         """
         Carga una versión específica del modelo.
         
+        Security note: This function loads checkpoints created by this manager.
+        Checkpoints should only be loaded from trusted sources (same training system).
+        The checkpoint structure is validated after loading to detect tampering.
+        
+        SECURITY: Uses weights_only=True to prevent arbitrary code execution (S6985).
+        This ensures only model weights and state_dicts are loaded, not arbitrary Python objects.
+        
         Args:
             version: Número de versión
             model_class: Clase del modelo
@@ -534,22 +664,75 @@ class IncrementalModelManager:
             raise FileNotFoundError(f"Versión {version} no encontrada")
         
         model_path = version_dir / "model.pt"
-        checkpoint = torch.load(model_path, map_location=device)
+        if not model_path.exists():
+            raise FileNotFoundError(f"Archivo de modelo no encontrado: {model_path}")
         
-        # Crear modelo y cargar pesos
-        model = model_class
-        model.load_state_dict(checkpoint['model_state_dict'])
-        model.to(device)
-        
-        metadata = checkpoint['model_info']
-        performance_metrics = checkpoint['performance_metrics']
-        
-        logger.info(f"Modelo versión {version} cargado exitosamente")
-        return model, {
-            "metadata": metadata,
-            "performance_metrics": performance_metrics,
-            "timestamp": checkpoint['timestamp']
-        }
+        # Security: Load checkpoint and validate structure
+        # Checkpoints are created by this same manager, so they come from a trusted source
+        # We validate the structure to ensure it matches our expected format
+        try:
+            # SECURITY: Use weights_only=True to prevent arbitrary code execution (S6985)
+            # This is the safest way to load PyTorch checkpoints (available in PyTorch 2.1+)
+            # Checkpoints are created by our own save_model_version method which only saves
+            # state_dicts (dictionaries of tensors) and metadata, not arbitrary Python objects
+            try:
+                # Try to load with weights_only=True (safest method, PyTorch 2.1+)
+                # SECURITY: weights_only=True prevents arbitrary code execution (S6985)
+                checkpoint = torch.load(model_path, map_location=device, weights_only=True)
+            except TypeError as exc:
+                raise RuntimeError(
+                    "La versión instalada de PyTorch no soporta weights_only=True. "
+                    "Actualiza al menos a PyTorch 2.1 para cargar checkpoints de forma segura "
+                    f"(archivo: {model_path})."
+                ) from exc
+            
+            # Validate checkpoint structure to ensure it's a valid checkpoint from our manager
+            # This helps detect if a checkpoint was tampered with
+            required_keys = ['model_state_dict', 'model_info', 'performance_metrics', 'timestamp']
+            if not all(key in checkpoint for key in required_keys):
+                raise ValueError(f"Invalid checkpoint structure. Missing required keys: {required_keys}")
+            
+            # Validate that model_state_dict is a dictionary with string keys
+            if not isinstance(checkpoint['model_state_dict'], dict):
+                raise ValueError("Invalid checkpoint: model_state_dict is not a dictionary")
+            
+            # State dicts should have string keys (layer names)
+            if checkpoint['model_state_dict'] and not all(isinstance(k, str) for k in checkpoint['model_state_dict'].keys()):
+                raise ValueError("Invalid checkpoint: model_state_dict has non-string keys")
+            
+            # Validate that values in state_dict are tensors (not arbitrary objects)
+            for key, value in checkpoint['model_state_dict'].items():
+                if not isinstance(value, torch.Tensor):
+                    raise ValueError(f"Invalid checkpoint: model_state_dict[{key}] is not a tensor")
+            
+            # Validate that model_info and performance_metrics are dictionaries
+            if not isinstance(checkpoint['model_info'], dict):
+                raise ValueError("Invalid checkpoint: model_info is not a dictionary")
+            
+            if not isinstance(checkpoint['performance_metrics'], dict):
+                raise ValueError("Invalid checkpoint: performance_metrics is not a dictionary")
+            
+            # Validate timestamp is a string
+            if not isinstance(checkpoint['timestamp'], str):
+                raise ValueError("Invalid checkpoint: timestamp is not a string")
+            
+            # Crear modelo y cargar pesos
+            model = model_class
+            model.load_state_dict(checkpoint['model_state_dict'])
+            model.to(device)
+            
+            metadata = checkpoint['model_info']
+            performance_metrics = checkpoint['performance_metrics']
+            
+            logger.info(f"Modelo versión {version} cargado exitosamente")
+            return model, {
+                "metadata": metadata,
+                "performance_metrics": performance_metrics,
+                "timestamp": checkpoint['timestamp']
+            }
+        except Exception as e:
+            logger.error(f"Error loading checkpoint from {model_path}: {e}")
+            raise
     
     def get_best_model(self, target: str, model_class: nn.Module, 
                       device: torch.device) -> Tuple[nn.Module, Dict]:
@@ -676,7 +859,7 @@ class IncrementalTrainer:
         
         # 5. Entrenar modelo incremental
         trained_model, training_history = self._train_incremental_model(
-            base_model, train_data, val_data, target
+            base_model, train_data, val_data
         )
         
         # 6. Evaluar rendimiento
@@ -777,7 +960,7 @@ class IncrementalTrainer:
             logger.warning(f"No se pudo computar información de Fisher: {e}")
     
     def _train_incremental_model(self, model: nn.Module, train_loader: DataLoader, 
-                                val_loader: DataLoader, target: str) -> Tuple[nn.Module, Dict]:
+                                val_loader: DataLoader) -> Tuple[nn.Module, Dict]:
         """Entrena el modelo con estrategias incrementales."""
         model.train()
         

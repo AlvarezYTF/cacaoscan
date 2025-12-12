@@ -24,10 +24,11 @@
             <h3 class="text-lg font-medium text-gray-900 mb-4">Información Básica</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-finca" class="block text-sm font-medium text-gray-700 mb-1">
                   Finca *
                 </label>
                 <select
+                  id="lote-finca"
                   v-model="formData.finca"
                   required
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -42,10 +43,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-identificador" class="block text-sm font-medium text-gray-700 mb-1">
                   Identificador *
                 </label>
                 <input
+                  id="lote-identificador"
                   v-model="formData.identificador"
                   type="text"
                   required
@@ -58,10 +60,11 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-variedad" class="block text-sm font-medium text-gray-700 mb-1">
                   Variedad *
                 </label>
                 <select
+                  id="lote-variedad"
                   v-model="formData.variedad"
                   required
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -76,10 +79,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-area" class="block text-sm font-medium text-gray-700 mb-1">
                   Área (hectáreas) *
                 </label>
                 <input
+                  id="lote-area"
                   v-model="formData.area_hectareas"
                   type="number"
                   step="0.01"
@@ -98,10 +102,11 @@
             <h3 class="text-lg font-medium text-gray-900 mb-4">Fechas</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-fecha-plantacion" class="block text-sm font-medium text-gray-700 mb-1">
                   Fecha de Plantación *
                 </label>
                 <input
+                  id="lote-fecha-plantacion"
                   v-model="formData.fecha_plantacion"
                   type="date"
                   required
@@ -112,10 +117,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-fecha-cosecha" class="block text-sm font-medium text-gray-700 mb-1">
                   Fecha de Cosecha
                 </label>
                 <input
+                  id="lote-fecha-cosecha"
                   v-model="formData.fecha_cosecha"
                   type="date"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -128,10 +134,11 @@
 
           <!-- Estado -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="lote-estado" class="block text-sm font-medium text-gray-700 mb-1">
               Estado del Lote *
             </label>
             <select
+              id="lote-estado"
               v-model="formData.estado"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -150,10 +157,11 @@
             <h3 class="text-lg font-medium text-gray-900 mb-4">Coordenadas GPS (Opcional)</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-latitud" class="block text-sm font-medium text-gray-700 mb-1">
                   Latitud
                 </label>
                 <input
+                  id="lote-latitud"
                   v-model="formData.coordenadas_lat"
                   type="number"
                   step="any"
@@ -166,10 +174,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="lote-longitud" class="block text-sm font-medium text-gray-700 mb-1">
                   Longitud
                 </label>
                 <input
+                  id="lote-longitud"
                   v-model="formData.coordenadas_lng"
                   type="number"
                   step="any"
@@ -185,10 +194,11 @@
 
           <!-- Descripción -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="lote-descripcion" class="block text-sm font-medium text-gray-700 mb-1">
               Descripción (Opcional)
             </label>
             <textarea
+              id="lote-descripcion"
               v-model="formData.descripcion"
               rows="3"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -236,7 +246,10 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import lotesApi from '@/services/lotesApi'
-import fincasApi from '@/services/fincasApi'
+import { useLotes } from '@/composables/useLotes'
+import { useFincas } from '@/composables/useFincas'
+import { useFormValidation } from '@/composables/useFormValidation'
+import { useNotifications } from '@/composables/useNotifications'
 
 const props = defineProps({
   lote: {
@@ -251,10 +264,16 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'saved'])
 
+// Composables
+const { createLote, updateLote, loading: isLotesLoading, error: lotesError } = useLotes()
+const { loadFincas: loadFincasComposable, fincas: fincasFromComposable, isLoading: isFincasLoading } = useFincas()
+const { errors, setError, clearErrors, mapServerErrors } = useFormValidation()
+const { showSuccess, showError } = useNotifications()
+
 // Estado reactivo
-const loading = ref(false)
-const errors = ref({})
-const fincas = ref([])
+const localLoading = ref(false)
+const loading = computed(() => localLoading.value || isLotesLoading.value || isFincasLoading.value)
+const fincas = computed(() => fincasFromComposable.value)
 
 // Datos del formulario
 const formData = reactive({
@@ -290,7 +309,7 @@ const resetForm = () => {
     coordenadas_lng: '',
     activa: true
   })
-  errors.value = {}
+  clearErrors()
 }
 
 const loadLoteData = () => {
@@ -306,78 +325,81 @@ const loadLoteData = () => {
       descripcion: props.lote.descripcion || '',
       coordenadas_lat: props.lote.coordenadas_lat || '',
       coordenadas_lng: props.lote.coordenadas_lng || '',
-      activa: props.lote.activa !== undefined ? props.lote.activa : true
+      activa: props.lote.activa ?? true
     })
   }
 }
 
 const loadFincas = async () => {
   try {
-    const response = await fincasApi.getFincas()
-    fincas.value = response.results || response
+    await loadFincasComposable()
   } catch (error) {
-    console.error('Error loading fincas:', error)
+    showError('No se pudieron cargar las fincas')
   }
 }
 
 const validateForm = () => {
+  clearErrors()
   const formattedData = lotesApi.formatLoteData(formData)
   const validation = lotesApi.validateLoteData(formattedData)
   
   if (!validation.isValid) {
-    errors.value = {}
-    validation.errors.forEach(error => {
+    for (const error of validation.errors) {
       // Mapear errores a campos específicos
-      if (error.includes('finca')) errors.value.finca = error
-      else if (error.includes('identificador')) errors.value.identificador = error
-      else if (error.includes('variedad')) errors.value.variedad = error
-      else if (error.includes('plantación')) errors.value.fecha_plantacion = error
-      else if (error.includes('cosecha')) errors.value.fecha_cosecha = error
-      else if (error.includes('área')) errors.value.area_hectareas = error
-      else if (error.includes('latitud')) errors.value.coordenadas_lat = error
-      else if (error.includes('longitud')) errors.value.coordenadas_lng = error
-      else if (error.includes('descripción')) errors.value.descripcion = error
-    })
+      if (error.includes('finca')) setError('finca', error)
+      else if (error.includes('identificador')) setError('identificador', error)
+      else if (error.includes('variedad')) setError('variedad', error)
+      else if (error.includes('plantación')) setError('fecha_plantacion', error)
+      else if (error.includes('cosecha')) setError('fecha_cosecha', error)
+      else if (error.includes('área')) setError('area_hectareas', error)
+      else if (error.includes('latitud')) setError('coordenadas_lat', error)
+      else if (error.includes('longitud')) setError('coordenadas_lng', error)
+      else if (error.includes('descripción')) setError('descripcion', error)
+    }
     return false
   }
   
-  errors.value = {}
   return true
 }
 
 const handleSubmit = async () => {
   if (!validateForm()) return
   
-  loading.value = true
+  localLoading.value = true
   
   try {
     const formattedData = lotesApi.formatLoteData(formData)
     
     if (props.isEditing) {
-      await lotesApi.updateLote(props.lote.id, formattedData)
+      await updateLote(props.lote.id, formattedData)
+      showSuccess('El lote ha sido actualizado exitosamente')
     } else {
-      await lotesApi.createLote(formattedData)
+      await createLote(formattedData)
+      showSuccess('El lote ha sido creado exitosamente')
     }
     
     emit('saved')
   } catch (error) {
-    console.error('Error saving lote:', error)
-    
     // Manejar errores de validación del servidor
     if (error.response?.data) {
       const serverErrors = error.response.data
-      errors.value = {}
-      
-      Object.keys(serverErrors).forEach(field => {
-        if (Array.isArray(serverErrors[field])) {
-          errors.value[field] = serverErrors[field][0]
-        } else {
-          errors.value[field] = serverErrors[field]
-        }
-      })
+      const fieldMapping = {
+        'finca': 'finca',
+        'identificador': 'identificador',
+        'variedad': 'variedad',
+        'fecha_plantacion': 'fecha_plantacion',
+        'fecha_cosecha': 'fecha_cosecha',
+        'area_hectareas': 'area_hectareas',
+        'coordenadas_lat': 'coordenadas_lat',
+        'coordenadas_lng': 'coordenadas_lng',
+        'descripcion': 'descripcion'
+      }
+      mapServerErrors(serverErrors, fieldMapping)
+    } else {
+      showError('No se pudo guardar el lote. Intenta nuevamente.')
     }
   } finally {
-    loading.value = false
+    localLoading.value = false
   }
 }
 

@@ -1,13 +1,12 @@
 /**
  * Utilidades para normalizar respuestas de la API
- * Estandariza arrays provenientes de endpoints paginados ({results: [...]})
- * o no paginados ([...]).
+ * Re-exporta desde apiResponseFormatter para mantener compatibilidad
+ * @deprecated Import directly from '@/utils/apiResponseFormatter' instead
  */
 
-export function normalizeResponse(data) {
-  if (data && Array.isArray(data.results)) return data.results
-  if (Array.isArray(data)) return data
-  return []
-}
-
-
+export {
+  formatSuccessResponse,
+  formatErrorResponse,
+  normalizeApiResponse,
+  normalizeResponse
+} from './apiResponseFormatter'

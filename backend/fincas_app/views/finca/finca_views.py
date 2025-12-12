@@ -12,6 +12,9 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from api.views.mixins import PaginationMixin, AdminPermissionMixin
+from core.utils import create_error_response, create_success_response
+from .mixins.finca_error_mixin import FincaErrorMixin, ERROR_INTERNAL_SERVER, ERROR_INVALID_INPUT, ERROR_FINCA_NOT_FOUND
+from .mixins.finca_serializer_mixin import FincaSerializerMixin
 
 from api.utils.model_imports import get_model_safely
 
@@ -27,7 +30,7 @@ from api.serializers import (
 logger = logging.getLogger("cacaoscan.api")
 
 
-class FincaPermissionMixin(AdminPermissionMixin):
+class FincaPermissionMixin(FincaErrorMixin, FincaSerializerMixin, AdminPermissionMixin):
     """
     Mixin para permisos de fincas.
     Los agricultores solo pueden ver/editar sus propias fincas.
@@ -35,17 +38,18 @@ class FincaPermissionMixin(AdminPermissionMixin):
     """
     
     def get_queryset(self):
-        """Obtener queryset filtrado por permisos (optimizado con select_related)."""
+        """Obtener queryset filtrado por permisos (optimizado con select_related y prefetch_related)."""
         user = self.request.user
         
-        base_queryset = Finca.objects.select_related('agricultor')
+        base_queryset = Finca.objects.select_related('agricultor', 'municipio', 'municipio__departamento').prefetch_related('lotes')
         
         if self.is_admin_user(user):
             # Admin puede ver todas las fincas (activas e inactivas)
             return base_queryset
         else:
-            # Agricultor solo ve sus fincas ACTIVAS (soft delete)
-            return base_queryset.filter(agricultor=user, activa=True)
+            # Agricultor ve sus fincas (activas e inactivas)
+            # El filtro de activa se aplica en la vista si es necesario
+            return base_queryset.filter(agricultor=user)
     
     def perform_create(self, serializer):
         """Asignar automáticamente el agricultor al crear finca."""
@@ -80,34 +84,48 @@ class FincaListCreateView(PaginationMixin, FincaPermissionMixin, APIView):
     def get(self, request):
         """Listar fincas con filtros optimizados."""
         try:
+            # Obtener queryset base
+            queryset = self.get_queryset()
+            logger.info(f"Queryset inicial para usuario {request.user.username} (admin: {self.is_admin_user(request.user)}): {queryset.count()} fincas")
+            
             # Optimización: obtener solo los campos necesarios
-            queryset = self.get_queryset().only(
-                'id', 'nombre', 'municipio', 'departamento', 'hectareas', 
-                'ubicacion', 'activa', 'fecha_registro'
-            )
+            # Incluir agricultor y municipio con select_related para evitar N+1 queries
+            # El departamento se obtiene de municipio.departamento (3NF)
+            queryset = queryset.select_related('municipio', 'municipio__departamento', 'agricultor')
             
             # Aplicar filtros
             search = request.GET.get('search', '').strip()
             if search:
                 queryset = queryset.filter(
                     Q(nombre__icontains=search) |
-                    Q(municipio__icontains=search) |
-                    Q(departamento__icontains=search)
+                    Q(municipio__nombre__icontains=search) |
+                    Q(municipio__departamento__nombre__icontains=search)
                 )
             
             municipio = request.GET.get('municipio', '').strip()
             if municipio:
-                queryset = queryset.filter(municipio__icontains=municipio)
+                queryset = queryset.filter(municipio__nombre__icontains=municipio)
             
             departamento = request.GET.get('departamento', '').strip()
             if departamento:
-                queryset = queryset.filter(departamento__icontains=departamento)
+                queryset = queryset.filter(municipio__departamento__nombre__icontains=departamento)
             
-            # Filtro por estado activo (solo admins pueden ver inactivas)
+            # Filtro por estado activo
+            # Por defecto, agricultores solo ven fincas activas, pero pueden filtrar explícitamente
             activa = request.GET.get('activa')
-            if activa is not None and self.is_admin_user(request.user):
+            is_admin = self.is_admin_user(request.user)
+            logger.info(f"Filtro activa: {activa}, is_admin: {is_admin}")
+            
+            if activa is not None:
                 activa_bool = activa.lower() in ['true', '1', 'yes']
                 queryset = queryset.filter(activa=activa_bool)
+                logger.info(f"Aplicando filtro explícito activa={activa_bool}: {queryset.count()} fincas")
+            elif not is_admin:
+                # Agricultores ven solo fincas activas por defecto
+                queryset = queryset.filter(activa=True)
+                logger.info(f"Aplicando filtro por defecto activa=True para agricultor: {queryset.count()} fincas")
+            else:
+                logger.info(f"Admin: sin filtro de activa, mostrando todas: {queryset.count()} fincas")
             
             # Filtrar por agricultor si se proporciona el parámetro (optimizado para el frontend)
             agricultor_id = request.GET.get('agricultor')
@@ -132,18 +150,18 @@ class FincaListCreateView(PaginationMixin, FincaPermissionMixin, APIView):
                 }, status=status.HTTP_200_OK)
             
             # Paginación solo para listados generales usando el mixin
-            return self.paginate_queryset(
+            logger.info(f"Antes de paginar: {queryset.count()} fincas en queryset")
+            response = self.paginate_queryset(
                 request,
                 queryset,
                 FincaListSerializer
             )
+            logger.info(f"Respuesta paginada: {response.data.get('count', 0)} fincas totales, {len(response.data.get('results', []))} en esta página")
+            return response
             
         except Exception as e:
-            logger.error(f"Error listando fincas para usuario {request.user.username}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(f"Error listando fincas para usuario {request.user.username}: {e}", exc_info=True)
+            return self.handle_finca_error(e, "listando fincas")
     
     @swagger_auto_schema(
         operation_description="Crea una nueva finca para el usuario autenticado",
@@ -175,22 +193,37 @@ class FincaListCreateView(PaginationMixin, FincaPermissionMixin, APIView):
             import traceback
             import sys
             
-            # Obtener el agricultor desde request.data si está presente, sino usar request.user
+            # Obtener el agricultor desde request.data si está presente y es válido, sino usar request.user
             agricultor = request.user
-            if 'agricultor' in request.data:
-                from django.contrib.auth.models import User
-                try:
-                    agricultor = User.objects.get(id=request.data['agricultor'])
-                except User.DoesNotExist:
-                    return Response({
-                        'error': 'Agricultor no encontrado',
-                        'details': {'agricultor': ['El ID de agricultor proporcionado no existe']},
-                        'status': 'error'
-                    }, status=status.HTTP_400_BAD_REQUEST)
+            # Crear una copia mutable de request.data para modificar
+            data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
             
-            logger.info(f"Creando finca con datos: {request.data}, agricultor: {agricultor.id}")
+            if 'agricultor' in data:
+                agricultor_id = data['agricultor']
+                # Validar que el ID no sea vacío, None o cadena vacía
+                if agricultor_id and str(agricultor_id).strip():
+                    from django.contrib.auth.models import User
+                    try:
+                        agricultor_id_int = int(agricultor_id)
+                        agricultor = User.objects.get(id=agricultor_id_int)
+                    except (ValueError, TypeError):
+                        return Response({
+                            'error': 'ID de agricultor inválido',
+                            'details': 'El ID de agricultor debe ser un número válido'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    except User.DoesNotExist:
+                        return Response({
+                            'error': 'Agricultor no encontrado',
+                            'details': 'El ID de agricultor proporcionado no existe'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    # Si agricultor_id está vacío o es None, eliminar del data y usar request.user
+                    data.pop('agricultor', None)
             
-            serializer = FincaSerializer(data=request.data, context={'request': request})
+            logger.info(f"Creando finca con datos: {data}, agricultor: {agricultor.id}")
+            
+            # Pasar el agricultor al contexto para que la validación del nombre use el agricultor correcto
+            serializer = FincaSerializer(data=data, context={'request': request, 'agricultor': agricultor})
             
             if serializer.is_valid():
                 # Si ya está el agricultor en request.data, usar el que vino en el serializer validado
@@ -199,26 +232,15 @@ class FincaListCreateView(PaginationMixin, FincaPermissionMixin, APIView):
                 
                 logger.info(f"Finca '{finca.nombre}' creada por usuario {request.user.username} para agricultor {agricultor.id}")
                 
-                # Devolver datos completos
-                response_serializer = FincaSerializer(finca, context={'request': request})
-                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+                return self.create_finca_response(finca)
             else:
                 logger.error(f"Errores de validación: {serializer.errors}")
-                return Response({
-                    'error': 'Datos de entrada inválidos',
-                    'details': serializer.errors,
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
+                return self.handle_validation_error(serializer.errors)
                 
         except Exception as e:
             logger.error(f"Error creando finca para usuario {request.user.username}: {e}")
             logger.error(f"Traceback completo: {traceback.format_exc()}")
-            import traceback
-            return Response({
-                'error': 'Error interno del servidor',
-                'error_detail': str(e),
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return self.handle_finca_error(e, "creando finca")
 
 
 class FincaDetailView(FincaPermissionMixin, APIView):
@@ -239,24 +261,11 @@ class FincaDetailView(FincaPermissionMixin, APIView):
     )
     def get(self, request, finca_id):
         """Obtener detalles de finca."""
-        try:
-            queryset = self.get_queryset()
-            finca = queryset.get(id=finca_id)
-            
-            serializer = FincaDetailSerializer(finca, context={'request': request})
-            return Response(serializer.data, status=status.HTTP_200_OK)
-            
-        except Finca.DoesNotExist:
-            return Response({
-                'error': 'Finca no encontrada',
-                'status': 'error'
-            }, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            logger.error(f"Error obteniendo detalles de finca {finca_id}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finca, error_response = self.get_finca_with_error_handling(finca_id)
+        if error_response:
+            return error_response
+        
+        return self.serialize_finca_response(finca, serializer_class=FincaDetailSerializer)
 
 
 class FincaUpdateView(FincaPermissionMixin, APIView):
@@ -292,71 +301,35 @@ class FincaUpdateView(FincaPermissionMixin, APIView):
     )
     def put(self, request, finca_id):
         """Actualizar finca completa."""
-        try:
-            queryset = self.get_queryset()
-            finca = queryset.get(id=finca_id)
-            
-            serializer = FincaSerializer(finca, data=request.data, context={'request': request})
-            
-            if serializer.is_valid():
-                finca = serializer.save()
-                
-                logger.info(f"Finca '{finca.nombre}' actualizada por usuario {request.user.username}")
-                
-                response_serializer = FincaSerializer(finca, context={'request': request})
-                return Response(response_serializer.data, status=status.HTTP_200_OK)
-            else:
-                return Response({
-                    'error': 'Datos de entrada inválidos',
-                    'details': serializer.errors,
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-                
-        except Finca.DoesNotExist:
-            return Response({
-                'error': 'Finca no encontrada',
-                'status': 'error'
-            }, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            logger.error(f"Error actualizando finca {finca_id}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finca, error_response = self.get_finca_with_error_handling(finca_id)
+        if error_response:
+            return error_response
+        
+        # Pasar el agricultor de la finca al contexto para validación correcta
+        serializer = FincaSerializer(finca, data=request.data, context={'request': request, 'agricultor': finca.agricultor})
+        
+        if serializer.is_valid():
+            finca = serializer.save()
+            logger.info(f"Finca '{finca.nombre}' actualizada por usuario {request.user.username}")
+            return self.update_finca_response(finca)
+        else:
+            return self.handle_validation_error(serializer.errors)
     
     def patch(self, request, finca_id):
         """Actualizar finca parcialmente."""
-        try:
-            queryset = self.get_queryset()
-            finca = queryset.get(id=finca_id)
-            
-            serializer = FincaSerializer(finca, data=request.data, partial=True, context={'request': request})
-            
-            if serializer.is_valid():
-                finca = serializer.save()
-                
-                logger.info(f"Finca '{finca.nombre}' actualizada parcialmente por usuario {request.user.username}")
-                
-                response_serializer = FincaSerializer(finca, context={'request': request})
-                return Response(response_serializer.data, status=status.HTTP_200_OK)
-            else:
-                return Response({
-                    'error': 'Datos de entrada inválidos',
-                    'details': serializer.errors,
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-                
-        except Finca.DoesNotExist:
-            return Response({
-                'error': 'Finca no encontrada',
-                'status': 'error'
-            }, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            logger.error(f"Error actualizando finca {finca_id}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finca, error_response = self.get_finca_with_error_handling(finca_id)
+        if error_response:
+            return error_response
+        
+        # Pasar el agricultor de la finca al contexto para validación correcta
+        serializer = FincaSerializer(finca, data=request.data, partial=True, context={'request': request, 'agricultor': finca.agricultor})
+        
+        if serializer.is_valid():
+            finca = serializer.save()
+            logger.info(f"Finca '{finca.nombre}' actualizada parcialmente por usuario {request.user.username}")
+            return self.update_finca_response(finca)
+        else:
+            return self.handle_validation_error(serializer.errors)
 
 
 class FincaDeleteView(FincaPermissionMixin, APIView):
@@ -388,10 +361,10 @@ class FincaDeleteView(FincaPermissionMixin, APIView):
             finca = queryset.get(id=finca_id)
             
             if not finca.activa:
-                return Response({
-                    'error': 'La finca ya está desactivada',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
+                return create_error_response(
+                    message='La finca ya está desactivada',
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
             
             finca_nombre = finca.nombre
             # Soft delete: marcar como inactiva en lugar de eliminar
@@ -400,22 +373,12 @@ class FincaDeleteView(FincaPermissionMixin, APIView):
             
             logger.info(f"Finca '{finca_nombre}' desactivada (soft delete) por usuario {request.user.username}")
             
-            return Response({
-                'message': 'Finca desactivada correctamente',
-                'status': 'success'
-            }, status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_204_NO_CONTENT)
             
         except Finca.DoesNotExist:
-            return Response({
-                'error': 'Finca no encontrada',
-                'status': 'error'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return self.handle_finca_not_found(finca_id)
         except Exception as e:
-            logger.error(f"Error desactivando finca {finca_id}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return self.handle_finca_error(e, "desactivando finca", finca_id)
 
 
 class FincaActivateView(FincaPermissionMixin, APIView):
@@ -448,16 +411,13 @@ class FincaActivateView(FincaPermissionMixin, APIView):
             try:
                 finca = Finca.objects.get(id=finca_id)
             except Finca.DoesNotExist:
-                return Response({
-                    'error': 'Finca no encontrada',
-                    'status': 'error'
-                }, status=status.HTTP_404_NOT_FOUND)
+                return self.handle_finca_not_found(finca_id)
             
             if finca.activa:
-                return Response({
-                    'error': 'La finca ya está activa',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
+                return create_error_response(
+                    message='La finca ya está activa',
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
             
             finca_nombre = finca.nombre
             finca.activa = True
@@ -465,17 +425,10 @@ class FincaActivateView(FincaPermissionMixin, APIView):
             
             logger.info(f"Finca '{finca_nombre}' reactivada por admin {request.user.username}")
             
-            return Response({
-                'message': 'Finca reactivada correctamente',
-                'status': 'success'
-            }, status=status.HTTP_200_OK)
+            return create_success_response(message='Finca reactivada correctamente')
             
         except Exception as e:
-            logger.error(f"Error reactivando finca {finca_id}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return self.handle_finca_error(e, "reactivando finca", finca_id)
 
 
 class FincaStatsView(FincaPermissionMixin, APIView):
@@ -496,31 +449,19 @@ class FincaStatsView(FincaPermissionMixin, APIView):
     )
     def get(self, request, finca_id):
         """Obtener estadísticas de finca."""
-        try:
-            queryset = self.get_queryset()
-            finca = queryset.get(id=finca_id)
-            
-            stats = finca.get_estadisticas()
-            
-            # Agregar estadísticas adicionales
-            stats.update({
-                'finca_nombre': finca.nombre,
-                'agricultor_nombre': finca.agricultor.get_full_name(),
-                'ubicacion_completa': finca.ubicacion_completa,
-            })
-            
-            return Response(stats, status=status.HTTP_200_OK)
-            
-        except Finca.DoesNotExist:
-            return Response({
-                'error': 'Finca no encontrada',
-                'status': 'error'
-            }, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            logger.error(f"Error obteniendo estadísticas de finca {finca_id}: {e}")
-            return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finca, error_response = self.get_finca_with_error_handling(finca_id)
+        if error_response:
+            return error_response
+        
+        stats = finca.get_estadisticas()
+        
+        # Agregar estadísticas adicionales
+        stats.update({
+            'finca_nombre': finca.nombre,
+            'agricultor_nombre': finca.agricultor.get_full_name(),
+            'ubicacion_completa': finca.ubicacion_completa,
+        })
+        
+        return Response(stats, status=status.HTTP_200_OK)
 
 

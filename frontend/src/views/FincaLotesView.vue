@@ -1,267 +1,92 @@
 <template>
-  <div class="container-fluid">
-    <div class="row">
-      <div class="col-12">
-        <!-- Header con breadcrumb -->
-        <nav aria-label="breadcrumb" class="mb-4">
-          <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-              <router-link to="/fincas">Fincas</router-link>
-            </li>
-            <li class="breadcrumb-item">
-              <router-link :to="`/fincas/${fincaId}`">{{ finca?.nombre || 'Finca' }}</router-link>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">
-              Lotes
-            </li>
-          </ol>
-        </nav>
+  <div class="min-h-screen bg-gray-100">
+    <!-- Sidebar -->
+    <Sidebar
+      :brand-name="'CacaoScan'"
+      :user-name="userName"
+      :user-role="userRole"
+      :current-route="route.path"
+      :active-section="'fincas'"
+      :collapsed="isSidebarCollapsed"
+      @menu-click="handleMenuClick"
+      @logout="handleLogout"
+      @toggle-collapse="toggleSidebarCollapse"
+    />
 
-        <!-- Header con acciones -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <h2>
-              <i class="fas fa-seedling me-2"></i>
-              Lotes de {{ finca?.nombre || 'Finca' }}
-            </h2>
-            <p class="text-muted mb-0">Gestiona los lotes de esta finca</p>
-          </div>
-          <div>
-            <button 
-              @click="createLote" 
-              class="btn btn-primary"
-              v-if="canCreate"
-            >
-              <i class="fas fa-plus me-2"></i>
-              Nuevo Lote
-            </button>
-          </div>
-        </div>
+    <!-- Main Content -->
+    <div :class="isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'" class="w-full relative">
+      <!-- Page Content -->
+      <main class="py-8 px-4 sm:px-6 lg:px-8 min-h-screen bg-white relative z-0">
+        <div class="max-w-7xl mx-auto space-y-8">
+          <!-- Breadcrumb Navigation -->
+          <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="flex items-center space-x-2 text-sm text-gray-600">
+              <li>
+                <router-link to="/fincas" class="hover:text-green-600 transition-colors">Fincas</router-link>
+              </li>
+              <li class="text-gray-400">/</li>
+              <li v-if="finca" class="text-gray-900 font-medium">
+                <router-link :to="`/fincas/${fincaId}`" class="hover:text-green-600 transition-colors">
+                  {{ finca.nombre || 'Finca' }}
+                </router-link>
+              </li>
+              <li v-else class="text-gray-400">Finca</li>
+              <li class="text-gray-400">/</li>
+              <li class="text-gray-900 font-medium" aria-current="page">Lotes</li>
+            </ol>
+          </nav>
 
-        <!-- Loading state -->
-        <div v-if="loading" class="text-center py-5">
-          <div class="spinner-border text-primary" aria-label="Cargando lotes">
-            <span class="visually-hidden">Cargando...</span>
-          </div>
-          <p class="mt-3">Cargando lotes...</p>
-        </div>
+          <!-- Header -->
+          <LotesHeader 
+            :finca-nombre="finca?.nombre || ''"
+            :can-create="canCreate"
+            @create="openCreateModal"
+          />
 
-        <!-- Error state -->
-        <div v-else-if="error" class="alert alert-danger" role="alert">
-          <h4 class="alert-heading">Error</h4>
-          <p>{{ error }}</p>
-          <hr>
-          <button @click="loadLotes" class="btn btn-outline-danger">
-            Intentar nuevamente
-          </button>
-        </div>
-
-        <!-- Lotes content -->
-        <div v-else>
           <!-- Filtros -->
-          <div class="card mb-4">
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-4">
-                  <label for="search" class="form-label">Buscar</label>
-                  <input 
-                    type="text" 
-                    id="search" 
-                    v-model="filters.search" 
-                    class="form-control"
-                    placeholder="Buscar por identificador o variedad..."
-                    @input="debouncedSearch"
-                  >
-                </div>
-                <div class="col-md-3">
-                  <label for="estado" class="form-label">Estado</label>
-                  <select id="estado" v-model="filters.estado" class="form-select">
-                    <option value="">Todos los estados</option>
-                    <option value="activo">Activo</option>
-                    <option value="inactivo">Inactivo</option>
-                    <option value="cosechado">Cosechado</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  <label for="variedad" class="form-label">Variedad</label>
-                  <select id="variedad" v-model="filters.variedad" class="form-select">
-                    <option value="">Todas las variedades</option>
-                    <option 
-                      v-for="variedad in variedades" 
-                      :key="variedad" 
-                      :value="variedad"
-                    >
-                      {{ variedad }}
-                    </option>
-                  </select>
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                  <button @click="clearFilters" class="btn btn-outline-secondary w-100">
-                    <i class="fas fa-times me-1"></i>
-                    Limpiar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <LotesFilters
+            v-model:search-query="searchQuery"
+            v-model:filters="filters"
+            @apply-filters="applyFilters"
+            @clear-filters="clearFilters"
+          />
 
-          <!-- Estadísticas -->
-          <div class="row mb-4">
-            <div class="col-md-3">
-              <div class="card text-center">
-                <div class="card-body">
-                  <h3 class="text-primary">{{ stats.total }}</h3>
-                  <p class="text-muted mb-0">Total Lotes</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="card text-center">
-                <div class="card-body">
-                  <h3 class="text-success">{{ stats.activos }}</h3>
-                  <p class="text-muted mb-0">Activos</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="card text-center">
-                <div class="card-body">
-                  <h3 class="text-warning">{{ stats.cosechados }}</h3>
-                  <p class="text-muted mb-0">Cosechados</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="card text-center">
-                <div class="card-body">
-                  <h3 class="text-info">{{ stats.analisis }}</h3>
-                  <p class="text-muted mb-0">Con Análisis</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <!-- Lista de lotes -->
+          <LoteList
+            :lotes="filteredLotes"
+            :loading="loading"
+            :error="error"
+            :can-edit="canEdit"
+            :can-create="canCreate"
+            @edit="editLote"
+            @analyze="analyzeLote"
+            @view-details="viewLote"
+            @create="openCreateModal"
+            @retry="loadLotes"
+          />
 
-          <!-- Tabla de lotes -->
-          <div class="card">
-            <div class="card-body">
-              <div class="table-responsive">
-                image.png                <table class="table table-hover" aria-label="Tabla de lotes de la finca">
-                  <caption class="sr-only">Tabla de lotes mostrando identificador, variedad, área, estado, fecha de plantación, análisis y acciones disponibles</caption>
-                  <thead>
-                    <tr>
-                      <th>Identificador</th>
-                      <th>Variedad</th>
-                      <th>Área (ha)</th>
-                      <th>Estado</th>
-                      <th>Fecha Plantación</th>
-                      <th>Análisis</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="lote in filteredLotes" :key="lote.id">
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <i class="fas fa-seedling text-success me-2"></i>
-                          <strong>{{ lote.identificador }}</strong>
-                        </div>
-                      </td>
-                      <td>{{ lote.variedad }}</td>
-                      <td>{{ lote.area_hectareas }}</td>
-                      <td>
-                        <span 
-                          class="badge"
-                          :class="{
-                            'bg-success': lote.estado === 'activo',
-                            'bg-warning': lote.estado === 'inactivo',
-                            'bg-info': lote.estado === 'cosechado'
-                          }"
-                        >
-                          {{ lote.estado_display }}
-                        </span>
-                      </td>
-                      <td>{{ formatDate(lote.fecha_plantacion) }}</td>
-                      <td>
-                        <span class="badge bg-primary" v-if="lote.total_analisis > 0">
-                          {{ lote.total_analisis }} análisis
-                        </span>
-                        <span class="text-muted" v-else>Sin análisis</span>
-                      </td>
-                      <td>
-                        <div class="btn-group btn-group-sm">
-                          <button 
-                            @click="viewLote(lote.id)" 
-                            class="btn btn-outline-primary"
-                            title="Ver detalles"
-                          >
-                            <i class="fas fa-eye"></i>
-                          </button>
-                          <button 
-                            @click="editLote(lote.id)" 
-                            class="btn btn-outline-secondary"
-                            title="Editar"
-                            v-if="canEdit"
-                          >
-                            <i class="fas fa-edit"></i>
-                          </button>
-                          <button 
-                            @click="analyzeLote(lote.id)" 
-                            class="btn btn-outline-success"
-                            title="Analizar"
-                          >
-                            <i class="fas fa-microscope"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+          <!-- Modal de formulario -->
+          <Teleport to="body">
+            <CreateLoteModal
+              v-if="showModal && finca && fincaId"
+              :finca-id="Number(fincaId)"
+              :finca-nombre="finca.nombre || 'Finca'"
+              @close="closeModal"
+              @lote-created="handleLoteCreated"
+            />
+          </Teleport>
 
-              <!-- Paginación -->
-              <nav v-if="totalPages > 1" class="mt-4" aria-label="Navegación de paginación">
-                <ul class="pagination justify-content-center">
-                  <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                    <button 
-                      @click="changePage(currentPage - 1)" 
-                      class="page-link"
-                      :disabled="currentPage === 1"
-                    >
-                      Anterior
-                    </button>
-                  </li>
-                  <li 
-                    v-for="page in visiblePages" 
-                    :key="page"
-                    class="page-item"
-                    :class="{ active: page === currentPage }"
-                  >
-                    <button @click="changePage(page)" class="page-link">
-                      {{ page }}
-                    </button>
-                  </li>
-                  <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                    <button 
-                      @click="changePage(currentPage + 1)" 
-                      class="page-link"
-                      :disabled="currentPage === totalPages"
-                    >
-                      Siguiente
-                    </button>
-                  </li>
-                </ul>
-              </nav>
-
-              <!-- Sin resultados -->
-              <div v-if="filteredLotes.length === 0" class="text-center py-5">
-                <i class="fas fa-seedling fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">No se encontraron lotes</h5>
-                <p class="text-muted">Intenta ajustar los filtros de búsqueda</p>
-              </div>
-            </div>
-          </div>
+          <!-- Modal de detalle de lote -->
+          <Teleport to="body">
+            <LoteDetailModal
+              v-if="showDetailModal"
+              :show="showDetailModal"
+              :lote-id="selectedLoteId"
+              @close="closeDetailModal"
+            />
+          </Teleport>
         </div>
-      </div>
+      </main>
     </div>
   </div>
 </template>
@@ -271,30 +96,58 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
+import { useSidebarNavigation } from '@/composables/useSidebarNavigation'
+import { usePagination } from '@/composables/usePagination'
+import { getLotesByFinca, getFincaById } from '@/services/fincasApi'
+import Sidebar from '@/components/layout/Common/Sidebar.vue'
+import LotesHeader from '@/components/common/LotesViewComponents/LotesHeader.vue'
+import LotesFilters from '@/components/common/LotesViewComponents/LotesFilters.vue'
+import LoteList from '@/components/common/LotesViewComponents/LoteList.vue'
+import CreateLoteModal from '@/components/admin/AdminAnalisisComponents/CreateLoteModal.vue'
+import LoteDetailModal from '@/components/common/LotesViewComponents/LoteDetailModal.vue'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
 
+// Sidebar navigation composable
+const {
+  isSidebarCollapsed,
+  userName,
+  userRole,
+  handleMenuClick,
+  toggleSidebarCollapse,
+  handleLogout
+} = useSidebarNavigation()
+
 // Reactive data
 const finca = ref(null)
 const lotes = ref([])
-const variedades = ref([])
 const loading = ref(true)
 const error = ref(null)
-const currentPage = ref(1)
-const itemsPerPage = 10
+const showModal = ref(false)
+const showDetailModal = ref(false)
+const selectedLoteId = ref(null)
 
 // Filters
 const filters = reactive({
-  search: '',
   estado: '',
   variedad: ''
 })
+const searchQuery = ref('')
+
+// Pagination
+const pagination = usePagination({
+  initialPage: 1,
+  initialItemsPerPage: 10
+})
 
 // Computed
-const fincaId = computed(() => route.params.id)
+const fincaId = computed(() => {
+  const id = route.params.id
+  return id ? parseInt(id, 10) : null
+})
 
 const canCreate = computed(() => {
   return authStore.userRole === 'admin' || 
@@ -309,66 +162,72 @@ const canEdit = computed(() => {
 const filteredLotes = computed(() => {
   let filtered = lotes.value
 
-  if (filters.search) {
-    const search = filters.search.toLowerCase()
-    filtered = filtered.filter(lote => 
-      lote.identificador.toLowerCase().includes(search) ||
-      lote.variedad.toLowerCase().includes(search)
-    )
+  if (searchQuery.value) {
+    const search = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(lote => {
+      const identificador = lote.identificador?.toLowerCase() || ''
+      const nombre = lote.nombre?.toLowerCase() || ''
+      const variedadNombre = typeof lote.variedad === 'object' 
+        ? lote.variedad?.nombre?.toLowerCase() || ''
+        : String(lote.variedad || '').toLowerCase()
+      return identificador.includes(search) || 
+             nombre.includes(search) || 
+             variedadNombre.includes(search)
+    })
   }
 
   if (filters.estado) {
-    filtered = filtered.filter(lote => lote.estado === filters.estado)
+    filtered = filtered.filter(lote => {
+      const estadoNombre = typeof lote.estado === 'object' 
+        ? lote.estado?.nombre?.toLowerCase() || ''
+        : String(lote.estado || '').toLowerCase()
+      return estadoNombre === filters.estado.toLowerCase()
+    })
   }
 
   if (filters.variedad) {
-    filtered = filtered.filter(lote => lote.variedad === filters.variedad)
+    filtered = filtered.filter(lote => {
+      const variedadNombre = typeof lote.variedad === 'object' 
+        ? lote.variedad?.nombre?.toLowerCase() || ''
+        : String(lote.variedad || '').toLowerCase()
+      return variedadNombre === filters.variedad.toLowerCase()
+    })
   }
 
   return filtered
 })
 
 const stats = computed(() => {
+  const total = lotes.value.length
+  const activos = lotes.value.filter(lote => {
+    const estadoNombre = typeof lote.estado === 'object' 
+      ? lote.estado?.nombre?.toLowerCase() || ''
+      : String(lote.estado || '').toLowerCase()
+    return estadoNombre === 'activo'
+  }).length
+  const cosechados = lotes.value.filter(lote => {
+    const estadoNombre = typeof lote.estado === 'object' 
+      ? lote.estado?.nombre?.toLowerCase() || ''
+      : String(lote.estado || '').toLowerCase()
+    return estadoNombre === 'cosechado'
+  }).length
+  const analisis = lotes.value.filter(lote => (lote.total_analisis || 0) > 0).length
+  
   return {
-    total: lotes.value.length,
-    activos: lotes.value.filter(l => l.estado === 'activo').length,
-    cosechados: lotes.value.filter(l => l.estado === 'cosechado').length,
-    analisis: lotes.value.filter(l => l.total_analisis > 0).length
+    total,
+    activos,
+    cosechados,
+    analisis
   }
-})
-
-const totalPages = computed(() => {
-  return Math.ceil(filteredLotes.value.length / itemsPerPage)
-})
-
-const visiblePages = computed(() => {
-  const pages = []
-  const start = Math.max(1, currentPage.value - 2)
-  const end = Math.min(totalPages.value, start + 4)
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
-  
-  return pages
 })
 
 // Methods
 const loadFinca = async () => {
   try {
-    const response = await fetch(`/api/fincas/${fincaId.value}/`, {
-      headers: {
-        'Authorization': `Bearer ${authStore.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    
-    if (response.ok) {
-      finca.value = await response.json()
-    }
+    const data = await getFincaById(fincaId.value)
+    finca.value = data
   } catch (err) {
-    console.error('Error cargando finca:', err)
-  }
+    }
 }
 
 const loadLotes = async () => {
@@ -376,81 +235,99 @@ const loadLotes = async () => {
     loading.value = true
     error.value = null
     
-    const response = await fetch(`/api/fincas/${fincaId.value}/lotes/`, {
-      headers: {
-        'Authorization': `Bearer ${authStore.accessToken}`,
-        'Content-Type': 'application/json'
+    const data = await getLotesByFinca(fincaId.value)
+    
+    if (data && typeof data === 'object') {
+      if (data.lotes && Array.isArray(data.lotes)) {
+        lotes.value = data.lotes
+        if (data.finca && !finca.value) {
+          finca.value = data.finca
+        }
+      } else if (data.results && Array.isArray(data.results)) {
+        lotes.value = data.results
+      } else if (Array.isArray(data)) {
+        lotes.value = data
+      } else {
+        lotes.value = []
       }
-    })
-    
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`)
+    } else if (Array.isArray(data)) {
+      lotes.value = data
+    } else {
+      lotes.value = []
     }
-    
-    const data = await response.json()
-    lotes.value = data.results || []
-    
-    // Extraer variedades únicas
-    variedades.value = [...new Set(lotes.value.map(l => l.variedad))].sort()
-    
   } catch (err) {
-    error.value = err.message
-    console.error('Error cargando lotes:', err)
+    const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || 'Error al cargar los lotes'
+    error.value = errorMessage
+    
+    if (err.response?.status === 403) {
+      error.value = 'No tienes permisos para ver los lotes de esta finca'
+    } else if (err.response?.status === 404) {
+      error.value = 'La finca no existe o no tienes acceso a ella'
+    }
   } finally {
     loading.value = false
   }
 }
 
+const openCreateModal = () => {
+  showModal.value = true
+}
+
 const createLote = () => {
-  router.push(`/fincas/${fincaId.value}/lotes/new`)
-}
-
-const viewLote = (loteId) => {
-  router.push(`/lotes/${loteId}`)
-}
-
-const editLote = (loteId) => {
-  router.push(`/lotes/${loteId}/edit`)
-}
-
-const analyzeLote = (loteId) => {
-  router.push(`/analisis/new?lote=${loteId}`)
-}
-
-const clearFilters = () => {
-  filters.search = ''
-  filters.estado = ''
-  filters.variedad = ''
-  currentPage.value = 1
-}
-
-const changePage = (page) => {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
+  if (fincaId.value) {
+    router.push(`/fincas/${fincaId.value}/lotes/new`)
   }
 }
 
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('es-CO')
+const closeModal = () => {
+  showModal.value = false
 }
 
-// Debounced search
-let searchTimeout = null
-const debouncedSearch = () => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    currentPage.value = 1
-  }, 300)
+const handleLoteCreated = async (newLote) => {
+  closeModal()
+  // Recargar lotes después de crear uno nuevo
+  await loadLotes()
 }
 
-// Watchers
-watch(() => filters.estado, () => {
-  currentPage.value = 1
-})
+const viewLote = (lote) => {
+  const loteId = typeof lote === 'object' ? lote.id : lote
+  selectedLoteId.value = loteId
+  showDetailModal.value = true
+}
 
-watch(() => filters.variedad, () => {
-  currentPage.value = 1
-})
+const closeDetailModal = () => {
+  showDetailModal.value = false
+  selectedLoteId.value = null
+}
+
+const editLote = (lote) => {
+  const loteId = typeof lote === 'object' ? lote.id : lote
+  router.push(`/lotes/${loteId}/edit`)
+}
+
+const analyzeLote = (lote) => {
+  const loteId = typeof lote === 'object' ? lote.id : lote
+  router.push(`/analisis?lote=${loteId}`)
+}
+
+const applyFilters = () => {
+  // Los filtros se aplican automáticamente a través del computed filteredLotes
+}
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  filters.estado = ''
+  filters.variedad = ''
+  pagination.goToPage(1)
+}
+
+const changePage = (page) => {
+  if (page >= 1 && page <= pagination.totalPages.value) {
+    pagination.goToPage(page)
+  }
+}
+
+// Debounced search ya está manejado en LotesFilters
 
 // Lifecycle
 onMounted(() => {
@@ -460,39 +337,27 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.card {
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-  border: 1px solid rgba(0, 0, 0, 0.125);
+/* Transiciones suaves */
+.transition-colors {
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 
-.card-header {
-  background-color: rgba(0, 0, 0, 0.03);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+.transition-shadow {
+  transition-property: box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 
-.table th {
-  border-top: none;
-  font-weight: 600;
-  color: #495057;
+/* Animación de carga */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.btn-group-sm > .btn {
-  padding: 0.25rem 0.5rem;
-}
-
-.pagination .page-link {
-  color: #007bff;
-  border-color: #dee2e6;
-}
-
-.pagination .page-item.active .page-link {
-  background-color: #007bff;
-  border-color: #007bff;
-}
-
-.pagination .page-item.disabled .page-link {
-  color: #6c757d;
-  background-color: #fff;
-  border-color: #dee2e6;
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 </style>

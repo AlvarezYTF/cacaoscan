@@ -86,9 +86,14 @@ if [[ "${ROLE}" == "web" ]]; then
     log "📦 Recolectando archivos estáticos..."
     run_management_command collectstatic --noinput --clear
     log "✅ Archivos estáticos recolectados"
-    if [[ "${CREATE_DEFAULT_SUPERUSER:-true}" == "true" ]]; then
-        log "👤 Asegurando superusuario predeterminado"
-        run_management_command create_admin_user || log "⚠️ No se pudo crear el superusuario predeterminado"
+    
+    # Create superuser if enabled via environment variables
+    # This uses the secure createsuperuser_if_not_exists command
+    if [[ "${DJANGO_CREATE_SUPERUSER:-}" == "true" ]]; then
+        log "👤 Creando superusuario desde variables de entorno..."
+        run_management_command createsuperuser_if_not_exists || log "⚠️ No se pudo crear el superusuario"
+    else
+        log "ℹ️  Superusuario: DJANGO_CREATE_SUPERUSER no está habilitado (debe ser 'true')"
     fi
     if [[ "${SEED_INITIAL_DATA:-true}" == "true" ]]; then
         log "🌱 Inicializando catálogos y datos base"
@@ -101,6 +106,16 @@ case "${ROLE}" in
     web)
         log "✅ Iniciando servidor Gunicorn"
         exec "$@"
+        ;;
+    celery-worker)
+        wait_for_database
+        log "✅ Iniciando Celery Worker"
+        exec celery -A cacaoscan worker --loglevel=info --concurrency=2 --max-tasks-per-child=1
+        ;;
+    celery-beat)
+        wait_for_database
+        log "✅ Iniciando Celery Beat (Scheduler)"
+        exec celery -A cacaoscan beat --loglevel=info
         ;;
     *)
         log "✅ Ejecutando comando personalizado: $*"

@@ -24,25 +24,77 @@ export function useImageStats() {
     error.value = null
     
     try {
-      const response = await axios.get('/api/v1/images/stats/')
+      const response = await axios.get('/images/stats/')
       
-      stats.value = response.data
+      // Ensure response.data exists and has the expected structure
+      if (response.data) {
+        stats.value = {
+          total_images: response.data.total_images || 0,
+          processed_images: response.data.processed_images || 0,
+          unprocessed_images: response.data.unprocessed_images || 0,
+          processing_rate: response.data.processing_rate || 0,
+          processed_today: response.data.processed_today || 0,
+          processed_this_week: response.data.processed_this_week || 0,
+          processed_this_month: response.data.processed_this_month || 0,
+          average_confidence: response.data.average_confidence || 0,
+          average_processing_time_ms: response.data.average_processing_time_ms || 0,
+          region_stats: response.data.region_stats || [],
+          top_fincas: response.data.top_fincas || [],
+          average_dimensions: response.data.average_dimensions || {}
+        }
+      } else {
+        // If response.data is null or undefined, set default values
+        stats.value = {
+          total_images: 0,
+          processed_images: 0,
+          unprocessed_images: 0,
+          processing_rate: 0,
+          processed_today: 0,
+          processed_this_week: 0,
+          processed_this_month: 0,
+          average_confidence: 0,
+          average_processing_time_ms: 0,
+          region_stats: [],
+          top_fincas: [],
+          average_dimensions: {}
+        }
+      }
     } catch (err) {
+      console.error('[useImageStats] Error fetching stats:', err)
       // Si es error 500, retornar valores por defecto sin loggear
       if (err.response?.status === 500) {
         stats.value = {
           total_images: 0,
           processed_images: 0,
+          unprocessed_images: 0,
           processing_rate: 0,
+          processed_today: 0,
+          processed_this_week: 0,
+          processed_this_month: 0,
           average_confidence: 0,
-          average_dimensions: {},
+          average_processing_time_ms: 0,
           region_stats: [],
-          top_fincas: []
+          top_fincas: [],
+          average_dimensions: {}
         }
         error.value = null
       } else {
-        console.error('Error fetching image stats:', err)
         error.value = err.response?.data?.error || 'Error al obtener estadísticas'
+        // Set default values on error
+        stats.value = {
+          total_images: 0,
+          processed_images: 0,
+          unprocessed_images: 0,
+          processing_rate: 0,
+          processed_today: 0,
+          processed_this_week: 0,
+          processed_this_month: 0,
+          average_confidence: 0,
+          average_processing_time_ms: 0,
+          region_stats: [],
+          top_fincas: [],
+          average_dimensions: {}
+        }
       }
     } finally {
       loading.value = false
@@ -68,19 +120,18 @@ export function useImageStats() {
       })
       
       // Agregar otros filtros si existen
-      Object.keys(filters).forEach(key => {
+      for (const key of Object.keys(filters)) {
         if (key !== 'page_size' && filters[key] !== undefined && filters[key] !== null) {
           params.append(key, filters[key].toString())
         }
-      })
+      }
       
-      const response = await axios.get(`/api/v1/images/?${params}`)
+      const response = await axios.get(`/images/?${params}`)
       
       return response.data
     } catch (err) {
       // Si es error 500, retornar objeto vacío sin loggear
       if (err.response?.status !== 500) {
-        console.error('Error fetching images:', err)
         error.value = err.response?.data?.error || 'Error al obtener imágenes'
       }
       return { results: [], count: 0, totalPages: 0 }
@@ -110,7 +161,6 @@ export function useImageStats() {
     } catch (err) {
       // Si es error 500, retornar null sin loggear
       if (err.response?.status !== 500) {
-        console.error('Error fetching report stats:', err)
         error.value = err.response?.data?.error || 'Error al obtener estadísticas de reportes'
       }
       return null
@@ -139,13 +189,12 @@ export function useImageStats() {
       // Crear blob y descargar
       const blob = new Blob([response.data], { type: 'application/pdf' })
       const link = document.createElement('a')
-      link.href = window.URL.createObjectURL(blob)
+      link.href = globalThis.URL.createObjectURL(blob)
       link.download = `reporte_${reportType}_${new Date().toISOString().split('T')[0]}.pdf`
       link.click()
       
       return true
     } catch (err) {
-      console.error('Error generating report:', err)
       error.value = err.response?.data?.error || 'Error al generar reporte'
       return false
     } finally {

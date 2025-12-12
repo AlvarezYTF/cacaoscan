@@ -1,101 +1,97 @@
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-            </svg>
-          </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- Total Agricultores -->
+    <div class="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-sm transition-shadow">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Cacaocultores</p>
+          <p class="text-3xl font-bold text-gray-900">{{ totalItems }}</p>
         </div>
-        <div class="ml-4">
-          <p class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-1">Total Agricultores</p>
-          <p class="text-2xl font-bold text-gray-900">{{ totalItems }}</p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-            </svg>
-          </div>
-        </div>
-        <div class="ml-4">
-          <p class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-1">Total Fincas</p>
-          <p class="text-2xl font-bold text-gray-900">{{ getTotalFarms() }}</p>
+        <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+          <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
         </div>
       </div>
     </div>
-    
-    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
+
+    <!-- Total Fincas -->
+    <div class="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-sm transition-shadow">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Fincas</p>
+          <p class="text-3xl font-bold text-gray-900">{{ getTotalFarms() }}</p>
         </div>
-        <div class="ml-4">
-          <p class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-1">Activos</p>
-          <p class="text-2xl font-bold text-gray-900">{{ getActiveFarmers() }}</p>
+        <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
         </div>
       </div>
     </div>
-    
-    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path>
-            </svg>
-          </div>
+
+    <!-- Activos -->
+    <div class="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-sm transition-shadow">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Activos</p>
+          <p class="text-3xl font-bold text-gray-900">{{ getActiveFarmers() }}</p>
         </div>
-        <div class="ml-4">
-          <p class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-1">Área Total</p>
-          <p class="text-2xl font-bold text-gray-900">{{ getTotalArea() }} ha</p>
+        <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center">
+          <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Área Total -->
+    <div class="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-sm transition-shadow">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Área Total</p>
+          <p class="text-3xl font-bold text-gray-900">{{ getTotalArea() }}<span class="text-lg font-normal text-gray-500 ml-1">ha</span></p>
+        </div>
+        <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+          <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'FarmersStatsCards',
-  props: {
-    totalItems: {
-      type: Number,
-      required: true
-    },
-    farmers: {
-      type: Array,
-      required: true
-    },
-    allFincas: {
-      type: Array,
-      required: true
-    }
+<script setup>
+import BaseStatsCard from '@/components/common/BaseStatsCard.vue'
+
+const props = defineProps({
+  totalItems: {
+    type: Number,
+    required: true
   },
-  methods: {
-    getTotalFarms() {
-      return this.allFincas.length;
-    },
-    getActiveFarmers() {
-      return this.farmers.filter(farmer => farmer.status === 'Activo').length;
-    },
-    getTotalArea() {
-      return this.allFincas.reduce((total, finca) => {
-        return total + parseFloat(finca.hectareas || 0);
-      }, 0).toFixed(1);
-    }
+  farmers: {
+    type: Array,
+    required: true
+  },
+  allFincas: {
+    type: Array,
+    required: true
   }
-};
+})
+
+const getTotalFarms = () => {
+  return props.allFincas.length
+}
+
+const getActiveFarmers = () => {
+  return props.farmers.filter(farmer => farmer.status === 'Activo').length
+}
+
+const getTotalArea = () => {
+  return props.allFincas.reduce((total, finca) => {
+    return total + Number.parseFloat(finca.hectareas || 0)
+  }, 0).toFixed(1)
+}
 </script>
 

@@ -35,14 +35,27 @@ class ProfileService(BaseService):
             models = get_models_safely({
                 'UserProfile': 'auth_app.models.UserProfile'
             })
-            UserProfile = models['UserProfile']
+            user_profile_model = models['UserProfile']
             
             user_profile = None
             try:
-                user_profile = user.profile
-            except UserProfile.DoesNotExist:
+                user_profile = user.auth_profile
+            except user_profile_model.DoesNotExist:
                 # If no profile exists, create empty one
-                user_profile = UserProfile.objects.create(user=user)
+                if user_profile_model is None:
+                    # If model is not available, return error
+                    return ServiceResult.error(
+                        ValidationServiceError("Modelo UserProfile no disponible")
+                    )
+                user_profile = user_profile_model.objects.create(user=user)
+            
+            # Get phone number from Persona if available
+            phone_number = ''
+            try:
+                if hasattr(user, 'persona') and user.persona:
+                    phone_number = user.persona.telefono or ''
+            except Exception:
+                pass
             
             profile_data = {
                 'id': user.id,
@@ -58,10 +71,9 @@ class ProfileService(BaseService):
                 'last_login': user.last_login.isoformat() if user.last_login else None,
                 'is_verified': self._check_email_verified(user),
                 # Extended profile data
-                'phone_number': user_profile.phone_number or '',
-                'region': user_profile.region or '',
-                'municipality': user_profile.municipality or '',
-                'farm_name': user_profile.farm_name or '',
+                'phone_number': phone_number,
+                'municipio_id': user_profile.municipio.id if user_profile.municipio else None,
+                'municipio_nombre': user_profile.municipio.nombre if user_profile.municipio else None,
                 'years_experience': user_profile.years_experience,
                 'farm_size_hectares': float(user_profile.farm_size_hectares) if user_profile.farm_size_hectares else None,
                 'preferred_language': user_profile.preferred_language,
@@ -96,7 +108,8 @@ class ProfileService(BaseService):
             user_allowed_fields = ['first_name', 'last_name', 'email']
             
             # Extended profile fields (UserProfile)
-            profile_allowed_fields = ['phone_number']
+            # Note: phone_number is managed in Persona model, not UserProfile
+            profile_allowed_fields = []
             
             # Separate User and UserProfile data
             user_data = {}
@@ -136,8 +149,8 @@ class ProfileService(BaseService):
                 models = get_models_safely({
                     'UserProfile': 'auth_app.models.UserProfile'
                 })
-                UserProfile = models['UserProfile']
-                profile, created = UserProfile.objects.get_or_create(user=user)
+                user_profile_model = models['UserProfile']
+                profile, _ = user_profile_model.objects.get_or_create(user=user)
                 for field, value in profile_data_dict.items():
                     setattr(profile, field, value)
                 profile.save()
@@ -174,7 +187,7 @@ class ProfileService(BaseService):
         try:
             if hasattr(user, 'auth_email_token'):
                 return user.auth_email_token.is_verified
-        except:
+        except (AttributeError, KeyError, ValueError):
             pass
         return user.is_active
 

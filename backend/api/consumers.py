@@ -21,6 +21,10 @@ except ImportError:
 
 logger = logging.getLogger("cacaoscan.websockets")
 
+# Error message constants
+ERROR_INVALID_JSON = 'Formato JSON inválido'
+ERROR_INTERNAL_SERVER = 'Error interno del servidor'
+
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     """
@@ -82,13 +86,13 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         except json.JSONDecodeError:
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': 'Formato JSON inválido'
+                'message': ERROR_INVALID_JSON
             }))
         except Exception as e:
             logger.error(f"Error procesando mensaje WebSocket: {e}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': 'Error interno del servidor'
+                'message': ERROR_INTERNAL_SERVER
             }))
     
     async def notification_message(self, event):
@@ -183,9 +187,18 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         unread_count = Notification.get_unread_count(user)
         
         notifications_by_type = {}
-        for tipo, _ in Notification.TIPO_CHOICES:
-            count = Notification.objects.filter(user=user, tipo=tipo).count()
-            notifications_by_type[tipo] = count
+        # Use Parametro catalog with TEMA_TIPO_NOTIFICACION theme
+        from catalogos.models import Parametro
+        try:
+            tipo_notificaciones = Parametro.objects.filter(
+                tema__codigo='TEMA_TIPO_NOTIFICACION',
+                activo=True
+            )
+            for tipo_param in tipo_notificaciones:
+                count = Notification.objects.filter(user=user, tipo=tipo_param).count()
+                notifications_by_type[tipo_param.codigo] = count
+        except Exception as e:
+            logger.debug(f"No se pudieron obtener tipos de notificación: {e}")
         
         stats = {
             'total_notifications': total_notifications,
@@ -247,13 +260,13 @@ class SystemStatusConsumer(AsyncWebsocketConsumer):
         except json.JSONDecodeError:
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': 'Formato JSON inválido'
+                'message': ERROR_INVALID_JSON
             }))
         except Exception as e:
             logger.error(f"Error procesando mensaje WebSocket: {e}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': 'Error interno del servidor'
+                'message': ERROR_INTERNAL_SERVER
             }))
     
     async def system_status_update(self, event):
@@ -372,13 +385,13 @@ class AuditConsumer(AsyncWebsocketConsumer):
         except json.JSONDecodeError:
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': 'Formato JSON inválido'
+                'message': ERROR_INVALID_JSON
             }))
         except Exception as e:
             logger.error(f"Error procesando mensaje WebSocket: {e}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': 'Error interno del servidor'
+                'message': ERROR_INTERNAL_SERVER
             }))
     
     async def audit_activity(self, event):
@@ -537,13 +550,13 @@ class UserStatsConsumer(AsyncWebsocketConsumer):
         except json.JSONDecodeError:
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': 'Formato JSON inválido'
+                'message': ERROR_INVALID_JSON
             }))
         except Exception as e:
             logger.error(f"Error procesando mensaje WebSocket: {e}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': 'Error interno del servidor'
+                'message': ERROR_INTERNAL_SERVER
             }))
     
     async def user_stats_update(self, event):

@@ -98,10 +98,11 @@
           v-for="img in uploadedImages"
           :key="img.id"
           class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+          data-testid="uploaded-image"
         >
           <img
             :src="img.image_url || img.image"
-            :alt="`Imagen ${img.id}`"
+            :alt="`${img.id}`"
             class="w-full h-48 object-cover"
             @error="handleImageError"
           />
@@ -138,12 +139,14 @@ const removeFile = (index) => {
   files.value.splice(index, 1)
 }
 
-const clearFiles = () => {
+const clearFiles = (clearStatus = true) => {
   files.value = []
   if (fileInput.value) {
     fileInput.value.value = ''
   }
-  uploadStatus.value = null
+  if (clearStatus) {
+    uploadStatus.value = null
+  }
 }
 
 const formatFileSize = (bytes) => {
@@ -194,12 +197,20 @@ const uploadImages = async () => {
       uploadStatus.value = {
         type: 'success',
         title: '✅ Subida completada',
-        message: `Se subieron ${total_uploaded} imagen${total_uploaded !== 1 ? 'es' : ''} correctamente.${total_errors > 0 ? ` ${total_errors} imagen${total_errors !== 1 ? 'es' : ''} con errores.` : ''}`,
+        message: (() => {
+          const imagesText = total_uploaded === 1 ? 'imagen' : 'imágenes'
+          const successMsg = `Se subieron ${total_uploaded} ${imagesText} correctamente.`
+          if (total_errors > 0) {
+            const errorsText = total_errors === 1 ? 'imagen' : 'imágenes'
+            return `${successMsg} ${total_errors} ${errorsText} con errores.`
+          }
+          return successMsg
+        })(),
         errors: errors || []
       }
       
-      // Limpiar archivos subidos exitosamente
-      clearFiles()
+      // Limpiar archivos subidos exitosamente (pero mantener el status)
+      clearFiles(false)
     } else {
       uploadStatus.value = {
         type: 'error',
@@ -209,7 +220,6 @@ const uploadImages = async () => {
       }
     }
   } catch (error) {
-    console.error('Error al subir imágenes:', error)
     uploadStatus.value = {
       type: 'error',
       title: '❌ Error al subir imágenes',

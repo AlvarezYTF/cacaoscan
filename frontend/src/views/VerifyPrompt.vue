@@ -133,7 +133,6 @@ const resendEmail = async () => {
       setStatusMessage(result.error || 'Error al reenviar el email', 'error')
     }
   } catch (error) {
-    console.error('Error reenviando email:', error)
     setStatusMessage('Error inesperado al reenviar el email', 'error')
   } finally {
     isLoading.value = false

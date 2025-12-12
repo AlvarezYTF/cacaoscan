@@ -7,7 +7,7 @@ import time
 import uuid
 import logging
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Any
+from typing import Dict, Optional, Tuple, Any, List
 import numpy as np
 import torch
 import cv2
@@ -21,18 +21,25 @@ from ..segmentation.cropper import create_cacao_cropper
 from ..regression.models import create_model, TARGETS
 from ..regression.scalers import load_scalers
 from ..data.transforms import resize_crop_to_square
-from ..measurement.calibration import (
+from ..measurement import (
     get_calibration_manager,
     CalibrationMethod,
-    ReferenceObject,
     convert_pixels_to_mm
 )
+from .base_predictor import PredictorBase
 
 logger = get_ml_logger("cacaoscan.ml.prediction")
 
 
-class CalibratedCacaoPredictor:
-    """Predictor unificado con calibración para granos de cacao."""
+class PredictorCacaoCalibrado(PredictorBase):
+    """
+    Predictor unificado con calibración para granos de cacao.
+    
+    Hereda de BasePredictor y añade funcionalidad específica para:
+    - Modelos individuales por target
+    - Calibración OpenCV
+    - Segmentación YOLO
+    """
     
     def __init__(self, confidence_threshold: float = 0.5, use_calibration: bool = True):
         """
@@ -42,13 +49,13 @@ class CalibratedCacaoPredictor:
             confidence_threshold: Umbral de confianza para YOLO
             use_calibration: Si usar calibración para convertir a medidas reales
         """
-        self.confidence_threshold = confidence_threshold
+        # Initialize base predictor
+        super().__init__(confidence_threshold=confidence_threshold)
+        
+        # Specific to calibrated predictor
         self.use_calibration = use_calibration
         self.yolo_cropper = None
-        self.regression_models = {}
-        self.scalers = None
-        self.device = self._get_device()
-        self.models_loaded = False
+        self.regression_models = {}  # Dictionary of individual models per target
         
         # Gestor de calibración
         self.calibration_manager = get_calibration_manager() if use_calibration else None
@@ -57,18 +64,9 @@ class CalibratedCacaoPredictor:
         self.runtime_crops_dir = Path("media/cacao_images/crops_runtime")
         ensure_dir_exists(self.runtime_crops_dir)
         
-        logger.info(f"CalibratedCacaoPredictor inicializado con threshold {confidence_threshold}, calibración: {use_calibration}")
+        logger.info(f"PredictorCacaoCalibrado initialized with threshold {confidence_threshold}, calibration: {use_calibration}")
     
-    def _get_device(self) -> torch.device:
-        """Obtiene el dispositivo disponible."""
-        if torch.cuda.is_available():
-            device = torch.device('cuda')
-            logger.info(f"Usando GPU: {torch.cuda.get_device_name(0)}")
-        else:
-            device = torch.device('cpu')
-            logger.info("Usando CPU")
-        
-        return device
+    # _get_device() is now inherited from BasePredictor
     
     def load_artifacts(self) -> bool:
         """
@@ -81,77 +79,14 @@ class CalibratedCacaoPredictor:
             logger.info("Cargando artefactos...")
             start_time = time.time()
             
-            # 1. Cargar YOLO cropper
-            self.yolo_cropper = create_cacao_cropper(
-                confidence_threshold=self.confidence_threshold,
-                crop_size=512,
-                padding=10,
-                save_masks=False,
-                overwrite=False
-            )
-            
-            # 2. Verificar si existen los modelos y escaladores
-            scalers_path = get_regressors_artifacts_dir()
-            models_exist = all(
-                (get_regressors_artifacts_dir() / f"{target}.pt").exists() 
-                for target in TARGETS
-            )
-            scalers_exist = scalers_path.exists()
-            
-            if not models_exist or not scalers_exist:
-                import os
-                auto_train_enabled = os.getenv("AUTO_TRAIN_ENABLED", "0").lower() in ("1", "true", "yes")
-                if auto_train_enabled:
-                    logger.warning("Modelos o escaladores no encontrados. Iniciando entrenamiento automtico...")
-                    if not self._auto_train_models():
-                        logger.error("Error en entrenamiento automtico")
-                        return False
-                else:
-                    logger.warning("Modelos/escaladores no encontrados y AUTO_TRAIN_ENABLED=0. Omitiendo autoentrenamiento.")
-                    return False
-            
-            # 3. Cargar escaladores
-            try:
-                self.scalers = load_scalers()
-                logger.info("Escaladores cargados exitosamente")
-            except Exception as e:
-                logger.error(f"Error cargando escaladores: {e}")
+            self._initialize_yolo_cropper()
+            if not self._ensure_regression_assets_exist():
                 return False
-            
-            # 4. Cargar modelos de regresión
-            for target in TARGETS:
-                try:
-                    model_path = get_regressors_artifacts_dir() / f"{target}.pt"
-                    model = create_model(
-                        model_type="resnet18",
-                        num_outputs=1,
-                        pretrained=False,
-                        dropout_rate=0.2
-                    )
-                    
-                    # Cargar pesos del modelo
-                    checkpoint = torch.load(model_path, map_location=self.device)
-                    model.load_state_dict(checkpoint['model_state_dict'])
-                    model.to(self.device)
-                    model.eval()
-                    
-                    self.regression_models[target] = model
-                    logger.info(f"Modelo {target} cargado exitosamente")
-                    
-                except Exception as e:
-                    logger.error(f"Error cargando modelo {target}: {e}")
-                    return False
-            
-            # 5. Cargar calibración si está habilitada
-            if self.use_calibration and self.calibration_manager:
-                try:
-                    calibration_params = self.calibration_manager.load_calibration()
-                    if calibration_params:
-                        logger.info(f"Calibración cargada: {calibration_params.pixels_per_mm:.3f} pixels/mm")
-                    else:
-                        logger.warning("No se encontró calibración previa. Se usarán medidas en píxeles.")
-                except Exception as e:
-                    logger.warning(f"Error cargando calibración: {e}")
+            if not self._load_scalers_safe():
+                return False
+            if not self._load_regression_models():
+                return False
+            self._load_calibration_if_needed()
             
             self.models_loaded = True
             load_time = time.time() - start_time
@@ -181,28 +116,86 @@ class CalibratedCacaoPredictor:
         except Exception as e:
             logger.error(f"Error en entrenamiento automático: {e}")
             return False
+
+    def _initialize_yolo_cropper(self) -> None:
+        """Inicializa el recortador YOLO."""
+        self.yolo_cropper = create_cacao_cropper(
+            confidence_threshold=self.confidence_threshold,
+            crop_size=512,
+            padding=10,
+            save_masks=False,
+            overwrite=False
+        )
+
+    def _ensure_regression_assets_exist(self) -> bool:
+        """Verifica la existencia de modelos y escaladores necesarios."""
+        models_exist = all(
+            (get_regressors_artifacts_dir() / f"{target}.pt").exists()
+            for target in TARGETS
+        )
+        scalers_exist = get_regressors_artifacts_dir().exists()
+        if models_exist and scalers_exist:
+            return True
+        
+        import os
+        auto_train_enabled = os.getenv("AUTO_TRAIN_ENABLED", "0").lower() in ("1", "true", "yes")
+        if auto_train_enabled:
+            logger.warning("Modelos o escaladores no encontrados. Iniciando entrenamiento automático...")
+            return self._auto_train_models()
+        
+        logger.warning("Modelos/escaladores no encontrados y AUTO_TRAIN_ENABLED=0. Omitiendo autoentrenamiento.")
+        return False
+
+    def _load_scalers_safe(self) -> bool:
+        """Carga los escaladores y gestiona errores."""
+        try:
+            self.scalers = load_scalers()
+            logger.info("Escaladores cargados exitosamente")
+            return True
+        except Exception as exc:
+            logger.error(f"Error cargando escaladores: {exc}")
+            return False
+
+    def _load_regression_models(self) -> bool:
+        """Carga los modelos de regresión individuales."""
+        for target in TARGETS:
+            try:
+                model_path = get_regressors_artifacts_dir() / f"{target}.pt"
+                model = create_model(
+                    model_type="resnet18",
+                    num_outputs=1,
+                    pretrained=False,
+                    dropout_rate=0.2
+                )
+                checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)
+                state_dict = checkpoint.get('model_state_dict')
+                if not state_dict:
+                    raise ValueError(f"Checkpoint {model_path} no contiene 'model_state_dict'")
+                model.load_state_dict(state_dict)
+                model.to(self.device)
+                model.eval()
+                
+                self.regression_models[target] = model
+                logger.info(f"Modelo {target} cargado exitosamente")
+            except Exception as exc:
+                logger.error(f"Error cargando modelo {target}: {exc}")
+                return False
+        return True
+
+    def _load_calibration_if_needed(self) -> None:
+        """Carga parámetros de calibración si está disponible."""
+        if not self.use_calibration or not self.calibration_manager:
+            return
+        try:
+            calibration_params = self.calibration_manager.load_calibration()
+            if calibration_params:
+                logger.info(f"Calibración cargada: {calibration_params.pixels_per_mm:.3f} pixels/mm")
+            else:
+                logger.warning("No se encontró calibración previa. Se usarán medidas en píxeles.")
+        except Exception as exc:
+            logger.warning(f"Error cargando calibración: {exc}")
     
-    def _preprocess_image(self, image: Image.Image) -> torch.Tensor:
-        """Preprocesa la imagen para el modelo de regresión."""
-        # Convertir a RGB si es necesario
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-        
-        # Redimensionar a 224x224 (tamaño esperado por ResNet)
-        image = image.resize((224, 224), Image.Resampling.LANCZOS)
-        
-        # Convertir a tensor y normalizar
-        image_array = np.array(image).astype(np.float32) / 255.0
-        
-        # Aplicar normalización estándar de ImageNet
-        mean = np.array([0.485, 0.456, 0.406])
-        std = np.array([0.229, 0.224, 0.225])
-        image_array = (image_array - mean) / std
-        
-        # Convertir a tensor y agregar dimensión de batch
-        image_tensor = torch.from_numpy(image_array).permute(2, 0, 1).unsqueeze(0)
-        
-        return image_tensor.to(self.device)
+    # _preprocess_image() is now inherited from BasePredictor
     
     def _predict_single_target(self, image_tensor: torch.Tensor, target: str) -> Tuple[float, float]:
         """Predice un target específico."""
@@ -221,8 +214,8 @@ class CalibratedCacaoPredictor:
     def calibrate_image(
         self,
         image: Image.Image,
-        method: CalibrationMethod = CalibrationMethod.COIN_DETECTION,
-        reference_object: Optional[ReferenceObject] = None
+        method: CalibrationMethod = CalibrationMethod.DATASET_CALIBRATION,
+        manual_points: Optional[List[Tuple[int, int]]] = None
     ) -> Dict[str, Any]:
         """
         Calibra una imagen para obtener la escala de píxeles a milímetros.
@@ -230,7 +223,7 @@ class CalibratedCacaoPredictor:
         Args:
             image: Imagen PIL
             method: Método de calibración
-            reference_object: Objeto de referencia específico
+            manual_points: Puntos manuales para calibración (solo para MANUAL_POINTS)
             
         Returns:
             Diccionario con resultado de calibración
@@ -247,7 +240,7 @@ class CalibratedCacaoPredictor:
             
             # Realizar calibración
             calibration_result = self.calibration_manager.calibrate_image(
-                image_cv, method, reference_object
+                image_cv, method, manual_points
             )
             
             if calibration_result.success:
@@ -259,7 +252,6 @@ class CalibratedCacaoPredictor:
                     'pixels_per_mm': calibration_result.pixels_per_mm,
                     'confidence': calibration_result.confidence,
                     'method': calibration_result.method.value,
-                    'reference_object': calibration_result.reference_object.value['name'] if calibration_result.reference_object else None,
                     'calibration_image_path': calibration_result.calibration_image_path
                 }
             else:
@@ -285,8 +277,7 @@ class CalibratedCacaoPredictor:
         Returns:
             Diccionario con predicciones y metadatos
         """
-        if not self.models_loaded:
-            raise ValueError("Modelos no cargados. Ejecutar load_artifacts() primero.")
+        self._validate_models_loaded()
         
         logger.info("Iniciando predicción con calibración...")
         
@@ -297,8 +288,19 @@ class CalibratedCacaoPredictor:
             logger.debug("Iniciando segmentación...")
             
             # Guardar imagen temporalmente para el cropper
+            # Convertir a RGB si es RGBA (JPEG no soporta transparencia)
+            if image.mode == 'RGBA':
+                # Crear fondo blanco y pegar la imagen RGBA encima
+                rgb_image = Image.new('RGB', image.size, (255, 255, 255))
+                rgb_image.paste(image, mask=image.split()[3])  # Usar canal alpha como máscara
+                image_to_save = rgb_image
+            elif image.mode != 'RGB':
+                image_to_save = image.convert('RGB')
+            else:
+                image_to_save = image
+            
             temp_image_path = self.runtime_crops_dir / f"temp_{uuid.uuid4()}.jpg"
-            image.save(temp_image_path)
+            image_to_save.save(temp_image_path, format='JPEG', quality=95)
             
             try:
                 # Usar el cropper para segmentar y recortar
@@ -444,7 +446,7 @@ class CalibratedCacaoPredictor:
 
 
 # Función de conveniencia para obtener el predictor calibrado
-def get_calibrated_predictor(confidence_threshold: float = 0.5, use_calibration: bool = True) -> CalibratedCacaoPredictor:
+def obtener_predictor_calibrado(confidence_threshold: float = 0.5, use_calibration: bool = True) -> PredictorCacaoCalibrado:
     """
     Obtiene una instancia del predictor calibrado.
     
@@ -455,6 +457,10 @@ def get_calibrated_predictor(confidence_threshold: float = 0.5, use_calibration:
     Returns:
         Instancia del predictor calibrado
     """
-    return CalibratedCacaoPredictor(confidence_threshold, use_calibration)
+    return PredictorCacaoCalibrado(confidence_threshold=confidence_threshold, use_calibration=use_calibration)
+
+# Compatibilidad hacia atrás
+CalibratedCacaoPredictor = PredictorCacaoCalibrado
+get_calibrated_predictor = obtener_predictor_calibrado
 
 

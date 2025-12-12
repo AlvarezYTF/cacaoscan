@@ -1,5 +1,10 @@
 """
 Inferencia con YOLOv8-seg para segmentación de granos de cacao.
+
+REFACTORIZADO: Aplicando principios SOLID
+- Funciones auxiliares extraídas para mejorar SRP
+- Mejores docstrings y type hints
+- Separación de responsabilidades mejorada
 """
 import numpy as np
 import cv2
@@ -18,6 +23,72 @@ from ..utils.logs import get_ml_logger
 
 
 logger = get_ml_logger("cacaoscan.ml.segmentation")
+
+
+def _calcular_centro_mascara(mask: np.ndarray) -> Tuple[int, int]:
+    """
+    Calcula el centro de masa de una máscara.
+    
+    Args:
+        mask: Máscara binaria
+        
+    Returns:
+        Tupla (cx, cy) con coordenadas del centro
+    """
+    moments = cv2.moments(mask.astype(np.uint8))
+    if moments['m00'] != 0:
+        cx = int(moments['m10'] / moments['m00'])
+        cy = int(moments['m01'] / moments['m00'])
+        return (cx, cy)
+    else:
+        # Fallback: centro geométrico
+        h, w = mask.shape
+        return (w // 2, h // 2)
+
+
+def _extraer_datos_prediccion(box: Any, mask: Any, class_names: Dict[int, str]) -> Dict[str, Any]:
+    """
+    Extrae datos de una predicción YOLO.
+    
+    Args:
+        box: Caja de detección YOLO
+        mask: Máscara de segmentación
+        class_names: Diccionario de nombres de clases
+        
+    Returns:
+        Diccionario con datos de la predicción
+    """
+    conf = float(box.conf[0])
+    cls = int(box.cls[0])
+    mask_data = mask.data[0].cpu().numpy()
+    
+    return {
+        'confidence': conf,
+        'class_id': cls,
+        'class_name': class_names[cls],
+        'bbox': box.xyxy[0].cpu().numpy().tolist(),
+        'mask': mask_data,
+        'area': int(np.sum(mask_data > 0.5)),
+        'center': _calcular_centro_mascara(mask_data)
+    }
+
+
+def _ordenar_modelos_por_timestamp(best_models: List[Tuple[str, Path]]) -> Optional[Path]:
+    """
+    Ordena modelos por timestamp y retorna el más reciente.
+    
+    Args:
+        best_models: Lista de tuplas (timestamp, path)
+        
+    Returns:
+        Path al modelo más reciente o None
+    """
+    if not best_models:
+        return None
+    
+    # Ordenar por timestamp (más reciente primero)
+    best_models.sort(reverse=True)
+    return best_models[0][1]
 
 
 class YOLOSegmentationInference:
@@ -96,15 +167,10 @@ class YOLOSegmentationInference:
                         timestamp = train_dir.name.split("_")[-2:]  # Obtener fecha y hora
                         timestamp_str = "_".join(timestamp)
                         best_models.append((timestamp_str, best_model))
-                    except:
+                    except Exception:
                         best_models.append((train_dir.name, best_model))
         
-        if best_models:
-            # Ordenar por timestamp (más reciente primero)
-            best_models.sort(reverse=True)
-            return best_models[0][1]
-        
-        return None
+        return _ordenar_modelos_por_timestamp(best_models)
     
     def predict(self, image_path: Path, conf_threshold: Optional[float] = None) -> List[Dict[str, Any]]:
         """
@@ -127,110 +193,20 @@ class YOLOSegmentationInference:
             # Usar threshold proporcionado o el predeterminado
             threshold = conf_threshold if conf_threshold is not None else self.confidence_threshold
             
-            # Realizar prediccin con umbral inicial
+            # Realizar predicción con umbral inicial
             results = self.model(str(image_path), conf=threshold)
+            predictions = self._process_yolo_results(results)
             
-            predictions = []
-            
-            for result in results:
-                if result.masks is not None and len(result.masks) > 0:
-                    # Obtener información de las detecciones
-                    boxes = result.boxes
-                    masks = result.masks
-                    
-                    for i in range(len(boxes)):
-                        # Información de la caja delimitadora
-                        box = boxes[i]
-                        conf = float(box.conf[0])
-                        cls = int(box.cls[0])
-                        
-                        # Información de la máscara
-                        mask = masks[i]
-                        mask_data = mask.data[0].cpu().numpy()
-                        
-                        prediction = {
-                            'confidence': conf,
-                            'class_id': cls,
-                            'class_name': self.model.names[cls],
-                            'bbox': box.xyxy[0].cpu().numpy().tolist(),  # [x1, y1, x2, y2]
-                            'mask': mask_data,
-                            'area': np.sum(mask_data > 0.5),
-                            'center': self._calculate_mask_center(mask_data)
-                        }
-                        
-                        predictions.append(prediction)
-            
-            # Si no hay detecciones con el umbral inicial, intentar con umbrales ms bajos progresivamente
+            # Si no hay detecciones, intentar con umbrales más bajos
             if not predictions:
-                lower_thresholds = [0.4, 0.3, 0.25, 0.2, 0.15, 0.1]  # Ms intentos con umbrales progresivamente ms bajos
-                for lower_threshold in lower_thresholds:
-                    logger.debug(f"Intentando deteccin con umbral {lower_threshold}...")
-                    results = self.model(str(image_path), conf=lower_threshold)
-                    
-                    for result in results:
-                        if result.masks is not None and len(result.masks) > 0:
-                            boxes = result.boxes
-                            masks = result.masks
-                            
-                            # Filtrar solo las detecciones ms confiables de cada intento
-                            for i in range(len(boxes)):
-                                box = boxes[i]
-                                conf = float(box.conf[0])
-                                
-                                # Solo aceptar si la confianza es razonable
-                                if conf >= lower_threshold * 0.8:  # Al menos 80% del umbral usado
-                                    mask = masks[i]
-                                    mask_data = mask.data[0].cpu().numpy()
-                                    
-                                    prediction = {
-                                        'confidence': conf,
-                                        'class_id': int(box.cls[0]),
-                                        'class_name': self.model.names[int(box.cls[0])],
-                                        'bbox': box.xyxy[0].cpu().numpy().tolist(),
-                                        'mask': mask_data,
-                                        'area': np.sum(mask_data > 0.5),
-                                        'center': self._calculate_mask_center(mask_data)
-                                    }
-                                    
-                                    predictions.append(prediction)
-                            
-                            # Si encontramos detecciones, detener bsqueda
-                            if predictions:
-                                break
-                    
-                    if predictions:
-                        break
+                lower_thresholds = [0.4, 0.3, 0.25, 0.2, 0.15, 0.1]
+                predictions = self._try_lower_thresholds(image_path, lower_thresholds, min_confidence_ratio=0.8)
             
-            # Si an no hay detecciones, usar el ltimo intento con umbral muy bajo
+            # Si aún no hay detecciones y el umbral inicial era alto, intentar con umbrales más bajos
             if not predictions and threshold > 0.25:
-                logger.debug(f"No se encontraron detecciones con conf={threshold:.2f}, intentando con umbral ms bajo...")
-                # Intentar con umbrales progresivamente ms bajos
-                for lower_threshold in [0.4, 0.3, 0.25]:
-                    results = self.model(str(image_path), conf=lower_threshold)
-                    for result in results:
-                        if result.masks is not None and len(result.masks) > 0:
-                            boxes = result.boxes
-                            masks = result.masks
-                            for i in range(len(boxes)):
-                                box = boxes[i]
-                                conf = float(box.conf[0])
-                                if conf >= 0.25:  # Aceptar si confianza >= 0.25
-                                    cls = int(box.cls[0])
-                                    mask = masks[i]
-                                    mask_data = mask.data[0].cpu().numpy()
-                                    prediction = {
-                                        'confidence': conf,
-                                        'class_id': cls,
-                                        'class_name': self.model.names[cls],
-                                        'bbox': box.xyxy[0].cpu().numpy().tolist(),
-                                        'mask': mask_data,
-                                        'area': np.sum(mask_data > 0.5),
-                                        'center': self._calculate_mask_center(mask_data)
-                                    }
-                                    predictions.append(prediction)
-                    if predictions:
-                        logger.debug(f"Encontradas {len(predictions)} detecciones con conf={lower_threshold:.2f}")
-                        break
+                logger.debug(f"No se encontraron detecciones con conf={threshold:.2f}, intentando con umbral más bajo...")
+                fallback_thresholds = [0.4, 0.3, 0.25]
+                predictions = self._try_lower_thresholds(image_path, fallback_thresholds, min_confidence_ratio=1.0)
             
             # Ordenar por confianza descendente
             predictions.sort(key=lambda x: x['confidence'], reverse=True)
@@ -244,16 +220,69 @@ class YOLOSegmentationInference:
             return []
     
     def _calculate_mask_center(self, mask: np.ndarray) -> Tuple[int, int]:
-        """Calcula el centro de masa de una máscara."""
-        moments = cv2.moments(mask.astype(np.uint8))
-        if moments['m00'] != 0:
-            cx = int(moments['m10'] / moments['m00'])
-            cy = int(moments['m01'] / moments['m00'])
-            return (cx, cy)
-        else:
-            # Fallback: centro geométrico
-            h, w = mask.shape
-            return (w // 2, h // 2)
+        """
+        Calcula el centro de masa de una máscara.
+        
+        Args:
+            mask: Máscara binaria
+            
+        Returns:
+            Tupla (cx, cy) con coordenadas del centro
+        """
+        return _calcular_centro_mascara(mask)
+    
+    def _process_yolo_results(self, results: Any, min_confidence: float = 0.0) -> List[Dict[str, Any]]:
+        """
+        Procesa resultados YOLO y extrae predicciones.
+        
+        Args:
+            results: Resultados de YOLO
+            min_confidence: Confianza mínima para filtrar predicciones
+            
+        Returns:
+            Lista de predicciones procesadas
+        """
+        predictions = []
+        
+        for result in results:
+            if result.masks is None or len(result.masks) == 0:
+                continue
+                
+            boxes = result.boxes
+            masks = result.masks
+            
+            for i in range(len(boxes)):
+                box = boxes[i]
+                conf = float(box.conf[0])
+                
+                if conf < min_confidence:
+                    continue
+                
+                mask = masks[i]
+                prediction = _extraer_datos_prediccion(box, mask, self.model.names)
+                predictions.append(prediction)
+        
+        return predictions
+    
+    def _try_lower_thresholds(
+        self,
+        image_path: Path,
+        thresholds: List[float],
+        min_confidence_ratio: float = 0.8
+    ) -> List[Dict[str, Any]]:
+        """Tries prediction with progressively lower thresholds."""
+        for lower_threshold in thresholds:
+            logger.debug(f"Intentando detección con umbral {lower_threshold}...")
+            results = self.model(str(image_path), conf=lower_threshold)
+            predictions = self._process_yolo_results(
+                results,
+                min_confidence=lower_threshold * min_confidence_ratio
+            )
+            
+            if predictions:
+                return predictions
+        
+        return []
     
     def get_best_prediction(self, image_path: Path) -> Optional[Dict[str, Any]]:
         """

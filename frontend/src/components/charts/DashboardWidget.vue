@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-widget" :class="widgetClass">
+  <div class="dashboard-widget" :class="widgetClass" @click="handleClick">
     <div class="widget-header">
       <div class="widget-title">
         <i v-if="icon" :class="icon" class="widget-icon"></i>
@@ -19,17 +19,17 @@
     </div>
     
     <div class="widget-content">
-      <div v-if="loading" class="widget-loading">
-        <div class="loading-spinner"></div>
-        <p>{{ loadingText }}</p>
-      </div>
-      
-      <div v-else-if="error" class="widget-error">
+      <div v-if="error" class="widget-error">
         <i class="fas fa-exclamation-triangle"></i>
         <p>{{ error }}</p>
         <button v-if="retryable" @click="handleRetry" class="retry-btn">
           Reintentar
         </button>
+      </div>
+      
+      <div v-else-if="loading" class="widget-loading">
+        <div class="loading-spinner"></div>
+        <p>{{ loadingText }}</p>
       </div>
       
       <div v-else class="widget-body">
@@ -149,6 +149,7 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
+  animation: fadeInUp 0.6s ease-out;
 }
 
 .dashboard-widget:hover {
@@ -337,8 +338,8 @@ export default {
 }
 
 .retry-btn {
-  background: #ef4444;
-  color: white;
+  background: #9b1c1c;
+  color: #ffffff;
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -348,7 +349,7 @@ export default {
 }
 
 .retry-btn:hover {
-  background: #dc2626;
+  background: #7c1515;
 }
 
 /* Footer */
@@ -401,11 +402,6 @@ export default {
 
 .widget-error .widget-content {
   opacity: 0.6;
-}
-
-/* Animaciones */
-.dashboard-widget {
-  animation: fadeInUp 0.6s ease-out;
 }
 
 @keyframes fadeInUp {

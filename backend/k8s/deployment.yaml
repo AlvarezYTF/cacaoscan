@@ -17,9 +17,10 @@ spec:
         app: backend
         component: api
     spec:
+      automountServiceAccountToken: false
       containers:
       - name: backend
-        image: cacaoscan-backend:latest
+        image: cacaoscan-backend:v1.0.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
@@ -100,9 +101,11 @@ spec:
           requests:
             memory: "512Mi"
             cpu: "500m"
+            ephemeral-storage: "6Gi"
           limits:
             memory: "2Gi"
             cpu: "2000m"
+            ephemeral-storage: "10Gi"
         livenessProbe:
           httpGet:
             path: /health
@@ -121,7 +124,9 @@ spec:
           failureThreshold: 3
       volumes:
       - name: staticfiles
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: 1Gi
       - name: media
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: 5Gi
 

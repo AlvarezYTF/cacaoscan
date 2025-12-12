@@ -104,14 +104,12 @@
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
 
 export default {
   name: 'NotificationBell',
   setup() {
     const router = useRouter()
-    const authStore = useAuthStore()
     const notificationStore = useNotificationStore()
 
     // Reactive data
@@ -137,7 +135,7 @@ export default {
         })
         recentNotifications.value = response.data.results || []
       } catch (error) {
-        console.error('Error loading recent notifications:', error)
+        console.error('Error loading notifications:', error)
       } finally {
         loading.value = false
       }
@@ -155,16 +153,15 @@ export default {
         await notificationStore.markAllAsRead()
         
         // Update local state
-        recentNotifications.value.forEach(notification => {
+        for (const notification of recentNotifications.value) {
           if (!notification.leida) {
             notification.leida = true
             notification.fecha_lectura = new Date().toISOString()
           }
-        })
+        }
         
       } catch (error) {
-        console.error('Error marking all notifications as read:', error)
-      }
+        }
     }
 
     const handleNotificationClick = async (notification) => {
@@ -264,6 +261,7 @@ export default {
     }
 
     const truncateMessage = (message) => {
+      if (!message) return ''
       if (message.length <= 60) return message
       return message.substring(0, 60) + '...'
     }
@@ -301,8 +299,9 @@ export default {
               showToast(data.notification)
             }
             
-            // Refresh notifications
-            loadRecentNotifications()
+            // Refresh notifications with error handling
+            loadRecentNotifications().catch(err => {
+              })
           }
         }
       }
@@ -310,14 +309,16 @@ export default {
 
     // Close dropdown when clicking outside
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.notification-bell')) {
+      if (event.target && typeof event.target.closest === 'function' && !event.target.closest('.notification-bell')) {
         showDropdown.value = false
       }
     }
 
     // Lifecycle
     onMounted(() => {
-      loadRecentNotifications()
+      // Handle potential errors to prevent unhandled promise rejections
+      loadRecentNotifications().catch(err => {
+        })
       connectWebSocket()
       document.addEventListener('click', handleClickOutside)
     })
@@ -387,8 +388,8 @@ export default {
   position: absolute;
   top: 2px;
   right: 2px;
-  background-color: #e74c3c;
-  color: white;
+  background-color: #c0392b;
+  color: #ffffff;
   font-size: 0.7rem;
   font-weight: bold;
   padding: 2px 6px;
@@ -604,12 +605,12 @@ export default {
 }
 
 .btn-primary {
-  background-color: #3498db;
-  color: white;
+  background-color: #1f4e79;
+  color: #ffffff;
 }
 
 .btn-primary:hover {
-  background-color: #2980b9;
+  background-color: #1a3d5b;
 }
 
 .btn-outline-primary {
@@ -619,8 +620,8 @@ export default {
 }
 
 .btn-outline-primary:hover {
-  background-color: #3498db;
-  color: white;
+  background-color: #1f4e79;
+  color: #ffffff;
 }
 
 .btn-outline-secondary {

@@ -10,6 +10,7 @@ class CacaoImageSerializer(serializers.ModelSerializer):
     Serializer para el modelo CacaoImage.
     """
     image_url = serializers.SerializerMethodField()
+    file_type = serializers.SerializerMethodField()
     
     class Meta:
         model = CacaoImage
@@ -17,6 +18,12 @@ class CacaoImageSerializer(serializers.ModelSerializer):
                   'finca_nombre', 'region', 'variedad', 'fecha_cosecha', 'notas',
                   'file_name', 'file_size', 'file_type', 'processed', 'created_at']
         read_only_fields = ['id', 'uploaded_at', 'created_at']
+    
+    def get_file_type(self, obj):
+        """Return MIME type as string."""
+        if obj.file_type:
+            return obj.file_type.mime_type
+        return None
     
     def get_image_url(self, obj):
         """

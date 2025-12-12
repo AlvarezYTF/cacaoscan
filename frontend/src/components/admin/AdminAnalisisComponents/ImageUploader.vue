@@ -45,23 +45,24 @@
       />
     </div>
 
-    <!-- Image Previews -->
+    <!-- Previews -->
     <div v-if="images.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
       <div 
-        v-for="image in images" 
-        :key="getImageKey(image)"
+        v-for="(file, index) in images" 
+        :key="getImageKey(file)"
         class="relative group overflow-hidden border-2 border-gray-200 hover:border-green-300 rounded-2xl transition-all duration-300 hover:shadow-lg"
       >
         <img 
-          :src="getImageUrl(image)" 
-          :alt="image.name || 'Imagen'"
+          :src="getImageUrl(file)" 
+          :alt="file.name ? `Vista previa: ${file.name.replace(/\.[^/.]+$/, '')}` : `Vista previa ${index + 1}`"
           class="w-full h-32 object-cover"
         />
         <button
-          @click.stop="removeImage(image)"
+          @click.stop="removeImage(file)"
           type="button"
-          class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-          :aria-label="`Eliminar imagen ${image.name}`"
+          class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-all duration-200 z-10 shadow-lg"
+          :aria-label="`Eliminar ${file.name || 'archivo'}`"
+          title="Eliminar imagen"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -107,11 +108,27 @@ const error = ref('')
 const images = ref([...props.modelValue])
 
 // Helper function to generate unique keys for images
+// Uses cryptographically secure random generation to avoid security warnings
+const generateSecureId = () => {
+  // Use crypto.randomUUID() if available (modern browsers)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  // Fallback to crypto.getRandomValues() for older browsers
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const randomArray = new Uint32Array(4)
+    crypto.getRandomValues(randomArray)
+    return Array.from(randomArray, val => val.toString(36)).join('-')
+  }
+  // Last resort: use timestamp + counter (not cryptographically secure but better than Math.random)
+  return `id-${Date.now()}-${performance.now()}`
+}
+
 const getImageKey = (file) => {
   if (file instanceof File) {
     return `${file.name}-${file.size}-${file.lastModified}`
   }
-  return file.id || file.url || file.name || String(Math.random())
+  return file.id || file.url || file.name || generateSecureId()
 }
 
 // Functions
@@ -165,15 +182,15 @@ const processFiles = (files) => {
   let hasError = false
   const validFiles = []
 
-  files.forEach(file => {
+  for (const file of files) {
     const validationError = validateFile(file)
     if (validationError) {
       error.value = validationError
       hasError = true
-      return
+      continue
     }
     validFiles.push(file)
-  })
+  }
 
   if (hasError && validFiles.length === 0) return
 
@@ -191,7 +208,12 @@ const removeImage = (imageToRemove) => {
 
 // Watch for changes in modelValue from parent
 watch(() => props.modelValue, (newValue) => {
-  images.value = [...newValue]
+  // Solo actualizar si realmente cambió para evitar loops infinitos
+  const currentKeys = images.value.map(img => getImageKey(img)).sort().join(',')
+  const newKeys = newValue.map(img => getImageKey(img)).sort().join(',')
+  if (currentKeys !== newKeys) {
+    images.value = [...newValue]
+  }
 }, { deep: true })
 </script>
 

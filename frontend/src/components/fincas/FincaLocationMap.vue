@@ -43,10 +43,10 @@ const latitudNum = computed(() => {
   }
   
   // Convertir a número (puede venir como string desde el backend)
-  let num = typeof props.latitud === 'string' ? parseFloat(props.latitud) : Number(props.latitud)
+  let num = typeof props.latitud === 'string' ? Number.parseFloat(props.latitud) : Number(props.latitud)
   
   // Validar que sea un número válido y esté en el rango correcto
-  if (isNaN(num) || num < -90 || num > 90) {
+  if (Number.isNaN(num) || num < -90 || num > 90) {
     return null
   }
   
@@ -59,10 +59,10 @@ const longitudNum = computed(() => {
   }
   
   // Convertir a número (puede venir como string desde el backend)
-  let num = typeof props.longitud === 'string' ? parseFloat(props.longitud) : Number(props.longitud)
+  let num = typeof props.longitud === 'string' ? Number.parseFloat(props.longitud) : Number(props.longitud)
   
   // Validar que sea un número válido y esté en el rango correcto
-  if (isNaN(num) || num < -180 || num > 180) {
+  if (Number.isNaN(num) || num < -180 || num > 180) {
     return null
   }
   
@@ -97,7 +97,7 @@ const initMap = () => {
   const lat = Number(latitudNum.value)
   const lng = Number(longitudNum.value)
   
-  if (isNaN(lat) || isNaN(lng)) {
+  if (Number.isNaN(lat) || Number.isNaN(lng)) {
     return
   }
   
@@ -138,7 +138,7 @@ const initMap = () => {
     // Abrir popup automáticamente
     marker.openPopup()
   } catch (error) {
-    // Error al inicializar el mapa - silenciar
+    throw error
   }
 }
 

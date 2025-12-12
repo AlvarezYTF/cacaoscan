@@ -46,12 +46,16 @@ class ImageStorageService(BaseService):
             ServiceResult with saved CacaoImage instance
         """
         try:
+            from images_app.utils import get_tipo_archivo_from_mime_type
+            mime_type = image_file.content_type if hasattr(image_file, 'content_type') else 'image/jpeg'
+            tipo_archivo = get_tipo_archivo_from_mime_type(mime_type)
+            
             cacao_image = CacaoImage(
                 user=user,
                 image=image_file,
                 file_name=image_file.name,
                 file_size=image_file.size,
-                file_type=image_file.content_type,
+                file_type=tipo_archivo,
                 processed=False
             )
             
@@ -82,24 +86,33 @@ class ImageStorageService(BaseService):
         """
         Saves an uploaded image and performs segmentation.
         
+        If segmentation fails (no cacao bean detected), the image is deleted
+        and an error is returned. No data is saved if the image is not a valid cacao bean.
+        
         Args:
             image_file: Uploaded image file
             user: User who uploaded the image
             
         Returns:
             ServiceResult with saved CacaoImage instance and processed PNG path
+            ServiceResult with error if no cacao bean is detected
         """
+        cacao_image = None
         try:
             from pathlib import Path
-            from ml.segmentation.processor import segment_and_crop_cacao_bean
+            from ml.segmentation.processor import segment_and_crop_cacao_bean, SegmentationError
+            from images_app.utils import get_tipo_archivo_from_mime_type
             
             # Create image
+            mime_type = image_file.content_type if hasattr(image_file, 'content_type') else 'image/jpeg'
+            tipo_archivo = get_tipo_archivo_from_mime_type(mime_type)
+            
             cacao_image = CacaoImage(
                 user=user,
                 image=image_file,
                 file_name=image_file.name,
                 file_size=image_file.size,
-                file_type=image_file.content_type,
+                file_type=tipo_archivo,
                 processed=False
             )
             
@@ -116,16 +129,38 @@ class ImageStorageService(BaseService):
             self.log_info(f"Image saved with ID {cacao_image.id} for user {user.username}")
             
             # Segment and save transparent PNG of the bean
+            # This validates that the image contains a cacao bean
             processed_png_path = None
             try:
-                generated_path = segment_and_crop_cacao_bean(str(cacao_image.image.path), method="opencv")
+                generated_path = segment_and_crop_cacao_bean(str(cacao_image.image.path), method="yolo")
                 if generated_path:
                     processed_png_path = Path(generated_path)
                     self.log_info(f"Segmented PNG saved at: {processed_png_path.absolute()}")
                 else:
-                    self.log_warning(f"Could not segment image {cacao_image.id}: empty return")
-            except Exception as seg_error:
-                self.log_error(f"Error segmenting image {cacao_image.id}: {seg_error}")
+                    # If segmentation returns None, it means no bean was detected
+                    raise SegmentationError("No se detectó un grano de cacao en la imagen")
+            except SegmentationError as seg_error:
+                # SegmentationError means no cacao bean was detected
+                # Delete the saved image and propagate the error
+                self.log_error(f"No se detectó un grano de cacao en la imagen {cacao_image.id}: {seg_error}")
+                if cacao_image and cacao_image.id:
+                    try:
+                        # Delete the image file
+                        if cacao_image.image:
+                            cacao_image.image.delete(save=False)
+                        # Delete the database record
+                        cacao_image.delete()
+                        self.log_info(f"Imagen {cacao_image.id} eliminada porque no contiene un grano de cacao válido")
+                    except Exception as delete_error:
+                        self.log_warning(f"Error eliminando imagen {cacao_image.id}: {delete_error}")
+                
+                # Return error - no data should be returned
+                return ServiceResult.error(
+                    ValidationServiceError(
+                        str(seg_error),
+                        details={"error_type": "segmentation_error", "original_error": str(seg_error)}
+                    )
+                )
             
             return ServiceResult.success(
                 data={
@@ -136,6 +171,15 @@ class ImageStorageService(BaseService):
             )
             
         except Exception as e:
+            # If any other error occurs, try to clean up the saved image
+            if cacao_image and cacao_image.id:
+                try:
+                    if cacao_image.image:
+                        cacao_image.image.delete(save=False)
+                    cacao_image.delete()
+                except Exception as cleanup_error:
+                    self.log_warning(f"Error limpiando imagen después de error: {cleanup_error}")
+            
             self.log_error(f"Error saving image: {str(e)}")
             return ServiceResult.error(
                 ValidationServiceError("Internal error saving image", details={"original_error": str(e)})

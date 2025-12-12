@@ -74,25 +74,25 @@
 
 <script setup>
 // 1. Vue core
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 
 // 2. Vue router
 import { useRoute, useRouter } from 'vue-router'
 
 // 3. Stores
 import { useAuthStore } from '@/stores/auth'
-import { useFincasStore } from '@/stores/fincas'
 
-// 4. Components
+// 4. Composables
+import { useFincas } from '@/composables/useFincas'
+import { useSidebarNavigation } from '@/composables/useSidebarNavigation'
+
+// 5. Components
 import Sidebar from '@/components/layout/Common/Sidebar.vue'
-import FincaForm from '@/components/FincaForm.vue'
+import FincaForm from '@/components/common/FincasViewComponents/FincaForm.vue'
 import FincasHeader from '@/components/common/FincasViewComponents/FincasHeader.vue'
 import FincasFilters from '@/components/common/FincasViewComponents/FincasFilters.vue'
 import FincaList from '@/components/common/FincasViewComponents/FincaList.vue'
 import FincaDetailModal from '@/components/common/FincasViewComponents/FincaDetailModal.vue'
-
-// 5. Services
-import fincasApi from '@/services/fincasApi'
 
 // 6. Libraries
 import Swal from 'sweetalert2'
@@ -103,10 +103,26 @@ const route = useRoute()
 
 // Stores
 const authStore = useAuthStore()
-const fincasStore = useFincasStore()
 
-// Sidebar collapse state
-const isSidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
+// Composables
+const {
+  loading,
+  error,
+  fincas,
+  loadFincas,
+  deleteFinca,
+  activateFinca
+} = useFincas()
+
+// Sidebar navigation composable
+const {
+  isSidebarCollapsed,
+  userName,
+  userRole: computedUserRole,
+  handleMenuClick,
+  toggleSidebarCollapse,
+  handleLogout
+} = useSidebarNavigation()
 
 // Estado reactivo
 const searchQuery = ref('')
@@ -122,33 +138,10 @@ const selectedFincaDetail = ref(null)
 const activeSection = ref('fincas')
 
 // Computed
-const fincas = computed(() => fincasStore.fincas)
-const loading = computed(() => fincasStore.loading)
-const error = computed(() => fincasStore.error)
-
-const userName = computed(() => {
-  return authStore.userFullName || 'Usuario'
-})
-
-const userRole = computed(() => {
-  const role = authStore.userRole || 'Usuario'
-  // Normalize role for sidebar - Backend returns: 'admin', 'analyst', or 'farmer'
-  if (role === 'admin') return 'admin'
-  if (role === 'farmer') return 'agricultor'
-  return 'agricultor' // Default to agricultor
-})
-
-// Flag de admin para decidir qué formulario mostrar en creación
-const isAdmin = computed(() => {
-  return (
-    authStore.user?.is_staff === true ||
-    authStore.user?.is_superuser === true ||
-    authStore.userRole === 'admin'
-  )
-})
+const userRole = computedUserRole
 
 // Métodos
-const loadFincas = async () => {
+const buildLoadParams = () => {
   const params = {}
   
   // Solo agregar parámetros que tengan valores
@@ -164,11 +157,12 @@ const loadFincas = async () => {
     params.activa = filters.value.activa
   }
   
-  await fincasStore.fetchFincas(params)
+  return params
 }
 
-const applyFilters = () => {
-  loadFincas()
+const applyFilters = async () => {
+  const params = buildLoadParams()
+  await loadFincas(params)
 }
 
 const clearFilters = () => {
@@ -218,16 +212,18 @@ const closeModal = () => {
   isEditing.value = false
 }
 
-const handleFincaSaved = () => {
+const handleFincaSaved = async () => {
   closeModal()
-  // No es necesario llamar loadFincas() ya que el store lo hace automáticamente
+  // Reload fincas after save
+  const params = buildLoadParams()
+  await loadFincas(params)
 }
 
 const confirmDelete = async (finca) => {
   const result = await Swal.fire({
     icon: 'warning',
     title: '¿Desactivar finca?',
-    html: "<p>¿Estás seguro de que deseas desactivar la finca <strong>\"" + finca.nombre + "\"</strong>?</p><p class=\"text-sm text-gray-600 mt-2\">La finca ya no aparecerá en tu lista, pero los datos se conservarán. Puedes contactar a un administrador si necesitas reactivarla.</p>",
+    html: `<p>¿Estás seguro de que deseas desactivar la finca <strong>"${finca.nombre}"</strong>?</p><p class="text-sm text-gray-600 mt-2">La finca ya no aparecerá en tu lista, pero los datos se conservarán. Puedes contactar a un administrador si necesitas reactivarla.</p>`,
     showCancelButton: true,
     confirmButtonText: 'Sí, desactivar',
     cancelButtonText: 'Cancelar',
@@ -238,7 +234,7 @@ const confirmDelete = async (finca) => {
   
   if (result.isConfirmed) {
     try {
-      await fincasStore.remove(finca.id)
+      await deleteFinca(finca.id)
       Swal.fire({
         icon: 'success',
         title: 'Finca desactivada',
@@ -246,11 +242,14 @@ const confirmDelete = async (finca) => {
         timer: 3000,
         showConfirmButton: false
       })
-    } catch (error) {
+      // Reload fincas after deletion
+      const params = buildLoadParams()
+      await loadFincas(params)
+    } catch (err) {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo desactivar la finca. Intenta nuevamente.',
+        text: err.message || 'No se pudo desactivar la finca. Intenta nuevamente.',
         timer: 4000
       })
     }
@@ -261,7 +260,7 @@ const confirmActivate = async (finca) => {
   const result = await Swal.fire({
     icon: 'question',
     title: '¿Activar finca?',
-    html: "<p>¿Estás seguro de que deseas reactivar la finca <strong>\"" + finca.nombre + "\"</strong>?</p><p class=\"text-sm text-gray-600 mt-2\">La finca volverá a estar disponible para el agricultor.</p>",
+    html: `<p>¿Estás seguro de que deseas reactivar la finca <strong>"${finca.nombre}"</strong>?</p><p class="text-sm text-gray-600 mt-2">La finca volverá a estar disponible para el agricultor.</p>`,
     showCancelButton: true,
     confirmButtonText: 'Sí, activar',
     cancelButtonText: 'Cancelar',
@@ -272,66 +271,39 @@ const confirmActivate = async (finca) => {
   
   if (result.isConfirmed) {
     try {
-      await fincasStore.activate(finca.id)
+      await activateFinca(finca.id)
       Swal.fire({
         icon: 'success',
         title: 'Finca activada',
-        text: "La finca \"" + finca.nombre + "\" ha sido reactivada. El agricultor podrá verla nuevamente en su gestión.",
+        text: `La finca "${finca.nombre}" ha sido reactivada. El agricultor podrá verla nuevamente en su gestión.`,
         timer: 3000,
         showConfirmButton: false
       })
-    } catch (error) {
+      // Reload fincas after activation
+      const params = buildLoadParams()
+      await loadFincas(params)
+    } catch (err) {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo activar la finca. Intenta nuevamente.',
+        text: err.message || 'No se pudo activar la finca. Intenta nuevamente.',
         timer: 4000
       })
     }
   }
 }
 
-// Sidebar and navbar methods
-const handleMenuClick = (item) => {
-  if (item.route && item.route !== null) {
-    // Navigate to external routes
-    const currentPath = router.currentRoute.value.path
-    if (currentPath !== item.route) {
-      router.push(item.route)
-    }
-  } else {
-    // For internal sections without routes, navigate to dashboard with query param
-    const role = authStore.userRole
-    if (role === 'farmer' || role === 'Agricultor') {
-      router.push({
-        name: 'AgricultorDashboard',
-        query: { section: item.id }
-      })
-    } else {
-      router.push({
-        name: 'AdminDashboard',
-        query: { section: item.id }
-      })
-    }
-  }
-}
-
-const toggleSidebarCollapse = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
-  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
-}
-
-const handleLogout = async () => {
-  try {
-    await authStore.logout()
-  } catch (error) {
-    // Error durante logout - silenciar
-  }
-}
+// Sidebar and navbar methods are now provided by useSidebarNavigation composable
 
 // Lifecycle
-onMounted(() => {
-  loadFincas()
+onMounted(async () => {
+  try {
+    // Load fincas without filters first - backend will filter by authenticated user automatically
+    await loadFincas({}, 1, 20)
+    console.log('[FincasView] Loaded fincas:', fincas.value.length)
+  } catch (error) {
+    console.error('[FincasView] Error loading fincas:', error)
+  }
 })
 </script>
 

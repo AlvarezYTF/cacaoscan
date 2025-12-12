@@ -19,52 +19,84 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False)
     password = serializers.CharField(write_only=True)
     
-    def validate(self, attrs):
+    def validate_email(self, value):
+        """Normalize email to lowercase."""
+        if value:
+            return value.lower().strip()
+        return value
+    
+    def validate_username(self, value):
+        """Normalize username to lowercase."""
+        if value:
+            return value.lower().strip()
+        return value
+    
+    def _normalize_username_email(self, attrs):
+        """Obtiene username y email normalizados (ya normalizados en validate_email/validate_username)."""
         username = attrs.get('username')
         email = attrs.get('email')
-        password = attrs.get('password')
         
-        # If email is provided, use it as username
-        if email and not username:
-            username = email
-            attrs['username'] = email
-        
-        # Validate that at least one is present
         if not username and not email:
             raise serializers.ValidationError('Debe incluir username o email.')
         
-        if username and password:
-            # Try to authenticate with username
+        return username, email
+    
+    def _authenticate_user(self, username: str, email: str, password: str):
+        """Intenta autenticar al usuario con username o email usando valores normalizados."""
+        # Try authentication with username if provided
+        if username:
             user = authenticate(username=username, password=password)
-            
-            # If it doesn't work, try with email
-            if not user and email:
-                try:
-                    # Use .first() instead of .get() to avoid error if there are multiple users
-                    user_obj = User.objects.filter(email=email).first()
-                    if user_obj:
-                        user = authenticate(username=user_obj.username, password=password)
-                    else:
-                        user = None
-                except Exception:
-                    user = None
-            
             if user:
-                if not user.is_active:
-                    # Check if there's a pending verification token
-                    if hasattr(user, 'auth_email_token') and not user.auth_email_token.is_verified:
-                        raise serializers.ValidationError(
-                            'Tu cuenta no está verificada. Por favor verifica tu correo electrónico antes de iniciar sesión. '
-                            'Si no recibiste el correo, puedes solicitar uno nuevo desde la página de registro.'
-                        )
-                    else:
-                        raise serializers.ValidationError('Usuario inactivo.')
-                attrs['user'] = user
-                return attrs
-            else:
-                raise serializers.ValidationError('Credenciales inválidas.')
-        else:
-            raise serializers.ValidationError('Debe incluir username/email y password.')
+                return user
+        
+        # If username auth failed or not provided, try with email
+        if email:
+            # Use case-insensitive search for email
+            user_obj = User.objects.filter(email__iexact=email).first()
+            if user_obj:
+                # Authenticate using the user's actual username
+                # This works whether username equals email or not
+                authenticated_user = authenticate(username=user_obj.username, password=password)
+                if authenticated_user:
+                    return authenticated_user
+        
+        return None
+    
+    def _validate_user_active(self, user):
+        """Valida que el usuario esté activo y verificado."""
+        if not user.is_active:
+            if hasattr(user, 'auth_email_token') and not user.auth_email_token.is_verified:
+                raise serializers.ValidationError(
+                    'Tu cuenta no está verificada. Por favor verifica tu correo electrónico antes de iniciar sesión. '
+                    'Si no recibiste el correo, puedes solicitar uno nuevo desde la página de registro.'
+                )
+            raise serializers.ValidationError('Usuario inactivo.')
+    
+    def _validate_user_has_password(self, user):
+        """Valida que el usuario tenga una contraseña usable si intenta login con contraseña."""
+        if not user.has_usable_password():
+            raise serializers.ValidationError(
+                'Esta cuenta fue creada mediante Google. Debes crear una contraseña antes de iniciar sesión con email y contraseña.'
+            )
+    
+    def validate(self, attrs):
+        username, email = self._normalize_username_email(attrs)
+        password = attrs.get('password')
+        
+        if not password:
+            raise serializers.ValidationError('Debe incluir password.')
+        
+        if not username and not email:
+            raise serializers.ValidationError('Debe incluir username o email.')
+        
+        user = self._authenticate_user(username, email, password)
+        if not user:
+            raise serializers.ValidationError('Credenciales inválidas.')
+        
+        self._validate_user_active(user)
+        self._validate_user_has_password(user)  # Validar que tenga contraseña usable
+        attrs['user'] = user
+        return attrs
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -222,10 +254,13 @@ class UserSerializer(serializers.ModelSerializer):
     """Serializer for user information."""
     role = serializers.SerializerMethodField()
     is_verified = serializers.SerializerMethodField()
+    has_password = serializers.SerializerMethodField()
+    login_provider = serializers.SerializerMethodField()
+    password_allowed = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined', 'role', 'is_verified')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined', 'role', 'is_verified', 'has_password', 'login_provider', 'password_allowed')
         read_only_fields = ('id', 'date_joined')
     
     def get_role(self, obj):
@@ -245,6 +280,32 @@ class UserSerializer(serializers.ModelSerializer):
         except Exception:
             pass
         return obj.is_active  # Fallback for users without verification token
+    
+    def get_has_password(self, obj):
+        """Check if user has a usable password."""
+        return obj.has_usable_password()
+    
+    def get_login_provider(self, obj):
+        """Get login provider from UserProfile, default to 'local'."""
+        try:
+            # Intentar acceder a auth_profile usando get_or_create para evitar errores
+            from auth_app.models import UserProfile
+            profile, created = UserProfile.objects.get_or_create(
+                user=obj,
+                defaults={'login_provider': 'local'}
+            )
+            return profile.login_provider
+        except Exception as e:
+            # Si hay algún error, retornar 'local' por defecto
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error obteniendo login_provider para usuario {obj.id}: {str(e)}")
+            return 'local'  # Default to local if no profile exists
+    
+    def get_password_allowed(self, obj):
+        """Check if user is allowed to use password authentication."""
+        login_provider = self.get_login_provider(obj)
+        return login_provider != 'google'
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -256,7 +317,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = (
-            'phone_number', 'region', 'municipality', 'farm_name',
+            'municipio',
             'years_experience', 'farm_size_hectares', 'preferred_language',
             'email_notifications', 'created_at', 'updated_at',
             'full_name', 'role', 'is_verified'

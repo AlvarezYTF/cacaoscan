@@ -1,10 +1,15 @@
 ﻿"""
 Procesador de recortes con máscaras para granos de cacao.
+
+REFACTORIZADO: Aplicando principios SOLID
+- Funciones auxiliares extraídas para mejorar SRP
+- Mejores docstrings y type hints
+- Separación de responsabilidades mejorada
 """
 import numpy as np
 import cv2
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List, Callable
 from PIL import Image
 import logging
 
@@ -16,6 +21,102 @@ from ..data.transforms import validate_crop_quality, create_transparent_crop
 
 
 logger = get_ml_logger("cacaoscan.ml.segmentation")
+
+
+def _intentar_umbrales_bajos(
+    yolo_inference: YOLOSegmentationInference,
+    image_path: Path,
+    umbrales: List[float]
+) -> Optional[Dict[str, Any]]:
+    """
+    Intenta obtener predicción YOLO con umbrales más bajos.
+    
+    Args:
+        yolo_inference: Instancia de inferencia YOLO
+        image_path: Ruta a la imagen
+        umbrales: Lista de umbrales a probar
+        
+    Returns:
+        Mejor predicción encontrada o None
+    """
+    for lower_threshold in umbrales:
+        predictions_low = yolo_inference.predict(image_path, conf_threshold=lower_threshold)
+        if predictions_low:
+            best_pred = max(predictions_low, key=lambda p: p['confidence'] * p.get('area', 1))
+            if best_pred['confidence'] >= lower_threshold * 0.7:
+                logger.info(f"Detección encontrada con umbral {lower_threshold}, confianza: {best_pred['confidence']:.2f}")
+                return best_pred
+    return None
+
+
+def _calcular_area_mascara(mask: Optional[np.ndarray]) -> int:
+    """Calcula el área de la máscara en píxeles."""
+    if mask is None:
+        return 0
+    return int(np.sum(mask > 0.5))
+
+
+def _normalizar_mascara_tipo(mask: np.ndarray) -> np.ndarray:
+    """Normaliza el tipo de datos de la máscara a uint8."""
+    if mask.dtype != np.uint8:
+        if mask.max() <= 1.0:
+            return (mask * 255).astype(np.uint8)
+        return mask.astype(np.uint8)
+    elif mask.max() > 1:
+        return np.clip(mask, 0, 255).astype(np.uint8)
+    return mask
+
+
+def _validar_calidad_crop(
+    image_rgb: np.ndarray,
+    mask: np.ndarray,
+    min_aspect_ratio: float = 0.05,
+    max_aspect_ratio: float = 20.0,
+    min_area: int = 50
+) -> bool:
+    """
+    Valida la calidad del crop.
+    
+    Returns:
+        True si el crop es válido, False en caso contrario
+    """
+    try:
+        return validate_crop_quality(
+            image_rgb,
+            mask,
+            min_aspect_ratio=min_aspect_ratio,
+            max_aspect_ratio=max_aspect_ratio,
+            min_area=min_area
+        )
+    except Exception as e:
+        logger.warning(f"Error en validación de crop: {e}, continuando...")
+        return True  # Continuar aunque falle la validación
+
+
+def _crear_imagen_transparente(image_rgb: np.ndarray, mask: np.ndarray) -> Image.Image:
+    """Crea una imagen transparente a partir de RGB y máscara."""
+    transparent_crop = create_transparent_crop(image_rgb, mask, padding=0, crop_only=True)
+    return Image.fromarray(transparent_crop, 'RGBA')
+
+
+def _extraer_mascara_desde_rgba(rgba_array: np.ndarray) -> np.ndarray:
+    """Extrae la máscara desde un array RGBA."""
+    if rgba_array.shape[2] == 4:
+        return rgba_array[:, :, 3]
+    return None
+
+
+def _calcular_estadisticas_crop(pil_crop: Image.Image) -> Dict[str, Any]:
+    """Calcula estadísticas del crop procesado."""
+    crop_array = np.array(pil_crop)
+    mask = _extraer_mascara_desde_rgba(crop_array) if crop_array.shape[2] == 4 else None
+    area = int(np.sum(mask > 128)) if mask is not None else 0
+    return {
+        'area': area,
+        'confidence': 0.5,  # Confianza fija para fallback
+        'bbox': None,
+        'method': 'fallback_chain'
+    }
 
 
 class CacaoCropper:
@@ -52,6 +153,94 @@ class CacaoCropper:
         if self.save_masks:
             ensure_dir_exists(get_masks_dir())
     
+    def _should_skip_processing(self, crop_path: Path, image_path: Path, force_process: bool) -> bool:
+        """Determina si se debe saltar el procesamiento."""
+        if force_process or self.overwrite or not crop_path.exists():
+            return False
+        return not self._should_reprocess(image_path, crop_path)
+    
+    def _get_yolo_prediction_with_fallback(self, image_path: Path) -> Optional[Dict[str, Any]]:
+        """
+        Obtiene predicción YOLO, intentando con umbrales más bajos si es necesario.
+        
+        Args:
+            image_path: Ruta a la imagen
+            
+        Returns:
+            Mejor predicción encontrada o None
+        """
+        prediction = self.yolo_inference.get_best_prediction(image_path)
+        
+        if prediction:
+            return prediction
+        
+        logger.warning(f"YOLO no detectó grano en {image_path.name}. Intentando con umbrales más bajos...")
+        lower_thresholds = [0.25, 0.2, 0.15, 0.1]
+        return _intentar_umbrales_bajos(self.yolo_inference, image_path, lower_thresholds)
+    
+    def _validate_prediction_quality(self, prediction: Dict[str, Any], image_path: Path) -> None:
+        """
+        Valida la calidad de la predicción y emite advertencias si es necesario.
+        
+        Args:
+            prediction: Diccionario con la predicción
+            image_path: Ruta a la imagen procesada
+        """
+        if prediction['confidence'] < 0.5:
+            logger.warning(
+                f"Predicción YOLO con confianza baja ({prediction['confidence']:.2f}) para {image_path.name}. "
+                f"Se recomienda mejorar la imagen o el modelo YOLO."
+            )
+        
+        mask_area = _calcular_area_mascara(prediction.get('mask'))
+        if mask_area < 100:
+            logger.warning(f"Máscara muy pequeña ({mask_area} píxeles) para {image_path.name}")
+    
+    def _prepare_mask(self, mask: np.ndarray, image_height: int, image_width: int) -> np.ndarray:
+        """
+        Redimensiona y normaliza la máscara al tamaño de la imagen.
+        
+        Args:
+            mask: Máscara original
+            image_height: Altura de la imagen
+            image_width: Ancho de la imagen
+            
+        Returns:
+            Máscara redimensionada y normalizada
+        """
+        mask_height, mask_width = mask.shape[:2]
+        
+        if mask_height != image_height or mask_width != image_width:
+            mask = cv2.resize(mask, (image_width, image_height), interpolation=cv2.INTER_LINEAR)
+            logger.debug(f"Máscara redimensionada de {mask_width}x{mask_height} a {image_width}x{image_height}")
+        
+        return _normalizar_mascara_tipo(mask)
+    
+    def _create_and_save_crop(self, image_rgb: np.ndarray, mask: np.ndarray, crop_path: Path, mask_path: Optional[Path]) -> None:
+        """
+        Crea y guarda el crop y la máscara si es necesario.
+        
+        Args:
+            image_rgb: Imagen RGB
+            mask: Máscara binaria
+            crop_path: Ruta donde guardar el crop
+            mask_path: Ruta donde guardar la máscara (opcional)
+        """
+        # Validar calidad del crop
+        is_valid = _validar_calidad_crop(image_rgb, mask)
+        if not is_valid:
+            logger.warning("Validación de crop falló, pero continuando...")
+        
+        # Crear y guardar crop transparente
+        pil_crop = _crear_imagen_transparente(image_rgb, mask)
+        save_image(pil_crop, crop_path)
+        
+        # Guardar máscara si se solicita
+        if self.save_masks and mask_path:
+            mask_normalized = (mask * 255).astype(np.uint8)
+            pil_mask = Image.fromarray(mask_normalized, 'L')
+            save_image(pil_mask, mask_path)
+    
     def process_image(
         self,
         image_path: Path,
@@ -72,131 +261,43 @@ class CacaoCropper:
         crop_path = get_crops_dir() / f"{image_id}.png"
         mask_path = get_masks_dir() / f"{image_id}.png" if self.save_masks else None
         
-        if not force_process and not self.overwrite and crop_path.exists():
-            # Verificar si la imagen original es más nueva
-            if not self._should_reprocess(image_path, crop_path):
-                logger.debug(f"Crop ya existe para ID {image_id}, saltando")
-                return {
-                    'success': True,
-                    'skipped': True,
-                    'crop_path': crop_path,
-                    'mask_path': mask_path,
-                    'message': 'Crop ya existe y no necesita reprocesamiento'
-                }
+        if self._should_skip_processing(crop_path, image_path, force_process):
+            logger.debug(f"Crop ya existe para ID {image_id}, saltando")
+            return {
+                'success': True,
+                'skipped': True,
+                'crop_path': crop_path,
+                'mask_path': mask_path,
+                'message': 'Crop ya existe y no necesita reprocesamiento'
+            }
         
         try:
-            # --- INICIO DE CORRECCIÓN ---
-            # Si YOLO está desactivado o no se inicializó, saltar al fallback
             if not self.yolo_inference or not self.enable_yolo:
                 logger.info(f"YOLO desactivado para ID {image_id}. Usando fallback OpenCV...")
                 return self._process_with_opencv_fallback(image_path, image_id)
-            # --- FIN DE CORRECCIÓN ---
 
-            # Realizar inferencia YOLO
             if self.yolo_inference is None:
                 raise ValueError("YOLO inference no está inicializado")
             
-            prediction = self.yolo_inference.get_best_prediction(image_path)
-            
+            prediction = self._get_yolo_prediction_with_fallback(image_path)
             if not prediction:
-                # Intentar con umbrales progresivamente ms bajos
-                logger.warning(f"YOLO no detect grano en {image_path.name}. Intentando con umbrales ms bajos...")
-                lower_thresholds = [0.25, 0.2, 0.15, 0.1]
-                
-                for lower_threshold in lower_thresholds:
-                    predictions_low = self.yolo_inference.predict(image_path, conf_threshold=lower_threshold)
-                    if predictions_low:
-                        # Filtrar la mejor prediccin (ms confianza y mayor rea)
-                        best_pred = max(predictions_low, key=lambda p: p['confidence'] * p.get('area', 1))
-                        
-                        # Solo aceptar si tiene un mnimo de confianza
-                        if best_pred['confidence'] >= lower_threshold * 0.7:
-                            prediction = best_pred
-                            logger.info(f"Deteccin encontrada con umbral {lower_threshold}, confianza: {best_pred['confidence']:.2f}")
-                            break
-                
-                if not prediction:
-                    return {
-                        'success': False,
-                        'error': 'No se encontraron detecciones incluso con umbral mnimo (0.1)',
-                        'crop_path': None,
-                        'mask_path': None
-                    }
+                return {
+                    'success': False,
+                    'error': 'No se encontraron detecciones incluso con umbral mínimo (0.1)',
+                    'crop_path': None,
+                    'mask_path': None
+                }
             
-            # Validar calidad de la prediccin
-            # Aceptar predicciones con confianza razonable, pero advertir si es baja
-            if prediction['confidence'] < 0.5:
-                logger.warning(
-                    f"Prediccin YOLO con confianza baja ({prediction['confidence']:.2f}) para {image_path.name}. "
-                    f"Se recomienda mejorar la imagen o el modelo YOLO."
-                )
-            
-            # Verificar que la mscara tenga contenido significativo
-            mask_area = np.sum(prediction['mask'] > 0.5) if prediction.get('mask') is not None else 0
-            if mask_area < 100:  # Mnimo de pxeles
-                logger.warning(f"Mscara muy pequea ({mask_area} pxeles) para {image_path.name}")
+            self._validate_prediction_quality(prediction, image_path)
             
             image = cv2.imread(str(image_path))
             if image is None:
                 raise ValueError(f"No se pudo cargar la imagen: {image_path}")
             
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            mask = self._prepare_mask(prediction['mask'], image_rgb.shape[0], image_rgb.shape[1])
             
-            # Obtener máscara de la predicción
-            mask = prediction['mask']
-            
-            # Redimensionar y normalizar mscara al tamao de la imagen original si es necesario
-            image_height, image_width = image_rgb.shape[:2]
-            mask_height, mask_width = mask.shape[:2]
-            
-            # Redimensionar mscara si es necesario
-            if mask_height != image_height or mask_width != image_width:
-                # Redimensionar mscara al tamao de la imagen original
-                mask = cv2.resize(mask, (image_width, image_height), interpolation=cv2.INTER_LINEAR)
-                logger.debug(f"Mscara redimensionada de {mask_width}x{mask_height} a {image_width}x{image_height}")
-            
-            # Normalizar mscara a valores 0-255 si es necesario
-            if mask.dtype != np.uint8:
-                if mask.max() <= 1.0:
-                    mask = (mask * 255).astype(np.uint8)
-                else:
-                    mask = mask.astype(np.uint8)
-            elif mask.max() > 1:
-                # Asegurar que est en rango 0-255
-                mask = np.clip(mask, 0, 255).astype(np.uint8)
-            
-            # Importar funciones necesarias (import dinmico para evitar problemas de cach)
-            from ..data.transforms import validate_crop_quality, create_transparent_crop
-            
-            # Validar calidad del recorte (con validacin ms permisiva)
-            # Usar rangos ms amplios para granos de cacao variados
-            try:
-                is_valid = validate_crop_quality(
-                    image_rgb, 
-                    mask, 
-                    min_aspect_ratio=0.05,  # Muy permisivo (1:20)
-                    max_aspect_ratio=20.0,  # Muy permisivo (20:1)
-                    min_area=50  # rea mnima pequea
-                )
-                if not is_valid:
-                    # Si falla la validacin, continuar de todos modos con advertencia
-                    logger.warning(f"Validacin de crop fall para {image_path}, pero continuando...")
-            except Exception as e:
-                # Si hay error en la validacin, continuar de todos modos
-                logger.warning(f"Error en validacin de crop para {image_path}: {e}, continuando...")
-            
-            transparent_crop = create_transparent_crop(
-                image_rgb, mask, padding=0, crop_only=True
-            )
-            
-            pil_crop = Image.fromarray(transparent_crop, 'RGBA')
-            save_image(pil_crop, crop_path)
-            
-            # Guardar máscara si se solicita
-            if self.save_masks and mask_path:
-                mask_normalized = (mask * 255).astype(np.uint8)
-                pil_mask = Image.fromarray(mask_normalized, 'L')
-                save_image(pil_mask, mask_path)
+            self._create_and_save_crop(image_rgb, mask, crop_path, mask_path)
             
             logger.debug(f"Procesado exitosamente ID {image_id} (con YOLO)")
             
@@ -208,17 +309,17 @@ class CacaoCropper:
                 'confidence': prediction['confidence'],
                 'area': prediction['area'],
                 'bbox': prediction['bbox'],
-                'mask': prediction.get('mask'),  # Incluir mscara de YOLO para refinamiento
-                'original_image_path': str(image_path)  # Para refinamiento con imagen original
+                'mask': prediction.get('mask'),
+                'original_image_path': str(image_path)
             }
             
         except Exception as e:
             logger.error(f"Error procesando imagen {image_path}: {e}")
             try:
-                logger.warning(f"Intentando fallback OpenCV despus de error en YOLO...")
+                logger.warning("Intentando fallback OpenCV después de error en YOLO...")
                 return self._process_with_opencv_fallback(image_path, image_id)
             except Exception as fallback_error:
-                logger.error(f"Fallback OpenCV tambin fall: {fallback_error}")
+                logger.error(f"Fallback OpenCV también falló: {fallback_error}")
                 return {
                     'success': False,
                     'error': f"YOLO: {str(e)}; OpenCV fallback: {str(fallback_error)}",
@@ -259,54 +360,38 @@ class CacaoCropper:
             mask = rgba_array[:, :, 3]
             
             # Validar calidad del recorte (permisivo)
-            try:
-                is_valid = validate_crop_quality(
-                    image_rgb, 
-                    mask, 
-                    min_aspect_ratio=0.05,
-                    max_aspect_ratio=20.0,
-                    min_area=50
-                )
-                if not is_valid:
-                    logger.warning(f"Validacin de crop fall para {image_path}, pero continuando...")
-            except Exception as e:
-                logger.warning(f"Error en validacin de crop para {image_path}: {e}, continuando...")
+            is_valid = _validar_calidad_crop(image_rgb, mask)
+            if not is_valid:
+                logger.warning(f"Validación de crop falló para {image_path}, pero continuando...")
             
-            # Crear imagen con fondo transparente (recortar solo el bounding box del grano, eliminar espacios en blanco)
-            # Usar padding=0 para recorte exacto sin bordes blancos, mantener calidad original
-            transparent_crop = create_transparent_crop(
-                image_rgb, mask, padding=0, crop_only=True
-            )
+            # Crear imagen con fondo transparente
+            pil_crop = _crear_imagen_transparente(image_rgb, mask)
 
-            # Convertir a PIL antes de guardar
-            pil_crop = Image.fromarray(transparent_crop, "RGBA")
-
-            # Esta es la ruta que el pipeline de entrenamiento espera
+            # Guardar crop
             crop_path = get_crops_dir() / f"{image_id}.png"
             save_image(pil_crop, crop_path)
             
-            # Guardar mscara si se solicita
+            # Guardar máscara si se solicita
             mask_path = None
             if self.save_masks:
                 mask_path = get_masks_dir() / f"{image_id}_opencv.png"
-                # Extraer máscara de la imagen RGBA
                 crop_array = np.array(pil_crop)
-                if crop_array.shape[2] == 4:
-                    mask = crop_array[:, :, 3]
-                    pil_mask = Image.fromarray(mask, "L")
+                mask_extracted = _extraer_mascara_desde_rgba(crop_array)
+                if mask_extracted is not None:
+                    pil_mask = Image.fromarray(mask_extracted, "L")
                     save_image(pil_mask, mask_path)
 
             logger.info(f"Procesado exitosamente con Fallback (rembg/OpenCV): {image_path.name}")
+            
+            # Calcular estadísticas
+            stats = _calcular_estadisticas_crop(pil_crop)
             
             return {
                 'success': True,
                 'skipped': False,
                 'crop_path': crop_path,
                 'mask_path': mask_path,
-                'confidence': 0.5,  # Confianza fija para fallback
-                'area': int(np.sum(np.array(pil_crop)[:, :, 3] > 128)),
-                'bbox': None,
-                'method': 'fallback_chain'
+                **stats
             }
             
         except Exception as e:
@@ -330,11 +415,39 @@ class CacaoCropper:
         
         return source_time > target_time
     
+    def _update_stats_from_result(
+        self,
+        stats: Dict[str, Any],
+        record: Dict[str, Any],
+        result: Dict[str, Any]
+    ) -> None:
+        """
+        Actualiza estadísticas basadas en el resultado del procesamiento.
+        
+        Args:
+            stats: Diccionario de estadísticas a actualizar
+            record: Registro de la imagen procesada
+            result: Resultado del procesamiento
+        """
+        stats['processed'] += 1
+        
+        if result['success']:
+            if result.get('skipped', False):
+                stats['skipped'] += 1
+            else:
+                stats['successful'] += 1
+        else:
+            stats['failed'] += 1
+            stats['errors'].append({
+                'id': record['id'],
+                'error': result.get('error', 'Error desconocido')
+            })
+    
     def process_batch(
         self,
-        image_records: list,
+        image_records: List[Dict[str, Any]],
         limit: int = 0,
-        progress_callback: Optional[callable] = None
+        progress_callback: Optional[Callable[[int, int, Dict[str, Any]], None]] = None
     ) -> Dict[str, Any]:
         """
         Procesa un lote de imágenes.
@@ -370,19 +483,7 @@ class CacaoCropper:
                     record['id']
                 )
                 
-                stats['processed'] += 1
-                
-                if result['success']:
-                    if result.get('skipped', False):
-                        stats['skipped'] += 1
-                    else:
-                        stats['successful'] += 1
-                else:
-                    stats['failed'] += 1
-                    stats['errors'].append({
-                        'id': record['id'],
-                        'error': result.get('error', 'Error desconocido')
-                    })
+                self._update_stats_from_result(stats, record, result)
                 
                 if progress_callback:
                     progress_callback(i + 1, total_images, result)

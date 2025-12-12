@@ -40,7 +40,16 @@ export default {
   methods: {
     formatDate(dateString) {
       if (!dateString) return 'N/A';
-      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      const options = { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' };
+      // Parse date string to avoid timezone issues with YYYY-MM-DD format
+      const dateParts = dateString.split('-');
+      if (dateParts.length === 3) {
+        const year = Number.parseInt(dateParts[0], 10);
+        const month = Number.parseInt(dateParts[1], 10) - 1; // Month is 0-indexed
+        const day = Number.parseInt(dateParts[2], 10);
+        const date = new Date(Date.UTC(year, month, day));
+        return date.toLocaleDateString('es-ES', options);
+      }
       return new Date(dateString).toLocaleDateString('es-ES', options);
     }
   }

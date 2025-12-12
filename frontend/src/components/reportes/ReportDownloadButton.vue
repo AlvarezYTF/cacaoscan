@@ -100,14 +100,14 @@ export default {
         
         // Crear blob y descargar
         const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
+        const url = globalThis.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
         link.download = filename
         document.body.appendChild(link)
         link.click()
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
+        link.remove()
+        globalThis.URL.revokeObjectURL(url)
         
         notificationStore.addNotification({
           type: 'success',
@@ -116,7 +116,6 @@ export default {
         })
         
       } catch (err) {
-        console.error('Error descargando reporte:', err)
         error.value = err.message
         notificationStore.addNotification({
           type: 'error',
@@ -162,27 +161,27 @@ export default {
 }
 
 .btn-primary {
-  background-color: #3b82f6;
-  color: white;
+  background-color: #1e40af;
+  color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
+  background-color: #1e3a8a;
 }
 
 .btn-secondary {
-  background-color: #6b7280;
-  color: white;
+  background-color: #4b5563;
+  color: #ffffff;
 }
 
 .btn-danger {
-  background-color: #ef4444;
-  color: white;
+  background-color: #dc2626;
+  color: #ffffff;
 }
 
 .btn-warning {
-  background-color: #f59e0b;
-  color: white;
+  background-color: #8a4b00;
+  color: #ffffff;
 }
 
 .btn-sm {
@@ -204,7 +203,7 @@ export default {
 .alert-danger {
   background-color: #fef2f2;
   border: 1px solid #fecaca;
-  color: #dc2626;
+  color: #991b1b;
 }
 
 .alert-danger i {

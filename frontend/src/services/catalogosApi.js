@@ -2,6 +2,7 @@
  * Servicio de API para catálogos (Tema-Parámetro) y ubicaciones
  */
 import api from './api'
+import { getApiBaseUrlWithPath } from '@/utils/apiConfig'
 
 const catalogosApi = {
   /**
@@ -13,22 +14,30 @@ const catalogosApi = {
     try {
       // Ruta principal: query por tema
       const response = await api.get('/parametros/', { params: { tema: codigoTema } })
-      return response.data
-    } catch (errorPrimario) {
-      console.warn(`[catalogosApi] Fallback 1 para tema ${codigoTema} tras error:`, errorPrimario?.response?.status)
+      const data = response.data
+      // Si es paginado, retornar results, sino retornar directamente
+      return Array.isArray(data) ? data : (data.results || data)
+    } catch (error_) {
       try {
         // Fallback 1: endpoint REST por tema
-        const respAlt1 = await api.get(`/parametros/tema/${codigoTema}/`)
-        return respAlt1.data
-      } catch (errorSecundario) {
-        console.warn(`[catalogosApi] Fallback 2 para tema ${codigoTema} tras error:`, errorSecundario?.response?.status)
+        const response = await api.get(`/parametros/tema/${codigoTema}/`, { params: {} })
+        const data = response.data
+        return data.parametros || data
+      } catch (error_) {
         try {
-          // Fallback 2: parámetros anidados bajo tema
-          const respAlt2 = await api.get(`/temas/${codigoTema}/parametros/`)
-          return respAlt2.data
-        } catch (errorTerciario) {
-          console.error(`Error obteniendo parámetros del tema ${codigoTema}:`, errorTerciario)
-          throw errorTerciario
+          // Fallback 2: parámetros anidados bajo tema (necesita buscar tema por código primero)
+          const temasResponse = await api.get('/temas/', { params: {} })
+          const temas = temasResponse.data
+          const temasArray = Array.isArray(temas) ? temas : (temas.results || [])
+          const tema = temasArray.find(t => t.codigo === codigoTema)
+          if (!tema) {
+            throw new Error(`Tema ${codigoTema} no encontrado`)
+          }
+          const response = await api.get(`/temas/${tema.id}/parametros/`, { params: {} })
+          const data = response.data
+          return Array.isArray(data) ? data : (data.results || data)
+        } catch (error_) {
+          throw error_
         }
       }
     }
@@ -40,10 +49,10 @@ const catalogosApi = {
    */
   async getTemas() {
     try {
-      const response = await api.get('/temas/')
-      return response.data
+      const response = await api.get('/temas/', { params: {} })
+      const data = response.data
+      return Array.isArray(data) ? data : (data.results || data)
     } catch (error) {
-      console.error('Error obteniendo temas:', error)
       throw error
     }
   },
@@ -54,10 +63,10 @@ const catalogosApi = {
    */
   async getDepartamentos() {
     try {
-      const response = await api.get('/departamentos/')
-      return response.data
+      const response = await api.get('/departamentos/', { params: {} })
+      const data = response.data
+      return Array.isArray(data) ? data : (data.results || data)
     } catch (error) {
-      console.error('Error obteniendo departamentos:', error)
       throw error
     }
   },
@@ -69,10 +78,10 @@ const catalogosApi = {
    */
   async getMunicipiosPorDepartamento(codigoDepartamento) {
     try {
-      const response = await api.get(`/municipios/`, { params: { departamento: codigoDepartamento } })
-      return response.data
+      const response = await api.get('/municipios/', { params: { departamento: codigoDepartamento } })
+      const data = response.data
+      return Array.isArray(data) ? data : (data.results || data)
     } catch (error) {
-      console.error(`Error obteniendo municipios del departamento ${codigoDepartamento}:`, error)
       throw error
     }
   },
@@ -84,10 +93,30 @@ const catalogosApi = {
    */
   async getDepartamentoPorCodigo(codigo) {
     try {
-      const response = await api.get('/departamentos/')
-      return response.data.find(dept => dept.codigo === codigo)
+      const baseUrl = getApiBaseUrlWithPath()
+      const response = await fetch(`${baseUrl}/departamentos/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      const data = await response.json()
+      // Handle different response formats: array, {results: []}, or {data: []}
+      let departamentos = null
+      if (Array.isArray(data)) {
+        departamentos = data
+      } else if (Array.isArray(data.results)) {
+        departamentos = data.results
+      } else if (Array.isArray(data.data)) {
+        departamentos = data.data
+      } else {
+        departamentos = []
+      }
+      return departamentos.find(dept => dept.codigo === codigo)
     } catch (error) {
-      console.error(`Error obteniendo departamento ${codigo}:`, error)
       throw error
     }
   },
@@ -100,9 +129,9 @@ const catalogosApi = {
   async getMunicipiosByDepartamento(idDepartamento) {
     try {
       const response = await api.get('/municipios/', { params: { departamento: idDepartamento } })
-      return response.data
+      const data = response.data
+      return Array.isArray(data) ? data : (data.results || data)
     } catch (error) {
-      console.error(`Error obteniendo municipios del departamento ${idDepartamento}:`, error)
       throw error
     }
   },

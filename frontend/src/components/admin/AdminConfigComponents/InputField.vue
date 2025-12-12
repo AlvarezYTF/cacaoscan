@@ -64,7 +64,13 @@ export default {
   },
   emits: ['update:modelValue', 'blur'],
   setup(props) {
-    const id = `input-${Math.random().toString(36).substr(2, 9)}`
+    // Generate a unique ID for the input field using cryptographically secure random values
+    // Note: Using crypto.getRandomValues() instead of Math.random() for better security
+    // This generates a UI identifier, not for cryptographic purposes, but using secure RNG
+    // is a best practice to avoid security warnings from static analysis tools
+    const randomArray = new Uint32Array(1)
+    crypto.getRandomValues(randomArray)
+    const id = `input-${randomArray[0].toString(36)}`
     return { id }
   }
 }

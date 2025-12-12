@@ -1,6 +1,6 @@
 <template>
   <!-- KPI Cards con diseño profesional mejorado -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-cy="kpi-cards">
     <div 
       v-for="(card, index) in cards" 
       :key="card.id"
@@ -149,13 +149,13 @@ const formatValue = (value) => {
     return '0'
   }
   if (typeof value === 'number') {
-    if (isNaN(value)) {
+    if (Number.isNaN(value)) {
       return '0'
     }
     return value.toLocaleString('es-ES')
   }
-  const numValue = parseFloat(value)
-  if (!isNaN(numValue)) {
+  const numValue = Number.parseFloat(value)
+  if (!Number.isNaN(numValue)) {
     return numValue.toLocaleString('es-ES')
   }
   return value || '0'

@@ -193,6 +193,16 @@
       @close="closeModal"
       @saved="handleLoteSaved"
     />
+
+    <!-- Modal de detalle de lote -->
+    <Teleport to="body">
+      <LoteDetailModal
+        v-if="showDetailModal"
+        :show="showDetailModal"
+        :lote-id="selectedLoteId"
+        @close="closeDetailModal"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -205,6 +215,7 @@ import { useRouter } from 'vue-router'
 
 // 3. Components
 import LoteForm from '@/components/LoteForm.vue'
+import LoteDetailModal from '@/components/common/LotesViewComponents/LoteDetailModal.vue'
 
 // 4. Services
 import lotesApi from '@/services/lotesApi'
@@ -226,6 +237,8 @@ const filters = ref({
 const showModal = ref(false)
 const selectedLote = ref(null)
 const isEditing = ref(false)
+const showDetailModal = ref(false)
+const selectedLoteId = ref(null)
 
 // Computed
 const estadosLote = computed(() => lotesApi.getEstadosLote())
@@ -255,8 +268,7 @@ const loadLotes = async () => {
     lotes.value = response.results || response
   } catch (err) {
     error.value = 'Error al cargar los lotes. Intenta nuevamente.'
-    console.error('Error loading lotes:', err)
-  } finally {
+    } finally {
     loading.value = false
   }
 }
@@ -266,8 +278,7 @@ const loadFincas = async () => {
     const response = await fincasApi.getFincas()
     fincas.value = response.results || response
   } catch (err) {
-    console.error('Error loading fincas:', err)
-  }
+    }
 }
 
 const applyFilters = () => {
@@ -296,7 +307,14 @@ const editLote = (lote) => {
 }
 
 const viewLote = (lote) => {
-  router.push(`/lotes/${lote.id}`)
+  const loteId = typeof lote === 'object' ? lote.id : lote
+  selectedLoteId.value = loteId
+  showDetailModal.value = true
+}
+
+const closeDetailModal = () => {
+  showDetailModal.value = false
+  selectedLoteId.value = null
 }
 
 const viewAnalisis = (lote) => {

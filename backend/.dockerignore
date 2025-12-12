@@ -12,6 +12,7 @@ env/
 ENV/
 .venv
 venv_wsl2/
+backend/venv/
 
 # Django
 *.log
@@ -49,27 +50,106 @@ Thumbs.db
 *.md
 docs/
 
-# Environment
+# Environment and secrets - CRITICAL: Prevent sensitive data from being copied
 .env
 .env.*
 !.env.example
+*.env
+*.secret
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+secrets/
+credentials/
+.secrets/
+
+# Configuration files with potential secrets
+config.local.*
+settings.local.*
+local_config.*
+*.local.py
+*.local.yml
+*.local.yaml
+*.local.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+*.dump
+*.backup
 
 # Logs
 logs/
 *.log
+*.log.*
 
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb
 
-# ML artifacts
+# ML artifacts and models (can be large and sensitive)
 ml/artifacts/
 *.pkl
 *.pt
 *.onnx
+*.h5
+*.hdf5
+*.model
+*.weights
+models/
+checkpoints/
 
 # Testing
 tests/
 test_*.py
 *_test.py
+conftest.py
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+
+# Cache directories
+.cache/
+*.cache
+
+# Development and debugging files
+*.debug
+debug/
+.dev/
+development/
+
+# CI/CD files (may contain secrets)
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+azure-pipelines.yml
+
+# Docker files (avoid recursive copying)
+docker-compose*.yml
+docker-compose*.yaml
+Dockerfile*
+.dockerignore
+
+# Kubernetes files (may contain secrets)
+k8s/
+kubernetes/
+*.kubeconfig
+
+# Scripts that might contain sensitive data
+scripts/*.sh
+scripts/*.py
+!scripts/check_fk_lotes.py
+!scripts/fix_encoding.py
 

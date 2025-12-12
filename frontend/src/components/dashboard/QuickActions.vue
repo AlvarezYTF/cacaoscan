@@ -54,12 +54,12 @@ export default {
 }
 
 .btn-primary {
-  background-color: #27ae60;
-  color: white;
+  background-color: #006400;
+  color: #ffffff;
 }
 
 .btn-primary:hover {
-  background-color: #219653;
+  background-color: #005200;
 }
 
 .btn-secondary {

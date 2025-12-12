@@ -11,6 +11,43 @@ from .logs import get_ml_logger
 logger = get_ml_logger("cacaoscan.ml.utils.losses")
 
 
+def _normalizar_tensor_a_2d(tensor: torch.Tensor) -> torch.Tensor:
+    """Normaliza un tensor a 2D (batch, features)."""
+    if tensor.ndim == 1:
+        return tensor.unsqueeze(0)
+    return tensor
+
+
+def _cortar_tensor_a_num_targets(tensor: torch.Tensor, num_targets: int) -> torch.Tensor:
+    """Corta un tensor a num_targets columnas si tiene más."""
+    if tensor.shape[1] > num_targets:
+        logger.warning(f"Tensor tiene {tensor.shape[1]} columnas, cortando a {num_targets}")
+        return tensor[:, :num_targets]
+    return tensor
+
+
+def _aplanar_log_sigmas(log_sigmas: torch.Tensor) -> torch.Tensor:
+    """Aplana log_sigmas a 1D si es necesario."""
+    if log_sigmas.ndim > 1:
+        return log_sigmas.flatten()
+    return log_sigmas
+
+
+def _calcular_loss_incertidumbre(
+    base_loss: torch.Tensor,
+    log_sigma: torch.Tensor,
+    epsilon: float = 1e-8
+) -> torch.Tensor:
+    """
+    Calcula la pérdida ponderada por incertidumbre.
+    
+    Fórmula: L_i_weighted = (1 / (2 * σ_i²)) * L_i + log(σ_i)
+    """
+    sigma = torch.exp(log_sigma)
+    sigma_sq = sigma ** 2
+    return (1.0 / (2.0 * sigma_sq + epsilon)) * base_loss + log_sigma
+
+
 class UncertaintyWeightedLoss(nn.Module):
     """
     Multi-task loss with learnable uncertainty weights.
@@ -39,8 +76,10 @@ class UncertaintyWeightedLoss(nn.Module):
         
         # Inicializar cada sigma con una pequeña variación aleatoria
         # Esto ayuda a que el optimizador pueda diferenciarlos desde el inicio
+        # Use fixed seed for reproducibility in parameter initialization
+        rng = np.random.default_rng(seed=42)
         initial_values = torch.tensor([
-            initial_log_sigma + np.random.uniform(-0.05, 0.05)  # ±5% variación
+            initial_log_sigma + rng.uniform(-0.05, 0.05)  # ±5% variación
             for _ in range(num_targets)
         ], dtype=torch.float32)
         
@@ -58,7 +97,7 @@ class UncertaintyWeightedLoss(nn.Module):
             f"UncertaintyWeightedLoss initialized with initial_sigma={initial_sigma}"
         )
         logger.info(
-            f"Uncertainty-based loss formula: L_total = Σ [ (1 / (2 * σ_i²)) * L_i + log σ_i ]"
+            "Uncertainty-based loss formula: L_total = Σ [ (1 / (2 * σ_i²)) * L_i + log σ_i ]"
         )
         logger.info(f"Learnable sigmas for targets: {self.TARGETS}")
         logger.info(f"Initial log_sigmas (4 parámetros independientes): {self.log_sigmas.data.cpu().numpy()}")
@@ -73,19 +112,13 @@ class UncertaintyWeightedLoss(nn.Module):
         print("DEBUG Loss: preds:", predictions.shape, "targets:", targets.shape)
         
         # 1) Normalizar pred/target a 2D
-        if predictions.ndim == 1:
-            predictions = predictions.unsqueeze(0)
-        if targets.ndim == 1:
-            targets = targets.unsqueeze(0)
+        predictions = _normalizar_tensor_a_2d(predictions)
+        targets = _normalizar_tensor_a_2d(targets)
         
         # Forzar tamaño correcto (cortar a 4 dimensiones si hay más)
         num_targets = len(self.log_sigmas)
-        if predictions.shape[1] > num_targets:
-            logger.warning(f"Predictions tiene {predictions.shape[1]} columnas, cortando a {num_targets}")
-            predictions = predictions[:, :num_targets]
-        if targets.shape[1] > num_targets:
-            logger.warning(f"Targets tiene {targets.shape[1]} columnas, cortando a {num_targets}")
-            targets = targets[:, :num_targets]
+        predictions = _cortar_tensor_a_num_targets(predictions, num_targets)
+        targets = _cortar_tensor_a_num_targets(targets, num_targets)
         
         # 2) Sanity check
         assert predictions.shape == targets.shape, \
@@ -93,40 +126,26 @@ class UncertaintyWeightedLoss(nn.Module):
         
         total_loss = 0.0
         
-        # Smooth L1 base loss
-        base_loss_fn = self.base_criterion
-        
         # Asegurar que log_sigmas es 1D (4 parámetros independientes)
-        if self.log_sigmas.ndim > 1:
-            log_sigmas_flat = self.log_sigmas.flatten()
-        else:
-            log_sigmas_flat = self.log_sigmas
+        log_sigmas_flat = _aplanar_log_sigmas(self.log_sigmas)
         
         # Para cada target i (usar min para evitar index out of bounds)
-        B, C = predictions.shape
+        _, C = predictions.shape
         C = min(predictions.shape[1], targets.shape[1], len(log_sigmas_flat))
         
         for i in range(C):
             pi = predictions[:, i]
             ti = targets[:, i]
             
-            Li = base_loss_fn(pi, ti)  # [batch]
+            li = self.base_criterion(pi, ti)  # [batch]
             
             # Obtener el log_sigma INDEPENDIENTE para esta tarea específica
             log_sigma_i = log_sigmas_flat[i]
-            sigma_i = torch.exp(log_sigma_i)
             
             # Loss incertidumbre según Kendall et al.
-            # Fórmula: L_i_weighted = (1 / (2 * σ_i²)) * L_i + log(σ_i)
-            # Nota: Usamos log(σ_i) en vez de log(σ_i²) para estabilidad numérica
-            # Si σ_i es muy pequeño, log(σ_i) puede ser muy negativo, pero eso está bien
-            # porque el término (1/(2*σ_i²)) * L_i compensa
-            sigma_sq = sigma_i ** 2
-            # Evitar división por cero (aunque sigma_i > 0 por construcción)
-            epsilon = 1e-8
-            Li_weighted = (1.0 / (2.0 * sigma_sq + epsilon)) * Li + log_sigma_i  # [batch]
+            li_weighted = _calcular_loss_incertidumbre(li, log_sigma_i)  # [batch]
             
-            total_loss = total_loss + Li_weighted  # [batch]
+            total_loss = total_loss + li_weighted  # [batch]
         
         # Promediar sobre el batch para obtener escalar
         total_loss = total_loss.mean()
@@ -142,10 +161,7 @@ class UncertaintyWeightedLoss(nn.Module):
             Dictionary of sigma values per target
         """
         # Asegurar que log_sigmas es un tensor 1D con 4 elementos
-        if self.log_sigmas.ndim > 1:
-            log_sigmas_flat = self.log_sigmas.flatten()
-        else:
-            log_sigmas_flat = self.log_sigmas
+        log_sigmas_flat = _aplanar_log_sigmas(self.log_sigmas)
         
         # Verificar que tenemos exactamente 4 valores
         if len(log_sigmas_flat) != len(self.TARGETS):

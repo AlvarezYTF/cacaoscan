@@ -149,7 +149,7 @@
 
 <script setup>
 // 1. Vue core
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 
 // Emits
 const emit = defineEmits(['capture'])
@@ -197,7 +197,6 @@ const startCamera = async () => {
       isCameraReady.value = true
     }
   } catch (err) {
-    console.error('Error accessing camera:', err)
     error.value = 'No se pudo acceder a la cámara. Asegúrate de otorgar los permisos necesarios.'
     hasError.value = true
   } finally {
@@ -208,7 +207,9 @@ const startCamera = async () => {
 const stopCamera = () => {
   if (stream.value) {
     const tracks = stream.value.getTracks()
-    tracks.forEach(track => track.stop())
+    for (const track of tracks) {
+      track.stop()
+    }
     stream.value = null
   }
   isCameraReady.value = false
@@ -223,6 +224,20 @@ const capturePhoto = () => {
   
   context.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
   
+  // Emitir la foto inmediatamente después de capturarla
+  canvas.value.toBlob((blob) => {
+    if (blob) {
+      const file = new File([blob], `cocoa-${Date.now()}.jpg`, { type: 'image/jpeg' })
+      emit('capture', file)
+      
+      // Auto-resetear después de un breve delay para tomar otra foto
+      setTimeout(async () => {
+        photoTaken.value = false
+        await startCamera()
+      }, 1500) // 1.5 segundos para que el usuario vea la foto
+    }
+  }, 'image/jpeg', 0.9)
+  
   stopCamera()
   photoTaken.value = true
 }
@@ -232,7 +247,8 @@ const retakePhoto = async () => {
   await startCamera()
 }
 
-const savePhoto = () => {
+const savePhoto = async () => {
+  // Emit the photo as blob when saving
   if (!canvas.value) return
   
   canvas.value.toBlob((blob) => {
@@ -241,6 +257,9 @@ const savePhoto = () => {
       emit('capture', file)
     }
   }, 'image/jpeg', 0.9)
+  
+  photoTaken.value = false
+  await startCamera()
 }
 
 const retryCamera = async () => {
@@ -421,13 +440,13 @@ onBeforeUnmount(() => {
 }
 
 .status-indicator.ready {
-  background: rgba(16, 185, 129, 0.9);
-  color: white;
+  background: #065f46;
+  color: #ffffff;
 }
 
 .status-indicator.error {
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
+  background: #b91c1c;
+  color: #ffffff;
 }
 
 .status-icon {
@@ -535,8 +554,8 @@ onBeforeUnmount(() => {
 }
 
 .action-button.save {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  color: #ffffff;
   box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.4);
 }
 

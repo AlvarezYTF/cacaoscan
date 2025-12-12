@@ -1,199 +1,133 @@
 /**
  * Servicio para gestión de reportes
+ * Usa apiClient para reducir duplicación de código
+ * Normaliza DTOs para consistencia en el frontend
  */
-import { useAuthStore } from '@/stores/auth'
+import { fetchGet, fetchPost, fetchDelete } from './apiClient'
+import {
+  normalizeReportDTO,
+  normalizeReportListResponse,
+  normalizeReportStatsResponse,
+  buildReportRequestPayload
+} from './reports/reportDTOs'
 
 class ReportsService {
-  constructor() {
-    this.baseURL = '/api/reportes'
-  }
-
-  /**
-   * Obtener headers de autenticación
-   */
-  getHeaders() {
-    const authStore = useAuthStore()
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authStore.token}`
-    }
-  }
+  baseURL = '/api/v1/reportes'
 
   /**
    * Listar reportes con filtros y paginación
+   * @param {Object} filters - Filter parameters
+   * @param {number} page - Page number
+   * @param {number} pageSize - Items per page
+   * @returns {Promise<Object>} Normalized report list with pagination
    */
   async getReports(filters = {}, page = 1, pageSize = 20) {
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        page_size: pageSize.toString()
-      })
-
-      // Agregar filtros
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) {
-          params.append(key, value)
-        }
-      })
-
-      const response = await fetch(`${this.baseURL}/?${params}`, {
-        headers: this.getHeaders()
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Error al obtener reportes')
-      }
-
-      return await response.json()
-    } catch (error) {
-      console.error('Error obteniendo reportes:', error)
-      throw error
+    const params = {
+      page,
+      page_size: pageSize,
+      ...filters
     }
+    const response = await fetchGet(`${this.baseURL}/`, params)
+    return normalizeReportListResponse(response)
   }
 
   /**
    * Obtener detalles de un reporte específico
+   * @param {number} reportId - Report ID
+   * @returns {Promise<Object>} Normalized report DTO
    */
   async getReportDetails(reportId) {
-    try {
-      const response = await fetch(`${this.baseURL}/${reportId}/`, {
-        headers: this.getHeaders()
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Error al obtener detalles del reporte')
-      }
-
-      return await response.json()
-    } catch (error) {
-      console.error('Error obteniendo detalles del reporte:', error)
-      throw error
-    }
+    const response = await fetchGet(`${this.baseURL}/${reportId}/`)
+    return normalizeReportDTO(response)
   }
 
   /**
    * Crear un nuevo reporte
+   * @param {Object} reportData - Report data from form
+   * @returns {Promise<Object>} Normalized report DTO
    */
   async createReport(reportData) {
-    try {
-      const response = await fetch(this.baseURL, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify(reportData)
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al crear el reporte')
-      }
-
-      return data
-    } catch (error) {
-      console.error('Error creando reporte:', error)
-      throw error
-    }
+    const payload = buildReportRequestPayload(reportData)
+    const response = await fetchPost(`${this.baseURL}/`, payload)
+    return normalizeReportDTO(response)
   }
 
   /**
    * Descargar un reporte
    */
   async downloadReport(reportId) {
-    try {
-      const response = await fetch(`${this.baseURL}/${reportId}/download/`, {
-        headers: {
-          'Authorization': this.getHeaders()['Authorization'],
-          'Accept': 'application/octet-stream'
-        }
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Error al descargar el reporte')
+    // Para descargas de archivos, necesitamos usar fetch directamente
+    // ya que apiClient devuelve JSON por defecto
+    const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+    const url = `${this.baseURL}/${reportId}/download/`
+    const fullUrl = url.startsWith('http') ? url : `${globalThis.location.origin}${url}`
+    
+    const response = await fetch(fullUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': '*/*' // Accept any content type for file downloads
       }
+    })
 
-      return response
-    } catch (error) {
-      console.error('Error descargando reporte:', error)
-      throw error
+    if (!response.ok) {
+      // Try to get error message from response
+      let errorMessage = `Error al descargar el reporte (${response.status})`
+      try {
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorData.detail || errorMessage
+        } else {
+          const text = await response.text()
+          if (text) {
+            errorMessage = text.substring(0, 200) // Limit error message length
+          }
+        }
+      } catch (e) {
+        // If we can't parse the error, use the default message
+        console.warn('Could not parse error response:', e)
+      }
+      throw new Error(errorMessage)
     }
+
+    return response
   }
 
   /**
    * Eliminar un reporte
    */
   async deleteReport(reportId) {
-    try {
-      const response = await fetch(`${this.baseURL}/${reportId}/delete/`, {
-        method: 'DELETE',
-        headers: this.getHeaders()
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Error al eliminar el reporte')
-      }
-
-      return true
-    } catch (error) {
-      console.error('Error eliminando reporte:', error)
-      throw error
-    }
+    await fetchDelete(`${this.baseURL}/${reportId}/delete/`)
+    return true
   }
 
   /**
    * Obtener estadísticas de reportes
+   * @returns {Promise<Object>} Normalized report stats
    */
   async getReportsStats() {
-    try {
-      const response = await fetch(`${this.baseURL}/stats/`, {
-        headers: this.getHeaders()
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Error al obtener estadísticas')
-      }
-
-      return await response.json()
-    } catch (error) {
-      console.error('Error obteniendo estadísticas:', error)
-      throw error
-    }
+    const response = await fetchGet(`${this.baseURL}/stats/`)
+    return normalizeReportStatsResponse(response)
   }
 
   /**
    * Limpiar reportes expirados (solo administradores)
    */
   async cleanupExpiredReports() {
-    try {
-      const response = await fetch(`${this.baseURL}/cleanup/`, {
-        method: 'POST',
-        headers: this.getHeaders()
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al limpiar reportes expirados')
-      }
-
-      return data
-    } catch (error) {
-      console.error('Error limpiando reportes expirados:', error)
-      throw error
-    }
+    return await fetchPost(`${this.baseURL}/cleanup/`)
   }
 
   /**
    * Generar reporte de calidad
+   * @param {string} title - Report title
+   * @param {string} description - Report description
+   * @param {Object} filters - Filter parameters
+   * @returns {Promise<Object>} Normalized report DTO
    */
   async generateQualityReport(title, description = '', filters = {}) {
     return this.createReport({
-      tipo_reporte: 'calidad',
-      formato: 'pdf',
+      tipo_reporte: 'CALIDAD',
+      formato: 'EXCEL',
       titulo: title,
       descripcion: description,
       filtros: filters
@@ -202,11 +136,16 @@ class ReportsService {
 
   /**
    * Generar reporte de finca
+   * @param {number} fincaId - Finca ID
+   * @param {string} title - Report title
+   * @param {string} description - Report description
+   * @param {Object} filters - Filter parameters
+   * @returns {Promise<Object>} Normalized report DTO
    */
   async generateFincaReport(fincaId, title, description = '', filters = {}) {
     return this.createReport({
-      tipo_reporte: 'finca',
-      formato: 'pdf',
+      tipo_reporte: 'FINCA',
+      formato: 'EXCEL',
       titulo: title,
       descripcion: description,
       parametros: { finca_id: fincaId },
@@ -216,11 +155,15 @@ class ReportsService {
 
   /**
    * Generar reporte de auditoría
+   * @param {string} title - Report title
+   * @param {string} description - Report description
+   * @param {Object} filters - Filter parameters
+   * @returns {Promise<Object>} Normalized report DTO
    */
   async generateAuditReport(title, description = '', filters = {}) {
     return this.createReport({
-      tipo_reporte: 'auditoria',
-      formato: 'pdf',
+      tipo_reporte: 'AUDITORIA',
+      formato: 'EXCEL',
       titulo: title,
       descripcion: description,
       filtros: filters
@@ -229,14 +172,20 @@ class ReportsService {
 
   /**
    * Generar reporte personalizado
+   * @param {string} tipoReporte - Report type
+   * @param {string} formato - Report format
+   * @param {string} title - Report title
+   * @param {Object} parametros - Custom parameters
+   * @param {Object} filtros - Filter parameters
+   * @returns {Promise<Object>} Normalized report DTO
    */
   async generateCustomReport(tipoReporte, formato, title, parametros = {}, filtros = {}) {
     return this.createReport({
-      tipo_reporte: 'personalizado',
-      formato: formato,
+      tipo_reporte: 'PERSONALIZADO',
+      formato: formato.toUpperCase(),
       titulo: title,
       parametros: {
-        tipo_reporte: tipoReporte,
+        tipo_reporte: tipoReporte.toUpperCase(),
         ...parametros
       },
       filtros: filtros
@@ -255,7 +204,8 @@ class ReportsService {
       let downloadFilename = filename || `reporte_${reportId}`
       
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="(.+)"/)
+        const filenameRegex = /filename="(.+)"/
+        const filenameMatch = filenameRegex.exec(contentDisposition)
         if (filenameMatch) {
           downloadFilename = filenameMatch[1]
         }
@@ -263,24 +213,25 @@ class ReportsService {
       
       // Crear blob y descargar
       const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
+      const url = globalThis.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
       link.download = downloadFilename
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+      link.remove()
+      globalThis.URL.revokeObjectURL(url)
       
       return true
     } catch (error) {
-      console.error('Error descargando archivo de reporte:', error)
       throw error
     }
   }
 
   /**
    * Verificar estado de un reporte
+   * @param {number} reportId - Report ID
+   * @returns {Promise<Object>} Status information
    */
   async checkReportStatus(reportId) {
     try {
@@ -293,7 +244,6 @@ class ReportsService {
         mensaje_error: report.mensaje_error
       }
     } catch (error) {
-      console.error('Error verificando estado del reporte:', error)
       throw error
     }
   }
@@ -303,10 +253,10 @@ class ReportsService {
    */
   getReportTypes() {
     return [
-      { value: 'calidad', label: 'Reporte de Calidad', description: 'Análisis de calidad de granos de cacao' },
-      { value: 'finca', label: 'Reporte de Finca', description: 'Análisis específico de una finca' },
-      { value: 'auditoria', label: 'Reporte de Auditoría', description: 'Actividad y logs del sistema' },
-      { value: 'personalizado', label: 'Reporte Personalizado', description: 'Reporte con parámetros específicos' }
+      { value: 'CALIDAD', label: 'Reporte de Calidad', description: 'Análisis de calidad de granos de cacao' },
+      { value: 'FINCA', label: 'Reporte de Finca', description: 'Análisis específico de una finca' },
+      { value: 'AUDITORIA', label: 'Reporte de Auditoría', description: 'Actividad y logs del sistema' },
+      { value: 'PERSONALIZADO', label: 'Reporte Personalizado', description: 'Reporte con parámetros específicos' }
     ]
   }
 
@@ -315,10 +265,10 @@ class ReportsService {
    */
   getReportFormats() {
     return [
-      { value: 'pdf', label: 'PDF', description: 'Documento PDF con gráficos y tablas' },
-      { value: 'excel', label: 'Excel', description: 'Hoja de cálculo Excel con datos detallados' },
-      { value: 'csv', label: 'CSV', description: 'Archivo CSV con datos tabulares' },
-      { value: 'json', label: 'JSON', description: 'Datos en formato JSON' }
+      { value: 'EXCEL', label: 'Excel', description: 'Hoja de cálculo Excel con datos detallados' },
+      { value: 'PDF', label: 'PDF', description: 'Documento PDF con gráficos y tablas' },
+      { value: 'CSV', label: 'CSV', description: 'Archivo CSV con datos tabulares' },
+      { value: 'JSON', label: 'JSON', description: 'Datos en formato JSON' }
     ]
   }
 
@@ -327,9 +277,10 @@ class ReportsService {
    */
   getReportStates() {
     return [
-      { value: 'completado', label: 'Completado', color: 'success' },
-      { value: 'generando', label: 'Generando', color: 'warning' },
-      { value: 'fallido', label: 'Fallido', color: 'danger' }
+      { value: 'COMPLETADO', label: 'Completado', color: 'success' },
+      { value: 'GENERANDO', label: 'Generando', color: 'warning' },
+      { value: 'PENDIENTE', label: 'Pendiente', color: 'info' },
+      { value: 'FALLIDO', label: 'Fallido', color: 'danger' }
     ]
   }
 }

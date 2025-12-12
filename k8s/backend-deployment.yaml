@@ -18,6 +18,7 @@ spec:
         app: backend
         tier: api
     spec:
+      automountServiceAccountToken: false
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
@@ -49,9 +50,11 @@ spec:
             requests:
               cpu: 500m
               memory: 512Mi
+              ephemeral-storage: "6Gi"
             limits:
               cpu: "2"
               memory: 2Gi
+              ephemeral-storage: "10Gi"
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
@@ -86,10 +89,12 @@ spec:
           persistentVolumeClaim:
             claimName: media-pvc
         - name: staticfiles
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 1Gi
         - name: tmp
           emptyDir:
             medium: Memory
+            sizeLimit: 500Mi
 ---
 apiVersion: v1
 kind: Service

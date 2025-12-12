@@ -1,22 +1,20 @@
 {
   "name": "cacaoscan-frontend",
   "version": "0.0.0",
-  "private": true,
   "type": "module",
-  "engines": {
-    "node": "^20.19.0 || >=22.12.0"
-  },
   "scripts": {
-    "dev": "vite --host",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "prepare": "cypress install",
-    "test:e2e": "start-server-and-test preview http://localhost:4173 'cypress run --e2e'",
-    "test:e2e:dev": "start-server-and-test 'vite dev --port 4173' http://localhost:4173 'cypress open --e2e'",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run --coverage",
     "test:unit:dev": "vitest --coverage",
     "test:unit:watch": "vitest --coverage --watch",
-    "test:coverage": "vitest run --coverage --reporter=verbose",
+    "test:fast:failed": "vitest --rerun-failed",
+    "test:fast:changed": "vitest --changed",
+    "test:fast:smart": "vitest --changed --rerun-failed",
+    "test:all": "vitest run --coverage",
     "lint": "eslint . --fix",
     "format": "prettier --write src/"
   },
@@ -39,9 +37,7 @@
     "@vitest/coverage-v8": "^2.1.8",
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/test-utils": "^2.4.6",
-    "cypress": "^14.5.3",
     "eslint": "^9.31.0",
-    "eslint-plugin-cypress": "^5.1.0",
     "eslint-plugin-vue": "~10.3.0",
     "globals": "^16.3.0",
     "jsdom": "^25.0.1",
@@ -50,5 +46,9 @@
     "vite": "^7.0.6",
     "vite-plugin-vue-devtools": "^8.0.0",
     "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   }
 }
+

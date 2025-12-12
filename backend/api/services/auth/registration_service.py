@@ -8,11 +8,15 @@ from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
 from django.db import transaction
+from django.template import TemplateDoesNotExist, TemplateSyntaxError
 
 from ..base import BaseService, ServiceResult, ValidationServiceError
 from audit.models import LoginHistory
 
 logger = logging.getLogger("cacaoscan.services.auth.registration")
+
+# Error message constants
+ERROR_EMAIL_ALREADY_REGISTERED = "Este email ya está registrado"
 
 
 class RegistrationService(BaseService):
@@ -39,58 +43,21 @@ class RegistrationService(BaseService):
             required_fields = ['username', 'email', 'password', 'password_confirm']
             self.validate_required_fields(user_data, required_fields)
             
-            # Validate passwords
-            if user_data['password'] != user_data['password_confirm']:
-                return ServiceResult.validation_error(
-                    "Las contraseñas no coinciden",
-                    details={"field": "password_confirm"}
-                )
-            
-            # Validate password strength
-            password = user_data['password']
-            try:
-                from core.utils import validate_password_strength
-                validate_password_strength(password, raise_serializer_error=False)
-            except Exception as e:
-                from core.utils import PasswordValidationError
-                if isinstance(e, PasswordValidationError):
-                    return ServiceResult.validation_error(
-                        e.message,
-                        details={"field": "password"}
-                    )
-                raise
-            
-            # Validate unique email
-            if User.objects.filter(email=user_data['email']).exists():
-                return ServiceResult.validation_error(
-                    "Este email ya está registrado",
-                    details={"field": "email"}
-                )
-            
-            # Validate unique username
-            if User.objects.filter(username=user_data['username']).exists():
-                return ServiceResult.validation_error(
-                    "Este nombre de usuario ya está en uso",
-                    details={"field": "username"}
-                )
+            # Validate user data
+            validation_result = self._validate_user_registration_data(user_data, check_username=True)
+            if validation_result:
+                return validation_result
             
             # Create user
-            user = User.objects.create_user(
-                username=user_data['username'],
-                email=user_data['email'],
-                password=user_data['password'],
-                first_name=user_data.get('first_name', ''),
-                last_name=user_data.get('last_name', ''),
-                is_active=True
-            )
+            user = self._create_user_from_data(user_data, use_email_as_username=False)
             
             # Create email verification token
             from ...utils.model_imports import get_models_safely
             models = get_models_safely({
                 'EmailVerificationToken': 'auth_app.models.EmailVerificationToken'
             })
-            EmailVerificationToken = models['EmailVerificationToken']
-            verification_token = EmailVerificationToken.create_for_user(user)
+            email_verification_token_model = models['EmailVerificationToken']
+            verification_token = email_verification_token_model.create_for_user(user)
             
             # Generate JWT tokens automatically
             refresh = RefreshToken.for_user(user)
@@ -157,51 +124,21 @@ class RegistrationService(BaseService):
             required_fields = ['email', 'password', 'password_confirm']
             self.validate_required_fields(user_data, required_fields)
             
-            # Validate passwords
-            if user_data['password'] != user_data['password_confirm']:
-                return ServiceResult.validation_error(
-                    "Las contraseñas no coinciden",
-                    details={"field": "password_confirm"}
-                )
-            
-            # Validate password strength
-            password = user_data['password']
-            try:
-                from core.utils import validate_password_strength
-                validate_password_strength(password, raise_serializer_error=False)
-            except Exception as e:
-                from core.utils import PasswordValidationError
-                if isinstance(e, PasswordValidationError):
-                    return ServiceResult.validation_error(
-                        e.message,
-                        details={"field": "password"}
-                    )
-                raise
-            
-            # Validate unique email
-            if User.objects.filter(email=user_data['email']).exists():
-                return ServiceResult.validation_error(
-                    "Este email ya está registrado",
-                    details={"field": "email"}
-                )
+            # Validate user data
+            validation_result = self._validate_user_registration_data(user_data, check_username=False)
+            if validation_result:
+                return validation_result
             
             # Create user
-            user = User.objects.create_user(
-                username=user_data['email'],
-                email=user_data['email'],
-                password=password,
-                first_name=user_data.get('first_name', ''),
-                last_name=user_data.get('last_name', ''),
-                is_active=True
-            )
+            user = self._create_user_from_data(user_data, use_email_as_username=True)
             
             # Create email verification token
             from ...utils.model_imports import get_models_safely
             models = get_models_safely({
                 'EmailVerificationToken': 'auth_app.models.EmailVerificationToken'
             })
-            EmailVerificationToken = models['EmailVerificationToken']
-            verification_token = EmailVerificationToken.create_for_user(user)
+            email_verification_token_model = models['EmailVerificationToken']
+            verification_token = email_verification_token_model.create_for_user(user)
             
             # Send verification email
             email_result = self._send_verification_email(user, verification_token)
@@ -249,6 +186,50 @@ class RegistrationService(BaseService):
                 ValidationServiceError("Error interno durante el registro", details={"original_error": str(e)})
             )
     
+    def _validate_pre_registration_data(self, user_data: Dict[str, Any]) -> ServiceResult:
+        """Valida los datos de pre-registro."""
+        email = user_data.get('email')
+        password = user_data.get('password')
+        
+        if not email or not password:
+            return ServiceResult.validation_error(
+                "Email y contraseña son requeridos",
+                details={"field": "email" if not email else "password"}
+            )
+        
+        try:
+            from core.utils import validate_password_strength
+            validate_password_strength(password, raise_serializer_error=False)
+        except Exception as e:
+            from core.utils import PasswordValidationError
+            if isinstance(e, PasswordValidationError):
+                return ServiceResult.validation_error(
+                    e.message,
+                    details={"field": "password"}
+                )
+            raise
+        
+        if User.objects.filter(email=email).exists():
+            return ServiceResult.validation_error(
+                ERROR_EMAIL_ALREADY_REGISTERED,
+                details={"field": "email"}
+            )
+        
+        return ServiceResult.success()
+    
+    def _handle_existing_pending_registration(self, existing_pending, email: str) -> Optional[ServiceResult]:
+        """Maneja un registro pendiente existente."""
+        if not existing_pending.is_expired():
+            email_result = self._send_pre_registration_verification_email(existing_pending)
+            if email_result.get('success'):
+                return ServiceResult.success(
+                    data={'email': email},
+                    message="Se ha reenviado el enlace de verificación a tu correo electrónico."
+                )
+        else:
+            existing_pending.delete()
+        return None
+    
     def pre_register_user(self, user_data: Dict[str, Any], request=None) -> ServiceResult:
         """
         Pre-registers a user (creates pending registration without creating final user).
@@ -256,69 +237,34 @@ class RegistrationService(BaseService):
         
         Args:
             user_data: User data
-            request: Request object to get IP and user agent
+            request: Request object to get IP and user agent (no usado actualmente)
             
         Returns:
             ServiceResult with pending registration data
         """
+        _ = request
         try:
             from personas.models import PendingRegistration
             
-            # Validate required fields
+            validation_error = self._validate_pre_registration_data(user_data)
+            if validation_error:
+                return validation_error
+            
             email = user_data.get('email')
-            password = user_data.get('password')
             
-            if not email or not password:
-                return ServiceResult.validation_error(
-                    "Email y contraseña son requeridos",
-                    details={"field": "email" if not email else "password"}
-                )
-            
-            # Validate password strength
-            try:
-                from core.utils import validate_password_strength
-                validate_password_strength(password, raise_serializer_error=False)
-            except Exception as e:
-                from core.utils import PasswordValidationError
-                if isinstance(e, PasswordValidationError):
-                    return ServiceResult.validation_error(
-                        e.message,
-                        details={"field": "password"}
-                    )
-                raise
-            
-            # Validate unique email
-            if User.objects.filter(email=email).exists():
-                return ServiceResult.validation_error(
-                    "Este email ya está registrado",
-                    details={"field": "email"}
-                )
-            
-            # Check if pending registration already exists
             existing_pending = PendingRegistration.objects.filter(email=email, is_verified=False).first()
             if existing_pending:
-                # If token hasn't expired, resend email
-                if not existing_pending.is_expired():
-                    email_result = self._send_pre_registration_verification_email(existing_pending)
-                    if email_result.get('success'):
-                        return ServiceResult.success(
-                            data={'email': email},
-                            message="Se ha reenviado el enlace de verificación a tu correo electrónico."
-                        )
-                else:
-                    # Delete expired registration
-                    existing_pending.delete()
+                result = self._handle_existing_pending_registration(existing_pending, email)
+                if result:
+                    return result
             
-            # Create new pending registration
             pending_reg = PendingRegistration.objects.create(
                 email=email,
                 data=user_data
             )
             
-            # Send verification email
             email_result = self._send_pre_registration_verification_email(pending_reg)
             if not email_result.get('success'):
-                # Delete pending registration if email fails
                 pending_reg.delete()
                 return ServiceResult.error(
                     ValidationServiceError(
@@ -341,6 +287,99 @@ class RegistrationService(BaseService):
             return ServiceResult.error(
                 ValidationServiceError("Error interno durante el pre-registro", details={"original_error": str(e)})
             )
+    
+    def verify_pre_registration_and_create_user_with_persona_data(self, token: str) -> Dict[str, Any]:
+        """
+        Verifies pre-registration token and creates final user with persona data.
+        Returns dict instead of ServiceResult for compatibility with tests.
+        
+        Args:
+            token: Verification token
+            
+        Returns:
+            Dict with success, user, and persona (or error on failure)
+        """
+        try:
+            from personas.models import PendingRegistration
+            from personas.serializers import PersonaRegistroSerializer
+            import uuid
+            
+            # Validate token format
+            try:
+                token_uuid = uuid.UUID(str(token))
+            except (ValueError, TypeError):
+                return {"success": False, "error": "Invalid token format"}
+            
+            # Get pending registration
+            try:
+                pending_reg = PendingRegistration.objects.get(verification_token=token_uuid)
+            except PendingRegistration.DoesNotExist:
+                return {"success": False, "error": "Invalid or expired token"}
+            
+            # Check if already verified
+            if pending_reg.is_verified:
+                return {"success": False, "error": "Token already used"}
+            
+            # Check if expired
+            if pending_reg.is_expired():
+                pending_reg.delete()
+                return {"success": False, "error": "Token expired"}
+            
+            # Create final user with saved data
+            with transaction.atomic():
+                user_data = pending_reg.data.copy()
+                password = user_data.pop('password')
+                
+                user_obj = self._create_user_from_data(user_data, use_email_as_username=True)
+                
+                persona_obj = None
+                
+                # If there's persona data, create persona record
+                if 'tipo_documento' in user_data or 'numero_documento' in user_data:
+                    try:
+                        persona_data = {k: v for k, v in user_data.items() if k not in ['email', 'password', 'first_name', 'last_name']}
+                        persona_data['email'] = user_obj.email
+                        persona_data['password'] = password
+                        persona_serializer = PersonaRegistroSerializer(data=persona_data)
+                        if persona_serializer.is_valid():
+                            persona_obj = persona_serializer.save()
+                            self.log_info(f"Persona creada exitosamente para usuario {user_obj.email}")
+                        else:
+                            self.log_warning(f"Error creando persona para usuario {user_obj.email}: {persona_serializer.errors}")
+                            return {"success": False, "error": "Persona data invalid"}
+                    except Exception as e:
+                        self.log_error(f"Error creando persona: {e}")
+                        return {"success": False, "error": "Persona data invalid"}
+                
+                # Mark pending registration as verified
+                pending_reg.verify()
+                
+                # Invalidate cache when new users are created
+                try:
+                    from core.utils import invalidate_system_stats_cache
+                    invalidate_system_stats_cache()
+                except Exception as e:
+                    self.log_warning(f"Error invalidating cache after user creation: {e}")
+                
+                # Create audit log
+                self.create_audit_log(
+                    user=user_obj,
+                    action="user_created_from_preregistration",
+                    resource_type="user",
+                    resource_id=user_obj.id
+                )
+                
+                self.log_info(f"Usuario {user_obj.email} creado exitosamente después de verificación")
+                
+                return {
+                    "success": True,
+                    "user": user_obj,
+                    "persona": persona_obj
+                }
+            
+        except Exception as e:
+            self.log_error(f"Error verificando pre-registro: {str(e)}")
+            return {"success": False, "error": str(e)}
     
     def verify_pre_registration_and_create_user(self, token: str) -> ServiceResult:
         """
@@ -395,14 +434,7 @@ class RegistrationService(BaseService):
                 user_data = pending_reg.data.copy()
                 password = user_data.pop('password')
                 
-                user = User.objects.create_user(
-                    username=user_data['email'],
-                    email=user_data['email'],
-                    password=password,
-                    first_name=user_data.get('first_name', ''),
-                    last_name=user_data.get('last_name', ''),
-                    is_active=True
-                )
+                user = self._create_user_from_data(user_data, use_email_as_username=True)
                 
                 # If there's persona data, create persona record
                 if 'tipo_documento' in user_data or 'numero_documento' in user_data:
@@ -412,7 +444,7 @@ class RegistrationService(BaseService):
                         persona_data['password'] = password
                         persona_serializer = PersonaRegistroSerializer(data=persona_data)
                         if persona_serializer.is_valid():
-                            persona = persona_serializer.save()
+                            _ = persona_serializer.save()  # Persona created but not used here
                         else:
                             self.log_warning(f"Error creando persona para usuario {user.email}: {persona_serializer.errors}")
                     except Exception as e:
@@ -464,19 +496,21 @@ class RegistrationService(BaseService):
     def _log_user_registration(self, user: User, request=None):
         """Logs user registration in history."""
         try:
-            ip_address = None
-            user_agent = None
-            
-            if request:
+            if request is None:
+                # When request is None, use None for IP and empty string for user_agent
+                ip_address = None
+                user_agent = ''
+            else:
+                # Read IP and user-agent only when request exists
                 ip_address = self._get_client_ip(request)
                 user_agent = request.META.get('HTTP_USER_AGENT', '')
             
             LoginHistory.objects.create(
-                usuario=user,
+                user=user,
                 ip_address=ip_address,
                 user_agent=user_agent,
                 login_time=timezone.now(),
-                success=True
+                login_successful=True
             )
         except Exception as e:
             self.log_warning(f"Error registrando registro: {str(e)}")
@@ -494,7 +528,7 @@ class RegistrationService(BaseService):
         """
         try:
             from django.conf import settings
-            from ...email import send_custom_email
+            from ...services.email import send_custom_email
             
             verification_url = f"{settings.FRONTEND_URL}/verify-email/{verification_token.token}"
             
@@ -555,7 +589,7 @@ Si no creaste esta cuenta, puedes ignorar este correo.
         """
         try:
             from django.template.loader import render_to_string
-            from ...email import send_custom_email
+            from ...services.email import send_custom_email
             from django.conf import settings
             
             verification_url = f"{settings.FRONTEND_URL}/auth/verificar/{pending_reg.verification_token}"
@@ -571,7 +605,7 @@ Si no creaste esta cuenta, puedes ignorar este correo.
                     'user_name': user_name,
                     'frontend_url': settings.FRONTEND_URL
                 })
-            except:
+            except (TemplateDoesNotExist, TemplateSyntaxError, Exception):
                 # Fallback to simple HTML if template doesn't exist
                 html_content = f"""
                 <html>
@@ -617,6 +651,61 @@ Equipo CacaoScan · Proyecto SENNOVA · SENA Guaviare
             self.log_error(f"Error enviando email de verificación: {e}")
             return {'success': False, 'error': str(e)}
     
+    def _validate_user_registration_data(self, user_data: Dict[str, Any], check_username: bool = False) -> Optional[ServiceResult]:
+        """Validate user registration data."""
+        # Validate passwords match
+        if user_data.get('password') != user_data.get('password_confirm'):
+            return ServiceResult.validation_error(
+                "Las contraseñas no coinciden",
+                details={"field": "password_confirm"}
+            )
+        
+        # Validate password strength
+        password = user_data.get('password')
+        if password:
+            try:
+                from core.utils import validate_password_strength
+                validate_password_strength(password, raise_serializer_error=False)
+            except Exception as e:
+                from core.utils import PasswordValidationError
+                if isinstance(e, PasswordValidationError):
+                    return ServiceResult.validation_error(
+                        e.message,
+                        details={"field": "password"}
+                    )
+                raise
+        
+        # Validate unique email
+        if User.objects.filter(email=user_data.get('email')).exists():
+            return ServiceResult.validation_error(
+                ERROR_EMAIL_ALREADY_REGISTERED,
+                details={"field": "email"}
+            )
+        
+        # Validate unique username if required
+        if check_username and user_data.get('username'):
+            if User.objects.filter(username=user_data['username']).exists():
+                return ServiceResult.validation_error(
+                    "Este nombre de usuario ya está en uso",
+                    details={"field": "username"}
+                )
+        
+        return None
+    
+    def _create_user_from_data(self, user_data: Dict[str, Any], use_email_as_username: bool = False) -> User:
+        """Create user from data dictionary."""
+        username = user_data['email'] if use_email_as_username else user_data['username']
+        password = user_data.get('password') or user_data.get('password_confirm')
+        
+        return User.objects.create_user(
+            username=username,
+            email=user_data['email'],
+            password=password,
+            first_name=user_data.get('first_name', ''),
+            last_name=user_data.get('last_name', ''),
+            is_active=True
+        )
+    
     def _get_client_ip(self, request):
         """Gets client IP address."""
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -625,4 +714,17 @@ Equipo CacaoScan · Proyecto SENNOVA · SENA Guaviare
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+    
+    def register(self, user_data: Dict[str, Any], request=None) -> ServiceResult:
+        """
+        Alias for register_user for backward compatibility with tests.
+        
+        Args:
+            user_data: User data
+            request: Request object to get IP and user agent
+            
+        Returns:
+            ServiceResult with created user data
+        """
+        return self.register_user(user_data, request)
 

@@ -13,7 +13,7 @@
     />
 
     <!-- Main Content -->
-    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'">
+    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'" data-cy="admin-dashboard">
       <!-- Dashboard Header -->
       <div class="mb-8">
         <div class="bg-gradient-to-r from-white to-green-50 rounded-2xl border-2 border-gray-200 hover:shadow-xl hover:border-green-300 transition-all duration-300">
@@ -31,10 +31,21 @@
                 </div>
               </div>
               <div class="flex items-center gap-2 ml-auto">
-                <div v-if="isRefreshing" class="flex items-center gap-2 text-sm text-green-600">
-                  <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button
+                  @click="refreshData"
+                  :disabled="isRefreshing"
+                  class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  data-cy="refresh-button"
+                  title="Actualizar datos"
+                >
+                  <svg v-if="!isRefreshing" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                   </svg>
+                  <svg v-else class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                </button>
+                <div v-if="isRefreshing" class="flex items-center gap-2 text-sm text-green-600">
                   <span>Actualizando...</span>
                 </div>
                 <div v-else-if="lastUpdateTime" class="text-xs text-gray-500">
@@ -109,10 +120,10 @@
 
 <script setup>
 // 1. Vue core
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, onActivated } from 'vue'
 
 // 2. Vue router
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 // 3. Components
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue'
@@ -120,7 +131,6 @@ import KPICards from '@/components/admin/AdminDashboardComponents/KPICards.vue'
 import DashboardCharts from '@/components/admin/AdminDashboardComponents/DashboardCharts.vue'
 import DashboardTables from '@/components/admin/AdminDashboardComponents/DashboardTables.vue'
 import DashboardAlerts from '@/components/admin/AdminDashboardComponents/DashboardAlerts.vue'
-import LoadingSpinner from '@/components/admin/AdminGeneralComponents/LoadingSpinner.vue'
 
 // 4. Stores
 import { useAuthStore } from '@/stores/auth'
@@ -135,6 +145,7 @@ import Swal from 'sweetalert2'
 
 // Router and stores
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const adminStore = useAdminStore()
 const configStore = useConfigStore()
@@ -144,8 +155,7 @@ let websocket = null
 try {
   websocket = useWebSocket()
 } catch (e) {
-  console.warn('⚠️ WebSocket no disponible, usando solo polling:', e.message)
-}
+  }
 
 // Reactive data
 const loading = ref(false)
@@ -169,7 +179,11 @@ const brandName = computed(() => configStore.brandName)
 
 const userName = computed(() => {
   const user = authStore.user
-  return user ? `${user.first_name} ${user.last_name}`.trim() || user.username : 'Admin User'
+  if (!user) return 'Admin User'
+  if (user.first_name && user.last_name) {
+    return `${user.first_name} ${user.last_name}`.trim()
+  }
+  return user.username || 'Admin User'
 })
 
 const userRole = computed(() => {
@@ -189,6 +203,7 @@ const kpiCards = computed(() => {
     ]
   }
   
+  // Extract data from backend response structure
   const usersTotal = Number(stats.value?.users?.total) || Number(stats.value?.total_users) || 0
   const usersThisWeek = Number(stats.value?.users?.this_week) || 0
   const fincasTotal = Number(stats.value?.fincas?.total) || 0
@@ -196,9 +211,14 @@ const kpiCards = computed(() => {
   const imagesTotal = Number(stats.value?.images?.total) || Number(stats.value?.total_images) || 0
   const imagesThisWeek = Number(stats.value?.images?.this_week) || 0
   
+  // Debug logging
+  if (usersTotal === 0 && stats.value?.users) {
+    }
+  
+  // Calculate average quality from predictions
   let avgQuality = 0
   const confidence = stats.value?.predictions?.average_confidence
-  if (confidence !== undefined && confidence !== null) {
+  if (confidence !== undefined && confidence !== null && Number(confidence) >= 0) {
     avgQuality = Math.round(Number(confidence) * 100)
   } else if (stats.value?.avg_quality !== undefined && stats.value?.avg_quality !== null) {
     avgQuality = Number(stats.value.avg_quality)
@@ -261,7 +281,11 @@ const kpiCards = computed(() => {
       variant: 'warning',
       trend: {
         data: [],
-        direction: qualityChange > 0 ? 'up' : qualityChange < 0 ? 'down' : 'stable'
+        direction: (() => {
+          if (qualityChange > 0) return 'up'
+          if (qualityChange < 0) return 'down'
+          return 'stable'
+        })()
       }
     }
   ]
@@ -297,7 +321,7 @@ const qualityChartOptions = computed(() => ({
 // Watch stats for debugging
 watch(() => stats.value, (newStats) => {
   console.log('🔄 Stats cambiaron:', newStats)
-}, { deep: true })
+  }, { deep: true })
 
 // Properties
 const navbarTitle = ref('Dashboard de Administración')
@@ -329,7 +353,7 @@ const failedReportsLabel = ref('Fallidos')
 // Functions
 const toggleSidebarCollapse = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
-  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value)
+  localStorage.setItem('sidebarCollapsed', String(isSidebarCollapsed.value))
 }
 
 const loadDashboardData = async () => {
@@ -345,7 +369,6 @@ const loadDashboardData = async () => {
       updateActivityChart()
     ])
   } catch (error) {
-    console.error('Error loading dashboard data:', error)
     Swal.fire({
       icon: 'error',
       title: 'Error',
@@ -362,41 +385,52 @@ const loadStats = async () => {
     const response = await adminStore.getGeneralStats()
     const data = response.data || {}
     
+    // Merge data with defaults to ensure all expected properties exist
     const statsData = {
       users: data.users || { total: 0, this_week: 0, this_month: 0 },
       fincas: data.fincas || { total: 0, this_week: 0, this_month: 0 },
       images: data.images || { total: 0, this_week: 0, this_month: 0 },
-      predictions: data.predictions || { average_confidence: 0 },
+      // Only set predictions default if not provided in data
+      ...(data.predictions ? { predictions: data.predictions } : {}),
       activity_by_day: data.activity_by_day || { labels: [], data: [] },
       quality_distribution: data.quality_distribution || { excelente: 0, buena: 0, regular: 0, baja: 0 },
-      ...data
+      ...data  // Spread data last to allow custom properties like avg_quality to override
     }
     
-    Object.assign(stats.value, statsData)
+    // Reassign to ensure reactivity - completely replace to trigger computed updates
+    stats.value = statsData
     lastUpdateTime.value = new Date()
     
     updateActivityChartFromStats()
     updateQualityChartFromStats()
   } catch (error) {
-    console.error('Error loading stats:', error)
+    // Set default values but still throw to let loadDashboardData handle the error
     stats.value = {
       users: { total: 0 },
       fincas: { total: 0 },
       images: { total: 0 },
       predictions: { average_confidence: 0 }
     }
+    throw error
   } finally {
     isRefreshing.value = false
   }
 }
 
 const processUserData = (user) => {
+  // Extract name from first_name and last_name, fallback to username or email
+  const firstName = user.first_name || ''
+  const lastName = user.last_name || ''
+  const fullName = `${firstName} ${lastName}`.trim()
+  const displayName = fullName || user.username || user.email?.split('@')[0] || 'Usuario'
+  
   return {
     id: user.id,
     username: user.username || user.email?.split('@')[0] || 'Usuario',
     email: user.email || '',
-    first_name: user.first_name || '',
-    last_name: user.last_name || '',
+    first_name: firstName,
+    last_name: lastName,
+    full_name: displayName,
     role: user.role || 'farmer',
     is_active: user.is_active !== false,
     date_joined: user.date_joined || user.created_at
@@ -419,13 +453,34 @@ const loadRecentUsers = async () => {
     }
     
     recentUsers.value = usersArray.map(processUserData)
+    
     lastUpdateTime.value = new Date()
   } catch (error) {
-    console.error('Error loading recent users:', error)
     recentUsers.value = []
   } finally {
     isRefreshing.value = false
   }
+}
+
+const getActionDisplay = (activity) => {
+  // Check if display is already provided
+  if (activity.accion_display || activity.action_display) {
+    return activity.accion_display || activity.action_display
+  }
+  
+  // Map action to display text
+  const action = activity.accion || activity.action
+  const actionMap = {
+    'create': 'Crear',
+    'update': 'Actualizar',
+    'delete': 'Eliminar',
+    'view': 'Ver',
+    'login': 'Login',
+    'logout': 'Logout',
+    'read': 'Leer'
+  }
+  
+  return actionMap[action] || action || 'Desconocida'
 }
 
 const processActivityData = (activity) => {
@@ -433,15 +488,7 @@ const processActivityData = (activity) => {
     id: activity.id,
     usuario: activity.usuario || activity.user?.username || activity.username || 'Anónimo',
     accion: activity.accion || activity.action || 'unknown',
-    accion_display: activity.accion_display || activity.action_display || 
-      (activity.accion === 'create' ? 'Crear' :
-       activity.accion === 'update' ? 'Actualizar' :
-       activity.accion === 'delete' ? 'Eliminar' :
-       activity.accion === 'view' ? 'Ver' :
-       activity.accion === 'login' ? 'Login' :
-       activity.accion === 'logout' ? 'Logout' : 
-       activity.accion === 'read' ? 'Leer' :
-       activity.accion || 'Desconocida'),
+    accion_display: getActionDisplay(activity),
     modelo: activity.modelo || activity.model || activity.content_type || 'N/A',
     timestamp: activity.timestamp || activity.created_at || activity.date || new Date().toISOString(),
     descripcion: activity.descripcion || activity.description || '',
@@ -454,20 +501,19 @@ const loadRecentActivities = async () => {
     isRefreshing.value = true
     const response = await adminStore.getRecentActivities(20)
     const data = response.data || {}
-    
     let activitiesArray = []
     if (Array.isArray(data)) {
       activitiesArray = data
-    } else if (data?.results && Array.isArray(data.results)) {
+      } else if (data?.results && Array.isArray(data.results)) {
       activitiesArray = data.results
-    } else if (data?.data && Array.isArray(data.data)) {
+      } else if (data?.data && Array.isArray(data.data)) {
       activitiesArray = data.data
-    }
+      } else {
+      }
     
     recentActivities.value = activitiesArray.map(processActivityData)
     lastUpdateTime.value = new Date()
   } catch (error) {
-    console.error('Error loading recent activities:', error)
     recentActivities.value = []
   } finally {
     isRefreshing.value = false
@@ -511,7 +557,6 @@ const loadAlerts = async () => {
     alerts.value = notificationsArray.map(processAlertData)
     lastUpdateTime.value = new Date()
   } catch (error) {
-    console.error('Error loading alerts:', error)
     alerts.value = []
   } finally {
     isRefreshing.value = false
@@ -534,7 +579,6 @@ const loadReportStats = async () => {
     
     lastUpdateTime.value = new Date()
   } catch (error) {
-    console.error('Error loading report stats:', error)
     reportStats.value = {
       total_reportes: 0,
       reportes_completados: 0,
@@ -549,15 +593,20 @@ const loadReportStats = async () => {
 const updateQualityChartFromStats = () => {
   const quality = stats.value?.quality_distribution || { excelente: 0, buena: 0, regular: 0, baja: 0 }
   
+  // Ensure we always have valid data for the chart
+  const excelente = Number(quality.excelente) || 0
+  const buena = Number(quality.buena) || 0
+  const regular = Number(quality.regular) || 0
+  const baja = Number(quality.baja) || 0
+  
+  // If all values are zero, set a default value to show the chart
+  const total = excelente + buena + regular + baja
+  const defaultData = total === 0 ? [1, 0, 0, 0] : [excelente, buena, regular, baja]
+  
   qualityData.value = {
     labels: ['Excelente', 'Buena', 'Regular', 'Baja'],
     datasets: [{
-      data: [
-        quality.excelente || 0,
-        quality.buena || 0,
-        quality.regular || 0,
-        quality.baja || 0
-      ],
+      data: defaultData,
       backgroundColor: [
         '#22c55e',
         '#3b82f6',
@@ -580,39 +629,36 @@ const loadQualityData = async () => {
     const response = await adminStore.getQualityDistribution()
     const quality = response.data || { excelente: 0, buena: 0, regular: 0, baja: 0 }
     
-    qualityData.value = {
-      labels: ['Excelente', 'Buena', 'Regular', 'Baja'],
-      datasets: [{
-        data: [
-          quality.excelente || 0,
-          quality.buena || 0,
-          quality.regular || 0,
-          quality.baja || 0
-        ],
-        backgroundColor: [
-          '#22c55e',
-          '#3b82f6',
-          '#f59e0b',
-          '#ef4444'
-        ],
-        borderWidth: 2,
-        borderColor: '#ffffff'
-      }]
+    // Update stats with quality distribution if available
+    if (quality && (quality.excelente !== undefined || quality.buena !== undefined)) {
+      stats.value = {
+        ...stats.value,
+        quality_distribution: quality
+      }
     }
+    
+    updateQualityChartFromStats()
   } catch (error) {
-    console.error('Error loading quality data:', error)
     updateQualityChartFromStats()
   }
 }
 
 const updateActivityChartFromStats = () => {
   const activity = stats.value?.activity_by_day || { labels: [], data: [] }
+  // Ensure we always have valid data for the chart
+  const labels = activity.labels && activity.labels.length > 0 
+    ? activity.labels 
+    : ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+  
+  const data = activity.data && activity.data.length > 0 
+    ? activity.data 
+    : [0, 0, 0, 0, 0, 0, 0]
   
   activityData.value = {
-    labels: activity.labels || [],
+    labels,
     datasets: [{
       label: 'Actividad del Sistema',
-      data: activity.data || [],
+      data,
       borderColor: '#22c55e',
       backgroundColor: 'rgba(34, 197, 94, 0.1)',
       fill: true,
@@ -624,25 +670,71 @@ const updateActivityChartFromStats = () => {
       pointBorderWidth: 2
     }]
   }
-}
+  
+  }
 
 const updateActivityChart = async () => {
   try {
-    if (stats.value?.activity_by_day) {
+    if (stats.value?.activity_by_day && stats.value.activity_by_day.labels && stats.value.activity_by_day.labels.length > 0) {
       updateActivityChartFromStats()
       return
     }
     
     const response = await adminStore.getActivityData(selectedPeriod.value)
-    if (!response.data || !response.data.results) {
-      updateActivityChartFromStats()
-      return
+    if (response.data && response.data.results && Array.isArray(response.data.results)) {
+      // Process activity logs to create chart data
+      const activities = response.data.results
+      const last7Days = []
+      const today = new Date()
+      
+      // Generate labels for last 7 days
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today)
+        date.setDate(date.getDate() - i)
+        last7Days.push(date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }))
+      }
+      
+      // Count activities per day
+      const activityCounts = new Array(7).fill(0)
+      activities.forEach(activity => {
+        if (activity.timestamp || activity.created_at) {
+          const activityDate = new Date(activity.timestamp || activity.created_at)
+          const daysDiff = Math.floor((today - activityDate) / (1000 * 60 * 60 * 24))
+          if (daysDiff >= 0 && daysDiff < 7) {
+            activityCounts[6 - daysDiff]++
+          }
+        }
+      })
+      
+      // Update stats with processed activity data
+      stats.value = {
+        ...stats.value,
+        activity_by_day: {
+          labels: last7Days,
+          data: activityCounts
+        }
+      }
     }
     
     updateActivityChartFromStats()
   } catch (error) {
-    console.debug('Error updating activity chart:', error)
-    updateActivityChartFromStats()
+    // On error, set empty arrays instead of default values
+    activityData.value = {
+      labels: [],
+      datasets: [{
+        label: 'Actividad del Sistema',
+        data: [],
+        borderColor: '#22c55e',
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#22c55e',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2
+      }]
+    }
   }
 }
 
@@ -688,7 +780,6 @@ const handleLogout = async () => {
   try {
     await authStore.logout()
   } catch (error) {
-    console.error('Error during logout:', error)
     Swal.fire({
       icon: 'error',
       title: 'Error',
@@ -711,12 +802,12 @@ const handleQualityRefresh = () => {
 }
 
 const handleActivityClick = (event) => {
-  console.log('Activity chart clicked:', event)
-}
+  console.log('Activity click:', event)
+  }
 
 const handleQualityClick = (event) => {
-  console.log('Quality chart clicked:', event)
-}
+  console.log('Quality click:', event)
+  }
 
 const handleViewUser = (userId) => {
   router.push(`/admin/users/${userId}`)
@@ -738,21 +829,12 @@ const handleDismissAlert = (alertId) => {
     cancelButtonText: 'Cancelar'
   }).then((result) => {
     if (result.isConfirmed) {
-      console.log('Alert dismissed:', alertId)
       Swal.fire('Descartada', 'La alerta ha sido descartada', 'success')
     }
   })
 }
 
 // Real-time updates
-let refreshInterval = null
-let statsInterval = null
-let quickRefreshInterval = null
-
-const QUICK_REFRESH_INTERVAL = 3000
-const REFRESH_INTERVAL = 8000
-const STATS_INTERVAL = 25000
-
 const setupWebSocketListeners = () => {
   if (!websocket) return
 
@@ -769,6 +851,7 @@ const setupWebSocketListeners = () => {
   websocket.on?.('audit-activity', (data) => {
     const processed = processActivityData(data)
     recentActivities.value = [processed, ...recentActivities.value].slice(0, 20)
+    updateActivityChart()
   })
 
   websocket.on?.('notification-received', (data) => {
@@ -779,75 +862,34 @@ const setupWebSocketListeners = () => {
   websocket.on?.('user-stats-update', (data) => {
     if (data?.users) {
       stats.value.users = { ...stats.value.users, ...data.users }
+      loadRecentUsers()
     }
   })
-}
 
-const startPollingUpdates = () => {
-  quickRefreshInterval = setInterval(() => {
-    Promise.all([
-      loadAlerts(),
-      loadRecentActivities()
-    ]).catch(err => {
-      console.error('Error en quick refresh:', err)
-    })
-  }, QUICK_REFRESH_INTERVAL)
-
-  refreshInterval = setInterval(() => {
-    Promise.all([
-      loadRecentUsers(),
+  websocket.on?.('report-stats-update', () => {
       loadReportStats()
-    ]).catch(err => {
-      console.error('Error en refresh normal:', err)
-    })
-  }, REFRESH_INTERVAL)
-
-  statsInterval = setInterval(() => {
-    Promise.all([
-      loadStats(),
-      loadQualityData(),
-      updateActivityChart()
-    ]).catch(err => {
-      console.error('Error en refresh de stats:', err)
-    })
-  }, STATS_INTERVAL)
+      })
 }
 
 const setupRealtimeUpdates = () => {
   if (websocket && websocket.hasAnyConnection?.value) {
     setupWebSocketListeners()
-    startPollingUpdates()
-  } else {
-    startPollingUpdates()
   }
 }
 
 const stopAutoRefresh = () => {
-  if (quickRefreshInterval) {
-    clearInterval(quickRefreshInterval)
-    quickRefreshInterval = null
-  }
-  if (refreshInterval) {
-    clearInterval(refreshInterval)
-    refreshInterval = null
-  }
-  if (statsInterval) {
-    clearInterval(statsInterval)
-    statsInterval = null
-  }
-
   if (websocket) {
     websocket.off?.('audit-stats-update')
     websocket.off?.('audit-activity')
     websocket.off?.('notification-received')
     websocket.off?.('user-stats-update')
+    websocket.off?.('report-stats-update')
   }
 }
 
-// Lifecycle
-onMounted(async () => {
+// Función para inicializar el dashboard
+const initializeDashboard = async () => {
   if (!authStore.isAdmin) {
-    console.warn('🚫 Usuario sin permisos de admin')
     router.push('/acceso-denegado')
     return
   }
@@ -858,11 +900,29 @@ onMounted(async () => {
     try {
       await websocket.connect()
     } catch (error) {
-      console.warn('⚠️ No se pudo conectar WebSocket, usando polling:', error)
-    }
+      }
   }
   
   setupRealtimeUpdates()
+}
+
+// Lifecycle
+onMounted(async () => {
+  await initializeDashboard()
+})
+
+// Si el componente está dentro de keep-alive, se ejecuta cuando se activa
+onActivated(async () => {
+  // Recargar datos cuando se vuelve a la vista
+  await initializeDashboard()
+})
+
+// Watch para detectar cambios de ruta
+watch(() => route.path, async (newPath, oldPath) => {
+  // Si volvemos al dashboard desde otra ruta, recargar datos
+  if (newPath === '/admin/dashboard' && oldPath !== newPath) {
+    await initializeDashboard()
+  }
 })
 
 onUnmounted(() => {

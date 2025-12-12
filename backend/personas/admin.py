@@ -6,7 +6,7 @@ INTEGRACI"N:
 - Persona ahora usa Departamento y Municipio (ubicaciones) para ubicación
 """
 from django.contrib import admin
-from .models import Persona, PendingRegistration
+from .models import Persona
 
 
 @admin.register(Persona)
@@ -40,7 +40,7 @@ class PersonaAdmin(admin.ModelAdmin):
     list_filter = [
         'tipo_documento__tema',
         'genero__tema',
-        'departamento',
+        'municipio__departamento',
         'fecha_creacion'
     ]
     readonly_fields = ['fecha_creacion']
@@ -60,9 +60,9 @@ class PersonaAdmin(admin.ModelAdmin):
             'fields': ('telefono', 'direccion', 'genero', 'fecha_nacimiento'),
             'description': 'Género es un Parametro del catálogo SEXO'
         }),
-        ('Ubicación (Normalizada)', {
-            'fields': ('departamento', 'municipio'),
-            'description': 'Ubicación usa las tablas normalizadas de ubicaciones'
+        ('Ubicación (Normalizada - 3NF)', {
+            'fields': ('municipio',),
+            'description': 'Ubicación normalizada: municipio (departamento se obtiene de municipio.departamento)'
         }),
         ('Fechas', {
             'fields': ('fecha_creacion',)
@@ -86,8 +86,10 @@ class PersonaAdmin(admin.ModelAdmin):
     email_usuario.short_description = 'Email'
     
     def get_departamento(self, obj):
-        """Mostrar el departamento."""
-        return obj.departamento.nombre if obj.departamento else '-'
+        """Mostrar el departamento desde municipio (3NF normalization)."""
+        if obj.municipio and obj.municipio.departamento:
+            return obj.municipio.departamento.nombre
+        return '-'
     get_departamento.short_description = 'Departamento'
     
     def get_municipio(self, obj):
@@ -96,23 +98,6 @@ class PersonaAdmin(admin.ModelAdmin):
     get_municipio.short_description = 'Municipio'
 
 
-@admin.register(PendingRegistration)
-class PendingRegistrationAdmin(admin.ModelAdmin):
-    """Admin para registros pendientes de verificación."""
-    list_display = [
-        'email',
-        'is_verified',
-        'created_at',
-        'verified_at',
-        'is_expired_display'
-    ]
-    search_fields = ['email', 'verification_token']
-    list_filter = ['is_verified', 'created_at']
-    readonly_fields = ['verification_token', 'created_at', 'verified_at']
-    
-    def is_expired_display(self, obj):
-        """Indica si el registro ha expirado."""
-        return "Sí" if obj.is_expired() else "No"
-    is_expired_display.short_description = 'Expirado'
-    is_expired_display.boolean = True
+# PendingRegistration fue eliminado - usar auth_app.models.EmailVerificationToken en su lugar
+# El admin para EmailVerificationToken debe estar en auth_app/admin.py
 

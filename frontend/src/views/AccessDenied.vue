@@ -232,11 +232,10 @@ const getErrorMessage = () => {
     case 'verification_required':
       return 'Debes verificar tu dirección de email para acceder a esta funcionalidad.'
     default:
-      if (!authStore.isAuthenticated) {
-        return 'Necesitas iniciar sesión para acceder a esta página.'
-      } else {
+      if (authStore.isAuthenticated) {
         return 'Tu cuenta no tiene acceso a este recurso. Contacta al administrador si necesitas permisos adicionales.'
       }
+      return 'Necesitas iniciar sesión para acceder a esta página.'
   }
 }
 </script>

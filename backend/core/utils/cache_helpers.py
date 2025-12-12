@@ -28,7 +28,7 @@ def invalidate_cache_pattern(pattern: str) -> None:
         # This works well with the KEY_PREFIX configuration
         if '*' in pattern:
             # Simple wildcard handling - invalidate by prefix
-            prefix = pattern.replace('*', '')
+            _ = pattern.replace('*', '')  # Reserved for future use
             # In production with Redis, use: cache.delete_pattern(f"{prefix}*")
             logger.info(f"Cache invalidation requested for pattern: {pattern}")
         else:

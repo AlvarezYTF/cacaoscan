@@ -1,64 +1,33 @@
 <template>
   <section class="stats-overview">
-    <div class="stat-card">
-      <div class="stat-icon">
-        <i class="fas fa-seedling"></i>
-      </div>
-      <div class="stat-content">
-        <h3>Total de lotes</h3>
-        <p class="stat-value">{{ stats.totalBatches || 0 }}</p>
-        <p class="stat-change positive" v-if="stats.batchesChange">
-          <i class="fas fa-arrow-up"></i> {{ stats.batchesChange }} este mes
-        </p>
-      </div>
-    </div>
-    
-    <div class="stat-card">
-      <div class="stat-icon quality">
-        <i class="fas fa-star"></i>
-      </div>
-      <div class="stat-content">
-        <h3>Calidad promedio</h3>
-        <p class="stat-value">{{ stats.avgQuality || 0 }}%</p>
-        <p class="stat-change positive" v-if="stats.qualityChange">
-          <i class="fas fa-arrow-up"></i> {{ stats.qualityChange }} este mes
-        </p>
-      </div>
-    </div>
-    
-    <div class="stat-card">
-      <div class="stat-icon warning">
-        <i class="fas fa-exclamation-triangle"></i>
-      </div>
-      <div class="stat-content">
-        <h3>Defectos</h3>
-        <p class="stat-value">{{ stats.defectRate || 0 }}%</p>
-        <p class="stat-change negative" v-if="stats.defectChange">
-          <i class="fas fa-arrow-down"></i> {{ stats.defectChange }} este mes
-        </p>
-      </div>
-    </div>
+    <BaseStatsCard
+      title="Total de lotes"
+      :value="stats.totalBatches || 0"
+      icon="fas fa-seedling"
+      :trend="stats.batchesChange ? { value: parseChange(stats.batchesChange), label: `${stats.batchesChange} este mes` } : null"
+      color="success"
+    />
   </section>
 </template>
 
-<script>
-export default {
-  name: 'StatsOverview',
-  props: {
-    stats: {
-      type: Object,
-      required: true,
-      default: () => ({
-        totalBatches: 24,
-        batchesChange: '+5%',
-        avgQuality: 87,
-        qualityChange: '+2%',
-        defectRate: 5.2,
-        defectChange: '-1.2%'
-      })
-    }
+<script setup>
+import BaseStatsCard from '@/components/common/BaseStatsCard.vue'
+import { parseChange } from '@/utils/formatters'
+
+const props = defineProps({
+  stats: {
+    type: Object,
+    required: true,
+    default: () => ({
+      totalBatches: 24,
+      batchesChange: '+5%',
+      avgQuality: 87,
+      qualityChange: '+2%',
+      defectRate: 5.2,
+      defectChange: '-1.2%'
+    })
   }
-};
+})
 </script>
 
 <style scoped>
@@ -93,16 +62,16 @@ export default {
   justify-content: center;
   margin-right: 1.25rem;
   font-size: 1.5rem;
-  color: white;
-  background-color: #27ae60;
+  color: #ffffff;
+  background-color: #1f7a3b;
 }
 
 .stat-icon.quality {
-  background-color: #f39c12;
+  background-color: #8a4b00;
 }
 
 .stat-icon.warning {
-  background-color: #e74c3c;
+  background-color: #b71c1c;
 }
 
 .stat-content h3 {

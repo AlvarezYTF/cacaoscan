@@ -15,7 +15,6 @@ const servicioAnalisis = {
       const response = await api.get('/analisis/', { params })
       return normalizeResponse(response.data)
     } catch (error) {
-      console.error('Error obteniendo análisis:', error)
       throw error
     }
   },
@@ -28,7 +27,6 @@ const servicioAnalisis = {
       const response = await api.post('/analisis/', analisisData)
       return response.data
     } catch (error) {
-      console.error('Error creando análisis:', error)
       throw error
     }
   },
@@ -41,7 +39,6 @@ const servicioAnalisis = {
       const response = await api.get(`/analisis/${analisisId}/`)
       return response.data
     } catch (error) {
-      console.error('Error obteniendo análisis:', error)
       throw error
     }
   },
@@ -54,7 +51,6 @@ const servicioAnalisis = {
       const response = await api.put(`/analisis/${analisisId}/`, analisisData)
       return response.data
     } catch (error) {
-      console.error('Error actualizando análisis:', error)
       throw error
     }
   },
@@ -67,7 +63,6 @@ const servicioAnalisis = {
       const response = await api.delete(`/analisis/${analisisId}/`)
       return response.data
     } catch (error) {
-      console.error('Error eliminando análisis:', error)
       throw error
     }
   },
@@ -80,7 +75,6 @@ const servicioAnalisis = {
       const response = await api.get('/analisis/stats/')
       return response.data
     } catch (error) {
-      console.error('Error obteniendo estadísticas de análisis:', error)
       throw error
     }
   }

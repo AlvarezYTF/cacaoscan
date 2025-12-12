@@ -12,65 +12,72 @@
  */
 
 /**
+ * Check if globalThis is available
+ * @returns {boolean} true if globalThis is available
+ */
+function isGlobalThisAvailable() {
+  return typeof globalThis === 'object' && globalThis !== null
+}
+
+/**
  * Obtiene la URL base del API con prioridad correcta
  * @returns {string} URL base del API
  */
 export const getApiBaseUrl = () => {
-  // URL absoluta del backend en producción (fallback seguro)
+  // URLs por defecto
   const PRODUCTION_BACKEND_URL = 'https://cacaoscan-backend.onrender.com/api/v1'
+  const LOCAL_BACKEND_URL = 'http://localhost:8000/api/v1'
   
   // Prioridad 1: Runtime injection (mejor para producción, permite cambios sin rebuild)
-  if (typeof window !== 'undefined' && window.__API_BASE_URL__) {
-    let url = window.__API_BASE_URL__
-    console.log('🌐 [API Config] Runtime API URL encontrada:', url)
-    
+  if (isGlobalThisAvailable() && globalThis.__API_BASE_URL__) {
+    let url = globalThis.__API_BASE_URL__
     // Validar y corregir si es relativa
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      console.error('❌ [API Config] Runtime URL es relativa, corrigiendo...')
-      // Si es relativa, construir URL absoluta
-      if (url.startsWith('/')) {
-        // Es una ruta absoluta relativa al dominio actual
-        url = `https://${window.location.hostname}${url}`
-        console.warn('⚠️ [API Config] Construida URL desde ruta relativa:', url)
-      } else {
-        // Usar fallback de producción
-        console.warn('⚠️ [API Config] Usando fallback de producción:', PRODUCTION_BACKEND_URL)
-        return PRODUCTION_BACKEND_URL
-      }
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url
     }
     
-    console.log('✅ [API Config] Using runtime API URL:', url)
-    return url
-  }
-  
-  // Prioridad 2: Build-time variable (Vite inyecta esto durante el build)
-  if (import.meta.env.VITE_API_BASE_URL) {
-    let url = import.meta.env.VITE_API_BASE_URL
-    console.log('🔧 [API Config] Build-time API URL encontrada:', url)
-    
-    // Validar y corregir si es relativa
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      console.error('❌ [API Config] Build-time URL es relativa, usando fallback')
-      return PRODUCTION_BACKEND_URL
+    // Si es relativa, construir URL absoluta
+    if (url.startsWith('/')) {
+      // Es una ruta absoluta relativa al dominio actual
+      url = `https://${globalThis.location.hostname}${url}`
+      return url
     }
     
-    console.log('✅ [API Config] Using build-time API URL:', url)
-    return url
+    // Usar fallback según entorno
+    const isLocalhost = isGlobalThisAvailable() && 
+                        globalThis.location?.hostname &&
+                        (globalThis.location.hostname.includes('localhost') || 
+                         globalThis.location.hostname === '127.0.0.1')
+    const fallbackUrl = isLocalhost ? LOCAL_BACKEND_URL : PRODUCTION_BACKEND_URL
+    return fallbackUrl
   }
   
-  // Prioridad 3: Detectar si estamos en producción y usar URL absoluta
-  if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
-    console.log('🌍 [API Config] Detectado entorno de producción, usando URL absoluta del backend')
+  // Prioridad 2: Build-time variable (Vite inyecta esto desde .env)
+  const buildTimeUrl = import.meta.env.VITE_API_BASE_URL
+  if (buildTimeUrl && buildTimeUrl.trim() !== '') {
+    let url = buildTimeUrl.trim()
+    // Validar y corregir si es relativa
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url
+    }
+    
+    // Continuar con detección automática
+  }
+  
+  // Prioridad 3: Detección automática según hostname
+  if (isGlobalThisAvailable() && globalThis.location?.hostname) {
+    const isLocalhost = globalThis.location.hostname.includes('localhost') || 
+                        globalThis.location.hostname === '127.0.0.1'
+    if (isLocalhost) {
+      // En localhost, usar backend local
+      return LOCAL_BACKEND_URL
+    }
+    // En producción, usar URL absoluta
     return PRODUCTION_BACKEND_URL
   }
-  
-  // Prioridad 4: Fallback para desarrollo local
-  const devUrl = 'http://localhost:8000/api/v1'
-  console.warn('⚠️ [API Config] Using development fallback URL:', devUrl)
-  console.warn('⚠️ [API Config] window.__API_BASE_URL__:', typeof window !== 'undefined' ? window.__API_BASE_URL__ : 'N/A')
-  console.warn('⚠️ [API Config] VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || 'N/A')
-  console.warn('⚠️ [API Config] window.location.hostname:', typeof window !== 'undefined' ? window.location.hostname : 'N/A')
-  return devUrl
+
+  // Fallback: si no se puede detectar, usar producción
+  return PRODUCTION_BACKEND_URL
 }
 
 /**
@@ -104,9 +111,13 @@ export const getApiBaseUrlWithPath = () => {
  * @returns {boolean} true si está en desarrollo
  */
 export const isDevelopment = () => {
-  return import.meta.env.DEV || 
-         import.meta.env.MODE === 'development' ||
-         (typeof window !== 'undefined' && window.location.hostname === 'localhost')
+  if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
+    return true
+  }
+  if (isGlobalThisAvailable() && globalThis.location?.hostname === 'localhost') {
+    return true
+  }
+  return false
 }
 
 /**
@@ -114,9 +125,25 @@ export const isDevelopment = () => {
  * @returns {boolean} true si está en producción
  */
 export const isProduction = () => {
-  return import.meta.env.PROD || 
-         import.meta.env.MODE === 'production' ||
-         (typeof window !== 'undefined' && !window.location.hostname.includes('localhost'))
+  if (import.meta.env.PROD || import.meta.env.MODE === 'production') {
+    return true
+  }
+  if (isGlobalThisAvailable() && globalThis.location?.hostname) {
+    const isLocalhost = globalThis.location?.hostname?.includes('localhost') ?? false
+    return !isLocalhost
+  }
+  return false
+}
+
+/**
+ * Get runtime URL if available
+ * @returns {string|null} Runtime URL or null
+ */
+function getRuntimeUrl() {
+  if (!isGlobalThisAvailable()) {
+    return null
+  }
+  return globalThis.__API_BASE_URL__ || null
 }
 
 // Exportar configuración actual para debugging
@@ -126,12 +153,11 @@ export const API_CONFIG = {
   baseUrlWithPath: getApiBaseUrlWithPath(),
   isDev: isDevelopment(),
   isProd: isProduction(),
-  runtimeUrl: typeof window !== 'undefined' ? window.__API_BASE_URL__ : null,
+  runtimeUrl: getRuntimeUrl(),
   buildTimeUrl: import.meta.env.VITE_API_BASE_URL || null,
 }
 
 // Log de configuración en desarrollo
 if (isDevelopment()) {
-  console.log('📋 API Configuration:', API_CONFIG)
-}
+  }
 

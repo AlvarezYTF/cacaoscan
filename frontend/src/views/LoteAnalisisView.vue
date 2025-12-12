@@ -92,11 +92,11 @@
                 </div>
                 <div class="mb-3">
                   <h6 class="text-muted">Variedad</h6>
-                  <p class="mb-0">{{ lote.variedad }}</p>
+                  <p class="mb-0">{{ lote.variedad?.nombre || lote.variedad || 'N/A' }}</p>
                 </div>
                 <div class="mb-3">
-                  <h6 class="text-muted">Área</h6>
-                  <p class="mb-0">{{ lote.area_hectareas }} hectáreas</p>
+                  <h6 class="text-muted">Peso</h6>
+                  <p class="mb-0">{{ lote.peso_kg || 0 }} kg</p>
                 </div>
                 <div class="mb-3">
                   <h6 class="text-muted">Fecha de Plantación</h6>
@@ -140,113 +140,199 @@
 
           <!-- Resultados del análisis -->
           <div class="col-lg-8">
+            <!-- Estadísticas principales -->
+            <div class="row mb-4">
+              <div class="col-md-3 col-6 mb-3">
+                <div class="card stat-card text-center h-100">
+                  <div class="card-body">
+                    <div class="stat-icon mb-2">
+                      <i class="fas fa-weight text-primary fa-2x"></i>
+                    </div>
+                    <h4 class="stat-value mb-1">{{ analisisResumen.peso_promedio || '0.00' }}g</h4>
+                    <p class="stat-label mb-0">Peso Promedio</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3 col-6 mb-3">
+                <div class="card stat-card text-center h-100">
+                  <div class="card-body">
+                    <div class="stat-icon mb-2">
+                      <i class="fas fa-expand-arrows-alt text-success fa-2x"></i>
+                    </div>
+                    <h4 class="stat-value mb-1">{{ analisisResumen.tamaño_promedio || '0.00' }}mm</h4>
+                    <p class="stat-label mb-0">Tamaño Promedio</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3 col-6 mb-3">
+                <div class="card stat-card text-center h-100">
+                  <div class="card-body">
+                    <div class="stat-icon mb-2">
+                      <i class="fas fa-layer-group text-info fa-2x"></i>
+                    </div>
+                    <h4 class="stat-value mb-1">{{ analisisResumen.grosor_promedio || '0.00' }}mm</h4>
+                    <p class="stat-label mb-0">Grosor Promedio</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3 col-6 mb-3">
+                <div class="card stat-card text-center h-100">
+                  <div class="card-body">
+                    <div class="stat-icon mb-2">
+                      <i class="fas fa-chart-line text-warning fa-2x"></i>
+                    </div>
+                    <h4 class="stat-value mb-1">{{ analisisResumen.total_muestras || 0 }}</h4>
+                    <p class="stat-label mb-0">Total Muestras</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Grid de imágenes con análisis detallados -->
             <div class="card">
-              <div class="card-header">
+              <div class="card-header bg-white">
                 <h5 class="mb-0">
-                  <i class="fas fa-clipboard-list me-2"></i>
-                  Resultados del Análisis
+                  <i class="fas fa-images me-2 text-primary"></i>
+                  Análisis Detallados por Imagen
+                  <span class="badge bg-primary ms-2">{{ analisisDetallados.length }}</span>
                 </h5>
               </div>
               <div class="card-body">
-                <!-- Estadísticas principales -->
-                <div class="row mb-4">
-                  <div class="col-md-3">
-                    <div class="stat-card text-center">
-                      <div class="stat-icon">
-                        <i class="fas fa-weight text-primary"></i>
-                      </div>
-                      <h4 class="stat-value">{{ analisisResumen.peso_promedio || 0 }}g</h4>
-                      <p class="stat-label">Peso Promedio</p>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="stat-card text-center">
-                      <div class="stat-icon">
-                        <i class="fas fa-expand-arrows-alt text-success"></i>
-                      </div>
-                      <h4 class="stat-value">{{ analisisResumen.tamaño_promedio || 0 }}mm</h4>
-                      <p class="stat-label">Tamaño Promedio</p>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="stat-card text-center">
-                      <div class="stat-icon">
-                        <i class="fas fa-layer-group text-info"></i>
-                      </div>
-                      <h4 class="stat-value">{{ analisisResumen.grosor_promedio || 0 }}mm</h4>
-                      <p class="stat-label">Grosor Promedio</p>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="stat-card text-center">
-                      <div class="stat-icon">
-                        <i class="fas fa-chart-line text-warning"></i>
-                      </div>
-                      <h4 class="stat-value">{{ analisisResumen.total_muestras || 0 }}</h4>
-                      <p class="stat-label">Total Muestras</p>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Tabla de análisis detallados -->
-                <div v-if="analisisDetallados.length > 0">
-                  <h6 class="text-muted mb-3">Análisis Detallados</h6>
-                  <div class="table-responsive">
-                    <table class="table table-hover" aria-label="Tabla de análisis detallados del lote">
-                      <caption class="sr-only">Tabla de análisis detallados mostrando fecha, tipo, peso, tamaño, grosor, calidad y estado de cada análisis</caption>
-                      <thead>
-                        <tr>  
-                          <th>Fecha</th>
-                          <th>Tipo</th>
-                          <th>Peso (g)</th>
-                          <th>Tamaño (mm)</th>
-                          <th>Grosor (mm)</th>
-                          <th>Calidad (%)</th>
-                          <th>Estado</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="analisis in analisisDetallados" :key="analisis.id">
-                          <td>{{ formatDate(analisis.fecha_analisis) }}</td>
-                          <td>{{ analisis.tipo_analisis }}</td>
-                          <td>{{ analisis.peso_promedio }}</td>
-                          <td>{{ analisis.tamaño_promedio }}</td>
-                          <td>{{ analisis.grosor_promedio }}</td>
-                          <td>
+                <div v-if="analisisDetallados.length > 0" class="row g-4">
+                    <div 
+                      v-for="analisis in analisisDetallados" 
+                      :key="analisis.id"
+                      class="col-md-6 col-lg-4"
+                    >
+                      <div class="card h-100 shadow-sm border analysis-card">
+                        <!-- Imagen -->
+                        <div class="position-relative" style="height: 220px; overflow: hidden; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                          <img 
+                            v-if="analisis.image_url"
+                            :src="analisis.image_url" 
+                            :alt="`Análisis ${analisis.id}`"
+                            class="w-100 h-100"
+                            style="object-fit: cover; transition: transform 0.3s ease;"
+                            @error="handleImageError"
+                            @mouseenter="$event.target.style.transform = 'scale(1.05)'"
+                            @mouseleave="$event.target.style.transform = 'scale(1)'"
+                          />
+                          <div v-else class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                            <i class="fas fa-image fa-4x mb-2 opacity-50"></i>
+                            <small>Sin imagen</small>
+                          </div>
+                          <!-- Badge de calidad -->
+                          <div class="position-absolute top-0 end-0 m-2">
                             <span 
-                              class="badge"
+                              class="badge shadow-sm"
                               :class="{
                                 'bg-success': analisis.calidad >= 80,
                                 'bg-warning': analisis.calidad >= 60 && analisis.calidad < 80,
                                 'bg-danger': analisis.calidad < 60
                               }"
+                              style="font-size: 0.85rem; padding: 0.4rem 0.6rem;"
                             >
-                              {{ analisis.calidad }}%
+                              <i class="fas fa-star me-1"></i>{{ analisis.calidad || 0 }}%
                             </span>
-                          </td>
-                          <td>
-                            <span 
-                              class="badge"
-                              :class="{
-                                'bg-success': analisis.estado === 'completado',
-                                'bg-warning': analisis.estado === 'procesando',
-                                'bg-danger': analisis.estado === 'fallido'
-                              }"
-                            >
-                              {{ analisis.estado_display }}
-                            </span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Datos del análisis -->
+                        <div class="card-body">
+                          <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                            <h6 class="card-title mb-0">
+                              <i class="fas fa-hashtag me-1 text-primary"></i>
+                              <small>Análisis #{{ analisis.id }}</small>
+                            </h6>
+                            <small class="text-muted">
+                              <i class="fas fa-calendar-alt me-1"></i>
+                              {{ formatDate(analisis.fecha_analisis) }}
+                            </small>
+                          </div>
+                          
+                          <!-- Dimensiones -->
+                          <div v-if="analisis.prediction" class="mb-3">
+                            <div class="row g-2 mb-2">
+                              <div class="col-6">
+                                <div class="d-flex align-items-center">
+                                  <i class="fas fa-arrows-alt-v text-primary me-2"></i>
+                                  <div>
+                                    <small class="text-muted d-block">Alto</small>
+                                    <strong>{{ (analisis.prediction.alto_mm || 0).toFixed(2) }} mm</strong>
+                                  </div>
+                                </div>
+                              </div>
+                              <div class="col-6">
+                                <div class="d-flex align-items-center">
+                                  <i class="fas fa-arrows-alt-h text-success me-2"></i>
+                                  <div>
+                                    <small class="text-muted d-block">Ancho</small>
+                                    <strong>{{ (analisis.prediction.ancho_mm || 0).toFixed(2) }} mm</strong>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="row g-2 mb-2">
+                              <div class="col-6">
+                                <div class="d-flex align-items-center">
+                                  <i class="fas fa-layer-group text-info me-2"></i>
+                                  <div>
+                                    <small class="text-muted d-block">Grosor</small>
+                                    <strong>{{ (analisis.prediction.grosor_mm || 0).toFixed(2) }} mm</strong>
+                                  </div>
+                                </div>
+                              </div>
+                              <div class="col-6">
+                                <div class="d-flex align-items-center">
+                                  <i class="fas fa-weight text-warning me-2"></i>
+                                  <div>
+                                    <small class="text-muted d-block">Peso</small>
+                                    <strong>{{ (analisis.prediction.peso_g || 0).toFixed(2) }} g</strong>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <!-- Confianzas -->
+                            <div v-if="analisis.prediction.average_confidence" class="mt-3 pt-3 border-top">
+                              <small class="text-muted d-block mb-2">Confianza Promedio</small>
+                              <div class="progress" style="height: 8px;">
+                                <div 
+                                  class="progress-bar"
+                                  :class="{
+                                    'bg-success': analisis.prediction.average_confidence >= 0.8,
+                                    'bg-warning': analisis.prediction.average_confidence >= 0.6 && analisis.prediction.average_confidence < 0.8,
+                                    'bg-danger': analisis.prediction.average_confidence < 0.6
+                                  }"
+                                  :style="{ width: `${(analisis.prediction.average_confidence * 100)}%` }"
+                                  role="progressbar"
+                                  :aria-valuenow="analisis.prediction.average_confidence * 100"
+                                  aria-valuemin="0"
+                                  aria-valuemax="100"
+                                >
+                                </div>
+                              </div>
+                              <small class="text-muted mt-1">
+                                {{ ((analisis.prediction.average_confidence || 0) * 100).toFixed(1) }}%
+                              </small>
+                            </div>
+                          </div>
+                          
+                          <!-- Sin predicción -->
+                          <div v-else class="text-center py-3">
+                            <i class="fas fa-exclamation-triangle text-warning mb-2"></i>
+                            <p class="text-muted mb-0 small">Sin datos de predicción</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                 </div>
 
                 <!-- Sin análisis -->
                 <div v-else class="text-center py-5">
                   <i class="fas fa-microscope fa-3x text-muted mb-3"></i>
                   <h5 class="text-muted">No hay análisis disponibles</h5>
-                  <p class="text-muted">Realiza el primer análisis de este lote</p>
+                  <p class="text-muted mb-4">Realiza el primer análisis de este lote</p>
                   <button @click="newAnalysis" class="btn btn-primary">
                     <i class="fas fa-plus me-2"></i>
                     Realizar Análisis
@@ -319,19 +405,11 @@ const loadAnalisis = async () => {
     loading.value = true
     error.value = null
     
+    const api = (await import('@/services/api')).default
+    
     // Cargar información del lote
-    const loteResponse = await fetch(`/api/lotes/${loteId.value}/`, {
-      headers: {
-        'Authorization': `Bearer ${authStore.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    
-    if (!loteResponse.ok) {
-      throw new Error(`Error ${loteResponse.status}: ${loteResponse.statusText}`)
-    }
-    
-    lote.value = await loteResponse.json()
+    const loteResponse = await api.get(`/lotes/${loteId.value}/`)
+    lote.value = loteResponse.data
     
     // Cargar información de la finca
     if (lote.value.finca) {
@@ -345,69 +423,62 @@ const loadAnalisis = async () => {
     generateRecomendaciones()
     
   } catch (err) {
-    error.value = err.message
-    console.error('Error cargando análisis:', err)
-  } finally {
+    console.error('Error loading análisis:', err)
+    error.value = err.response?.data?.error || err.message || 'Error al cargar los datos del lote'
+    } finally {
     loading.value = false
   }
 }
 
 const loadFinca = async (fincaId) => {
   try {
-    const response = await fetch(`/api/fincas/${fincaId}/`, {
-      headers: {
-        'Authorization': `Bearer ${authStore.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    
-    if (response.ok) {
-      finca.value = await response.json()
-    }
+    const api = (await import('@/services/api')).default
+    const response = await api.get(`/fincas/${fincaId}/`)
+    finca.value = response.data
   } catch (err) {
-    console.error('Error cargando finca:', err)
-  }
+    console.error('Error loading finca:', err)
+    }
 }
 
 const loadAnalisisData = async () => {
   try {
-    const response = await fetch(`/api/lotes/${loteId.value}/analisis/`, {
-      headers: {
-        'Authorization': `Bearer ${authStore.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    const api = (await import('@/services/api')).default
+    const response = await api.get(`/lotes/${loteId.value}/analisis/`)
     
-    if (response.ok) {
-      const data = await response.json()
+    const data = response.data
       analisisDetallados.value = data.results || []
       
-      // Calcular resumen
+    // Calcular resumen basado en las predicciones
       if (analisisDetallados.value.length > 0) {
+      const predictions = analisisDetallados.value
+        .filter(a => a.prediction)
+        .map(a => a.prediction)
+      
+      if (predictions.length > 0) {
         analisisResumen.value = {
-          peso_promedio: Math.round(
-            analisisDetallados.value.reduce((sum, a) => sum + a.peso_promedio, 0) / 
-            analisisDetallados.value.length
-          ),
-          tamaño_promedio: Math.round(
-            analisisDetallados.value.reduce((sum, a) => sum + a.tamaño_promedio, 0) / 
-            analisisDetallados.value.length
-          ),
-          grosor_promedio: Math.round(
-            analisisDetallados.value.reduce((sum, a) => sum + a.grosor_promedio, 0) / 
-            analisisDetallados.value.length
-          ),
+          peso_promedio: (predictions.reduce((sum, p) => sum + (parseFloat(p.peso_g) || 0), 0) / predictions.length).toFixed(2),
+          tamaño_promedio: (predictions.reduce((sum, p) => sum + (parseFloat(p.alto_mm) || 0), 0) / predictions.length).toFixed(2),
+          grosor_promedio: (predictions.reduce((sum, p) => sum + (parseFloat(p.grosor_mm) || 0), 0) / predictions.length).toFixed(2),
           calidad_promedio: Math.round(
-            analisisDetallados.value.reduce((sum, a) => sum + a.calidad, 0) / 
+            analisisDetallados.value.reduce((sum, a) => sum + (a.calidad || 0), 0) / 
             analisisDetallados.value.length
           ),
+          total_muestras: analisisDetallados.value.length
+        }
+      } else {
+        analisisResumen.value = {
+          peso_promedio: 0,
+          tamaño_promedio: 0,
+          grosor_promedio: 0,
+          calidad_promedio: 0,
           total_muestras: analisisDetallados.value.length
         }
       }
     }
   } catch (err) {
-    console.error('Error cargando análisis:', err)
-  }
+    console.error('Error loading análisis data:', err)
+    error.value = 'Error al cargar los análisis del lote'
+    }
 }
 
 const generateRecomendaciones = () => {
@@ -458,7 +529,23 @@ const newAnalysis = () => {
 }
 
 const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('es-CO')
+  if (!dateString) return 'N/A'
+  const date = new Date(dateString)
+  return date.toLocaleDateString('es-CO', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const handleImageError = (event) => {
+  event.target.style.display = 'none'
+  const parent = event.target.parentElement
+  if (parent) {
+    parent.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted"><i class="fas fa-image fa-3x"></i></div>'
+  }
 }
 
 // Lifecycle
@@ -479,14 +566,13 @@ onMounted(() => {
 }
 
 .stat-card {
-  padding: 1rem;
-  border-radius: 0.5rem;
-  background-color: #f8f9fa;
-  transition: transform 0.2s ease-in-out;
+  border: 1px solid #e9ecef;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 
 .stat-icon {
@@ -554,5 +640,18 @@ onMounted(() => {
   border-top: none;
   font-weight: 600;
   color: #495057;
+}
+
+.analysis-card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.analysis-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.object-fit-cover {
+  object-fit: cover;
 }
 </style>

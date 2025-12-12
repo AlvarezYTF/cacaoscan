@@ -30,7 +30,7 @@ class TemaViewSet(viewsets.ModelViewSet):
     queryset = Tema.objects.all()
     serializer_class = TemaSerializer
     permission_classes = [AllowAny]
-    lookup_field = 'id'
+    lookup_field = 'codigo'  # Cambiar a 'codigo' para permitir búsqueda por código
 
     def get_serializer_class(self):
         """Devuelve diferentes serializers según la acción"""
@@ -39,10 +39,10 @@ class TemaViewSet(viewsets.ModelViewSet):
         return TemaSerializer
 
     @action(detail=True, methods=['get'], url_path='parametros')
-    def parametros(self, request, id=None):
+    def parametros(self, request, codigo=None):
         """
         Obtiene todos los parámetros de un tema específico.
-        Endpoint: GET /api/temas/{id}/parametros/
+        Endpoint: GET /api/temas/{codigo}/parametros/
         """
         tema = self.get_object()
         parametros = tema.parametros.all()
@@ -84,7 +84,7 @@ class ParametroViewSet(viewsets.ModelViewSet):
         if tema_param:
             # Si es numérico -> asumir ID; si no, filtrar por código
             if tema_param.isdigit():
-                queryset = queryset.filter(tema_id=int(tema_param))
+                queryset = queryset.filter(tema__id=int(tema_param))
             else:
                 queryset = queryset.filter(tema__codigo=tema_param)
 
@@ -92,7 +92,7 @@ class ParametroViewSet(viewsets.ModelViewSet):
         if solo_activos:
             queryset = queryset.filter(activo=True)
 
-        return queryset
+        return queryset.distinct()
 
     @action(detail=False, methods=['get'], url_path='tema/(?P<codigo_tema>[^/.]+)')
     def by_tema(self, request, codigo_tema=None):
@@ -119,7 +119,7 @@ class ParametroViewSet(viewsets.ModelViewSet):
             })
         except Tema.DoesNotExist:
             return Response(
-                    {'error': f'Tema con código "{codigo_tema}" no encontrado'},
+                {'error': f'Tema con código "{codigo_tema}" no encontrado'},
                 status=status.HTTP_404_NOT_FOUND
             )
 

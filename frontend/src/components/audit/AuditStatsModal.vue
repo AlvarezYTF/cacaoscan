@@ -1,22 +1,24 @@
 <template>
-  <div class="audit-stats-modal" @click="closeModal">
-    <div class="modal-container" @click.stop>
-      <div class="modal-header">
-        <div class="header-content">
-          <div class="header-icon">
-            <i class="fas fa-chart-bar"></i>
-          </div>
-          <div class="header-text">
-            <h3>Estadísticas Detalladas de Auditoría</h3>
-            <p>Análisis completo de la actividad del sistema</p>
-          </div>
+  <BaseModal
+    :show="true"
+    title="Estadísticas Detalladas de Auditoría"
+    subtitle="Análisis completo de la actividad del sistema"
+    max-width="6xl"
+    @close="closeModal"
+  >
+    <template #header>
+      <div class="flex items-center">
+        <div class="bg-blue-100 p-2 rounded-lg mr-3">
+          <i class="fas fa-chart-bar text-blue-600"></i>
         </div>
-        <button class="close-btn" @click="closeModal">
-          <i class="fas fa-times"></i>
-        </button>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">Estadísticas Detalladas de Auditoría</h3>
+          <p class="text-sm text-gray-600 mt-1">Análisis completo de la actividad del sistema</p>
+        </div>
       </div>
+    </template>
 
-      <div class="modal-body">
+    <div class="modal-body-content">
         <div class="stats-content">
           <!-- Resumen general -->
           <div class="stats-section">
@@ -226,30 +228,34 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <div class="footer-left">
-          <button
-            @click="exportStats"
-            class="btn btn-outline"
-          >
-            <i class="fas fa-download"></i>
-            Exportar Estadísticas
-          </button>
-        </div>
-
-        <div class="footer-right">
-          <button @click="closeModal" class="btn btn-primary">
-            Cerrar
-          </button>
-        </div>
+    <template #footer>
+      <div class="flex justify-between items-center w-full">
+        <button
+          @click="exportStats"
+          class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+        >
+          <i class="fas fa-download"></i>
+          Exportar Estadísticas
+        </button>
+        <button 
+          @click="closeModal" 
+          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+        >
+          Cerrar
+        </button>
       </div>
-    </div>
-  </div>
+    </template>
+  </BaseModal>
 </template>
 
 <script>
+import BaseModal from '@/components/common/BaseModal.vue'
+
 export default {
   name: 'AuditStatsModal',
+  components: {
+    BaseModal
+  },
   props: {
     stats: {
       type: Object,
@@ -321,7 +327,7 @@ export default {
       }
 
       const blob = new Blob([JSON.stringify(statsData, null, 2)], { type: 'application/json' })
-      const url = window.URL.createObjectURL(blob)
+      const url = globalThis.URL.createObjectURL(blob)
       
       const link = document.createElement('a')
       link.href = url
@@ -329,8 +335,8 @@ export default {
       document.body.appendChild(link)
       link.click()
       
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+      link.remove()
+      globalThis.URL.revokeObjectURL(url)
     },
 
     closeModal() {
@@ -373,8 +379,8 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #1f4e79 0%, #31235d 100%);
+  color: #f8fafc;
 }
 
 .header-content {
@@ -407,9 +413,9 @@ export default {
 }
 
 .close-btn {
-  background: rgba(255, 255, 255, 0.2);
+  background-color: #0f172a;
   border: none;
-  color: white;
+  color: #ffffff;
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
@@ -421,7 +427,8 @@ export default {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background-color: #1a2640;
+  color: #ffffff;
 }
 
 .modal-body {
@@ -476,8 +483,8 @@ export default {
 .summary-icon {
   width: 2.5rem;
   height: 2.5rem;
-  background: #3b82f6;
-  color: white;
+  background: #1f4e79;
+  color: #ffffff;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -618,8 +625,8 @@ export default {
 .user-rank {
   width: 2rem;
   height: 2rem;
-  background: #3b82f6;
-  color: white;
+  background: #1f4e79;
+  color: #ffffff;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -725,8 +732,8 @@ export default {
 .ip-rank {
   width: 2rem;
   height: 2rem;
-  background: #f59e0b;
-  color: white;
+  background: #8a4b00;
+  color: #ffffff;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -855,14 +862,14 @@ export default {
 }
 
 .btn-primary {
-  background-color: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
+  background-color: #1f4e79;
+  color: #ffffff;
+  border-color: #1f4e79;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
-  border-color: #2563eb;
+  background-color: #1a3d5b;
+  border-color: #1a3d5b;
 }
 
 /* Responsive */

@@ -16,8 +16,9 @@
     <div class="p-6">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+          <label for="fincas-filter-search" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
           <input
+            id="fincas-filter-search"
             v-model="localSearchQuery"
             type="text"
             placeholder="Nombre, municipio, departamento..."
@@ -26,8 +27,9 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
+          <label for="fincas-filter-departamento" class="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
           <select
+            id="fincas-filter-departamento"
             v-model="localFilters.departamento"
             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
             @change="applyFilters"
@@ -39,8 +41,9 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+          <label for="fincas-filter-estado" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
           <select
+            id="fincas-filter-estado"
             v-model="localFilters.activa"
             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
             @change="applyFilters"

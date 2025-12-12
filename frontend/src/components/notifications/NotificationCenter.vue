@@ -244,15 +244,15 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
-import Swal from 'sweetalert2'
+import { useNotifications } from '@/composables/useNotifications'
+import Swal from 'sweetalert2' // Keep for confirmation dialogs
 
 export default {
   name: 'NotificationCenter',
   setup() {
-    const authStore = useAuthStore()
     const notificationStore = useNotificationStore()
+    const { showSuccess, showError } = useNotifications()
 
     // Reactive data
     const loading = ref(false)
@@ -324,19 +324,16 @@ export default {
         totalPages.value = Math.ceil(totalCount.value / pageSize.value)
         
       } catch (error) {
-        console.error('Error loading notifications:', error)
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudieron cargar las notificaciones'
-        })
+        showError('No se pudieron cargar las notificaciones')
       } finally {
         loading.value = false
       }
     }
 
     const refreshNotifications = () => {
-      loadNotifications()
+      // Handle potential errors to prevent unhandled promise rejections
+      loadNotifications().catch(err => {
+        })
     }
 
     const setFilter = (filter) => {
@@ -369,12 +366,7 @@ export default {
         }
         
       } catch (error) {
-        console.error('Error marking notification as read:', error)
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo marcar la notificación como leída'
-        })
+        showError('No se pudo marcar la notificación como leída')
       }
     }
 
@@ -383,26 +375,17 @@ export default {
         await notificationStore.markAllAsRead()
         
         // Update local state
-        notifications.value.forEach(notification => {
+        for (const notification of notifications.value) {
           if (!notification.leida) {
             notification.leida = true
             notification.fecha_lectura = new Date().toISOString()
           }
-        })
+        }
         
-        Swal.fire({
-          icon: 'success',
-          title: 'Notificaciones marcadas',
-          text: 'Todas las notificaciones han sido marcadas como leídas'
-        })
+        showSuccess('Todas las notificaciones han sido marcadas como leídas')
         
       } catch (error) {
-        console.error('Error marking all notifications as read:', error)
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudieron marcar todas las notificaciones como leídas'
-        })
+        showError('No se pudieron marcar todas las notificaciones como leídas')
       }
     }
 
@@ -426,19 +409,10 @@ export default {
           notifications.value = notifications.value.filter(n => n.id !== notification.id)
           totalCount.value--
           
-          Swal.fire({
-            icon: 'success',
-            title: 'Notificación eliminada',
-            text: 'La notificación ha sido eliminada exitosamente'
-          })
+          showSuccess('La notificación ha sido eliminada exitosamente')
           
         } catch (error) {
-          console.error('Error deleting notification:', error)
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo eliminar la notificación'
-          })
+          showError('No se pudo eliminar la notificación')
         }
       }
     }
@@ -447,19 +421,10 @@ export default {
       try {
         await notificationStore.updateSettings(settings.value)
         
-        Swal.fire({
-          icon: 'success',
-          title: 'Configuración actualizada',
-          text: 'Las preferencias de notificaciones han sido guardadas'
-        })
+        showSuccess('Las preferencias de notificaciones han sido guardadas')
         
       } catch (error) {
-        console.error('Error updating notification settings:', error)
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudieron actualizar las preferencias'
-        })
+        showError('No se pudieron actualizar las preferencias')
       }
     }
 
@@ -512,7 +477,9 @@ export default {
 
     // Lifecycle
     onMounted(() => {
-      loadNotifications()
+      // Handle potential errors to prevent unhandled promise rejections
+      loadNotifications().catch(err => {
+        })
       connectWebSocket()
     })
 
@@ -569,6 +536,10 @@ export default {
   padding: 20px;
   border-bottom: 1px solid #ecf0f1;
   background: #f8f9fa;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 5px;
 }
 
 .header-content {
@@ -618,12 +589,13 @@ export default {
 
 .filter-tab:hover {
   background-color: #e9ecef;
+  color: #212529;
 }
 
 .filter-tab.active {
-  background-color: #3498db;
-  color: white;
-  border-color: #3498db;
+  background-color: #1f4e79;
+  color: #ffffff;
+  border-color: #1f4e79;
 }
 
 .filter-options select {
@@ -706,12 +678,6 @@ export default {
   flex: 1;
 }
 
-.notification-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 5px;
-}
 
 .notification-title {
   margin: 0;
@@ -744,7 +710,7 @@ export default {
 
 .extra-item {
   font-size: 0.8rem;
-  color: #6c757d;
+  color: #495057;
   background: #f8f9fa;
   padding: 2px 6px;
   border-radius: 3px;
@@ -790,7 +756,7 @@ export default {
 }
 
 .page-link:hover {
-  color: #2980b9;
+  color: #1e5a8a;
   background-color: #e9ecef;
   border-color: #dee2e6;
 }
@@ -864,8 +830,8 @@ export default {
 }
 
 .btn-outline-primary:hover:not(:disabled) {
-  background-color: #3498db;
-  color: white;
+  background-color: #1f4e79;
+  color: #ffffff;
 }
 
 .btn-outline-secondary {

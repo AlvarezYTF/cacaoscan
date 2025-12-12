@@ -13,7 +13,7 @@
     />
 
     <!-- Main Content -->
-    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'">
+    <div class="p-6 transition-all duration-300" :class="isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-64'" data-cy="admin-usuarios">
       <!-- Page Header -->
       <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
         <div class="flex items-center justify-between flex-wrap gap-4">
@@ -226,6 +226,7 @@ import reportsApi from '@/services/reportsApi'
 
 // 5. Composables
 import { useWebSocket } from '@/composables/useWebSocket'
+import { usePagination } from '@/composables/usePagination'
 
 // 6. Components
 import AdminSidebar from '@/components/layout/Common/Sidebar.vue'
@@ -235,7 +236,6 @@ import UserActivityModal from '@/components/admin/AdminUserComponents/UserActivi
 import UsersStatsCards from '@/components/admin/AdminUserComponents/UsersStatsCards.vue'
 import UsersSearchBar from '@/components/admin/AdminUserComponents/UsersSearchBar.vue'
 import UsersTable from '@/components/admin/AdminUserComponents/UsersTable.vue'
-import LoadingSpinner from '@/components/admin/AdminGeneralComponents/LoadingSpinner.vue'
 
 // 7. Libraries
 import Swal from 'sweetalert2'
@@ -292,10 +292,14 @@ const statusFilter = ref('')
 const sortBy = ref('-date_joined')
 
 // Pagination
-const currentPage = ref(1)
-const pageSize = ref(20)
+// Paginación usando composable
+const pagination = usePagination(1, 20)
 const totalUsersCount = ref(0)
-const totalPages = ref(0)
+
+// Computed para compatibilidad con el template
+const currentPage = computed(() => pagination.currentPage.value)
+const pageSize = computed(() => pagination.itemsPerPage.value)
+const totalPages = computed(() => pagination.totalPages.value)
 
 // Modals
 const showUserModal = ref(false)
@@ -322,8 +326,8 @@ const newUsersToday = computed(() => userStats.value.new_today)
 
 const visiblePages = computed(() => {
   const pages = []
-  const start = Math.max(1, currentPage.value - 2)
-  const end = Math.min(totalPages.value, start + 4)
+  const start = Math.max(1, pagination.currentPage.value - 2)
+  const end = Math.min(pagination.totalPages.value, start + 4)
 
   for (let i = start; i <= end; i++) {
     pages.push(i)
@@ -354,7 +358,6 @@ const loadUserStats = async () => {
           new_today: stats.new_today || 0
         }
       } catch (error) {
-        console.error('Error loading user stats:', error)
         // Establecer valores por defecto en caso de error
         userStats.value = {
           total: 0,
@@ -369,8 +372,8 @@ const loadUserStats = async () => {
       loading.value = true
       try {
         const params = {
-          page: currentPage.value,
-          page_size: pageSize.value,
+          page: pagination.currentPage.value,
+          page_size: pagination.itemsPerPage.value,
           search: searchQuery.value,
           role: roleFilter.value,
           status: statusFilter.value,
@@ -380,16 +383,25 @@ const loadUserStats = async () => {
         const response = await adminStore.getAllUsers(params)
         users.value = response.data.results
         totalUsersCount.value = response.data.count
-        totalPages.value = Math.ceil(response.data.count / pageSize.value)
+        
+        // Actualizar paginación desde respuesta API
+        pagination.updateFromApiResponse({
+          page: response.data.current_page || currentPage.value,
+          page_size: pageSize.value,
+          count: response.data.count,
+          total_pages: response.data.total_pages || Math.ceil(response.data.count / pageSize.value)
+        })
 
       } catch (error) {
-        console.error('Error loading users:', error)
-        
         // Si es error de conexión, establecer arrays vacíos
         if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
           users.value = []
           totalUsersCount.value = 0
-          totalPages.value = 1
+          pagination.updatePagination({
+            page: 1,
+            page_size: pageSize.value,
+            count: 0
+          })
         }
         
         // Solo mostrar error si no es un error de red común
@@ -407,12 +419,12 @@ const loadUserStats = async () => {
     }
 
     const debouncedSearch = debounce(() => {
-      currentPage.value = 1
+      pagination.goToPage(1)
       loadUsers()
     }, 500)
 
     const applyFilters = () => {
-      currentPage.value = 1
+      pagination.goToPage(1)
       loadUsers()
     }
 
@@ -421,13 +433,13 @@ const loadUserStats = async () => {
       roleFilter.value = ''
       statusFilter.value = ''
       sortBy.value = '-date_joined'
-      currentPage.value = 1
+      pagination.goToPage(1)
       loadUsers()
     }
 
     const changePage = (page) => {
       if (page >= 1 && page <= totalPages.value) {
-        currentPage.value = page
+        pagination.goToPage(page)
         loadUsers()
       }
     }
@@ -538,7 +550,6 @@ const loadUserStats = async () => {
         })
 
       } catch (error) {
-        console.error('Error deleting user:', error)
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -556,11 +567,11 @@ const loadUserStats = async () => {
         await Promise.all(promises)
 
         // Update local state
-        users.value.forEach(user => {
+        for (const user of users.value) {
           if (selectedUsers.value.includes(user.id)) {
             user.is_active = true
           }
-        })
+        }
 
         selectedUsers.value = []
         selectAll.value = false
@@ -572,7 +583,6 @@ const loadUserStats = async () => {
         })
 
       } catch (error) {
-        console.error('Error bulk activating users:', error)
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -590,11 +600,11 @@ const loadUserStats = async () => {
         await Promise.all(promises)
 
         // Update local state
-        users.value.forEach(user => {
+        for (const user of users.value) {
           if (selectedUsers.value.includes(user.id)) {
             user.is_active = false
           }
-        })
+        }
 
         selectedUsers.value = []
         selectAll.value = false
@@ -606,7 +616,6 @@ const loadUserStats = async () => {
         })
 
       } catch (error) {
-        console.error('Error bulk deactivating users:', error)
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -651,7 +660,6 @@ const loadUserStats = async () => {
           })
 
         } catch (error) {
-          console.error('Error bulk deleting users:', error)
           Swal.fire({
             icon: 'error',
             title: 'Error',
@@ -662,7 +670,9 @@ const loadUserStats = async () => {
     }
 
     const handleToggleStatus = async (user) => {
-      console.log('Toggle status for user:', user);
+      if (!user) {
+        return;
+      }
       
       try {
         // Marcar el usuario como actualizándose
@@ -677,8 +687,6 @@ const loadUserStats = async () => {
         // Actualizar estado local sin recargar
         user.is_active = newStatus;
         
-        console.log(`✅ Estado actualizado para usuario ${user.username}: ${newStatus ? 'Activo' : 'Inactivo'}`);
-        
         // Mostrar notificación de éxito
         Swal.fire({
           icon: 'success',
@@ -690,8 +698,6 @@ const loadUserStats = async () => {
         });
         
       } catch (error) {
-        console.error('Error cambiando estado:', error);
-        
         // Mostrar error
         const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error al cambiar el estado del usuario';
         
@@ -702,8 +708,10 @@ const loadUserStats = async () => {
           confirmButtonColor: '#ef4444'
         });
       } finally {
-        // Remover el estado de actualización
-        user.isUpdating = false;
+        // Remover el estado de actualización solo si user existe
+        if (user) {
+          user.isUpdating = false;
+        }
       }
     };
 
@@ -734,7 +742,6 @@ const loadUserStats = async () => {
         })
 
       } catch (error) {
-        console.error('Error exporting users:', error)
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -774,7 +781,6 @@ const loadUserStats = async () => {
 
     // Sidebar event handlers
     const handleMenuClick = (menuItem) => {
-      console.log('Menu clicked:', menuItem)
       router.push(menuItem.route)
     }
 
@@ -815,66 +821,21 @@ const loadUserStats = async () => {
     onMounted(() => {
       // Verificar permisos de administrador usando el sistema de roles
       if (!authStore.isAdmin) {
-        console.warn('🚫 Usuario sin permisos de admin:', {
-          userRole: authStore.userRole,
-          isAdmin: authStore.isAdmin,
-          user: authStore.user
-        })
         router.push('/acceso-denegado')
         return
       }
 
-      loadUserStats()
-      loadUsers()
+      // Load data with error handling to prevent unhandled promise rejections
+      loadUserStats().catch(err => {
+        })
+      loadUsers().catch(err => {
+        })
       
       // Conectar a WebSocket para estadísticas en tiempo real
       setupWebSocketConnection()
       
-      // Configurar polling para actualizaciones periódicas (fallback si WebSockets fallan)
-      // Aumentar intervalo a 60 segundos para reducir carga
-      let statsPollingInterval = null
-      
-      // Solo iniciar polling si no hay error activo
-      const startPolling = () => {
-        if (statsPollingInterval) return
-        
-        statsPollingInterval = setInterval(() => {
-          try {
-            loadUserStats().catch(err => {
-              console.error('Error en polling de estadísticas:', err)
-              // Detener polling si hay errores persistentes
-              stopPolling()
-            })
-            
-            // Solo recargar usuarios si están en la primera página
-            if (currentPage.value === 1) {
-              loadUsers().catch(err => {
-                console.error('Error en polling de usuarios:', err)
-              })
-            }
-          } catch (error) {
-            console.error('Error en polling:', error)
-            stopPolling()
-          }
-        }, 60000) // Actualizar cada 60 segundos (reducido de 30)
-      }
-      
-      const stopPolling = () => {
-        if (statsPollingInterval) {
-          clearInterval(statsPollingInterval)
-          statsPollingInterval = null
-        }
-      }
-      
-      // Iniciar polling después de cargar datos iniciales
-      setTimeout(() => {
-        startPolling()
-      }, 5000)
-      
-      // Limpiar intervalo y listeners de WebSocket al desmontar
+      // Limpiar listeners de WebSocket al desmontar
       onUnmounted(() => {
-        stopPolling()
-        // Limpiar listeners de WebSocket si es necesario
         if (websocket && websocket.off) {
           websocket.off('user-stats-updated', handleStatsUpdate)
         }
@@ -889,12 +850,17 @@ const loadUserStats = async () => {
     }
     
     const handleStatsUpdate = (data) => {
-      console.log('📊 Actualización de estadísticas recibida:', data)
       userStats.value = {
         total: data.total || 0,
         active: data.active || 0,
         online: data.online || 0,
         new_today: data.new_today || 0
+      }
+      // Recargar usuarios cuando hay actualización de stats
+      if (pagination.currentPage.value === 1) {
+        loadUsers().catch(() => {
+          // Silently handle errors
+        })
       }
     }
 

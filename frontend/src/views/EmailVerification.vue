@@ -287,7 +287,6 @@ const resendVerification = async () => {
       setStatusMessage(result.error || 'Error al enviar email de verificación', 'error')
     }
   } catch (error) {
-    console.error('Error reenviando verificación:', error)
     setStatusMessage('Error inesperado al enviar email', 'error')
   } finally {
     isLoading.value = false
@@ -322,7 +321,6 @@ const verifyEmailFromUrl = async () => {
       errorMessage.value = result.error || 'Token de verificación inválido o expirado'
     }
   } catch (error) {
-    console.error('Error verificando email:', error)
     verificationStatus.value = 'error'
     errorMessage.value = 'Error inesperado al verificar email'
   } finally {

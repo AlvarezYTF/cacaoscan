@@ -39,16 +39,17 @@
       <!-- Navigation Menu -->
       <nav class="space-y-1">
         <div v-for="item in menuItems" :key="item.id">
-          <div 
+          <button
+            type="button"
             @click="handleMenuClick(item)"
+            @keydown="handleKeyboardAction($event, item)"
+            @keyup="handleKeyboardAction($event, item)"
+            @keypress="handleKeyboardAction($event, item)"
             :class="[
-              'flex items-center rounded-lg group transition-all duration-200 cursor-pointer',
+              'flex items-center rounded-lg group transition-all duration-200 cursor-pointer w-full text-left border-0 bg-transparent',
               collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-3',
               getMenuItemClass(item)
             ]"
-            role="button"
-            tabindex="0"
-            @keyup.enter="handleMenuClick(item)"
           >
             <svg 
               :class="['transition-colors duration-200', collapsed ? 'w-5 h-5' : 'w-5 h-5', getIconClass(item)]"
@@ -61,7 +62,7 @@
             <span v-if="!collapsed && item.badge" class="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-white bg-green-600">
               {{ item.badge }}
             </span>
-          </div>
+          </button>
         </div>
       </nav>
 
@@ -97,6 +98,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { normalizeRole } from '@/utils/roleUtils'
 
 // Props
 const props = defineProps({
@@ -153,7 +155,7 @@ const allMenuItems = {
     },
     {
       id: 'agricultores',
-      label: 'Agricultores',
+      label: 'Cacaocultores',
       route: '/admin/agricultores',
       iconPath: 'M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z',
       fillRule: 'evenodd',
@@ -236,16 +238,12 @@ const allMenuItems = {
 
 // Computed properties
 const menuItems = computed(() => {
-  // Normalize role to ensure it matches our keys
-  let normalizedRole = props.userRole
-  
-  // Normalize from backend values or common variations
-  if (normalizedRole === 'Administrador' || normalizedRole === 'Administrator') {
-    normalizedRole = 'admin'
-  } else if (normalizedRole === 'Agricultor' || normalizedRole === 'Farmer') {
+  // Normalize role: convert 'farmer' to 'agricultor' for menu lookup
+  let normalizedRole = normalizeRole(props.userRole) || 'agricultor'
+  // Convert 'farmer' to 'agricultor' for menu items lookup
+  if (normalizedRole === 'farmer') {
     normalizedRole = 'agricultor'
   }
-  
   return allMenuItems[normalizedRole] || []
 })
 
@@ -255,17 +253,20 @@ const userInitials = computed(() => {
 })
 
 // Methods
-const getMenuItemClass = (item) => {
-  let isActive = false
-  
+// Base function to check if menu item is active (extracted common logic)
+const isMenuItemActive = (item) => {
   if (props.userRole === 'admin') {
     // For admin role, check route
-    isActive = props.currentRoute === item.route || 
-               (item.route !== '/admin/dashboard' && props.currentRoute.startsWith(item.route))
+    return props.currentRoute === item.route || 
+           (item.route !== '/admin/dashboard' && props.currentRoute.startsWith(item.route))
   } else {
     // For agricultor role, check activeSection
-    isActive = props.activeSection === item.id
+    return props.activeSection === item.id
   }
+}
+
+const getMenuItemClass = (item) => {
+  const isActive = isMenuItemActive(item)
   
   if (isActive) {
     return 'text-green-700 bg-green-100 border-r-3 border-green-600 shadow-sm'
@@ -275,16 +276,7 @@ const getMenuItemClass = (item) => {
 }
 
 const getIconClass = (item) => {
-  let isActive = false
-  
-  if (props.userRole === 'admin') {
-    // For admin role, check route
-    isActive = props.currentRoute === item.route || 
-               (item.route !== '/admin/dashboard' && props.currentRoute.startsWith(item.route))
-  } else {
-    // For agricultor role, check activeSection
-    isActive = props.activeSection === item.id
-  }
+  const isActive = isMenuItemActive(item)
   
   if (isActive) {
     return 'text-green-700'
@@ -305,6 +297,13 @@ const handleLogoClick = () => {
 
 const handleMenuClick = (item) => {
   emit('menu-click', item)
+}
+
+const handleKeyboardAction = (event, item) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    handleMenuClick(item)
+  }
 }
 
 const handleLogout = () => {

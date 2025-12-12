@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.core.paginator import EmptyPage, InvalidPage, PageNotAnInteger
 
 logger = logging.getLogger("cacaoscan.services")
 
@@ -57,18 +58,26 @@ class BaseService:
         """Log de error."""
         self.logger.error(message, extra=kwargs)
     
+    def log_debug(self, message: str, **kwargs):
+        """Log de debug."""
+        self.logger.debug(message, extra=kwargs)
+    
     def validate_user_permission(self, user: User, permission: str, resource: Any = None) -> bool:
         """
         Valida permisos de usuario.
         
         Args:
             user: Usuario a validar
-            permission: Permiso requerido
-            resource: Recurso específico (opcional)
+            permission: Permiso requerido (no usado en implementación base)
+            resource: Recurso específico (opcional, no usado en implementación base)
             
         Returns:
             True si tiene permisos, False en caso contrario
         """
+        # Suppress unused parameter warning - estos parámetros son parte de la interfaz
+        _ = permission
+        _ = resource
+        
         if user.is_superuser or user.is_staff:
             return True
         
@@ -112,6 +121,58 @@ class BaseService:
                 details={"missing_fields": missing_fields}
             )
     
+    def _validate_field_type(self, field: str, value: Any, expected_type):
+        """Valida el tipo de un campo."""
+        # Handle tuple of types (e.g., (int, float, Decimal))
+        if isinstance(expected_type, tuple):
+            if not isinstance(value, expected_type):
+                type_names = ', '.join(t.__name__ for t in expected_type)
+                raise ValidationServiceError(
+                    f"Campo '{field}' debe ser uno de los tipos: {type_names}",
+                    error_code="invalid_field_type",
+                    details={"field": field, "expected_types": [t.__name__ for t in expected_type], "actual_type": type(value).__name__}
+                )
+        else:
+            if not isinstance(value, expected_type):
+                raise ValidationServiceError(
+                    f"Campo '{field}' debe ser de tipo {expected_type.__name__}",
+                    error_code="invalid_field_type",
+                    details={"field": field, "expected_type": expected_type.__name__, "actual_type": type(value).__name__}
+                )
+    
+    def _validate_field_range(self, field: str, value: Any, validation: Dict[str, Any]):
+        """Valida el rango de un campo."""
+        if 'min' in validation and value < validation['min']:
+            raise ValidationServiceError(
+                f"Campo '{field}' debe ser mayor o igual a {validation['min']}",
+                error_code="field_value_too_small",
+                details={"field": field, "min": validation['min'], "actual": value}
+            )
+        
+        if 'max' in validation and value > validation['max']:
+            raise ValidationServiceError(
+                f"Campo '{field}' debe ser menor o igual a {validation['max']}",
+                error_code="field_value_too_large",
+                details={"field": field, "max": validation['max'], "actual": value}
+            )
+    
+    def _validate_field_length(self, field: str, value: Any, validation: Dict[str, Any]):
+        """Valida la longitud de un campo."""
+        value_str = str(value)
+        if 'min_length' in validation and len(value_str) < validation['min_length']:
+            raise ValidationServiceError(
+                f"Campo '{field}' debe tener al menos {validation['min_length']} caracteres",
+                error_code="field_too_short",
+                details={"field": field, "min_length": validation['min_length'], "actual_length": len(value_str)}
+            )
+        
+        if 'max_length' in validation and len(value_str) > validation['max_length']:
+            raise ValidationServiceError(
+                f"Campo '{field}' debe tener máximo {validation['max_length']} caracteres",
+                error_code="field_too_long",
+                details={"field": field, "max_length": validation['max_length'], "actual_length": len(value_str)}
+            )
+    
     def validate_field_values(self, data: Dict[str, Any], validations: Dict[str, Any]):
         """
         Valida valores de campos específicos.
@@ -124,48 +185,16 @@ class BaseService:
             ValidationServiceError: Si las validaciones fallan
         """
         for field, validation in validations.items():
-            if field in data:
-                value = data[field]
-                
-                # Validación de tipo
-                if 'type' in validation:
-                    expected_type = validation['type']
-                    if not isinstance(value, expected_type):
-                        raise ValidationServiceError(
-                            f"Campo '{field}' debe ser de tipo {expected_type.__name__}",
-                            error_code="invalid_field_type",
-                            details={"field": field, "expected_type": expected_type.__name__, "actual_type": type(value).__name__}
-                        )
-                
-                # Validación de rango
-                if 'min' in validation and value < validation['min']:
-                    raise ValidationServiceError(
-                        f"Campo '{field}' debe ser mayor o igual a {validation['min']}",
-                        error_code="field_value_too_small",
-                        details={"field": field, "min": validation['min'], "actual": value}
-                    )
-                
-                if 'max' in validation and value > validation['max']:
-                    raise ValidationServiceError(
-                        f"Campo '{field}' debe ser menor o igual a {validation['max']}",
-                        error_code="field_value_too_large",
-                        details={"field": field, "max": validation['max'], "actual": value}
-                    )
-                
-                # Validación de longitud
-                if 'min_length' in validation and len(str(value)) < validation['min_length']:
-                    raise ValidationServiceError(
-                        f"Campo '{field}' debe tener al menos {validation['min_length']} caracteres",
-                        error_code="field_too_short",
-                        details={"field": field, "min_length": validation['min_length'], "actual_length": len(str(value))}
-                    )
-                
-                if 'max_length' in validation and len(str(value)) > validation['max_length']:
-                    raise ValidationServiceError(
-                        f"Campo '{field}' debe tener máximo {validation['max_length']} caracteres",
-                        error_code="field_too_long",
-                        details={"field": field, "max_length": validation['max_length'], "actual_length": len(str(value))}
-                    )
+            if field not in data:
+                continue
+            
+            value = data[field]
+            
+            if 'type' in validation:
+                self._validate_field_type(field, value, validation['type'])
+            
+            self._validate_field_range(field, value, validation)
+            self._validate_field_length(field, value, validation)
     
     def execute_with_transaction(self, func, *args, **kwargs):
         """
@@ -211,7 +240,7 @@ class BaseService:
         
         try:
             page_obj = paginator.page(page)
-        except:
+        except (EmptyPage, InvalidPage, PageNotAnInteger):
             page_obj = paginator.page(1)
         
         return {
@@ -228,37 +257,92 @@ class BaseService:
             }
         }
     
-    def create_audit_log(self, user: User, action: str, resource_type: str, resource_id: Any = None, details: Dict[str, Any] = None):
+    def _serialize_for_json(self, value: Any) -> Any:
+        """
+        Serializa un valor para JSON, convirtiendo Decimal y otros tipos no serializables.
+        
+        Args:
+            value: Valor a serializar
+            
+        Returns:
+            Valor serializable para JSON
+        """
+        from decimal import Decimal
+        from datetime import date, datetime
+        
+        if isinstance(value, Decimal):
+            return float(value)
+        elif isinstance(value, (date, datetime)):
+            return value.isoformat()
+        elif isinstance(value, dict):
+            return {k: self._serialize_for_json(v) for k, v in value.items()}
+        elif isinstance(value, (list, tuple)):
+            return [self._serialize_for_json(item) for item in value]
+        else:
+            return value
+    
+    def create_audit_log(self, user: User, action: str, resource_type: str = None, resource_id: Any = None, 
+                         content_object: Any = None, details: Dict[str, Any] = None):
         """
         Crea un log de auditoría.
+        Se ejecuta después de que la transacción se complete para evitar problemas con bloques atómicos.
         
         Args:
             user: Usuario que realiza la acción
             action: Acción realizada
-            resource_type: Tipo de recurso
-            resource_id: ID del recurso (opcional)
+            resource_type: [DEPRECATED] Tipo de recurso como string - usar content_object en su lugar
+            resource_id: [DEPRECATED] ID del recurso - usar content_object en su lugar
+            content_object: Objeto relacionado (recomendado - normalizado con ContentType)
             details: Detalles adicionales (opcional)
         """
-        try:
+        def _create_log():
             try:
-                from audit.models import ActivityLog
-            except ImportError:
-                ActivityLog = None
-            
-            if ActivityLog is None:
-                self.log_debug("Servicio de auditoría no disponible; se omite creación de log")
-                return
-            
-            ActivityLog.objects.create(
-                user=user,
-                action=action,
-                resource_type=resource_type,
-                resource_id=str(resource_id) if resource_id else None,
-                details=details or {},
-                timestamp=timezone.now()
-            )
-        except Exception as e:
-            self.log_warning(f"Error creando log de auditoría: {str(e)}")
+                try:
+                    from audit.models import ActivityLog as activity_log_model
+                    from django.contrib.contenttypes.models import ContentType
+                except ImportError:
+                    activity_log_model = None
+                    ContentType = None
+                
+                if activity_log_model is None:
+                    self.log_debug("Servicio de auditoría no disponible; se omite creación de log")
+                    return
+                
+                # Serialize details to ensure JSON compatibility
+                serialized_details = {}
+                if details:
+                    serialized_details = self._serialize_for_json(details)
+                
+                # Use ContentType if content_object is provided (normalized approach)
+                content_type = None
+                object_id = None
+                
+                if content_object is not None:
+                    content_type = ContentType.objects.get_for_model(content_object)
+                    object_id = content_object.pk
+                    # Also populate legacy fields for backward compatibility
+                    resource_type_str = f"{content_type.app_label}.{content_type.model}"
+                    resource_id_int = int(object_id) if object_id else None
+                else:
+                    # Fallback to legacy fields if content_object not provided
+                    resource_type_str = resource_type or ""
+                    resource_id_int = int(resource_id) if resource_id else None
+                
+                activity_log_model.objects.create(
+                    user=user,
+                    action=action,
+                    content_type=content_type,
+                    object_id=object_id,
+                    resource_type=resource_type_str,  # Legacy field for backward compatibility
+                    resource_id=resource_id_int,  # Legacy field for backward compatibility
+                    details=serialized_details,
+                    timestamp=timezone.now()
+                )
+            except Exception as e:
+                self.log_warning(f"Error creando log de auditoría: {str(e)}")
+        
+        # Execute after transaction commits to avoid atomic block issues
+        transaction.on_commit(_create_log)
 
 
 class ServiceResult:

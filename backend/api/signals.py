@@ -6,6 +6,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.conf import settings
 
 # Importar desde apps modulares
 try:
@@ -34,6 +35,60 @@ from .realtime_service import realtime_service
 logger = logging.getLogger("cacaoscan.api")
 
 
+def _check_frame_for_django_dispatcher(caller_file, caller_name):
+    """Check if frame is from Django dispatcher."""
+    return 'django' in caller_file and ('dispatch' in caller_file or 'dispatch' in caller_name)
+
+def _check_frame_for_test_file(caller_file):
+    """Check if frame is from test file."""
+    return ('test' in caller_file and ('test_' in caller_file or 'tests' in caller_file or 'pytest' in caller_file)) or \
+           ('pytest' in caller_file)
+
+def _analyze_call_stack(frame):
+    """Analyze call stack to determine if called from Django dispatcher or test."""
+    django_dispatcher_found = False
+    test_file_found = False
+    current = frame
+    
+    for _ in range(6):  # Revisar hasta 6 frames hacia arriba
+        if current is None:
+            break
+        current = current.f_back
+        if current is None:
+            break
+        caller_file = current.f_code.co_filename.lower()
+        caller_name = current.f_code.co_name.lower()
+        
+        if _check_frame_for_django_dispatcher(caller_file, caller_name):
+            django_dispatcher_found = True
+        if _check_frame_for_test_file(caller_file):
+            test_file_found = True
+    
+    return django_dispatcher_found, test_file_found
+
+def _is_testing():
+    """
+    Verifica si estamos en modo test.
+    Retorna True solo cuando se ejecuta automáticamente desde Django en modo test.
+    Retorna False cuando se llama directamente (desde tests) para permitir ejecución.
+    """
+    import inspect
+    # Si no estamos en modo test, siempre permitir ejecución
+    if not getattr(settings, "TESTING", False):
+        return False
+    
+    # Si estamos en modo test, verificar si fue llamada automáticamente o directamente
+    frame = inspect.currentframe()
+    try:
+        django_dispatcher_found, test_file_found = _analyze_call_stack(frame)
+        # Si encontramos Django dispatcher y no encontramos archivo de test, bloquear
+        if django_dispatcher_found and not test_file_found:
+            return True
+        return False
+    finally:
+        del frame
+
+
 # Temporarily disabled to avoid import errors
 if CacaoPrediction:
     @receiver(post_save, sender=CacaoPrediction)
@@ -41,81 +96,139 @@ if CacaoPrediction:
         """
         Notificar cuando se completa una predicción de análisis.
         """
-    if created:
-        try:
-            # Determinar el tipo de notificación basado en la calidad
-            if instance.average_confidence >= 0.8:
-                tipo = 'success'
-                titulo = 'Análisis Completado - Alta Calidad'
-                mensaje = f'Tu análisis de granos de cacao ha sido completado con alta calidad (confianza: {instance.average_confidence:.1%}). Los resultados están disponibles.'
-            elif instance.average_confidence >= 0.6:
-                tipo = 'info'
-                titulo = 'Análisis Completado - Calidad Estándar'
-                mensaje = f'Tu análisis de granos de cacao ha sido completado con calidad estándar (confianza: {instance.average_confidence:.1%}). Revisa los resultados.'
-            else:
-                tipo = 'warning'
-                titulo = 'Análisis Completado - Calidad Baja'
-                mensaje = f'Tu análisis de granos de cacao ha sido completado con baja confianza ({instance.average_confidence:.1%}). Considera repetir el análisis.'
-            
-            # Crear notificación y enviar en tiempo real
-            datos_extra = {
-                'prediction_id': instance.id,
-                'image_id': instance.image.id,
-                'confidence': float(instance.average_confidence),
-                'quality_metrics': {
-                    'alto_mm': float(instance.alto_mm),
-                    'ancho_mm': float(instance.ancho_mm),
-                    'grosor_mm': float(instance.grosor_mm),
-                    'peso_g': float(instance.peso_g),
-                }
-            }
-            
-            notification = realtime_service.create_and_send_notification(
-                user_id=instance.image.user.id,
-                tipo=tipo,
-                titulo=titulo,
-                mensaje=mensaje,
-                datos_extra=datos_extra
-            )
-            
-            # Enviar email de notificación si está habilitado
+        if _is_testing():
+            return
+        
+        if created:
             try:
-                from .services.email import send_email_notification
+                # Determinar el tipo de notificación basado en la calidad (usar códigos del catálogo)
+                if instance.average_confidence >= 0.8:
+                    tipo = 'SUCCESS'  # Código del catálogo TipoNotificacion
+                    titulo = 'Análisis Completado - Alta Calidad'
+                    mensaje = f'Tu análisis de granos de cacao ha sido completado con alta calidad (confianza: {instance.average_confidence:.1%}). Los resultados están disponibles.'
+                elif instance.average_confidence >= 0.6:
+                    tipo = 'INFO'  # Código del catálogo TipoNotificacion
+                    titulo = 'Análisis Completado - Calidad Estándar'
+                    mensaje = f'Tu análisis de granos de cacao ha sido completado con calidad estándar (confianza: {instance.average_confidence:.1%}). Revisa los resultados.'
+                else:
+                    tipo = 'WARNING'  # Código del catálogo TipoNotificacion
+                    titulo = 'Análisis Completado - Calidad Baja'
+                    mensaje = f'Tu análisis de granos de cacao ha sido completado con baja confianza ({instance.average_confidence:.1%}). Considera repetir el análisis.'
                 
-                email_context = {
-                    'user_name': instance.image.user.get_full_name() or instance.image.user.username,
-                    'user_email': instance.image.user.email,
-                    'analysis_id': instance.id,
-                    'confidence': round(instance.average_confidence * 100, 1),
-                    'confidence_level': tipo,
-                    'alto_mm': instance.alto_mm,
-                    'ancho_mm': instance.ancho_mm,
-                    'grosor_mm': instance.grosor_mm,
-                    'peso_g': instance.peso_g,
-                    'processing_time_ms': instance.processing_time_ms,
-                    'analysis_date': instance.created_at.strftime('%d/%m/%Y %H:%M'),
-                    'crop_url': getattr(instance, 'crop_url', ''),
-                    'defects_detected': []  # TODO: Implementar detección de defectos
+                # Crear notificación y enviar en tiempo real
+                datos_extra = {
+                    'prediction_id': instance.id,
+                    'image_id': instance.image.id,
+                    'confidence': float(instance.average_confidence),
+                    'quality_metrics': {
+                        'alto_mm': float(instance.alto_mm),
+                        'ancho_mm': float(instance.ancho_mm),
+                        'grosor_mm': float(instance.grosor_mm),
+                        'peso_g': float(instance.peso_g),
+                    }
                 }
                 
-                email_result = send_email_notification(
-                    user_email=instance.image.user.email,
-                    notification_type='analysis_complete',
-                    context=email_context
+                realtime_service.create_and_send_notification(
+                    user_id=instance.image.user.id,
+                    tipo=tipo,
+                    titulo=titulo,
+                    mensaje=mensaje,
+                    datos_extra=datos_extra
                 )
                 
-                if email_result['success']:
-                    logger.info(f"Email de análisis completado enviado a {instance.image.user.email}")
-                else:
-                    logger.warning(f"Error enviando email de análisis: {email_result.get('error')}")
+                # Enviar email de notificación si está habilitado
+                try:
+                    from .services.email import send_email_notification
                     
+                    email_context = {
+                        'user_name': instance.image.user.get_full_name() or instance.image.user.username,
+                        'user_email': instance.image.user.email,
+                        'analysis_id': instance.id,
+                        'confidence': round(instance.average_confidence * 100, 1),
+                        'confidence_level': tipo,
+                        'alto_mm': instance.alto_mm,
+                        'ancho_mm': instance.ancho_mm,
+                        'grosor_mm': instance.grosor_mm,
+                        'peso_g': instance.peso_g,
+                        'processing_time_ms': instance.processing_time_ms,
+                        'analysis_date': instance.created_at.strftime('%d/%m/%Y %H:%M'),
+                        'crop_url': getattr(instance, 'crop_url', ''),
+                        'defects_detected': []  # Pendiente: Implementar detección de defectos mediante ML (análisis de imagen para manchas, grietas, deformaciones, etc.)
+                    }
+                    
+                    email_result = send_email_notification(
+                        user_email=instance.image.user.email,
+                        notification_type='analysis_complete',
+                        context=email_context
+                    )
+                    
+                    if email_result['success']:
+                        logger.info(f"Email de análisis completado enviado a {instance.image.user.email}")
+                    else:
+                        logger.warning(f"Error enviando email de análisis: {email_result.get('error')}")
+                        
+                except Exception as e:
+                    logger.error(f"Error en envío de email de análisis: {e}")
+                
+                logger.info(f"Notificación de análisis completado enviada a usuario {instance.image.user.username}")
+                
             except Exception as e:
-                logger.error(f"Error en envío de email de análisis: {e}")
+                logger.error(f"Error enviando notificación de análisis completado: {e}")
+
+
+def _send_training_complete_email(instance):
+    """Send email notification for completed training job."""
+    try:
+        from .services.email import send_email_notification
+        
+        email_context = {
+            'user_name': instance.created_by.get_full_name() or instance.created_by.username,
+            'user_email': instance.created_by.email,
+            'model_name': instance.model_name,
+            'job_id': instance.job_id,
+            'metrics': instance.metrics,
+            'duration': instance.duration_formatted if hasattr(instance, 'duration_formatted') else 'N/A',
+            'completion_date': instance.updated_at.strftime('%d/%m/%Y %H:%M'),
+            'status': instance.status
+        }
+        
+        email_result = send_email_notification(
+            user_email=instance.created_by.email,
+            notification_type='training_complete',
+            context=email_context
+        )
+        
+        if email_result['success']:
+            logger.info(f"Email de entrenamiento completado enviado a {instance.created_by.email}")
+        else:
+            logger.warning(f"Error enviando email de entrenamiento: {email_result.get('error')}")
             
-            logger.info(f"Notificación de análisis completado enviada a usuario {instance.image.user.username}")
-            
-        except Exception as e:
-            logger.error(f"Error enviando notificación de análisis completado: {e}")
+    except Exception as e:
+        logger.error(f"Error en envío de email de entrenamiento: {e}")
+
+
+def _notify_admins_training_complete(instance):
+    """Notify administrators about important training jobs."""
+    if instance.job_type not in ['full_training', 'model_update']:
+        return
+    
+    if not Notification:
+        return
+    
+    admins = User.objects.filter(is_superuser=True)
+    for admin in admins:
+        if admin != instance.created_by:
+            Notification.create_notification(
+                user=admin,
+                tipo='INFO',  # Código del catálogo TipoNotificacion
+                titulo='Nuevo Modelo Entrenado',
+                mensaje=f'El usuario {instance.created_by.username} ha completado el entrenamiento del modelo "{instance.model_name}".',
+                datos_extra={
+                    'job_id': instance.job_id,
+                    'created_by': instance.created_by.username,
+                    'model_name': instance.model_name
+                }
+            )
 
 
 if TrainingJob:
@@ -124,9 +237,13 @@ if TrainingJob:
         """
         Notificar cuando se completa un trabajo de entrenamiento.
         """
-    if not created and instance.status == 'completed':
+        if _is_testing():
+            return
+        
+        if created or instance.status != 'completed':
+            return
+        
         try:
-            # Notificar al usuario que creó el trabajo
             datos_extra = {
                 'job_id': instance.job_id,
                 'model_name': instance.model_name,
@@ -134,7 +251,7 @@ if TrainingJob:
                 'duration': instance.duration_formatted if hasattr(instance, 'duration_formatted') else None
             }
             
-            notification = realtime_service.create_and_send_notification(
+            realtime_service.create_and_send_notification(
                 user_id=instance.created_by.id,
                 tipo='training_complete',
                 titulo='Entrenamiento de Modelo Completado',
@@ -142,51 +259,8 @@ if TrainingJob:
                 datos_extra=datos_extra
             )
             
-            # Enviar email de notificación si está habilitado
-            try:
-                from .services.email import send_email_notification
-                
-                email_context = {
-                    'user_name': instance.created_by.get_full_name() or instance.created_by.username,
-                    'user_email': instance.created_by.email,
-                    'model_name': instance.model_name,
-                    'job_id': instance.job_id,
-                    'metrics': instance.metrics,
-                    'duration': instance.duration_formatted if hasattr(instance, 'duration_formatted') else 'N/A',
-                    'completion_date': instance.updated_at.strftime('%d/%m/%Y %H:%M'),
-                    'status': instance.status
-                }
-                
-                email_result = send_email_notification(
-                    user_email=instance.created_by.email,
-                    notification_type='training_complete',
-                    context=email_context
-                )
-                
-                if email_result['success']:
-                    logger.info(f"Email de entrenamiento completado enviado a {instance.created_by.email}")
-                else:
-                    logger.warning(f"Error enviando email de entrenamiento: {email_result.get('error')}")
-                    
-            except Exception as e:
-                logger.error(f"Error en envío de email de entrenamiento: {e}")
-            
-            # Si es un trabajo importante, también notificar a los administradores
-            if instance.job_type in ['full_training', 'model_update']:
-                admins = User.objects.filter(is_superuser=True)
-                for admin in admins:
-                    if admin != instance.created_by:  # No duplicar notificación
-                        Notification.create_notification(
-                            user=admin,
-                            tipo='info',
-                            titulo='Nuevo Modelo Entrenado',
-                            mensaje=f'El usuario {instance.created_by.username} ha completado el entrenamiento del modelo "{instance.model_name}".',
-                            datos_extra={
-                                'job_id': instance.job_id,
-                                'created_by': instance.created_by.username,
-                                'model_name': instance.model_name
-                            }
-                        )
+            _send_training_complete_email(instance)
+            _notify_admins_training_complete(instance)
             
             logger.info(f"Notificación de entrenamiento completado enviada a usuario {instance.created_by.username}")
             
@@ -194,31 +268,35 @@ if TrainingJob:
             logger.error(f"Error enviando notificación de entrenamiento completado: {e}")
 
 
-@receiver(post_save, sender=TrainingJob)
-def notify_training_failed(sender, instance, created, **kwargs):
-    """
-    Notificar cuando falla un trabajo de entrenamiento.
-    """
-    if not created and instance.status == 'failed':
-        try:
-            datos_extra = {
-                'job_id': instance.job_id,
-                'model_name': instance.model_name,
-                'error_message': instance.error_message
-            }
-            
-            realtime_service.create_and_send_notification(
-                user_id=instance.created_by.id,
-                tipo='error',
-                titulo='Error en Entrenamiento de Modelo',
-                mensaje=f'El entrenamiento del modelo "{instance.model_name}" ha fallado. Error: {instance.error_message or "Error desconocido"}.',
-                datos_extra=datos_extra
-            )
-            
-            logger.info(f"Notificación de error de entrenamiento enviada a usuario {instance.created_by.username}")
-            
-        except Exception as e:
-            logger.error(f"Error enviando notificación de error de entrenamiento: {e}")
+if TrainingJob:
+    @receiver(post_save, sender=TrainingJob)
+    def notify_training_failed(sender, instance, created, **kwargs):
+        """
+        Notificar cuando falla un trabajo de entrenamiento.
+        """
+        if _is_testing():
+            return
+        
+        if not created and instance.status == 'failed':
+            try:
+                datos_extra = {
+                    'job_id': instance.job_id,
+                    'model_name': instance.model_name,
+                    'error_message': instance.error_message
+                }
+                
+                realtime_service.create_and_send_notification(
+                    user_id=instance.created_by.id,
+                    tipo='ERROR',  # Código del catálogo TipoNotificacion
+                    titulo='Error en Entrenamiento de Modelo',
+                    mensaje=f'El entrenamiento del modelo "{instance.model_name}" ha fallado. Error: {instance.error_message or "Error desconocido"}.',
+                    datos_extra=datos_extra
+                )
+                
+                logger.info(f"Notificación de error de entrenamiento enviada a usuario {instance.created_by.username}")
+                
+            except Exception as e:
+                logger.error(f"Error enviando notificación de error de entrenamiento: {e}")
 
 
 @receiver(post_save, sender=User)
@@ -226,6 +304,9 @@ def notify_user_registered(sender, instance, created, **kwargs):
     """
     Notificar cuando se registra un nuevo usuario.
     """
+    if _is_testing():
+        return
+    
     if created:
         try:
             # Notificación de bienvenida
@@ -241,7 +322,7 @@ def notify_user_registered(sender, instance, created, **kwargs):
             
             realtime_service.create_and_send_notification(
                 user_id=instance.id,
-                tipo='welcome',
+                tipo='WELCOME',  # Código del catálogo TipoNotificacion
                 titulo='¡Bienvenido a CacaoScan!',
                 mensaje='Gracias por registrarte en CacaoScan. Tu cuenta ha sido creada exitosamente. Puedes comenzar a analizar granos de cacao subiendo imágenes.',
                 datos_extra=datos_extra
@@ -258,11 +339,14 @@ def notify_finca_created(sender, instance, created, **kwargs):
     """
     Notificar cuando se crea una nueva finca.
     """
+    if _is_testing():
+        return
+    
     if created:
         try:
             Notification.create_notification(
                 user=instance.agricultor,
-                tipo='success',
+                tipo='SUCCESS',  # Código del catálogo TipoNotificacion
                 titulo='Finca Registrada Exitosamente',
                 mensaje=f'Tu finca "{instance.nombre}" ha sido registrada exitosamente en {instance.municipio}, {instance.departamento}.',
                 datos_extra={
@@ -284,11 +368,14 @@ def notify_lote_created(sender, instance, created, **kwargs):
     """
     Notificar cuando se crea un nuevo lote.
     """
+    if _is_testing():
+        return
+    
     if created:
         try:
             Notification.create_notification(
                 user=instance.finca.agricultor,
-                tipo='info',
+                tipo='INFO',  # Código del catálogo TipoNotificacion
                 titulo='Nuevo Lote Registrado',
                 mensaje=f'Se ha registrado el lote "{instance.identificador}" de variedad {instance.variedad} en tu finca "{instance.finca.nombre}".',
                 datos_extra={
@@ -311,11 +398,14 @@ def notify_lote_cosechado(sender, instance, created, **kwargs):
     """
     Notificar cuando se marca un lote como cosechado.
     """
+    if _is_testing():
+        return
+    
     if not created and instance.estado == 'cosechado':
         try:
             Notification.create_notification(
                 user=instance.finca.agricultor,
-                tipo='success',
+                tipo='SUCCESS',  # Código del catálogo TipoNotificacion
                 titulo='Lote Cosechado',
                 mensaje=f'El lote "{instance.identificador}" de variedad {instance.variedad} ha sido marcado como cosechado.',
                 datos_extra={

@@ -12,20 +12,17 @@ except ImportError:
 from ...serializers import SystemSettingsSerializer
 from ..mixins import AdminPermissionMixin
 
+# Default configuration constants
+DEFAULT_CONTACT_EMAIL = 'contacto@cacaoscan.com'
+DEFAULT_SYSTEM_SLOGAN = 'La mejor plataforma para el control de calidad del cacao'
+LOGGER_NAME = "cacaoscan.api"
+
 
 class SystemSettingsView(AdminPermissionMixin, APIView):
     """
     Vista para obtener y actualizar la configuración del sistema.
     """
     permission_classes = [permissions.IsAuthenticated]
-    
-    def get_permissions(self):
-        """
-        Solo los administradores pueden acceder a esta vista.
-        """
-        if self.request.method == 'GET':
-            return [permissions.IsAuthenticated()]
-        return [permissions.IsAdminUser()]
     
     def get(self, request):
         """
@@ -46,6 +43,10 @@ class SystemSettingsView(AdminPermissionMixin, APIView):
         Actualizar la configuración del sistema.
         Solo permite actualizar, no crear (es un singleton).
         """
+        # Check admin permission
+        if not self.is_admin_user(request.user):
+            return self.admin_permission_denied()
+        
         try:
             settings = SystemSettings.get_singleton()
             serializer = SystemSettingsSerializer(
@@ -87,22 +88,22 @@ class SystemGeneralConfigView(AdminPermissionMixin, APIView):
             if not settings:
                 return Response({
                     'nombre_sistema': 'CacaoScan',
-                    'email_contacto': 'contacto@cacaoscan.com',
-                    'lema': 'La mejor plataforma para el control de calidad del cacao',
+                    'email_contacto': DEFAULT_CONTACT_EMAIL,
+                    'lema': DEFAULT_SYSTEM_SLOGAN,
                     'logo_url': None
                 }, status=status.HTTP_200_OK)
             
             data = {
                 'nombre_sistema': settings.nombre_sistema or 'CacaoScan',
-                'email_contacto': settings.email_contacto or 'contacto@cacaoscan.com',
-                'lema': settings.lema or 'La mejor plataforma para el control de calidad del cacao',
+                'email_contacto': settings.email_contacto or DEFAULT_CONTACT_EMAIL,
+                'lema': settings.lema or DEFAULT_SYSTEM_SLOGAN,
                 'logo_url': request.build_absolute_uri(settings.logo.url) if settings.logo else None
             }
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
             # Retornar valores por defecto en caso de error
             import logging
-            logger = logging.getLogger("cacaoscan.api")
+            logger = logging.getLogger(LOGGER_NAME)
             logger.warning(f"Error cargando configuración general: {e}")
             
             return Response({
@@ -180,7 +181,7 @@ class SystemSecurityConfigView(AdminPermissionMixin, APIView):
         except Exception as e:
             # Retornar valores por defecto en caso de error
             import logging
-            logger = logging.getLogger("cacaoscan.api")
+            logger = logging.getLogger(LOGGER_NAME)
             logger.warning(f"Error cargando configuración de seguridad: {e}")
             
             return Response({
@@ -251,7 +252,7 @@ class SystemMLConfigView(AdminPermissionMixin, APIView):
         except Exception as e:
             # Retornar valores por defecto en caso de error
             import logging
-            logger = logging.getLogger("cacaoscan.api")
+            logger = logging.getLogger(LOGGER_NAME)
             logger.warning(f"Error cargando configuración ML: {e}")
             
             return Response({
@@ -319,7 +320,7 @@ class SystemInfoView(APIView):
             }
             
             return Response(data, status=status.HTTP_200_OK)
-        except Exception as e:
+        except Exception:
             # Retornar datos mínimos incluso si hay error
             return Response({
                 'system': 'CacaoScan',

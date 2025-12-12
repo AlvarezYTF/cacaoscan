@@ -38,6 +38,73 @@ class ReportGenerationService(BaseService):
     def __init__(self):
         super().__init__()
     
+    def _parse_and_validate_dates(self, report_data: Dict[str, Any]) -> tuple[datetime | None, datetime | None, ServiceResult | None]:
+        """Parse and validate dates from report data. Returns (fecha_inicio, fecha_fin, error)."""
+        try:
+            fecha_inicio = report_data['fecha_inicio']
+            fecha_fin = report_data['fecha_fin']
+            
+            if isinstance(fecha_inicio, str):
+                fecha_inicio = datetime.fromisoformat(fecha_inicio.replace('Z', '+00:00'))
+            if isinstance(fecha_fin, str):
+                fecha_fin = datetime.fromisoformat(fecha_fin.replace('Z', '+00:00'))
+            
+            if fecha_inicio.tzinfo is None:
+                fecha_inicio = timezone.make_aware(fecha_inicio)
+            if fecha_fin.tzinfo is None:
+                fecha_fin = timezone.make_aware(fecha_fin)
+            
+            if fecha_inicio > fecha_fin:
+                return None, None, ServiceResult.validation_error(
+                    "La fecha de inicio debe ser anterior a la fecha de fin",
+                    details={"field": "fecha_inicio"}
+                )
+            
+            return fecha_inicio, fecha_fin, None
+        except (ValueError, TypeError, AttributeError) as e:
+            return None, None, ServiceResult.validation_error(
+                "Formato de fecha inválido. Use formato ISO (YYYY-MM-DD o YYYY-MM-DDTHH:MM:SS)",
+                details={"field": "fecha_inicio" if 'fecha_inicio' in str(e) else "fecha_fin", "error": str(e)}
+            )
+    
+    def _normalize_report_type(self, report_type: str, report_data: Dict[str, Any]) -> str:
+        """Normalize report type, handling aliases."""
+        if report_type == 'analisis_periodo':
+            report_type = 'analisis_general'
+            report_data['tipo_reporte'] = 'analisis_general'
+        return report_type
+    
+    def _generate_report_by_type(self, report_type: str, user: User, report_data: Dict[str, Any], fecha_inicio: datetime, fecha_fin: datetime) -> ServiceResult | None:
+        """Generate report based on type. Returns error if validation fails."""
+        if report_type == 'analisis_general':
+            self._generate_general_analysis_report(user, fecha_inicio, fecha_fin)
+        elif report_type == 'analisis_por_finca':
+            finca_id = report_data.get('finca_id')
+            if not finca_id:
+                return ServiceResult.validation_error(
+                    "finca_id es requerido para reportes por finca",
+                    details={"field": "finca_id"}
+                )
+            self._generate_finca_analysis_report(user, finca_id, fecha_inicio, fecha_fin)
+        elif report_type == 'analisis_por_lote':
+            lote_id = report_data.get('lote_id')
+            if not lote_id:
+                return ServiceResult.validation_error(
+                    "lote_id es requerido para reportes por lote",
+                    details={"field": "lote_id"}
+                )
+            self._generate_lote_analysis_report(user, lote_id, fecha_inicio, fecha_fin)
+        elif report_type == 'estadisticas_usuario':
+            self._generate_user_statistics_report(user, fecha_inicio, fecha_fin)
+        else:
+            return ServiceResult.validation_error(
+                f"Tipo de reporte no válido: {report_type}",
+                details={"field": "tipo_reporte", "allowed_types": [
+                    'analisis_general', 'analisis_periodo', 'analisis_por_finca', 'analisis_por_lote', 'estadisticas_usuario'
+                ]}
+            )
+        return None
+    
     def generate_analysis_report(self, user: User, report_data: Dict[str, Any]) -> ServiceResult:
         """
         Generates an analysis report for cacao grains.
@@ -50,66 +117,41 @@ class ReportGenerationService(BaseService):
             ServiceResult with generated report data
         """
         try:
-            # Validate required fields
             required_fields = ['tipo_reporte', 'fecha_inicio', 'fecha_fin']
             self.validate_required_fields(report_data, required_fields)
             
-            # Validate dates
-            fecha_inicio = report_data['fecha_inicio']
-            fecha_fin = report_data['fecha_fin']
+            fecha_inicio, fecha_fin, error = self._parse_and_validate_dates(report_data)
+            if error:
+                return error
             
-            if fecha_inicio > fecha_fin:
-                return ServiceResult.validation_error(
-                    "La fecha de inicio debe ser anterior a la fecha de fin",
-                    details={"field": "fecha_inicio"}
-                )
-            
-            # Generate report data according to type
             report_type = report_data['tipo_reporte']
-            
-            if report_type == 'analisis_general':
-                report_content = self._generate_general_analysis_report(user, fecha_inicio, fecha_fin)
-            elif report_type == 'analisis_por_finca':
-                finca_id = report_data.get('finca_id')
-                if not finca_id:
-                    return ServiceResult.validation_error(
-                        "finca_id es requerido para reportes por finca",
-                        details={"field": "finca_id"}
-                    )
-                report_content = self._generate_finca_analysis_report(user, finca_id, fecha_inicio, fecha_fin)
-            elif report_type == 'analisis_por_lote':
-                lote_id = report_data.get('lote_id')
-                if not lote_id:
-                    return ServiceResult.validation_error(
-                        "lote_id es requerido para reportes por lote",
-                        details={"field": "lote_id"}
-                    )
-                report_content = self._generate_lote_analysis_report(user, lote_id, fecha_inicio, fecha_fin)
-            elif report_type == 'estadisticas_usuario':
-                report_content = self._generate_user_statistics_report(user, fecha_inicio, fecha_fin)
-            else:
+            if not report_type or not report_type.strip():
                 return ServiceResult.validation_error(
-                    f"Tipo de reporte no válido: {report_type}",
-                    details={"field": "tipo_reporte", "allowed_types": [
-                        'analisis_general', 'analisis_por_finca', 'analisis_por_lote', 'estadisticas_usuario'
-                    ]}
+                    "El tipo de reporte es requerido",
+                    details={"field": "tipo_reporte"}
                 )
             
-            # Create report record
+            report_type = self._normalize_report_type(report_type, report_data)
+            
+            error = self._generate_report_by_type(report_type, user, report_data, fecha_inicio, fecha_fin)
+            if error:
+                return error
+            
+            original_tipo_reporte = report_data.get('tipo_reporte', report_type)
             reporte = ReporteGenerado(
                 usuario=user,
-                tipo_reporte=report_type,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin,
+                tipo_reporte=original_tipo_reporte,
+                fecha_solicitud=timezone.now(),
+                fecha_generacion=timezone.now(),
                 parametros=report_data,
-                contenido=report_content,
-                formato='json',
+                titulo=report_data.get('titulo', f'Reporte de {original_tipo_reporte}'),
+                descripcion=report_data.get('descripcion', ''),
+                formato=report_data.get('formato', 'json'),
                 estado='completado'
             )
             
             reporte.save()
             
-            # Create audit log
             self.create_audit_log(
                 user=user,
                 action="report_generated",
@@ -126,14 +168,17 @@ class ReportGenerationService(BaseService):
             
             return ServiceResult.success(
                 data={
-                    'id': reporte.id,
-                    'tipo_reporte': reporte.tipo_reporte,
-                    'fecha_inicio': reporte.fecha_inicio.isoformat(),
-                    'fecha_fin': reporte.fecha_fin.isoformat(),
-                    'contenido': reporte.contenido,
-                    'created_at': reporte.created_at.isoformat(),
-                    'formato': reporte.formato,
-                    'estado': reporte.estado
+                    'reporte': {
+                        'id': reporte.id,
+                        'tipo_reporte': reporte.tipo_reporte,
+                        'fecha_solicitud': reporte.fecha_solicitud.isoformat() if reporte.fecha_solicitud else None,
+                        'fecha_generacion': reporte.fecha_generacion.isoformat() if reporte.fecha_generacion else None,
+                        'formato': reporte.formato,
+                        'estado': reporte.estado,
+                        'titulo': reporte.titulo,
+                        'descripcion': reporte.descripcion,
+                        'created_at': reporte.created_at.isoformat() if hasattr(reporte, 'created_at') else None
+                    }
                 },
                 message="Reporte generado exitosamente"
             )
@@ -145,6 +190,56 @@ class ReportGenerationService(BaseService):
             return ServiceResult.error(
                 ValidationServiceError("Error interno generando reporte", details={"original_error": str(e)})
             )
+    
+    def _calculate_dimension_stats(self, predictions) -> Dict[str, Dict[str, float]]:
+        """Calculate dimension statistics for predictions."""
+        return {
+            'alto_mm': {
+                'promedio': float(predictions.aggregate(avg=Avg('alto_mm'))['avg'] or 0),
+                'minimo': float(predictions.aggregate(min=Min('alto_mm'))['min'] or 0),
+                'maximo': float(predictions.aggregate(max=Max('alto_mm'))['max'] or 0),
+                'desviacion': self._calculate_std_dev(predictions, 'alto_mm')
+            },
+            'ancho_mm': {
+                'promedio': float(predictions.aggregate(avg=Avg('ancho_mm'))['avg'] or 0),
+                'minimo': float(predictions.aggregate(min=Min('ancho_mm'))['min'] or 0),
+                'maximo': float(predictions.aggregate(max=Max('ancho_mm'))['max'] or 0),
+                'desviacion': self._calculate_std_dev(predictions, 'ancho_mm')
+            },
+            'grosor_mm': {
+                'promedio': float(predictions.aggregate(avg=Avg('grosor_mm'))['avg'] or 0),
+                'minimo': float(predictions.aggregate(min=Min('grosor_mm'))['min'] or 0),
+                'maximo': float(predictions.aggregate(max=Max('grosor_mm'))['max'] or 0),
+                'desviacion': self._calculate_std_dev(predictions, 'grosor_mm')
+            },
+            'peso_g': {
+                'promedio': float(predictions.aggregate(avg=Avg('peso_g'))['avg'] or 0),
+                'minimo': float(predictions.aggregate(min=Min('peso_g'))['min'] or 0),
+                'maximo': float(predictions.aggregate(max=Max('peso_g'))['max'] or 0),
+                'desviacion': self._calculate_std_dev(predictions, 'peso_g')
+            }
+        }
+    
+    def _calculate_confidence_stats(self, predictions) -> Dict[str, Any]:
+        """Calculate confidence statistics for predictions."""
+        return {
+            'promedio': float(predictions.aggregate(avg=Avg('average_confidence'))['avg'] or 0),
+            'minimo': float(predictions.aggregate(min=Min('average_confidence'))['min'] or 0),
+            'maximo': float(predictions.aggregate(max=Max('average_confidence'))['max'] or 0),
+            'distribucion': {
+                'alta': predictions.filter(average_confidence__gte=0.8).count(),
+                'media': predictions.filter(average_confidence__gte=0.6, average_confidence__lt=0.8).count(),
+                'baja': predictions.filter(average_confidence__lt=0.6).count()
+            }
+        }
+    
+    def _calculate_processing_stats(self, predictions) -> Dict[str, float]:
+        """Calculate processing time statistics for predictions."""
+        return {
+            'promedio_ms': float(predictions.aggregate(avg=Avg('processing_time_ms'))['avg'] or 0),
+            'minimo_ms': float(predictions.aggregate(min=Min('processing_time_ms'))['min'] or 0),
+            'maximo_ms': float(predictions.aggregate(max=Max('processing_time_ms'))['max'] or 0)
+        }
     
     def _generate_general_analysis_report(self, user: User, fecha_inicio: datetime, fecha_fin: datetime) -> Dict[str, Any]:
         """
@@ -177,51 +272,13 @@ class ReportGenerationService(BaseService):
             }
         
         # Dimension statistics
-        dimension_stats = {
-            'alto_mm': {
-                'promedio': float(predictions.aggregate(avg=Avg('alto_mm'))['avg'] or 0),
-                'minimo': float(predictions.aggregate(min=Min('alto_mm'))['min'] or 0),
-                'maximo': float(predictions.aggregate(max=Max('alto_mm'))['max'] or 0),
-                'desviacion': self._calculate_std_dev(predictions, 'alto_mm')
-            },
-            'ancho_mm': {
-                'promedio': float(predictions.aggregate(avg=Avg('ancho_mm'))['avg'] or 0),
-                'minimo': float(predictions.aggregate(min=Min('ancho_mm'))['min'] or 0),
-                'maximo': float(predictions.aggregate(max=Max('ancho_mm'))['max'] or 0),
-                'desviacion': self._calculate_std_dev(predictions, 'ancho_mm')
-            },
-            'grosor_mm': {
-                'promedio': float(predictions.aggregate(avg=Avg('grosor_mm'))['avg'] or 0),
-                'minimo': float(predictions.aggregate(min=Min('grosor_mm'))['min'] or 0),
-                'maximo': float(predictions.aggregate(max=Max('grosor_mm'))['max'] or 0),
-                'desviacion': self._calculate_std_dev(predictions, 'grosor_mm')
-            },
-            'peso_g': {
-                'promedio': float(predictions.aggregate(avg=Avg('peso_g'))['avg'] or 0),
-                'minimo': float(predictions.aggregate(min=Min('peso_g'))['min'] or 0),
-                'maximo': float(predictions.aggregate(max=Max('peso_g'))['max'] or 0),
-                'desviacion': self._calculate_std_dev(predictions, 'peso_g')
-            }
-        }
+        dimension_stats = self._calculate_dimension_stats(predictions)
         
         # Confidence statistics
-        confidence_stats = {
-            'promedio': float(predictions.aggregate(avg=Avg('average_confidence'))['avg'] or 0),
-            'minimo': float(predictions.aggregate(min=Min('average_confidence'))['min'] or 0),
-            'maximo': float(predictions.aggregate(max=Max('average_confidence'))['max'] or 0),
-            'distribucion': {
-                'alta': predictions.filter(average_confidence__gte=0.8).count(),
-                'media': predictions.filter(average_confidence__gte=0.6, average_confidence__lt=0.8).count(),
-                'baja': predictions.filter(average_confidence__lt=0.6).count()
-            }
-        }
+        confidence_stats = self._calculate_confidence_stats(predictions)
         
         # Processing time statistics
-        processing_stats = {
-            'promedio_ms': float(predictions.aggregate(avg=Avg('processing_time_ms'))['avg'] or 0),
-            'minimo_ms': float(predictions.aggregate(min=Min('processing_time_ms'))['min'] or 0),
-            'maximo_ms': float(predictions.aggregate(max=Max('processing_time_ms'))['max'] or 0)
-        }
+        processing_stats = self._calculate_processing_stats(predictions)
         
         # Daily analysis
         daily_analysis = self._get_daily_analysis(predictions)
@@ -319,16 +376,6 @@ class ReportGenerationService(BaseService):
             lote = Lote.objects.select_related('finca').get(id=lote_id, finca__agricultor=user)
         except Lote.DoesNotExist:
             return {'error': 'Lote no encontrado'}
-        
-        # Get predictions from images associated with the lote
-        predictions = CacaoPrediction.objects.filter(
-            image__user=user,
-            created_at__gte=fecha_inicio,
-            created_at__lte=fecha_fin
-        ).filter(
-            Q(image__metadata__lote_id=lote_id) | 
-            Q(image__metadata__lote=lote_id)
-        )
         
         # Generate base report
         base_report = self._generate_general_analysis_report(user, fecha_inicio, fecha_fin)

@@ -1,11 +1,11 @@
 #!/bin/sh
 set -e
 
-# Render inyecta PORT automáticamente, usar esa variable si está disponible
-PORT=${PORT:-8080}
+# Puerto interno del contenedor (evita conflictos con otros servicios)
+PORT=${PORT:-18081}
 
 # Reemplazar el puerto en nginx.conf dinámicamente
-sed -i "s/listen 8080;/listen ${PORT};/g" /etc/nginx/conf.d/default.conf
+sed -i "s/listen 18081;/listen ${PORT};/g" /etc/nginx/conf.d/default.conf
 
 # Inyectar API_BASE_URL en runtime si está disponible
 # Esto permite que la URL del API se configure dinámicamente sin rebuild

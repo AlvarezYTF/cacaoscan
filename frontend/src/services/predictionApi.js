@@ -5,7 +5,11 @@
  * incluyendo subida de imágenes y obtención de resultados de análisis.
  */
 
+import { apiPost, apiGet, apiDelete, apiPatch } from './apiClient'
 import api from './api'
+import { validateImageFile, getImageValidationError } from '@/utils/imageValidationUtils'
+import { handleApiError } from './apiErrorHandler'
+import { createImageFormData } from '@/utils/formDataUtils'
 
 // Endpoints de la API
 const API_ENDPOINTS = {
@@ -33,58 +37,43 @@ export async function predictImage(formData) {
       throw new Error('El archivo de imagen está vacío o corrupto')
     }
 
-    // Validar formato de imagen
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-    if (!allowedTypes.includes(imageFile.type)) {
-      throw new Error('Formato de imagen no válido. Use JPEG, PNG o WebP')
-    }
-
-    // Validar tamaño máximo (20MB)
-    const maxSize = 20 * 1024 * 1024
-    if (imageFile.size > maxSize) {
-      throw new Error('La imagen es demasiado grande. Máximo 20MB permitido')
+    // Validar imagen usando utilidad compartida
+    const validationError = getImageValidationError(imageFile, {
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    })
+    if (validationError) {
+      throw new Error(validationError)
     }
 
     // Emitir evento de loading
-    window.dispatchEvent(new CustomEvent('api-loading-start', {
+    globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
       detail: { type: 'prediction', message: 'Analizando imagen de cacao...' }
     }))
 
-    console.log('📤 Enviando imagen para predicción:', {
-      fileName: imageFile.name,
-      fileSize: `${(imageFile.size / 1024).toFixed(1)}KB`,
-      fileType: imageFile.type
-    })
-
-    const response = await api.post(API_ENDPOINTS.predict, formData, {
+    const response = await apiPost(API_ENDPOINTS.predict, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
       timeout: 60000 // 60 segundos para procesamiento ML
     })
 
-    console.log('✅ Predicción completada:', response.data)
-
     return {
       success: true,
-      data: response.data
+      data: response
     }
 
   } catch (error) {
-    console.error('❌ Error en predicción:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error inesperado al procesar la imagen'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   } finally {
     // Emitir evento de fin de loading
-    window.dispatchEvent(new CustomEvent('api-loading-end'))
+    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 
@@ -105,58 +94,43 @@ export async function predictImageYolo(formData) {
       throw new Error('El archivo de imagen está vacío o corrupto')
     }
 
-    // Validar formato de imagen
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
-    if (!allowedTypes.includes(imageFile.type)) {
-      throw new Error('Formato de imagen no válido. Use JPEG, PNG, WebP o BMP')
-    }
-
-    // Validar tamaño máximo (20MB para YOLOv8)
-    const maxSize = 20 * 1024 * 1024
-    if (imageFile.size > maxSize) {
-      throw new Error('La imagen es demasiado grande. Máximo 20MB permitido')
+    // Validar imagen usando utilidad compartida
+    const validationError = getImageValidationError(imageFile, {
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
+    })
+    if (validationError) {
+      throw new Error(validationError)
     }
 
     // Emitir evento de loading
-    window.dispatchEvent(new CustomEvent('api-loading-start', {
+    globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
       detail: { type: 'yolo-prediction', message: 'Analizando imagen con YOLOv8...' }
     }))
 
-    console.log('📤 Enviando imagen para predicción YOLOv8:', {
-      fileName: imageFile.name,
-      fileSize: `${(imageFile.size / 1024).toFixed(1)}KB`,
-      fileType: imageFile.type
-    })
-
-    const response = await api.post(API_ENDPOINTS.predictYolo, formData, {
+    const response = await apiPost(API_ENDPOINTS.predictYolo, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
       timeout: 120000 // 120 segundos para YOLOv8
     })
 
-    console.log('✅ Predicción YOLOv8 completada:', response.data)
-
     return {
       success: true,
-      data: response.data
+      data: response
     }
 
   } catch (error) {
-    console.error('❌ Error en predicción YOLOv8:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error inesperado al procesar la imagen con YOLOv8'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   } finally {
     // Emitir evento de fin de loading
-    window.dispatchEvent(new CustomEvent('api-loading-end'))
+    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 
@@ -178,16 +152,12 @@ export async function predictImageSmart(formData, options = {}) {
       throw new Error('El archivo de imagen está vacío o corrupto')
     }
 
-    // Validar formato de imagen
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
-    if (!allowedTypes.includes(imageFile.type)) {
-      throw new Error('Formato de imagen no válido. Use JPEG, PNG, WebP o BMP')
-    }
-
-    // Validar tamaño máximo (20MB para YOLOv8)
-    const maxSize = 20 * 1024 * 1024
-    if (imageFile.size > maxSize) {
-      throw new Error('La imagen es demasiado grande. Máximo 20MB permitido')
+    // Validar imagen usando utilidad compartida
+    const validationError = getImageValidationError(imageFile, {
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp']
+    })
+    if (validationError) {
+      throw new Error(validationError)
     }
 
     // Agregar opciones al FormData
@@ -199,46 +169,34 @@ export async function predictImageSmart(formData, options = {}) {
     }
 
     // Emitir evento de loading
-    window.dispatchEvent(new CustomEvent('api-loading-start', {
+    globalThis.dispatchEvent(new CustomEvent('api-loading-start', {
       detail: { type: 'smart-prediction', message: 'Analizando imagen con recorte inteligente...' }
     }))
 
-    console.log('📤 Enviando imagen para predicción con recorte inteligente:', {
-      fileName: imageFile.name,
-      fileSize: `${(imageFile.size / 1024).toFixed(1)}KB`,
-      fileType: imageFile.type,
-      options
-    })
-
-    const response = await api.post(API_ENDPOINTS.predictSmart, formData, {
+    const response = await apiPost(API_ENDPOINTS.predictSmart, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
       timeout: 150000 // 150 segundos para recorte inteligente
     })
 
-    console.log('✅ Predicción con recorte inteligente completada:', response.data)
-
     return {
       success: true,
-      data: response.data
+      data: response
     }
 
   } catch (error) {
-    console.error('❌ Error en predicción con recorte inteligente:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error inesperado al procesar la imagen con recorte inteligente'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   } finally {
     // Emitir evento de fin de loading
-    window.dispatchEvent(new CustomEvent('api-loading-end'))
+    globalThis.dispatchEvent(new CustomEvent('api-loading-end'))
   }
 }
 
@@ -249,31 +207,21 @@ export async function predictImageSmart(formData, options = {}) {
  */
 export async function getImages(params = {}) {
   try {
-    console.log('📋 Obteniendo lista de imágenes:', params)
-
-    const response = await api.get(API_ENDPOINTS.images, { params })
-
-    console.log('✅ Imágenes obtenidas:', {
-      count: response.data.results?.length || 0,
-      total: response.data.count || 0
-    })
+    const response = await apiGet(API_ENDPOINTS.images, params)
 
     return {
       success: true,
-      data: response.data
+      data: response
     }
 
   } catch (error) {
-    console.error('❌ Error obteniendo imágenes:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al obtener el historial de imágenes'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
@@ -303,28 +251,21 @@ export async function getImageDetails(imageId) {
       throw new Error('ID de imagen requerido')
     }
 
-    console.log('🔍 Obteniendo detalles de imagen:', imageId)
-
-    const response = await api.get(`${API_ENDPOINTS.images}${imageId}/`)
-
-    console.log('✅ Detalles de imagen obtenidos')
+    const response = await apiGet(`${API_ENDPOINTS.images}${imageId}/`)
 
     return {
       success: true,
-      data: response.data
+      data: response
     }
     
   } catch (error) {
-    console.error('❌ Error obteniendo detalles de imagen:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al obtener los detalles de la imagen'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
@@ -340,11 +281,7 @@ export async function deleteImage(imageId) {
       throw new Error('ID de imagen requerido')
     }
 
-    console.log('🗑️ Eliminando imagen:', imageId)
-
-    await api.delete(`${API_ENDPOINTS.images}${imageId}/`)
-
-    console.log('✅ Imagen eliminada exitosamente')
+    await apiDelete(`${API_ENDPOINTS.images}${imageId}/`)
 
     return {
       success: true,
@@ -352,16 +289,13 @@ export async function deleteImage(imageId) {
     }
 
   } catch (error) {
-    console.error('❌ Error eliminando imagen:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al eliminar la imagen'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
@@ -373,28 +307,21 @@ export async function deleteImage(imageId) {
  */
 export async function getStats(params = {}) {
   try {
-    console.log('📊 Obteniendo estadísticas:', params)
-
-    const response = await api.get(API_ENDPOINTS.stats, { params })
-
-    console.log('✅ Estadísticas obtenidas')
+    const data = await apiGet(API_ENDPOINTS.stats, params)
 
     return {
       success: true,
-      data: response.data
+      data: data
     }
 
   } catch (error) {
-    console.error('❌ Error obteniendo estadísticas:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al obtener las estadísticas'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
@@ -411,28 +338,21 @@ export async function updateImageMetadata(imageId, data) {
       throw new Error('ID de imagen requerido')
     }
 
-    console.log('✏️ Actualizando metadatos de imagen:', imageId, data)
-
-    const response = await api.patch(`${API_ENDPOINTS.images}${imageId}/`, data)
-
-    console.log('✅ Metadatos actualizados exitosamente')
+    const responseData = await apiPatch(`${API_ENDPOINTS.images}${imageId}/`, data)
 
     return {
       success: true,
-      data: response.data
+      data: responseData
     }
 
   } catch (error) {
-    console.error('❌ Error actualizando metadatos:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al actualizar los metadatos'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
@@ -449,8 +369,6 @@ export async function downloadImage(imageId, type = 'original') {
       throw new Error('ID de imagen requerido')
     }
 
-    console.log('⬇️ Descargando imagen:', imageId, type)
-
     const response = await api.get(`${API_ENDPOINTS.images}${imageId}/download/`, {
       params: { type },
       responseType: 'blob'
@@ -458,7 +376,7 @@ export async function downloadImage(imageId, type = 'original') {
 
     // Crear URL de descarga
     const blob = new Blob([response.data])
-    const url = window.URL.createObjectURL(blob)
+    const url = globalThis.URL.createObjectURL(blob)
     
     // Extraer nombre del archivo de headers o usar default
     const contentDisposition = response.headers['content-disposition']
@@ -479,10 +397,8 @@ export async function downloadImage(imageId, type = 'original') {
     link.click()
     
     // Limpiar
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-
-    console.log('✅ Descarga completada')
+    link.remove()
+    globalThis.URL.revokeObjectURL(url)
 
     return {
       success: true,
@@ -490,16 +406,13 @@ export async function downloadImage(imageId, type = 'original') {
     }
 
   } catch (error) {
-    console.error('❌ Error descargando imagen:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al descargar la imagen'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
@@ -511,15 +424,13 @@ export async function downloadImage(imageId, type = 'original') {
  */
 export async function exportResults(options = {}) {
   try {
-    console.log('📤 Exportando resultados:', options)
-
     const response = await api.post(`${API_ENDPOINTS.images}export/`, options, {
       responseType: 'blob'
     })
 
     // Crear URL de descarga
     const blob = new Blob([response.data])
-    const url = window.URL.createObjectURL(blob)
+    const url = globalThis.URL.createObjectURL(blob)
     
     // Determinar nombre del archivo
     const format = options.format || 'csv'
@@ -534,10 +445,8 @@ export async function exportResults(options = {}) {
     link.click()
     
     // Limpiar
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-
-    console.log('✅ Exportación completada')
+    link.remove()
+    globalThis.URL.revokeObjectURL(url)
 
     return {
       success: true,
@@ -545,97 +454,22 @@ export async function exportResults(options = {}) {
     }
 
   } catch (error) {
-    console.error('❌ Error exportando resultados:', error)
-    
-    const errorMessage = error.response?.data?.detail || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Error al exportar los resultados'
+    const errorInfo = handleApiError(error, {
+      logError: true
+    })
 
     return {
       success: false,
-      error: errorMessage
+      error: errorInfo.message
     }
   }
 }
 
-// Función auxiliar para validar formatos de imagen
-export function validateImageFile(file) {
-  const errors = []
+// Re-export validateImageFile from utils for backward compatibility
+export { validateImageFile } from '@/utils/imageValidationUtils'
 
-  if (!file) {
-    errors.push('Archivo requerido')
-    return errors
-  }
-
-  // Validar tipo
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-  if (!allowedTypes.includes(file.type)) {
-    errors.push('Formato no válido. Use JPEG, PNG o WebP')
-  }
-
-  // Validar tamaño (20MB máximo)
-  const maxSize = 20 * 1024 * 1024
-  if (file.size > maxSize) {
-    errors.push('Archivo demasiado grande. Máximo 20MB')
-  }
-
-  // Validar tamaño mínimo (1KB)
-  const minSize = 1024
-  if (file.size < minSize) {
-    errors.push('Archivo demasiado pequeño')
-  }
-
-  return errors
-}
-
-/**
- * Crea FormData para envío de imagen con metadatos
- * @param {File} file - Archivo de imagen
- * @param {Object} metadata - Metadatos adicionales
- * @returns {FormData} - FormData preparado para envío
- */
-export function createImageFormData(file, metadata = {}) {
-  const formData = new FormData()
-  
-  // Agregar archivo de imagen
-  formData.append('image', file)
-  
-  // Agregar metadatos
-  if (metadata.lote_id) {
-    formData.append('lote_id', metadata.lote_id)
-  }
-  
-  if (metadata.finca) {
-    formData.append('finca', metadata.finca)
-  }
-  
-  if (metadata.region) {
-    formData.append('region', metadata.region)
-  }
-  
-  if (metadata.variedad) {
-    formData.append('variedad', metadata.variedad)
-  }
-  
-  if (metadata.fecha_cosecha) {
-    formData.append('fecha_cosecha', metadata.fecha_cosecha)
-  }
-  
-  if (metadata.notas) {
-    formData.append('notas', metadata.notas)
-  }
-  
-  // Agregar información técnica del archivo
-  formData.append('file_name', file.name)
-  formData.append('file_size', file.size.toString())
-  formData.append('file_type', file.type)
-  
-  // Timestamp para auditoría
-  formData.append('upload_timestamp', new Date().toISOString())
-  
-  return formData
-}
+// Re-export createImageFormData from utils for backward compatibility
+export { createImageFormData } from '@/utils/formDataUtils'
 
 // No exportar api directamente, solo las funciones
 export default {

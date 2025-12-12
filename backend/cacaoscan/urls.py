@@ -7,6 +7,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.http import JsonResponse, HttpResponse
+from django.views.decorators.http import require_safe, require_http_methods
 
 # Swagger schema view - cargado de forma lazy para evitar problemas de memoria con pkg_resources
 def get_schema_view_lazy():
@@ -38,24 +39,50 @@ def get_schema_view_lazy():
             def without_ui(cache_timeout):
                 def view(request, format=None):
                     return JsonResponse({'error': 'Swagger not available'}, status=503)
-                return view
+                # Only allow safe methods for diagnostic/schema endpoints to avoid
+                # accidental state changes if a client attempts to use unsafe
+                # HTTP methods against this fallback view.
+                return require_http_methods(["GET", "HEAD"])(view)
             
             @staticmethod
             def with_ui(ui, cache_timeout):
                 def view(request):
                     return JsonResponse({'error': 'Swagger UI not available'}, status=503)
-                return view
+                # Ensure only safe methods are permitted on this diagnostic UI
+                # fallback to mitigate CSRF/unsafe-method risks (S3752).
+                return require_http_methods(["GET", "HEAD"])(view)
         
         return DummySchemaView()
 
 schema_view = get_schema_view_lazy()
 
+# Constants
+METHOD_NOT_ALLOWED_MESSAGE = 'Method not allowed'
+
+@require_safe
 def health_check(request):
-    """Endpoint simple para health check."""
+    """
+    Endpoint simple para health check. Solo permite métodos seguros (GET, HEAD).
+    
+    Esta vista solo acepta métodos HTTP seguros que no modifican datos,
+    por lo que no requiere protección CSRF adicional.
+    """
+    # Explicit check to ensure only safe methods are processed
+    if request.method not in ('GET', 'HEAD'):
+        return JsonResponse({'error': METHOD_NOT_ALLOWED_MESSAGE}, status=405)
     return JsonResponse({'status': 'ok', 'service': 'cacaoscan-backend'}, status=200)
 
+@require_safe
 def api_info(request):
-    """Endpoint de información del API para diagnóstico."""
+    """
+    Endpoint de información del API para diagnóstico. Solo permite métodos seguros (GET, HEAD).
+    
+    Esta vista solo acepta métodos HTTP seguros que no modifican datos,
+    por lo que no requiere protección CSRF adicional.
+    """
+    # Explicit check to ensure only safe methods are processed
+    if request.method not in ('GET', 'HEAD'):
+        return JsonResponse({'error': METHOD_NOT_ALLOWED_MESSAGE}, status=405)
     from django.conf import settings
     return JsonResponse({
         'status': 'ok',
@@ -68,8 +95,17 @@ def api_info(request):
         'request_host': request.META.get('HTTP_HOST', 'No host header'),
     }, status=200)
 
+@require_safe
 def root_view(request):
-    """Vista informativa para la ruta raíz."""
+    """
+    Vista informativa para la ruta raíz. Solo permite métodos seguros (GET, HEAD).
+    
+    Esta vista solo acepta métodos HTTP seguros que no modifican datos,
+    por lo que no requiere protección CSRF adicional.
+    """
+    # Explicit check to ensure only safe methods are processed
+    if request.method not in ('GET', 'HEAD'):
+        return HttpResponse(METHOD_NOT_ALLOWED_MESSAGE, status=405)
     html_content = """
     <!DOCTYPE html>
     <html lang="es">
@@ -185,6 +221,9 @@ def root_view(request):
     """
     return HttpResponse(html_content, content_type='text/html')
 
+# URL prefix constants
+API_V1_PREFIX = 'api/v1/'
+
 urlpatterns = [
     path('', root_view, name='root'),
     path('health/', health_check, name='health-check'),
@@ -194,34 +233,55 @@ urlpatterns = [
 ]
 
 # Cargar URLs de apps de forma segura
+# IMPORTANTE: Rutas específicas deben ir ANTES de rutas generales
 try:
     urlpatterns += [
-        # API de personas (incluida en v1 con prefijo personas/)
-        path('api/v1/personas/', include('personas.urls')),
+        # API de personas (debe ir ANTES de api.urls para evitar conflictos)
+        path(f'{API_V1_PREFIX}personas/', include('personas.urls')),
     ]
-except Exception:
-    pass
+except Exception as e:
+    # Log error instead of silently failing
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.error(f"Error loading personas.urls: {e}", exc_info=True)
+    # Re-raise to see the error in development
+    if settings.DEBUG:
+        raise
+
+try:
+    urlpatterns += [
+        # API principal de CacaoScan (debe ir DESPUÉS de rutas específicas)
+        path(API_V1_PREFIX, include('api.urls')),
+    ]
+except Exception as e:
+    # Log error instead of silently failing
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.error(f"Error loading api.urls: {e}", exc_info=True)
+    # Re-raise to see the error in development
+    if settings.DEBUG:
+        raise
 
 try:
     urlpatterns += [
         # API de catálogos (incluida en v1 para consistencia)
-        path('api/v1/', include('catalogos.urls')),
+        path(API_V1_PREFIX, include('catalogos.urls')),
     ]
 except Exception:
     pass
 
 try:
     urlpatterns += [
-        # API de imágenes (debe ir antes de api.urls para evitar conflictos)
-        path('api/v1/', include('images_app.urls')),
+        # API de imágenes (debe ir después de api.urls para evitar conflictos)
+        path(API_V1_PREFIX, include('images_app.urls')),
     ]
 except Exception:
     pass
 
 try:
     urlpatterns += [
-        # API principal de CacaoScan (debe ir después de rutas específicas)
-        path('api/v1/', include('api.urls')),
+        # API de reportes (debe ir después de api.urls para evitar conflictos)
+        path(API_V1_PREFIX, include('reports.urls')),
     ]
 except Exception:
     pass

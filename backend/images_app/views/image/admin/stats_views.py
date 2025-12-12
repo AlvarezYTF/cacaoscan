@@ -12,7 +12,7 @@ from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from api.views.mixins import AdminPermissionMixin
+from api.views.mixins.admin_mixin import AdminPermissionMixin
 from api.serializers import ErrorResponseSerializer
 from api.utils.model_imports import get_models_safely
 
@@ -61,28 +61,9 @@ class AdminDatasetStatsView(AdminPermissionMixin, APIView):
             if not self.is_admin_user(request.user):
                 return self.admin_permission_denied()
             
-            # Estadísticas generales del dataset
-            total_images = CacaoImage.objects.count()
-            processed_images = CacaoImage.objects.filter(processed=True).count()
-            unprocessed_images = total_images - processed_images
-            
-            # Estadísticas por usuarios
-            total_users = User.objects.count()
-            active_users = User.objects.filter(is_active=True).count()
-            users_with_images = User.objects.filter(cacao_images__isnull=False).distinct().count()
-            
-            # Estadísticas de predicciones
-            total_predictions = CacaoPrediction.objects.count()
-            
-            # Estadísticas por fechas
-            today = timezone.now().date()
-            this_week = today - timedelta(days=7)
-            this_month = today - timedelta(days=30)
-            this_year = today - timedelta(days=365)
-            
-            images_this_week = CacaoImage.objects.filter(created_at__date__gte=this_week).count()
-            images_this_month = CacaoImage.objects.filter(created_at__date__gte=this_month).count()
-            images_this_year = CacaoImage.objects.filter(created_at__date__gte=this_year).count()
+            # Estadísticas básicas del dataset
+            basic_stats = self._get_basic_dataset_stats()
+            temporal_stats = self._get_temporal_stats()
             
             # Estadísticas por región
             region_stats = CacaoImage.objects.values('region').annotate(
@@ -104,7 +85,7 @@ class AdminDatasetStatsView(AdminPermissionMixin, APIView):
                 processed_count=Count('id', filter=Q(processed=True))
             ).order_by('-count')[:15]
             
-            # Estadísticas de dimensiones y confianza
+            # Estadísticas de dimensiones
             avg_dimensions = CacaoPrediction.objects.aggregate(
                 avg_alto=Avg('alto_mm'),
                 avg_ancho=Avg('ancho_mm'),
@@ -113,90 +94,19 @@ class AdminDatasetStatsView(AdminPermissionMixin, APIView):
                 avg_processing_time=Avg('processing_time_ms')
             )
             
-            # Calcular confidence usando agregaciones SQL
-            # average_confidence = (confidence_alto + confidence_ancho + confidence_grosor + confidence_peso) / 4
-            avg_confidence_expr = (
-                F('confidence_alto') + F('confidence_ancho') + 
-                F('confidence_grosor') + F('confidence_peso')
-            ) / 4
+            confidence_stats = self._get_confidence_stats()
+            model_stats = self._get_model_stats()
+            device_stats = self._get_device_stats()
+            top_users = self._get_top_users()
+            file_stats = self._get_file_stats()
+            images_with_metadata = self._get_metadata_completeness()
             
-            confidence_stats = CacaoPrediction.objects.aggregate(
-                avg_confidence=Avg(avg_confidence_expr),
-                min_confidence=Min(avg_confidence_expr),
-                max_confidence=Max(avg_confidence_expr)
-            )
-            
-            avg_confidence = float(confidence_stats.get('avg_confidence', 0) or 0)
-            min_confidence = float(confidence_stats.get('min_confidence', 0) or 0)
-            max_confidence = float(confidence_stats.get('max_confidence', 0) or 0)
-            
-            # Estadísticas por modelo usando agregaciones SQL
-            model_stats = list(
-                CacaoPrediction.objects.values('model_version').annotate(
-                    count=Count('id'),
-                    avg_confidence=Avg(avg_confidence_expr),
-                    avg_processing_time=Avg('processing_time_ms')
-                ).order_by('-count')
-            )
-            
-            # Convertir a formato esperado
-            model_stats = [
-                {
-                    'model_version': stat['model_version'],
-                    'count': stat['count'],
-                    'avg_confidence': round(float(stat['avg_confidence'] or 0), 3),
-                    'avg_processing_time_ms': round(float(stat['avg_processing_time'] or 0), 0)
-                }
-                for stat in model_stats
-            ]
-            
-            # Estadísticas por dispositivo
-            device_stats = CacaoPrediction.objects.values('device_used').annotate(
-                count=Count('id'),
-                avg_processing_time=Avg('processing_time_ms')
-            ).order_by('-count')
-            
-            # Top usuarios por actividad
-            top_users = User.objects.annotate(
-                image_count=Count('api_cacao_images'),
-                processed_count=Count('api_cacao_images', filter=Q(api_cacao_images__processed=True))
-            ).order_by('-image_count')[:10]
-            
-            # Estadísticas de archivos
-            total_file_size = CacaoImage.objects.aggregate(
-                total_size=Sum('file_size')
-            )['total_size'] or 0
-            
-            avg_file_size = CacaoImage.objects.aggregate(
-                avg_size=Avg('file_size')
-            )['avg_size'] or 0
-            
-            # Estadísticas de calidad de datos
-            images_with_metadata = CacaoImage.objects.filter(
-                Q(finca__isnull=False) & ~Q(finca='') |
-                Q(region__isnull=False) & ~Q(region='') |
-                Q(variedad__isnull=False) & ~Q(variedad='')
-            ).count()
-            
-            # Preparar respuesta
             stats = {
                 'dataset_overview': {
-                    'total_images': total_images,
-                    'processed_images': processed_images,
-                    'unprocessed_images': unprocessed_images,
-                    'processing_rate': round((processed_images / total_images * 100), 2) if total_images > 0 else 0,
-                    'total_users': total_users,
-                    'active_users': active_users,
-                    'users_with_images': users_with_images,
-                    'total_predictions': total_predictions
+                    **basic_stats,
+                    'processing_rate': round((basic_stats['processed_images'] / basic_stats['total_images'] * 100), 2) if basic_stats['total_images'] > 0 else 0
                 },
-                'temporal_stats': {
-                    'this_week': images_this_week,
-                    'this_month': images_this_month,
-                    'this_year': images_this_year,
-                    'daily_average_this_month': round(images_this_month / 30, 2),
-                    'weekly_average_this_year': round(images_this_year / 52, 2)
-                },
+                'temporal_stats': temporal_stats,
                 'geographic_stats': {
                     'top_regions': list(region_stats),
                     'top_fincas': list(finca_stats),
@@ -214,11 +124,7 @@ class AdminDatasetStatsView(AdminPermissionMixin, APIView):
                         'grosor_mm': round(float(avg_dimensions['avg_grosor'] or 0), 2),
                         'peso_g': round(float(avg_dimensions['avg_peso'] or 0), 2)
                     },
-                    'confidence_stats': {
-                        'average': round(float(avg_confidence), 3),
-                        'minimum': round(float(min_confidence), 3),
-                        'maximum': round(float(max_confidence), 3)
-                    },
+                    'confidence_stats': confidence_stats,
                     'processing_stats': {
                         'average_time_ms': round(float(avg_dimensions['avg_processing_time'] or 0), 0)
                     }
@@ -241,10 +147,10 @@ class AdminDatasetStatsView(AdminPermissionMixin, APIView):
                     ]
                 },
                 'storage_stats': {
-                    'total_file_size_mb': round(total_file_size / (1024 * 1024), 2),
-                    'average_file_size_mb': round(avg_file_size / (1024 * 1024), 2),
+                    'total_file_size_mb': round(file_stats['total_size'] / (1024 * 1024), 2),
+                    'average_file_size_mb': round(file_stats['avg_size'] / (1024 * 1024), 2),
                     'images_with_metadata': images_with_metadata,
-                    'metadata_completeness': round((images_with_metadata / total_images * 100), 2) if total_images > 0 else 0
+                    'metadata_completeness': round((images_with_metadata / basic_stats['total_images'] * 100), 2) if basic_stats['total_images'] > 0 else 0
                 },
                 'generated_at': timezone.now().isoformat(),
                 'generated_by': request.user.username
@@ -258,4 +164,69 @@ class AdminDatasetStatsView(AdminPermissionMixin, APIView):
                 'error': 'Error interno del servidor',
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _get_basic_dataset_stats(self):
+        """Get basic dataset statistics."""
+        return {
+            'total_images': CacaoImage.objects.count(),
+            'processed_images': CacaoImage.objects.filter(processed=True).count(),
+            'pending_images': CacaoImage.objects.filter(processed=False).count(),
+        }
+    
+    def _get_temporal_stats(self):
+        """Get temporal statistics."""
+        now = timezone.now()
+        last_24h = now - timedelta(hours=24)
+        last_7d = now - timedelta(days=7)
+        last_30d = now - timedelta(days=30)
+        
+        return {
+            'last_24h': CacaoImage.objects.filter(created_at__gte=last_24h).count(),
+            'last_7d': CacaoImage.objects.filter(created_at__gte=last_7d).count(),
+            'last_30d': CacaoImage.objects.filter(created_at__gte=last_30d).count(),
+        }
+    
+    def _get_confidence_stats(self):
+        """Get confidence statistics."""
+        queryset = CacaoPrediction.objects.all()
+        return {
+            'avg_confidence': round(float(queryset.aggregate(avg=Avg('average_confidence'))['avg'] or 0) * 100, 2),
+            'min_confidence': round(float(queryset.aggregate(min=Min('average_confidence'))['min'] or 0) * 100, 2),
+            'max_confidence': round(float(queryset.aggregate(max=Max('average_confidence'))['max'] or 0) * 100, 2),
+        }
+    
+    def _get_model_stats(self):
+        """Get model statistics."""
+        return CacaoPrediction.objects.values('model_version').annotate(
+            count=Count('id'),
+            avg_confidence=Avg('average_confidence')
+        ).order_by('-count')
+    
+    def _get_device_stats(self):
+        """Get device statistics."""
+        return CacaoPrediction.objects.values('device_used').annotate(
+            count=Count('id'),
+            avg_processing_time=Avg('processing_time_ms')
+        ).order_by('-count')
+    
+    def _get_top_users(self):
+        """Get top users by activity."""
+        return User.objects.annotate(
+            image_count=Count('api_cacao_images'),
+            processed_count=Count('api_cacao_images', filter=Q(api_cacao_images__processed=True))
+        ).order_by('-image_count')[:10]
+    
+    def _get_file_stats(self):
+        """Get file statistics."""
+        total_size = CacaoImage.objects.aggregate(total_size=Sum('file_size'))['total_size'] or 0
+        avg_size = CacaoImage.objects.aggregate(avg_size=Avg('file_size'))['avg_size'] or 0
+        return {'total_size': total_size, 'avg_size': avg_size}
+    
+    def _get_metadata_completeness(self):
+        """Get metadata completeness statistics."""
+        return CacaoImage.objects.filter(
+            Q(finca__isnull=False) & ~Q(finca='') |
+            Q(region__isnull=False) & ~Q(region='') |
+            Q(variedad__isnull=False) & ~Q(variedad='')
+        ).count()
 

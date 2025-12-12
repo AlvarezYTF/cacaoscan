@@ -1,0 +1,568 @@
+@startuml
+' Diagrama de Dominio - CacaoScan
+' Compatible con draw.io
+' Basado en los modelos Django reales y migraciones actuales
+' Organizado por módulos/aplicaciones
+' Incluye métodos y propiedades principales
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+' ============================================
+' MÓDULO: DJANGO USER (django.contrib.auth)
+' ============================================
+package "django.contrib.auth" {
+class User {
+    + id: Integer
+    + username: String
+    + email: String
+    + password: String
+    + first_name: String
+    + last_name: String
+    + is_staff: Boolean
+    + is_active: Boolean
+    + is_superuser: Boolean
+    + date_joined: DateTime
+    + last_login: DateTime
+    --
+    + get_full_name(): String
+    + get_short_name(): String
+}
+}
+
+' ============================================
+' MÓDULO: AUTHENTICATION (auth_app)
+' ============================================
+package "auth_app" {
+class EmailVerification {
+    + id: Long
+    + email: String
+    + verification_type: String
+    + token: UUID
+    + otp_code: String
+    + temp_data: JSON
+    + created_at: DateTime
+    + last_sent: DateTime
+    + verified_at: DateTime
+    + is_verified: Boolean
+    --
+    + is_expired: Boolean {property}
+    + expires_at: DateTime {property}
+    + verify(): void
+    + create_for_user(user, type): EmailVerification {classmethod}
+    + create_for_email(email, type, temp_data): EmailVerification {classmethod}
+    + get_valid_token(token_uuid): EmailVerification {classmethod}
+    + get_valid_otp(email, otp_code): EmailVerification {classmethod}
+    + generate_otp_code(): String {static}
+}
+
+class UserProfile {
+    + id: Long
+    + years_experience: Integer
+    + farm_size_hectares: Decimal
+    + preferred_language: String
+    + email_notifications: Boolean
+    + login_provider: String
+    + created_at: DateTime
+    + updated_at: DateTime
+    --
+    + full_name: String {property}
+    + role: String {property}
+    + is_verified: Boolean {property}
+}
+}
+
+' ============================================
+' MÓDULO: PERSONAS (personas)
+' ============================================
+package "personas" {
+class Persona {
+    + id: Long
+    + numero_documento: String
+    + primer_nombre: String
+    + segundo_nombre: String
+    + primer_apellido: String
+    + segundo_apellido: String
+    + telefono: String
+    + direccion: String
+    + fecha_nacimiento: Date
+    + fecha_creacion: DateTime
+    + user_id: Integer
+    + tipo_documento_id: Long
+    + genero_id: Long
+    + municipio_id: Long
+    --
+    + nombre_completo: String {property}
+    + edad: Integer {property}
+    + departamento: Departamento {property}
+    + clean(): void
+    + save(): void
+    + _validate_document_number(errors): void
+    + _validate_phone(errors): void
+    + _validate_birth_date(errors): void
+    + _validate_names(errors): void
+    + _validate_municipality_department(errors): void
+}
+}
+
+' ============================================
+' MÓDULO: CATÁLOGOS (catalogos)
+' ============================================
+package "catalogos" {
+class Departamento {
+    + id: Long
+    + codigo: String
+    + nombre: String
+    --
+    + municipios_count: Integer {property}
+}
+
+class Municipio {
+    + id: Long
+    + codigo: String
+    + nombre: String
+}
+
+class Tema {
+    + id: Long
+    + codigo: String
+    + nombre: String
+    + descripcion: String
+    + activo: Boolean
+    --
+    + parametros_count: Integer {property}
+}
+
+class Parametro {
+    + id: Long
+    + codigo: String
+    + nombre: String
+    + descripcion: String
+    + activo: Boolean
+    + metadata: JSON
+    + tema_id: Long
+}
+}
+
+' ============================================
+' MÓDULO: FINCAS (fincas_app)
+' ============================================
+package "fincas_app" {
+class Finca {
+    + id: Long
+    + created_at: DateTime
+    + updated_at: DateTime
+    + nombre: String
+    + ubicacion: String
+    + hectareas: Decimal
+    + descripcion: String
+    + coordenadas_lat: Decimal
+    + coordenadas_lng: Decimal
+    + fecha_registro: DateTime
+    + activa: Boolean
+    + altitud: Integer
+    + precipitacion_anual: Decimal
+    + temperatura_promedio: Decimal
+    + agricultor_id: Integer
+    + municipio_id: Long
+    + tipo_suelo_id: Long
+    + clima_id: Long
+    + estado_id: Long
+    --
+    + propietario: User {property}
+    + area_total: Decimal {property}
+    + total_lotes: Integer {property}
+    + lotes_activos: Integer {property}
+    + total_analisis: Integer {property}
+    + calidad_promedio: Decimal {property}
+    + ubicacion_completa: String {property}
+    + get_estadisticas(): Dict
+}
+
+class Lote {
+    + id: Long
+    + created_at: DateTime
+    + updated_at: DateTime
+    + identificador: String
+    + nombre: String
+    + peso_kg: Decimal
+    + fecha_recepcion: Date
+    + fecha_plantacion: Date
+    + fecha_cosecha: Date
+    + fecha_procesamiento: Date
+    + descripcion: String
+    + fecha_registro: DateTime
+    + activo: Boolean
+    + fecha_creacion: DateTime
+    + fecha_actualizacion: DateTime
+    + finca_id: Long
+    + variedad_id: Long
+    + estado_id: Long
+    --
+    + total_analisis: Integer {property}
+    + analisis_procesados: Integer {property}
+    + calidad_promedio: Decimal {property}
+    + edad_meses: Integer {property}
+    + ubicacion_completa: String {property}
+    + get_estadisticas(): Dict
+}
+}
+
+' ============================================
+' MÓDULO: IMÁGENES (images_app)
+' ============================================
+package "images_app" {
+class CacaoImage {
+    + id: Long
+    + created_at: DateTime
+    + updated_at: DateTime
+    + image: String
+    + uploaded_at: DateTime
+    + processed: Boolean
+    + notas: String
+    + file_name: String
+    + file_size: Integer
+    + metadata: JSON
+    + lote_id: Long
+    + user_id: Integer
+    + file_type_id: Long
+    --
+    + file_size_mb: Decimal {property}
+    + has_prediction: Boolean {property}
+    + filename: String {property}
+    + finca: Finca {property}
+    + clean(): void
+    + save(): void
+}
+
+class CacaoPrediction {
+    + id: Long
+    + alto_mm: Decimal
+    + ancho_mm: Decimal
+    + grosor_mm: Decimal
+    + peso_g: Decimal
+    + confidence_alto: Decimal
+    + confidence_ancho: Decimal
+    + confidence_grosor: Decimal
+    + confidence_peso: Decimal
+    + quality_score: Decimal
+    + maturity_percentage: Decimal
+    + defects_count: Integer
+    + analysis_status: String
+    + processing_time: Decimal
+    + processing_time_ms: Integer
+    + crop_url: String
+    + created_at: DateTime
+    + image_id: Long
+    + user_id: Integer
+    + model_version_id: Long
+    + device_used_id: Long
+    --
+    + created: DateTime {property}
+    + average_confidence: Decimal {property}
+    + volume_cm3: Decimal {property}
+    + density_g_cm3: Decimal {property}
+}
+}
+
+' ============================================
+' MÓDULO: TRAINING (training)
+' ============================================
+package "training" {
+class TrainingJob {
+    + id: Long
+    + job_id: String
+    + job_type: String
+    + status: String
+    + model_name: String
+    + dataset_size: Integer
+    + epochs: Integer
+    + batch_size: Integer
+    + learning_rate: Float
+    + config_params: JSON
+    + metrics: JSON
+    + model_path: String
+    + logs: String
+    + created_at: DateTime
+    + started_at: DateTime
+    + completed_at: DateTime
+    + error_message: String
+    + progress_percentage: Float
+    + created_by_id: Integer
+    --
+    + duration: Float {property}
+    + duration_formatted: String {property}
+    + is_active: Boolean {property}
+    + update_progress(percentage, logs): void
+    + mark_started(): void
+    + mark_completed(metrics, model_path): void
+    + mark_failed(error_message): void
+    + mark_cancelled(): void
+}
+
+class ModelMetrics {
+    + id: Long
+    + model_name: String
+    + model_type: String
+    + target: String
+    + version: String
+    + metric_type: String
+    + mae: Float
+    + mse: Float
+    + rmse: Float
+    + r2_score: Float
+    + mape: Float
+    + additional_metrics: JSON
+    + dataset_size: Integer
+    + train_size: Integer
+    + validation_size: Integer
+    + test_size: Integer
+    + epochs: Integer
+    + batch_size: Integer
+    + learning_rate: Float
+    + model_params: JSON
+    + training_time_seconds: Integer
+    + inference_time_ms: Float
+    + stability_score: Float
+    + knowledge_retention: Float
+    + notes: String
+    + is_best_model: Boolean
+    + is_production_model: Boolean
+    + created_at: DateTime
+    + updated_at: DateTime
+    + created_by_id: Integer
+    + training_job_id: Long
+    --
+    + accuracy_percentage: Float {property}
+    + training_time_formatted: String {property}
+    + performance_summary: Dict {property}
+    + dataset_summary: Dict {property}
+    + model_summary: Dict {property}
+    + get_performance_trend(model_name, target, metric_type): List {classmethod}
+    + get_comparison_with_previous(): Dict
+}
+}
+
+' ============================================
+' MÓDULO: NOTIFICACIONES (notifications)
+' ============================================
+package "notifications" {
+class Notification {
+    + id: Long
+    + titulo: String
+    + mensaje: String
+    + leida: Boolean
+    + fecha_creacion: DateTime
+    + fecha_lectura: DateTime
+    + datos_extra: JSON
+    + created_at: DateTime
+    + updated_at: DateTime
+    + user_id: Integer
+    + tipo_id: Long
+    --
+    + tiempo_transcurrido: String {property}
+    + create_notification(user, tipo, titulo, mensaje, datos_extra): Notification {classmethod}
+    + mark_as_read(): void
+    + get_unread_count(user): Integer {classmethod}
+    + mark_all_as_read(user): Integer {classmethod}
+}
+}
+
+' ============================================
+' MÓDULO: DJANGO CONTENT TYPES
+' ============================================
+package "django.contrib.contenttypes" {
+class ContentType {
+    + id: Integer
+    + app_label: String
+    + model: String
+}
+}
+
+' ============================================
+' MÓDULO: AUDITORÍA (audit)
+' ============================================
+package "audit" {
+class ActivityLog {
+    + id: Long
+    + action: String
+    + modelo: String
+    + objeto_id: String
+    + descripcion: Text
+    + ip_address: Inet
+    + user_agent: Text
+    + datos_antes: JSON
+    + datos_despues: JSON
+    + timestamp: DateTime
+    + user_id: Integer
+    + resource_type: String
+    + resource_id: Integer
+    + details: JSON
+    + content_type_id: Integer
+    + object_id: Integer
+    --
+    + content_object: GenericForeignKey {property}
+    + clean(): void
+    + save(): void
+}
+
+class LoginHistory {
+    + id: Long
+    + ip_address: Inet
+    + user_agent: Text
+    + login_time: DateTime
+    + logout_time: DateTime
+    + session_duration: Interval
+    + login_successful: Boolean
+    + failure_reason: String
+    + user_id: Integer
+    --
+    + success: Boolean {property}
+    + usuario: User {property}
+}
+}
+
+' ============================================
+' MÓDULO: REPORTES (reports)
+' ============================================
+package "reports" {
+class ReporteGenerado {
+    + id: Long
+    + titulo: String
+    + descripcion: String
+    + archivo: String
+    + nombre_archivo: String
+    + ruta_archivo: String
+    + tamano_archivo: Integer
+    + parametros: JSON
+    + filtros_aplicados: JSON
+    + fecha_solicitud: DateTime
+    + fecha_generacion: DateTime
+    + fecha_expiracion: DateTime
+    + tiempo_generacion: Interval
+    + mensaje_error: String
+    + created_at: DateTime
+    + updated_at: DateTime
+    + usuario_id: Integer
+    + tipo_reporte_id: Long
+    + formato_id: Long
+    + estado_id: Long
+    --
+    + tamano_archivo_mb: Decimal {property}
+    + archivo_url: String {property}
+    + tiempo_generacion_segundos: Float {property}
+    + esta_expirado: Boolean {property}
+    + generar_reporte(usuario, tipo_reporte, formato, titulo, descripcion, parametros, filtros): ReporteGenerado {static}
+    + marcar_completado(archivo, tiempo_generacion): void
+    + marcar_fallido(mensaje_error): void
+    + clean(): void
+    + save(): void
+}
+}
+
+' ============================================
+' MÓDULO: CORE (core)
+' ============================================
+package "core" {
+abstract class TimeStampedModel {
+    + created_at: DateTime
+    + updated_at: DateTime
+}
+
+class SystemSettings {
+    + id: Long
+    + nombre_sistema: String
+    + email_contacto: String
+    + lema: String
+    + logo: String
+    + recaptcha_enabled: Boolean
+    + session_timeout: Integer
+    + login_attempts: Integer
+    + two_factor_auth: Boolean
+    + active_model: String
+    + last_training: DateTime
+    + created_at: DateTime
+    + updated_at: DateTime
+    --
+    + get_singleton(): SystemSettings {classmethod}
+    + save(): void
+}
+}
+
+' ============================================
+' RELACIONES ENTRE ENTIDADES
+' ============================================
+
+' Relaciones de Usuario (django.contrib.auth.User)
+User "1" ||--|| Persona : "user_id"
+User "1" ||--o| UserProfile : "user_id"
+User "1" ||--o{ EmailVerification : "user_id"
+User "1" ||--o{ Finca : "agricultor_id"
+User "1" ||--o{ CacaoImage : "user_id"
+User "1" ||--o{ CacaoPrediction : "user_id"
+User "1" ||--o{ TrainingJob : "created_by_id"
+User "1" ||--o{ ModelMetrics : "created_by_id"
+User "1" ||--o{ Notification : "user_id"
+User "1" ||--o{ ActivityLog : "user_id"
+User "1" ||--o{ LoginHistory : "user_id"
+User "1" ||--o{ ReporteGenerado : "usuario_id"
+
+' Relaciones de Persona
+Persona "N" }o--|| Parametro : "tipo_documento_id"
+Persona "N" }o--|| Parametro : "genero_id"
+Persona "N" }o--o| Municipio : "municipio_id"
+Persona "1" ||--|| User : "user_id"
+
+' Relaciones de UserProfile
+UserProfile "N" }o--o| Municipio : "municipio_id"
+
+' Relaciones de EmailVerification
+EmailVerification "N" }o--o| User : "user_id"
+
+' Relaciones de Finca
+Finca "N" }o--|| Municipio : "municipio_id"
+Finca "N" }o--o| Parametro : "tipo_suelo_id"
+Finca "N" }o--o| Parametro : "clima_id"
+Finca "N" }o--o| Parametro : "estado_id"
+Finca "N" }o--|| User : "agricultor_id"
+Finca "1" ||--o{ Lote : "finca_id"
+
+' Relaciones de Lote
+Lote "N" }o--|| Parametro : "variedad_id"
+Lote "N" }o--o| Parametro : "estado_id"
+Lote "1" ||--o{ CacaoImage : "lote_id"
+
+' Relaciones de CacaoImage
+CacaoImage "N" }o--o| Parametro : "file_type_id"
+CacaoImage "N" }o--|| User : "user_id"
+
+' Relaciones de CacaoPrediction
+CacaoPrediction "1" ||--|| CacaoImage : "image_id"
+CacaoPrediction "N" }o--|| Parametro : "model_version_id"
+CacaoPrediction "N" }o--|| Parametro : "device_used_id"
+CacaoPrediction "N" }o--o| User : "user_id"
+
+' Relaciones de Notification
+Notification "N" }o--|| Parametro : "tipo_id"
+
+' Relaciones de ReporteGenerado
+ReporteGenerado "N" }o--|| Parametro : "tipo_reporte_id"
+ReporteGenerado "N" }o--|| Parametro : "formato_id"
+ReporteGenerado "N" }o--|| Parametro : "estado_id"
+
+' Relaciones de ModelMetrics
+ModelMetrics "N" }o--o| TrainingJob : "training_job_id"
+
+' Relaciones de ActivityLog
+ActivityLog "N" }o--o| ContentType : "content_type_id"
+
+' Relaciones de Catálogos
+Departamento "1" ||--o{ Municipio : "departamento_id"
+Tema "1" ||--o{ Parametro : "tema_id"
+
+' Herencia de TimeStampedModel
+TimeStampedModel <|-- Finca
+TimeStampedModel <|-- Lote
+TimeStampedModel <|-- CacaoImage
+
+@enduml

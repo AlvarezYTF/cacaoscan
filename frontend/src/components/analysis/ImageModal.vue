@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <dialog v-if="show" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" aria-modal="true" open>
     <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
       <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="$emit('close')"></div>
       <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
@@ -24,7 +24,7 @@
                 </button>
               </div>
               <div class="mt-4 relative">
-                <img :src="image.fullSizeUrl" class="w-full max-h-[70vh] object-contain" :alt="'Imagen analizada'" />
+                <img :src="image.fullSizeUrl" class="w-full max-h-[70vh] object-contain" :alt="'Analizada'" />
                 <!-- Defect markers would go here -->
               </div>
               <div class="mt-4">
@@ -49,7 +49,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </dialog>
 </template>
 
 <script>

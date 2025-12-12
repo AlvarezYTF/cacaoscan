@@ -1,17 +1,24 @@
 <template>
-  <div class="modal-overlay" @click="closeModal">
-    <div class="modal-container" @click.stop>
-      <div class="modal-header">
-        <h3>
-          <i class="fas fa-user"></i>
-          Detalles del Usuario
-        </h3>
-        <button class="close-btn" @click="closeModal">
-          <i class="fas fa-times"></i>
-        </button>
+  <BaseModal
+    :show="true"
+    title="Detalles del Usuario"
+    subtitle="Información completa del usuario"
+    max-width="4xl"
+    @close="closeModal"
+  >
+    <template #header>
+      <div class="flex items-center">
+        <div class="bg-blue-100 p-2 rounded-lg mr-3">
+          <i class="fas fa-user text-blue-600"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">Detalles del Usuario</h3>
+          <p class="text-sm text-gray-600 mt-1">Información completa del usuario</p>
+        </div>
       </div>
+    </template>
 
-      <div class="modal-body">
+    <div class="modal-body-content">
         <div v-if="loading" class="loading-state">
           <i class="fas fa-spinner fa-spin"></i>
           <p>Cargando detalles del usuario...</p>
@@ -26,37 +33,37 @@
             </h4>
             <div class="info-grid">
               <div class="info-item">
-                <label>Nombre de Usuario</label>
+                <div class="info-label">Nombre de Usuario</div>
                 <span>{{ userDetails.username }}</span>
               </div>
               <div class="info-item">
-                <label>Email</label>
+                <div class="info-label">Email</div>
                 <span>{{ userDetails.email }}</span>
               </div>
               <div class="info-item">
-                <label>Nombre Completo</label>
+                <div class="info-label">Nombre Completo</div>
                 <span>{{ userDetails.first_name }} {{ userDetails.last_name }}</span>
               </div>
               <div class="info-item">
-                <label>Rol</label>
+                <div class="info-label">Rol</div>
                 <span class="badge" :class="getRoleBadgeClass(userDetails.role)">
                   {{ userDetails.role || 'Sin rol' }}
                 </span>
               </div>
               <div class="info-item">
-                <label>Teléfono</label>
+                <div class="info-label">Teléfono</div>
                 <span>{{ userDetails.phone || 'No especificado' }}</span>
               </div>
               <div class="info-item">
-                <label>Ubicación</label>
+                <div class="info-label">Ubicación</div>
                 <span>{{ userDetails.location || 'No especificada' }}</span>
               </div>
               <div class="info-item">
-                <label>Organización</label>
+                <div class="info-label">Organización</div>
                 <span>{{ userDetails.organization || 'No especificada' }}</span>
               </div>
               <div class="info-item">
-                <label>Estado</label>
+                <div class="info-label">Estado</div>
                 <span class="badge" :class="userDetails.is_active ? 'badge-success' : 'badge-danger'">
                   {{ userDetails.is_active ? 'Activo' : 'Inactivo' }}
                 </span>
@@ -96,25 +103,25 @@
             </h4>
             <div class="info-grid">
               <div class="info-item">
-                <label>Fecha de Registro</label>
+                <div class="info-label">Fecha de Registro</div>
                 <span>{{ formatDateTime(userDetails.date_joined) }}</span>
               </div>
               <div class="info-item">
-                <label>Último Login</label>
+                <div class="info-label">Último Login</div>
                 <span v-if="userDetails.last_login">
                   {{ formatDateTime(userDetails.last_login) }}
                 </span>
                 <span v-else class="text-muted">Nunca</span>
               </div>
               <div class="info-item">
-                <label>Última Actividad</label>
+                <div class="info-label">Última Actividad</div>
                 <span v-if="userDetails.last_activity">
                   {{ formatDateTime(userDetails.last_activity) }}
                 </span>
                 <span v-else class="text-muted">No disponible</span>
               </div>
               <div class="info-item">
-                <label>Estado de Conexión</label>
+                <div class="info-label">Estado de Conexión</div>
                 <span class="badge" :class="getConnectionStatusClass(userDetails)">
                   {{ getConnectionStatus(userDetails) }}
                 </span>
@@ -195,29 +202,39 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" @click="closeModal">
+    <template #footer>
+      <div class="flex items-center justify-end gap-3">
+        <button 
+          type="button" 
+          @click="closeModal"
+          class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+        >
           Cerrar
         </button>
         <button 
+          v-if="canEdit"
           type="button" 
-          class="btn btn-primary"
           @click="editUser"
+          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
         >
           <i class="fas fa-edit"></i>
           Editar Usuario
         </button>
       </div>
-    </div>
-  </div>
+    </template>
+  </BaseModal>
 </template>
 
 <script>
 import { ref, onMounted } from 'vue'
 import { useAdminStore } from '@/stores/admin'
+import BaseModal from '@/components/common/BaseModal.vue'
 
 export default {
   name: 'UserDetailsModal',
+  components: {
+    BaseModal
+  },
   props: {
     user: {
       type: Object,
@@ -243,8 +260,7 @@ export default {
         await loadRecentActivities()
         
       } catch (error) {
-        console.error('Error loading user details:', error)
-      } finally {
+        } finally {
         loading.value = false
       }
     }
@@ -257,8 +273,7 @@ export default {
         })
         recentActivities.value = response.data.results
       } catch (error) {
-        console.error('Error loading recent activities:', error)
-      }
+        }
     }
 
     const closeModal = () => {
@@ -339,6 +354,7 @@ export default {
       userDetails,
       recentActivities,
       loadUserDetails,
+      loadRecentActivities,
       closeModal,
       editUser,
       formatDateTime,
@@ -463,7 +479,8 @@ export default {
   gap: 5px;
 }
 
-.info-item label {
+.info-item label,
+.info-item .info-label {
   font-weight: 500;
   color: #7f8c8d;
   font-size: 0.9rem;
@@ -672,17 +689,17 @@ export default {
 }
 
 .btn-secondary {
-  background-color: #95a5a6;
-  color: white;
+  background-color: #6b7280;
+  color: #ffffff;
 }
 
 .btn-secondary:hover {
-  background-color: #7f8c8d;
+  background-color: #4b5563;
 }
 
 .btn-primary {
-  background-color: #3498db;
-  color: white;
+  background-color: #2563eb;
+  color: #ffffff;
 }
 
 .btn-primary:hover {

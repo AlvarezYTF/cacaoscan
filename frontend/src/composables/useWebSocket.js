@@ -1,11 +1,10 @@
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, reactive, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useWebSocketBase } from './useWebSocketBase'
 
 export function useWebSocket() {
   // Deshabilitar WebSockets en modo desarrollo para evitar reconexiones infinitas
   if (import.meta.env.MODE === 'development') {
-    console.log('🔌 WebSockets deshabilitados en modo desarrollo')
-    
     // Retornar un objeto mock con la misma interfaz
     return {
       isConnected: ref(false),
@@ -16,6 +15,10 @@ export function useWebSocket() {
       lastMessage: ref(null),
       messageHistory: ref([]),
       reconnectAttempts: ref(0),
+      notificationSocket: null,
+      systemStatusSocket: null,
+      auditSocket: null,
+      userStatsSocket: null,
       connect: () => {},
       disconnect: () => {},
       reconnect: () => {},
@@ -35,30 +38,14 @@ export function useWebSocket() {
   
   const authStore = useAuthStore()
   
-  // Estado reactivo
-  const isConnected = ref(false)
-  const isConnecting = ref(false)
-  const connectionError = ref(null)
-  const lastMessage = ref(null)
-  const messageHistory = ref([])
-  const reconnectAttempts = ref(0)
-  const maxReconnectAttempts = 5
-  const reconnectInterval = ref(null)
-  
-  // WebSocket instances
-  const notificationSocket = ref(null)
-  const systemStatusSocket = ref(null)
-  const auditSocket = ref(null)
-  const userStatsSocket = ref(null)
-  
   // Convertir HTTP/HTTPS a WS/WSS usando configuración centralizada
   const getWebSocketUrl = () => {
     if (import.meta.env.VITE_WS_URL) {
       return import.meta.env.VITE_WS_URL
     }
     // Usar runtime injection si está disponible
-    if (typeof window !== 'undefined' && window.__API_BASE_URL__) {
-      const apiUrl = window.__API_BASE_URL__.replace(/\/api\/v1\/?$/, '')
+    if (typeof globalThis !== 'undefined' && globalThis.__API_BASE_URL__) {
+      const apiUrl = globalThis.__API_BASE_URL__.replace(/\/api\/v1\/?$/, '')
       return apiUrl.replace(/^https?/, 'ws') + '/ws'
     }
     // Usar build-time variable
@@ -78,415 +65,18 @@ export function useWebSocket() {
     maxMessageHistory: 100
   }
   
-  // Computed
-  const connectionStatus = computed(() => {
-    if (isConnecting.value) return 'connecting'
-    if (isConnected.value) return 'connected'
-    if (connectionError.value) return 'error'
-    return 'disconnected'
-  })
-  
-  const hasAnyConnection = computed(() => {
-    return notificationSocket.value?.readyState === WebSocket.OPEN ||
-           systemStatusSocket.value?.readyState === WebSocket.OPEN ||
-           auditSocket.value?.readyState === WebSocket.OPEN ||
-           userStatsSocket.value?.readyState === WebSocket.OPEN
-  })
-  
-  // Métodos principales
-  const connect = () => {
-    if (!authStore.user) {
-      console.warn('No hay usuario autenticado, no se puede conectar WebSocket')
-      return
-    }
-    
-    isConnecting.value = true
-    connectionError.value = null
-    
-    try {
-      // Conectar a notificaciones
-      connectNotifications()
-      
-      // Conectar a estado del sistema
-      connectSystemStatus()
-      
-      // Conectar a auditoría (solo para admins)
-      if (authStore.user.is_superuser || authStore.user.is_staff) {
-        connectAudit()
-      }
-      
-      // Conectar a estadísticas de usuarios
-      connectUserStats()
-      
-    } catch (error) {
-      console.error('Error conectando WebSockets:', error)
-      connectionError.value = error.message
-      isConnecting.value = false
-    }
-  }
-  
-  const disconnect = () => {
-    // Desconectar todos los sockets
-    if (notificationSocket.value) {
-      notificationSocket.value.close()
-      notificationSocket.value = null
-    }
-    
-    if (systemStatusSocket.value) {
-      systemStatusSocket.value.close()
-      systemStatusSocket.value = null
-    }
-    
-    if (auditSocket.value) {
-      auditSocket.value.close()
-      auditSocket.value = null
-    }
-    
-    if (userStatsSocket.value) {
-      userStatsSocket.value.close()
-      userStatsSocket.value = null
-    }
-    
-    // Limpiar intervalos
-    if (reconnectInterval.value) {
-      clearInterval(reconnectInterval.value)
-      reconnectInterval.value = null
-    }
-    
-    isConnected.value = false
-    isConnecting.value = false
-    reconnectAttempts.value = 0
-  }
-  
-  const reconnect = () => {
-    if (reconnectAttempts.value >= maxReconnectAttempts) {
-      console.error('Máximo número de intentos de reconexión alcanzado')
-      return
-    }
-    
-    reconnectAttempts.value++
-    console.log(`Intentando reconectar... (${reconnectAttempts.value}/${maxReconnectAttempts})`)
-    
-    setTimeout(() => {
-      disconnect()
-      connect()
-    }, wsConfig.reconnectDelay)
-  }
-  
-  // Conexiones específicas
-  const connectNotifications = () => {
-    if (!authStore.user) return
-    
-    const url = `${wsConfig.baseUrl}/notifications/${authStore.user.id}/`
-    notificationSocket.value = new WebSocket(url)
-    
-    notificationSocket.value.onopen = () => {
-      console.log('WebSocket de notificaciones conectado')
-      isConnected.value = true
-      isConnecting.value = false
-      reconnectAttempts.value = 0
-    }
-    
-    notificationSocket.value.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        handleNotificationMessage(data)
-      } catch (error) {
-        console.error('Error parseando mensaje de notificaciones:', error)
-      }
-    }
-    
-    notificationSocket.value.onclose = (event) => {
-      console.log('WebSocket de notificaciones desconectado:', event.code, event.reason)
-      isConnected.value = false
-      
-      if (!event.wasClean) {
-        reconnect()
-      }
-    }
-    
-    notificationSocket.value.onerror = (error) => {
-      console.error('Error en WebSocket de notificaciones:', error)
-      connectionError.value = 'Error de conexión de notificaciones'
-    }
-  }
-  
-  const connectSystemStatus = () => {
-    const url = `${wsConfig.baseUrl}/system-status/`
-    systemStatusSocket.value = new WebSocket(url)
-    
-    systemStatusSocket.value.onopen = () => {
-      console.log('WebSocket de estado del sistema conectado')
-    }
-    
-    systemStatusSocket.value.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        handleSystemStatusMessage(data)
-      } catch (error) {
-        console.error('Error parseando mensaje de estado del sistema:', error)
-      }
-    }
-    
-    systemStatusSocket.value.onclose = (event) => {
-      console.log('WebSocket de estado del sistema desconectado:', event.code, event.reason)
-    }
-    
-    systemStatusSocket.value.onerror = (error) => {
-      console.error('Error en WebSocket de estado del sistema:', error)
-    }
-  }
-  
-  const connectAudit = () => {
-    if (!authStore.user) return
-    
-    const url = `${wsConfig.baseUrl}/audit/${authStore.user.id}/`
-    auditSocket.value = new WebSocket(url)
-    
-    auditSocket.value.onopen = () => {
-      console.log('WebSocket de auditoría conectado')
-    }
-    
-    auditSocket.value.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        handleAuditMessage(data)
-      } catch (error) {
-        console.error('Error parseando mensaje de auditoría:', error)
-      }
-    }
-    
-    auditSocket.value.onclose = (event) => {
-      console.log('WebSocket de auditoría desconectado:', event.code, event.reason)
-    }
-    
-    auditSocket.value.onerror = (error) => {
-      console.error('Error en WebSocket de auditoría:', error)
-    }
-  }
-  
-  const connectUserStats = () => {
-    const url = `${wsConfig.baseUrl}/user-stats/`
-    userStatsSocket.value = new WebSocket(url)
-    
-    userStatsSocket.value.onopen = () => {
-      console.log('WebSocket de estadísticas de usuarios conectado')
-    }
-    
-    userStatsSocket.value.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        handleUserStatsMessage(data)
-      } catch (error) {
-        console.error('Error parseando mensaje de estadísticas de usuarios:', error)
-      }
-    }
-    
-    userStatsSocket.value.onclose = (event) => {
-      console.log('WebSocket de estadísticas de usuarios desconectado:', event.code, event.reason)
-    }
-    
-    userStatsSocket.value.onerror = (error) => {
-      console.error('Error en WebSocket de estadísticas de usuarios:', error)
-    }
-  }
-  
-  // Manejo de mensajes
-  const handleNotificationMessage = (data) => {
-    lastMessage.value = data
-    
-    // Agregar al historial
-    addToHistory(data)
-    
-    // Emitir eventos específicos
-    switch (data.type) {
-      case 'notification':
-        emit('notification-received', data.data)
-        break
-      case 'notification_update':
-        emit('notification-updated', data.data)
-        break
-      case 'stats_update':
-        emit('notification-stats-updated', data.data)
-        break
-      case 'pending_notification':
-        emit('pending-notification', data.data)
-        break
-      case 'pong':
-        // Respuesta a ping
-        break
-      default:
-        console.log('Mensaje de notificación no manejado:', data)
-    }
-  }
-  
-  const handleSystemStatusMessage = (data) => {
-    lastMessage.value = data
-    addToHistory(data)
-    
-    switch (data.type) {
-      case 'system_status':
-        emit('system-status-updated', data.data)
-        break
-      case 'system_alert':
-        emit('system-alert', data.data)
-        break
-      case 'pong':
-        // Respuesta a ping
-        break
-      default:
-        console.log('Mensaje de estado del sistema no manejado:', data)
-    }
-  }
-  
-  const handleAuditMessage = (data) => {
-    lastMessage.value = data
-    addToHistory(data)
-    
-    switch (data.type) {
-      case 'audit_activity':
-        emit('audit-activity', data.data)
-        break
-      case 'audit_login':
-        emit('audit-login', data.data)
-        break
-      case 'audit_stats_update':
-        emit('audit-stats-updated', data.data)
-        break
-      case 'pong':
-        // Respuesta a ping
-        break
-      default:
-        console.log('Mensaje de auditoría no manejado:', data)
-    }
-  }
-  
-  const handleUserStatsMessage = (data) => {
-    lastMessage.value = data
-    addToHistory(data)
-    
-    switch (data.type) {
-      case 'user_stats':
-        emit('user-stats-updated', data.data)
-        break
-      case 'user_stats_update':
-        emit('user-stats-updated', data.data)
-        break
-      case 'pong':
-        // Respuesta a ping
-        break
-      default:
-        console.log('Mensaje de estadísticas de usuarios no manejado:', data)
-    }
-  }
-  
-  // Utilidades
-  const addToHistory = (message) => {
-    messageHistory.value.unshift({
-      ...message,
-      timestamp: new Date().toISOString()
-    })
-    
-    // Limitar historial
-    if (messageHistory.value.length > wsConfig.maxMessageHistory) {
-      messageHistory.value = messageHistory.value.slice(0, wsConfig.maxMessageHistory)
-    }
-  }
-  
-  const sendMessage = (socket, message) => {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(message))
-    } else {
-      console.warn('WebSocket no está conectado')
-    }
-  }
-  
-  const ping = () => {
-    const pingMessage = {
-      type: 'ping',
-      timestamp: new Date().toISOString()
-    }
-    
-    if (notificationSocket.value) {
-      sendMessage(notificationSocket.value, pingMessage)
-    }
-    if (systemStatusSocket.value) {
-      sendMessage(systemStatusSocket.value, pingMessage)
-    }
-    if (auditSocket.value) {
-      sendMessage(auditSocket.value, pingMessage)
-    }
-  }
-  
-  const markNotificationRead = (notificationId) => {
-    if (notificationSocket.value) {
-      sendMessage(notificationSocket.value, {
-        type: 'mark_read',
-        notification_id: notificationId
-      })
-    }
-  }
-  
-  const markAllNotificationsRead = () => {
-    if (notificationSocket.value) {
-      sendMessage(notificationSocket.value, {
-        type: 'mark_all_read'
-      })
-    }
-  }
-  
-  const getNotificationStats = () => {
-    if (notificationSocket.value) {
-      sendMessage(notificationSocket.value, {
-        type: 'get_stats'
-      })
-    }
-  }
-  
-  const getAuditStats = () => {
-    if (auditSocket.value) {
-      sendMessage(auditSocket.value, {
-        type: 'get_audit_stats'
-      })
-    }
-  }
-  
-  const getRecentActivity = () => {
-    if (auditSocket.value) {
-      sendMessage(auditSocket.value, {
-        type: 'get_recent_activity'
-      })
-    }
-  }
-  
-  const getSystemStatus = () => {
-    if (systemStatusSocket.value) {
-      sendMessage(systemStatusSocket.value, {
-        type: 'get_status'
-      })
-    }
-  }
-  
-  const getUserStats = () => {
-    if (userStatsSocket.value) {
-      sendMessage(userStatsSocket.value, {
-        type: 'get_stats'
-      })
-    }
-  }
-  
   // Event emitter simple
   const listeners = new Map()
   
   const emit = (event, data) => {
     if (listeners.has(event)) {
-      listeners.get(event).forEach(callback => {
+      for (const callback of listeners.get(event)) {
         try {
           callback(data)
         } catch (error) {
-          console.error(`Error en listener de evento ${event}:`, error)
+          console.error('Error in WebSocket event listener:', error)
         }
-      })
+      }
     }
   }
   
@@ -507,6 +97,325 @@ export function useWebSocket() {
     }
   }
   
+  // Helper para agregar mensaje al historial
+  const addToHistory = (message) => {
+    messageHistory.value.unshift({
+      ...message,
+      timestamp: new Date().toISOString()
+    })
+    
+    // Limitar historial
+    if (messageHistory.value.length > wsConfig.maxMessageHistory) {
+      messageHistory.value = messageHistory.value.slice(0, wsConfig.maxMessageHistory)
+    }
+  }
+  
+  // Base message handler (extracted common logic)
+  const createMessageHandler = (eventMap, logContext) => {
+    return (data) => {
+      lastMessage.value = data
+      addToHistory(data)
+      
+      // Handle pong responses
+      if (data.type === 'pong') {
+        return
+      }
+      
+      // Emit mapped events
+      const eventName = eventMap[data.type]
+      if (eventName) {
+        emit(eventName, data.data)
+      } else {
+        console.log(`[${logContext}] Unhandled message type:`, data.type, data)
+      }
+    }
+  }
+  
+  // Handlers de mensajes específicos
+  const handleNotificationMessage = createMessageHandler({
+    notification: 'notification-received',
+    notification_update: 'notification-updated',
+    stats_update: 'notification-stats-updated',
+    pending_notification: 'pending-notification'
+  }, 'notificación')
+  
+  const handleSystemStatusMessage = createMessageHandler({
+    system_status: 'system-status-updated',
+    system_alert: 'system-alert'
+  }, 'estado del sistema')
+  
+  const handleAuditMessage = createMessageHandler({
+    audit_activity: 'audit-activity',
+    audit_login: 'audit-login',
+    audit_stats_update: 'audit-stats-updated'
+  }, 'auditoría')
+  
+  const handleUserStatsMessage = createMessageHandler({
+    user_stats: 'user-stats-updated',
+    user_stats_update: 'user-stats-updated'
+  }, 'estadísticas de usuarios')
+  
+  // Estado compartido
+  const lastMessage = ref(null)
+  const messageHistory = ref([])
+  
+  
+  // Estado agregado
+  const connectionError = ref(null)
+  
+  // Computed
+  const connectionStatus = computed(() => {
+    if (socketRefs.notificationSocket?.isConnecting.value || 
+        socketRefs.systemStatusSocket?.isConnecting.value || 
+        socketRefs.auditSocket?.isConnecting.value || 
+        socketRefs.userStatsSocket?.isConnecting.value) {
+      return 'connecting'
+    }
+    if (hasAnyConnection.value) {
+      return 'connected'
+    }
+    if (connectionError.value) {
+      return 'error'
+    }
+    return 'disconnected'
+  })
+  
+  const hasAnyConnection = computed(() => {
+    return !!(socketRefs.notificationSocket?.isConnected.value) ||
+           !!(socketRefs.systemStatusSocket?.isConnected.value) ||
+           !!(socketRefs.auditSocket?.isConnected.value) ||
+           !!(socketRefs.userStatsSocket?.isConnected.value)
+  })
+  
+  const reconnectAttempts = computed(() => {
+    const attempts = []
+    if (socketRefs.notificationSocket) attempts.push(socketRefs.notificationSocket.reconnectAttempts.value)
+    if (socketRefs.systemStatusSocket) attempts.push(socketRefs.systemStatusSocket.reconnectAttempts.value)
+    if (socketRefs.auditSocket) attempts.push(socketRefs.auditSocket.reconnectAttempts.value)
+    if (socketRefs.userStatsSocket) attempts.push(socketRefs.userStatsSocket.reconnectAttempts.value)
+    return attempts.length > 0 ? Math.max(...attempts) : 0
+  })
+  
+  // Referencias a las conexiones (se crean dinámicamente en connect)
+  // Using reactive object to allow mutation in tests and maintain reactivity
+  const socketRefs = reactive({
+    notificationSocket: null,
+    systemStatusSocket: null,
+    auditSocket: null,
+    userStatsSocket: null
+  })
+  
+  // Aliases para compatibilidad con código existente
+  let notificationSocket = null
+  let systemStatusSocket = null
+  let auditSocket = null
+  let userStatsSocket = null
+  
+  // Métodos principales
+  const connect = () => {
+    if (!authStore.user) {
+      return
+    }
+    
+    connectionError.value = null
+    
+    try {
+      // Desconectar conexiones existentes
+      internalMethods.disconnect()
+      
+      // Crear conexión de notificaciones
+      const notificationUrl = `${wsConfig.baseUrl}/notifications/${authStore.user.id}/`
+      notificationSocket = useWebSocketBase({
+        url: notificationUrl,
+        onMessage: handleNotificationMessage,
+        onError: (error) => {
+          connectionError.value = 'Error de conexión de notificaciones'
+          emit('connection-error', { type: 'notifications', error })
+        },
+        reconnectInterval: wsConfig.reconnectDelay,
+        maxReconnectAttempts: 5
+      })
+      socketRefs.notificationSocket = notificationSocket
+      notificationSocket.connect()
+      
+      // Crear conexión de estado del sistema
+      const systemStatusUrl = `${wsConfig.baseUrl}/system-status/`
+      systemStatusSocket = useWebSocketBase({
+        url: systemStatusUrl,
+        onMessage: handleSystemStatusMessage,
+        onError: (error) => {
+          emit('connection-error', { type: 'system-status', error })
+        },
+        reconnectInterval: wsConfig.reconnectDelay,
+        maxReconnectAttempts: 5
+      })
+      socketRefs.systemStatusSocket = systemStatusSocket
+      systemStatusSocket.connect()
+      
+      // Crear conexión de auditoría (solo para admins)
+      if (authStore.user.is_superuser || authStore.user.is_staff) {
+        const auditUrl = `${wsConfig.baseUrl}/audit/${authStore.user.id}/`
+        auditSocket = useWebSocketBase({
+          url: auditUrl,
+          onMessage: handleAuditMessage,
+          onError: (error) => {
+            emit('connection-error', { type: 'audit', error })
+          },
+          reconnectInterval: wsConfig.reconnectDelay,
+          maxReconnectAttempts: 5
+        })
+        socketRefs.auditSocket = auditSocket
+        auditSocket.connect()
+      }
+      
+      // Crear conexión de estadísticas de usuarios
+      const userStatsUrl = `${wsConfig.baseUrl}/user-stats/`
+      userStatsSocket = useWebSocketBase({
+        url: userStatsUrl,
+        onMessage: handleUserStatsMessage,
+        onError: (error) => {
+          emit('connection-error', { type: 'user-stats', error })
+        },
+        reconnectInterval: wsConfig.reconnectDelay,
+        maxReconnectAttempts: 5
+      })
+      socketRefs.userStatsSocket = userStatsSocket
+      userStatsSocket.connect()
+      
+    } catch (error) {
+      console.error('Error connecting WebSocket:', error)
+      connectionError.value = error.message
+    }
+  }
+  
+  const disconnect = () => {
+    if (socketRefs.notificationSocket) {
+      socketRefs.notificationSocket.disconnect()
+      notificationSocket = null
+      socketRefs.notificationSocket = null
+    }
+    if (socketRefs.systemStatusSocket) {
+      socketRefs.systemStatusSocket.disconnect()
+      systemStatusSocket = null
+      socketRefs.systemStatusSocket = null
+    }
+    if (socketRefs.auditSocket) {
+      socketRefs.auditSocket.disconnect()
+      auditSocket = null
+      socketRefs.auditSocket = null
+    }
+    if (socketRefs.userStatsSocket) {
+      socketRefs.userStatsSocket.disconnect()
+      userStatsSocket = null
+      socketRefs.userStatsSocket = null
+    }
+    connectionError.value = null
+  }
+  
+  // Internal method references for reconnect to use (allows mocking in tests)
+  const internalMethods = {
+    disconnect,
+    connect
+  }
+  
+  const reconnect = () => {
+    internalMethods.disconnect()
+    setTimeout(() => {
+      internalMethods.connect()
+    }, wsConfig.reconnectDelay)
+  }
+  
+  const ping = () => {
+    const pingMessage = {
+      type: 'ping',
+      timestamp: new Date().toISOString()
+    }
+    
+    // Use socketRefs to allow mutation in tests
+    const sockets = [
+      socketRefs.notificationSocket,
+      socketRefs.systemStatusSocket,
+      socketRefs.auditSocket,
+      socketRefs.userStatsSocket
+    ]
+    
+    for (const socket of sockets) {
+      if (socket) {
+        socket.send(pingMessage)
+      }
+    }
+  }
+  
+  // Métodos específicos de notificaciones
+  const markNotificationRead = (notificationId) => {
+    if (socketRefs.notificationSocket) {
+      socketRefs.notificationSocket.send({
+        type: 'mark_read',
+        notification_id: notificationId
+      })
+    }
+  }
+  
+  const markAllNotificationsRead = () => {
+    if (socketRefs.notificationSocket) {
+      socketRefs.notificationSocket.send({
+        type: 'mark_all_read'
+      })
+    }
+  }
+  
+  const getNotificationStats = () => {
+    if (socketRefs.notificationSocket) {
+      socketRefs.notificationSocket.send({
+        type: 'get_stats'
+      })
+    }
+  }
+  
+  // Métodos específicos de auditoría
+  const getAuditStats = () => {
+    if (socketRefs.auditSocket) {
+      socketRefs.auditSocket.send({
+        type: 'get_audit_stats'
+      })
+    }
+  }
+  
+  const getRecentActivity = () => {
+    if (socketRefs.auditSocket) {
+      socketRefs.auditSocket.send({
+        type: 'get_recent_activity'
+      })
+    }
+  }
+  
+  // Métodos específicos de sistema
+  const getSystemStatus = () => {
+    if (socketRefs.systemStatusSocket) {
+      socketRefs.systemStatusSocket.send({
+        type: 'get_status'
+      })
+    }
+  }
+  
+  // Métodos específicos de usuarios
+  const getUserStats = () => {
+    if (socketRefs.userStatsSocket) {
+      socketRefs.userStatsSocket.send({
+        type: 'get_stats'
+      })
+    }
+  }
+  
+  // Computed para estado agregado
+  const isConnected = computed(() => hasAnyConnection.value)
+  const isConnecting = computed(() => 
+    (socketRefs.notificationSocket?.isConnecting.value) ||
+    (socketRefs.systemStatusSocket?.isConnecting.value) ||
+    (socketRefs.auditSocket?.isConnecting.value) ||
+    (socketRefs.userStatsSocket?.isConnecting.value)
+  )
+  
   // Lifecycle
   onMounted(() => {
     // Solo conectar WebSockets si están habilitados (evitar reconexiones infinitas)
@@ -524,7 +433,6 @@ export function useWebSocket() {
             try {
               ping()
             } catch (error) {
-              console.error('Error en heartbeat:', error)
               if (heartbeatInterval) {
                 clearInterval(heartbeatInterval)
                 heartbeatInterval = null
@@ -545,7 +453,7 @@ export function useWebSocket() {
           clearInterval(heartbeatInterval)
           heartbeatInterval = null
         }
-        disconnect()
+        internalMethods.disconnect()
       })
     }
   })
@@ -559,13 +467,12 @@ export function useWebSocket() {
         try {
           connect()
         } catch (error) {
-          console.warn('⚠️ No se pudieron conectar los WebSockets. La aplicación seguirá funcionando sin actualizaciones en tiempo real:', error.message)
           connectionError.value = 'WebSockets no disponibles (modo offline)'
         }
       }, 1000)
     } else if (!newUser && oldUser) {
       // Usuario deslogueado, desconectar
-      disconnect()
+      internalMethods.disconnect()
     }
   }, { immediate: true })
   
@@ -580,9 +487,33 @@ export function useWebSocket() {
     messageHistory,
     reconnectAttempts,
     
+    // Referencias a sockets (para testing)
+    get notificationSocket() { return socketRefs.notificationSocket },
+    set notificationSocket(value) { 
+      socketRefs.notificationSocket = value
+    },
+    get systemStatusSocket() { return socketRefs.systemStatusSocket },
+    set systemStatusSocket(value) { 
+      socketRefs.systemStatusSocket = value
+    },
+    get auditSocket() { return socketRefs.auditSocket },
+    set auditSocket(value) { 
+      socketRefs.auditSocket = value
+    },
+    get userStatsSocket() { return socketRefs.userStatsSocket },
+    set userStatsSocket(value) { 
+      socketRefs.userStatsSocket = value
+    },
+    
     // Métodos
-    connect,
-    disconnect,
+    get connect() { return internalMethods.connect },
+    set connect(value) { 
+      internalMethods.connect = value
+    },
+    get disconnect() { return internalMethods.disconnect },
+    set disconnect(value) { 
+      internalMethods.disconnect = value
+    },
     reconnect,
     ping,
     

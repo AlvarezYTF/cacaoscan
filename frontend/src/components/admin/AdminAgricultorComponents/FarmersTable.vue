@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+  <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden" data-cy="agricultores-table">
     <!-- Estado vacío -->
     <div v-if="filteredFarmers.length === 0" class="text-center py-16 px-6">
       <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
@@ -7,11 +7,11 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
         </svg>
       </div>
-      <h3 class="text-lg font-bold text-gray-900 mb-2">No se encontraron agricultores</h3>
+      <h3 class="text-lg font-bold text-gray-900 mb-2">No se encontraron cacaocultores</h3>
       <p class="text-gray-600 mb-6">
         {{ searchQuery || filters.region !== 'all' || filters.status !== 'all' 
           ? 'Intenta ajustar los filtros o la búsqueda' 
-          : 'Comienza agregando tu primer agricultor' }}
+          : 'Comienza agregando tu primer cacaocultor' }}
       </p>
       <button 
         v-if="!searchQuery && filters.region === 'all' && filters.status === 'all'"
@@ -21,7 +21,7 @@
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
         </svg>
-        Agregar Primer Agricultor
+        Agregar Primer Cacaocultor
       </button>
     </div>
 
@@ -32,7 +32,7 @@
       :data="filteredFarmers"
       :show-table-info="false"
     >
-      <!-- Celda personalizada para Agricultor -->
+      <!-- Celda personalizada para Cacaocultor -->
       <template #cell-farmer="{ row }">
         <div class="flex items-center">
           <div class="h-10 w-10 rounded-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center text-green-700 font-semibold text-sm border-2 border-green-100">
@@ -99,7 +99,7 @@
       <!-- Celda personalizada para Acciones -->
       <template #cell-actions="{ row }">
         <div class="flex items-center space-x-3">
-          <button @click="$emit('view-farmer', row)" class="text-green-600 hover:text-green-700 hover:bg-green-50 p-1.5 rounded-md transition-all duration-200" title="Ver detalles">
+          <button @click="$emit('view-farmer', row)" class="text-green-600 hover:text-green-700 hover:bg-green-50 p-1.5 rounded-md transition-all duration-200" title="Ver detalles" data-cy="view-agricultor">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -136,7 +136,7 @@
 
 <script>
 import DataTable from './DataTable.vue';
-import Pagination from './Pagination.vue';
+import Pagination from '@/components/common/Pagination.vue';
 
 export default {
   name: 'FarmersTable',

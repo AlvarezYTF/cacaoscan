@@ -42,6 +42,33 @@ def init_weights(m: nn.Module) -> None:
         nn.init.constant_(m.bias, 0.0)
 
 
+def extract_resnet_features(backbone: nn.Module, x: torch.Tensor) -> torch.Tensor:
+    """
+    Extrae features de un backbone ResNet18.
+    
+    Args:
+        backbone: Backbone ResNet18
+        x: Tensor de imagen [batch, 3, H, W]
+        
+    Returns:
+        Tensor de features [batch, num_features]
+    """
+    x = backbone.conv1(x)
+    x = backbone.bn1(x)
+    x = backbone.relu(x)
+    x = backbone.maxpool(x)
+    
+    x = backbone.layer1(x)
+    x = backbone.layer2(x)
+    x = backbone.layer3(x)
+    x = backbone.layer4(x)
+    
+    x = backbone.avgpool(x)
+    x = torch.flatten(x, 1)
+    
+    return x
+
+
 class OptimizedResNet18Regression(nn.Module):
     """
     ResNet18 optimizado para regresión de dimensiones de cacao.
@@ -135,40 +162,16 @@ class OptimizedResNet18Regression(nn.Module):
             Orden: [alto, ancho, grosor, peso]
         """
         # Extraer features del backbone
-        x = self.backbone.conv1(x)
-        x = self.backbone.bn1(x)
-        x = self.backbone.relu(x)
-        x = self.backbone.maxpool(x)
-        
-        x = self.backbone.layer1(x)
-        x = self.backbone.layer2(x)
-        x = self.backbone.layer3(x)
-        x = self.backbone.layer4(x)
-        
-        x = self.backbone.avgpool(x)
-        x = torch.flatten(x, 1)
+        features = extract_resnet_features(self.backbone, x)
         
         # Aplicar cabeza de regresión
-        output = self.regression_head(x)
+        output = self.regression_head(features)
         
         return output
     
     def get_features(self, x: torch.Tensor) -> torch.Tensor:
         """Extrae características antes de la cabeza de regresión."""
-        x = self.backbone.conv1(x)
-        x = self.backbone.bn1(x)
-        x = self.backbone.relu(x)
-        x = self.backbone.maxpool(x)
-        
-        x = self.backbone.layer1(x)
-        x = self.backbone.layer2(x)
-        x = self.backbone.layer3(x)
-        x = self.backbone.layer4(x)
-        
-        x = self.backbone.avgpool(x)
-        x = torch.flatten(x, 1)
-        
-        return x
+        return extract_resnet_features(self.backbone, x)
 
 
 class OptimizedHybridRegression(nn.Module):
@@ -294,18 +297,7 @@ class OptimizedHybridRegression(nn.Module):
             Diccionario con predicciones en orden: [alto, ancho, grosor, peso]
         """
         # Extraer features de ResNet18
-        x = self.backbone.conv1(image)
-        x = self.backbone.bn1(x)
-        x = self.backbone.relu(x)
-        x = self.backbone.maxpool(x)
-        
-        x = self.backbone.layer1(x)
-        x = self.backbone.layer2(x)
-        x = self.backbone.layer3(x)
-        x = self.backbone.layer4(x)
-        
-        x = self.backbone.avgpool(x)
-        resnet_feat = torch.flatten(x, 1)  # [batch, 512]
+        resnet_feat = extract_resnet_features(self.backbone, image)  # [batch, 512]
         
         # Proyectar features de ResNet
         resnet_proj = self.resnet_projection(resnet_feat)  # [batch, 256]
@@ -402,21 +394,10 @@ class SimpleCacaoRegression(nn.Module):
             Orden: [alto, ancho, grosor, peso]
         """
         # Extraer features
-        x = self.backbone.conv1(x)
-        x = self.backbone.bn1(x)
-        x = self.backbone.relu(x)
-        x = self.backbone.maxpool(x)
-        
-        x = self.backbone.layer1(x)
-        x = self.backbone.layer2(x)
-        x = self.backbone.layer3(x)
-        x = self.backbone.layer4(x)
-        
-        x = self.backbone.avgpool(x)
-        x = torch.flatten(x, 1)
+        features = extract_resnet_features(self.backbone, x)
         
         # Regresión
-        return self.regression_head(x)
+        return self.regression_head(features)
 
 
 def create_optimized_model(

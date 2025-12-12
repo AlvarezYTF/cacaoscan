@@ -90,7 +90,7 @@ class SystemSettings(models.Model):
         """
         Obtener o crear la única instancia de configuración.
         """
-        obj, created = cls.objects.get_or_create(pk=1)
+        obj, _ = cls.objects.get_or_create(pk=1)
         return obj
     
     def save(self, *args, **kwargs):

@@ -3,6 +3,7 @@ User management views for CacaoScan API.
 """
 import logging
 from datetime import timedelta, datetime
+from typing import Tuple, Optional
 from django.db.models import Q, Count, Avg, Min, Max, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -24,6 +25,9 @@ from api.utils.decorators import handle_api_errors
 User = get_user_model()
 
 logger = logging.getLogger("cacaoscan.api.auth.users")
+
+# Error message constants
+ERROR_USER_NOT_FOUND = 'Usuario no encontrado'
 
 
 class UserListView(PaginationMixin, AdminPermissionMixin, APIView):
@@ -88,8 +92,13 @@ class UserListView(PaginationMixin, AdminPermissionMixin, APIView):
         date_from = request.GET.get('date_from')
         date_to = request.GET.get('date_to')
         
-        # Construir queryset base (evitar select_related/prefetch a relaciones no garantizadas)
-        queryset = User.objects.all().prefetch_related('groups')
+        # Construir queryset base con optimizaciones para evitar consultas N+1
+        # Incluir persona con municipio y departamento para obtener región
+        queryset = User.objects.all().prefetch_related('groups').select_related(
+            'persona',
+            'persona__municipio',
+            'persona__municipio__departamento'
+        )
         
         # Aplicar filtros
         if role:
@@ -136,11 +145,29 @@ class UserListView(PaginationMixin, AdminPermissionMixin, APIView):
         queryset = queryset.order_by('-date_joined')
         
         # Paginar usando el mixin
-        return self.paginate_queryset(
+        response = self.paginate_queryset(
             request,
             queryset,
             UserSerializer
         )
+        
+        # Agregar información de persona a cada usuario en la respuesta
+        if response.status_code == 200 and 'results' in response.data:
+            from personas.serializers import PersonaSerializer
+            for user_data in response.data['results']:
+                try:
+                    # Obtener el usuario del queryset original para acceder a persona
+                    user_id = user_data.get('id')
+                    if user_id:
+                        # Buscar el usuario en el queryset (ya está cargado con select_related)
+                        user = next((u for u in queryset if u.id == user_id), None)
+                        if user and hasattr(user, 'persona') and user.persona:
+                            user_data['persona'] = PersonaSerializer(user.persona).data
+                except Exception as e:
+                    logger.warning(f"Error agregando persona al usuario {user_id}: {e}")
+                    # Continuar con el siguiente usuario si hay error
+        
+        return response
 
 
 class UserUpdateView(AdminPermissionMixin, APIView):
@@ -174,75 +201,89 @@ class UserUpdateView(AdminPermissionMixin, APIView):
         },
         tags=['Usuarios']
     )
+    def _get_user_or_404(self, user_id: int) -> Tuple[User, Optional[Response]]:
+        """Obtiene un usuario o retorna respuesta 404."""
+        try:
+            user = User.objects.get(id=user_id)
+            return user, None
+        except User.DoesNotExist:
+            return None, Response({
+                'error': ERROR_USER_NOT_FOUND,
+                'status': 'error'
+            }, status=status.HTTP_404_NOT_FOUND)
+    
+    def _validate_self_deactivation(self, user: User, request_user, is_active: Optional[bool]) -> Optional[Response]:
+        """Valida que un usuario no se pueda desactivar a sí mismo."""
+        if user == request_user and is_active is False:
+            return Response({
+                'error': 'No puedes desactivar tu propia cuenta',
+                'status': 'error'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        return None
+    
+    def _update_basic_fields(self, user: User, request_data: dict, user_id: int) -> Optional[Response]:
+        """Actualiza los campos básicos del usuario."""
+        if 'first_name' in request_data:
+            user.first_name = request_data['first_name']
+        
+        if 'last_name' in request_data:
+            user.last_name = request_data['last_name']
+        
+        if 'email' in request_data:
+            if User.objects.filter(email=request_data['email']).exclude(id=user_id).exists():
+                return Response({
+                    'error': 'Este email ya está en uso por otro usuario',
+                    'status': 'error'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            user.email = request_data['email']
+            user.username = request_data['email']
+        
+        if 'is_active' in request_data:
+            user.is_active = request_data['is_active']
+        
+        if 'is_staff' in request_data:
+            user.is_staff = request_data['is_staff']
+        
+        return None
+    
+    def _update_user_groups(self, user: User, group_names: list) -> None:
+        """Actualiza los grupos del usuario."""
+        user.groups.clear()
+        for group_name in group_names:
+            try:
+                group = Group.objects.get(name=group_name)
+                user.groups.add(group)
+            except Group.DoesNotExist:
+                logger.warning(f"Grupo '{group_name}' no encontrado")
+    
     def patch(self, request, user_id):
         """
         Actualiza la información de un usuario específico.
         Solo accesible para administradores.
         """
-        # Verificar permisos de administrador
         if not self.is_admin_user(request.user):
             return self.admin_permission_denied()
         
-        # Obtener usuario
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response({
-                'error': 'Usuario no encontrado',
-                'status': 'error'
-            }, status=status.HTTP_404_NOT_FOUND)
+        user, error_response = self._get_user_or_404(user_id)
+        if error_response:
+            return error_response
         
-        # Validar que no se puede desactivar a sí mismo
-        if user == request.user and request.data.get('is_active') is False:
-            return Response({
-                'error': 'No puedes desactivar tu propia cuenta',
-                'status': 'error'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        validation_error = self._validate_self_deactivation(
+            user, request.user, request.data.get('is_active')
+        )
+        if validation_error:
+            return validation_error
         
-        # Actualizar campos básicos
-        if 'first_name' in request.data:
-            user.first_name = request.data['first_name']
+        update_error = self._update_basic_fields(user, request.data, user_id)
+        if update_error:
+            return update_error
         
-        if 'last_name' in request.data:
-            user.last_name = request.data['last_name']
-        
-        if 'email' in request.data:
-            # Verificar que el email no esté en uso por otro usuario
-            if User.objects.filter(email=request.data['email']).exclude(id=user_id).exists():
-                return Response({
-                    'error': 'Este email ya está en uso por otro usuario',
-                    'status': 'error'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            user.email = request.data['email']
-            user.username = request.data['email']  # Mantener username = email
-        
-        if 'is_active' in request.data:
-            user.is_active = request.data['is_active']
-        
-        if 'is_staff' in request.data:
-            user.is_staff = request.data['is_staff']
-        
-        # Guardar cambios
         user.save()
         
-        # Actualizar grupos si se proporcionan
         if 'groups' in request.data:
-            group_names = request.data['groups']
-            
-            # Limpiar grupos existentes
-            user.groups.clear()
-            
-            # Agregar nuevos grupos
-            for group_name in group_names:
-                try:
-                    group = Group.objects.get(name=group_name)
-                    user.groups.add(group)
-                except Group.DoesNotExist:
-                    logger.warning(f"Grupo '{group_name}' no encontrado")
+            self._update_user_groups(user, request.data['groups'])
         
-        # Serializar usuario actualizado
         serializer = UserSerializer(user)
-        
         return Response({
             'message': 'Usuario actualizado exitosamente',
             'user': serializer.data
@@ -289,7 +330,7 @@ class UserDeleteView(AdminPermissionMixin, APIView):
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({
-                'error': 'Usuario no encontrado',
+                'error': ERROR_USER_NOT_FOUND,
                 'status': 'error'
             }, status=status.HTTP_404_NOT_FOUND)
         
@@ -413,7 +454,8 @@ class UserStatsView(AdminPermissionMixin, APIView):
         return Response(stats, status=status.HTTP_200_OK)
 
 
-@method_decorator(cache_page(60 * 10, cache='api_cache'), name='get')
+# Temporarily disable cache to debug 500 error
+# @method_decorator(cache_page(60 * 10, cache='api_cache'), name='get')
 class AdminStatsView(AdminPermissionMixin, APIView):
     """
     Endpoint para obtener estadísticas globales del sistema (Admin only).
@@ -440,36 +482,83 @@ class AdminStatsView(AdminPermissionMixin, APIView):
     )
     def get(self, request):
         """
-        Obtiene estadísticas globales del sistema de forma asíncrona.
+        Obtiene estadísticas globales del sistema.
         Solo accesible para administradores.
         
-        Retorna inmediatamente un task_id que puede usarse para consultar el estado
-        del cálculo mediante el endpoint GET /api/v1/tasks/{task_id}/status/
+        Retorna las estadísticas directamente de forma síncrona.
+        Siempre devuelve una respuesta válida, incluso si hay errores.
         """
+        logger.info(f"[AdminStatsView] Iniciando get() para usuario: {request.user.username if request.user.is_authenticated else 'Anonymous'}")
+        
+        # Default empty stats response
+        default_empty_response = {
+            'users': {'total': 0, 'active': 0, 'staff': 0, 'superusers': 0, 'analysts': 0, 'farmers': 0, 'verified': 0, 'this_week': 0, 'this_month': 0},
+            'fincas': {'total': 0, 'this_week': 0, 'this_month': 0},
+            'images': {'total': 0, 'processed': 0, 'unprocessed': 0, 'this_week': 0, 'this_month': 0, 'processing_rate': 0},
+            'predictions': {'total': 0, 'average_dimensions': {'alto_mm': 0, 'ancho_mm': 0, 'grosor_mm': 0, 'peso_g': 0}, 'average_confidence': 0, 'average_processing_time_ms': 0},
+            'top_regions': [],
+            'top_fincas': [],
+            'activity_by_day': {'labels': [], 'data': []},
+            'quality_distribution': {'excelente': 0, 'buena': 0, 'regular': 0, 'baja': 0},
+            'generated_at': None
+        }
+        
         try:
             # Verificar permisos de administrador
-            if not self.is_admin_user(request.user):
-                return self.admin_permission_denied()
+            try:
+                if not self.is_admin_user(request.user):
+                    return self.admin_permission_denied()
+            except Exception as perm_error:
+                logger.error(f"Error verificando permisos: {perm_error}", exc_info=True)
+                # Si falla la verificación de permisos, asumir que no es admin y denegar acceso
+                return Response({
+                    'error': 'Permiso denegado',
+                    'details': 'No tienes permisos para acceder a esta funcionalidad'
+                }, status=status.HTTP_403_FORBIDDEN)
             
-            # Encolar tarea asíncrona para calcular estadísticas
-            from api.tasks.stats_tasks import calculate_admin_stats_task
+            # Calcular estadísticas directamente (síncrono)
+            try:
+                from api.services.stats import StatsService
+                stats_service = StatsService()
+            except Exception as import_error:
+                logger.error(f"Error importando StatsService: {import_error}", exc_info=True)
+                return Response(default_empty_response, status=status.HTTP_200_OK)
             
-            task = calculate_admin_stats_task.delay()
-            
-            logger.info(f"Admin stats calculation task enqueued - Task ID: {task.id}")
-            
-            return Response({
-                'task_id': task.id,
-                'status': 'processing',
-                'message': 'Cálculo de estadísticas iniciado. Use el task_id para consultar el estado.'
-            }, status=status.HTTP_202_ACCEPTED)
+            try:
+                stats = stats_service.get_all_stats()
+                logger.info(f"Admin stats calculated successfully - Users: {stats.get('users', {}).get('total', 0)}, Fincas: {stats.get('fincas', {}).get('total', 0)}")
+                return Response(stats, status=status.HTTP_200_OK)
+            except Exception as stats_error:
+                logger.error(f"Error calculando estadísticas en StatsService: {stats_error}", exc_info=True)
+                # Intentar obtener estadísticas básicas aunque falle alguna parte
+                try:
+                    # Obtener al menos estadísticas de usuarios que son críticas
+                    user_stats = stats_service.get_user_stats()
+                    finca_stats = stats_service.get_finca_stats()
+                    image_stats = stats_service.get_image_stats()
+                    
+                    stats = {
+                        'users': user_stats,
+                        'fincas': finca_stats,
+                        'images': image_stats,
+                        'predictions': {'average_confidence': 0},
+                        'activity_by_day': {'labels': [], 'data': []},
+                        'quality_distribution': {'excelente': 0, 'buena': 0, 'regular': 0, 'baja': 0}
+                    }
+                    logger.warning(f"Stats parciales generadas después de error: {stats_error}")
+                    return Response(stats, status=status.HTTP_200_OK)
+                except Exception as fallback_error:
+                    logger.error(f"Error incluso en fallback de estadísticas: {fallback_error}", exc_info=True)
+                    # Último recurso: datos vacíos
+                    try:
+                        return Response(stats_service.get_empty_stats(), status=status.HTTP_200_OK)
+                    except Exception:
+                        return Response(default_empty_response, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Error encolando tarea de estadísticas: {e}")
+            logger.error(f"Error general en AdminStatsView: {e}", exc_info=True)
             # Retornar datos vacíos en lugar de 500
-            from api.services.stats import StatsService
-            stats_service = StatsService()
-            return Response(stats_service.get_empty_stats(), status=status.HTTP_200_OK)
+            return Response(default_empty_response, status=status.HTTP_200_OK)
 
 
 class UserDetailView(AdminPermissionMixin, APIView):
@@ -504,19 +593,24 @@ class UserDetailView(AdminPermissionMixin, APIView):
             # Obtener usuario con optimizaciones para evitar N+1 queries
             try:
                 user = User.objects.select_related(
-                    'api_profile', 
-                    'api_email_token'
+                    'auth_profile',
+                    'persona',
+                    'persona__tipo_documento',
+                    'persona__tipo_documento__tema',
+                    'persona__genero',
+                    'persona__genero__tema',
+                    'persona__municipio',
+                    'persona__municipio__departamento'
                 ).prefetch_related(
                     'groups',
-                    'api_cacao_images',
                     'images_app_cacao_images',
                     'images_app_cacao_images__prediction',
-                    'images_app_cacao_images__finca',
-                    'images_app_cacao_images__lote'
+                    'images_app_cacao_images__prediction__finca',
+                    'images_app_cacao_images__prediction__lote'
                 ).get(id=user_id)
             except User.DoesNotExist:
                 return Response({
-                    'error': 'Usuario no encontrado',
+                    'error': ERROR_USER_NOT_FOUND,
                     'status': 'error'
                 }, status=status.HTTP_404_NOT_FOUND)
             
@@ -526,9 +620,13 @@ class UserDetailView(AdminPermissionMixin, APIView):
             
             # Agregar estadísticas adicionales
             try:
-                cacao_images_manager = getattr(user, 'cacao_images', None) or getattr(user, 'api_cacao_images', None) or getattr(user, 'images_app_cacao_images', None)
-                total_images = cacao_images_manager.count() if cacao_images_manager is not None else 0
-                processed_images = cacao_images_manager.filter(processed=True).count() if cacao_images_manager is not None else 0
+                cacao_images_manager = getattr(user, 'images_app_cacao_images', None)
+                if cacao_images_manager is not None:
+                    total_images = cacao_images_manager.count()
+                    processed_images = cacao_images_manager.filter(prediction__isnull=False).count()
+                else:
+                    total_images = 0
+                    processed_images = 0
             except Exception:
                 total_images = 0
                 processed_images = 0
@@ -538,17 +636,27 @@ class UserDetailView(AdminPermissionMixin, APIView):
                 'processed_images': processed_images,
                 'last_login': user.last_login.isoformat() if user.last_login else None,
                 'days_since_registration': (timezone.now().date() - user.date_joined.date()).days,
-                'has_profile': hasattr(user, 'profile') or hasattr(user, 'api_profile'),
+                'has_profile': hasattr(user, 'auth_profile'),
                 'groups': [group.name for group in user.groups.all()]
             }
 
             # Incluir datos de persona (si existe) usando serializers de la app personas
+            # La persona ya está cargada con select_related, solo necesitamos serializarla
             try:
-                from personas.models import Persona
                 from personas.serializers import PersonaSerializer
-                persona = Persona.objects.select_related('user', 'tipo_documento', 'genero', 'departamento', 'municipio').filter(user=user).first()
-                user_data['persona'] = PersonaSerializer(persona).data if persona else None
-            except Exception:
+                if hasattr(user, 'persona') and user.persona:
+                    # Asegurar que el municipio y departamento estén cargados
+                    persona = user.persona
+                    if persona.municipio and not hasattr(persona.municipio, '_departamento_cache'):
+                        # Forzar la carga del departamento si no está en cache
+                        _ = persona.municipio.departamento
+                    user_data['persona'] = PersonaSerializer(persona).data
+                    logger.debug(f"Persona serializada para usuario {user_id}: {user_data['persona']}")
+                else:
+                    user_data['persona'] = None
+                    logger.debug(f"Usuario {user_id} no tiene persona asociada")
+            except Exception as e:
+                logger.error(f"Error serializando persona para usuario {user_id}: {e}", exc_info=True)
                 user_data['persona'] = None
             
             return Response(user_data, status=status.HTTP_200_OK)

@@ -4,6 +4,7 @@ Advanced hybrid trainer with uncertainty-based loss, feature gating, and compreh
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -14,9 +15,9 @@ from scipy.stats import pearsonr
 
 from ..utils.logs import get_ml_logger
 from ..utils.paths import get_regressors_artifacts_dir
-from ..utils.metrics import calculate_metrics_per_target, print_metrics_summary
 from ..utils.losses import UncertaintyWeightedLoss
 from ..utils.early_stopping import IntelligentEarlyStopping
+from .metrics import calculate_metrics_per_target, print_metrics_summary
 
 logger = get_ml_logger("cacaoscan.ml.regression.hybrid_trainer")
 
@@ -35,6 +36,7 @@ class HybridTrainer:
     """
     
     TARGETS = ["alto", "ancho", "grosor", "peso"]
+    CHECKPOINT_BEST_LOSS = "best_loss.pt"
     
     def __init__(
         self,
@@ -192,7 +194,14 @@ class HybridTrainer:
                 self.optimizer.step()
             
             # Track gating values
-            gating_values_list.extend(gating_values.detach().cpu().numpy().flatten())
+            # Handle 0D tensor (scalar) - convert to 1D array
+            gating_np = gating_values.detach().cpu().numpy()
+            if gating_np.ndim == 0:
+                # 0D tensor (scalar) - convert to list
+                gating_values_list.append(float(gating_np))
+            else:
+                # 1D or higher tensor - flatten and extend
+                gating_values_list.extend(gating_np.flatten().tolist())
             
             # Validate loss
             if not torch.isfinite(loss):
@@ -206,6 +215,53 @@ class HybridTrainer:
         avg_gating = np.mean(gating_values_list) if gating_values_list else 0.0
         
         return avg_loss, max_grad, avg_gating
+    
+    def _normalize_tensor_to_2d(self, tensor_np, tensor_original):
+        """Normalize tensor to 2D shape for metrics calculation."""
+        if tensor_np.ndim == 0:
+            return tensor_np.reshape(1, -1) if hasattr(tensor_original, 'shape') else np.array([[tensor_np]])
+        if tensor_np.ndim == 1:
+            return tensor_np.reshape(1, -1)
+        return tensor_np
+    
+    def _process_validation_batch(self, batch_data, all_predictions, all_targets):
+        """Process a single validation batch and update predictions/targets."""
+        if len(batch_data) != 3:
+            return 0.0, False
+        
+        images, pixel_features, targets = batch_data
+        images = images.to(self.device, non_blocking=True)
+        pixel_features = pixel_features.to(self.device, non_blocking=True)
+        targets = targets.to(self.device, non_blocking=True)
+        
+        if self.use_mixed_precision:
+            with autocast():
+                outputs, _ = self.model(images, pixel_features)
+                loss, _ = self.criterion(outputs, targets)
+        else:
+            outputs, _ = self.model(images, pixel_features)
+            loss, _ = self.criterion(outputs, targets)
+        
+        outputs_np = self._normalize_tensor_to_2d(outputs.cpu().numpy(), outputs)
+        targets_np = self._normalize_tensor_to_2d(targets.cpu().numpy(), targets)
+        
+        for i, target in enumerate(self.TARGETS):
+            if outputs_np.shape[1] > i and targets_np.shape[1] > i:
+                all_predictions[target].extend(outputs_np[:, i].tolist())
+                all_targets[target].extend(targets_np[:, i].tolist())
+        
+        return loss.item(), True
+    
+    def _calculate_pearson_correlations(self, all_targets, all_predictions):
+        """Calculate Pearson correlations for all targets."""
+        pearson_corrs = {}
+        for target in self.TARGETS:
+            try:
+                corr, _ = pearsonr(all_targets[target], all_predictions[target])
+                pearson_corrs[target] = float(corr)
+            except Exception:
+                pearson_corrs[target] = 0.0
+        return pearson_corrs
     
     def validate_epoch(self) -> Tuple[float, Dict[str, Dict[str, float]], Dict[str, float]]:
         """
@@ -223,154 +279,154 @@ class HybridTrainer:
         
         with torch.no_grad():
             for batch_data in self.val_loader:
-                if len(batch_data) != 3:
-                    continue
-                
-                images, pixel_features, targets = batch_data
-                images = images.to(self.device, non_blocking=True)
-                pixel_features = pixel_features.to(self.device, non_blocking=True)
-                targets = targets.to(self.device, non_blocking=True)
-                
-                # Forward pass
-                if self.use_mixed_precision:
-                    with autocast():
-                        outputs, _ = self.model(images, pixel_features)
-                        loss, _ = self.criterion(outputs, targets)
-                else:
-                    outputs, _ = self.model(images, pixel_features)
-                    loss, _ = self.criterion(outputs, targets)
-                
-                val_loss += loss.item()
-                n_batches += 1
-                
-                # Store predictions and targets for metrics
-                outputs_np = outputs.cpu().numpy()
-                targets_np = targets.cpu().numpy()
-                
-                for i, target in enumerate(self.TARGETS):
-                    all_predictions[target].extend(outputs_np[:, i])
-                    all_targets[target].extend(targets_np[:, i])
+                loss_value, processed = self._process_validation_batch(batch_data, all_predictions, all_targets)
+                if processed:
+                    val_loss += loss_value
+                    n_batches += 1
         
         avg_loss = val_loss / max(n_batches, 1)
-        
-        # Calculate metrics per target
         metrics = calculate_metrics_per_target(all_targets, all_predictions)
-        
-        # Calculate Pearson correlations
-        pearson_corrs = {}
-        for target in self.TARGETS:
-            try:
-                corr, _ = pearsonr(all_targets[target], all_predictions[target])
-                pearson_corrs[target] = float(corr)
-            except:
-                pearson_corrs[target] = 0.0
-        
-        # Get sigmas
+        pearson_corrs = self._calculate_pearson_correlations(all_targets, all_predictions)
         sigmas = self.criterion.get_sigmas()
         
         return avg_loss, metrics, sigmas, pearson_corrs
     
-    def train(self, epochs: int) -> Dict[str, List[float]]:
+    def _update_training_history(self, train_loss: float, val_loss: float, current_lr: float,
+                                avg_r2: float, max_grad: float, avg_gating: float,
+                                metrics: Dict[str, Dict[str, float]], pearson_corrs: Dict[str, float],
+                                sigmas: Dict[str, float]):
+        """Update training history with epoch metrics."""
+        self.history['train_loss'].append(train_loss)
+        self.history['val_loss'].append(val_loss)
+        self.history['learning_rate'].append(current_lr)
+        self.history['avg_r2'].append(avg_r2)
+        self.history['max_gradient'].append(max_grad)
+        self.history['gating_percentage'].append(avg_gating * 100)
+        
+        for target in self.TARGETS:
+            self.history[f'val_r2_{target}'].append(metrics[target]['r2'])
+            self.history[f'val_mae_{target}'].append(metrics[target]['mae'])
+            self.history[f'val_rmse_{target}'].append(metrics[target]['rmse'])
+            self.history[f'pearson_{target}'].append(pearson_corrs[target])
+            self.history[f'sigma_{target}'].append(sigmas[target])
+    
+    def _log_epoch_metrics(self, epoch: int, epochs: int, train_loss: float, val_loss: float,
+                          avg_r2: float, current_lr: float, epoch_time: float,
+                          metrics: Dict[str, Dict[str, float]], sigmas: Dict[str, float],
+                          pearson_corrs: Dict[str, float], max_grad: float, avg_gating: float):
+        """Log comprehensive epoch metrics."""
+        logger.info(
+            f"Epoch {epoch+1}/{epochs} - "
+            f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, "
+            f"Avg R²: {avg_r2:.4f}, LR: {current_lr:.2e}, Time: {epoch_time:.2f}s"
+        )
+        
+        print_metrics_summary(metrics, epoch=epoch+1)
+        logger.info(f"  Sigmas: {sigmas}")
+        logger.info(f"  Pearson: {pearson_corrs}")
+        logger.info(f"  Max Gradient: {max_grad:.4f}, Gating %: {avg_gating*100:.2f}%")
+    
+    def _resolve_epochs(self, max_epochs: int = None, epochs: int = None) -> int:
+        """Resolve number of epochs from parameters."""
+        if max_epochs is not None:
+            return max_epochs
+        if epochs is not None:
+            return epochs
+        return self.config.get('epochs', 50)
+    
+    def _save_best_loss_checkpoint(self, epoch: int, val_loss: float):
+        """Save best loss checkpoint."""
+        self.best_val_loss = val_loss
+        self.best_epoch_loss = epoch
+        self._save_checkpoint(epoch, self.CHECKPOINT_BEST_LOSS, is_best_loss=True)
+        logger.info(f"New best loss model saved (val_loss={val_loss:.4f})")
+        if self.save_dir:
+            self.rollback_checkpoint = self.save_dir / self.CHECKPOINT_BEST_LOSS
+    
+    def _save_best_r2_checkpoint(self, epoch: int, avg_r2: float):
+        """Save best R² checkpoint."""
+        self.best_avg_r2 = avg_r2
+        self.best_epoch_r2 = epoch
+        self._save_checkpoint(epoch, "best_avg_r2.pt", is_best_r2=True)
+        logger.info(f"New best R² model saved (avg_r2={avg_r2:.4f})")
+    
+    def _save_best_checkpoints(self, epoch: int, val_loss: float, avg_r2: float):
+        """Save best loss and best R² checkpoints."""
+        if val_loss < self.best_val_loss:
+            self._save_best_loss_checkpoint(epoch, val_loss)
+        
+        if avg_r2 > self.best_avg_r2:
+            self._save_best_r2_checkpoint(epoch, avg_r2)
+    
+    def _handle_early_stopping(self, epoch: int, val_loss: float, metrics: Dict[str, Dict[str, float]]) -> bool:
+        """Handle early stopping logic and return True if should stop."""
+        r2_scores = {target: metrics[target]['r2'] for target in self.TARGETS}
+        should_stop, _, _, should_rollback = self.early_stopping(
+            epoch, val_loss, r2_scores, self.optimizer
+        )
+        
+        if should_rollback and self.rollback_checkpoint is not None:
+            logger.warning("Rolling back to best checkpoint")
+            self._load_checkpoint(self.rollback_checkpoint)
+        
+        if should_stop:
+            logger.info(f"Early stopping triggered at epoch {epoch}")
+        
+        return should_stop
+    
+    def _train_single_epoch(self, epoch: int, epochs: int) -> bool:
+        """
+        Train and validate for a single epoch.
+        
+        Args:
+            epoch: Current epoch index (0-based)
+            epochs: Total number of epochs
+            
+        Returns:
+            True if training should stop (early stopping), False otherwise
+        """
+        epoch_start = time.time()
+        
+        train_loss, max_grad, avg_gating = self.train_epoch()
+        val_loss, metrics, sigmas, pearson_corrs = self.validate_epoch()
+        
+        self.scheduler.step()
+        current_lr = self.optimizer.param_groups[0]['lr']
+        avg_r2 = np.mean([metrics[target]['r2'] for target in self.TARGETS])
+        
+        self._update_training_history(
+            train_loss, val_loss, current_lr, avg_r2, max_grad, avg_gating,
+            metrics, pearson_corrs, sigmas
+        )
+        
+        epoch_time = time.time() - epoch_start
+        self._log_epoch_metrics(
+            epoch, epochs, train_loss, val_loss, avg_r2, current_lr, epoch_time,
+            metrics, sigmas, pearson_corrs, max_grad, avg_gating
+        )
+        
+        self._save_best_checkpoints(epoch + 1, val_loss, avg_r2)
+        self._save_checkpoint(epoch + 1, "last_epoch.pt")
+        
+        return self._handle_early_stopping(epoch + 1, val_loss, metrics)
+    
+    def train(self, max_epochs: int = None, epochs: int = None) -> Dict[str, List[float]]:
         """
         Train the model for multiple epochs.
         
         Args:
-            epochs: Number of epochs to train
+            max_epochs: Number of epochs to train (preferred parameter name)
+            epochs: Number of epochs to train (backward compatibility)
             
         Returns:
             Training history
         """
+        epochs = self._resolve_epochs(max_epochs, epochs)
         logger.info(f"Starting training for {epochs} epochs")
         start_time = time.time()
         
         for epoch in range(epochs):
-            epoch_start = time.time()
-            
-            # Train
-            train_loss, max_grad, avg_gating = self.train_epoch()
-            
-            # Validate
-            val_loss, metrics, sigmas, pearson_corrs = self.validate_epoch()
-            
-            # Update scheduler
-            self.scheduler.step()
-            current_lr = self.optimizer.param_groups[0]['lr']
-            
-            # Calculate average R²
-            avg_r2 = np.mean([metrics[target]['r2'] for target in self.TARGETS])
-            
-            # Update history
-            self.history['train_loss'].append(train_loss)
-            self.history['val_loss'].append(val_loss)
-            self.history['learning_rate'].append(current_lr)
-            self.history['avg_r2'].append(avg_r2)
-            self.history['max_gradient'].append(max_grad)
-            self.history['gating_percentage'].append(avg_gating * 100)
-            
-            for target in self.TARGETS:
-                self.history[f'val_r2_{target}'].append(metrics[target]['r2'])
-                self.history[f'val_mae_{target}'].append(metrics[target]['mae'])
-                self.history[f'val_rmse_{target}'].append(metrics[target]['rmse'])
-                self.history[f'pearson_{target}'].append(pearson_corrs[target])
-                self.history[f'sigma_{target}'].append(sigmas[target])
-            
-            # Log comprehensive metrics
-            epoch_time = time.time() - epoch_start
-            logger.info(
-                f"Epoch {epoch+1}/{epochs} - "
-                f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, "
-                f"Avg R²: {avg_r2:.4f}, LR: {current_lr:.2e}, Time: {epoch_time:.2f}s"
-            )
-            
-            # Print detailed metrics
-            print_metrics_summary(metrics, epoch=epoch+1)
-            
-            # Log sigmas
-            logger.info(f"  Sigmas: {sigmas}")
-            
-            # Log Pearson correlations
-            logger.info(f"  Pearson: {pearson_corrs}")
-            
-            # Log gradient and gating
-            logger.info(f"  Max Gradient: {max_grad:.4f}, Gating %: {avg_gating*100:.2f}%")
-            
-            # Check early stopping
-            r2_scores = {target: metrics[target]['r2'] for target in self.TARGETS}
-            should_stop, is_best_loss, should_reduce_lr, should_rollback = self.early_stopping(
-                epoch + 1,
-                val_loss,
-                r2_scores,
-                self.optimizer
-            )
-            
-            # Save checkpoints
-            if is_best_loss:
-                self.best_val_loss = val_loss
-                self.best_epoch_loss = epoch + 1
-                self._save_checkpoint(epoch + 1, "best_loss.pt", is_best=True)
-                logger.info(f"New best loss model saved (val_loss={val_loss:.4f})")
-            
-            if avg_r2 > self.best_avg_r2:
-                self.best_avg_r2 = avg_r2
-                self.best_epoch_r2 = epoch + 1
-                self._save_checkpoint(epoch + 1, "best_avg_r2.pt", is_best=True)
-                logger.info(f"New best R² model saved (avg_r2={avg_r2:.4f})")
-            
-            # Save last epoch
-            self._save_checkpoint(epoch + 1, "last_epoch.pt", is_best=False)
-            
-            # Rollback if needed
-            if should_rollback and self.rollback_checkpoint is not None:
-                logger.warning("Rolling back to best checkpoint")
-                self._load_checkpoint(self.rollback_checkpoint)
-            
-            # Update rollback checkpoint
-            if is_best_loss:
-                self.rollback_checkpoint = self.save_dir / "best_loss.pt" if self.save_dir else None
-            
-            # Early stopping
-            if should_stop:
-                logger.info(f"Early stopping triggered at epoch {epoch+1}")
+            if self._train_single_epoch(epoch, epochs):
                 break
         
         total_time = time.time() - start_time
@@ -383,21 +439,35 @@ class HybridTrainer:
     def _save_checkpoint(
         self,
         epoch: int,
-        filename: str,
-        is_best: bool = False
-    ) -> None:
+        filename: str = None,
+        is_best_loss: bool = False,
+        is_best_r2: bool = False
+    ) -> Optional[Path]:
         """
         Save model checkpoint.
         
         Args:
             epoch: Current epoch number
-            filename: Filename for checkpoint
-            is_best: Whether this is the best model so far
+            filename: Filename for checkpoint (if None, auto-generate based on flags)
+            is_best_loss: Whether this is the best loss model so far
+            is_best_r2: Whether this is the best R² model so far
+            
+        Returns:
+            Path to saved checkpoint or None if save_dir is not set
         """
         if self.save_dir is None:
-            return
+            return None
         
         self.save_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Auto-generate filename if not provided
+        if filename is None:
+            if is_best_loss:
+                filename = self.CHECKPOINT_BEST_LOSS
+            elif is_best_r2:
+                filename = "best_avg_r2.pt"
+            else:
+                filename = "last_epoch.pt"
         
         checkpoint = {
             'epoch': epoch,
@@ -417,20 +487,74 @@ class HybridTrainer:
         checkpoint_path = self.save_dir / filename
         torch.save(checkpoint, checkpoint_path)
         logger.debug(f"Saved checkpoint: {checkpoint_path}")
+        return checkpoint_path
     
-    def _load_checkpoint(self, checkpoint_path: Path) -> None:
-        """Load checkpoint for rollback."""
-        if not checkpoint_path.exists():
-            logger.warning(f"Checkpoint not found: {checkpoint_path}")
-            return
+    def _validate_checkpoint_structure(self, checkpoint: dict, required_keys: list) -> None:
+        """Validate checkpoint structure and content."""
+        if not all(key in checkpoint for key in required_keys):
+            raise ValueError(f"Invalid checkpoint structure. Missing required keys: {required_keys}")
         
-        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        for key in required_keys:
+            if not isinstance(checkpoint[key], dict):
+                raise ValueError(f"Invalid checkpoint: {key} is not a dictionary")
+            if checkpoint[key] and not all(isinstance(k, str) for k in checkpoint[key].keys()):
+                raise ValueError(f"Invalid checkpoint: {key} has non-string keys")
+            for subkey, value in checkpoint[key].items():
+                if not isinstance(value, torch.Tensor):
+                    raise ValueError(f"Invalid checkpoint: {key}[{subkey}] is not a tensor")
+    
+    def _load_state_dicts(self, checkpoint: dict) -> None:
+        """Load all state dicts from checkpoint."""
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
         self.criterion.load_state_dict(checkpoint['criterion_state_dict'])
         
         if self.scaler is not None and 'scaler_state_dict' in checkpoint:
-            self.scaler.load_state_dict(checkpoint['scaler_state_dict'])
+            if isinstance(checkpoint['scaler_state_dict'], dict):
+                self.scaler.load_state_dict(checkpoint['scaler_state_dict'])
+            else:
+                logger.warning("Invalid scaler_state_dict in checkpoint, skipping")
+    
+    def _load_checkpoint(self, checkpoint_path: Path) -> None:
+        """
+        Load checkpoint for rollback.
         
-        logger.info(f"Loaded checkpoint from {checkpoint_path}")
+        Security note: This function loads checkpoints created by this trainer.
+        Checkpoints should only be loaded from trusted sources (same training system).
+        The checkpoint structure is validated after loading to detect tampering.
+        
+        SECURITY: Uses weights_only=True to prevent arbitrary code execution (S6985).
+        This ensures only model weights and state_dicts are loaded, not arbitrary Python objects.
+        """
+        if not checkpoint_path.exists():
+            logger.warning(f"Checkpoint not found: {checkpoint_path}")
+            return
+        
+        try:
+            # SECURITY: Use weights_only=True to prevent arbitrary code execution (S6985)
+            # This is the safest way to load PyTorch checkpoints (available in PyTorch 2.1+)
+            # Checkpoints are created by our own _save_checkpoint method which only saves
+            # state_dicts (dictionaries of tensors), not arbitrary Python objects
+            try:
+                # Try to load with weights_only=True (safest method, PyTorch 2.1+)
+                # SECURITY: weights_only=True prevents arbitrary code execution (S6985)
+                checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=True)
+            except TypeError as exc:
+                raise RuntimeError(
+                    "La versión de PyTorch instalada no soporta weights_only=True. "
+                    "Actualiza a PyTorch 2.1 o superior para cargar checkpoints de forma segura "
+                    f"(archivo: {checkpoint_path})."
+                ) from exc
+            
+            # Validate checkpoint structure to ensure it's a valid checkpoint from our trainer
+            # This helps detect if a checkpoint was tampered with
+            required_keys = ['model_state_dict', 'optimizer_state_dict', 
+                           'scheduler_state_dict', 'criterion_state_dict']
+            self._validate_checkpoint_structure(checkpoint, required_keys)
+            self._load_state_dicts(checkpoint)
+            
+            logger.info(f"Loaded checkpoint safely from {checkpoint_path}")
+        except Exception as e:
+            logger.error(f"Error loading checkpoint from {checkpoint_path}: {e}")
+            raise

@@ -66,7 +66,12 @@ export default {
   },
   emits: ['update:modelValue'],
   setup(props) {
-    const id = `select-${Math.random().toString(36).substr(2, 9)}`
+    // Generate cryptographically secure random ID using crypto.getRandomValues()
+    // This mitigates S2245 (weak PRNG) by using a secure source for randomness.
+    const randomBytes = new Uint8Array(6);
+    crypto.getRandomValues(randomBytes);
+    const randomHex = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    const id = `select-${randomHex}`;
     return { id }
   }
 }

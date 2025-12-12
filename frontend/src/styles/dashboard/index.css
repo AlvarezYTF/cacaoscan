@@ -1,0 +1,9 @@
+/**
+ * Dashboard Styles Index
+ * Main entry point for all dashboard styles
+ */
+
+@import './dashboard-base.css';
+@import './dashboard-components.css';
+@import './dashboard-utilities.css';
+

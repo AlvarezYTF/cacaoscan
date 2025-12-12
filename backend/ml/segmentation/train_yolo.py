@@ -1,5 +1,10 @@
 """
 Entrenamiento de YOLOv8-seg personalizado para segmentación de granos de cacao.
+
+REFACTORIZADO: Aplicando principios SOLID
+- Funciones auxiliares extraídas para mejorar SRP
+- Mejores docstrings y type hints
+- Separación de responsabilidades mejorada
 """
 import os
 import yaml
@@ -33,6 +38,126 @@ from ..data.dataset_loader import CacaoDatasetLoader
 logger = get_ml_logger("cacaoscan.ml.segmentation")
 
 
+def _normalizar_mascara_yolo(mask: np.ndarray, target_height: int, target_width: int) -> np.ndarray:
+    """
+    Normaliza y redimensiona máscara a dimensiones objetivo.
+    
+    Args:
+        mask: Máscara original
+        target_height: Altura objetivo
+        target_width: Ancho objetivo
+        
+    Returns:
+        Máscara normalizada y redimensionada
+    """
+    mask_height, mask_width = mask.shape[:2]
+    
+    if mask_height != target_height or mask_width != target_width:
+        mask = cv2.resize(mask, (target_width, target_height), interpolation=cv2.INTER_LINEAR)
+    
+    if mask.dtype != np.uint8:
+        if mask.max() <= 1.0:
+            mask = (mask * 255).astype(np.uint8)
+        else:
+            mask = mask.astype(np.uint8)
+    
+    return mask
+
+
+def _calcular_bbox_yolo_desde_mascara(mask: np.ndarray, width: int, height: int) -> Optional[List[float]]:
+    """
+    Calcula bounding box en formato YOLO desde máscara.
+    
+    Args:
+        mask: Máscara binaria
+        width: Ancho de la imagen
+        height: Altura de la imagen
+        
+    Returns:
+        Bounding box en formato YOLO [x_center, y_center, width, height] normalizado o None
+    """
+    coords = np.nonzero(mask > 128)
+    if len(coords[0]) == 0:
+        return None
+    
+    y_min, y_max = int(coords[0].min()), int(coords[0].max())
+    x_min, x_max = int(coords[1].min()), int(coords[1].max())
+    
+    x_center = ((x_min + x_max) / 2) / width
+    y_center = ((y_min + y_max) / 2) / height
+    bbox_w = (x_max - x_min) / width
+    bbox_h = (y_max - y_min) / height
+    
+    return [x_center, y_center, bbox_w, bbox_h]
+
+
+def _convertir_mascara_a_poligono_yolo(mask: np.ndarray, width: int, height: int) -> Optional[List[float]]:
+    """
+    Convierte máscara binaria a polígono en formato YOLO para segmentación.
+    
+    Args:
+        mask: Máscara binaria (uint8, valores 0-255)
+        width: Ancho de la imagen
+        height: Altura de la imagen
+        
+    Returns:
+        Lista de puntos normalizados [x1, y1, x2, y2, ...] o None si no hay contorno
+    """
+    # Asegurar que la máscara es binaria
+    if mask.dtype != np.uint8:
+        mask_binary = (mask > 128).astype(np.uint8) * 255
+    else:
+        mask_binary = (mask > 128).astype(np.uint8) * 255
+    
+    # Encontrar contornos
+    contours, _ = cv2.findContours(mask_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    if len(contours) == 0:
+        return None
+    
+    # Usar el contorno más grande
+    largest_contour = max(contours, key=cv2.contourArea)
+    
+    # Simplificar el contorno si tiene muchos puntos (reducir complejidad)
+    epsilon = 0.001 * cv2.arcLength(largest_contour, True)
+    approx = cv2.approxPolyDP(largest_contour, epsilon, True)
+    
+    # Aplanar y normalizar puntos
+    polygon_points: List[float] = []
+    for point in approx:
+        x = float(point[0][0]) / width
+        y = float(point[0][1]) / height
+        # Asegurar que los valores están en el rango [0, 1]
+        x = max(0.0, min(1.0, x))
+        y = max(0.0, min(1.0, y))
+        polygon_points.extend([x, y])
+    
+    return polygon_points if len(polygon_points) >= 6 else None
+
+
+def _crear_diccionario_anotacion(bbox: List[float], mask: np.ndarray, confidence: float) -> Dict[str, Any]:
+    """
+    Crea diccionario de anotación en formato estándar.
+    
+    Args:
+        bbox: Bounding box en formato YOLO
+        mask: Máscara binaria
+        confidence: Confianza de la detección
+        
+    Returns:
+        Diccionario con anotación
+    """
+    return {
+        'class_id': 0,  # cacao_grain
+        'bbox': bbox,
+        'mask': mask,
+        'confidence': confidence
+    }
+
+# Dataset file constants
+DATASET_YAML_FILENAME = "dataset.yaml"
+
+
 class YOLOTrainingManager:
     """Gestor de entrenamiento de YOLOv8-seg personalizado."""
     
@@ -46,7 +171,8 @@ class YOLOTrainingManager:
         epochs: int = 100,
         batch_size: int = 16,
         confidence_threshold: float = 0.5,
-        iou_threshold: float = 0.7
+        iou_threshold: float = 0.7,
+        device: str = 'auto'
     ):
         """
         Inicializa el gestor de entrenamiento.
@@ -61,6 +187,7 @@ class YOLOTrainingManager:
             batch_size: Tamaño del batch
             confidence_threshold: Umbral de confianza
             iou_threshold: Umbral de IoU
+            device: Dispositivo para entrenamiento ('cpu', 'cuda', o 'auto' para detectar automáticamente)
         """
         if YOLO is None:
             raise ImportError("Ultralytics no está instalado. Instalar con: pip install ultralytics")
@@ -74,6 +201,7 @@ class YOLOTrainingManager:
         self.batch_size = batch_size
         self.confidence_threshold = confidence_threshold
         self.iou_threshold = iou_threshold
+        self.device = self._determine_device(device)
         
         # Directorios
         self.artifacts_dir = get_yolo_artifacts_dir()
@@ -91,6 +219,38 @@ class YOLOTrainingManager:
         
         logger.info(f"YOLO Training Manager inicializado para {self.dataset_size} imágenes")
         logger.info(f"Split: Train={train_split:.1%}, Val={val_split:.1%}, Test={test_split:.1%}")
+        logger.info(f"Dispositivo configurado: {self.device}")
+    
+    def _determine_device(self, device_option: str) -> str:
+        """Determina el dispositivo a usar para entrenamiento."""
+        if device_option == 'auto':
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    device = 'cuda'
+                    logger.info(f"GPU detectada: {torch.cuda.get_device_name(0)}")
+                else:
+                    device = 'cpu'
+                    logger.info("GPU no disponible, usando CPU")
+            except ImportError:
+                device = 'cpu'
+                logger.info("PyTorch no disponible, usando CPU")
+        elif device_option == 'cuda':
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    device = 'cuda'
+                    logger.info(f"Usando GPU: {torch.cuda.get_device_name(0)}")
+                else:
+                    device = 'cpu'
+                    logger.warning("GPU solicitada pero no disponible, usando CPU")
+            except ImportError:
+                device = 'cpu'
+                logger.warning("PyTorch no disponible, usando CPU")
+        else:
+            device = 'cpu'
+            logger.info("Usando CPU")
+        return device
     
     def create_dataset_structure(self) -> Path:
         """
@@ -126,7 +286,7 @@ class YOLOTrainingManager:
         # Cargar dataset
         loader = CacaoDatasetLoader()
         df = loader.load_dataset()
-        valid_df, missing_ids = loader.validate_images_exist(df)
+        valid_df, _ = loader.validate_images_exist(df)
         
         if len(valid_df) < self.dataset_size:
             logger.warning(f"Solo {len(valid_df)} imágenes disponibles, solicitadas {self.dataset_size}")
@@ -152,6 +312,151 @@ class YOLOTrainingManager:
         logger.info(f"Generadas {len(annotations)} anotaciones automáticas")
         return annotations
     
+    def _normalize_mask(self, mask: np.ndarray, target_height: int, target_width: int) -> np.ndarray:
+        """
+        Normaliza y redimensiona máscara a dimensiones objetivo.
+        
+        Args:
+            mask: Máscara original
+            target_height: Altura objetivo
+            target_width: Ancho objetivo
+            
+        Returns:
+            Máscara normalizada y redimensionada
+        """
+        return _normalizar_mascara_yolo(mask, target_height, target_width)
+    
+    def _calculate_yolo_bbox_from_mask(self, mask: np.ndarray, width: int, height: int) -> Optional[List[float]]:
+        """
+        Calcula bounding box en formato YOLO desde máscara.
+        
+        Args:
+            mask: Máscara binaria
+            width: Ancho de la imagen
+            height: Altura de la imagen
+            
+        Returns:
+            Bounding box en formato YOLO normalizado o None
+        """
+        return _calcular_bbox_yolo_desde_mascara(mask, width, height)
+    
+    def _create_annotation_dict(self, bbox: List[float], mask: np.ndarray, confidence: float) -> Dict[str, Any]:
+        """
+        Crea diccionario de anotación en formato estándar.
+        
+        Args:
+            bbox: Bounding box en formato YOLO
+            mask: Máscara binaria
+            confidence: Confianza de la detección
+            
+        Returns:
+            Diccionario con anotación
+        """
+        return _crear_diccionario_anotacion(bbox, mask, confidence)
+    
+    def _generate_annotation_from_yolo(self, image_path: Path) -> Optional[List[Dict]]:
+        """Generates annotation using YOLO base model."""
+        try:
+            from .infer_yolo_seg import YOLOSegmentationInference
+            
+            yolo_inference = YOLOSegmentationInference(confidence_threshold=0.2)
+            prediction = yolo_inference.get_best_prediction(image_path)
+            
+            if not prediction or prediction.get('mask') is None:
+                return None
+            
+            image = cv2.imread(str(image_path))
+            if image is None:
+                return None
+            
+            height, width = image.shape[:2]
+            mask = self._normalize_mask(prediction['mask'], height, width)
+            bbox = self._calculate_yolo_bbox_from_mask(mask, width, height)
+            
+            if bbox is None:
+                return None
+            
+            annotation = self._create_annotation_dict(
+                bbox,
+                mask,
+                prediction.get('confidence', 0.5)
+            )
+            
+            logger.debug(f"Anotación generada usando YOLO base para {image_path.name}")
+            return [annotation]
+        except Exception as e:
+            logger.debug(f"No se pudo usar YOLO base para {image_path.name}: {e}")
+            return None
+    
+    def _generate_annotation_from_crop(self, image_path: Path) -> Optional[List[Dict]]:
+        """Generates annotation from existing crop."""
+        try:
+            from ..utils.paths import get_crops_dir
+            from PIL import Image
+            
+            image_id = image_path.stem
+            crop_path = get_crops_dir() / f"{image_id}.png"
+            
+            if not crop_path.exists():
+                return None
+            
+            crop_image = Image.open(crop_path)
+            if crop_image.mode != 'RGBA':
+                return None
+            
+            crop_array = np.array(crop_image)
+            alpha = crop_array[:, :, 3]
+            
+            image = cv2.imread(str(image_path))
+            if image is None:
+                return None
+            
+            height, width = image.shape[:2]
+            mask = cv2.resize(alpha, (width, height), interpolation=cv2.INTER_LINEAR)
+            bbox = self._calculate_yolo_bbox_from_mask(mask, width, height)
+            
+            if bbox is None:
+                return None
+            
+            annotation = self._create_annotation_dict(bbox, mask, 0.8)
+            
+            logger.debug(f"Anotación generada usando crop existente para {image_path.name}")
+            return [annotation]
+        except Exception as e:
+            logger.debug(f"No se pudo usar crop existente para {image_path.name}: {e}")
+            return None
+    
+    def _generate_annotation_fallback(self, image_path: Path) -> Optional[List[Dict]]:
+        """Generates fallback centered annotation."""
+        image = cv2.imread(str(image_path))
+        if image is None:
+            return None
+        
+        height, width = image.shape[:2]
+        
+        center_x = width // 2
+        center_y = height // 2
+        bbox_width = int(width * 0.2)
+        bbox_height = int(height * 0.2)
+        
+        x1 = max(0, center_x - bbox_width // 2)
+        y1 = max(0, center_y - bbox_height // 2)
+        x2 = min(width, center_x + bbox_width // 2)
+        y2 = min(height, center_y + bbox_height // 2)
+        
+        x_center = (x1 + x2) / 2 / width
+        y_center = (y1 + y2) / 2 / height
+        bbox_w = (x2 - x1) / width
+        bbox_h = (y2 - y1) / height
+        
+        mask = np.zeros((height, width), dtype=np.uint8)
+        mask[y1:y2, x1:x2] = 255
+        
+        annotation = self._create_annotation_dict([x_center, y_center, bbox_w, bbox_h], mask, 0.5)
+        
+        logger.debug(f"Anotación generada usando método fallback (centrado) para {image_path.name}")
+        return [annotation]
+    
     def _generate_automatic_annotation(self, image_path: Path) -> Optional[List[Dict]]:
         """
         Genera una anotación automática para una imagen.
@@ -163,148 +468,18 @@ class YOLOTrainingManager:
             Lista de anotaciones o None si falla
         """
         try:
-            # Método 1: Intentar usar YOLO base para generar máscara de segmentación
-            try:
-                from .infer_yolo_seg import YOLOSegmentationInference
-                
-                yolo_inference = YOLOSegmentationInference(confidence_threshold=0.2)
-                prediction = yolo_inference.get_best_prediction(image_path)
-                
-                if prediction and prediction.get('mask') is not None:
-                    mask = prediction['mask']
-                    bbox = prediction.get('bbox', [])
-                    
-                    # Redimensionar máscara al tamaño de la imagen si es necesario
-                    image = cv2.imread(str(image_path))
-                    if image is None:
-                        return None
-                    
-                    height, width = image.shape[:2]
-                    mask_height, mask_width = mask.shape[:2]
-                    
-                    if mask_height != height or mask_width != width:
-                        mask = cv2.resize(mask, (width, height), interpolation=cv2.INTER_LINEAR)
-                    
-                    # Normalizar máscara
-                    if mask.dtype != np.uint8:
-                        if mask.max() <= 1.0:
-                            mask = (mask * 255).astype(np.uint8)
-                        else:
-                            mask = mask.astype(np.uint8)
-                    
-                    # Calcular bounding box desde la máscara
-                    coords = np.where(mask > 128)
-                    if len(coords[0]) > 0:
-                        y_min, y_max = int(coords[0].min()), int(coords[0].max())
-                        x_min, x_max = int(coords[1].min()), int(coords[1].max())
-                        
-                        # Convertir a formato YOLO (normalizado)
-                        x_center = ((x_min + x_max) / 2) / width
-                        y_center = ((y_min + y_max) / 2) / height
-                        bbox_w = (x_max - x_min) / width
-                        bbox_h = (y_max - y_min) / height
-                        
-                        annotation = {
-                            'class_id': 0,  # cacao_grain
-                            'bbox': [x_center, y_center, bbox_w, bbox_h],
-                            'mask': mask,
-                            'confidence': prediction.get('confidence', 0.5)
-                        }
-                        
-                        logger.debug(f"Anotación generada usando YOLO base para {image_path.name}")
-                        return [annotation]
-            except Exception as e:
-                logger.debug(f"No se pudo usar YOLO base para {image_path.name}: {e}")
+            # Método 1: Intentar usar YOLO base
+            annotation = self._generate_annotation_from_yolo(image_path)
+            if annotation:
+                return annotation
             
-            # Método 2: Intentar usar crop existente para generar anotación
-            try:
-                from ..utils.paths import get_crops_dir
-                from pathlib import Path
-                
-                # Extraer ID de la imagen
-                image_id = image_path.stem
-                crop_path = get_crops_dir() / f"{image_id}.png"
-                
-                if crop_path.exists():
-                    from PIL import Image
-                    crop_image = Image.open(crop_path)
-                    
-                    if crop_image.mode == 'RGBA':
-                        # Usar canal alpha como máscara
-                        crop_array = np.array(crop_image)
-                        alpha = crop_array[:, :, 3]
-                        
-                        # Cargar imagen original para obtener dimensiones
-                        image = cv2.imread(str(image_path))
-                        if image is not None:
-                            height, width = image.shape[:2]
-                            
-                            # Redimensionar máscara del crop al tamaño original
-                            mask = cv2.resize(alpha, (width, height), interpolation=cv2.INTER_LINEAR)
-                            
-                            # Calcular bounding box desde la máscara
-                            coords = np.where(mask > 128)
-                            if len(coords[0]) > 0:
-                                y_min, y_max = int(coords[0].min()), int(coords[0].max())
-                                x_min, x_max = int(coords[1].min()), int(coords[1].max())
-                                
-                                # Convertir a formato YOLO (normalizado)
-                                x_center = ((x_min + x_max) / 2) / width
-                                y_center = ((y_min + y_max) / 2) / height
-                                bbox_w = (x_max - x_min) / width
-                                bbox_h = (y_max - y_min) / height
-                                
-                                annotation = {
-                                    'class_id': 0,  # cacao_grain
-                                    'bbox': [x_center, y_center, bbox_w, bbox_h],
-                                    'mask': mask,
-                                    'confidence': 0.8
-                                }
-                                
-                                logger.debug(f"Anotación generada usando crop existente para {image_path.name}")
-                                return [annotation]
-            except Exception as e:
-                logger.debug(f"No se pudo usar crop existente para {image_path.name}: {e}")
+            # Método 2: Intentar usar crop existente
+            annotation = self._generate_annotation_from_crop(image_path)
+            if annotation:
+                return annotation
             
-            # Método 3: Fallback - anotación centrada simple
-            image = cv2.imread(str(image_path))
-            if image is None:
-                return None
-            
-            height, width = image.shape[:2]
-            
-            # Crear anotación centrada (asumiendo que el grano está en el centro)
-            center_x = width // 2
-            center_y = height // 2
-            
-            # Calcular bounding box (20% del tamaño de la imagen)
-            bbox_width = int(width * 0.2)
-            bbox_height = int(height * 0.2)
-            
-            x1 = max(0, center_x - bbox_width // 2)
-            y1 = max(0, center_y - bbox_height // 2)
-            x2 = min(width, center_x + bbox_width // 2)
-            y2 = min(height, center_y + bbox_height // 2)
-            
-            # Convertir a formato YOLO (normalizado)
-            x_center = (x1 + x2) / 2 / width
-            y_center = (y1 + y2) / 2 / height
-            bbox_w = (x2 - x1) / width
-            bbox_h = (y2 - y1) / height
-            
-            # Crear máscara simple (rectángulo)
-            mask = np.zeros((height, width), dtype=np.uint8)
-            mask[y1:y2, x1:x2] = 255
-            
-            annotation = {
-                'class_id': 0,  # cacao_grain
-                'bbox': [x_center, y_center, bbox_w, bbox_h],
-                'mask': mask,
-                'confidence': 0.5
-            }
-            
-            logger.debug(f"Anotación generada usando método fallback (centrado) para {image_path.name}")
-            return [annotation]
+            # Método 3: Fallback - anotación centrada
+            return self._generate_annotation_fallback(image_path)
             
         except Exception as e:
             logger.error(f"Error generando anotación para {image_path}: {e}")
@@ -337,8 +512,8 @@ class YOLOTrainingManager:
         
         # Dividir dataset
         image_ids = list(all_annotations.keys())
-        np.random.seed(42)
-        np.random.shuffle(image_ids)
+        rng = np.random.default_rng(42)
+        rng.shuffle(image_ids)
         
         n_train = int(len(image_ids) * self.train_split)
         n_val = int(len(image_ids) * self.val_split)
@@ -372,12 +547,14 @@ class YOLOTrainingManager:
                     if image is None:
                         continue
                     
+                    height, width = image.shape[:2]
+                    
                     target_image_path = images_dir / f"{image_id}.jpg"
                     cv2.imwrite(str(target_image_path), image)
                     
                     # Crear archivo de etiquetas
                     label_path = labels_dir / f"{image_id}.txt"
-                    self._create_yolo_label_file(label_path, all_annotations[image_id])
+                    self._create_yolo_label_file(label_path, all_annotations[image_id], width, height)
                     
                 except Exception as e:
                     logger.error(f"Error procesando imagen {image_id}: {e}")
@@ -388,21 +565,47 @@ class YOLOTrainingManager:
         logger.info("Dataset YOLO creado exitosamente")
         return splits
     
-    def _create_yolo_label_file(self, label_path: Path, annotations: List[Dict]) -> None:
+    def _create_yolo_label_file(self, label_path: Path, annotations: List[Dict], width: int, height: int) -> None:
         """
-        Crea archivo de etiquetas en formato YOLO.
+        Crea archivo de etiquetas en formato YOLO para segmentación.
         
         Args:
             label_path: Ruta al archivo de etiquetas
-            annotations: Lista de anotaciones
+            annotations: Lista de anotaciones (debe incluir 'mask')
+            width: Ancho de la imagen
+            height: Altura de la imagen
         """
         with open(label_path, 'w') as f:
             for annotation in annotations:
                 class_id = annotation['class_id']
-                bbox = annotation['bbox']
+                mask = annotation.get('mask')
                 
-                # Formato YOLO: class_id x_center y_center width height
-                line = f"{class_id} {bbox[0]:.6f} {bbox[1]:.6f} {bbox[2]:.6f} {bbox[3]:.6f}\n"
+                if mask is None:
+                    # Fallback a bbox si no hay máscara
+                    bbox = annotation['bbox']
+                    line = f"{class_id} {bbox[0]:.6f} {bbox[1]:.6f} {bbox[2]:.6f} {bbox[3]:.6f}\n"
+                    f.write(line)
+                    continue
+                
+                # Asegurar que la máscara tiene las dimensiones correctas
+                mask_height, mask_width = mask.shape[:2]
+                if mask_height != height or mask_width != width:
+                    mask = cv2.resize(mask, (width, height), interpolation=cv2.INTER_LINEAR)
+                
+                # Convertir máscara a polígono
+                polygon = _convertir_mascara_a_poligono_yolo(mask, width, height)
+                
+                if polygon is None or len(polygon) < 6:  # Mínimo 3 puntos (6 valores)
+                    # Fallback a bbox si no se puede generar polígono
+                    bbox = annotation['bbox']
+                    line = f"{class_id} {bbox[0]:.6f} {bbox[1]:.6f} {bbox[2]:.6f} {bbox[3]:.6f}\n"
+                    f.write(line)
+                    logger.warning(f"No se pudo generar polígono para anotación, usando bbox como fallback")
+                    continue
+                
+                # Formato YOLO segmentación: class_id x1 y1 x2 y2 ... xn yn
+                polygon_str = ' '.join(f"{coord:.6f}" for coord in polygon)
+                line = f"{class_id} {polygon_str}\n"
                 f.write(line)
     
     def _create_dataset_yaml(self) -> None:
@@ -416,7 +619,7 @@ class YOLOTrainingManager:
             'names': self.class_names
         }
         
-        yaml_path = self.dataset_dir / "dataset.yaml"
+        yaml_path = self.dataset_dir / DATASET_YAML_FILENAME
         with open(yaml_path, 'w') as f:
             yaml.dump(dataset_config, f, default_flow_style=False)
         
@@ -425,7 +628,6 @@ class YOLOTrainingManager:
     def train_model(
         self,
         model_name: str = "yolov8s-seg",
-        resume: bool = False,
         pretrained: bool = True
     ) -> Dict[str, Any]:
         """
@@ -440,6 +642,22 @@ class YOLOTrainingManager:
             Diccionario con resultados del entrenamiento
         """
         logger.info(f"Iniciando entrenamiento de {model_name}...")
+        logger.info(f"Usando dispositivo: {self.device}")
+        
+        # Verificar disponibilidad de GPU si se solicita
+        if self.device == 'cuda':
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    logger.info(f"GPU disponible: {torch.cuda.get_device_name(0)}")
+                    logger.info(f"Memoria GPU total: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB")
+                else:
+                    logger.warning("⚠️ CUDA solicitada pero no está disponible. Verifica:")
+                    logger.warning("  1. Que PyTorch con CUDA esté instalado: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118")
+                    logger.warning("  2. Que los drivers de NVIDIA estén instalados")
+                    logger.warning("  3. Ejecuta: python -c 'import torch; print(torch.cuda.is_available())'")
+            except ImportError:
+                logger.error("PyTorch no está instalado. Instala con: pip install torch")
         
         # Configurar logging de Ultralytics
         if LOGGER:
@@ -450,7 +668,7 @@ class YOLOTrainingManager:
         
         # Configuración de entrenamiento
         train_config = {
-            'data': str(self.dataset_dir / "dataset.yaml"),
+                'data': str(self.dataset_dir / DATASET_YAML_FILENAME),
             'epochs': self.epochs,
             'batch': self.batch_size,
             'imgsz': self.image_size,
@@ -461,7 +679,7 @@ class YOLOTrainingManager:
             'save': True,
             'save_period': 10,
             'cache': True,
-            'device': 'cpu',  # Cambiar a 'cuda' si hay GPU disponible
+            'device': self.device,
             'workers': 4,
             'patience': 20,
             'lr0': 0.01,
@@ -508,7 +726,7 @@ class YOLOTrainingManager:
             with open(info_path, 'w') as f:
                 json.dump(training_info, f, indent=2, default=str)
             
-            logger.info(f"Entrenamiento completado exitosamente")
+            logger.info("Entrenamiento completado exitosamente")
             logger.info(f"Mejor modelo guardado en: {training_info['best_model_path']}")
             
             return training_info
@@ -535,7 +753,7 @@ class YOLOTrainingManager:
             
             # Validar en dataset de test
             results = model.val(
-                data=str(self.dataset_dir / "dataset.yaml"),
+                    data=str(self.dataset_dir / DATASET_YAML_FILENAME),
                 split='test',
                 imgsz=self.image_size,
                 conf=self.confidence_threshold,
@@ -555,7 +773,7 @@ class YOLOTrainingManager:
                 'mask_mAP50-95': results.seg.map if hasattr(results, 'seg') else 0
             }
             
-            logger.info(f"Métricas de validación:")
+            logger.info("Métricas de validación:")
             logger.info(f"  mAP50: {metrics['mAP50']:.3f}")
             logger.info(f"  mAP50-95: {metrics['mAP50-95']:.3f}")
             logger.info(f"  Precision: {metrics['precision']:.3f}")
@@ -624,7 +842,7 @@ class YOLOTrainingManager:
                 'model_paths': {
                     'best_model': training_results['best_model_path'],
                     'last_model': training_results['last_model_path'],
-                    'dataset_config': str(self.dataset_dir / "dataset.yaml")
+                    'dataset_config': str(self.dataset_dir / DATASET_YAML_FILENAME)
                 }
             }
             
@@ -646,7 +864,8 @@ class YOLOTrainingManager:
 def create_yolo_trainer(
     dataset_size: int = 150,
     epochs: int = 100,
-    batch_size: int = 16
+    batch_size: int = 16,
+    device: str = 'auto'
 ) -> YOLOTrainingManager:
     """
     Función de conveniencia para crear un entrenador YOLO.
@@ -655,6 +874,7 @@ def create_yolo_trainer(
         dataset_size: Número de imágenes para el dataset
         epochs: Número de épocas
         batch_size: Tamaño del batch
+        device: Dispositivo para entrenamiento ('cpu', 'cuda', o 'auto')
         
     Returns:
         Instancia de YOLOTrainingManager
@@ -662,7 +882,8 @@ def create_yolo_trainer(
     return YOLOTrainingManager(
         dataset_size=dataset_size,
         epochs=epochs,
-        batch_size=batch_size
+        batch_size=batch_size,
+        device=device
     )
 
 
@@ -670,7 +891,8 @@ def train_cacao_yolo_model(
     dataset_size: int = 150,
     epochs: int = 100,
     batch_size: int = 16,
-    model_name: str = "yolov8s-seg"
+    model_name: str = "yolov8s-seg",
+    device: str = 'auto'
 ) -> Dict[str, Any]:
     """
     Función de conveniencia para entrenar modelo YOLO de cacao.
@@ -680,11 +902,12 @@ def train_cacao_yolo_model(
         epochs: Número de épocas
         batch_size: Tamaño del batch
         model_name: Nombre del modelo base
+        device: Dispositivo para entrenamiento ('cpu', 'cuda', o 'auto')
         
     Returns:
         Resultados del entrenamiento
     """
-    trainer = create_yolo_trainer(dataset_size, epochs, batch_size)
+    trainer = create_yolo_trainer(dataset_size, epochs, batch_size, device)
     return trainer.run_full_training_pipeline(model_name)
 
 

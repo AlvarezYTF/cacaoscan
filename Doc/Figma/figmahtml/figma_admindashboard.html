@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Administrador - CacaoScan</title>
+    <link rel="stylesheet" href="../figmacss/figma_admindashboard.css">
+</head>
+<body>
+    <div class="min-h-screen bg-gray-50">
+        <!-- Sidebar placeholder (simplificado para Figma) -->
+        <div class="sidebar-placeholder">
+            <!-- Sidebar se renderiza aquí en la aplicación real -->
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Header -->
+            <div class="mb-8">
+                <div class="dashboard-header bg-gradient-to-r from-white to-green-50 rounded-2xl border-2 border-gray-200 hover:shadow-xl hover:border-green-300 transition-all duration-300">
+                    <div class="px-8 py-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg">
+                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h1 class="text-3xl font-bold text-gray-900 mb-1">Dashboard de Administración</h1>
+                                    <p class="text-gray-600 text-base">Panel de control completo del sistema CacaoScan</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500" title="Actualizar datos">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                </button>
+                                <div class="text-xs text-gray-500">
+                                    Última actualización: Hace 2m
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- KPI Cards -->
+            <div class="mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Card Usuarios Totales -->
+                    <div class="kpi-card bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-xl hover:border-green-300 transition-all duration-300 group">
+                        <div class="absolute top-0 right-0 w-20 h-1 bg-gradient-to-l from-green-500 to-transparent rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Usuarios Totales</p>
+                                </div>
+                                <p class="text-4xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors duration-300">1,234</p>
+                                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50">
+                                    <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"></path>
+                                    </svg>
+                                    <span class="text-sm font-semibold text-green-600">+12 esta semana</span>
+                                </div>
+                            </div>
+                            <div class="relative ml-4">
+                                <div class="absolute inset-0 bg-green-400 rounded-2xl transform rotate-3 opacity-20 group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300"></div>
+                                <div class="relative p-4 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 transition-all duration-300 shadow-md group-hover:shadow-lg">
+                                    <svg class="w-8 h-8 text-green-600 group-hover:text-green-700 group-hover:scale-110 transition-all duration-300" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Fincas Registradas -->
+                    <div class="kpi-card bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-xl hover:border-green-300 transition-all duration-300 group">
+                        <div class="absolute top-0 right-0 w-20 h-1 bg-gradient-to-l from-green-500 to-transparent rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Fincas Registradas</p>
+                                </div>
+                                <p class="text-4xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors duration-300">456</p>
+                                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50">
+                                    <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"></path>
+                                    </svg>
+                                    <span class="text-sm font-semibold text-green-600">+5 esta semana</span>
+                                </div>
+                            </div>
+                            <div class="relative ml-4">
+                                <div class="absolute inset-0 bg-green-400 rounded-2xl transform rotate-3 opacity-20 group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300"></div>
+                                <div class="relative p-4 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 transition-all duration-300 shadow-md group-hover:shadow-lg">
+                                    <svg class="w-8 h-8 text-green-600 group-hover:text-green-700 group-hover:scale-110 transition-all duration-300" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Análisis Realizados -->
+                    <div class="kpi-card bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-xl hover:border-green-300 transition-all duration-300 group">
+                        <div class="absolute top-0 right-0 w-20 h-1 bg-gradient-to-l from-green-500 to-transparent rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Análisis Realizados</p>
+                                </div>
+                                <p class="text-4xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors duration-300">8,901</p>
+                                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50">
+                                    <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"></path>
+                                    </svg>
+                                    <span class="text-sm font-semibold text-green-600">+234 esta semana</span>
+                                </div>
+                            </div>
+                            <div class="relative ml-4">
+                                <div class="absolute inset-0 bg-green-400 rounded-2xl transform rotate-3 opacity-20 group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300"></div>
+                                <div class="relative p-4 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 transition-all duration-300 shadow-md group-hover:shadow-lg">
+                                    <svg class="w-8 h-8 text-green-600 group-hover:text-green-700 group-hover:scale-110 transition-all duration-300" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Calidad Promedio -->
+                    <div class="kpi-card bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-xl hover:border-green-300 transition-all duration-300 group">
+                        <div class="absolute top-0 right-0 w-20 h-1 bg-gradient-to-l from-green-500 to-transparent rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Calidad Promedio</p>
+                                </div>
+                                <p class="text-4xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors duration-300">87%</p>
+                                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-50">
+                                    <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"></path>
+                                    </svg>
+                                    <span class="text-sm font-semibold text-gray-600">+2% vs mes anterior</span>
+                                </div>
+                            </div>
+                            <div class="relative ml-4">
+                                <div class="absolute inset-0 bg-green-400 rounded-2xl transform rotate-3 opacity-20 group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300"></div>
+                                <div class="relative p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 group-hover:from-amber-100 group-hover:to-amber-200 transition-all duration-300 shadow-md group-hover:shadow-lg">
+                                    <svg class="w-8 h-8 text-amber-600 group-hover:text-amber-700 group-hover:scale-110 transition-all duration-300" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="mb-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Activity Chart Card -->
+                    <div class="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-lg">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">Actividad de Usuarios</h2>
+                                <p class="text-sm text-gray-600 mt-1">Últimos 30 días</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-placeholder bg-gray-50 rounded-xl h-64 flex items-center justify-center">
+                            <p class="text-gray-500">Gráfico de Actividad</p>
+                        </div>
+                    </div>
+
+                    <!-- Quality Chart Card -->
+                    <div class="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-lg">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">Distribución de Calidad</h2>
+                                <p class="text-sm text-gray-600 mt-1">Análisis por categoría</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-placeholder bg-gray-50 rounded-xl h-64 flex items-center justify-center">
+                            <p class="text-gray-500">Gráfico de Distribución</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tables Section -->
+            <div class="mb-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Recent Users Table -->
+                    <div class="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-lg">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold text-gray-900">Usuarios Recientes</h2>
+                            <a href="/admin/agricultores" class="text-sm font-semibold text-green-600 hover:text-green-700 transition-colors">
+                                Ver Todos →
+                            </a>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200">
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Usuario</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Rol</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr class="hover:bg-gray-50 transition-colors">
+                                        <td class="py-3 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                    <span class="text-sm font-semibold text-green-600">JU</span>
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm font-semibold text-gray-900">Juan Pérez</p>
+                                                    <p class="text-xs text-gray-500">juan@ejemplo.com</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">Agricultor</span>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Activo</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50 transition-colors">
+                                        <td class="py-3 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                    <span class="text-sm font-semibold text-green-600">MA</span>
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm font-semibold text-gray-900">María García</p>
+                                                    <p class="text-xs text-gray-500">maria@ejemplo.com</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">Agricultor</span>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Activo</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity Table -->
+                    <div class="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-lg">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold text-gray-900">Actividad Reciente</h2>
+                            <a href="/admin/audit" class="text-sm font-semibold text-green-600 hover:text-green-700 transition-colors">
+                                Ver Auditoría →
+                            </a>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-green-50 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-900">Usuario creado</p>
+                                        <p class="text-xs text-gray-500">Hace 5 minutos</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-green-50 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-900">Análisis actualizado</p>
+                                        <p class="text-xs text-gray-500">Hace 12 minutos</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts and Reports Section -->
+            <div class="mb-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Alerts Card -->
+                    <div class="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-lg">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Alertas del Sistema</h2>
+                        <div class="text-center py-8">
+                            <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <p class="text-gray-600 font-medium">No hay alertas activas</p>
+                        </div>
+                    </div>
+
+                    <!-- Reports Card -->
+                    <div class="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-lg">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold text-gray-900">Reportes Generados</h2>
+                            <a href="/admin/reports" class="text-sm font-semibold text-green-600 hover:text-green-700 transition-colors">
+                                Gestionar Reportes →
+                            </a>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-50 rounded-xl p-4 text-center">
+                                <p class="text-2xl font-bold text-gray-900">156</p>
+                                <p class="text-xs text-gray-600 mt-1">Total Reportes</p>
+                            </div>
+                            <div class="bg-green-50 rounded-xl p-4 text-center">
+                                <p class="text-2xl font-bold text-green-600">142</p>
+                                <p class="text-xs text-gray-600 mt-1">Completados</p>
+                            </div>
+                            <div class="bg-amber-50 rounded-xl p-4 text-center">
+                                <p class="text-2xl font-bold text-amber-600">8</p>
+                                <p class="text-xs text-gray-600 mt-1">Generando</p>
+                            </div>
+                            <div class="bg-red-50 rounded-xl p-4 text-center">
+                                <p class="text-2xl font-bold text-red-600">6</p>
+                                <p class="text-xs text-gray-600 mt-1">Fallidos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

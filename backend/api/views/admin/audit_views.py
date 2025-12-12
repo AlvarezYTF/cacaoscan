@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q, Count, Avg
+from django.db import models
 from django.utils import timezone
 from datetime import timedelta
 from drf_yasg.utils import swagger_auto_schema
@@ -21,6 +22,10 @@ ActivityLog = get_model_safely('audit.models.ActivityLog')
 from ...serializers import ErrorResponseSerializer
 
 logger = logging.getLogger("cacaoscan.api")
+
+# Error message constants
+ERROR_INVALID_DATE_FORMAT = 'Formato de fecha inválido. Use YYYY-MM-DD'
+ERROR_INTERNAL_SERVER = 'Error interno del servidor'
 
 
 class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
@@ -49,6 +54,106 @@ class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
         },
         tags=['Auditoría']
     )
+    def _get_empty_response(self):
+        """Return empty response when ActivityLog is not available."""
+        return Response({
+            'results': [],
+            'count': 0,
+            'page': 1,
+            'page_size': 50,
+            'total_pages': 0,
+            'next': None,
+            'previous': None,
+        }, status=status.HTTP_200_OK)
+    
+    def _apply_text_filters(self, queryset, request):
+        """Apply text-based filters to queryset."""
+        usuario = request.GET.get('usuario', '').strip()
+        if usuario:
+            queryset = queryset.filter(user__username__icontains=usuario)
+        
+        accion = request.GET.get('accion', '').strip()
+        if accion:
+            queryset = queryset.filter(action=accion)
+        
+        modelo = request.GET.get('modelo', '').strip()
+        if modelo:
+            # Try to filter by content_type first (normalized), fallback to resource_type (legacy)
+            from django.contrib.contenttypes.models import ContentType
+            try:
+                # Try to find ContentType by app_label or model name
+                content_types = ContentType.objects.filter(
+                    models.Q(app_label__icontains=modelo) | 
+                    models.Q(model__icontains=modelo)
+                )
+                if content_types.exists():
+                    queryset = queryset.filter(content_type__in=content_types)
+                else:
+                    # Fallback to legacy resource_type field
+                    queryset = queryset.filter(resource_type__icontains=modelo)
+            except Exception:
+                # Fallback to legacy resource_type field
+                queryset = queryset.filter(resource_type__icontains=modelo)
+        
+        ip_address = request.GET.get('ip_address', '').strip()
+        if ip_address:
+            queryset = queryset.filter(ip_address__icontains=ip_address)
+        
+        return queryset
+    
+    def _apply_date_filters(self, queryset, request):
+        """Apply date filters to queryset. Returns (queryset, error_response)."""
+        fecha_desde = request.GET.get('fecha_desde')
+        if fecha_desde:
+            try:
+                fecha_desde = timezone.datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+                queryset = queryset.filter(timestamp__date__gte=fecha_desde)
+            except ValueError:
+                return None, Response({
+                    'error': ERROR_INVALID_DATE_FORMAT,
+                    'status': 'error'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        fecha_hasta = request.GET.get('fecha_hasta')
+        if fecha_hasta:
+            try:
+                fecha_hasta = timezone.datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+                queryset = queryset.filter(timestamp__date__lte=fecha_hasta)
+            except ValueError:
+                return None, Response({
+                    'error': ERROR_INVALID_DATE_FORMAT,
+                    'status': 'error'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        return queryset, None
+    
+    def _serialize_logs(self, logs):
+        """Serialize logs for response."""
+        result = []
+        for log in logs:
+            # Use ContentType fields if available, fallback to legacy fields
+            if log.content_type:
+                modelo = f"{log.content_type.app_label}.{log.content_type.model}"
+                objeto_id = log.object_id
+            else:
+                modelo = log.resource_type or ""
+                objeto_id = log.resource_id
+            
+            result.append({
+                'id': log.id,
+                'usuario': log.user.username if log.user else 'Usuario Anónimo',
+                'accion': log.action,
+                'accion_display': log.action,
+                'modelo': modelo,
+                'objeto_id': objeto_id,
+                'descripcion': log.details.get('description', '') if isinstance(log.details, dict) else str(log.details),
+                'ip_address': log.ip_address,
+                'timestamp': log.timestamp.isoformat(),
+                'datos_antes': log.details.get('before', {}) if isinstance(log.details, dict) else {},
+                'datos_despues': log.details.get('after', {}) if isinstance(log.details, dict) else {},
+            })
+        return result
+    
     def get(self, request):
         """Listar logs de actividad con filtros."""
         try:
@@ -56,86 +161,35 @@ class ActivityLogListView(PaginationMixin, AdminPermissionMixin, APIView):
                 return self.admin_permission_denied('No tienes permisos para acceder a los logs de actividad')
             
             if ActivityLog is None:
-                # Si el modelo no está disponible, retornar vacío
-                return Response({
-                    'results': [],
-                    'count': 0,
-                    'page': 1,
-                    'page_size': 50,
-                    'total_pages': 0,
-                    'next': None,
-                    'previous': None,
-                }, status=status.HTTP_200_OK)
+                return self._get_empty_response()
             
-            queryset = ActivityLog.objects.all().select_related('usuario').order_by('-timestamp')
+            # Get ordering parameter from request
+            ordering = request.GET.get('ordering', '-timestamp')
+            # Validate ordering field (security: only allow specific fields)
+            allowed_orderings = ['timestamp', '-timestamp', 'action', '-action', 'user__username', '-user__username']
+            if ordering not in allowed_orderings:
+                ordering = '-timestamp'  # Default to most recent first
             
-            # Aplicar filtros
-            usuario = request.GET.get('usuario', '').strip()
-            if usuario:
-                queryset = queryset.filter(usuario__username__icontains=usuario)
+            queryset = ActivityLog.objects.all().select_related('user').order_by(ordering)
+            queryset = self._apply_text_filters(queryset, request)
             
-            accion = request.GET.get('accion', '').strip()
-            if accion:
-                queryset = queryset.filter(accion=accion)
+            queryset, error_response = self._apply_date_filters(queryset, request)
+            if error_response:
+                return error_response
             
-            modelo = request.GET.get('modelo', '').strip()
-            if modelo:
-                queryset = queryset.filter(modelo__icontains=modelo)
-            
-            ip_address = request.GET.get('ip_address', '').strip()
-            if ip_address:
-                queryset = queryset.filter(ip_address__icontains=ip_address)
-            
-            # Filtros de fecha
-            fecha_desde = request.GET.get('fecha_desde')
-            if fecha_desde:
-                try:
-                    fecha_desde = timezone.datetime.strptime(fecha_desde, '%Y-%m-%d').date()
-                    queryset = queryset.filter(timestamp__date__gte=fecha_desde)
-                except ValueError:
-                    return Response({
-                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
-                        'status': 'error'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-            
-            fecha_hasta = request.GET.get('fecha_hasta')
-            if fecha_hasta:
-                try:
-                    fecha_hasta = timezone.datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
-                    queryset = queryset.filter(timestamp__date__lte=fecha_hasta)
-                except ValueError:
-                    return Response({
-                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
-                        'status': 'error'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Paginar usando el mixin con serialización personalizada
-            def serialize_logs(logs):
-                return [{
-                    'id': log.id,
-                    'usuario': log.usuario.username if log.usuario else 'Usuario Anónimo',
-                    'accion': log.accion,
-                    'accion_display': log.get_accion_display(),
-                    'modelo': log.modelo,
-                    'objeto_id': log.objeto_id,
-                    'descripcion': log.descripcion,
-                    'ip_address': log.ip_address,
-                    'timestamp': log.timestamp.isoformat(),
-                    'datos_antes': log.datos_antes,
-                    'datos_despues': log.datos_despues,
-                } for log in logs]
+            logger.info(f"[ActivityLogListView] Querying {queryset.count()} activity logs")
             
             return self.paginate_queryset(
                 request,
                 queryset,
-                serializer_func=serialize_logs,
+                serializer_func=self._serialize_logs,
                 extra_data=None
             )
             
         except Exception as e:
             logger.error(f"Error listando logs de actividad: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -165,76 +219,87 @@ class LoginHistoryListView(PaginationMixin, AdminPermissionMixin, APIView):
         },
         tags=['Auditoría']
     )
+    def _apply_login_text_filters(self, queryset, request):
+        """Apply text-based filters to login history queryset."""
+        usuario = request.GET.get('usuario', '').strip()
+        if usuario:
+            queryset = queryset.filter(user__username__icontains=usuario)
+        
+        ip_address = request.GET.get('ip_address', '').strip()
+        if ip_address:
+            queryset = queryset.filter(ip_address__icontains=ip_address)
+        
+        success = request.GET.get('success')
+        if success is not None:
+            success_bool = success.lower() in ['true', '1', 'yes']
+            queryset = queryset.filter(login_successful=success_bool)
+        
+        return queryset
+    
+    def _apply_login_date_filters(self, queryset, request):
+        """Apply date filters to login history queryset. Returns (queryset, error_response)."""
+        fecha_desde = request.GET.get('fecha_desde')
+        if fecha_desde:
+            try:
+                fecha_desde = timezone.datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+                queryset = queryset.filter(login_time__date__gte=fecha_desde)
+            except ValueError:
+                return None, Response({
+                    'error': ERROR_INVALID_DATE_FORMAT,
+                    'status': 'error'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        fecha_hasta = request.GET.get('fecha_hasta')
+        if fecha_hasta:
+            try:
+                fecha_hasta = timezone.datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+                queryset = queryset.filter(login_time__date__lte=fecha_hasta)
+            except ValueError:
+                return None, Response({
+                    'error': ERROR_INVALID_DATE_FORMAT,
+                    'status': 'error'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        return queryset, None
+    
+    def _serialize_logins(self, logins):
+        """Serialize logins for response."""
+        return [{
+            'id': login.id,
+            'usuario': login.user.username if login.user else 'Usuario Anónimo',
+            'ip_address': login.ip_address,
+            'user_agent': login.user_agent,
+            'login_time': login.login_time.isoformat(),
+            'logout_time': login.logout_time.isoformat() if login.logout_time else None,
+            'session_duration': str(login.session_duration) if login.session_duration else None,
+            'success': login.login_successful,
+            'failure_reason': login.failure_reason,
+        } for login in logins]
+    
     def get(self, request):
         """Listar historial de logins con filtros."""
         try:
             if not self.is_admin_user(request.user):
                 return self.admin_permission_denied('No tienes permisos para acceder al historial de logins')
             
-            queryset = LoginHistory.objects.all().select_related('usuario')
+            queryset = LoginHistory.objects.all().select_related('user')
+            queryset = self._apply_login_text_filters(queryset, request)
             
-            # Aplicar filtros
-            usuario = request.GET.get('usuario', '').strip()
-            if usuario:
-                queryset = queryset.filter(usuario__username__icontains=usuario)
-            
-            ip_address = request.GET.get('ip_address', '').strip()
-            if ip_address:
-                queryset = queryset.filter(ip_address__icontains=ip_address)
-            
-            success = request.GET.get('success')
-            if success is not None:
-                success_bool = success.lower() in ['true', '1', 'yes']
-                queryset = queryset.filter(success=success_bool)
-            
-            # Filtros de fecha
-            fecha_desde = request.GET.get('fecha_desde')
-            if fecha_desde:
-                try:
-                    fecha_desde = timezone.datetime.strptime(fecha_desde, '%Y-%m-%d').date()
-                    queryset = queryset.filter(login_time__date__gte=fecha_desde)
-                except ValueError:
-                    return Response({
-                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
-                        'status': 'error'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-            
-            fecha_hasta = request.GET.get('fecha_hasta')
-            if fecha_hasta:
-                try:
-                    fecha_hasta = timezone.datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
-                    queryset = queryset.filter(login_time__date__lte=fecha_hasta)
-                except ValueError:
-                    return Response({
-                        'error': 'Formato de fecha inválido. Use YYYY-MM-DD',
-                        'status': 'error'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Paginar usando el mixin con serialización personalizada
-            def serialize_logins(logins):
-                return [{
-                    'id': login.id,
-                    'usuario': login.usuario.username,
-                    'ip_address': login.ip_address,
-                    'user_agent': login.user_agent,
-                    'login_time': login.login_time.isoformat(),
-                    'logout_time': login.logout_time.isoformat() if login.logout_time else None,
-                    'session_duration': str(login.session_duration) if login.session_duration else None,
-                    'success': login.success,
-                    'failure_reason': login.failure_reason,
-                } for login in logins]
+            queryset, error_response = self._apply_login_date_filters(queryset, request)
+            if error_response:
+                return error_response
             
             return self.paginate_queryset(
                 request,
                 queryset,
-                serializer_func=serialize_logins,
+                serializer_func=self._serialize_logins,
                 extra_data=None
             )
             
         except Exception as e:
             logger.error(f"Error listando historial de logins: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -261,6 +326,13 @@ class AuditStatsView(AdminPermissionMixin, APIView):
             if not self.is_admin_user(request.user):
                 return self.admin_permission_denied('No tienes permisos para acceder a las estadísticas de auditoría')
             
+            # Check if models are available
+            if ActivityLog is None:
+                return Response({
+                    'error': 'Modelo ActivityLog no disponible',
+                    'status': 'error'
+                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            
             # Estadísticas de ActivityLog
             total_activities = ActivityLog.objects.count()
             activities_today = ActivityLog.objects.filter(
@@ -268,28 +340,38 @@ class AuditStatsView(AdminPermissionMixin, APIView):
             ).count()
             
             activities_by_action = dict(
-                ActivityLog.objects.values('accion')
+                ActivityLog.objects.values('action')
                 .annotate(count=Count('id'))
-                .values_list('accion', 'count')
+                .values_list('action', 'count')
             )
             
-            activities_by_model = dict(
-                ActivityLog.objects.values('modelo')
-                .annotate(count=Count('id'))
-                .values_list('modelo', 'count')
-            )
+            # Use normalized content_type if available, fallback to resource_type
+            from django.contrib.contenttypes.models import ContentType
+            activities_by_model = {}
+            
+            # Get from ContentType fields
+            for log in ActivityLog.objects.filter(content_type__isnull=False).select_related('content_type'):
+                model_name = f"{log.content_type.app_label}.{log.content_type.model}"
+                activities_by_model[model_name] = activities_by_model.get(model_name, 0) + 1
+            
+            # Add from legacy fields
+            for resource_type, count in ActivityLog.objects.filter(
+                content_type__isnull=True
+            ).values('resource_type').annotate(count=Count('id')).values_list('resource_type', 'count'):
+                if resource_type:
+                    activities_by_model[resource_type] = activities_by_model.get(resource_type, 0) + count
             
             # Top usuarios más activos
             top_active_users = list(
-                ActivityLog.objects.values('usuario__username')
+                ActivityLog.objects.values('user__username')
                 .annotate(count=Count('id'))
                 .order_by('-count')[:10]
             )
             
             # Estadísticas de LoginHistory
             total_logins = LoginHistory.objects.count()
-            successful_logins = LoginHistory.objects.filter(success=True).count()
-            failed_logins = LoginHistory.objects.filter(success=False).count()
+            successful_logins = LoginHistory.objects.filter(login_successful=True).count()
+            failed_logins = LoginHistory.objects.filter(login_successful=False).count()
             
             # Logins por día (últimos 7 días)
             login_stats_by_day = []
@@ -338,7 +420,7 @@ class AuditStatsView(AdminPermissionMixin, APIView):
         except Exception as e:
             logger.error(f"Error obteniendo estadísticas de auditoría: {e}")
             return Response({
-                'error': 'Error interno del servidor',
+                'error': ERROR_INTERNAL_SERVER,
                 'status': 'error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

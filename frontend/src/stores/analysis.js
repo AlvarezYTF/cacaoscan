@@ -77,16 +77,16 @@ export const useAnalysisStore = defineStore('analysis', {
         const formData = new FormData();
 
         // Add batch data
-        Object.entries(this.batch).forEach(([key, value]) => {
+        for (const [key, value] of Object.entries(this.batch)) {
           if (value) {
             formData.append(key, value);
           }
-        });
+        }
 
         // Add images
-        this.images.forEach((file) => {
+        for (const file of this.images) {
           formData.append('images', file);
-        });
+        }
 
         // Upload with progress tracking
         // Timeout aumentado a 120 segundos para análisis batch con múltiples imágenes
@@ -104,8 +104,9 @@ export const useAnalysisStore = defineStore('analysis', {
           },
         });
 
-        // NOTA: Ya no llamamos a /scan/measure/ porque el batch endpoint ya hace todo el procesamiento
-        // Esto evita errores duplicados y mejora el rendimiento
+        // El endpoint /api/v1/images/batch/upload/ procesa automáticamente las imágenes
+        // incluyendo mediciones, por lo que no es necesario llamar a /scan/measure/ por separado.
+        // Esto evita procesamiento duplicado y mejora el rendimiento del sistema.
 
         return response.data;
 

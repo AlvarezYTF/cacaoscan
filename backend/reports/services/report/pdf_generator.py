@@ -6,7 +6,7 @@ import io
 from datetime import datetime, timedelta
 from decimal import Decimal
 from django.utils import timezone
-from django.db.models import Count, Avg, Sum, Q
+from django.db.models import Sum, Q
 from django.http import HttpResponse
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -18,6 +18,13 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
 # Importar desde apps modulares
 from api.utils.model_imports import get_models_safely
+from .report_stats import (
+    apply_prediction_filters,
+    get_quality_stats,
+    get_lotes_stats,
+    get_activity_stats,
+    get_login_stats
+)
 
 # Import models safely
 models = get_models_safely({
@@ -39,6 +46,10 @@ from audit.models import LoginHistory
 from reports.models import ReporteGenerado
 
 logger = logging.getLogger("cacaoscan.services.report.pdf")
+
+# PDF column constants
+PDF_COL_METRIC = 'Métrica'
+PDF_COL_VALUE = 'Valor'
 
 
 class CacaoReportPDFGenerator:
@@ -87,6 +98,51 @@ class CacaoReportPDFGenerator:
             spaceAfter=3
         ))
     
+    def _create_table_with_style(
+        self,
+        data: list[list[str]],
+        col_widths: list[float],
+        header_font_size: int = 10,
+        body_font_size: int = 10,
+        alignment: str = 'CENTER'
+    ) -> Table:
+        """Crear tabla con estilo estándar."""
+        table = Table(data, colWidths=col_widths)
+        table_style = [
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), alignment),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), header_font_size),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]
+        
+        if body_font_size != header_font_size:
+            table_style.append(('FONTSIZE', (0, 1), (-1, -1), body_font_size))
+        
+        table.setStyle(TableStyle(table_style))
+        return table
+    
+    def _create_section_with_table(
+        self,
+        title: str,
+        data: list[list[str]],
+        col_widths: list[float],
+        header_font_size: int = 10,
+        body_font_size: int = 10,
+        alignment: str = 'CENTER'
+    ) -> list:
+        """Crear sección con título y tabla."""
+        story = []
+        story.append(Paragraph(title, self.styles['CustomSubtitle']))
+        story.append(Spacer(1, 10))
+        table = self._create_table_with_style(data, col_widths, header_font_size, body_font_size, alignment)
+        story.append(table)
+        story.append(Spacer(1, 20))
+        return story
+    
     def generate_quality_report(self, user, filtros=None):
         """
         Generar reporte de calidad de granos.
@@ -110,10 +166,10 @@ class CacaoReportPDFGenerator:
             story.append(Spacer(1, 20))
             
             # Aplicar filtros
-            queryset = self._apply_filters(CacaoPrediction.objects.all(), filtros)
+            queryset = apply_prediction_filters(CacaoPrediction.objects.all(), filtros)
             
             # Estadísticas generales
-            stats = self._get_quality_stats(queryset)
+            stats = get_quality_stats(queryset)
             story.extend(self._create_stats_section(stats))
             
             # Tabla de análisis recientes
@@ -141,9 +197,13 @@ class CacaoReportPDFGenerator:
         
         Args:
             finca_id: ID de la finca
-            user: Usuario que solicita el reporte
-            filtros: Filtros a aplicar
+            user: Usuario que solicita el reporte (reservado para uso futuro)
+            filtros: Filtros a aplicar (reservado para uso futuro)
         """
+        # Suppress unused parameter warnings - reserved for future use
+        _ = user
+        _ = filtros
+        
         try:
             finca = Finca.objects.get(id=finca_id)
             buffer = io.BytesIO()
@@ -158,7 +218,7 @@ class CacaoReportPDFGenerator:
             story.extend(self._create_finca_info_section(finca))
             
             # Estadísticas de lotes
-            lotes_stats = self._get_lotes_stats(finca)
+            lotes_stats = get_lotes_stats(finca)
             story.extend(self._create_lotes_stats_section(lotes_stats))
             
             # Análisis por lote
@@ -198,15 +258,15 @@ class CacaoReportPDFGenerator:
             story.append(Spacer(1, 20))
             
             # Estadísticas de actividad
-            activity_stats = self._get_activity_stats(filtros)
+            activity_stats = get_activity_stats(filtros)
             story.extend(self._create_activity_stats_section(activity_stats))
             
             # Estadísticas de logins
-            login_stats = self._get_login_stats(filtros)
+            login_stats = get_login_stats(filtros)
             story.extend(self._create_login_stats_section(login_stats))
             
             # Actividades recientes
-            recent_activities = ActivityLog.objects.select_related('usuario').order_by('-timestamp')[:50]
+            recent_activities = ActivityLog.objects.select_related('user').order_by('-timestamp')[:50]
             if recent_activities:
                 story.extend(self._create_recent_activities_table(recent_activities))
             
@@ -218,87 +278,11 @@ class CacaoReportPDFGenerator:
             logger.error(f"Error generando reporte de auditoría: {e}")
             raise
     
-    def _apply_filters(self, queryset, filtros):
-        """Aplicar filtros al queryset."""
-        if not filtros:
-            return queryset
-        
-        # Filtro por fecha
-        if filtros.get('fecha_desde'):
-            queryset = queryset.filter(created_at__date__gte=filtros['fecha_desde'])
-        if filtros.get('fecha_hasta'):
-            queryset = queryset.filter(created_at__date__lte=filtros['fecha_hasta'])
-        
-        # Filtro por usuario
-        if filtros.get('usuario_id'):
-            queryset = queryset.filter(image__user_id=filtros['usuario_id'])
-        
-        # Filtro por finca
-        if filtros.get('finca_id'):
-            queryset = queryset.filter(image__finca=filtros['finca_id'])
-        
-        # Filtro por lote
-        if filtros.get('lote_id'):
-            queryset = queryset.filter(image__lote_id=filtros['lote_id'])
-        
-        return queryset
-    
-    def _get_quality_stats(self, queryset):
-        """Obtener estadísticas de calidad."""
-        total_analyses = queryset.count()
-        
-        if total_analyses == 0:
-            return {
-                'total_analyses': 0,
-                'avg_confidence': 0,
-                'quality_distribution': {},
-                'avg_dimensions': {},
-                'avg_weight': 0
-            }
-        
-        # Estadísticas de confianza
-        avg_confidence = queryset.aggregate(avg=Avg('average_confidence'))['avg'] or 0
-        
-        # Distribución de calidad
-        quality_distribution = {
-            'Excelente (90%)': queryset.filter(average_confidence__gte=0.9).count(),
-            'Buena (80-89%)': queryset.filter(average_confidence__gte=0.8, average_confidence__lt=0.9).count(),
-            'Regular (70-79%)': queryset.filter(average_confidence__gte=0.7, average_confidence__lt=0.8).count(),
-            'Baja (<70%)': queryset.filter(average_confidence__lt=0.7).count(),
-        }
-        
-        # Dimensiones promedio
-        avg_dimensions = queryset.aggregate(
-            avg_alto=Avg('alto_mm'),
-            avg_ancho=Avg('ancho_mm'),
-            avg_grosor=Avg('grosor_mm')
-        )
-        
-        # Peso promedio
-        avg_weight = queryset.aggregate(avg=Avg('peso_g'))['avg'] or 0
-        
-        return {
-            'total_analyses': total_analyses,
-            'avg_confidence': round(float(avg_confidence) * 100, 2),
-            'quality_distribution': quality_distribution,
-            'avg_dimensions': {
-                'alto': round(float(avg_dimensions['avg_alto'] or 0), 2),
-                'ancho': round(float(avg_dimensions['avg_ancho'] or 0), 2),
-                'grosor': round(float(avg_dimensions['avg_grosor'] or 0), 2),
-            },
-            'avg_weight': round(float(avg_weight), 2)
-        }
     
     def _create_stats_section(self, stats):
         """Crear sección de estadísticas."""
-        story = []
-        
-        story.append(Paragraph("Estadísticas Generales", self.styles['CustomSubtitle']))
-        story.append(Spacer(1, 10))
-        
-        # Tabla de estadísticas
         data = [
-            ['Métrica', 'Valor'],
+            [PDF_COL_METRIC, PDF_COL_VALUE],
             ['Total de Análisis', str(stats['total_analyses'])],
             ['Confianza Promedio', f"{stats['avg_confidence']}%"],
             ['Alto Promedio', f"{stats['avg_dimensions']['alto']} mm"],
@@ -306,35 +290,17 @@ class CacaoReportPDFGenerator:
             ['Grosor Promedio', f"{stats['avg_dimensions']['grosor']} mm"],
             ['Peso Promedio', f"{stats['avg_weight']} g"],
         ]
-        
-        table = Table(data, colWidths=[2*inch, 2*inch])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        
-        story.append(table)
-        story.append(Spacer(1, 20))
-        
-        return story
+        return self._create_section_with_table(
+            "Estadísticas Generales",
+            data,
+            [2*inch, 2*inch],
+            header_font_size=12
+        )
     
     def _create_recent_analyses_table(self, analyses):
         """Crear tabla de análisis recientes."""
-        story = []
-        
-        story.append(Paragraph("Análisis Recientes", self.styles['CustomSubtitle']))
-        story.append(Spacer(1, 10))
-        
-        # Encabezados
         data = [['Fecha', 'Usuario', 'Confianza', 'Alto (mm)', 'Ancho (mm)', 'Grosor (mm)', 'Peso (g)']]
         
-        # Datos
         for analysis in analyses:
             data.append([
                 analysis.created_at.strftime('%d/%m/%Y %H:%M'),
@@ -346,32 +312,20 @@ class CacaoReportPDFGenerator:
                 f"{analysis.peso_g:.1f}",
             ])
         
-        table = Table(data, colWidths=[1*inch, 1*inch, 0.8*inch, 0.8*inch, 0.8*inch, 0.8*inch, 0.8*inch])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 8),
-            ('FONTSIZE', (0, 1), (-1, -1), 7),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        
-        story.append(table)
-        story.append(Spacer(1, 20))
-        
-        return story
+        return self._create_section_with_table(
+            "Análisis Recientes",
+            data,
+            [1*inch, 1*inch, 0.8*inch, 0.8*inch, 0.8*inch, 0.8*inch, 0.8*inch],
+            header_font_size=8,
+            body_font_size=7
+        )
     
     def _create_quality_distribution_chart(self, queryset):
         """Crear gráfico de distribución de calidad."""
         story = []
-        
         story.append(Paragraph("Distribución de Calidad", self.styles['CustomSubtitle']))
         story.append(Spacer(1, 10))
         
-        # Calcular distribución
         distribution = {
             'Excelente (90%)': queryset.filter(average_confidence__gte=0.9).count(),
             'Buena (80-89%)': queryset.filter(average_confidence__gte=0.8, average_confidence__lt=0.9).count(),
@@ -386,18 +340,7 @@ class CacaoReportPDFGenerator:
                 percentage = (count / total) * 100
                 data.append([category, str(count), f"{percentage:.1f}%"])
             
-            table = Table(data, colWidths=[2*inch, 1*inch, 1*inch])
-            table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black)
-            ]))
-            
+            table = self._create_table_with_style(data, [2*inch, 1*inch, 1*inch])
             story.append(table)
             story.append(Spacer(1, 20))
         
@@ -433,11 +376,6 @@ class CacaoReportPDFGenerator:
     
     def _create_finca_info_section(self, finca):
         """Crear sección de información de finca."""
-        story = []
-        
-        story.append(Paragraph("Información de la Finca", self.styles['CustomSubtitle']))
-        story.append(Spacer(1, 10))
-        
         data = [
             ['Campo', 'Valor'],
             ['Nombre', finca.nombre],
@@ -449,73 +387,32 @@ class CacaoReportPDFGenerator:
             ['Total de Análisis', str(finca.total_analisis)],
             ['Calidad Promedio', f"{finca.calidad_promedio}%"],
         ]
-        
-        table = Table(data, colWidths=[2*inch, 3*inch])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-            ('ALIGN', (1, 0), (1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        
-        story.append(table)
-        story.append(Spacer(1, 20))
-        
-        return story
+        return self._create_section_with_table(
+            "Información de la Finca",
+            data,
+            [2*inch, 3*inch],
+            alignment='LEFT'
+        )
     
-    def _get_lotes_stats(self, finca):
-        """Obtener estadísticas de lotes de la finca."""
-        lotes = finca.lotes.all()
-        
-        return {
-            'total_lotes': lotes.count(),
-            'lotes_activos': lotes.filter(activo=True).count(),
-            'total_area': sum(float(lote.area_hectareas) for lote in lotes),
-            'variedades': list(lotes.values('variedad').distinct()),
-            'estados': dict(lotes.values('estado').annotate(count=Count('id')).values_list('estado', 'count')),
-        }
     
     def _create_lotes_stats_section(self, stats):
         """Crear sección de estadísticas de lotes."""
-        story = []
-        
-        story.append(Paragraph("Estadísticas de Lotes", self.styles['CustomSubtitle']))
-        story.append(Spacer(1, 10))
-        
         data = [
-            ['Métrica', 'Valor'],
+            [PDF_COL_METRIC, PDF_COL_VALUE],
             ['Total de Lotes', str(stats['total_lotes'])],
             ['Lotes Activos', str(stats['lotes_activos'])],
             ['Área Total', f"{stats['total_area']:.2f} ha"],
             ['Variedades', str(len(stats['variedades']))],
         ]
-        
-        table = Table(data, colWidths=[2*inch, 2*inch])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        
-        story.append(table)
-        story.append(Spacer(1, 20))
-        
-        return story
+        return self._create_section_with_table(
+            "Estadísticas de Lotes",
+            data,
+            [2*inch, 2*inch]
+        )
     
     def _create_lotes_analysis_section(self, finca):
         """Crear sección de análisis por lote."""
         story = []
-        
         story.append(Paragraph("Análisis por Lote", self.styles['CustomSubtitle']))
         story.append(Spacer(1, 10))
         
@@ -529,24 +426,17 @@ class CacaoReportPDFGenerator:
                     lote.identificador,
                     lote.variedad,
                     lote.get_estado_display(),
-                    f"{lote.area_hectareas:.2f}",
+                    f"{float(lote.area_hectareas):.2f}",
                     str(lote.total_analisis),
                     f"{lote.calidad_promedio:.1f}",
                 ])
             
-            table = Table(data, colWidths=[1*inch, 1.5*inch, 1*inch, 0.8*inch, 0.8*inch, 0.8*inch])
-            table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 8),
-                ('FONTSIZE', (0, 1), (-1, -1), 7),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black)
-            ]))
-            
+            table = self._create_table_with_style(
+                data,
+                [1*inch, 1.5*inch, 1*inch, 0.8*inch, 0.8*inch, 0.8*inch],
+                header_font_size=8,
+                body_font_size=7
+            )
             story.append(table)
             story.append(Spacer(1, 20))
         
@@ -583,135 +473,63 @@ class CacaoReportPDFGenerator:
         
         return story
     
-    def _get_activity_stats(self, filtros):
-        """Obtener estadísticas de actividad."""
-        queryset = ActivityLog.objects.all()
-        
-        if filtros:
-            if filtros.get('fecha_desde'):
-                queryset = queryset.filter(timestamp__date__gte=filtros['fecha_desde'])
-            if filtros.get('fecha_hasta'):
-                queryset = queryset.filter(timestamp__date__lte=filtros['fecha_hasta'])
-        
-        return {
-            'total_activities': queryset.count(),
-            'activities_today': queryset.filter(timestamp__date=timezone.now().date()).count(),
-            'activities_by_action': dict(queryset.values('accion').annotate(count=Count('id')).values_list('accion', 'count')),
-            'top_users': list(queryset.values('usuario__username').annotate(count=Count('id')).order_by('-count')[:10]),
-        }
     
     def _create_activity_stats_section(self, stats):
         """Crear sección de estadísticas de actividad."""
-        story = []
-        
-        story.append(Paragraph("Estadísticas de Actividad", self.styles['CustomSubtitle']))
-        story.append(Spacer(1, 10))
-        
         data = [
-            ['Métrica', 'Valor'],
+            [PDF_COL_METRIC, PDF_COL_VALUE],
             ['Total de Actividades', str(stats['total_activities'])],
             ['Actividades Hoy', str(stats['activities_today'])],
         ]
-        
-        table = Table(data, colWidths=[2*inch, 2*inch])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        
-        story.append(table)
-        story.append(Spacer(1, 20))
-        
-        return story
+        return self._create_section_with_table(
+            "Estadísticas de Actividad",
+            data,
+            [2*inch, 2*inch]
+        )
     
-    def _get_login_stats(self, filtros):
-        """Obtener estadísticas de logins."""
-        queryset = LoginHistory.objects.all()
-        
-        if filtros:
-            if filtros.get('fecha_desde'):
-                queryset = queryset.filter(login_time__date__gte=filtros['fecha_desde'])
-            if filtros.get('fecha_hasta'):
-                queryset = queryset.filter(login_time__date__lte=filtros['fecha_hasta'])
-        
-        return {
-            'total_logins': queryset.count(),
-            'successful_logins': queryset.filter(success=True).count(),
-            'failed_logins': queryset.filter(success=False).count(),
-            'success_rate': (queryset.filter(success=True).count() / queryset.count() * 100) if queryset.count() > 0 else 0,
-        }
     
     def _create_login_stats_section(self, stats):
         """Crear sección de estadísticas de logins."""
-        story = []
-        
-        story.append(Paragraph("Estadísticas de Logins", self.styles['CustomSubtitle']))
-        story.append(Spacer(1, 10))
-        
         data = [
-            ['Métrica', 'Valor'],
+            [PDF_COL_METRIC, PDF_COL_VALUE],
             ['Total de Logins', str(stats['total_logins'])],
             ['Logins Exitosos', str(stats['successful_logins'])],
             ['Logins Fallidos', str(stats['failed_logins'])],
             ['Tasa de xito', f"{stats['success_rate']:.1f}%"],
         ]
-        
-        table = Table(data, colWidths=[2*inch, 2*inch])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        
-        story.append(table)
-        story.append(Spacer(1, 20))
-        
-        return story
+        return self._create_section_with_table(
+            "Estadísticas de Logins",
+            data,
+            [2*inch, 2*inch]
+        )
     
     def _create_recent_activities_table(self, activities):
         """Crear tabla de actividades recientes."""
-        story = []
-        
-        story.append(Paragraph("Actividades Recientes", self.styles['CustomSubtitle']))
-        story.append(Spacer(1, 10))
-        
-        data = [['Fecha', 'Usuario', 'Acción', 'Modelo', 'Descripción']]
+        data = [['Fecha', 'Usuario', 'Acción', 'Tipo Recurso', 'Detalles']]
         
         for activity in activities:
+            details_str = ''
+            if isinstance(activity.details, dict):
+                details_str = activity.details.get('description', str(activity.details))
+            else:
+                details_str = str(activity.details)
+            
+            if len(details_str) > 50:
+                details_str = details_str[:50] + '...'
+            
             data.append([
                 activity.timestamp.strftime('%d/%m/%Y %H:%M'),
-                activity.usuario.username if activity.usuario else 'Anónimo',
-                activity.get_accion_display(),
-                activity.modelo,
-                activity.descripcion[:50] + '...' if len(activity.descripcion) > 50 else activity.descripcion,
+                activity.user.username if activity.user else 'Anónimo',
+                activity.action,
+                activity.resource_type or 'N/A',
+                details_str,
             ])
         
-        table = Table(data, colWidths=[1*inch, 1*inch, 0.8*inch, 0.8*inch, 2*inch])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 8),
-            ('FONTSIZE', (0, 1), (-1, -1), 7),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        
-        story.append(table)
-        story.append(Spacer(1, 20))
-        
-        return story
+        return self._create_section_with_table(
+            "Actividades Recientes",
+            data,
+            [1*inch, 1*inch, 0.8*inch, 0.8*inch, 2*inch],
+            header_font_size=8,
+            body_font_size=7
+        )
 

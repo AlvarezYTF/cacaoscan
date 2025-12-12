@@ -26,6 +26,9 @@ from ...serializers import (
 
 logger = logging.getLogger("cacaoscan.api")
 
+# Error message constants
+ERROR_INTERNAL_SERVER = 'Error interno del servidor'
+
 
 class NotificationListCreateView(PaginationMixin, APIView):
     """
@@ -92,8 +95,8 @@ class NotificationListCreateView(PaginationMixin, APIView):
         except Exception as e:
             logger.error(f"Error listando notificaciones para usuario {request.user.username}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
+                'error': ERROR_INTERNAL_SERVER,
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -124,13 +127,13 @@ class NotificationDetailView(APIView):
         except Notification.DoesNotExist:
             return Response({
                 'error': 'Notificación no encontrada',
-                'status': 'error'
+                'details': 'La notificación solicitada no existe o no tienes permiso para acceder a ella'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error obteniendo detalles de notificación {notification_id}: {e}")
             return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
+                'error': ERROR_INTERNAL_SERVER,
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -167,13 +170,13 @@ class NotificationMarkReadView(APIView):
         except Notification.DoesNotExist:
             return Response({
                 'error': 'Notificación no encontrada',
-                'status': 'error'
+                'details': 'La notificación solicitada no existe o no tienes permiso para acceder a ella'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error marcando notificación {notification_id} como leída: {e}")
             return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
+                'error': ERROR_INTERNAL_SERVER,
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -207,8 +210,8 @@ class NotificationMarkAllReadView(APIView):
         except Exception as e:
             logger.error(f"Error marcando todas las notificaciones como leídas: {e}")
             return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
+                'error': ERROR_INTERNAL_SERVER,
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -240,8 +243,8 @@ class NotificationUnreadCountView(APIView):
         except Exception as e:
             logger.error(f"Error obteniendo contador de notificaciones no leídas: {e}")
             return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
+                'error': ERROR_INTERNAL_SERVER,
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -293,19 +296,21 @@ class NotificationStatsView(APIView):
         except Exception as e:
             logger.error(f"Error obteniendo estadísticas de notificaciones: {e}")
             return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
+                'error': ERROR_INTERNAL_SERVER,
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class NotificationCreateView(AdminPermissionMixin, APIView):
     """
-    Vista para crear notificaciones (solo administradores).
+    Vista para crear notificaciones.
+    - Administradores pueden crear notificaciones para cualquier usuario
+    - Usuarios regulares pueden crear notificaciones solo para sí mismos
     """
     permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="Crea una nueva notificación (solo administradores)",
+        operation_description="Crea una nueva notificación. Los administradores pueden crear para cualquier usuario, los usuarios regulares solo para sí mismos.",
         operation_summary="Crear notificación",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -329,8 +334,18 @@ class NotificationCreateView(AdminPermissionMixin, APIView):
     def post(self, request):
         """Crear nueva notificación."""
         try:
-            if not self.is_admin_user(request.user):
-                return self.admin_permission_denied('No tienes permisos para crear notificaciones')
+            # Administradores pueden crear notificaciones para cualquier usuario
+            # Usuarios regulares solo pueden crear notificaciones para sí mismos
+            is_admin = self.is_admin_user(request.user)
+            user_id = request.data.get('user')
+            
+            if not is_admin:
+                # Usuario regular: solo puede crear notificaciones para sí mismo
+                if not user_id or int(user_id) != request.user.id:
+                    return Response({
+                        'error': 'Permiso denegado',
+                        'details': 'Solo puedes crear notificaciones para ti mismo'
+                    }, status=status.HTTP_403_FORBIDDEN)
             
             serializer = NotificationCreateSerializer(data=request.data)
             
@@ -340,19 +355,26 @@ class NotificationCreateView(AdminPermissionMixin, APIView):
                 logger.info(f"Notificación '{notification.titulo}' creada por admin {request.user.username}")
                 
                 response_serializer = NotificationSerializer(notification)
-                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+                return Response({
+                    'success': True,
+                    'notification': response_serializer.data
+                }, status=status.HTTP_201_CREATED)
             else:
+                error_details = serializer.errors
+                if isinstance(error_details, dict):
+                    error_msg = '; '.join([f"{k}: {', '.join(v) if isinstance(v, list) else str(v)}" for k, v in error_details.items()])
+                else:
+                    error_msg = str(error_details)
                 return Response({
                     'error': 'Datos de entrada inválidos',
-                    'details': serializer.errors,
-                    'status': 'error'
+                    'details': error_msg
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Exception as e:
             logger.error(f"Error creando notificación: {e}")
             return Response({
-                'error': 'Error interno del servidor',
-                'status': 'error'
+                'error': ERROR_INTERNAL_SERVER,
+                'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

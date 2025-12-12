@@ -10,6 +10,33 @@ import pandas as pd
 from PIL import Image
 
 
+def _intentar_decodificar_con_multiples_encodings(raw_content: bytes) -> str:
+    """Intenta decodificar contenido con múltiples encodings."""
+    encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+    for encoding in encodings:
+        try:
+            return raw_content.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    # Último recurso: usar utf-8 con errors='ignore'
+    return raw_content.decode('utf-8', errors='ignore')
+
+
+def _obtener_formato_imagen_desde_extension(file_path: Path) -> str:
+    """Obtiene el formato de imagen desde la extensión del archivo."""
+    ext = file_path.suffix[1:].upper()
+    format_map = {
+        'JPG': 'JPEG',
+        'JPEG': 'JPEG',
+        'PNG': 'PNG',
+        'GIF': 'GIF',
+        'BMP': 'BMP',
+        'TIFF': 'TIFF',
+        'TIF': 'TIFF',
+    }
+    return format_map.get(ext, ext)
+
+
 def save_json(data: Dict[str, Any], file_path: Path) -> None:
     """Guarda datos en formato JSON."""
     file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -19,8 +46,10 @@ def save_json(data: Dict[str, Any], file_path: Path) -> None:
 
 def load_json(file_path: Path) -> Dict[str, Any]:
     """Carga datos desde un archivo JSON."""
-    with open(file_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    with open(file_path, 'rb') as f:
+        raw_content = f.read()
+        text_content = _intentar_decodificar_con_multiples_encodings(raw_content)
+        return json.loads(text_content)
 
 
 def save_pickle(data: Any, file_path: Path) -> None:
@@ -51,8 +80,10 @@ def save_image(image: Image.Image, file_path: Path, format: str = None) -> None:
     """Guarda una imagen."""
     file_path.parent.mkdir(parents=True, exist_ok=True)
     if format is None:
-        format = file_path.suffix[1:].upper()
-    image.save(file_path, format=format)
+        image_format = _obtener_formato_imagen_desde_extension(file_path)
+    else:
+        image_format = format
+    image.save(file_path, format=image_format)
 
 
 def load_image(file_path: Path) -> Image.Image:

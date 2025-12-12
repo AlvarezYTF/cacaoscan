@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Agricultor - CacaoScan</title>
+    <link rel="stylesheet" href="../figmacss/figma_agricultordashboard.css">
+</head>
+<body>
+    <div class="flex min-h-screen bg-gray-50">
+        <!-- Sidebar placeholder (simplificado para Figma) -->
+        <div class="sidebar-placeholder">
+            <!-- Sidebar se renderiza aquí en la aplicación real -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="min-h-screen w-full p-8 overflow-y-auto main-content">
+            <!-- Welcome Header -->
+            <div class="welcome-header bg-white rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="bg-green-100 p-3 rounded-xl mr-4">
+                            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-900">¡Bienvenido a CacaoScan, Juan Pérez!</h1>
+                            <p class="text-gray-600 mt-1">Su herramienta para asegurar la calidad de cada grano</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-cards grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Card Lotes Totales -->
+                <div class="stat-card bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-1">Lotes Totales</h3>
+                            <p class="text-2xl font-bold text-gray-900">45</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Card Calidad Promedio -->
+                <div class="stat-card bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-1">Calidad Promedio</h3>
+                            <p class="text-2xl font-bold text-gray-900">87%</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Card Tasa de Defectos -->
+                <div class="stat-card bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-1">Tasa de Defectos</h3>
+                            <p class="text-2xl font-bold text-gray-900">13%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <!-- Recent Activity Card -->
+                <div class="activity-card bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-50 to-green-50 px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center">
+                            <div class="bg-green-100 p-2 rounded-xl mr-3">
+                                <svg class="text-xl text-green-600 w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold text-gray-900">Actividad Reciente</h2>
+                                <p class="text-sm text-gray-600">Últimos análisis realizados</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-3">
+                            <!-- Analysis Item 1 -->
+                            <div class="analysis-item flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-green-50 transition-colors duration-200 cursor-pointer border border-gray-200 hover:border-green-300">
+                                <div class="flex items-center space-x-3">
+                                    <div class="bg-green-500 p-2 rounded-lg">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-900">Lote #CAC-1234</p>
+                                        <p class="text-xs text-gray-600">15 ene, 2024</p>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold shadow-sm">92%</span>
+                            </div>
+
+                            <!-- Analysis Item 2 -->
+                            <div class="analysis-item flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-green-50 transition-colors duration-200 cursor-pointer border border-gray-200 hover:border-green-300">
+                                <div class="flex items-center space-x-3">
+                                    <div class="bg-green-500 p-2 rounded-lg">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-900">Lote #CAC-1233</p>
+                                        <p class="text-xs text-gray-600">14 ene, 2024</p>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold shadow-sm">88%</span>
+                            </div>
+
+                            <!-- Analysis Item 3 -->
+                            <div class="analysis-item flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-green-50 transition-colors duration-200 cursor-pointer border border-gray-200 hover:border-green-300">
+                                <div class="flex items-center space-x-3">
+                                    <div class="bg-green-500 p-2 rounded-lg">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-900">Lote #CAC-1232</p>
+                                        <p class="text-xs text-gray-600">13 ene, 2024</p>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold shadow-sm">85%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Card -->
+                <div class="quick-actions-card bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-50 to-green-50 px-4 py-3 border-b border-gray-200">
+                        <div class="flex items-center">
+                            <div class="bg-green-100 p-1.5 rounded-lg mr-2">
+                                <svg class="text-green-600 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-bold text-gray-900">Acciones Rápidas</h2>
+                                <p class="text-xs text-gray-600">Gestionar y analizar</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <!-- Nuevo Análisis Button -->
+                        <button class="quick-action-button w-full flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 group">
+                            <div class="bg-green-500 p-2 rounded-lg flex-shrink-0">
+                                <svg class="text-white w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <h3 class="text-base font-bold text-gray-900">Nuevo Análisis</h3>
+                                <p class="text-xs text-gray-600">Analizar granos de cacao</p>
+                            </div>
+                            <div class="text-green-600 group-hover:translate-x-1 transition-transform duration-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </div>
+                        </button>
+                        
+                        <!-- Gestionar Fincas Button -->
+                        <button class="quick-action-button w-full flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 group">
+                            <div class="bg-blue-500 p-2 rounded-lg flex-shrink-0">
+                                <svg class="text-white w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <h3 class="text-base font-bold text-gray-900">Gestionar Fincas</h3>
+                                <p class="text-xs text-gray-600">Administrar fincas y lotes</p>
+                            </div>
+                            <div class="text-blue-600 group-hover:translate-x-1 transition-transform duration-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+
