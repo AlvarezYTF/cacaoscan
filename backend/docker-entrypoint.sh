@@ -107,6 +107,16 @@ case "${ROLE}" in
         log "✅ Iniciando servidor Gunicorn"
         exec "$@"
         ;;
+    celery-worker)
+        wait_for_database
+        log "✅ Iniciando Celery Worker"
+        exec celery -A cacaoscan worker --loglevel=info --concurrency=2 --max-tasks-per-child=1
+        ;;
+    celery-beat)
+        wait_for_database
+        log "✅ Iniciando Celery Beat (Scheduler)"
+        exec celery -A cacaoscan beat --loglevel=info
+        ;;
     *)
         log "✅ Ejecutando comando personalizado: $*"
         exec "$@"
