@@ -61,10 +61,17 @@ services:
       # Startup flags
       - key: SERVICE_ROLE
         value: "web"
-      - key: CREATE_DEFAULT_SUPERUSER
-        value: "true"
       - key: SEED_INITIAL_DATA
         value: "true"
+      
+      # Superuser creation (secure, via environment variables)
+      # Set DJANGO_CREATE_SUPERUSER=true to enable automatic superuser creation
+      - key: DJANGO_CREATE_SUPERUSER
+        value: "true"
+      # IMPORTANT: Set these in Render Dashboard > Environment Variables (not in this file for security)
+      # - DJANGO_SUPERUSER_USERNAME: Your desired username
+      # - DJANGO_SUPERUSER_EMAIL: Your desired email
+      # - DJANGO_SUPERUSER_PASSWORD: Your secure password (min 8 characters)
 
   # --- Frontend Vue ---
   - type: web
@@ -88,3 +95,4 @@ services:
           name: cacaoscan-backend
           property: host
           format: https://${host}/api/v1
+
