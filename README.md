@@ -321,6 +321,7 @@ Proyecto desarrollado por aprendices de **Analisis y Desarrollo de Software (ADS
 - Camilo Andres Hernandez Gonzales
 - Jeferson Alexander Alvarez Rodriguez
 - Deyson De Jesus Urrego Ibarra
+- Cristian Camilo Camacho Morales
 
 ---
 
