@@ -46,7 +46,8 @@ RUN python -m venv /opt/venv \
          [ "$i" -lt 5 ] && sleep 15; \
        done \
     && [ "$installed" = "1" ] \
-    && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+    && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt \
+    && /opt/venv/bin/pip uninstall -y opencv-python opencv-contrib-python 2>/dev/null || true
 
 # ========================================
 # Etapa 2: Runtime base
