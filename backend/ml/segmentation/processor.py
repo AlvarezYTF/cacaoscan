@@ -44,6 +44,15 @@ except Exception:
 logger = get_ml_logger("cacaoscan.ml.segmentation.processor")
 
 
+def _yolo_validator_threshold() -> float:
+    """Lee el threshold del validador YOLO desde settings con fallback seguro."""
+    try:
+        from django.conf import settings
+        return float(getattr(settings, 'ML_YOLO_VALIDATOR_MIN_CONFIDENCE', 0.75))
+    except Exception:
+        return 0.75
+
+
 class SegmentationError(Exception):
     """Excepción personalizada para errores de segmentación."""
     pass
@@ -713,7 +722,7 @@ def _process_with_opencv(image_path: str, filename: str) -> Image.Image:
         # YOLO ES OBLIGATORIO: Debe validar antes de procesar con OpenCV
         # Si YOLO falla, NO se permite continuar con OpenCV
         logger.info("[YOLO OBLIGATORIO] Validando con YOLO antes de procesar con OpenCV...")
-        _validate_with_yolo_fast(image_path, min_confidence=0.75)  # Umbral estricto (75%)
+        _validate_with_yolo_fast(image_path, min_confidence=_yolo_validator_threshold())
         logger.info("[YOLO OBLIGATORIO] YOLO validó detección, procesando con OpenCV...")
         
         return _remove_background_opencv(image_path)
@@ -745,7 +754,7 @@ def _process_with_priority_chain(image_path: str, filename: str) -> Image.Image:
     """
     # YOLO ES OBLIGATORIO: Validar primero antes de cualquier segmentación
     logger.info("[YOLO OBLIGATORIO] Validando con YOLO antes de segmentación...")
-    _validate_with_yolo_fast(image_path, min_confidence=0.75)  # Umbral estricto (75%)
+    _validate_with_yolo_fast(image_path, min_confidence=_yolo_validator_threshold())
     logger.info("[YOLO OBLIGATORIO] YOLO validó detección, procediendo con segmentación...")
     
     try:
@@ -811,9 +820,9 @@ def _try_opencv_fallback(image_path: str, filename: str) -> Image.Image:
         
         # YOLO ES OBLIGATORIO: Debe validar antes de procesar con OpenCV
         # Si YOLO falla, NO se permite continuar con OpenCV
-        _validate_with_yolo_fast(image_path, min_confidence=0.75)  # Umbral estricto (75%)
+        _validate_with_yolo_fast(image_path, min_confidence=_yolo_validator_threshold())
         logger.info("[YOLO OBLIGATORIO] YOLO validó detección, procesando con OpenCV...")
-        
+
         return _remove_background_opencv(image_path)
     except SegmentationError:
         # Propagar SegmentationError inmediatamente (detección temprana de "no hay grano")
@@ -901,7 +910,7 @@ def segment_and_crop_cacao_bean(image_path: str, method: str = "yolo") -> str:
         # Inicializar modelo (se carga lazy, solo una vez)
         if not hasattr(segment_and_crop_cacao_bean, '_seg_model'):
             segment_and_crop_cacao_bean._seg_model = CacaoSegmentationModel(
-                confidence_threshold=0.75
+                confidence_threshold=_yolo_validator_threshold()
             )
         
         seg_model = segment_and_crop_cacao_bean._seg_model

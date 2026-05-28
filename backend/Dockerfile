@@ -53,7 +53,8 @@ RUN python -m venv /opt/venv \
     && if [ "$INSTALL_TRAIN_DEPS" = "true" ]; then \
          /opt/venv/bin/pip install --no-cache-dir -r requirements-train.txt; \
        fi \
-    && /opt/venv/bin/pip uninstall -y opencv-python opencv-contrib-python 2>/dev/null || true
+    && /opt/venv/bin/pip uninstall -y opencv-python opencv-contrib-python 2>/dev/null || true \
+    && /opt/venv/bin/pip install --no-cache-dir --force-reinstall --no-deps opencv-python-headless==4.12.0.88
 
 # ========================================
 # Etapa 2: Runtime base

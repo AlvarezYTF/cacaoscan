@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.throttling import ScopedRateThrottle
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -27,6 +28,8 @@ class ScanMeasureView(APIView):
     """
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'analysis'
     
     @swagger_auto_schema(
         operation_description="Procesa una imagen de grano de cacao y devuelve predicciones de dimensiones y peso",

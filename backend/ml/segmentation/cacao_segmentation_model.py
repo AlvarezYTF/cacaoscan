@@ -43,16 +43,21 @@ class CacaoSegmentationModel:
     - Exportación PNG con fondo transparente
     """
     
-    # Clases válidas de cacao
     VALID_CACAO_CLASSES = ["cacao", "cacao_grain", "cocoa", "cocoa_bean"]
-    
-    # Umbrales de validación
-    MIN_CONFIDENCE = 0.75
+
     MIN_AREA_PIXELS = 2000
     MIN_ASPECT_RATIO = 0.2
     MAX_ASPECT_RATIO = 4.0
-    
-    def __init__(self, model_path: Optional[Path] = None, confidence_threshold: float = 0.75):
+
+    @property
+    def MIN_CONFIDENCE(self) -> float:
+        try:
+            from django.conf import settings
+            return float(getattr(settings, 'ML_YOLO_VALIDATOR_MIN_CONFIDENCE', 0.75))
+        except Exception:
+            return 0.75
+
+    def __init__(self, model_path: Optional[Path] = None, confidence_threshold: Optional[float] = None):
         """
         Inicializa el modelo de segmentación YOLO-Seg.
         
@@ -66,7 +71,9 @@ class CacaoSegmentationModel:
                 "Instalar con: pip install ultralytics"
             )
         
-        self.confidence_threshold = confidence_threshold
+        self.confidence_threshold = (
+            confidence_threshold if confidence_threshold is not None else self.MIN_CONFIDENCE
+        )
         self.model = None
         self.is_custom_model = False
         

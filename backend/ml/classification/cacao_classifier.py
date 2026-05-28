@@ -63,10 +63,17 @@ class CacaoImageClassifier:
     Uses example images to determine if an image contains a cacao bean.
     """
     
-    # Default paths
     DEFAULT_MODEL_PATH = "cacao_classifier.pt"
-    MIN_CONFIDENCE = 0.90  # Very high threshold to avoid false positives (90%)
-    MIN_CACAO_PROBABILITY = 0.85  # Minimum probability of being cacao (85%)
+
+    @property
+    def MIN_CONFIDENCE(self) -> float:
+        from django.conf import settings
+        return float(getattr(settings, 'ML_CLASSIFIER_MIN_CONFIDENCE', 0.90))
+
+    @property
+    def MIN_CACAO_PROBABILITY(self) -> float:
+        from django.conf import settings
+        return float(getattr(settings, 'ML_CLASSIFIER_MIN_CACAO_PROBABILITY', 0.85))
     
     def __init__(self, model_path: Optional[Path] = None):
         """

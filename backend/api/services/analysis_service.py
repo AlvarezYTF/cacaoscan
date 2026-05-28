@@ -564,57 +564,31 @@ class AnalysisService(BaseService):
                 ValidationServiceError(f"Error loading models: {str(e)}")
             )
     
-    def _get_mock_predictor(self):
-        """Get a mock predictor for testing."""
-        from unittest.mock import Mock
-        predictor = Mock()
-        predictor.predict.return_value = {
-            'quality_score': 85.5,
-            'maturity_percentage': 75.0,
-            'defects_count': 2,
-            'recommendations': ['Cosecha recomendada']
-        }
-        return predictor
-    
     def _get_predictor(self):
-        """Get predictor with fallback to mock."""
-        try:
-            from training.services import get_predictor
-            predictor = get_predictor()
-            if predictor is None:
-                raise ImportError("Predictor not available")
-            return predictor
-        except (ImportError, AttributeError) as e:
-            self.log_warning(f"Predictor not available ({type(e).__name__}), using mock")
-            return self._get_mock_predictor()
-    
-    def _get_mock_prediction_result(self):
-        """Get mock prediction result."""
-        return {
-            'quality_score': 85.5,
-            'maturity_percentage': 75.0,
-            'defects_count': 2,
-            'recommendations': ['Cosecha recomendada']
-        }
-    
+        """Devuelve el predictor real o lanza excepcion si no esta disponible."""
+        from training.services import get_predictor
+        predictor = get_predictor()
+        if predictor is None:
+            raise RuntimeError(
+                "Predictor ML no disponible. Verifica que los modelos esten entrenados "
+                "y cargados (hybrid.pt y scalers)."
+            )
+        return predictor
+
     def _perform_prediction(self, predictor, image):
-        """Perform prediction on image with fallback to mock."""
-        try:
-            if not (hasattr(image, 'image') and image.image):
-                return self._get_mock_predictor().predict.return_value
-            
-            from PIL import Image as PILImage
-            import io
-            image_file = image.image
-            if not hasattr(image_file, 'read'):
-                return self._get_mock_predictor().predict.return_value
-            
-            image_data = image_file.read()
-            pil_image = PILImage.open(io.BytesIO(image_data))
-            return predictor.predict(pil_image)
-        except Exception as e:
-            self.log_warning(f"Error in prediction, using mock: {str(e)}")
-            return self._get_mock_prediction_result()
+        """Ejecuta la prediccion sobre la imagen. Propaga errores en vez de devolver mock."""
+        if not (hasattr(image, 'image') and image.image):
+            raise ValueError("La imagen no tiene archivo asociado")
+
+        image_file = image.image
+        if not hasattr(image_file, 'read'):
+            raise ValueError("El archivo de imagen no es legible")
+
+        from PIL import Image as PILImage
+        import io
+        image_data = image_file.read()
+        pil_image = PILImage.open(io.BytesIO(image_data))
+        return predictor.predict(pil_image)
     
     def analyze_image(self, image_id: int, user: User) -> ServiceResult:
         """
@@ -650,19 +624,31 @@ class AnalysisService(BaseService):
                 from ..base import PermissionServiceError
                 return ServiceResult.error(PermissionServiceError("No tienes permisos para analizar esta imagen"))
             
-            # Get predictor and perform prediction
-            predictor = self._get_predictor()
-            prediction_result = self._perform_prediction(predictor, image)
-            
-            # Create or update prediction
+            try:
+                predictor = self._get_predictor()
+                prediction_result = self._perform_prediction(predictor, image)
+            except (RuntimeError, ValueError) as e:
+                self.log_error(f"Prediccion fallida para imagen {image_id}: {e}")
+                return ServiceResult.error(
+                    ValidationServiceError(f"No se pudo analizar la imagen: {e}")
+                )
+
+            if 'quality_score' not in prediction_result or 'maturity_percentage' not in prediction_result:
+                return ServiceResult.error(
+                    ValidationServiceError(
+                        "Resultado de prediccion incompleto",
+                        details={'received_keys': list(prediction_result.keys())}
+                    )
+                )
+
             from decimal import Decimal
             prediction, _ = cacao_prediction_model.objects.update_or_create(
                 image=image,
                 defaults={
                     'user': user,
-                    'quality_score': Decimal(str(prediction_result.get('quality_score', 85.5))),
-                    'maturity_percentage': Decimal(str(prediction_result.get('maturity_percentage', 75.0))),
-                    'defects_count': prediction_result.get('defects_count', 2),
+                    'quality_score': Decimal(str(prediction_result['quality_score'])),
+                    'maturity_percentage': Decimal(str(prediction_result['maturity_percentage'])),
+                    'defects_count': prediction_result.get('defects_count', 0),
                     'analysis_status': 'completed'
                 }
             )

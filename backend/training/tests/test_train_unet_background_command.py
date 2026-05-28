@@ -544,8 +544,10 @@ class TestTrainUnetBackgroundCommand:
         options = {'force': False, 'epochs': 20, 'batch_size': 4, 'max_images': None, 'learning_rate': 1e-4}
         
         result = command.handle(**options)
-        
-        assert result is True
+
+        # Django llama .endswith() al return de handle(): debe ser None, no bool.
+        # Ver commit 0b46ba6.
+        assert result is None
         assert 'ya existe' in out.getvalue().lower()
     
     @patch('training.management.commands.train_unet_background.get_project_root')

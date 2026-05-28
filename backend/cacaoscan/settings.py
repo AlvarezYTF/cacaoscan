@@ -698,6 +698,16 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'EXCEPTION_HANDLER': 'api.exceptions.custom_exception_handler',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'user': os.environ.get('DRF_THROTTLE_USER', '1000/hour'),
+        'anon': os.environ.get('DRF_THROTTLE_ANON', '60/hour'),
+        # Analisis ML: caro en CPU/GPU. Ajustar via env si se requiere mas capacidad.
+        'analysis': os.environ.get('DRF_THROTTLE_ANALYSIS', '30/min'),
+    },
 }
 
 # CORS settings
@@ -1178,3 +1188,11 @@ CELERY_WORKER_MAX_TASKS_PER_CHILD = 1
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BROKER_CONNECTION_RETRY = True
 CELERY_BROKER_CONNECTION_MAX_RETRIES = 10
+
+# Umbrales del pipeline ML. Centralizados aqui para poder ajustarlos por entorno
+# sin tocar codigo. Subir o bajar afecta el balance entre falsos positivos y
+# rechazos validos.
+ML_CLASSIFIER_MIN_CONFIDENCE = float(os.environ.get('ML_CLASSIFIER_MIN_CONFIDENCE', '0.90'))
+ML_YOLO_VALIDATOR_MIN_CONFIDENCE = float(os.environ.get('ML_YOLO_VALIDATOR_MIN_CONFIDENCE', '0.75'))
+ML_YOLO_SEG_CONFIDENCE = float(os.environ.get('ML_YOLO_SEG_CONFIDENCE', '0.5'))
+ML_CLASSIFIER_MIN_CACAO_PROBABILITY = float(os.environ.get('ML_CLASSIFIER_MIN_CACAO_PROBABILITY', '0.85'))
