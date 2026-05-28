@@ -1,0 +1,10 @@
+# Dependencias SOLO para entrenamiento / evaluación de modelos.
+# No se necesitan para servir el API en producción.
+# Instalar con: pip install -r requirements.txt -r requirements-train.txt
+#
+# En la imagen Docker de producción NO se instalan (ver ARG INSTALL_TRAIN_DEPS en Dockerfile).
+# Los modulos que las usan (ej. ml/regression/evaluate.py) hacen import perezoso.
+
+matplotlib==3.10.7
+seaborn==0.13.2
+scikit-image==0.25.2

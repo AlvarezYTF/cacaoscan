@@ -5,6 +5,9 @@
 FROM python:3.12-slim AS builder
 
 ARG APP_VERSION=v1.3.0
+# INSTALL_TRAIN_DEPS=true instala matplotlib/seaborn/scikit-image (entornos de training).
+# Para imagen de produccion slim, build con --build-arg INSTALL_TRAIN_DEPS=false.
+ARG INSTALL_TRAIN_DEPS=true
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -29,7 +32,7 @@ WORKDIR /app
 
 # Copiar solo requirements.txt primero para aprovechar el cache de Docker
 # Si requirements.txt no cambia, esta capa se cachea y no reinstala dependencias
-COPY requirements.txt ./
+COPY requirements.txt requirements-train.txt ./
 
 # Instalar dependencias (esta capa se cachea si requirements.txt no cambia)
 # torch/torchvision (~280 MB) se instalan primero con loop de reintento a nivel shell:
@@ -47,6 +50,9 @@ RUN python -m venv /opt/venv \
        done \
     && [ "$installed" = "1" ] \
     && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt \
+    && if [ "$INSTALL_TRAIN_DEPS" = "true" ]; then \
+         /opt/venv/bin/pip install --no-cache-dir -r requirements-train.txt; \
+       fi \
     && /opt/venv/bin/pip uninstall -y opencv-python opencv-contrib-python 2>/dev/null || true
 
 # ========================================
@@ -91,7 +97,6 @@ COPY --from=builder /opt/venv /opt/venv
 # .dockerignore provides additional protection, but explicit copying is safer
 # This prevents accidentally copying credentials, local configs, or other sensitive data
 COPY ["manage.py", "/app/manage.py"]
-COPY ["runtime.txt", "/app/runtime.txt"]
 COPY ["pytest.ini", "/app/pytest.ini"]
 # Copy Django project configuration
 COPY cacaoscan/ ./cacaoscan/

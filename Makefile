@@ -1,4 +1,4 @@
-.PHONY: help build test up down restart logs clean deploy k8s-status k8s-logs k8s-clean
+.PHONY: help build test up down restart logs clean deploy k8s-status k8s-logs k8s-clean seed minio-up minio-console sync-models upload-model
 
 COMPOSE ?= docker compose --env-file .env
 PYTHON ?= python3
@@ -44,4 +44,21 @@ k8s-logs: ## Logs del backend en Kubernetes
 
 k8s-clean: ## Eliminar recursos desplegados con Kustomize
 	kubectl delete -k k8s/ || true
+
+seed: ## Migraciones + catalogos + Colombia (DB recien creada)
+	$(COMPOSE) exec backend python manage.py migrate
+	$(COMPOSE) exec backend python manage.py init_catalogos
+	$(COMPOSE) exec backend python manage.py seed_colombia
+
+minio-up: ## Levantar solo MinIO + crear buckets
+	$(COMPOSE) up -d minio minio_setup
+
+minio-console: ## Abrir consola web de MinIO
+	@echo "MinIO console: http://localhost:19001  (user: minioadmin)"
+
+sync-models: ## Descargar modelos desde S3/MinIO a backend/ml/artifacts
+	bash scripts/sync_models_from_s3.sh
+
+upload-model: ## Subir modelo a S3/MinIO. Uso: make upload-model SRC=... DST=...
+	bash scripts/upload_model_to_s3.sh $(SRC) $(DST)
 

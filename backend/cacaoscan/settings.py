@@ -652,23 +652,26 @@ MEDIA_ROOT = Path(_media_root_env) if _media_root_env else (BASE_DIR / 'media')
 USE_S3 = os.environ.get('USE_S3', 'False').lower() == 'true'
 
 if USE_S3:
-    # AWS S3 settings
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
     AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
-    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', 'cacaoscan-dataset')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', 'cacaoscan-media')
     AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'us-east-1')
     AWS_QUERYSTRING_AUTH = False
-    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
-    AWS_S3_OBJECT_PARAMETERS = {
-        'CacheControl': 'max-age=86400',
-    }
-    
-    # S3 static files configuration (opcional, solo si quieres servir estticos desde S3)
-    # STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    
-    # S3 media files configuration
+    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+
+    # endpoint_url permite apuntar a MinIO en local; vacio => S3 real.
+    AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL', '').strip() or None
+    if AWS_S3_ENDPOINT_URL:
+        # MinIO requiere path-style addressing y dominio custom apuntando al endpoint.
+        AWS_S3_ADDRESSING_STYLE = 'path'
+        AWS_S3_CUSTOM_DOMAIN = None
+        AWS_S3_URL_PROTOCOL = 'http:' if AWS_S3_ENDPOINT_URL.startswith('http://') else 'https:'
+        MEDIA_URL = f"{AWS_S3_ENDPOINT_URL.rstrip('/')}/{AWS_STORAGE_BUCKET_NAME}/"
+    else:
+        AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+        MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
 else:
     # Configuración local para desarrollo / entornos sin S3
     MEDIA_URL = '/media/'
