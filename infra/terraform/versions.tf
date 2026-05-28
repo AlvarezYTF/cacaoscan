@@ -7,7 +7,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "cacaoscan-tfstate"
+    bucket         = "cacaoscan-tfstate-077207386318"
     key            = "prod/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "cacaoscan-tflock"

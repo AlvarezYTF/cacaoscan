@@ -1,16 +1,4 @@
-region        = "us-east-1"
-environment   = "prod"
-domain_name   = "cacaoscan.app"
-api_subdomain = "api"
-app_subdomain = "app"
-
-# Multi-AZ y storage solo para prod real
-db_instance_class    = "db.t4g.micro"
-db_allocated_storage = 20
-db_multi_az          = false
-
-# Tag inicial; CI lo sobreescribe
-image_tag = "v1.3.0"
-
+region       = "us-east-1"
+environment  = "prod"
 github_owner = "JefersonCCJM"
 github_repo  = "cacaoscan"

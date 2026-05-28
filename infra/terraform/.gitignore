@@ -1,0 +1,16 @@
+# Terraform local artifacts (binarios y state local)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+
+# Variables con valores reales (no commitear)
+terraform.tfvars
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Solo commiteamos el lock file y los .tf
+!.terraform.lock.hcl
