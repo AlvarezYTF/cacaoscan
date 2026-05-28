@@ -18,7 +18,9 @@ celery==5.6.0
 redis==7.1.0
 
 # --- Servidor y estáticos ---
+# gunicorn solo si NO se usan Channels/WebSockets. Para prod con Channels usa daphne.
 gunicorn==23.0.0
+daphne==4.1.2
 whitenoise==6.8.2
 
 # --- Base de datos y config ---
