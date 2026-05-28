@@ -459,7 +459,8 @@ class Command(BaseCommand):
         """Validate dataset records."""
         from ml.data.dataset_loader import CacaoDatasetLoader
         loader = CacaoDatasetLoader()
-        if loader.csv_path == "mock":
+        # csv_path vive en el componente CSVLoader interno.
+        if getattr(loader.csv_loader, 'csv_path', None) is None:
             return
         
         try:
