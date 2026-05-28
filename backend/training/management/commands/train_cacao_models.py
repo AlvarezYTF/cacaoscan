@@ -241,26 +241,24 @@ class Command(BaseCommand):
             
             if options['validate_only']:
                 if dataset_missing:
-                    return "mock"
+                    return
                 self._validate_data_only()
-                return True
-            
-            # Use new hybrid-v2 pipeline if requested
-            # Always call train_hybrid_v2 when hybrid_v2 is enabled, even if dataset is missing (for tests)
+                return
+
             if options.get('hybrid_v2', False):
                 from ml.pipeline.hybrid_v2_training import train_hybrid_v2
                 results = train_hybrid_v2(config)
                 if dataset_missing:
-                    return "mock"
+                    return
                 self._display_results_v2(results, start_time)
-                return True
+                return
             else:
                 if dataset_missing:
-                    return "mock"
+                    return
                 pipeline = CacaoTrainingPipeline(config)
                 results = pipeline.run_pipeline()
                 self._display_results(results, start_time)
-                return True
+                return
             
         except Exception as e:
             import traceback

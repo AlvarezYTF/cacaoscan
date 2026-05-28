@@ -364,7 +364,7 @@ class Command(BaseCommand):
         # Verificar si el modelo ya existe
         existing_model = self._check_existing_model(options)
         if existing_model:
-            return True
+            return
         
         # Obtener imágenes
         image_files = self._get_image_files(max_images)
@@ -456,8 +456,6 @@ class Command(BaseCommand):
                     model_path_final.touch()
                 else:
                     raise CommandError(f"Error guardando modelo: {save_error}")
-            
-            return True
             
         except Exception as e:
             logger.error(f"Error durante el entrenamiento: {e}", exc_info=True)
