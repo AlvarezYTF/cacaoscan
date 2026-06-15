@@ -1192,7 +1192,14 @@ CELERY_BROKER_CONNECTION_MAX_RETRIES = 10
 # Umbrales del pipeline ML. Centralizados aqui para poder ajustarlos por entorno
 # sin tocar codigo. Subir o bajar afecta el balance entre falsos positivos y
 # rechazos validos.
-ML_CLASSIFIER_MIN_CONFIDENCE = float(os.environ.get('ML_CLASSIFIER_MIN_CONFIDENCE', '0.90'))
-ML_YOLO_VALIDATOR_MIN_CONFIDENCE = float(os.environ.get('ML_YOLO_VALIDATOR_MIN_CONFIDENCE', '0.75'))
-ML_YOLO_SEG_CONFIDENCE = float(os.environ.get('ML_YOLO_SEG_CONFIDENCE', '0.5'))
-ML_CLASSIFIER_MIN_CACAO_PROBABILITY = float(os.environ.get('ML_CLASSIFIER_MIN_CACAO_PROBABILITY', '0.85'))
+def _ml_float(env_key: str, default: float) -> float:
+    try:
+        return float(os.environ.get(env_key, str(default)))
+    except ValueError:
+        warnings.warn(f"Valor invalido para {env_key}, usando default {default}", stacklevel=2)
+        return default
+
+ML_CLASSIFIER_MIN_CONFIDENCE = _ml_float('ML_CLASSIFIER_MIN_CONFIDENCE', 0.90)
+ML_YOLO_VALIDATOR_MIN_CONFIDENCE = _ml_float('ML_YOLO_VALIDATOR_MIN_CONFIDENCE', 0.75)
+ML_YOLO_SEG_CONFIDENCE = _ml_float('ML_YOLO_SEG_CONFIDENCE', 0.5)
+ML_CLASSIFIER_MIN_CACAO_PROBABILITY = _ml_float('ML_CLASSIFIER_MIN_CACAO_PROBABILITY', 0.85)

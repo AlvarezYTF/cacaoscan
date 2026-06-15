@@ -641,6 +641,21 @@ class AnalysisService(BaseService):
                     )
                 )
 
+            try:
+                qs = float(prediction_result['quality_score'])
+                mp = float(prediction_result['maturity_percentage'])
+            except (TypeError, ValueError) as e:
+                return ServiceResult.error(
+                    ValidationServiceError(f"Valores de prediccion no numericos: {e}")
+                )
+            if not (0.0 <= qs <= 100.0) or not (0.0 <= mp <= 100.0):
+                return ServiceResult.error(
+                    ValidationServiceError(
+                        "Valores de prediccion fuera de rango [0, 100]",
+                        details={'quality_score': qs, 'maturity_percentage': mp}
+                    )
+                )
+
             from decimal import Decimal
             prediction, _ = cacao_prediction_model.objects.update_or_create(
                 image=image,
