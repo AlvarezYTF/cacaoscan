@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-15T00:00:00Z",
+  "title": "Design System: CacaoScan",
+  "extensions": {
+    "colorMeta": {
+      "primary":         { "role": "primary",  "displayName": "Verde Esmeralda",    "canonical": "oklch(0.697 0.191 157.0)", "tonalRamp": ["#052e16","#064e3b","#065f46","#047857","#059669","#10b981","#34d399","#6ee7b7","#a7f3d0","#d1fae5"] },
+      "primary-deep":    { "role": "primary",  "displayName": "Verde Profundo",      "canonical": "oklch(0.600 0.190 157.0)", "tonalRamp": ["#052e16","#064e3b","#065f46","#047857","#059669","#27ae60","#34d399","#6ee7b7","#a7f3d0","#d1fae5"] },
+      "primary-surface": { "role": "tertiary", "displayName": "Verde Superficie",    "canonical": "oklch(0.950 0.060 155.0)", "tonalRamp": ["#052e16","#064e3b","#065f46","#6ee7b7","#a7f3d0","#d1fae5","#ecfdf5","#f0fdf4","#f6fff8","#fafffe"] },
+      "ink":             { "role": "neutral",  "displayName": "Tinta Principal",     "canonical": "oklch(0.270 0.038 245.0)", "tonalRamp": ["#0f1923","#1a2634","#2c3e50","#34495e","#4a6278","#5d7d96","#8fa8be","#b8cad8","#d9e5ed","#f0f4f7"] },
+      "muted":           { "role": "neutral",  "displayName": "Texto Secundario",    "canonical": "oklch(0.560 0.015 195.0)", "tonalRamp": ["#2c3e50","#3d5166","#566a7f","#7f8c8d","#95a5a6","#b2bec3","#cdd3d3","#dee2e2","#eef0f0","#f8f9f9"] },
+      "surface":         { "role": "neutral",  "displayName": "Superficie",          "canonical": "oklch(0.975 0.003 230.0)", "tonalRamp": ["#d0d5da","#dde2e7","#e8ecef","#f1f3f5","#f8f9fa","#fafbfc","#fcfcfd","#fdfdfe","#fefefe","#ffffff"] },
+      "border":          { "role": "neutral",  "displayName": "Borde",               "canonical": "oklch(0.940 0.005 230.0)", "tonalRamp": ["#b0b8c1","#c3cbcf","#d1d8dd","#dde2e6","#e9ecef","#f0f3f5","#f5f7f9","#f8f9fb","#fbfcfd","#ffffff"] },
+      "bg":              { "role": "neutral",  "displayName": "Fondo Base",          "canonical": "oklch(1.000 0.000 0)",    "tonalRamp": ["#e0e0e0","#ebebeb","#f0f0f0","#f5f5f5","#f9f9f9","#fbfbfb","#fdfdfd","#fefefe","#ffffff","#ffffff"] },
+      "success-text":    { "role": "semantic", "displayName": "Éxito Texto",         "canonical": "oklch(0.370 0.110 160.0)", "tonalRamp": ["#022c22","#044232","#065f46","#047857","#059669","#10b981","#34d399","#6ee7b7","#a7f3d0","#d1fae5"] },
+      "error-inline":    { "role": "semantic", "displayName": "Error Inline",        "canonical": "oklch(0.580 0.200 25.0)",  "tonalRamp": ["#7f1d1d","#991b1b","#b91c1c","#dc2626","#e74c3c","#ef4444","#f87171","#fca5a5","#fecaca","#fee2e2"] }
+    },
+    "typographyMeta": {
+      "display":  { "displayName": "Display",  "purpose": "Títulos de página. Uno visible a la vez." },
+      "headline": { "displayName": "Headline", "purpose": "Cabeceras de sección, títulos de modal." },
+      "title":    { "displayName": "Title",    "purpose": "Subtítulos, labels de card, nombres de campo." },
+      "body":     { "displayName": "Body",     "purpose": "Todo texto de contenido. Max 75ch en prose." },
+      "label":    { "displayName": "Label",    "purpose": "Tags, badges, metadatos, texto de botón." }
+    },
+    "shadows": [
+      { "name": "card-hover",  "value": "0 4px 12px rgba(0, 0, 0, 0.08)",  "purpose": "Cards clicables en hover. Respuesta a estado, no reposo." },
+      { "name": "modal",       "value": "0 16px 40px rgba(0, 0, 0, 0.16)", "purpose": "Ventanas modales y drawers. La sombra más pesada permitida." },
+      { "name": "tooltip",     "value": "0 2px 8px rgba(0, 0, 0, 0.12)",   "purpose": "Tooltips y popovers." }
+    ],
+    "motion": [
+      { "name": "ease-standard",  "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Transiciones de estado por defecto." },
+      { "name": "ease-out-expo",  "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Entradas de elementos (modales, drawers)." },
+      { "name": "duration-fast",  "value": "100ms", "purpose": "Feedback táctil inmediato (press, hover)." },
+      { "name": "duration-base",  "value": "150ms", "purpose": "Transiciones de estado estándar." },
+      { "name": "duration-enter", "value": "200ms", "purpose": "Entradas de elementos nuevos en pantalla." }
+    ],
+    "breakpoints": [
+      { "name": "sm",  "value": "640px"  },
+      { "name": "md",  "value": "768px"  },
+      { "name": "lg",  "value": "1024px" },
+      { "name": "xl",  "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal. Táctil y directo — press feedback en 100ms.",
+      "html": "<button class=\"ds-btn-primary\">Analizar Grano</button>",
+      "css": ".ds-btn-primary { background: #10b981; color: #ffffff; padding: 10px 20px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer; min-height: 44px; transition: background 100ms cubic-bezier(0.4,0,0.2,1), transform 100ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: #27ae60; } .ds-btn-primary:active { transform: scale(0.98); } .ds-btn-primary:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; } @media (prefers-reduced-motion: reduce) { .ds-btn-primary { transition: none; } }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Acción secundaria. Borde verde, sin fondo en reposo.",
+      "html": "<button class=\"ds-btn-secondary\">Ver Historial</button>",
+      "css": ".ds-btn-secondary { background: transparent; color: #10b981; padding: 10px 20px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; border: 1px solid #10b981; cursor: pointer; min-height: 44px; transition: background 100ms cubic-bezier(0.4,0,0.2,1), transform 100ms; } .ds-btn-secondary:hover { background: #e3f9e5; } .ds-btn-secondary:active { transform: scale(0.98); } .ds-btn-secondary:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-btn-secondary { transition: none; } }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Contenedor base. Plano en reposo, sombra solo en hover interactivo.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-header\">Resultado del Escaneo</div><div class=\"ds-card-body\">Contenido</div></div>",
+      "css": ".ds-card { background: #ffffff; border: 1px solid #e9ecef; border-radius: 12px; padding: 24px; } .ds-card-header { font-size: 1rem; font-weight: 600; color: #2c3e50; margin-bottom: 16px; } .ds-card-body { font-size: 0.875rem; color: #2c3e50; } .ds-card--interactive { cursor: pointer; transition: box-shadow 150ms cubic-bezier(0.4,0,0.2,1); } .ds-card--interactive:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); } @media (prefers-reduced-motion: reduce) { .ds-card--interactive { transition: none; } }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo de texto. Focus con borde verde, sin glow.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-label\">Lote</label><input class=\"ds-input\" type=\"text\" placeholder=\"Nombre del lote\"></div>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; } .ds-label { font-size: 0.75rem; font-weight: 500; color: #2c3e50; } .ds-input { background: #ffffff; color: #2c3e50; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px 14px; font-size: 0.875rem; min-height: 44px; width: 100%; transition: border-color 100ms; } .ds-input:focus { outline: none; border: 2px solid #10b981; padding: 9px 13px; } .ds-input::placeholder { color: #7f8c8d; } .ds-input:disabled { background: #f8f9fa; color: #7f8c8d; cursor: not-allowed; } .ds-input.error { border-color: #e74c3c; }"
+    },
+    {
+      "name": "Badge Success",
+      "kind": "chip",
+      "refersTo": "badge-success",
+      "description": "Estado de éxito. Solo para comunicar estado real — nunca decorativo.",
+      "html": "<span class=\"ds-badge ds-badge--success\">Aprobado</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; line-height: 1.4; } .ds-badge--success { background: #e3f9e5; color: #065f46; } .ds-badge--warning { background: #fff8e1; color: #8a4b00; } .ds-badge--error { background: #ffebee; color: #b71c1c; } .ds-badge--neutral { background: #ecf0f1; color: #2c3e50; }"
+    },
+    {
+      "name": "Scan Result Card",
+      "kind": "custom",
+      "description": "Componente signature: resultado del análisis ML. Número primero, unidad secundaria.",
+      "html": "<div class=\"ds-scan-result\"><div class=\"ds-scan-metric\"><span class=\"ds-scan-value\">18.4</span><span class=\"ds-scan-unit\">mm largo</span></div><div class=\"ds-scan-metric\"><span class=\"ds-scan-value\">12.1</span><span class=\"ds-scan-unit\">mm ancho</span></div><div class=\"ds-scan-metric\"><span class=\"ds-scan-value\">1.32</span><span class=\"ds-scan-unit\">g peso</span></div></div>",
+      "css": ".ds-scan-result { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px; padding: 24px; background: #ffffff; border: 1px solid #e9ecef; border-radius: 12px; } .ds-scan-metric { display: flex; flex-direction: column; gap: 2px; } .ds-scan-value { font-size: 2rem; font-weight: 700; color: #2c3e50; line-height: 1.2; letter-spacing: -0.02em; } .ds-scan-unit { font-size: 0.75rem; font-weight: 500; color: #7f8c8d; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "El Laboratorio del Cacao",
+    "overview": "CacaoScan es la herramienta que le pone número al ojo del técnico. El sistema de diseño refleja eso: rigor científico con calidez agrícola. Cada pantalla tiene un trabajo concreto — mostrar un resultado, pedir una imagen, generar un informe — y la UI desaparece para que el dato ocupe el primer plano.\n\nEl sistema usa una sola familia tipográfica del sistema en distintos pesos. La paleta es restringida: verde esmeralda como color de marca, blanco puro como fondo, tono oscuro azulado como tinta. Las sombras no existen en reposo — la profundidad se comunica con bordes y tonos, no con efectos.\n\nEste sistema rechaza: gradientes SaaS genéricos, glassmorphism decorativo, cards idénticas en grilla, héroe con métricas flotantes, azul corporativo.",
+    "keyCharacteristics": [
+      "Verde esmeralda único: solo en acciones primarias y estados de éxito",
+      "Plano por defecto: sin sombras en reposo, solo borde 1px",
+      "Tipografía del sistema, un peso por nivel jerárquico",
+      "Tap targets ≥44px, contraste ≥7:1 en resultados",
+      "Feedback táctil inmediato en press (100ms, scale 0.98)"
+    ],
+    "rules": [
+      { "name": "La Regla de la Señal Verde",    "body": "El color primario aparece en ≤10% de cualquier pantalla. Su rareza es lo que hace que un botón primario se vea como la acción correcta.",                                    "section": "colors" },
+      { "name": "La Regla Sin Azul de Enlace",   "body": "Links migran a #10b981 o #2c3e50 con subrayado. Un azul de link en un sistema de marca verde erosiona la confianza visual.",                                                 "section": "colors" },
+      { "name": "La Regla Plano-por-Defecto",    "body": "Sin sombras en reposo. La sombra es respuesta a interacción, no decoración de identidad. Cards estáticas: solo border 1px solid #e9ecef.",                                    "section": "elevation" },
+      { "name": "La Regla Sin Ghost-Card",       "body": "Prohibido combinar border: 1px solid + box-shadow con blur ≥16px en el mismo elemento en reposo.",                                                                             "section": "elevation" },
+      { "name": "La Regla del Peso Único",       "body": "Cada nivel jerárquico tiene un solo peso. No mezclar Bold y SemiBold en el mismo nivel para añadir énfasis.",                                                                  "section": "typography" },
+      { "name": "La Regla del Techo Display",    "body": "letter-spacing en headings: mínimo -0.02em. Nunca más apretado.",                                                                                                               "section": "typography" }
+    ],
+    "dos": [
+      "Do usar #10b981 exclusivamente en acciones primarias y estados de éxito",
+      "Do usar border: 1px solid #e9ecef como único separador en reposo",
+      "Do mantener tap targets ≥44px en todos los elementos interactivos",
+      "Do mostrar el resultado del escaneo como primer elemento visible",
+      "Do usar transform: scale(0.98) en active/press para feedback táctil",
+      "Do respetar prefers-reduced-motion — todas las transiciones caen a instantáneas",
+      "Do usar body text en #2c3e50 con contraste ≥7:1 sobre fondo blanco"
+    ],
+    "donts": [
+      "Don't usar gradiente purple-to-blue ni ningún gradiente decorativo",
+      "Don't combinar border: 1px solid + box-shadow con blur ≥16px en reposo",
+      "Don't usar border-radius mayor de 16px en cards o contenedores",
+      "Don't usar glassmorphism (backdrop-filter: blur) como estética por defecto",
+      "Don't usar #3498db (azul) para links en el dashboard",
+      "Don't poner cards idénticas en grilla como estructura por defecto",
+      "Don't animar en acciones de teclado o acciones de alta frecuencia",
+      "Don't usar texto muted (#7f8c8d) para datos de resultado del escaneo",
+      "Don't diseñar layouts que dependan de hover para revelar información"
+    ]
+  }
+}
