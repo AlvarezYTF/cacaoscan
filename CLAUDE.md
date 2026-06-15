@@ -17,6 +17,9 @@ CacaoScan is a full-stack platform that measures dimensions and weight of cacao 
 - `make down`, `make logs`, `make clean` (clean removes volumes — destroys DB)
 - `make test` — runs backend pytest + frontend vitest
 - `make deploy` / `make k8s-status` / `make k8s-logs` — Kubernetes via `k8s/`
+- AWS deploy: push a `main` dispara CI/CD automático (ver `Doc/AWS_DEPLOYMENT.md`); infra en `infra/terraform/`
+- `bash scripts/sync_models_from_s3.sh` — descarga modelos ML desde S3 al entorno local
+- `bash scripts/upload_model_to_s3.sh` — sube modelos entrenados a S3
 
 ### Backend (`cd backend`, requires Python 3.12 exactly)
 - Create venv: `py -3.12 -m venv venv && venv\Scripts\activate` (Windows) or `source venv/bin/activate`

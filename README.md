@@ -299,6 +299,7 @@ make test                    # backend + frontend
 ## Despliegue
 
 - **Docker Compose**: `docker-compose.yml` define backend, frontend (nginx), Postgres, Redis, Celery worker y beat.
+- **AWS ECS + ECR** (produccion recomendada): push a `main` dispara `.github/workflows/deploy-aws.yml` — construye imagenes, las sube a ECR y actualiza el servicio ECS. Requiere Terraform aplicado previamente (`infra/terraform/`). Ver `Doc/AWS_DEPLOYMENT.md`.
 - **Render**: configurado vía `render.yaml`; variables en `RENDER_ENVIRONMENT_VARIABLES.md`.
 - **Kubernetes**: manifests Kustomize en `k8s/`. Comandos:
 
@@ -310,7 +311,20 @@ make test                    # backend + frontend
 
   Namespace por defecto `app-namespace` (override con `K8S_NS=...`).
 
-- **Almacenamiento de imagenes**: configurable a S3 via `django-storages` (ver `Doc/`).
+- **Almacenamiento de imagenes**: S3 en produccion via `django-storages`. En local, `AWS_S3_ENDPOINT_URL` apunta a MinIO para paridad de comportamiento sin cuenta AWS. Ver `Doc/Guia_AWS_S3_Configuracion.md`.
+
+### Variables de entorno clave (v1.4+)
+
+| Variable | Default | Descripcion |
+|---|---|---|
+| `AWS_S3_ENDPOINT_URL` | _(vacio = S3 real)_ | URL de MinIO para desarrollo local |
+| `ML_CLASSIFIER_MIN_CONFIDENCE` | `0.90` | Umbral minimo del clasificador de cacao |
+| `ML_YOLO_VALIDATOR_MIN_CONFIDENCE` | `0.75` | Umbral del validador YOLO |
+| `ML_YOLO_SEG_CONFIDENCE` | `0.50` | Umbral de segmentacion U-Net |
+| `ML_CLASSIFIER_MIN_CACAO_PROBABILITY` | `0.85` | Probabilidad minima de clase cacao |
+| `DRF_THROTTLE_ANALYSIS` | `30/min` | Rate limit del endpoint `/scan/` (ML) |
+| `DRF_THROTTLE_USER` | `1000/hour` | Rate limit usuarios autenticados |
+| `DRF_THROTTLE_ANON` | `60/hour` | Rate limit usuarios anonimos |
 
 ---
 
