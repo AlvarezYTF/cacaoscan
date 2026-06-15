@@ -556,7 +556,7 @@ export default {
 
 .notification-header h3 i {
   margin-right: 10px;
-  color: #3498db;
+  color: #10b981;
 }
 
 .header-actions {
@@ -622,7 +622,7 @@ export default {
 .loading-state i {
   font-size: 2rem;
   margin-bottom: 10px;
-  color: #3498db;
+  color: #10b981;
 }
 
 .empty-state i {
@@ -649,8 +649,7 @@ export default {
 }
 
 .notification-item.unread {
-  background-color: #e3f2fd;
-  border-left: 4px solid #3498db;
+  background-color: #f0fdf4;
 }
 
 .notification-item.read {
@@ -671,7 +670,7 @@ export default {
 
 .notification-icon i {
   font-size: 1.2rem;
-  color: #3498db;
+  color: #10b981;
 }
 
 .notification-content {
@@ -730,7 +729,7 @@ export default {
 .unread-indicator {
   width: 8px;
   height: 8px;
-  background-color: #3498db;
+  background-color: #10b981;
   border-radius: 50%;
 }
 
@@ -746,12 +745,12 @@ export default {
 }
 
 .page-item.active .page-link {
-  background-color: #3498db;
-  border-color: #3498db;
+  background-color: #10b981;
+  border-color: #10b981;
 }
 
 .page-link {
-  color: #3498db;
+  color: #10b981;
   border-color: #dee2e6;
 }
 
@@ -777,7 +776,7 @@ export default {
 }
 
 .notification-settings h4 i {
-  color: #3498db;
+  color: #10b981;
 }
 
 .settings-grid {
@@ -825,8 +824,8 @@ export default {
 
 .btn-outline-primary {
   background-color: transparent;
-  color: #3498db;
-  border: 1px solid #3498db;
+  color: #10b981;
+  border: 1px solid #10b981;
 }
 
 .btn-outline-primary:hover:not(:disabled) {

@@ -372,6 +372,13 @@ const getRedirectPath = () => {
   animation: bounce-slow 3s ease-in-out infinite;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animate-bounce-slow,
+  .animate-fade-in {
+    animation: none;
+  }
+}
+
 @keyframes float {
   0%, 100% {
     transform: translateY(0);

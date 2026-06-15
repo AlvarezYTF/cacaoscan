@@ -1,7 +1,7 @@
 <template>
   <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
     <!-- Total Usuarios -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-150 p-6">
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -18,7 +18,7 @@
     </div>
 
     <!-- Activos -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-150 p-6">
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -35,7 +35,7 @@
     </div>
 
     <!-- Nuevos Hoy -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-150 p-6">
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -52,7 +52,7 @@
     </div>
 
     <!-- En Línea -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 p-6">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-150 p-6">
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">

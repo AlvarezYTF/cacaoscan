@@ -171,7 +171,7 @@ const containerClass = computed(() => {
 }
 
 .animate-shimmer {
-  animation: shimmer 2s infinite;
+  animation: shimmer 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 /* Style progress element to match previous appearance */

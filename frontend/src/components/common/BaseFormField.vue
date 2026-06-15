@@ -22,6 +22,8 @@
       :required="required"
       :disabled="disabled"
       :autocomplete="autocomplete"
+      :aria-invalid="error ? 'true' : undefined"
+      :aria-describedby="error ? `${fieldId}-error` : helpText ? `${fieldId}-help` : undefined"
       :class="inputClass"
       @input="handleInput"
       @blur="handleBlur"
@@ -115,12 +117,12 @@
     <slot v-else :fieldId="fieldId"></slot>
 
     <!-- Error Message -->
-    <p v-if="error" class="text-red-600 text-xs mt-1">
+    <p v-if="error" :id="`${fieldId}-error`" role="alert" class="text-red-600 text-xs mt-1">
       {{ error }}
     </p>
 
     <!-- Help Text -->
-    <p v-if="helpText && !error" class="text-gray-500 text-xs mt-1">
+    <p v-if="helpText && !error" :id="`${fieldId}-help`" class="text-gray-500 text-xs mt-1">
       {{ helpText }}
     </p>
   </div>

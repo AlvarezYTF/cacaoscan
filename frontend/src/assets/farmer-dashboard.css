@@ -81,8 +81,8 @@
 
 .btn-outline {
   background: transparent;
-  border: 1px solid #3498db;
-  color: #3498db;
+  border: 1px solid #10b981;
+  color: #10b981;
 }
 
 /* Upload Section */
@@ -141,7 +141,7 @@
 }
 
 .view-all {
-  color: #3498db;
+  color: #10b981;
   text-decoration: none;
   font-weight: 500;
   font-size: 0.95rem;

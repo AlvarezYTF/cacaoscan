@@ -33,7 +33,7 @@
           <button 
             v-if="ctaText"
             @click="handleCtaClick"
-            class="group bg-white text-green-600 hover:bg-gray-50 font-semibold py-4 px-10 rounded-xl text-lg shadow-xl hover:shadow-2xl transition-all duration-200 hover:scale-105 active:scale-100 transform"
+            class="group bg-white text-green-600 hover:bg-gray-50 font-semibold py-4 px-10 rounded-xl text-lg shadow-xl hover:shadow-2xl transition-all duration-200 hover:scale-[1.02] active:scale-100 transform"
           >
             <span class="flex items-center justify-center gap-2">
               {{ ctaText }}
@@ -145,7 +145,7 @@ const handleCtaClick = () => {
 @keyframes fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -154,7 +154,7 @@ const handleCtaClick = () => {
 }
 
 .animate-fade-in-up {
-  animation: fade-in-up 0.8s ease-out;
+  animation: fade-in-up 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 </style>
 

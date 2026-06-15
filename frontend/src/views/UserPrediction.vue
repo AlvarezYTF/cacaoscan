@@ -20,11 +20,11 @@
               <div class="text-xs text-gray-500">Análisis realizados</div>
             </div>
             <div class="text-center">
-              <div class="text-2xl font-bold text-blue-600">{{ quickStats.avgConfidence }}%</div>
+              <div class="text-2xl font-bold text-green-600">{{ quickStats.avgConfidence }}%</div>
               <div class="text-xs text-gray-500">Confianza promedio</div>
             </div>
             <div class="text-center">
-              <div class="text-2xl font-bold text-purple-600">{{ quickStats.avgWeight }}g</div>
+              <div class="text-2xl font-bold text-gray-900">{{ quickStats.avgWeight }}g</div>
               <div class="text-xs text-gray-500">Peso promedio</div>
             </div>
           </div>
@@ -45,7 +45,7 @@
                 <h2 class="text-xl font-semibold text-gray-900">
                   Subir Nueva Imagen
                 </h2>
-                <div v-if="isLoading" class="flex items-center text-sm text-blue-600">
+                <div v-if="isLoading" class="flex items-center text-sm text-green-600">
                   <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -76,17 +76,17 @@
                     <div class="text-sm text-green-600 font-medium">Peso</div>
                     <div class="text-xl font-bold text-green-800">{{ cacaoScanResult.peso_g }} g</div>
                   </div>
-                  <div class="bg-blue-50 rounded-lg p-3">
-                    <div class="text-sm text-blue-600 font-medium">Altura</div>
-                    <div class="text-xl font-bold text-blue-800">{{ cacaoScanResult.alto_mm }} mm</div>
+                  <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-sm text-gray-500 font-medium">Altura</div>
+                    <div class="text-xl font-bold text-gray-900">{{ cacaoScanResult.alto_mm }} mm</div>
                   </div>
-                  <div class="bg-purple-50 rounded-lg p-3">
-                    <div class="text-sm text-purple-600 font-medium">Ancho</div>
-                    <div class="text-xl font-bold text-purple-800">{{ cacaoScanResult.ancho_mm }} mm</div>
+                  <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-sm text-gray-500 font-medium">Ancho</div>
+                    <div class="text-xl font-bold text-gray-900">{{ cacaoScanResult.ancho_mm }} mm</div>
                   </div>
-                  <div class="bg-orange-50 rounded-lg p-3">
-                    <div class="text-sm text-orange-600 font-medium">Grosor</div>
-                    <div class="text-xl font-bold text-orange-800">{{ cacaoScanResult.grosor_mm }} mm</div>
+                  <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-sm text-gray-500 font-medium">Grosor</div>
+                    <div class="text-xl font-bold text-gray-900">{{ cacaoScanResult.grosor_mm }} mm</div>
                   </div>
                 </div>
 
@@ -177,14 +177,14 @@
           </div>
 
           <!-- Tips Section -->
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div class="flex items-start">
-              <svg class="w-5 h-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 text-gray-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <h3 class="text-sm font-medium text-blue-800">Consejos para mejores resultados</h3>
-                <ul class="text-sm text-blue-700 mt-2 space-y-1">
+                <h3 class="text-sm font-medium text-gray-700">Consejos para mejores resultados</h3>
+                <ul class="text-sm text-gray-600 mt-2 space-y-1">
                   <li>• Usa imágenes claras y bien iluminadas</li>
                   <li>• Asegúrate de que el grano esté completo en la imagen</li>
                   <li>• Evita sombras fuertes o reflejos</li>
@@ -349,17 +349,17 @@
                 <div class="text-2xl font-bold text-green-600">{{ quickStats.total }}</div>
                 <div class="text-sm text-green-700">Total de análisis</div>
               </div>
-              <div class="text-center p-3 bg-blue-50 rounded-lg">
-                <div class="text-2xl font-bold text-blue-600">{{ quickStats.highConfidenceCount }}</div>
-                <div class="text-sm text-blue-700">Alta confianza</div>
+              <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-gray-900">{{ quickStats.highConfidenceCount }}</div>
+                <div class="text-sm text-gray-500">Alta confianza</div>
               </div>
-              <div class="text-center p-3 bg-purple-50 rounded-lg">
-                <div class="text-2xl font-bold text-purple-600">{{ quickStats.avgWeight }}g</div>
-                <div class="text-sm text-purple-700">Peso promedio</div>
+              <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-gray-900">{{ quickStats.avgWeight }}g</div>
+                <div class="text-sm text-gray-500">Peso promedio</div>
               </div>
-              <div class="text-center p-3 bg-orange-50 rounded-lg">
-                <div class="text-2xl font-bold text-orange-600">{{ quickStats.avgConfidence }}%</div>
-                <div class="text-sm text-orange-700">Confianza promedio</div>
+              <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600">{{ quickStats.avgConfidence }}%</div>
+                <div class="text-sm text-gray-500">Confianza promedio</div>
               </div>
             </div>
           </div>

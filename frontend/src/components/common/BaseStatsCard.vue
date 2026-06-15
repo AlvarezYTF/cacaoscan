@@ -129,7 +129,7 @@ const iconBgClass = computed(() => {
 
 <style scoped>
 .base-stats-card {
-  transition: all 0.2s;
+  transition: box-shadow 150ms ease-out, border-color 150ms ease-out;
 }
 
 .base-stats-card:hover {

@@ -16,7 +16,7 @@
         :disabled="action.disabled || loading"
         :class="[
           'flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all duration-200',
-          'hover:shadow-md hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2',
+          'hover:shadow-md hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2',
           action.variant === 'primary' ? 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100' : '',
           action.variant === 'secondary' ? 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50' : '',
           action.variant === 'danger' ? 'border-red-500 bg-red-50 text-red-700 hover:bg-red-100' : '',

@@ -164,25 +164,30 @@ export default {
   transform: translateY(-2px);
 }
 
-/* Variantes */
+/* Variantes — full border + background tint, no side-stripe */
 .widget-primary {
-  border-left: 4px solid #3b82f6;
+  background: #eff6ff;
+  border: 1px solid #6b7280;
 }
 
 .widget-success {
-  border-left: 4px solid #10b981;
+  background: #f0fdf4;
+  border: 1px solid #10b981;
 }
 
 .widget-warning {
-  border-left: 4px solid #f59e0b;
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
 }
 
 .widget-danger {
-  border-left: 4px solid #ef4444;
+  background: #fef2f2;
+  border: 1px solid #ef4444;
 }
 
 .widget-info {
-  border-left: 4px solid #06b6d4;
+  background: #f8f9fa;
+  border: 1px solid #6b7280;
 }
 
 /* Tamaños */
@@ -224,7 +229,7 @@ export default {
 }
 
 .widget-primary .widget-icon {
-  color: #3b82f6;
+  color: #10b981;
 }
 
 .widget-success .widget-icon {
@@ -300,7 +305,7 @@ export default {
   width: 32px;
   height: 32px;
   border: 3px solid #f3f4f6;
-  border-top: 3px solid #3b82f6;
+  border-top: 3px solid #10b981;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 12px;

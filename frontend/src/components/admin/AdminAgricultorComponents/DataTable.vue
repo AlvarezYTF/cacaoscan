@@ -36,8 +36,8 @@
           <tr 
             v-for="(row, index) in paginatedData" 
             :key="row.id || index"
-            class="hover:bg-green-50 transition-all duration-200 cursor-pointer"
-            :class="{ 'bg-green-100 border-l-4 border-green-500': selectedRows.includes(row.id || index) }"
+            class="hover:bg-green-50 transition-colors duration-150 cursor-pointer"
+            :class="{ 'selected bg-green-50': selectedRows.includes(row.id || index) }"
           >
             <td 
               v-for="column in columns" 
@@ -299,8 +299,8 @@ tbody tr {
 
 /* Estados de selección */
 tbody tr.selected {
-  background-color: #eff6ff;
-  border-left: 3px solid #3b82f6;
+  background-color: #f0fdf4;
+  box-shadow: inset 3px 0 0 #10b981;
 }
 
 /* Estados de carga */

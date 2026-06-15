@@ -68,7 +68,7 @@ const props = defineProps({
   },
   shadow: {
     type: Boolean,
-    default: true
+    default: false
   }
 })
 
@@ -97,7 +97,7 @@ const handleClick = (event) => {
   background: white;
   border-radius: 0.75rem;
   overflow: hidden;
-  transition: all 0.2s;
+  transition: box-shadow 150ms ease-out, border-color 150ms ease-out;
 }
 
 .base-card-bordered {
@@ -105,7 +105,7 @@ const handleClick = (event) => {
 }
 
 .base-card-shadow {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
 }
 
 .base-card-clickable {
@@ -113,8 +113,14 @@ const handleClick = (event) => {
 }
 
 .base-card-clickable:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  border-color: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .base-card {
+    transition: none;
+  }
 }
 
 .base-card-header {
@@ -188,25 +194,29 @@ const handleClick = (event) => {
   gap: 0.5rem;
 }
 
-/* Variants */
+/* Variants — full border + background tint, no side-stripe */
 .base-card-success {
-  border-left: 4px solid #10b981;
+  background: #f0fdf4;
+  border: 1px solid #10b981;
 }
 
 .base-card-error {
-  border-left: 4px solid #ef4444;
+  background: #fef2f2;
+  border: 1px solid #ef4444;
 }
 
 .base-card-warning {
-  border-left: 4px solid #f59e0b;
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
 }
 
 .base-card-info {
-  border-left: 4px solid #3b82f6;
+  background: #f8f9fa;
+  border: 1px solid #6b7280;
 }
 
 .base-card-default {
-  border-left: 4px solid #e5e7eb;
+  /* inherits .base-card-bordered when prop is set */
 }
 </style>
 

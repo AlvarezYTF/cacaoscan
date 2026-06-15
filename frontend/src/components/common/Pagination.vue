@@ -198,7 +198,7 @@ const handleItemsPerPageChange = (newSize) => {
 .page-link {
   color: #007bff;
   border-color: #dee2e6;
-  transition: all 0.2s ease-in-out;
+  transition: background-color 150ms ease-out, box-shadow 150ms ease-out, transform 100ms ease-out;
 }
 
 .page-link:hover {

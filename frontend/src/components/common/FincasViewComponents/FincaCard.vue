@@ -1,6 +1,6 @@
 <template>
   <div 
-    class="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 cursor-pointer group"
+    class="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-150 border border-gray-200 cursor-pointer group"
     @click="$emit('view-details', finca)"
   >
     <div class="p-6">
@@ -51,13 +51,13 @@
 
       <!-- Estadísticas -->
       <div class="grid grid-cols-2 gap-4 mb-4">
-        <div class="bg-blue-50 rounded-lg p-3 text-center">
-          <div class="text-2xl font-bold text-blue-600">{{ finca.total_lotes || 0 }}</div>
-          <div class="text-xs text-gray-600">Lotes</div>
+        <div class="bg-gray-50 rounded-lg p-3 text-center">
+          <div class="text-2xl font-bold text-gray-900">{{ finca.total_lotes || 0 }}</div>
+          <div class="text-xs text-gray-500">Lotes</div>
         </div>
-        <div class="bg-purple-50 rounded-lg p-3 text-center">
-          <div class="text-2xl font-bold text-purple-600">{{ finca.total_analisis || 0 }}</div>
-          <div class="text-xs text-gray-600">Análisis</div>
+        <div class="bg-gray-50 rounded-lg p-3 text-center">
+          <div class="text-2xl font-bold text-green-600">{{ finca.total_analisis || 0 }}</div>
+          <div class="text-xs text-gray-500">Análisis</div>
         </div>
       </div>
 

@@ -1,11 +1,15 @@
 <template>
-  <div 
-    v-if="show" 
+  <div
+    v-if="show"
     class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
     :class="overlayClass"
     @click="handleOverlayClick"
+    aria-hidden="true"
   >
-    <div 
+    <div
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="title ? 'base-modal-title' : undefined"
       class="bg-white rounded-lg shadow-xl border border-gray-200 relative w-full max-h-[90vh] overflow-hidden"
       :class="containerClass"
       @click.stop
@@ -14,7 +18,7 @@
       <div v-if="$slots.header" class="modal-header border-b border-gray-200">
         <slot name="header"></slot>
       </div>
-      
+
       <!-- Default Header -->
       <div v-else-if="title" class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
         <div class="flex items-center">
@@ -22,7 +26,7 @@
             <component :is="icon" class="text-xl text-green-600 w-5 h-5" />
           </div>
           <div>
-            <h3 class="text-xl font-bold text-gray-900">{{ title }}</h3>
+            <h3 id="base-modal-title" class="text-xl font-bold text-gray-900">{{ title }}</h3>
             <p v-if="subtitle" class="text-sm text-gray-600 mt-1">{{ subtitle }}</p>
           </div>
         </div>
@@ -143,11 +147,11 @@ const handleOverlayClick = () => {
   padding: 1.5rem;
 }
 
-/* Animation */
+/* Modal entrance — scale + translateY with expo ease */
 @keyframes modalAppear {
   from {
     opacity: 0;
-    transform: scale(0.95) translateY(-10px);
+    transform: scale(0.96) translateY(8px);
   }
   to {
     opacity: 1;
@@ -155,8 +159,8 @@ const handleOverlayClick = () => {
   }
 }
 
-.bg-white {
-  animation: modalAppear 0.2s ease-out;
+[role="dialog"] {
+  animation: modalAppear 250ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
 }
 </style>
 

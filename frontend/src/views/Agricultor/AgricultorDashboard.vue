@@ -17,8 +17,20 @@
     <main class="min-h-screen w-full p-8 overflow-y-auto" :class="isSidebarCollapsed ? 'ml-20' : 'ml-64'">
       <!-- Overview Section -->
       <div v-if="activeSection === 'overview'" class="max-w-full space-y-6">
-        <WelcomeHeader :farmer-name="farmerName" />
-        
+        <div class="flex items-center justify-between">
+          <WelcomeHeader :farmer-name="farmerName" />
+          <button
+            @click="handleNuevoAnalisis"
+            type="button"
+            class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex-shrink-0"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Nuevo Análisis
+          </button>
+        </div>
+
         <!-- Quality Overview Card - Compact -->
         <QualityOverviewCard
           :quality="qualityStats?.averageQuality || 0"

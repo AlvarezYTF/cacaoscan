@@ -108,7 +108,7 @@
                 <!-- Card: Análisis Realizados -->
                 <div class="bg-blue-50 rounded-xl p-5 border border-blue-200 hover:shadow-md transition-all duration-200 text-center group">
                   <div class="flex justify-center mb-2">
-                    <div class="bg-blue-100 p-2 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                    <div class="bg-blue-100 p-2 rounded-lg group-hover:scale-[1.04] transition-transform duration-200">
                       <i class="fas fa-microscope text-blue-600 text-lg"></i>
                     </div>
                   </div>
@@ -121,7 +121,7 @@
                 <!-- Card: Análisis Exitosos -->
                 <div class="bg-green-50 rounded-xl p-5 border border-green-200 hover:shadow-md transition-all duration-200 text-center group">
                   <div class="flex justify-center mb-2">
-                    <div class="bg-green-100 p-2 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                    <div class="bg-green-100 p-2 rounded-lg group-hover:scale-[1.04] transition-transform duration-200">
                       <i class="fas fa-check-circle text-green-600 text-lg"></i>
                     </div>
                   </div>
@@ -134,7 +134,7 @@
                 <!-- Card: Calidad Promedio -->
                 <div class="bg-yellow-50 rounded-xl p-5 border border-yellow-200 hover:shadow-md transition-all duration-200 text-center group">
                   <div class="flex justify-center mb-2">
-                    <div class="bg-yellow-100 p-2 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                    <div class="bg-yellow-100 p-2 rounded-lg group-hover:scale-[1.04] transition-transform duration-200">
                       <i class="fas fa-star text-yellow-600 text-lg"></i>
                     </div>
                   </div>
@@ -147,7 +147,7 @@
                 <!-- Card: Último Análisis -->
                 <div class="bg-purple-50 rounded-xl p-5 border border-purple-200 hover:shadow-md transition-all duration-200 text-center group">
                   <div class="flex justify-center mb-2">
-                    <div class="bg-purple-100 p-2 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                    <div class="bg-purple-100 p-2 rounded-lg group-hover:scale-[1.04] transition-transform duration-200">
                       <i class="fas fa-clock text-purple-600 text-lg"></i>
                     </div>
                   </div>

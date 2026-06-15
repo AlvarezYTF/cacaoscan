@@ -28,8 +28,8 @@
 .form-select:focus,
 .form-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 /* Botones */
@@ -52,14 +52,14 @@
 }
 
 .btn-primary {
-  background-color: #2563eb;
+  background-color: #10b981;
   color: #ffffff;
-  border-color: #2563eb;
+  border-color: #10b981;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #1e3a8a;
-  border-color: #1e3a8a;
+  background-color: #059669;
+  border-color: #059669;
 }
 
 .btn-outline {
@@ -173,7 +173,7 @@ main {
 
 /* Mejoras para accesibilidad */
 *:focus {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #10b981;
   outline-offset: 2px;
 }
 

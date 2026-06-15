@@ -646,7 +646,13 @@ onMounted(async () => {
 /* Estilos para el acordeón - Animaciones suaves de expansión/colapso */
 .accordion-content {
   overflow: hidden;
-  transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+  transition: opacity 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accordion-content {
+    transition: none;
+  }
 }
 
 /* Responsive: Asegurar que el acordeón se adapte bien en móviles */

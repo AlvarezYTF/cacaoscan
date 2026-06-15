@@ -24,7 +24,7 @@
           <h3 class="text-base font-bold text-gray-900">➕ Nuevo Análisis</h3>
           <p class="text-xs text-gray-600">Analizar granos de cacao</p>
         </div>
-        <div class="text-green-600 group-hover:translate-x-1 transition-transform duration-300">
+        <div class="text-green-600 group-hover:translate-x-1 transition-transform duration-150">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
           </svg>
@@ -41,7 +41,7 @@
           <h3 class="text-base font-bold text-gray-900">📄 Generar Reporte del Mes</h3>
           <p class="text-xs text-gray-600">Exportar estadísticas mensuales</p>
         </div>
-        <div class="text-purple-600 group-hover:translate-x-1 transition-transform duration-300">
+        <div class="text-purple-600 group-hover:translate-x-1 transition-transform duration-150">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
           </svg>
@@ -62,7 +62,7 @@
           <h3 class="text-base font-bold text-gray-900">⚠️ Ver Alertas Críticas</h3>
           <p class="text-xs text-gray-600">{{ criticalAlertsCount }} alerta{{ criticalAlertsCount > 1 ? 's' : '' }} pendiente{{ criticalAlertsCount > 1 ? 's' : '' }}</p>
         </div>
-        <div class="text-red-600 group-hover:translate-x-1 transition-transform duration-300">
+        <div class="text-red-600 group-hover:translate-x-1 transition-transform duration-150">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
           </svg>
@@ -79,7 +79,7 @@
           <h3 class="text-base font-bold text-gray-900">🧠 Ver Recomendaciones</h3>
           <p class="text-xs text-gray-600">Sugerencias basadas en IA</p>
         </div>
-        <div class="text-indigo-600 group-hover:translate-x-1 transition-transform duration-300">
+        <div class="text-indigo-600 group-hover:translate-x-1 transition-transform duration-150">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
           </svg>

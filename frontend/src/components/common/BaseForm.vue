@@ -337,7 +337,7 @@ defineExpose({
   border-radius: 0.375rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: box-shadow 150ms ease-out, border-color 150ms ease-out;
   border: 1px solid transparent;
   gap: 0.5rem;
 }

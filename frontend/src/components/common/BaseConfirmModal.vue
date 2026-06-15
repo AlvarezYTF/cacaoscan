@@ -259,7 +259,7 @@ const handleUpdateShow = (value) => {
   border-radius: 0.5rem;
   color: #991b1b;
   font-size: 0.875rem;
-  transition: all 0.2s;
+  transition: box-shadow 150ms ease-out, border-color 150ms ease-out;
 }
 
 .confirm-warning i {
@@ -284,7 +284,7 @@ const handleUpdateShow = (value) => {
   font-size: 0.875rem;
   font-weight: 500;
   text-decoration: none;
-  transition: all 0.2s ease-in-out;
+  transition: background-color 150ms ease-out, box-shadow 150ms ease-out, transform 100ms ease-out;
   cursor: pointer;
   border: 1px solid transparent;
 }

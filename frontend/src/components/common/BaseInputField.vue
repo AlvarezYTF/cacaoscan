@@ -36,6 +36,8 @@
         :maxlength="maxLength"
         :pattern="pattern"
         :autocomplete="autocomplete"
+        :aria-invalid="hasError || !!error ? 'true' : undefined"
+        :aria-describedby="(hasError || error) ? `${id}-error` : helperText ? `${id}-helper` : undefined"
         :class="inputClass"
         @input="handleInput"
         @blur="handleBlur"
@@ -52,10 +54,10 @@
     </div>
 
     <!-- Helper text -->
-    <p v-if="helperText && !hasError" class="mt-1 text-xs text-gray-500">{{ helperText }}</p>
+    <p v-if="helperText && !hasError" :id="`${id}-helper`" class="mt-1 text-xs text-gray-500">{{ helperText }}</p>
 
     <!-- Error message -->
-    <p v-if="error || hasError" class="mt-1 text-xs text-red-600">{{ error || errorMessage }}</p>
+    <p v-if="error || hasError" :id="`${id}-error`" role="alert" class="mt-1 text-xs text-red-600">{{ error || errorMessage }}</p>
   </div>
 </template>
 

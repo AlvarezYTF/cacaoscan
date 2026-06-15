@@ -1,16 +1,18 @@
 <template>
   <Transition
-    enter-active-class="transform ease-out duration-300 transition"
-    enter-from-class="opacity-0 translate-y-2"
+    enter-active-class="transition-[opacity,transform] duration-200"
+    enter-from-class="opacity-0 -translate-y-1"
     enter-to-class="opacity-100 translate-y-0"
-    leave-active-class="transition ease-in duration-200"
+    leave-active-class="transition-opacity duration-150"
     leave-from-class="opacity-100"
     leave-to-class="opacity-0"
   >
-    <div 
-      v-if="show" 
-      class="border-l-4 p-4 rounded-r-md shadow-sm"
+    <div
+      v-if="show"
+      class="p-4 rounded-md border"
       :class="alertClasses"
+      :role="variant === 'error' || variant === 'critical' ? 'alert' : 'status'"
+      :aria-live="variant === 'error' || variant === 'critical' ? 'assertive' : 'polite'"
     >
       <div class="flex">
         <div class="flex-shrink-0">

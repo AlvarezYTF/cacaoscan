@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+/* ── Motion tokens ─────────────────────────────────────────────────────── */
+:root {
+  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-standard:  cubic-bezier(0.4, 0, 0.2, 1);
+
+  --duration-instant: 100ms;
+  --duration-fast:    150ms;
+  --duration-base:    200ms;
+  --duration-enter:   280ms;
+}
+
+/* ── Global reduced-motion override ────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    transition-duration:       0.01ms !important;
+    scroll-behavior:           auto   !important;
+  }
+}
+
 /* Estilos globales mejorados para vistas de autenticación */
 .auth-background {
   background-image: url('./Cacao/GranosCacao.jpg');
@@ -25,24 +47,21 @@
 .auth-form-container {
   position: relative;
   z-index: 2;
-  /* Glassmorphism mejorado con tonos verdes sutiles */
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(16px) saturate(180%);
-  border-radius: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 
-              0 0 0 1px rgba(16, 185, 129, 0.1),
-              inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  transition: all 0.3s ease-in-out;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  transition: box-shadow 200ms ease-out, border-color 150ms ease-out;
 }
 
 .auth-form-container:hover {
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.35),
-              0 0 0 1px rgba(16, 185, 129, 0.15),
-              inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  border-color: rgba(16, 185, 129, 0.3);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-form-container {
+    transition: none;
+  }
 }
 
 /* Utilidad de accesibilidad: ocultar visualmente pero mantener accesible para lectores de pantalla */

@@ -35,7 +35,7 @@
             <form @submit.prevent="handleSubmit" class="p-6">
               <div class="space-y-6">
                 <!-- Alerta de errores generales -->
-                <div v-if="generalError || Object.keys(errors).length > 0" class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+                <div v-if="generalError || Object.keys(errors).length > 0" class="mb-6 p-4 bg-red-50 border border-red-400 rounded-lg">
                   <div class="flex items-start">
                     <div class="flex-shrink-0">
                       <svg class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -288,7 +288,7 @@
               </div>
 
               <!-- Alerta de errores encima de los botones -->
-              <div v-if="generalError || Object.keys(errors).length > 0" class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+              <div v-if="generalError || Object.keys(errors).length > 0" class="mb-6 p-4 bg-red-50 border border-red-400 rounded-lg">
                 <div class="flex items-start">
                   <div class="flex-shrink-0">
                     <svg class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

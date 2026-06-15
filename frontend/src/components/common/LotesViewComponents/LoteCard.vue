@@ -1,6 +1,6 @@
 <template>
   <div 
-    class="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 cursor-pointer group"
+    class="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-150 border border-gray-200 cursor-pointer group"
     @click="$emit('view-details', lote)"
   >
     <div class="p-6">

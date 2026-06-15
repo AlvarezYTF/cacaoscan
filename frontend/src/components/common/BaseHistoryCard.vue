@@ -186,7 +186,7 @@ const loadMore = () => {
 }
 
 .base-history-item {
-  transition: all 0.2s;
+  transition: box-shadow 150ms ease-out, border-color 150ms ease-out;
 }
 
 .base-history-item:hover {
@@ -207,7 +207,7 @@ const loadMore = () => {
   border-radius: 0.5rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: box-shadow 150ms ease-out, border-color 150ms ease-out;
 }
 
 .base-history-load-more:hover:not(:disabled) {

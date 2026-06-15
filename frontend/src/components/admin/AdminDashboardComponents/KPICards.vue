@@ -4,7 +4,7 @@
     <div 
       v-for="(card, index) in cards" 
       :key="card.id"
-      class="relative bg-white rounded-2xl border-2 border-gray-200 p-6 hover:shadow-xl hover:border-green-300 transition-all duration-300 group animate-slide-up"
+      class="relative bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-md hover:border-green-300 transition duration-150 ease-out group animate-slide-up"
       :style="{ animationDelay: `${index * 50}ms` }"
     >
       <!-- Indicador decorativo superior -->
@@ -36,8 +36,8 @@
         <!-- Ícono con efecto 3D mejorado -->
         <div class="relative ml-4">
           <div class="absolute inset-0 bg-green-400 rounded-2xl transform rotate-3 opacity-20 group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300"></div>
-          <div class="relative p-4 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 transition-all duration-300 shadow-md group-hover:shadow-lg">
-            <svg class="w-8 h-8 text-green-600 group-hover:text-green-700 group-hover:scale-110 transition-all duration-300" fill="currentColor" viewBox="0 0 20 20">
+          <div class="relative p-4 rounded-xl bg-green-50 group-hover:bg-green-100 transition-colors duration-150">
+            <svg class="w-8 h-8 text-green-600 group-hover:text-green-700 transition-colors duration-150" fill="currentColor" viewBox="0 0 20 20">
               <path :d="card.iconPath" :fill-rule="card.fillRule" :clip-rule="card.clipRule"></path>
             </svg>
           </div>
@@ -178,11 +178,10 @@ const getTrendBgClass = (direction) => {
 </script>
 
 <style scoped>
-/* Solo animación personalizada que no está en Tailwind */
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -191,14 +190,12 @@ const getTrendBgClass = (direction) => {
 }
 
 .animate-slide-up {
-  animation: slide-up 0.5s ease-out both;
+  animation: slide-up 0.3s ease-out both;
 }
 
-/* Gradient text effect - no está disponible en Tailwind por defecto */
-.group:hover .text-gray-900 {
-  background: linear-gradient(135deg, rgb(55 65 81), rgb(34 197 94));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-up {
+    animation: none;
+  }
 }
 </style>
