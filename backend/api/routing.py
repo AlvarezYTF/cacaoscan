@@ -1,4 +1,4 @@
-﻿"""
+"""
 Routing de WebSockets para CacaoScan.
 """
 from django.urls import re_path

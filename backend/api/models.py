@@ -1,4 +1,4 @@
-﻿"""
+"""
 Modelos de la API.
 
 Este módulo re-exporta modelos desde apps modulares para compatibilidad hacia atrás.

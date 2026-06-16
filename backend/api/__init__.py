@@ -1,4 +1,4 @@
-﻿"""
+"""
 API module for CacaoScan.
 
 This module does not import views to avoid circular dependencies during Django setup.
