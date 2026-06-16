@@ -3,7 +3,7 @@ Cache helper utilities for CacaoScan API.
 Provides functions for cache invalidation and management.
 """
 import logging
-from typing import List, Optional
+from typing import Optional
 from django.core.cache import cache
 from django.conf import settings
 

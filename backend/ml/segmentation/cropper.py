@@ -9,9 +9,8 @@ REFACTORIZADO: Aplicando principios SOLID
 import numpy as np
 import cv2
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple, List, Callable
+from typing import Dict, Any, Optional, List, Callable
 from PIL import Image
-import logging
 
 from ..utils.paths import get_crops_dir, get_masks_dir, ensure_dir_exists
 from ..utils.io import save_image, get_file_timestamp

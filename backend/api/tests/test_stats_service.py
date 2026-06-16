@@ -2,9 +2,7 @@
 Tests for stats service.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import timedelta
-from django.utils import timezone
+from unittest.mock import Mock, patch
 from django.contrib.auth.models import User, Group
 
 from api.services.stats.stats_service import StatsService

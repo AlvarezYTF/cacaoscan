@@ -6,14 +6,12 @@ INTEGRACI"N CON M"DULOS:
 - Catálogos (Tema-Parámetro): Para tipo_documento y genero
 - Ubicaciones: Para departamento y municipio
 """
-import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from datetime import timedelta
 import re
-from catalogos.models import Parametro, Departamento, Municipio
+from catalogos.models import Parametro, Municipio
 
 
 class Persona(models.Model):

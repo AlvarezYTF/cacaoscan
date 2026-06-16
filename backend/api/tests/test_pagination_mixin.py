@@ -2,7 +2,6 @@
 Tests for pagination mixin.
 """
 import pytest
-from unittest.mock import Mock, MagicMock
 from django.test import RequestFactory
 from rest_framework.views import APIView
 from rest_framework.serializers import Serializer

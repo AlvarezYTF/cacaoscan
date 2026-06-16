@@ -2,14 +2,11 @@
 Tests for personas views.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 from django.contrib.auth.models import User
-from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework import status
 from catalogos.models import Tema, Parametro, Departamento, Municipio
 from personas.models import Persona
-from personas.serializers import PersonaSerializer, PersonaRegistroSerializer, PersonaActualizacionSerializer
 
 
 @pytest.mark.django_db

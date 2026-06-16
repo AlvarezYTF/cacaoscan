@@ -3,7 +3,6 @@ Login service for CacaoScan.
 Handles user authentication, login, logout, and token refresh.
 """
 import logging
-from typing import Optional
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken

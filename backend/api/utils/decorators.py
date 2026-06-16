@@ -3,7 +3,7 @@ Decorators for API error handling in CacaoScan.
 """
 import logging
 from functools import wraps
-from typing import Callable, Optional, Type, Tuple, Any
+from typing import Callable, Optional, Type, Tuple
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import APIException

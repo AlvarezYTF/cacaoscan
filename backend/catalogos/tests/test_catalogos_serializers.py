@@ -2,7 +2,6 @@
 Tests for catalogos serializers.
 """
 import pytest
-from rest_framework.exceptions import ValidationError
 from catalogos.models import Tema, Parametro, Departamento, Municipio
 from catalogos.serializers import (
     ParametroSerializer,

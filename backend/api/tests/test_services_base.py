@@ -2,11 +2,8 @@
 Tests for base service classes.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from django.db import transaction
-from django.contrib.auth.models import User
-from django.core.paginator import Paginator, EmptyPage, InvalidPage, PageNotAnInteger
-from django.utils import timezone
+from unittest.mock import Mock, patch
+from django.core.paginator import EmptyPage, InvalidPage
 from api.services.base import (
     BaseService,
     ServiceResult,

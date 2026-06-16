@@ -10,24 +10,20 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import numpy as np
-import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, Any
-import logging
-import json
+from typing import Dict, List, Optional, Tuple, Any
 import time
 from datetime import datetime
 
 from ..utils.logs import get_ml_logger
-from ..utils.paths import get_regressors_artifacts_dir, ensure_dir_exists
-from .models import create_model, TARGETS, TARGET_NAMES, get_model_info
-from .scalers import CacaoScalers, save_scalers
+from ..utils.paths import get_regressors_artifacts_dir
+from .models import TARGETS, get_model_info
+from .scalers import CacaoScalers
 from .base_trainer import BaseTrainer
 
 # Importar Django para usar ModelMetrics
 import os
 import sys
-from pathlib import Path
 
 # Configurar Django
 project_root = Path(__file__).resolve().parents[2] # Sube 2 niveles (regression/ml/backend)
@@ -358,7 +354,6 @@ class RegressionTrainer(BaseTrainer):
 
     def save_model(self, file_path: Path) -> None:
         """Guarda el modelo entrenado."""
-        from datetime import datetime
         
         model_info = {
             'target': self.target,

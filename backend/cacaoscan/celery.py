@@ -4,7 +4,6 @@ Solo se inicializa si USE_CELERY_REDIS está habilitado.
 """
 import os
 from celery import Celery
-from django.conf import settings
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cacaoscan.settings')
 

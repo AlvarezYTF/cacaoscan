@@ -5,7 +5,6 @@ Responsabilidad única: convertir CalibrationParams a/desde dict,
 siguiendo el principio de Single Responsibility (SOLID).
 """
 from typing import Dict, Any, Optional
-from pathlib import Path
 
 from ...models import CalibrationParams, CalibrationMethod
 from ....utils.logs import get_ml_logger

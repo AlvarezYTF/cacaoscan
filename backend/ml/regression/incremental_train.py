@@ -11,28 +11,18 @@ Este módulo implementa estrategias avanzadas de aprendizaje incremental que per
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, ConcatDataset, Subset
+from torch.utils.data import DataLoader
 import numpy as np
-import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, Any
-import logging
-import json
-import time
+from typing import Dict, List, Optional, Tuple
 from datetime import datetime
-import copy
-from collections import defaultdict
-import pickle
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 from ..utils.logs import get_ml_logger
-from ..utils.paths import get_regressors_artifacts_dir, ensure_dir_exists
+from ..utils.paths import ensure_dir_exists
 from ..utils.io import save_json, load_json
-from .models import create_model, TARGETS, TARGET_NAMES, get_model_info
-from .scalers import CacaoScalers, save_scalers, load_scalers
-from .train import RegressionTrainer, get_device
-from ..data.dataset_loader import CacaoDatasetLoader
-from ..data.transforms import resize_with_padding, normalize_image
+from .models import create_model, TARGETS
+from .train import get_device
 
 logger = get_ml_logger("cacaoscan.ml.incremental")
 

@@ -2,11 +2,10 @@
 Tests for notification views.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from rest_framework import status
-from django.utils import timezone
 
 
 @pytest.mark.django_db
@@ -135,8 +134,6 @@ class TestNotificationDetailView:
     @patch('api.views.notifications.notification_views.Notification')
     def test_get_notification_error(self, mock_notification_class, client, user):
         """Test getting notification with error."""
-        from notifications.models import Notification as RealNotification
-        from django.core.exceptions import ObjectDoesNotExist
         
         mock_notification_class.objects.get.side_effect = Exception("Database error")
         

@@ -5,7 +5,6 @@ Este módulo maneja la conversión de dimensiones reales en milímetros
 a medidas en píxeles para granos de cacao,
 siguiendo el principio de Responsabilidad Única.
 """
-from ..models import CalibrationParams
 from .base_converter import ConvertidorBase
 from .validators.calibration_validator import ValidadorCalibracion
 from ...utils.logs import get_ml_logger

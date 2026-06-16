@@ -1,11 +1,7 @@
 """
 Tests for ML logging utilities.
 """
-import pytest
 import logging
-import sys
-from pathlib import Path
-from unittest.mock import patch, Mock
 from ml.utils.logs import (
     setup_logger,
     get_ml_logger,

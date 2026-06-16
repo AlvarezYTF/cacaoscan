@@ -2,12 +2,11 @@
 Tests for images_app views.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 from rest_framework import status
-from io import BytesIO
 
 # Import directly from views.py file (not from views/__init__.py)
 import importlib.util
@@ -22,7 +21,6 @@ spec.loader.exec_module(views_direct)
 CacaoImageUploadView = views_direct.CacaoImageUploadView
 CacaoImageListView = views_direct.CacaoImageListView
 from images_app.models import CacaoImage
-from api.serializers import CacaoImageSerializer
 
 
 @pytest.mark.django_db

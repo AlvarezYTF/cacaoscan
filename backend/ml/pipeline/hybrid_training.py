@@ -7,14 +7,12 @@ Integra:
 - HybridCacaoRegressionModel para modelo híbrido
 - HybridTrainer para loop de entrenamiento mejorado
 """
-import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
-import torchvision.transforms as transforms
 
 from ..utils.logs import get_ml_logger
 from ..utils.paths import get_regressors_artifacts_dir

@@ -3,8 +3,7 @@ Tests for cacao cropper.
 """
 import pytest
 import numpy as np
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from ml.segmentation.cropper import CacaoCropper, create_cacao_cropper
 
 

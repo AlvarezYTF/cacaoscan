@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.db.models import Q, Count, Avg
+from django.db.models import Count, Avg
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
@@ -346,7 +346,6 @@ class AuditStatsView(AdminPermissionMixin, APIView):
             )
             
             # Use normalized content_type if available, fallback to resource_type
-            from django.contrib.contenttypes.models import ContentType
             activities_by_model = {}
             
             # Get from ContentType fields

@@ -3,25 +3,21 @@ Servicio de emails para CacaoScan.
 Maneja el envío de emails usando SMTP y SendGrid como alternativas.
 """
 import logging
-import smtplib
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Union, Tuple
+from typing import List, Dict, Any, Tuple
 from django.conf import settings
-from django.core.mail import send_mail, EmailMultiAlternatives, get_connection
+from django.core.mail import EmailMultiAlternatives, get_connection
 from django.template.loader import render_to_string
 from django.template import TemplateDoesNotExist, TemplateSyntaxError
 from django.utils.html import strip_tags
 from django.utils import timezone
 from django.core.mail.backends.smtp import EmailBackend
 import sendgrid
-from sendgrid.helpers.mail import Mail, Email, To, Content, Attachment, FileContent, FileName, FileType, Disposition
+from sendgrid.helpers.mail import Mail, Email, To, Attachment, FileContent, FileName, FileType, Disposition
 import base64
-import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
 logger = logging.getLogger("cacaoscan.services.email")
 

@@ -2,13 +2,10 @@
 User management views for CacaoScan API.
 """
 import logging
-from datetime import timedelta, datetime
+from datetime import timedelta
 from typing import Tuple, Optional
-from django.db.models import Q, Count, Avg, Min, Max, Sum
-from django.db.models.functions import TruncDate
+from django.db.models import Q
 from django.utils import timezone
-from django.views.decorators.cache import cache_page
-from django.utils.decorators import method_decorator
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.permissions import IsAuthenticated

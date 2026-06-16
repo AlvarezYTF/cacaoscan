@@ -5,7 +5,6 @@ Handles listing, creating, retrieving, updating, and deleting model metrics.
 import logging
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -16,8 +15,7 @@ from api.serializers import (
     ModelMetricsSerializer,
     ModelMetricsListSerializer,
     ModelMetricsCreateSerializer,
-    ModelMetricsUpdateSerializer,
-    ErrorResponseSerializer
+    ModelMetricsUpdateSerializer
 )
 from core.utils import create_error_response, create_success_response
 from ..mixins import PaginationMixin

@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.http import FileResponse
 from django.utils import timezone
-from django.db.models import Q, Count, Avg, Value, FloatField
+from django.db.models import Count, Avg, Value, FloatField
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import logging

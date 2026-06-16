@@ -10,7 +10,6 @@ from different predictor implementations, following SOLID principles:
 - Dependency Inversion: Depends on abstractions (nn.Module, Image)
 """
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Dict, Optional, Any, Tuple
 import torch
 import torch.nn as nn

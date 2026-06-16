@@ -2,17 +2,13 @@
 Generador de reportes PDF para CacaoScan.
 """
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer, Image
+from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-from django.http import FileResponse
+from reportlab.lib.enums import TA_CENTER
 from django.utils import timezone
-from django.db.models import Q
 import io
-import os
-from datetime import datetime
 
 
 def safe_float(value):

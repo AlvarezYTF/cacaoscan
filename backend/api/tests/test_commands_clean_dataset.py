@@ -6,9 +6,8 @@ import csv
 import tempfile
 from pathlib import Path
 from io import StringIO
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 from django.test import override_settings
-from django.core.management import call_command
 
 from api.management.commands.clean_dataset import Command
 

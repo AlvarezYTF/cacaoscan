@@ -2,9 +2,8 @@
 Tests for ExcelBaseGenerator.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from unittest.mock import Mock
+from openpyxl.styles import Font, Alignment, PatternFill, Border
 from django.utils import timezone
 from django.contrib.auth.models import User
 
@@ -238,7 +237,6 @@ class TestExcelBaseGenerator:
     
     def test_apply_date_filters(self, excel_generator):
         """Test _apply_date_filters method."""
-        from django.utils import timezone
         from datetime import timedelta
         
         queryset = Mock()
@@ -261,7 +259,6 @@ class TestExcelBaseGenerator:
     
     def test_apply_date_filters_only_desde(self, excel_generator):
         """Test _apply_date_filters with only fecha_desde."""
-        from django.utils import timezone
         from datetime import timedelta
         
         queryset = Mock()

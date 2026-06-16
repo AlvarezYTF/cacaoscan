@@ -16,7 +16,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-import numpy as np
 
 from ..utils.logs import get_ml_logger
 from .scalers import CacaoScalers

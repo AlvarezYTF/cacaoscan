@@ -2,8 +2,8 @@
 Tests for ExcelUsuariosGenerator.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from django.contrib.auth.models import User, Group
+from unittest.mock import Mock, patch
+from django.contrib.auth.models import User
 from decimal import Decimal
 
 from reports.services.report.excel.excel_usuarios import ExcelUsuariosGenerator
@@ -119,7 +119,6 @@ class TestExcelUsuariosGenerator:
     
     def test_add_user_row_with_none_coordinates(self, excel_generator, user):
         """Test _add_user_row with None coordinates."""
-        from fincas_app.models import Finca
         finca = Mock()
         finca.nombre = 'Test Finca'
         finca.departamento = None

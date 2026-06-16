@@ -77,18 +77,6 @@ def obtener_fabrica() -> FabricaModelo:
     return _factory_instance
 
 # Re-export creators for backward compatibility
-from .creadores import (
-    CreadorModeloBase,
-    CreadorModeloHibrido,
-    CreadorModeloMultiHead,
-    CreadorModeloOptimizado,
-    CreadorModeloEstandar,
-    ModelCreator,
-    HybridModelCreator,
-    MultiHeadModelCreator,
-    OptimizedModelCreator,
-    StandardModelCreator
-)
 
 # Compatibilidad hacia atrás
 ModelFactory = FabricaModelo

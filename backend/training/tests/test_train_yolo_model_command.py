@@ -2,7 +2,7 @@
 Tests for train_yolo_model management command.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from io import StringIO
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -273,7 +273,6 @@ class TestTrainYoloModelCommand:
     def test_save_results(self, mock_path_class):
         """Test saving results."""
         from training.management.commands.train_yolo_model import Command
-        from django.conf import settings
         
         command = Command()
         out = StringIO()

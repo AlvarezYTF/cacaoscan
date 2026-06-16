@@ -13,6 +13,5 @@ class ApiConfig(AppConfig):
             return
         
         # Importar signals solo si no estamos en modo test
-        import api.signals
 
 

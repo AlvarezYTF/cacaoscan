@@ -2,10 +2,9 @@
 Tests for API middleware.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from django.test import RequestFactory
 from django.contrib.auth.models import User
-from django.http import JsonResponse
 
 from api.middleware import (
     AuditMiddleware,
@@ -276,7 +275,6 @@ def test_token_cleanup_middleware_call(request_factory, get_response):
 @patch('api.middleware.ActivityLog')
 def test_log_custom_activity(mock_activity_log, user):
     """log_custom_activity persiste invocando ActivityLog.objects.create."""
-    from api.middleware import log_custom_activity
 
     log_custom_activity(
         user=user,
@@ -291,7 +289,6 @@ def test_log_custom_activity(mock_activity_log, user):
 @patch('api.middleware.LoginHistory')
 def test_log_failed_login(mock_login_history):
     """Test log_failed_login function."""
-    from api.middleware import log_failed_login
     
     mock_login_history.log_login = Mock()
     log_failed_login(

@@ -4,9 +4,7 @@ Tests for YOLO segmentation inference.
 import pytest
 import numpy as np
 import torch
-import cv2
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from ml.segmentation.infer_yolo_seg import (
     YOLOSegmentationInference,
     create_yolo_inference

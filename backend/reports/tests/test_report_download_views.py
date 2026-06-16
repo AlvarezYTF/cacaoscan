@@ -2,7 +2,6 @@
 Tests for report download views.
 """
 import pytest
-from unittest.mock import Mock, patch
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -121,7 +120,6 @@ class TestReporteDownloadView:
     def test_download_report_unauthenticated(self, api_client, reporte):
         """Test downloading report without authentication."""
         from rest_framework.test import APIRequestFactory
-        from rest_framework.permissions import IsAuthenticated
         from django.contrib.auth.models import AnonymousUser
         api_factory = APIRequestFactory()
         view = ReporteDownloadView()

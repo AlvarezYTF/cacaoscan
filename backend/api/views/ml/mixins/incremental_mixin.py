@@ -4,7 +4,7 @@ Mixin for incremental training views to reduce code duplication.
 import logging
 from rest_framework.response import Response
 from rest_framework import status
-from core.utils import create_error_response, create_success_response
+from core.utils import create_error_response
 
 logger = logging.getLogger("cacaoscan.api")
 

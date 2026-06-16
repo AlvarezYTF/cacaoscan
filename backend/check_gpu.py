@@ -18,11 +18,11 @@ except ImportError:
     sys.exit(1)
 
 # Verificar CUDA en PyTorch
-print(f"\nVerificando soporte CUDA en PyTorch...")
+print("\nVerificando soporte CUDA en PyTorch...")
 print(f"  torch.cuda.is_available(): {torch.cuda.is_available()}")
 
 if torch.cuda.is_available():
-    print(f"✓ CUDA disponible en PyTorch")
+    print("✓ CUDA disponible en PyTorch")
     print(f"  Número de GPUs: {torch.cuda.device_count()}")
     print(f"  GPU actual: {torch.cuda.current_device()}")
     print(f"  Nombre GPU: {torch.cuda.get_device_name(0)}")
@@ -81,7 +81,7 @@ try:
     import torch
     if torch.cuda.is_available():
         print("✓ Todo está listo para usar GPU en el entrenamiento")
-        print(f"  Usa: --device cuda o --device auto")
+        print("  Usa: --device cuda o --device auto")
     else:
         print("✗ GPU no disponible para PyTorch")
         print("  Instala PyTorch con soporte CUDA (ver instrucciones arriba)")

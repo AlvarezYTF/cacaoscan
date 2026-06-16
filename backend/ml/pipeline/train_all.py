@@ -3,7 +3,6 @@ Pipeline completo de entrenamiento para modelos de regresión de cacao.
 """
 import argparse
 import json
-import logging
 import os
 import sys
 import platform
@@ -13,12 +12,11 @@ import time
 from datetime import datetime
 
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import QuantileTransformer, StandardScaler
+from sklearn.preprocessing import QuantileTransformer
 from PIL import Image
 import torchvision.transforms as transforms
 
@@ -50,10 +48,8 @@ from ml.data.dataset_loader import CacaoDatasetLoader
 from ml.regression.models import (
     create_model,
     TARGETS,
-    TARGET_NAMES,
-    HybridCacaoRegression,
 )
-from ml.regression.scalers import create_scalers_from_data, save_scalers
+from ml.regression.scalers import create_scalers_from_data
 from ml.regression.train import train_single_model, train_multi_head_model, get_device
 from ml.regression.evaluate import RegressionEvaluator
 from ml.utils.paths import (
@@ -61,13 +57,8 @@ from ml.utils.paths import (
     get_artifacts_dir,
     get_datasets_dir,
 )
-from ml.utils.io import save_json, load_json, save_pickle
+from ml.utils.io import save_json, load_json
 from ml.utils.logs import get_ml_logger
-from ml.regression.augmentation import (
-    create_advanced_train_transform,
-    create_advanced_val_transform,
-)
-from ml.segmentation.cropper import create_cacao_cropper
 # Importar función de entrenamiento incremental
 try:
     from ml.regression.incremental_train import run_incremental_training
@@ -77,7 +68,6 @@ except ImportError:
 # Import new refactored classes
 from .generators.crop_generator import CropGenerator
 from .managers.artifact_manager import ArtifactManager
-from .orchestrators.training_orchestrator import TrainingOrchestrator
 
 
 logger = get_ml_logger("cacaoscan.ml.pipeline")
@@ -1022,7 +1012,6 @@ class PipelineEntrenamientoCacao:
         """
         logger.info("Creando data loaders...")
         
-        import torchvision.transforms as transforms
         
         # Transformaciones de entrenamiento avanzadas
         from ..regression.augmentation import create_advanced_train_transform, create_advanced_val_transform
@@ -1367,7 +1356,6 @@ class PipelineEntrenamientoCacao:
             # El dataset devuelve (image, tensor) para modelos individuales
             from torch.utils.data import DataLoader
             from ml.pipeline.train_all import CacaoDataset
-            import torchvision.transforms as transforms
             
             # Transformaciones de test
             test_transform = transforms.Compose([

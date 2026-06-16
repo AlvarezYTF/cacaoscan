@@ -5,22 +5,19 @@ Integra segmentación YOLOv8-seg, modelos de regresión y calibración OpenCV.
 
 import time
 import uuid
-import logging
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Any, List
 import numpy as np
 import torch
 import cv2
 from PIL import Image
-import io
 
-from ..utils.paths import get_regressors_artifacts_dir, get_yolo_artifacts_dir
+from ..utils.paths import get_regressors_artifacts_dir
 from ..utils.logs import get_ml_logger
-from ..utils.io import save_image, ensure_dir_exists
+from ..utils.io import ensure_dir_exists
 from ..segmentation.cropper import create_cacao_cropper
 from ..regression.models import create_model, TARGETS
 from ..regression.scalers import load_scalers
-from ..data.transforms import resize_crop_to_square
 from ..measurement import (
     get_calibration_manager,
     CalibrationMethod,

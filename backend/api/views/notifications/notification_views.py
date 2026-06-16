@@ -6,8 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.core.paginator import Paginator
-from django.db.models import Q, Count
+from django.db.models import Count
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -19,7 +18,6 @@ Notification = get_model_safely('notifications.models.Notification')
 from ...serializers import (
     NotificationSerializer,
     NotificationListSerializer,
-    NotificationStatsSerializer,
     NotificationCreateSerializer,
     ErrorResponseSerializer
 )

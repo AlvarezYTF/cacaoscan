@@ -1,7 +1,6 @@
 """
 Tests for deprecated api/serializers.py (re-export module).
 """
-import pytest
 from api import serializers
 
 

@@ -5,17 +5,12 @@ This file tests the complete training pipeline.
 import pytest
 import torch
 import numpy as np
-from unittest.mock import Mock, patch, MagicMock
-from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 from ml.pipeline.train_all import (
     CacaoDataset,
     CacaoTrainingPipeline,
-    PIXEL_FEATURE_KEYS,
     CALIB_PIXEL_FEATURE_KEYS,
-    MODEL_HYBRID,
-    MODEL_MULTIHEAD,
-    TARGETS,
 )
 
 

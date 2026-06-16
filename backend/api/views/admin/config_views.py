@@ -300,7 +300,6 @@ class SystemInfoView(APIView):
         """
         try:
             import django
-            from django.conf import settings
             
             data = {
                 'system': 'CacaoScan',

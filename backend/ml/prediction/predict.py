@@ -10,7 +10,6 @@ ACTUALIZADO:
 import time
 import uuid
 import os
-import platform
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Any, List
 from datetime import datetime
@@ -18,9 +17,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import torch
-import torchvision.transforms as transforms
 from PIL import Image
-import io
 
 # --- CORRECCIÓN: Usar imports relativos ---
 from ..utils.paths import get_regressors_artifacts_dir, get_datasets_dir
@@ -29,7 +26,7 @@ from ..utils.io import ensure_dir_exists, load_json
 from ..segmentation.processor import SegmentationError
 from ..segmentation.cacao_segmentation_model import CacaoSegmentationModel
 from ..regression.models import create_model, TARGETS, get_model_info
-from ..regression.scalers import load_scalers, CacaoScalers
+from ..regression.scalers import load_scalers
 from .base_predictor import PredictorBase
 
 # Configuración de Django (necesaria para que el worker de Gunicorn encuentre MEDIA_ROOT)

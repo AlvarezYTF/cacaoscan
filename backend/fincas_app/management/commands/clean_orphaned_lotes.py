@@ -4,7 +4,7 @@ Ejecutar con: python manage.py clean_orphaned_lotes
 """
 from django.core.management.base import BaseCommand
 from django.db import connection
-from fincas_app.models import Lote, Finca
+from fincas_app.models import Finca
 
 
 class Command(BaseCommand):

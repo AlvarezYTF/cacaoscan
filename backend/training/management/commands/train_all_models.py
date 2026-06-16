@@ -6,7 +6,6 @@ ACTUALIZADO:
   del modelo de regresión híbrido.
 """
 from django.core.management.base import BaseCommand, CommandError
-from django.conf import settings
 import json
 import time
 import sys
@@ -196,7 +195,6 @@ class Command(BaseCommand):
     def _check_yolo_model_exists(self) -> bool:
         """Verifica si ya existe un modelo YOLO entrenado."""
         from ml.utils.paths import get_yolo_artifacts_dir
-        from pathlib import Path
         
         artifacts_dir = get_yolo_artifacts_dir()
         models_dir = artifacts_dir / "models"
@@ -297,7 +295,6 @@ class Command(BaseCommand):
     def _check_regression_model_exists(self, is_hybrid: bool) -> bool:
         """Verifica si ya existe un modelo de regresión entrenado."""
         from ml.utils.paths import get_regressors_artifacts_dir
-        from pathlib import Path
         
         artifacts_dir = get_regressors_artifacts_dir()
         

@@ -2,7 +2,6 @@
 Tests for training models.
 """
 import pytest
-from unittest.mock import Mock, patch
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta

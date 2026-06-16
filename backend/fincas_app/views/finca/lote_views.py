@@ -7,7 +7,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import serializers
-from django.core.paginator import Paginator
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -27,9 +26,7 @@ from api.serializers import (
     LoteSerializer,
     LoteListSerializer,
     LoteDetailSerializer,
-    LoteStatsSerializer,
-    ErrorResponseSerializer,
-    CacaoImageSerializer
+    ErrorResponseSerializer
 )
 
 logger = logging.getLogger("cacaoscan.api")
@@ -618,7 +615,6 @@ class AnalisisSerializer(serializers.Serializer):
                 'device_used': str(pred.device_used) if pred.device_used else None,
                 'created_at': pred.created_at.isoformat() if pred.created_at else None
             }
-        return None
         return None
 
 

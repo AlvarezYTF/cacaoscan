@@ -1,7 +1,6 @@
 """
 Tests for hybrid training pipeline.
 """
-import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from ml.pipeline.hybrid_training import (

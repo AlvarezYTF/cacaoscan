@@ -5,16 +5,12 @@ import logging
 from pathlib import Path
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.utils import timezone
-from typing import Dict, List, Any
 
-from ...services import analysis_service
-from core.utils import create_error_response, create_success_response, validate_target
+from core.utils import create_success_response, validate_target
 from .mixins.incremental_mixin import IncrementalViewMixin
 from .mixins.swagger_helpers import (
     create_incremental_swagger_decorator,

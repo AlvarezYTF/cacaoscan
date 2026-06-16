@@ -9,8 +9,6 @@ from pathlib import Path
 from io import StringIO
 from unittest.mock import Mock, patch, MagicMock
 from PIL import Image
-from django.core.management import call_command
-from django.core.management.base import CommandError
 
 from training.management.commands.calibrate_dataset_pixels import Command
 

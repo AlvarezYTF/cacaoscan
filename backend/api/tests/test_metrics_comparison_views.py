@@ -2,7 +2,7 @@
 Tests for metrics comparison views.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -198,7 +198,6 @@ class TestModelComparisonView:
     @patch('api.views.ml.metrics_comparison_views.ModelMetrics')
     def test_compare_models_error(self, mock_model_metrics, client, user):
         """Test comparison with error."""
-        from training.models import ModelMetrics as RealModelMetrics
         with patch('api.views.ml.metrics_comparison_views.ModelMetrics') as mock:
             mock.objects.get.side_effect = Exception("Database error")
             

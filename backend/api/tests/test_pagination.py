@@ -2,7 +2,7 @@
 Tests for pagination utilities.
 """
 import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 from django.test import RequestFactory
 from django.contrib.auth.models import User
 from rest_framework.response import Response

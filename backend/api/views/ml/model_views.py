@@ -2,7 +2,6 @@
 ML model views for CacaoScan API.
 """
 import logging
-import time
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -22,9 +21,9 @@ from ...serializers import (
 from ...utils.decorators import handle_api_errors
 from ...services.analysis_service import AnalysisService
 from training.services import MLService
-from core.utils import invalidate_models_status_cache, invalidate_dataset_validation_cache, invalidate_latest_metrics_cache
+from core.utils import invalidate_models_status_cache
 
-from ...utils.model_imports import get_model_safely, get_models_safely
+from ...utils.model_imports import get_models_safely
 
 # ML related imports (these are functions, not models, but we use the same pattern)
 try:

@@ -6,7 +6,6 @@ siguiendo principios SOLID:
 - Single Responsibility: solo filtrado, no normalización ni verificación
 - Dependency Inversion: implementa IFiltro
 """
-from pathlib import Path
 from typing import Dict, List, Any, Tuple
 
 from ....utils.logs import get_ml_logger

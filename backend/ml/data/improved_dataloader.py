@@ -5,7 +5,6 @@ REFACTORIZADO: Aplicando principios SOLID
 - Separación de responsabilidades: TargetNormalizer, validators, extractors, loaders
 - Mantiene compatibilidad hacia atrás con la API original
 """
-import torch
 from torch.utils.data import DataLoader
 import numpy as np
 from pathlib import Path

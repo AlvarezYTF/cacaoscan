@@ -3,7 +3,6 @@ Tests for admin permission mixin.
 """
 import pytest
 from unittest.mock import Mock
-from django.contrib.auth.models import User
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework import status

@@ -7,8 +7,6 @@ REFACTORIZADO: Aplicando principios SOLID
 - Separación de responsabilidades mejorada
 """
 import os
-import logging
-import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Tuple, Optional, Dict, Any, List
@@ -867,7 +865,7 @@ def segment_and_crop_cacao_bean(image_path: str, method: str = "yolo") -> str:
         
         classifier = get_cacao_classifier()
         if classifier is not None:
-            logger.info(f"[Clasificador] Validando imagen con clasificador binario (OBLIGATORIO)...")
+            logger.info("[Clasificador] Validando imagen con clasificador binario (OBLIGATORIO)...")
             try:
                 is_cacao, confidence, details = classifier.classify(image_path)
                 
@@ -1112,7 +1110,7 @@ def debug_validate_thresholds(
             print(f"\n{'='*80}")
             print(f"Imagen: {image_path_obj.name}")
             print(f"Tamaño: {img_width}x{img_height} ({total_pixels} píxeles)")
-            print(f"\nYOLO Validation:")
+            print("\nYOLO Validation:")
             print(f"  Passed: {yolo_result['passed']}")
             if yolo_result['metrics']:
                 print(f"  Confidence: {yolo_result['metrics'].get('confidence', 0):.3f}")
@@ -1122,7 +1120,7 @@ def debug_validate_thresholds(
                 print(f"  Class: {yolo_result['metrics'].get('class_name', 'unknown')}")
             if yolo_result['error']:
                 print(f"  Error: {yolo_result['error']}")
-            print(f"\nPost-Segmentation Validation:")
+            print("\nPost-Segmentation Validation:")
             print(f"  Passed: {seg_result['passed']}")
             if seg_result['error']:
                 print(f"  Error: {seg_result['error']}")

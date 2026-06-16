@@ -1,7 +1,6 @@
 """
 Tests for model import utilities.
 """
-import pytest
 from unittest.mock import patch, MagicMock
 
 from api.utils.model_imports import get_model_safely, get_models_safely

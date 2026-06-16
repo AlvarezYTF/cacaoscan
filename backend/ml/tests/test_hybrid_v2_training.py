@@ -1,8 +1,7 @@
 """
 Tests for hybrid v2 training pipeline.
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from ml.pipeline.hybrid_v2_training import train_hybrid_v2
 
 

@@ -2,8 +2,7 @@
 Tests for common serializers.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from rest_framework.exceptions import ValidationError
+from unittest.mock import Mock
 from api.serializers.common_serializers import (
     ErrorResponseSerializer,
     DatasetStatsSerializer,
@@ -213,7 +212,6 @@ class TestSystemSettingsSerializer:
     def test_system_settings_serializer_with_logo(self):
         """Test SystemSettingsSerializer with logo."""
         from core.models import SystemSettings
-        from unittest.mock import Mock
         
         settings = Mock(spec=SystemSettings)
         settings.logo = Mock()
@@ -229,7 +227,6 @@ class TestSystemSettingsSerializer:
     def test_system_settings_serializer_without_logo(self):
         """Test SystemSettingsSerializer without logo."""
         from core.models import SystemSettings
-        from unittest.mock import Mock
         
         settings = Mock(spec=SystemSettings)
         settings.logo = None
@@ -241,7 +238,6 @@ class TestSystemSettingsSerializer:
     def test_system_settings_serializer_without_request(self):
         """Test SystemSettingsSerializer without request in context."""
         from core.models import SystemSettings
-        from unittest.mock import Mock
         
         settings = Mock(spec=SystemSettings)
         settings.logo = Mock()

@@ -6,7 +6,6 @@ from io import StringIO
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.contrib.auth.models import User
-from api.management.commands.create_admin_user import Command as CreateAdminCommand
 
 
 @pytest.mark.django_db
@@ -86,7 +85,6 @@ class TestCleanOrphanedLotesCommand:
     
     def test_dry_run_with_orphaned_lotes(self):
         """Test dry run with orphaned lotes."""
-        from django.db import connection
         from fincas_app.management.commands.clean_orphaned_lotes import Command
         from fincas_app.models import Lote
         from fincas_app.models import Finca

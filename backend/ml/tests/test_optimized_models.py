@@ -1,10 +1,8 @@
 """
 Tests for optimized regression models.
 """
-import pytest
 import torch
 import torch.nn as nn
-from unittest.mock import patch, MagicMock
 from ml.regression.optimized_models import (
     init_weights,
     extract_resnet_features,

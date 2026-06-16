@@ -2,7 +2,6 @@
 Tests for auth_app views.
 """
 import pytest
-from django.test import RequestFactory
 from auth_app import views
 
 

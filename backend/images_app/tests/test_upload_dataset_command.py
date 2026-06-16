@@ -2,11 +2,9 @@
 Tests for upload_dataset management command.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 from io import StringIO
 from pathlib import Path
 from django.core.management import call_command
-from django.core.management.base import CommandError
 from django.contrib.auth.models import User
 from images_app.models import CacaoImage
 
@@ -257,7 +255,6 @@ class TestUploadDatasetCommand:
     @pytest.mark.django_db
     def test_handle_command_success(self, user, temp_folder):
         """Test handling command successfully."""
-        from images_app.management.commands.upload_dataset import Command
         
         out = StringIO()
         

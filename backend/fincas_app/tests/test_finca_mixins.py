@@ -2,7 +2,7 @@
 Tests for finca mixins.
 """
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from rest_framework.test import APIRequestFactory
 from rest_framework import status
 from django.contrib.auth.models import User
@@ -136,7 +136,6 @@ class TestFincaSerializerMixin:
     
     def test_serialize_finca_response(self, request_factory, finca):
         """Test serialize_finca_response method."""
-        from api.serializers import FincaSerializer
         mixin = FincaSerializerMixin()
         mixin.request = request_factory.get('/')
         
@@ -146,7 +145,6 @@ class TestFincaSerializerMixin:
     
     def test_serialize_finca_response_with_success(self, request_factory, finca):
         """Test serialize_finca_response with include_success."""
-        from api.serializers import FincaSerializer
         mixin = FincaSerializerMixin()
         mixin.request = request_factory.get('/')
         
@@ -155,7 +153,6 @@ class TestFincaSerializerMixin:
     
     def test_create_finca_response(self, request_factory, finca):
         """Test create_finca_response method."""
-        from api.serializers import FincaSerializer
         mixin = FincaSerializerMixin()
         mixin.request = request_factory.get('/')
         
@@ -165,7 +162,6 @@ class TestFincaSerializerMixin:
     
     def test_update_finca_response(self, request_factory, finca):
         """Test update_finca_response method."""
-        from api.serializers import FincaSerializer
         mixin = FincaSerializerMixin()
         mixin.request = request_factory.get('/')
         

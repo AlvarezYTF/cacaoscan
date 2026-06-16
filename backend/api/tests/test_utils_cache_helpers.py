@@ -1,8 +1,7 @@
 """
 Tests for cache helper utilities.
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from django.core.cache import cache
 from core.utils.cache_helpers import (
     invalidate_cache_pattern,

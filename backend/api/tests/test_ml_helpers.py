@@ -2,7 +2,7 @@
 Tests for ML helpers.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from PIL import Image
 import io
 from api.utils.ml_helpers import (

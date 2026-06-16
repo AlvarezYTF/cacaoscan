@@ -2,10 +2,9 @@
 Tests for ExcelAnalisisGenerator.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from django.contrib.auth.models import User
 from decimal import Decimal
-from datetime import date
 
 from reports.services.report.excel.excel_analisis import ExcelAnalisisGenerator
 

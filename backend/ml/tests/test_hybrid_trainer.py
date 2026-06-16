@@ -4,8 +4,6 @@ Tests for hybrid trainer.
 import pytest
 import torch
 import torch.nn as nn
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 from ml.regression.hybrid_trainer import HybridTrainer
 
 

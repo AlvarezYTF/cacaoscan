@@ -5,7 +5,6 @@ import pytest
 from unittest.mock import Mock, patch
 from django.contrib.auth.models import User
 from api.services.auth import PasswordService
-from api.services.base import ServiceResult
 
 
 @pytest.mark.django_db

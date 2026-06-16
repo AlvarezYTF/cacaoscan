@@ -3,9 +3,8 @@ Tests for regression augmentation module.
 """
 import pytest
 import torch
-import numpy as np
 from PIL import Image
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from torchvision import transforms
 
 from ml.regression.augmentation import (

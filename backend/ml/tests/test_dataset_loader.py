@@ -3,7 +3,6 @@ Tests for dataset loader.
 """
 import pytest
 import pandas as pd
-from pathlib import Path
 from unittest.mock import patch, Mock
 from ml.data.dataset_loader import CacaoDatasetLoader
 

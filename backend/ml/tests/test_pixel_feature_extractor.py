@@ -5,7 +5,7 @@ import pytest
 import json
 import numpy as np
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from ml.data.pixel_feature_extractor import PixelFeatureExtractor
 
 

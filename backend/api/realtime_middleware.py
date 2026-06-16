@@ -2,11 +2,8 @@
 Middleware para integrar auditoría con WebSockets en tiempo real.
 """
 import logging
-from django.contrib.auth.models import User
 from django.utils import timezone
-from django.conf import settings
 
-from audit.models import LoginHistory
 try:
     from audit.models import ActivityLog
 except ImportError:

@@ -4,7 +4,6 @@ Tests for security utility functions.
 import pytest
 from pathlib import Path
 import tempfile
-import os
 
 from core.utils.security import (
     sanitize_filename,

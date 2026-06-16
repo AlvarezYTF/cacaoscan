@@ -1,7 +1,6 @@
 """
 Tests for Swagger helpers.
 """
-import pytest
 from drf_yasg import openapi
 
 from api.views.ml.mixins.swagger_helpers import (

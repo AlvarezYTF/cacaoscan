@@ -2,7 +2,6 @@
 Tests for training views.
 """
 import pytest
-from django.test import RequestFactory
 from training import views
 
 

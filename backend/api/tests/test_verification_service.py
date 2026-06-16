@@ -2,7 +2,7 @@
 Tests for verification service.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from django.contrib.auth.models import User
 
 from api.services.auth.verification_service import VerificationService

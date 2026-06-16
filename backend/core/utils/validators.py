@@ -2,7 +2,6 @@
 Centralized validators for CacaoScan API.
 Contains reusable validation functions following DRY and KISS principles.
 """
-import re
 from typing import Dict, Any, Optional
 from rest_framework import serializers
 

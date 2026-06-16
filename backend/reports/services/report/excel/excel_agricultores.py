@@ -3,7 +3,6 @@ Excel generator for farmers report.
 Generates Excel reports with farmer and farm information.
 """
 import logging
-from typing import Optional
 from openpyxl.styles import Font, Alignment, PatternFill
 
 from .excel_base import ExcelBaseGenerator

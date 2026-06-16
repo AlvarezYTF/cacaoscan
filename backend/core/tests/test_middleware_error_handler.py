@@ -1,9 +1,8 @@
 """
 Tests for error handler middleware.
 """
-import pytest
-from unittest.mock import Mock, MagicMock
-from django.http import JsonResponse, HttpRequest, HttpResponse
+from unittest.mock import Mock
+from django.http import JsonResponse, HttpResponse
 from django.test import RequestFactory
 from core.middleware.error_handler import StandardErrorMiddleware
 

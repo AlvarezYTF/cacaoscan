@@ -3,8 +3,7 @@ Tests for cancel_training management command.
 """
 import pytest
 from io import StringIO
-from unittest.mock import Mock, patch, MagicMock
-from django.core.management import call_command
+from unittest.mock import Mock, patch
 from django.core.management.base import CommandError
 from django.utils import timezone
 

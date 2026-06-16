@@ -3,9 +3,8 @@ Utilidades para operaciones de entrada y salida.
 """
 import json
 import pickle
-import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 import pandas as pd
 from PIL import Image
 

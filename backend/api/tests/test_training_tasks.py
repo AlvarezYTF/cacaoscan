@@ -3,7 +3,6 @@ Tests for training tasks.
 """
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-from django.utils import timezone
 from api.utils.model_imports import get_model_safely
 
 # Mock TrainingJob model

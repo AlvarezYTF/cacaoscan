@@ -3,19 +3,16 @@ Vistas para gestión de emails en CacaoScan.
 """
 import logging
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from django.contrib.auth.models import User
+from rest_framework.permissions import IsAdminUser
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import datetime
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from api.services.email import (
     email_service, 
     email_notification_service,
-    send_email_notification,
     send_bulk_email_notification,
     send_custom_email
 )

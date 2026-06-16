@@ -5,7 +5,6 @@ Define el contrato que deben cumplir todas las implementaciones
 de almacenamiento, siguiendo el principio de Dependency Inversion.
 """
 from typing import Protocol, Optional
-from pathlib import Path
 
 from ...models import CalibrationParams
 

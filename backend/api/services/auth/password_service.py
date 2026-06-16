@@ -3,7 +3,6 @@ Password service for CacaoScan.
 Handles password reset and recovery operations.
 """
 import logging
-from typing import Optional
 from django.contrib.auth.models import User
 from django.utils import timezone
 

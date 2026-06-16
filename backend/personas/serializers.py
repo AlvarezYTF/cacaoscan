@@ -11,7 +11,7 @@ from django.db import transaction
 from django.utils import timezone
 from datetime import date
 import re
-from catalogos.models import Parametro, Departamento, Municipio
+from catalogos.models import Parametro, Municipio
 from .models import Persona
 
 

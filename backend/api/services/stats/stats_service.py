@@ -3,8 +3,8 @@ Statistics service for CacaoScan API.
 """
 import logging
 from datetime import timedelta
-from typing import Dict, Any, List, Tuple
-from django.db.models import Q, Count, Avg, F, Case, When, IntegerField
+from typing import Dict, Any, List
+from django.db.models import Q, Count, Avg, F
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -489,7 +489,7 @@ class StatsService(BaseService):
             prediction_stats = {}
             try:
                 prediction_stats = self.get_prediction_stats()
-                self.log_info(f"Prediction stats obtenidas")
+                self.log_info("Prediction stats obtenidas")
             except Exception as e:
                 self.log_warning(f"Error obteniendo prediction stats: {e}")
                 prediction_stats = {
@@ -502,7 +502,7 @@ class StatsService(BaseService):
             activity_by_day = {}
             try:
                 activity_by_day = self.get_activity_by_day()
-                self.log_info(f"Activity by day obtenida")
+                self.log_info("Activity by day obtenida")
             except Exception as e:
                 self.log_warning(f"Error obteniendo activity by day: {e}")
                 activity_by_day = {'labels': [], 'data': []}

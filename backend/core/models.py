@@ -2,7 +2,6 @@
 Modelos compartidos del core del sistema.
 """
 from django.db import models
-from django.utils import timezone
 
 
 class TimeStampedModel(models.Model):

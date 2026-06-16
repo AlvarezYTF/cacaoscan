@@ -1,9 +1,7 @@
 """
 Tests for core models.
 """
-import pytest
 from django.utils import timezone
-from datetime import timedelta
 
 from core.models import TimeStampedModel, SystemSettings
 

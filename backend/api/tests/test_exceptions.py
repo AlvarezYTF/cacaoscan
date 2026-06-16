@@ -5,12 +5,11 @@ import pytest
 from unittest.mock import patch, Mock
 from rest_framework.test import APIRequestFactory
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
 from django.http import Http404
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError
-from rest_framework.exceptions import APIException, NotFound, PermissionDenied as DRFPermissionDenied
+from rest_framework.exceptions import APIException, NotFound
 
 from api.exceptions import custom_exception_handler
 
@@ -166,7 +165,6 @@ def test_custom_exception_handler_integrity_error_empty_string(context):
 
 def test_custom_exception_handler_drf_response_with_error_key(context):
     """Test exception handler with DRF response that already has error key."""
-    from unittest.mock import Mock
     exc = NotFound("Not found")
     response = custom_exception_handler(exc, context)
     if response and response.data and isinstance(response.data, dict):
@@ -178,7 +176,6 @@ def test_custom_exception_handler_drf_response_with_error_key(context):
 
 def test_custom_exception_handler_drf_response_with_non_dict_data(context):
     """Test exception handler with DRF response that has non-dict data."""
-    from rest_framework.exceptions import APIException
     exc = APIException("Test")
     with patch('rest_framework.views.exception_handler') as mock_handler:
         mock_response = Mock()

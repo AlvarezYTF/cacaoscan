@@ -4,7 +4,6 @@ Handles image validation, segmentation, and processing operations.
 """
 import logging
 import io
-from typing import Dict, Any
 from django.core.files.uploadedfile import UploadedFile
 from PIL import Image
 

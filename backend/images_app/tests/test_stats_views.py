@@ -2,7 +2,7 @@
 Tests for image statistics views.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from rest_framework.test import APIRequestFactory
 from rest_framework import status
 from django.contrib.auth.models import User

@@ -2,7 +2,6 @@
 Tests for audit views.
 """
 import pytest
-from django.test import RequestFactory
 from audit import views
 
 

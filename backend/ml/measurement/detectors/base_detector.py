@@ -5,7 +5,7 @@ Este módulo define la interfaz común para detectores,
 siguiendo el principio de Abierto/Cerrado y Inversión de Dependencias.
 """
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from PIL import Image
 
 from ...utils.logs import get_ml_logger

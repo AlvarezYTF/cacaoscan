@@ -8,20 +8,15 @@ import pandas as pd
 # Importacin perezosa de matplotlib/seaborn para evitar MemoryError en Windows con multiprocessing
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
-import json
-import logging
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.metrics import mean_absolute_percentage_error
 
 from ..utils.logs import get_ml_logger
 from ..utils.paths import (
-    get_regressors_artifacts_dir,
-    get_artifacts_dir,
     ensure_dir_exists,
 )
 from ..utils.io import save_json
 from .models import TARGETS, TARGET_NAMES
-from .scalers import load_scalers
 
 
 logger = get_ml_logger("cacaoscan.ml.regression")

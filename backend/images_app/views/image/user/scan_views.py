@@ -16,7 +16,6 @@ from api.serializers import (
     ScanMeasureResponseSerializer,
     ErrorResponseSerializer,
 )
-from api.utils.decorators import handle_api_errors
 from api.services.analysis_service import AnalysisService
 
 logger = logging.getLogger("cacaoscan.api.images")

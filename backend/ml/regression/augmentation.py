@@ -11,10 +11,9 @@ for data augmentation purposes. These are appropriate and safe for ML training a
 4. The randomness is used only for creating training variations, not for security purposes
 """
 import torch
-import torch.nn as nn
 import torchvision.transforms as transforms
 import numpy as np
-from typing import Tuple, Optional
+from typing import Tuple
 import math
 from torch.distributions import Beta as _Beta
 from PIL import Image
@@ -322,7 +321,6 @@ class AugmentedDataset:
         return len(self.image_paths)
     
     def __getitem__(self, idx):
-        from PIL import Image
         
         image_path = self.image_paths[idx]
         image = Image.open(image_path).convert('RGB')

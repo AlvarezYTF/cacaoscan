@@ -3,9 +3,7 @@ Tests for calibrated prediction module.
 """
 import pytest
 import torch
-import numpy as np
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from PIL import Image
 
 from ml.prediction.calibrated_predict import (

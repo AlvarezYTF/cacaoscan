@@ -1,13 +1,10 @@
 """
 Pipeline de entrenamiento híbrido v2 con características mejoradas.
 """
-import logging
-from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 import torch
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
-import torchvision.transforms as transforms
 
 from ..utils.logs import get_ml_logger
 from ..utils.paths import get_regressors_artifacts_dir

@@ -6,7 +6,6 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 from contextlib import contextmanager
-from django.core.files.storage import default_storage
 from api.utils.model_imports import get_model_safely
 
 Parametro = get_model_safely('catalogos.models.Parametro')
@@ -117,7 +116,7 @@ def get_local_image_path(image_field):
                     # Clean up temporary file
                     if os.path.exists(temp_path):
                         os.unlink(temp_path)
-        except Exception as e:
+        except Exception:
             # If there's an error, try to clean up
             if 'temp_path' in locals() and os.path.exists(temp_path):
                 try:

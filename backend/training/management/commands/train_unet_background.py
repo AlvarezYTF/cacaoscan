@@ -2,7 +2,6 @@
 Comando Django para entrenar modelo U-Net para eliminación de fondo.
 Adaptado para usar imágenes del dataset de cacao (BMP, JPG, PNG, TIFF).
 """
-import os
 import sys
 import shutil
 import tempfile
@@ -10,7 +9,6 @@ import time
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from django.core.management.base import BaseCommand, CommandError
-from django.conf import settings
 from PIL import Image
 
 # Import torch at module level for easier mocking in tests
@@ -34,7 +32,7 @@ project_root = Path(__file__).resolve().parents[4]
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from ml.data.transforms import train_background_ai, UNet
+from ml.data.transforms import UNet
 from ml.utils.paths import get_raw_images_dir, get_project_root, ensure_dir_exists
 from ml.utils.logs import get_ml_logger
 
@@ -270,7 +268,7 @@ class Command(BaseCommand):
         if not TORCH_AVAILABLE:
             raise CommandError("PyTorch no está disponible. Instala torch para usar este comando.")
         
-        from ml.data.transforms import CacaoDataset, UNet
+        from ml.data.transforms import CacaoDataset
         
         transform = T.Compose([
             T.Resize((256, 256)),

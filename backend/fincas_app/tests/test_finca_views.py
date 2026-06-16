@@ -2,7 +2,6 @@
 Tests for finca views.
 """
 import pytest
-from unittest.mock import Mock, patch
 from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework import status
 from django.contrib.auth.models import User

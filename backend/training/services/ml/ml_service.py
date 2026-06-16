@@ -5,7 +5,7 @@ are loaded only once across the application.
 """
 import logging
 import threading
-from typing import Optional, Dict, Any
+from typing import Optional
 from enum import Enum
 
 from api.services.base import BaseService, ServiceResult, ValidationServiceError

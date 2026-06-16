@@ -3,7 +3,7 @@ Admin image statistics views for CacaoScan API.
 """
 import logging
 from datetime import timedelta
-from django.db.models import Q, Count, Avg, Sum, F, Min, Max
+from django.db.models import Q, Count, Avg, Sum, Min, Max
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView

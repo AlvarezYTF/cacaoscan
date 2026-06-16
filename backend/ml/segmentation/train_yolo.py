@@ -6,12 +6,10 @@ REFACTORIZADO: Aplicando principios SOLID
 - Mejores docstrings y type hints
 - Separación de responsabilidades mejorada
 """
-import os
 import yaml
-import shutil
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Any
 import logging
 import numpy as np
 import cv2
@@ -28,7 +26,6 @@ except ImportError:
 from ..utils.paths import (
     get_yolo_artifacts_dir, 
     get_raw_images_dir, 
-    get_cacao_images_dir,
     ensure_dir_exists
 )
 from ..utils.logs import get_ml_logger
@@ -600,7 +597,7 @@ class YOLOTrainingManager:
                     bbox = annotation['bbox']
                     line = f"{class_id} {bbox[0]:.6f} {bbox[1]:.6f} {bbox[2]:.6f} {bbox[3]:.6f}\n"
                     f.write(line)
-                    logger.warning(f"No se pudo generar polígono para anotación, usando bbox como fallback")
+                    logger.warning("No se pudo generar polígono para anotación, usando bbox como fallback")
                     continue
                 
                 # Formato YOLO segmentación: class_id x1 y1 x2 y2 ... xn yn

@@ -2,8 +2,6 @@
 Middleware para auditoría automática en CacaoScan.
 """
 import logging
-import json
-from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.utils import timezone
 
@@ -161,7 +159,7 @@ class AuditMiddleware:
                         try:
                             model_class = content_type.model_class()
                             if model_class:
-                                content_object = model_class.objects.filter(pk=object_id).first()
+                                model_class.objects.filter(pk=object_id).first()
                         except Exception:
                             pass
                 except ContentType.DoesNotExist:

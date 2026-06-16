@@ -10,8 +10,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth.models import User
-from django.utils import timezone
-from catalogos.models import Parametro, Departamento, Municipio
 from .serializers import (
     PersonaRegistroSerializer, 
     PersonaSerializer,
@@ -20,11 +18,6 @@ from .serializers import (
 from .models import Persona
 
 # Import CRUD views
-from .views.crud_views import (
-    PersonaCreateView,
-    PersonaUpdateView,
-    PersonaDeleteView
-)
 
 
 class PersonaRegistroView(APIView):

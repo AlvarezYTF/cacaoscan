@@ -2,15 +2,14 @@
 Tests for API decorators.
 """
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from rest_framework.test import APIRequestFactory
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.exceptions import APIException, NotFound
+from rest_framework.exceptions import NotFound
 
 from api.utils.decorators import handle_api_errors
-from core.utils import create_error_response
 
 
 class TestView(APIView):

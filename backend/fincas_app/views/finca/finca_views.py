@@ -6,14 +6,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.core.paginator import Paginator
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from api.views.mixins import PaginationMixin, AdminPermissionMixin
 from core.utils import create_error_response, create_success_response
-from .mixins.finca_error_mixin import FincaErrorMixin, ERROR_INTERNAL_SERVER, ERROR_INVALID_INPUT, ERROR_FINCA_NOT_FOUND
+from .mixins.finca_error_mixin import FincaErrorMixin
 from .mixins.finca_serializer_mixin import FincaSerializerMixin
 
 from api.utils.model_imports import get_model_safely
@@ -23,7 +22,6 @@ from api.serializers import (
     FincaSerializer,
     FincaListSerializer,
     FincaDetailSerializer,
-    FincaStatsSerializer,
     ErrorResponseSerializer
 )
 
@@ -191,7 +189,6 @@ class FincaListCreateView(PaginationMixin, FincaPermissionMixin, APIView):
         """Crear nueva finca."""
         try:
             import traceback
-            import sys
             
             # Obtener el agricultor desde request.data si está presente y es válido, sino usar request.user
             agricultor = request.user

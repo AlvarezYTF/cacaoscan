@@ -7,7 +7,7 @@ REFACTORIZADO: Aplicando principios SOLID
 """
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import List, Optional, Tuple
 import numpy as np
 
 from ..utils.paths import get_regressors_artifacts_dir, ensure_dir_exists
@@ -44,7 +44,7 @@ class GestorCalibracion:
         
         self.current_calibration: Optional[CalibrationParams] = None
         
-        logger.info(f"GestorCalibracion inicializado")
+        logger.info("GestorCalibracion inicializado")
     
     @property
     def storage(self) -> CalibrationStorage:

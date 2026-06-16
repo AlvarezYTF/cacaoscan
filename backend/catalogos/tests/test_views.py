@@ -208,7 +208,7 @@ class TestMunicipioViewSet:
     
     def test_filter_municipios_by_nombre(self, api_client, municipio):
         """Test filtering municipios by nombre."""
-        response = api_client.get(f'/api/v1/municipios/?nombre=Test')
+        response = api_client.get('/api/v1/municipios/?nombre=Test')
         
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) >= 1

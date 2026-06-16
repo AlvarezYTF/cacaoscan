@@ -31,7 +31,6 @@ def get_schema_view_lazy():
         )
     except Exception:
         # Si hay error al cargar drf_yasg, retornar una vista dummy
-        from django.views.generic import TemplateView
         from django.http import JsonResponse
         
         class DummySchemaView:

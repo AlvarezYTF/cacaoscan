@@ -2,7 +2,7 @@
 Signals para notificaciones automáticas en CacaoScan.
 """
 import logging
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.utils import timezone

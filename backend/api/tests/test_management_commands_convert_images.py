@@ -3,10 +3,8 @@ Tests for convert_cacao_images management command.
 """
 import pytest
 from io import StringIO
-from pathlib import Path
 from unittest.mock import patch, MagicMock
 from django.core.management import call_command
-from django.core.management.base import CommandError
 
 
 @pytest.mark.django_db

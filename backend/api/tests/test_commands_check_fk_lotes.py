@@ -3,7 +3,7 @@ Tests for check_fk_lotes management command.
 """
 import pytest
 from io import StringIO
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from django.core.management.base import CommandError
 from django.db import connection
 

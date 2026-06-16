@@ -2,8 +2,6 @@
 Tests for core views.
 """
 import pytest
-from django.test import RequestFactory
-from django.shortcuts import render
 from core import views
 
 

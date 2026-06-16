@@ -2,8 +2,7 @@
 Tests for token cleanup task.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from django.utils import timezone
+from unittest.mock import Mock, patch
 from django.db import OperationalError, ProgrammingError
 
 from api.tasks.token_cleanup import cleanup_expired_tokens

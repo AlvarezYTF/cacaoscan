@@ -7,18 +7,14 @@ that contain cacao beans and images that don't.
 Usage:
     python manage.py train_cacao_classifier --positive_dir /path/to/cacao/images --negative_dir /path/to/other/images
 """
-import logging
 from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
-from django.conf import settings
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision import transforms
 from PIL import Image
-import numpy as np
-from typing import List, Tuple
 
 from ml.classification.cacao_classifier import CacaoBinaryClassifier
 from ml.utils.paths import get_artifacts_dir, ensure_dir_exists
@@ -292,7 +288,7 @@ class Command(BaseCommand):
             )
             use_mixed_precision = False
         
-        self.stdout.write(f"\n📋 Configuración de entrenamiento:")
+        self.stdout.write("\n📋 Configuración de entrenamiento:")
         self.stdout.write(f"  Imágenes positivas: {positive_dir}")
         self.stdout.write(f"  Imágenes negativas: {negative_dir}")
         self.stdout.write(f"  Épocas: {epochs}")
@@ -358,7 +354,7 @@ class Command(BaseCommand):
         # Training loop
         best_val_acc = 0.0
         
-        self.stdout.write(f"\n🚀 Iniciando entrenamiento...\n")
+        self.stdout.write("\n🚀 Iniciando entrenamiento...\n")
         
         for epoch in range(epochs):
             # Training phase

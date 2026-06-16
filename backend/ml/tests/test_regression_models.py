@@ -8,8 +8,7 @@ from unittest.mock import patch, Mock
 from ml.regression.models import (
     ResNet18Regression,
     init_linear_and_batchnorm_weights,
-    create_model,
-    TARGETS
+    create_model
 )
 
 

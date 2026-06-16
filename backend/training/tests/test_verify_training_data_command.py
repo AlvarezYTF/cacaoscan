@@ -2,12 +2,10 @@
 Tests for verify_training_data management command.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from io import StringIO
-from pathlib import Path
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from ml.data.dataset_loader import CacaoDatasetLoader
 
 
 @pytest.mark.django_db

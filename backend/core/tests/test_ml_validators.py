@@ -1,8 +1,7 @@
 """
 Tests for ML validation utilities.
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from rest_framework import status
 
 from core.utils.ml_validators import validate_target

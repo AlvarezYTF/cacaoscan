@@ -7,7 +7,6 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.conf import settings
 
 from audit.models import LoginHistory
 try:
@@ -569,7 +568,6 @@ class UserStatsConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def send_user_stats(self):
         """Enviar estadísticas actuales de usuarios."""
-        from django.db.models import Count, Q
         from datetime import timedelta
         
         now = timezone.now()

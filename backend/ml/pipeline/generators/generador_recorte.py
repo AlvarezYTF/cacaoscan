@@ -7,7 +7,7 @@ REFACTORIZADO: Aplicando principios SOLID
 - Mantiene compatibilidad hacia atrás con la API original
 """
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Any, Tuple
 
 from ...utils.logs import get_ml_logger
 from .filters import FiltroRecorte

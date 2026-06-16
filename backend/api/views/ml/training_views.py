@@ -3,7 +3,6 @@ Training views for CacaoScan API.
 """
 import logging
 import uuid
-from django.core.paginator import Paginator
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -19,7 +18,6 @@ from ...serializers import (
     TrainingJobStatusSerializer,
     ErrorResponseSerializer
 )
-from ...utils.decorators import handle_api_errors
 
 from ...utils.model_imports import get_model_safely
 

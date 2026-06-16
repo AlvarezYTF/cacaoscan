@@ -2,7 +2,7 @@
 Tests for finca serializers.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from django.contrib.auth.models import User
 from rest_framework.exceptions import ValidationError
 from api.serializers.finca_serializers import (
@@ -567,7 +567,7 @@ class TestLoteSerializer:
     
     def test_validate_fecha_cosecha_basic_future(self):
         """Test _validate_fecha_cosecha_basic with future date."""
-        from datetime import date, timedelta
+        from datetime import timedelta
         from django.utils import timezone
         serializer = LoteSerializer()
         

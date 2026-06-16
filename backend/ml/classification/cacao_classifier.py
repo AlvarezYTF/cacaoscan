@@ -10,7 +10,6 @@ import torchvision.transforms as transforms
 from pathlib import Path
 from typing import Optional, Tuple, Dict, Any
 from PIL import Image
-import numpy as np
 
 from ..utils.paths import get_artifacts_dir, ensure_dir_exists
 from ..utils.logs import get_ml_logger

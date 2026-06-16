@@ -19,7 +19,7 @@ from django.utils.encoding import escape_uri_path
 
 from reports.models import ReporteGenerado
 from api.utils.model_imports import get_models_safely
-from reports.services import ExcelAgricultoresGenerator, ExcelUsuariosGenerator
+from reports.services import ExcelUsuariosGenerator
 from api.serializers import ErrorResponseSerializer
 from .report_crud_views import ExcelRenderer
 
@@ -385,9 +385,7 @@ class ReporteAgricultoresView(APIView):
         """
         Generates and downloads an Excel file with information of all farmers and their farms.
         """
-        from io import BytesIO
         from openpyxl import Workbook
-        from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
         
         try:
             logger.info("[INFO] Generando reporte de agricultores para %s", request.user.username)

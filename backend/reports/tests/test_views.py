@@ -2,20 +2,15 @@
 Tests for reports views.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from django.contrib.auth.models import User
-from django.utils import timezone
-from rest_framework.test import APIClient, APIRequestFactory
+from rest_framework.test import APIClient
 from rest_framework import status
 from django.http import FileResponse
 from io import BytesIO
 
 # Import directly from reports.views module (which loads from views.py via __init__.py)
 from reports.views import (
-    GenerateQualityReportView,
-    GenerateDefectsReportView,
-    GeneratePerformanceReportView,
-    ReportStatsView,
     apply_image_filters,
     apply_query_filters,
     generate_pdf_response,
@@ -150,7 +145,6 @@ class TestGeneratePdfResponse:
         import importlib
         import reports.views
         importlib.reload(reports.views)
-        from reports.views import generate_pdf_response
         
         pdf_buffer = BytesIO(b'fake pdf content')
         filename = 'test_report.pdf'
@@ -181,7 +175,6 @@ class TestHandleReportError:
         import importlib
         import reports.views
         importlib.reload(reports.views)
-        from reports.views import handle_report_error
         
         error = Exception('Test error')
         username = 'testuser'

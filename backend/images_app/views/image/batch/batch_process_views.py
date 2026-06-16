@@ -4,13 +4,11 @@ Handles ML prediction processing and statistics calculation.
 """
 import logging
 import time
-from PIL import Image
 
 from api.utils.model_imports import get_models_safely
 from api.utils.ml_helpers import (
     get_predictor,
     load_image_for_prediction,
-    create_prediction_from_result,
     calculate_prediction_statistics,
     process_image_prediction
 )

@@ -5,8 +5,7 @@ This module handles loading and parsing of pixel calibration JSON files,
 following Single Responsibility Principle.
 """
 from pathlib import Path
-from typing import Dict, Optional, Any, Sequence
-import numpy as np
+from typing import Dict, Optional, Any
 
 from ...utils.logs import get_ml_logger
 from ...utils.paths import get_datasets_dir

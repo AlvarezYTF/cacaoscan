@@ -7,7 +7,7 @@ import json
 import time
 from pathlib import Path
 
-from ml.segmentation.train_yolo import YOLOTrainingManager, train_cacao_yolo_model
+from ml.segmentation.train_yolo import YOLOTrainingManager
 
 
 class Command(BaseCommand):

@@ -11,7 +11,7 @@ django.setup()
 import pytest
 from django.contrib.auth.models import User
 from django.test import RequestFactory
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 import tempfile
 from pathlib import Path
 import uuid

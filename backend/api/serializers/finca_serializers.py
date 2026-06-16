@@ -266,7 +266,6 @@ class FincaDetailSerializer(FincaSerializer):
         """Get finca lots."""
         # Deferred import to avoid circular imports
         try:
-            from fincas_app.models import Lote
             lotes = obj.lotes.all()[:10]  # Limit to 10 lotes to avoid overload
             
             # Serialize manually to avoid circular dependencies
@@ -439,7 +438,6 @@ class LoteSerializer(serializers.ModelSerializer):
 
     def _validate_fecha_cosecha_basic(self, value):
         """Validate basic fecha_cosecha constraints."""
-        from datetime import date
         from django.utils import timezone
         
         if value.year < 1900:

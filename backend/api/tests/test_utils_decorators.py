@@ -2,7 +2,7 @@
 Tests for API decorators.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError, NotFound

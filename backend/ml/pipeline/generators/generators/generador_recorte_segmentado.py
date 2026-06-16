@@ -6,7 +6,6 @@ siguiendo principios SOLID:
 - Single Responsibility: solo generación con segmentación
 - Dependency Inversion: implementa IGeneradorRecorte
 """
-from pathlib import Path
 from typing import Dict, List, Any
 from PIL import Image
 

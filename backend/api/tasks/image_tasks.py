@@ -14,7 +14,6 @@ except ImportError:
         def decorator(func):
             return func
         return decorator
-from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.files.base import ContentFile
 from django.db import transaction
 

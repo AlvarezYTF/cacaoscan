@@ -376,7 +376,6 @@ class ImageDownloadView(APIView, ImagePermissionMixin):
         Puede recibir un path (str) o contenido (bytes) desde S3.
         """
         from django.http import HttpResponse
-        import io
         
         if isinstance(file_path_or_content, bytes):
             # Content from S3

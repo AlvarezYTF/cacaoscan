@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 from pathlib import Path
 from PIL import Image
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch
 from ml.segmentation.processor import (
     _deshadow_alpha,
     _guided_refine,

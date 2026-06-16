@@ -4,7 +4,6 @@ Security utilities for input validation and sanitization.
 import os
 import re
 from pathlib import Path
-from typing import Optional
 
 
 def sanitize_filename(filename: str, default: str = "file") -> str:

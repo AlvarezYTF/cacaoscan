@@ -4,7 +4,6 @@ Advanced hybrid trainer with uncertainty-based loss, feature gating, and compreh
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -14,7 +13,6 @@ import numpy as np
 from scipy.stats import pearsonr
 
 from ..utils.logs import get_ml_logger
-from ..utils.paths import get_regressors_artifacts_dir
 from ..utils.losses import UncertaintyWeightedLoss
 from ..utils.early_stopping import IntelligentEarlyStopping
 from .metrics import calculate_metrics_per_target, print_metrics_summary

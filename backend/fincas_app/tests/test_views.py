@@ -2,7 +2,6 @@
 Tests for fincas_app views.
 """
 import pytest
-from django.test import RequestFactory
 from fincas_app import views
 
 

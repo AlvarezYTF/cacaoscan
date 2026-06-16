@@ -10,7 +10,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.contrib.auth.models import User
 
-from api.views.mixins import AdminPermissionMixin, PaginationMixin
+from api.views.mixins import AdminPermissionMixin
 from api.serializers import ErrorResponseSerializer
 from personas.models import Persona
 from personas.serializers import (

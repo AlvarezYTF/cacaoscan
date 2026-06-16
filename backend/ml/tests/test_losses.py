@@ -1,9 +1,7 @@
 """
 Tests for loss functions.
 """
-import pytest
 import torch
-import torch.nn as nn
 from ml.utils.losses import UncertaintyWeightedLoss
 
 

@@ -11,7 +11,7 @@ Mejoras implementadas:
 import torch
 import torch.nn as nn
 import torchvision.models as models
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 import logging
 
 try:

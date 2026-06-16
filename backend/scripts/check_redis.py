@@ -24,7 +24,7 @@ def check_redis():
         redis_db = int(os.environ.get('REDIS_DB', 0))
         redis_password = os.environ.get('REDIS_PASSWORD', None)
         
-        print(f"🔍 Verificando conexión a Redis...")
+        print("🔍 Verificando conexión a Redis...")
         print(f"   Host: {redis_host}")
         print(f"   Port: {redis_port}")
         print(f"   DB: {redis_db}")

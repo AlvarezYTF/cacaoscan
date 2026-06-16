@@ -2,7 +2,7 @@
 Tests for stats tasks.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 from api.tasks.stats_tasks import calculate_admin_stats_task
 

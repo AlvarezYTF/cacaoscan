@@ -4,8 +4,7 @@ Pagination mixin for API views.
 """
 Pagination mixin for API views.
 """
-from typing import Dict, Any, Optional, Tuple, Callable, Union, Type
-from django.core.paginator import Paginator, Page
+from typing import Dict, Any, Optional, Tuple, Callable, Type
 from django.http import HttpRequest
 from rest_framework.response import Response
 from rest_framework import status

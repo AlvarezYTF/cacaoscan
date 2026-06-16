@@ -7,8 +7,7 @@ Siguiendo principios SOLID:
 - Single Responsibility: orquestación del entrenamiento
 - Dependency Inversion: implementa IOrquestadorEntrenamiento
 """
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, Optional, Any, Union
 import torch
 from torch.utils.data import DataLoader
 

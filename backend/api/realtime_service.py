@@ -1,7 +1,6 @@
 """
 Servicio para notificaciones en tiempo real usando WebSockets.
 """
-import json
 import logging
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -9,7 +8,6 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django.conf import settings
 
-from audit.models import LoginHistory
 try:
     from notifications.models import Notification
 except ImportError:
@@ -21,7 +19,6 @@ except ImportError:
 
 # Import Redis exceptions for better error handling
 try:
-    import redis
     from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutError as RedisTimeoutError
 except ImportError:
     RedisConnectionError = ConnectionError

@@ -2,7 +2,7 @@
 Tests for ExcelAgricultoresGenerator.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from django.contrib.auth.models import User
 from decimal import Decimal
 

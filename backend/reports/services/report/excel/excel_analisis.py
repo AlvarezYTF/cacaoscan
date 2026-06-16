@@ -3,10 +3,8 @@ Excel generator for analysis reports.
 Generates Excel reports for quality, farm, audit, and custom analysis.
 """
 import logging
-import io
 from django.utils import timezone
-from django.db.models import Count, Avg
-from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.styles import Font, Alignment
 from openpyxl.chart import BarChart, Reference
 
 from .excel_base import ExcelBaseGenerator

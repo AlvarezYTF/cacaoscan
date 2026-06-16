@@ -5,7 +5,6 @@ import pytest
 from datetime import date, timedelta
 from unittest.mock import patch, Mock
 from django.contrib.auth.models import User
-from django.utils import timezone
 from catalogos.models import Tema, Parametro, Departamento, Municipio
 from personas.models import Persona
 from personas.serializers import (

@@ -4,8 +4,7 @@ Tests for hybrid dataset.
 import pytest
 import numpy as np
 import torch
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from PIL import Image
 import torchvision.transforms as transforms
 

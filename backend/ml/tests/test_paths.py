@@ -1,11 +1,9 @@
 """
 Tests for ML path utilities.
 """
-import pytest
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 from ml.utils.paths import (
     get_project_root,

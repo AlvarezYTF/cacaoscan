@@ -2,7 +2,7 @@
 Tests for ML serializers.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 from django.contrib.auth.models import User
 from rest_framework.exceptions import ValidationError
 from api.serializers.ml_serializers import (

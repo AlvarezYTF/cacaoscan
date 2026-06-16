@@ -161,7 +161,7 @@ if os.path.exists(dotenv_path):
                     value = value.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
                 if key and key not in os.environ:
                     os.environ[key] = value
-    except Exception as e:
+    except Exception:
         # Fallback: use load_dotenv
         try:
             load_dotenv(dotenv_path, override=False)
@@ -557,7 +557,7 @@ try:
             'LOCATION': 'unique-sessions',
             'TIMEOUT': 86400,
         }
-except (ImportError, AttributeError, FileNotFoundError) as e:
+except (ImportError, AttributeError, FileNotFoundError):
     # Default cache configuration (fallback)
     REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
     REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))

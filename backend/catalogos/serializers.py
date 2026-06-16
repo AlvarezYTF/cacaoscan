@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Tema, Parametro, Departamento, Municipio, TemaParametro
+from .models import Tema, Parametro, Departamento, Municipio
 
 
 class ParametroSerializer(serializers.ModelSerializer):

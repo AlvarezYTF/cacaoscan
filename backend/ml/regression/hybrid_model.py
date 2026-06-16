@@ -3,7 +3,7 @@ Advanced hybrid regression model with feature gating fusion.
 """
 import torch
 import torch.nn as nn
-from typing import Optional, Tuple
+from typing import Tuple
 import logging
 
 try:

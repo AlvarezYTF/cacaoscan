@@ -7,7 +7,7 @@ import torch
 import json
 from pathlib import Path
 from PIL import Image
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from sklearn.preprocessing import StandardScaler
 
 from ml.data.cacao_dataset import CacaoDataset

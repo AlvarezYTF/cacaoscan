@@ -5,7 +5,6 @@ import pytest
 from io import StringIO
 from unittest.mock import patch, MagicMock
 from django.core.management import call_command
-from django.db import connection
 
 
 @pytest.mark.django_db

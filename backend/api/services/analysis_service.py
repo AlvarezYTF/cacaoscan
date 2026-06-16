@@ -152,7 +152,6 @@ class AnalysisService(BaseService):
         """
         try:
             from api.utils.model_imports import get_models_safely
-            from django.db.models import Avg
             
             models = get_models_safely({
                 'CacaoPrediction': CACAO_PREDICTION_MODEL_PATH

@@ -12,9 +12,8 @@ Uso:
   python manage.py convert_cacao_images --only png   # solo JPG->PNG (segmentado)
 """
 
-import io
 from pathlib import Path
-from typing import Optional, Callable, Tuple, Any
+from typing import Callable, Tuple, Any
 
 from django.core.management.base import BaseCommand
 

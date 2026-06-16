@@ -4,7 +4,6 @@ Contains common functionality and styles for Excel report generation.
 """
 import logging
 import io
-from datetime import datetime
 from django.utils import timezone
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side

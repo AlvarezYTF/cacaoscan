@@ -2,8 +2,6 @@
 Tests for WebSocket consumers.
 """
 import pytest
-import json
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Try to import channels testing, skip tests if not available
 try:

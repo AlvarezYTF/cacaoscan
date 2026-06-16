@@ -106,7 +106,6 @@ class EmailVerificationView(APIView):
     def _verify_token(self, token_uuid):
         """Método helper para verificar el token."""
         try:
-            import uuid
             token_obj = EmailVerificationToken.get_valid_token(str(token_uuid))
         except (ValueError, TypeError):
             return create_error_response(

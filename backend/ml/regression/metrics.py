@@ -12,7 +12,6 @@ para eliminar duplicación y seguir principios SOLID (SRP).
 """
 import numpy as np
 from typing import Dict, Tuple, Optional, List
-import logging
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
 from ..utils.logs import get_ml_logger

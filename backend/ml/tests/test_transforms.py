@@ -3,13 +3,12 @@ Tests for image transforms.
 """
 import pytest
 import numpy as np
-import cv2
 import torch
 import tempfile
 import shutil
 from pathlib import Path
 from PIL import Image
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock
 from ml.data.transforms import (
     resize_crop_to_square,
     resize_with_padding,

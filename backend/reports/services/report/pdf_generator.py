@@ -3,18 +3,13 @@ Generador de reportes PDF para CacaoScan.
 """
 import logging
 import io
-from datetime import datetime, timedelta
-from decimal import Decimal
 from django.utils import timezone
-from django.db.models import Sum, Q
-from django.http import HttpResponse
-from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
-from reportlab.platypus import Image as RLImage
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.enums import TA_CENTER
 
 # Importar desde apps modulares
 from api.utils.model_imports import get_models_safely
@@ -42,8 +37,6 @@ Lote = models['Lote']
 Notification = models['Notification']
 ActivityLog = models['ActivityLog']
 
-from audit.models import LoginHistory
-from reports.models import ReporteGenerado
 
 logger = logging.getLogger("cacaoscan.services.report.pdf")
 

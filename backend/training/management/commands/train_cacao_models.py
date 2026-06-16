@@ -439,7 +439,6 @@ class Command(BaseCommand):
     
     def _validate_dataset_files(self) -> None:
         """Validate dataset files exist."""
-        import os
         csv_path = self._find_dataset_csv()
         if not csv_path:
             return

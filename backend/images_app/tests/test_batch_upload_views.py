@@ -92,7 +92,6 @@ class TestBatchAnalysisView:
     def test_batch_analysis_post_unauthenticated(self, api_client, image_file):
         """Test batch analysis POST without authentication."""
         from rest_framework.test import APIRequestFactory
-        from django.contrib.auth.models import AnonymousUser
         
         view = BatchAnalysisView()
         api_factory = APIRequestFactory()

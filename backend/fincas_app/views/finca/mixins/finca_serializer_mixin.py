@@ -3,7 +3,7 @@ Mixin for finca views to reduce code duplication in serializer operations.
 """
 from rest_framework.response import Response
 from rest_framework import status
-from api.serializers import FincaSerializer, FincaDetailSerializer
+from api.serializers import FincaSerializer
 from api.utils.model_imports import get_model_safely
 
 Finca = get_model_safely('fincas_app.models.Finca')

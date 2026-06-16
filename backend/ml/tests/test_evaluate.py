@@ -5,6 +5,7 @@ import pytest
 import numpy as np
 import torch
 import torch.nn as nn
+from unittest.mock import patch
 from ml.regression.evaluate import (
     compute_regression_metrics,
     RegressionEvaluator

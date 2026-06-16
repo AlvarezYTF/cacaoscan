@@ -5,7 +5,7 @@ Este módulo orquesta el redimensionamiento, normalización y validación de cal
 siguiendo los principios de Responsabilidad Única e Inversión de Dependencias.
 """
 import numpy as np
-from typing import Tuple, Optional
+from typing import Tuple
 
 from ...utils.logs import get_ml_logger
 from .resizers import SquareResizer, PaddedResizer

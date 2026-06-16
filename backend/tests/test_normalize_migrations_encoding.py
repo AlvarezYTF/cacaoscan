@@ -1,12 +1,11 @@
 """
 Tests for normalize_migrations_encoding script.
 """
-import pytest
 import tempfile
 import os
 from pathlib import Path
 
-from normalize_migrations_encoding import normalize_file_encoding, main
+from normalize_migrations_encoding import normalize_file_encoding
 
 
 def test_normalize_file_encoding_utf8_file():

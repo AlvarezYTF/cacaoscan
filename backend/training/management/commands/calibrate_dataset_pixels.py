@@ -33,9 +33,7 @@ except Exception as e:
 
 from ml.data.dataset_loader import CacaoDatasetLoader
 from ml.utils.paths import (
-    get_raw_images_dir,
     ensure_dir_exists,
-    get_datasets_dir,
     get_crop_image_path,
     get_crops_dir,
 )

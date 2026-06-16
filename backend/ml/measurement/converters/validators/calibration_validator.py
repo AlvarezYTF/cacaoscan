@@ -32,7 +32,7 @@ class ValidadorCalibracion:
         
         if calibration_params.pixels_per_mm <= 0:
             logger.error(f"Parámetro de calibración inválido: pixels_per_mm={calibration_params.pixels_per_mm}")
-            raise ValueError(f"Parámetro de calibración inválido: pixels_per_mm debe ser mayor que 0")
+            raise ValueError("Parámetro de calibración inválido: pixels_per_mm debe ser mayor que 0")
     
     @staticmethod
     def validate_calibration(calibration_params: Optional[CalibrationParams]) -> None:

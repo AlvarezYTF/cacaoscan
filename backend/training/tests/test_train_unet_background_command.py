@@ -5,7 +5,6 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 from io import StringIO
 from pathlib import Path
-from django.core.management import call_command
 from django.core.management.base import CommandError
 
 
@@ -140,7 +139,6 @@ class TestTrainUnetBackgroundCommand:
     def test_convert_images_to_jpg_success(self, tmp_path):
         """Test converting images to JPG successfully."""
         from training.management.commands.train_unet_background import Command
-        from PIL import Image
         
         image_files = [
             tmp_path / 'test1.bmp',
@@ -218,7 +216,6 @@ class TestTrainUnetBackgroundCommand:
     def test_copy_valid_files(self, tmp_path):
         """Test copying valid files."""
         from training.management.commands.train_unet_background import Command
-        import shutil
         
         valid_image_files = ['test1.jpg', 'test2.jpg']
         

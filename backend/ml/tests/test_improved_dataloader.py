@@ -4,15 +4,10 @@ Tests for improved dataloader.
 import pytest
 import numpy as np
 import torch
-from pathlib import Path
-from unittest.mock import patch, MagicMock
-from PIL import Image
 from ml.data.improved_dataloader import (
     TargetNormalizer,
     normalize_targets,
-    denormalize_predictions,
-    ImprovedCacaoDataset,
-    create_improved_dataloader
+    denormalize_predictions
 )
 
 

@@ -2,7 +2,6 @@
 Intelligent early stopping with variance and R² monitoring.
 """
 from typing import Dict, Tuple, Optional
-import numpy as np
 
 from .logs import get_ml_logger
 

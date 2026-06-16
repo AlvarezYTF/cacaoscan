@@ -2,12 +2,11 @@
 Tests for image processing service.
 """
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 import io
 from images_app.services.image import ImageProcessingService
-from api.services.base import ServiceResult
 
 
 class TestImageProcessingService:
@@ -91,7 +90,7 @@ class TestImageProcessingService:
         """Test validating image file with invalid filename."""
         # Create a mock file with empty name to test validation
         # We use a mock to avoid SuspiciousFileOperation during file creation
-        from unittest.mock import Mock, MagicMock
+        from unittest.mock import MagicMock
         empty_name_file = MagicMock(spec=SimpleUploadedFile)
         empty_name_file.name = ''
         empty_name_file.content_type = 'image/jpeg'

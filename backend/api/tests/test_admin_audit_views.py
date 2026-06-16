@@ -4,9 +4,6 @@ Tests for admin audit views.
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from django.test import RequestFactory
-from django.contrib.auth.models import User
-from django.utils import timezone
-from datetime import timedelta
 from rest_framework.response import Response
 from api.views.admin.audit_views import (
     ActivityLogListView,
@@ -18,7 +15,6 @@ from api.views.admin.audit_views import (
 @pytest.fixture
 def activity_log_mock():
     """Mock ActivityLog model."""
-    from unittest.mock import MagicMock
     mock_model = MagicMock()
     mock_model.objects = MagicMock()
     mock_model.DoesNotExist = Exception
@@ -28,7 +24,6 @@ def activity_log_mock():
 @pytest.fixture
 def login_history_mock():
     """Mock LoginHistory model."""
-    from unittest.mock import MagicMock
     mock_model = MagicMock()
     mock_model.objects = MagicMock()
     mock_model.DoesNotExist = Exception
@@ -146,7 +141,6 @@ class TestLoginHistoryListView:
     
     def test_get_with_admin_permission(self, admin_user):
         """Test GET request with admin permission."""
-        from audit.models import LoginHistory
         
         factory = RequestFactory()
         request = factory.get('/api/admin/audit/logins/')
@@ -209,9 +203,6 @@ class TestAuditStatsView:
                             "o reescribir la vista para usar un servicio testeable.")
     def test_get_with_admin_permission(self, admin_user):
         """Test GET request with admin permission."""
-        from audit.models import ActivityLog, LoginHistory
-        from django.db.models import Count
-        from datetime import timedelta
 
         factory = RequestFactory()
         request = factory.get('/api/admin/audit/stats/')

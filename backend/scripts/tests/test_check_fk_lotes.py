@@ -2,9 +2,7 @@
 Tests for check_fk_lotes script.
 """
 import pytest
-import sys
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from django.db import connection
 
 

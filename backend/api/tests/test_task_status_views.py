@@ -2,10 +2,9 @@
 Tests for task status views.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from rest_framework.test import APIRequestFactory
 from rest_framework import status
-from celery.result import AsyncResult
 from django.contrib.auth.models import User
 
 from api.views.admin.task_status_views import TaskStatusView

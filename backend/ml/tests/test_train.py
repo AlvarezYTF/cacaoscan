@@ -6,13 +6,11 @@ import pytest
 import torch
 import torch.nn as nn
 import numpy as np
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from torch.utils.data import DataLoader, TensorDataset
-from pathlib import Path
 
 from ml.regression.train import (
     RegressionTrainer,
-    train_single_model,
     _create_loss_function,
     _validate_learning_rate,
     _create_optimizer_with_loss_params,
@@ -21,22 +19,10 @@ from ml.regression.train import (
     _split_outputs,
     _prepare_batch_data,
     _compute_loss,
-    _train_one_epoch,
-    _validate_one_epoch,
-    _compute_validation_metrics,
-    _update_history_with_metrics,
-    _build_metrics_log_string,
-    _log_detailed_metrics_if_needed,
-    _calculate_and_log_metrics,
-    _update_scheduler,
     _check_early_stopping,
-    _save_model_file,
-    _save_metrics_to_db,
-    _try_use_improved_training,
     _detect_model_type,
     _initialize_training_components,
     _initialize_history,
-    train_multi_head_model,
     get_device,
     create_training_job,
     update_training_job_metrics,

@@ -2,7 +2,6 @@
 URLs para la API de CacaoScan.
 """
 from django.urls import path
-from . import views
 # Import views from modular structure
 from .views import (
     # Auth views (from auth_app)

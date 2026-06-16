@@ -4,7 +4,7 @@ Column validator for CSV datasets.
 This module validates CSV column structure,
 following Single Responsibility Principle.
 """
-from typing import Dict, List
+from typing import Dict
 import pandas as pd
 
 from ....utils.logs import get_ml_logger

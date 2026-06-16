@@ -6,7 +6,6 @@ El sistema ahora usa exclusivamente pixel_calibration.json para calibración.
 """
 import pytest
 import numpy as np
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 from ml.measurement.calibration import (

@@ -3,7 +3,7 @@ Tests for PDF generator.
 """
 import pytest
 from io import BytesIO
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 from reports.pdf_generator import CacaoReportPDFGenerator
 
 

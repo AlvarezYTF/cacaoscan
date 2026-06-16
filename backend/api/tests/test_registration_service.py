@@ -2,7 +2,7 @@
 Tests for registration service.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from django.contrib.auth.models import User
 from api.services.auth import RegistrationService
 from api.services.base import ServiceResult
@@ -445,7 +445,6 @@ class TestRegistrationService:
     
     def test_handle_existing_pending_registration_not_expired(self, service):
         """Test _handle_existing_pending_registration with not expired."""
-        from personas.models import PendingRegistration
         import uuid
         unique_id = str(uuid.uuid4())[:8]
         email = f'test_{unique_id}@example.com'
@@ -473,7 +472,6 @@ class TestRegistrationService:
     
     def test_pre_register_user_existing_not_expired(self, service):
         """Test pre_register_user with existing not expired."""
-        from personas.models import PendingRegistration
         import uuid
         unique_id = str(uuid.uuid4())[:8]
         user_data = {
@@ -495,7 +493,6 @@ class TestRegistrationService:
     
     def test_pre_register_user_email_error(self, service):
         """Test pre_register_user with email error."""
-        from personas.models import PendingRegistration
         import uuid
         unique_id = str(uuid.uuid4())[:8]
         user_data = {
@@ -538,7 +535,6 @@ class TestRegistrationService:
     def test_verify_pre_registration_and_create_user_token_not_found(self, service):
         """Test verify_pre_registration_and_create_user with token not found."""
         import uuid
-        from personas.models import PendingRegistration
         
         token = str(uuid.uuid4())
         
@@ -554,7 +550,6 @@ class TestRegistrationService:
     def test_verify_pre_registration_and_create_user_already_verified(self, service):
         """Test verify_pre_registration_and_create_user with already verified."""
         import uuid
-        from personas.models import PendingRegistration
         
         token = str(uuid.uuid4())
         
@@ -571,7 +566,6 @@ class TestRegistrationService:
     def test_verify_pre_registration_and_create_user_expired(self, service):
         """Test verify_pre_registration_and_create_user with expired token."""
         import uuid
-        from personas.models import PendingRegistration
         
         token = str(uuid.uuid4())
         
@@ -590,7 +584,6 @@ class TestRegistrationService:
     def test_verify_pre_registration_and_create_user_with_persona_data(self, service):
         """Test verify_pre_registration_and_create_user with persona data."""
         import uuid
-        from personas.models import PendingRegistration
         
         token = str(uuid.uuid4())
         
@@ -634,7 +627,6 @@ class TestRegistrationService:
     def test_verify_pre_registration_and_create_user_persona_error(self, service):
         """Test verify_pre_registration_and_create_user with persona error."""
         import uuid
-        from personas.models import PendingRegistration
         
         token = str(uuid.uuid4())
         
@@ -743,7 +735,6 @@ class TestRegistrationService:
     
     def test_send_pre_registration_verification_email_with_template(self, service):
         """Test _send_pre_registration_verification_email with template."""
-        from personas.models import PendingRegistration
         import uuid
         unique_id = str(uuid.uuid4())[:8]
         email = f'test_{unique_id}@example.com'
@@ -770,7 +761,6 @@ class TestRegistrationService:
         pending_reg.email = email
         pending_reg.data = {}
         
-        from django.template import TemplateDoesNotExist
         with patch('django.template.loader.render_to_string', side_effect=TemplateDoesNotExist("Template")):
             with patch('api.services.email.send_custom_email', return_value={'success': True}):
                 result = service._send_pre_registration_verification_email(pending_reg)

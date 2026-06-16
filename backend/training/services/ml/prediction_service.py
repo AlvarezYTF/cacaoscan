@@ -4,7 +4,6 @@ Handles all ML prediction-related operations.
 """
 import logging
 import time
-from typing import Dict, Any
 from PIL import Image
 
 from api.services.base import BaseService, ServiceResult, ValidationServiceError

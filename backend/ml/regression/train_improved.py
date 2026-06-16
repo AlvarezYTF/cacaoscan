@@ -18,16 +18,14 @@ import numpy as np
 from typing import Dict, List, Optional, Tuple, Any
 import time
 from pathlib import Path
-import logging
 
 from ..utils.logs import get_ml_logger
 from ..utils.paths import get_regressors_artifacts_dir, ensure_dir_exists
-from .models import TARGETS, TARGET_NAMES
-from .scalers import CacaoScalers, save_scalers
+from .models import TARGETS
+from .scalers import CacaoScalers
 from .metrics import (
     denormalize_and_calculate_metrics,
-    validate_predictions_targets_alignment,
-    robust_r2_score
+    validate_predictions_targets_alignment
 )
 
 logger = get_ml_logger("cacaoscan.ml.regression.train_improved")

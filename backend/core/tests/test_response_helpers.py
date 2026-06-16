@@ -1,7 +1,6 @@
 """
 Tests for response helper functions.
 """
-import pytest
 from rest_framework import status
 from rest_framework.response import Response
 

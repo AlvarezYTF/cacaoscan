@@ -6,7 +6,6 @@ import os
 import sys
 from unittest.mock import patch, Mock
 from django.contrib.auth.models import User, Group
-from django.db.models.signals import pre_save, post_save
 
 from users import signals
 

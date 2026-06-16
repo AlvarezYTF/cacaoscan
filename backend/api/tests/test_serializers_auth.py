@@ -2,10 +2,7 @@
 Tests for authentication serializers.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
-from rest_framework.exceptions import ValidationError
 from api.serializers.auth_serializers import (
     LoginSerializer,
     RegisterSerializer,

@@ -2,10 +2,8 @@
 Tests for admin config views.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from django.test import RequestFactory
-from django.contrib.auth.models import User
-from rest_framework.response import Response
 from api.views.admin.config_views import (
     SystemSettingsView,
     SystemGeneralConfigView,

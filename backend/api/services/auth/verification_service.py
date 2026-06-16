@@ -3,7 +3,6 @@ Email verification service for CacaoScan.
 Handles email verification and token resending.
 """
 import logging
-from typing import Optional
 from django.contrib.auth.models import User
 
 from ..base import BaseService, ServiceResult, ValidationServiceError

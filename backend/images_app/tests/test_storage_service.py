@@ -2,7 +2,7 @@
 Tests for image storage service.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import User
 
