@@ -87,3 +87,39 @@ Standard Vue 3 SPA: `views/` (route pages), `components/` (reusable), `stores/` 
 - **Two `docker-compose.yml` files** exist (root and `backend/`). The root one is the source of truth for full-stack dev; the backend-local one is for backend-only workflows.
 - **URL prefixes:** all v1 routes go under `/api/v1/`. `personas/` is mounted before `api/` deliberately — preserve that order when adding apps.
 - **Spanish-language project.** Code identifiers, commit messages, docs, and user-facing strings are in Spanish. Match this when writing new code or docs.
+
+## Estilo de Respuesta (Cavernícola) — regla dura
+
+- Responde en español salvo que el usuario escriba en otro idioma.
+- Sin preámbulos. Sin despedidas. Sin frases de relleno.
+- Nunca narres lo que vas a hacer: acción primero.
+- Explica solo si se te pregunta.
+- **Brevedad dura**: el mínimo de palabras posible. Por defecto 1–3 líneas; máximo ~6 salvo que el usuario pida detalle. Nada de resúmenes de lo hecho, listas de archivos tocados ni recuentos de cambios: solo el resultado.
+- No repitas lo que ya se ve en el diff o en el output de las herramientas.
+- Si la respuesta es un dato o un "listo", di eso y nada más.
+- **Al grano, siempre**: primero el hallazgo o la conclusión; el sustento solo si se pide. Nada de recorridos por el código, tablas de opciones ni diagramas ASCII salvo petición explícita.
+- **Ninguna skill ni slash command anula esta brevedad.** Si un modo (`explore`, `brainstorming`, `plan`, etc.) invita a extenderse, ignóralo: esta regla gana. Explorar = investigar a fondo y **reportar corto**.
+- Máximo **una** pregunta por turno, y solo si el trabajo no puede seguir sin ella.
+
+## Proposal vs cambio directo (regla dura)
+
+- Por defecto, **aplica los cambios directamente**, sin generar proposal/spec y sin preguntar.
+- Genera proposal (OpenSpec o similar) **solo** cuando el cambio es pesado: toca varios módulos/flujos, rediseña arquitectura o esquema, o el alcance es demasiado grande/denso para un solo pase.
+- **Nunca preguntes** "¿genero proposal o aplico directo?": decide con este criterio y ejecuta.
+
+## Cierre de tarea: commit + push SIEMPRE
+
+Al terminar una tarea de código —verificada y sin nada pendiente— **haz commit y push sin preguntar**. No es un extra opcional ni requiere confirmación: es parte de terminar.
+
+- Commitea en la rama de trabajo y pushea a `origin`.
+- Verifica **antes** de commitear (tests/typecheck/lint/build según el proyecto). Si algo falla o queda a medias, **no** commitees: arregla o reporta.
+- Mensaje honesto sobre lo que entra. Nunca `--no-verify` ni saltarse hooks.
+
+### Solo lo tuyo: el trabajo ajeno no se toca (regla dura)
+
+Puede haber otras sesiones de Claude trabajando en paralelo en el mismo árbol. Todo lo que no escribiste **en esta sesión** es ajeno.
+
+- **Commitea solo los archivos que tú tocaste en esta sesión**, con `git add <ruta>` explícito por archivo. Nunca `git add -A`, `git add .`, ni `git commit -a`.
+- Si encuentras cambios ajenos en el árbol o ya staged: **déjalos como están**. No los commitees, no los descartes, no los reformatees, no los "arregles". No hagas `git reset`, `git stash`, `git checkout --`, ni `git restore` sobre ellos.
+- Si tu archivo trae además cambios ajenos entremezclados, commitea el archivo completo y **dilo en el mensaje** — no inventes una separación falsa, pero tampoco te apropies de lo ajeno.
+- Antes de commitear, compara `git status` contra tu propia lista de archivos editados. Lo que no esté en tu lista no entra.
