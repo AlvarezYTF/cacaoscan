@@ -123,3 +123,10 @@ Puede haber otras sesiones de Claude trabajando en paralelo en el mismo árbol. 
 - Si encuentras cambios ajenos en el árbol o ya staged: **déjalos como están**. No los commitees, no los descartes, no los reformatees, no los "arregles". No hagas `git reset`, `git stash`, `git checkout --`, ni `git restore` sobre ellos.
 - Si tu archivo trae además cambios ajenos entremezclados, commitea el archivo completo y **dilo en el mensaje** — no inventes una separación falsa, pero tampoco te apropies de lo ajeno.
 - Antes de commitear, compara `git status` contra tu propia lista de archivos editados. Lo que no esté en tu lista no entra.
+
+## Grafo de código primero (codebase-memory)
+
+- Para descubrimiento **estructural** (dónde está un símbolo, quién llama a qué, trazar un flujo, impacto de un cambio, orientación en el repo) usa primero `codebase-memory-mcp`: `search_graph`, `trace_path`, `get_code_snippet`, `query_graph`, `get_architecture`.
+- Read/Grep quedan para texto literal (strings, configs, docs) y como respaldo cuando el grafo no cubra algo. Nunca sustituyen la verificación: confirma en el fuente antes de afirmar o de editar.
+- Si este proyecto no aparece en `list_projects`, indéxalo con `index_repository` sin preguntar. Ya indexado se refresca solo (`auto_watch`); solo re-indexa tras un cambio externo grande.
+- La cobertura del grafo es best-effort: para afirmaciones exhaustivas ("no existe", "es el único uso") valida con `check_index_coverage` + grep.
